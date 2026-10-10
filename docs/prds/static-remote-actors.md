@@ -2180,9 +2180,10 @@ with full native transfer to the service and explicit parent disposition.
 Keep the complete original native result with its existing parent owner; derive
 a separate local service receipt only after the actual actor join. Preserve
 final state, rejected messages and original errors; do not clone native errors
-or serialize them onto the network. Receipt schema, attachment,
-public API, failure policy and implementation remain unselected. Publication
-timing is selected below.
+or serialize them onto the network. At this decision, receipt schema,
+attachment, public API, failure policy and implementation were unselected.
+Subsequent accepted decisions below select the report representation, access
+and publication timing.
 Accepted receipt-observation decision (2026-10-09 UTC): the user selected
 **shared independent observations**, after comparison with one affine consumer
 and explicit redistribution. Reuse the existing Observe shared pair: permitted
@@ -2235,8 +2236,8 @@ not receipt fields, public API, classification policy or wait limits.
 Earlier independent preparation compared concrete borrowed leaf and aggregate
 policies against adding a universal classifier. The current owners have no
 verified universal predicate for application-owned descendant/failure products.
-The common report family, outcome assessments and runtime derivation ownership
-are selected below; classification rules and exact fields remain separate.
+The common report family, outcome assessments, runtime derivation ownership
+and exact fields are selected below; classification rules remain separate.
 
 Fresh owning-regression checks use the root pinned Nix shell, current Engine
 0.2.2 and Bombay Macros 0.1.2. Each command below passed in debug and again
@@ -2376,7 +2377,7 @@ the original and commits completion before waking the receiver, and returns
 the exact value on closure refusal. A registered receiver's waker may still
 panic: any proposed cause-transfer boundary must account for that fault and
 actual receiving order, not assume sending cannot unwind. The child oneshot
-selection is recorded above; root component types remain unselected.
+selection is recorded above; root component types are selected below.
 
 Completed HTTP/caller audit extends that impact to four HTTP execution methods
 and two HTTP identity-retention callbacks: fifteen public entry points and
@@ -2397,9 +2398,9 @@ receipts to individual phase fields, broadening enum/generic/conversion
 migrations. Cold states must not synthesize native/report receipts or infer
 actor absence from a closed publication. Retain family outcomes, caller-local
 non-Send work, bare original outputs and the existing cleanup barrier.
-Exact component/error types, report-access methods, public names and the
-measured production budget remain separate choices. No production edit is
-authorized by this layout decision alone.
+Subsequent decisions below select component/error types, report-access methods
+and public names. The measured production budget remains a separate choice;
+this layout decision alone supplies no production authorization.
 
 Accepted notification-error family decision (2026-10-09 UTC): the user selected
 **one common notification error type** for roots and children. Distinguish the
@@ -2409,19 +2410,317 @@ identify the affected actor. Keep these acquired causes separate from its
 retirement report and original task errors; do not clone an arbitrary panic
 payload or manufacture a native task error. The rejected alternative duplicates
 the variants and conversions in separate root and child error families.
-This adds one expected public type; its exact name, owning fields and explicit
-receiving-abandonment policy remain unselected. Scope approval must precede
-implementation.
+This adds one expected public type; its exact name and owning fields are
+selected below. Receiving-abandonment policy remains unselected. Scope approval
+must precede implementation.
 
-Pending report-access decision: the submitted question recommends ordinary
+Accepted report-access decision (2026-10-09 UTC): the user said
+**"go with recommended approach"** in response to the pending question. Use ordinary
 `ApplicationLifecycle::retirement()` and `InstalledActor::retirement()` methods,
 each returning an independently cancellable future for the same small shared
 report through Observe. Calling either requests no stop; service capability
 export follows existing Application/typed Actions wiring. Message-only
-`ActorRef` gains no report method. The alternative introduces a dedicated
-public read-only retirement capability and export path. No demonstrated need
-for that additional authority split has been found. Neither option is adopted
-without the user's answer; waiting limits and exact report fields remain open.
+`ActorRef` gains no report method. The rejected alternative introduces a
+dedicated public read-only retirement capability and export path; no demonstrated
+need for that additional authority split was found. Waiting limits and the
+implementation-stage budget remain open; report fields are selected below. Do not re-ask
+this selected projection absent new evidence.
+
+Accepted common local report/error API decision (2026-10-09 UTC): the user
+selected **runtime-issued read-only report**. Keep runtime-issued
+report fields private, with read-only `retirement()` and `failures()` accessors.
+The report owns exactly the two already selected assessments; its enums express
+the approved distinctions. The existing native `ActorRetirement` retains full
+state, payloads and errors. No public constructor, mutation API, serializer or
+new report wrapper is proposed. A report snapshot can be `Copy`, `Clone`,
+`Debug`, `Eq` and `PartialEq`; original panic/task errors remain affine.
+
+```rust
+pub struct ActorRetirementReport {
+    retirement: RetirementAssessment,
+    failures: ActorFailureAssessment,
+}
+
+pub enum RetirementAssessment {
+    Established,
+    NotEstablished,
+}
+
+pub enum ActorFailureAssessment {
+    FailuresFound,
+    NoFailuresFound,
+    Incomplete,
+}
+
+pub enum RetirementNotificationError {
+    Panicked { payload: Box<dyn Any + Send> },
+    ReceiptClosed { error: RecvError },
+}
+```
+
+The panic payload is the original standard unwind cause already owned by the
+runtime, not erased application protocol content. The receiving variant keeps
+Tokio's actual error. The proposed root receiving components are the existing
+`Result<(RootOrigin<Owner>, ActorRetirement<Actor, Terminal, ChildFailures>), RecvError>`
+and, as subsequently extended by the two-stage decision below, a separate
+`ActorNotificationReceipts`, beside the existing work outcome with unit cleanup.
+Each notification result distinguishes a
+proved no-fault transfer from either acquired fault; receipt closure does not
+infer actor absence or retirement success. Entity family receipts coexist.
+
+The rejected public alternative exposes the report's fields for direct construction and
+mutation. That is shorter for application-created fixtures, but permits callers
+to manufacture a value styled as a runtime assessment. Private construction
+keeps the observation/reporting owner explicit; fixtures can acquire real
+reports through the owning composition. This selects the four public names,
+report accessors and concrete error/receiving representation shown above.
+Child fault storage is selected below. Classification rules, abandonment policy
+and stage scope remain separate choices. A fresh public-name/interface review must precede
+retention of the final implementation; no production edit is authorized by
+this API decision alone.
+
+Accepted child coexisting-fault representation (2026-10-09 UTC): the user
+selected **extend existing child-failure records**. Extend existing
+`ChildFailure::ActorTaskFailed` and `ProjectionTaskFailed` with
+the notification receipt beside their native task error. Its initially selected
+single-result shape is superseded by the two-stage product below. Keep their
+same genuine `JoinError`, exact actor and single origin. When application
+projection succeeds but notification fails, retain the original projected
+child result in the existing retired lane and add
+`ChildFailure::RetirementNotificationFailed { id, kind, origin, actor, error }`
+to the existing failure lane. Its `error` owns the common notification error.
+The existing retirement-origin policy supplies that row's actual origin;
+do not clone or recreate an origin from an acquired task error. This preserves
+coexistence without a new public type or a second failure list, and cannot
+rewrite the child's already published report.
+
+The rejected alternative adds a separate notification-failure list correlated by actual
+creation identity and occurrence, leaving native failure variants unchanged.
+That avoids new fields on those variants but broadens receiving products and
+requires reconciling separate lists. Either representation must retain the
+successful projected value when a notification cause coexists, and retain
+both genuine task/notification causes when task projection fails. Exact cause
+transfer order and receiving-abandonment policy require their own reviewed law.
+
+Approved-method baseline compiler evidence (2026-10-09 UTC): locked Cargo
+builds of `bombay-rs` 0.1.1 with default features pass in debug and optimized
+profiles. Cargo's JSON artifact record selects the owning
+`target/debug/libbombay.rlib` (SHA-256
+`f315c58990701920ea4b226739e1a4c001bb9d0211b82cc44c80211a1a634274`)
+and `target/release/libbombay.rlib` (SHA-256
+`49c0db5cbc956d53c17fbfafe1d2e24a87142baba5fca54893d3783c1bf1ca11`).
+Using those artifacts, an ordinary module-imported generic function calling
+`ApplicationLifecycle::termination()` and one cloning `InstalledActor` compile
+without diagnostics in both profiles. Changing only the root call to
+`retirement()` fails solely with E0599 on that owner at stdin line 5; changing
+only the child call fails solely with E0599 on `InstalledActor` at line 12.
+No speculative report type or macro is needed to isolate either API gap.
+
+All commands run inside `nix develop /Users/joel/orca/workspaces/bombay/main-2 -c python3 -`,
+using stdin source and standard subprocess execution. The build command is
+`cargo build --manifest-path Cargo.toml --locked -p bombay-rs --lib --jobs 2 --message-format=json`
+with `--release` for the optimized artifact. Compiler controls use
+`rustc --edition=2024 --crate-name retirement_observation --crate-type lib --emit metadata -D warnings --error-format=json`,
+Cargo's exact `--extern bombay` artifact, the matching `target/PROFILE/deps`
+dependency search, stdin `-` and ignored target metadata output; optimized
+controls additionally use `-C opt-level=3 -C debug-assertions=no`.
+Control stdin is thirteen lines, SHA-256
+`19696c30a9d995501f95997f7568efe0596402f20324f66a41fd898cf0db8d10`;
+root and child candidates are respectively
+`c31d3f485684f9ee27007fb5fda58de250af6c2c7c224b4fa499c39ab3458e0c`
+and `d46907b67598ff1e8d6f18112bd2d0f2a576f291f7c34d83aa6dbb4b880ef4ae`.
+The selected source instructions and lock/manifest hashes are unchanged;
+no retained source path, production code, manifest, dependency or public type
+was added. An initial wrong dependency-search path produced E0463 and was
+corrected before the six matched controls; that setup failure receives no
+proof credit. These results prove only the public API gap, not timing,
+retirement conservation, a semantic inversion or full R11 acceptance.
+
+Accepted notification-receiving order (2026-10-09 UTC): the user selected
+**receive after producer join**. Retain the notification
+receiver in its existing owner, and poll it only after acquiring the actual
+projector join for children or cleanup join for roots. Producers still transfer
+their acquired notification cause before consuming child conversion or later
+root-family cleanup. By the receiving cut, that producer has finished or its
+sender has disappeared, so the receiver cannot register a notification waker
+while the sender is active. Preserve the native join outside the receiving
+attempt and acquire the genuine notification result before disposing its
+owner or running origin/application policy. Test cancellation between those
+acquisitions and resume without reaccepting either fact. Shared report
+observation remains independent and available at the approved earlier cut.
+
+The alternative polls notification results concurrently with their producers,
+providing earlier fault inspection but allowing the oneshot's registered
+receiver waker to panic after send commits. That needs another cause-custody
+boundary. The proposed ordering reuses existing receiving barriers, adds no
+task, dependency or lock, and does not defer shared-report availability until
+application work finishes. Receiving abandonment remains an explicit separate
+policy. This selects polling order, not a new publication/cause source or
+receiving-abandonment policy.
+
+Verified existing termination-publication custody blocker (2026-10-09 UTC):
+an actual public Application probe reproduces in debug and optimized builds.
+Outside-fold work registers a custom `Wake` on the exact root's termination
+future, holds that future without replacing its waker, requests ordinary stop
+and waits on an independent signal from that waker. With a normal notification,
+the parent obtains the complete native `Completed` result, same original actor
+state allocation, every residual lane and sole complete Stop Actions. With
+a panicking notification, the same `Ok(Exit::Normal)` fact remains published,
+but the original state allocation is destroyed and the native result becomes
+`ActorRetirement::ActorTaskFailed`, retaining the exact observer panic allocation
+and genuine task identity. Both probe binaries exit zero by asserting this
+counterexample; this is not a passing conservation regression or a repair.
+
+The source cut is `LocalRetirement::retire` in `launch.rs`: it owns the acquired
+Driver outcome while invoking `TerminationPublication`, without containing
+Observe's propagated waiter panic. Observe commits first, then resumes the
+first available waiter cause. Unwinding destroys the outcome and skips the
+subsequent activation-task settlement. This actual probe contains no activation
+tasks, so skipped settlement is source evidence only. Protecting solely the
+new after-join report publisher is too late to preserve that earlier fact.
+The owning correction is a prerequisite, not an unrelated runtime refactor.
+
+Pinned-Nix Cargo-JSON-selected debug/release builds pass with the unchanged
+lock. The stdin probe is 181 lines, SHA-256
+`52e30e14eadae5613a57705d75e370aa2a97f9081c70e31204f80061a6cad8fc`.
+Only Bombay/Tokio externs are used, Rust 2024 with `-D warnings`; optimized
+compilation uses `-C opt-level=3 -C debug-assertions=no`. Actual execution
+commands are `nix develop -c target/debug/termination_notification_custody_stdin`
+and its `target/release` counterpart. Binary hashes are respectively
+`09e5996f5d454f805497de8703cc6965d284157260b5bcbaaf5c000bc6648ca2`
+and `ebcd107961ead6a37690133d5280b7a6ee8e9ccf2875e2a612000f0f900cca34`.
+Normal and panic cases execute unchanged in both profiles. Corrected fixture
+syntax/model mistakes receive no inversion credit. Retained source paths,
+production, tests and public API additions remain zero; only ignored build
+artifacts exist. No old publication policy is changed by this evidence.
+
+Accepted two-stage notification-receipt decision (2026-10-09 UTC): the user
+selected **two named notification receipts** after the new counterexample
+reopened the earlier single-result shape. The
+existing termination publication and the later joined-retirement report
+publication can each produce an independent acquired fault. A single
+`Result<(), RetirementNotificationError>` cannot retain both causes. Use
+one `ActorNotificationReceipts` product with named `termination` and `retirement`
+fields, each `Result<(), RetirementNotificationError>`, beside the same native
+result. Child failure records keep this product in their existing record,
+preserving the approved coexisting-storage law and one origin. Keep the two
+original causes independently; the report publication cannot rewrite an
+already published assessment or the earlier termination fact.
+
+The rejected alternative expands one composite error enum into flat variants for all
+combinations of the two publication phases and their missing-receipt errors.
+It avoids a fifth public type but repeats stage-specific cases and conversions.
+The named product owns a newly demonstrated pair of coexisting authoritative
+facts, rather than shortening a nested spelling. This raises the
+expected public additions from four to five and requires a revised stage
+record. Mechanism, guard-unwind/cancellation custody, native handoff, receiving
+abandonment and exact source-classification rules remain unselected; no
+production edit is authorized by this representation decision. The earlier
+child coexisting-storage policy remains selected; exact child field/variant
+spelling must account for both stages before implementation.
+
+Required-law baseline regression precursor (2026-10-09 UTC): the same public
+Application setup now asserts native conservation rather than accepting the
+counterexample. Its normal observer control passes the full original
+`Completed` result, state allocation, every residual field and complete sole
+Stop Actions. Its panicking observer control independently observes
+`Ok(Exit::Normal)` and the genuine joined task failure, then fails at stdin
+line 107: the original actor-state allocation has zero strong owners, where
+the required joined native result must retain one. Both debug and optimized
+executions intentionally exit 101 for that exact custody assertion. The
+following full-native assertion runs in the normal control and is unreachable
+after today's panicking-control failure; it receives no separate failing-proof
+credit. No unimplemented notification receipt is fabricated by the fixture.
+
+The 156-line stdin source has SHA-256
+`584c2a845c1630c0ea39f644cc4138688c836188eec611c3d8aa386c1ee79d25`.
+Compilation uses the same pinned-Nix Cargo-selected Bombay/Tokio artifacts,
+Rust 2024, `-D warnings`, matching profile dependency search, and stdin `-`;
+optimized compilation adds `-C opt-level=3 -C debug-assertions=no`.
+Executions are `nix develop -c target/debug/termination_notification_native_conservation_stdin`
+and the corresponding `target/release` path. Binary SHA-256 values are
+`b1362a343fa43a507aff07433cb39640e58b2a186b977d27fb0ef0654eda8f50`
+and `45eee29d3c6ed5d450f4d879490f5b0311853eba1506b7a8c39960a44feb1a23`.
+The original counterexample remains available independently. Runtime source,
+manifest and lock are unchanged; retained source/test paths and public API
+additions remain zero. This establishes the intended failing local law before
+a repair; it does not satisfy full R11 or a passing feature witness.
+
+Prepared first-publication repair mechanism, **awaiting user selection**:
+create one additional locked Tokio oneshot pair per standard actor at launch.
+`LocalRetirement` owns its unique sender; the existing actor-task owner retains
+its receiver. Keep the acquired native outcome outside the unwind-catching
+closure, contain the existing termination publication's propagated observer
+panic, transfer its exact original cause or proved no-fault result, then return
+the same native outcome for actual activation-task settlement. Receive this
+cause only after acquiring the actual actor task join, retaining both facts
+outside any later conversion/disposal. The receiver remains unpolled while its
+producer runs, so that transfer cannot invoke a registered receiver waker.
+
+The same local retirement owner is invoked by `Terminal::Drop` during
+cancellation or panic unwinding. Its returned value is discarded there; the
+separate receipt would conserve the notification cause independently. This
+does not reconstruct an unavailable native result or establish retirement
+from cancellation. Returning a cause only in the actor task's result misses
+that guard path and may lose it on a later task failure. Existing Observe's
+affine pair retains move-only values but leaves a dropped publisher pending;
+it needs a further missing-publication mechanism and does not directly supply
+the selected actual Tokio receipt-closure error. These are evaluated reuse
+alternatives, not adopted replacements.
+
+The recommended candidate adds one allocated channel per actor, no new task,
+dependency or public type beyond the selected notification product. Allocation,
+async-frame size, startup refusal, abrupt task failure, cancellation, guard
+unwind and same-fact replay need concrete owner tests and resource accounting.
+A closed receiver returns the original cause to the producer; abandonment and
+potentially panicking panic-payload destruction require an explicit separate
+disposition, not silent successful notification. No production patch, verified
+repair or permission for this additional channel exists yet. The user question
+presents this mechanism and its consequences before dependent implementation.
+
+Independent first-publication review confirmed the causal source cut and the
+required precursor's intended assertion, using the reported fixture/evidence
+and current owning source without claiming another binary execution. The
+review requires a retained passing native/state regression, held actual
+activation-task settlement, guard cancellation/unwind custody, unchanged
+termination classifications and affine publication replay denial before
+broader implementation. The two real notification-panic combination remains
+an unexecuted obligation before the second publisher can be retained.
+
+Mandatory Entity compatibility consequence, **design unselected**:
+`entity/bombay.rs` acquires the actor join before consuming its native result
+through `EntityDefinition::retired`; keep the exact result until that existing
+explicit application transfer. Existing `EntityRetirementFailure` in
+`entity/family.rs` distinguishes unavailable actor retirement, shutdown
+conversion, forced callback and final user callback faults. A caught Observe
+termination-notification fault is none of those causes; neither returning
+`Ok(())` nor storing it as a user-callback panic is truthful. Its existing
+failure type can be extended with notification-only and coexisting custody,
+without adding another public type or changing the generic Entity runtime.
+Exact variant/field selection still requires user steering.
+
+This Entity route currently has no second joined-report publisher. Do not
+populate the selected two-stage product with invented successful retirement
+notification or a closed receipt for a publication that was never attempted.
+Compare retaining the actually produced first-stage common notification result
+in Entity's existing failure contract with explicitly adding a second internal
+report publication. Neither is selected. Stable `EntityRef` remote export,
+hydration and Entity-specific remote replay remain outside this PRD. Existing
+family runtime receiving already preserves its concrete retirement failure
+rows with their actual entity/activation/mode; reuse it unchanged where proven.
+
+Compatibility impact adds the two native Entity owner paths above, and requires
+review of existing `tests/{entity_runtime,entity_family,entity_errors,entity_directory}.rs`
+beside already inventoried Entity Application callers. `entity/mod.rs` and
+`worker_preparation.rs` need export/receiving compatibility inspection, not an
+assumed production rewrite. The earlier forty-two-path stage inventory and
+210-path ceiling are incomplete once these consequences are retained; revise
+the complete union and line budget before requesting expanded authorization.
+Required Entity regression: full original native retirement reaches its existing
+callback; the original Observe cause survives in the actual family failure row;
+resident permits and metrics settle; forced/shutdown/final-callback causes can
+coexist. Dropping only the new notification cause must fail that exact payload
+oracle in both profiles. No such test or Entity API change is implemented.
 
 Independent startup-conservation review (2026-10-09 UTC), no source edits:
 `local/effects/creation.rs` can return the child's original initialization
@@ -2449,6 +2748,9 @@ Prepared local-retirement implementation stage, **not yet authorized**:
 - Exact blocker: a service inside Application work cannot currently obtain a
   joined root report, and child/native products do not independently conserve
   descendant assessments and notification faults before opaque conversion.
+  The ordinary termination publisher can already destroy acquired native
+  state before actor join; its debug/optimized failing precursor above must
+  become a passing regression before broader feature production edits.
   This stage implements the selected local prerequisite for R11; it does not
   substitute local evidence for remote authorization, freshness or transport
   acceptance.
@@ -2465,13 +2767,26 @@ Prepared local-retirement implementation stage, **not yet authorized**:
   panic/cancellation while retaining root, notification and acquired family
   receipts; extend `child_projection_panic` with an actual Observe waiter
   panic followed by the existing consuming projection panic. Assert both
-  original causes, genuine projector task identity, original actor/origin and
+original causes, genuine projector task identity, original actor/origin and
   continued sibling joining. Sending the cause after conversion or dropping
   independent native receiving must fail those exact assertions.
+  First protect the actual first-publication native/state law recorded above,
+  held activation-task custody, and the terminal guard's cancellation/unwind
+  notification transfer. Preserve each existing termination classification and
+  prove no second publication after the affine capability is consumed. Before
+  enabling the second publisher, cause both real observer stages to panic and
+  retain their distinct original payloads in the two named receipt fields.
+  Swallowing either cause, overwriting the first or using a single result must
+  fail the corresponding independent custody oracle in both profiles.
 - Expected owner edits: `application/{execution,interface,http,mod}.rs`,
   `lib.rs`, `launch.rs`, `terminal.rs`, `local/{children,endpoint,environment}.rs`
-  and `local/effects/{creation,mod,observation}.rs`: up to thirteen existing
-  production paths. Include a path only when its actual owning obligation
+  and `local/effects/{creation,mod,observation}.rs`: thirteen existing
+  production paths from the earlier full-stage proposal. First-publication
+  investigation also reaches `entity/bombay.rs`: its existing native actor
+  retirement consumes only the task result before invoking
+  `EntityDefinition::retired`. The additional notification cause cannot be
+  discarded there. Audit its actual failure/callback receiving before fixing
+  the revised complete source union and budget. Include a path only when its actual owning obligation
   requires it. No new module, macro, dependency or executor task is proposed.
 - Public compatibility audit: the current `ApplicationOutcome` /
   `ApplicationCleanupError` scan identifies twenty-six paths: five source
@@ -2481,10 +2796,12 @@ Prepared local-retirement implementation stage, **not yet authorized**:
   actor errors and Entity family receipts. Audit compile fixtures and current
   capability/module/API guidance alongside those callers.
 - Expected public additions: one common small report, its two closed
-  assessment enums and the selected common notification error: four types,
-  zero removals. Exact report names/accessors and child fault fields remain
-  unselected. Reuse ordinary existing lifecycle capabilities if the pending
-  projection choice is approved; do not add another public observation wrapper
+  assessment enums, the selected common notification error and the named
+  two-stage notification receipts: five types, zero removals. The report
+  names/accessors and receipt product are selected; the first publication's
+  repair mechanism and final child field/variant spelling remain unselected.
+  Reuse the approved ordinary existing lifecycle capabilities;
+  do not add another public observation wrapper
   merely to hide existing concrete composition.
 - Expected net production growth: +650–1,000 lines including public caller
   migration; proposed stage ceiling +1,100. These are source-informed
@@ -2507,23 +2824,26 @@ Prepared local-retirement implementation stage, **not yet authorized**:
 The current cumulative correction envelope remains 166 accounted paths and
 758 conservative functional lines under its approved 770-line ceiling. It is
 not authorization for this feature stage. The proposed stage adds up to forty-two
-paths (including compatibility/compile/documentation migration), for a proposed
+paths in its earlier inventory (including compatibility/compile/documentation migration), for a proposed
 cumulative ceiling of 210 paths and 1,858 conservative functional lines.
 Retain the separately accounted downloaded snapshots and earlier test fixtures;
 the proposed +2,000 fixture ceiling is additional stage work, not a replacement
-for their existing accounting. Before production edits, settle the public
-projection, exact report/error representation, child coexisting-fault fields,
-receiving-abandonment policy and actual classification rules, record the
-complete path union, then obtain explicit expanded-scope authorization required
+for their existing accounting. The report/access/error/receipt selections are
+recorded above. Before production edits, settle the first-publication repair,
+final two-stage child fields/variants, Entity receiving, receiving-abandonment
+policy and actual classification rules, record the revised complete path union
+and budget, then obtain explicit expanded-scope authorization required
 by AGENTS.md. No cap or design in this proposal is adopted by preparation.
 
-The proposed new-path union was checked against the actual tracked tree:
+The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
 five current guidance paths below and three existing compile fixtures for
 forty-two new accounted paths, not forty-two newly created files. The four
 existing decision/index documents are already accounted separately. Every
-listed file exists; this is an impact inventory, not a measured patch.
+listed file exists; this is an impact inventory, not a measured patch. The
+subsequently identified Entity neighbor is not yet included in that forty-two;
+the final union must include its proven affected ownership and callers.
 
 | Additional migration category | Exact existing paths |
 | --- | --- |
@@ -2580,7 +2900,9 @@ descendant's resource settlement. A candidate is preserving each child's
 owner-derived common report before projection and retaining/composing that
 evidence in existing typed bindings. This would avoid requiring applications
 to inspect arbitrary descendant products, but the evidence is not conserved
-by the current implementation. No new classifier trait or mechanism is selected.
+by the current implementation. No new classifier trait or concrete assessment
+implementation is selected; Observe and the previously approved Tokio cause
+transfer retain their recorded selections.
 
 Root integration has an additional concrete prerequisite:
 `application/execution.rs` currently waits for application-work permission
@@ -2590,7 +2912,8 @@ report from inside that work cannot obtain an early report through this current
 cut. Separate-Application stop/join probes do not prove this service integration.
 Investigate the existing cleanup task's join/permission ordering while preserving
 the original native root result and the application's family-shutdown policy;
-no ordering change, extra task or public API is authorized by this finding.
+this finding alone authorizes no ordering change, extra task or public API.
+The subsequent ordering and API choices are recorded separately below and above.
 The full roots-and-children stage must account for this owning source path;
 the smaller child-only estimate below does not cover it. No new implementation,
 timing inversion or full R11 acceptance was executed for these findings.
@@ -2616,19 +2939,20 @@ by this decision alone.
 The intended prior-order inversion holds application work open, joins genuine
 root-owned work and expects the report before releasing the application gate;
 restoring permission-before-join must fail that specific readiness assertion.
-This is a planned oracle, not a current passing test or a selected public API.
+This is a planned oracle, not a current passing test. The public report methods
+were subsequently selected above; their implementation remains scope-gated.
 
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +531 / -35 / net +496.
+Documentation: +863 / -41 / net +822.
 Previously recorded pinned-Nix law-manifest controls pass all nine in debug
 and optimized builds; they were not rerun for these documentation edits.
 Current document-link and whitespace checks pass; all twenty-five unexecuted
 acceptance rows remain. These checks verify the decision records, not any new
 retirement or networking implementation.
 
-The smaller child-only attachment proposal is prepared but **unadopted**:
+Historical smaller child-only attachment proposal, **unadopted**:
 reuse the existing projected-task handoff's publication authority, retain its
 shared observation in the established creation binding and full installed-actor
 capability, and borrow the actual native result for receipt derivation before
@@ -2637,8 +2961,9 @@ passing that same original result to the parent lift. This would affect
 `local/effects/observation.rs` and possibly `terminal.rs`, plus owning tests.
 Attachment and private classification are estimated at net +80–170 production
 lines before service integration; these are preparation estimates, not measured
-edits or an authorized budget. New public types and methods depend on the still
-unselected service projection. Even private fields in public `InstalledActor`
+edits or an authorized budget. Its then-unselected public types and service
+projection are now selected above; the attachment itself remains unadopted.
+Even private fields in public `InstalledActor`
 require size/auto-trait/interface review. Keep messaging-only `ActorRef` authority
 separate. Actor-task failure, residual-free cancellation/panic and a dropped
 publisher cannot establish clean retirement. Observe intentionally leaves an
@@ -2906,6 +3231,7 @@ serde_json 1.0.151, exact protected bytes and Zenoh 1.10.1 over mutual TLS/TCP
 with configured-only CA trust, as recorded above. The approved owning trust
 correction is locally verified; registry delivery and networking integration
 remain open.
-Public abstractions, default limits and remaining protocol choices are
+The local retirement report/error/receipt names and access methods are selected
+above. Remaining network abstractions, default limits and protocol choices are
 unselected. Existing safety
 laws constrain the options; they do not authorize agent-selected representations.
