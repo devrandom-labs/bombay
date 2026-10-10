@@ -2,6 +2,7 @@
 //! messages, state, typed reply, domain error, and transition remain together.
 //! No reusable template is needed; the pure active fold remains the test oracle.
 
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use tokio::runtime::Builder;
 mod counter;
@@ -73,10 +74,17 @@ fn main() {
             panic!("the counter application retains exact cold or joined failure inputs");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };

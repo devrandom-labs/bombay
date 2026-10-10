@@ -4,6 +4,7 @@ use bombay::entity::{
     ActivationId, AdmissionFailure, DrainFailure, EntityActivationError, EntityDefinition,
     EntityId,
 };
+use bombay::ActorRetirementReport;
 use bombay::{ActorRetirement, ActorSpace, ActorSpaces};
 
 struct Account;
@@ -60,7 +61,10 @@ impl EntityDefinition for Accounts {
         _: &EntityId<Self::Id>,
         _: ActivationId,
         _: Result<ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>, tokio::task::JoinError>,
+        retirement_report: ActorRetirementReport,
     ) {
+        // This compile-denial fixture executes no retirement consumer.
+        let _ = retirement_report;
     }
 }
 

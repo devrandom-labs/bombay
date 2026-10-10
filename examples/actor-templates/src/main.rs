@@ -1,6 +1,7 @@
 //! For learning how to select a standalone actor template and compose wrapper
 //! policy through `ActorExt` without implementing a custom Behavior.
 
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use tokio::runtime::Builder;
 mod processor;
@@ -83,10 +84,17 @@ fn run_receive_timeout() {
             panic!("the receive-timeout actor starts and retires");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
@@ -128,10 +136,17 @@ fn run_shutdown() {
             panic!("the shutdown actor starts and retires");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };

@@ -22,7 +22,10 @@ use bombay::entity::{
 use bombay::prelude::{
     ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown, TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App, ApplicationOutcome};
+use bombay::{
+    ActorFailureAssessment, ActorRetirementReport, ActorSpace, ActorSpaces, App,
+    ApplicationOutcome, RetirementAssessment,
+};
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
@@ -63,7 +66,7 @@ type AccountRetirement =
 
 struct Accounts {
     retired: Arc<Semaphore>,
-    retirements: Arc<Mutex<Vec<AccountRetirement>>>,
+    retirements: Arc<Mutex<Vec<(AccountRetirement, ActorRetirementReport)>>>,
     unexpected_facts: Arc<AtomicUsize>,
 }
 
@@ -105,11 +108,17 @@ impl EntityDefinition for Accounts {
         self.unexpected_facts.fetch_add(1, Ordering::Relaxed);
     }
 
-    fn retired(&self, _: &EntityId<Self::Id>, _: ActivationId, retirement: AccountRetirement) {
+    fn retired(
+        &self,
+        _: &EntityId<Self::Id>,
+        _: ActivationId,
+        retirement: AccountRetirement,
+        retirement_report: ActorRetirementReport,
+    ) {
         self.retirements
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push(retirement);
+            .push((retirement, retirement_report));
         self.retired.add_permits(1);
     }
 }
@@ -173,7 +182,7 @@ fn main() {
         .enable_all()
         .build()
         .expect("the synchronous example owns one enabled application host");
-    let (outcome, root_receiving, shutdowns) = application_host
+    let (outcome, root_receiving, notification_receiving, shutdowns) = application_host
         .block_on(
             application.run_with_entities(move |application| async move {
                 let accounts = application.entities(AccountsRole);
@@ -207,6 +216,14 @@ fn main() {
             panic!("the explicit application host must be entered: {error}");
         });
     drop(application_host);
+    let notifications = notification_receiving
+        .expect("the existing cleanup owner transferred both original notifications");
+    notifications
+        .termination
+        .expect("ordinary root termination notification succeeded");
+    notifications
+        .retirement
+        .expect("joined root report notification succeeded");
     let ApplicationOutcome::Completed {
         output: (),
         cleanup: Ok(()),
@@ -216,15 +233,7 @@ fn main() {
     };
     let (root_origin, joined_actor) =
         root_receiving.expect("the independent original root retirement is acquired");
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
+    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(root_origin, joined_actor);
     let (head_receiving, ()) = shutdowns;
     let (AccountsRole, (shutdown, metrics, family_disposal_failure)) =
         head_receiving.expect("the complete original account family retirement is acquired");
@@ -299,12 +308,14 @@ where
     assert_eq!(completion, Completion::Stopped);
 }
 
-fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
+fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetirementReport)>>) {
     let retirements = retirements.lock().unwrap_or_else(PoisonError::into_inner);
     assert_eq!(retirements.len(), 2);
     let balances = retirements
         .iter()
-        .map(|retirement| {
+        .map(|(retirement, report)| {
+            assert_eq!(report.retirement(), RetirementAssessment::Established);
+            assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             let (behavior, settlements, user, descendants, capability_failures) = match retirement {
                 Ok(ActorRetirement::Completed {
                     child_failures: (),

@@ -3,6 +3,7 @@
 //! shutdown. Behavior owns the closed roles and routes, Behavior Actors owns
 //! the shutdown plan, and Bombay only interprets and retains the result.
 
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use bombay::behavior::{
     BehaviorBase, BehaviorSettlements, ChildHead, ChildTail, Children, ClassifySettlement,
@@ -166,10 +167,17 @@ fn main() {
             panic!("the named child topology activates and shuts down in declared phase order");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };

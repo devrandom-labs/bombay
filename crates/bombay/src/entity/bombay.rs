@@ -13,7 +13,6 @@ use communication::Config;
 use tokio::runtime::Handle;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
-use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
 use crate::local::children::StructuralOrigins;
@@ -23,6 +22,7 @@ use crate::local::effects::{ActionInterpreter, ActionSettlementOf};
 use crate::local::effects::{ApplicationCapabilities, NoParent};
 use crate::local::endpoint::{ActorRef, request_actor_shutdown};
 use crate::topology::Hosts;
+use crate::{ActorRetirement, ActorRetirementReport};
 
 use super::family::{EntityCapacity, EntityDefinition, EntityMetricState, EntityRetirementFailure};
 use super::{
@@ -51,6 +51,10 @@ pub(crate) trait NativeEntityHost<B, Terminal, ChildFailures>: Send + Sync + Siz
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
 {
+    #[expect(
+        clippy::type_complexity,
+        reason = "the native actor and startup rejection retain their distinct owning results"
+    )]
     fn launch_entity(
         self: Arc<Self>,
         address: MailAddr,
@@ -59,7 +63,7 @@ where
     ) -> impl Future<
         Output = Result<
             NativeEntityActor<B, Terminal, ChildFailures>,
-            ActorRetirement<B, Terminal, ChildFailures>,
+            SpawnError<B, (Vec<Terminal>, ChildFailures)>,
         >,
     > + Send;
 }
@@ -96,7 +100,7 @@ where
         behavior: B,
     ) -> Result<
         NativeEntityActor<B, Terminal, ChildFailures>,
-        ActorRetirement<B, Terminal, ChildFailures>,
+        SpawnError<B, (Vec<Terminal>, ChildFailures)>,
     > {
         let addresses = <N as Hosts<B::Protocol>>::space(&self).clone();
         spawn_owned_entity_with(
@@ -120,7 +124,6 @@ where
             },
         )
         .await
-        .map_err(crate::launch::SpawnError::into_retirement)
     }
 }
 
@@ -248,19 +251,17 @@ where
             Ok(address) => address,
             Err(reason) => {
                 self.metrics.launch_failed();
-                let failure = SpawnError::<D::Behavior, (Vec<D::Terminal>, D::ChildFailures)>::AllocationRejected {
-                    behavior,
-                    reason,
-                };
-                return Err(EntityActivationError::Launch(failure.into_retirement()));
+                return Err(EntityActivationError::from_launch(
+                    SpawnError::AllocationRejected { behavior, reason },
+                ));
             }
         };
         let mut actor = Arc::clone(&self.actors)
             .launch_entity(address, self.allocations.clone(), behavior)
             .await
-            .map_err(|retirement| {
+            .map_err(|failure| {
                 self.metrics.launch_failed();
-                EntityActivationError::Launch(retirement)
+                EntityActivationError::from_launch(failure)
             })?;
         actor.acknowledge_binding();
         self.metrics.activation_succeeded();
@@ -324,46 +325,63 @@ where
         // Graceful names the successful fence, not guaranteed actor stopping.
         // The same lease owns cancellation and join even when the actor ignores
         // ShutdownRequested. Its factual cause and queued inputs are returned.
-        let joined = lease
-            .actor
-            .task
-            .retire()
-            .await
-            .map(ActorRetirement::from_local);
+        let (joined, termination_notification) = lease.actor.task.retire().await;
+        let retirement_report =
+            ActorRetirementReport::from_joined(&joined, &termination_notification);
+        let joined = joined.map(ActorRetirement::from_local);
         // Only the final notification consumes the joined actor result. The
         // original key and resident permit remain owned outside that user call.
 
         let failure = match joined {
             Ok(joined) => {
                 let retired = catch_unwind(AssertUnwindSafe(|| {
-                    self.definition
-                        .retired(entity_id, activation_id, Ok(joined));
+                    self.definition.retired(
+                        entity_id,
+                        activation_id,
+                        Ok(joined),
+                        retirement_report,
+                    );
                 }))
                 .err();
                 match (shutdown_request, forced, retired) {
-                    (None, None, None) => Ok(()),
+                    (None, None, None) => termination_notification.map_err(|error| {
+                        EntityRetirementFailure::TerminationNotificationFailed { error }
+                    }),
                     (Some(shutdown_request), forced, retired) => {
                         Err(EntityRetirementFailure::ShutdownRequestPanicked {
+                            termination_notification,
                             shutdown_request,
                             forced,
                             retired,
                         })
                     }
                     (None, Some(forced), retired) => {
-                        Err(EntityRetirementFailure::ForcedRetirementPanicked { forced, retired })
+                        Err(EntityRetirementFailure::ForcedRetirementPanicked {
+                            termination_notification,
+                            forced,
+                            retired,
+                        })
                     }
                     (None, None, Some(retired)) => {
-                        Err(EntityRetirementFailure::RetirementPanicked { retired })
+                        Err(EntityRetirementFailure::RetirementPanicked {
+                            termination_notification,
+                            retired,
+                        })
                     }
                 }
             }
             Err(failure) => {
                 let retired = catch_unwind(AssertUnwindSafe(|| {
-                    self.definition
-                        .retired(entity_id, activation_id, Err(failure));
+                    self.definition.retired(
+                        entity_id,
+                        activation_id,
+                        Err(failure),
+                        retirement_report,
+                    );
                 }))
                 .err();
                 Err(EntityRetirementFailure::ActorRetirementUnavailable {
+                    termination_notification,
                     shutdown_request,
                     forced,
                     retired,
@@ -382,20 +400,29 @@ where
 mod tests {
     use super::*;
     use crate::termination::Termination;
-    use behavior::{Actions, ActiveTurn, BehaviorActed, NoBirths, NoSends, Step, User, UserEvent};
-    use behavior_actors::{Exit, StopOnShutdown};
+    use crate::{ActorFailureAssessment, RetirementAssessment, RetirementNotificationError};
+    use behavior::{
+        Actions, ActiveTurn, AllocationRejection, BehaviorActed, NoBirths, NoSends, Step, User,
+        UserEvent,
+    };
+    use behavior_actors::{Crash, Exit, StopOnShutdown};
     use bombay_engine::Completion;
     use core::num::{NonZeroU64, NonZeroUsize};
     use core::pin::pin;
     use core::task::{Context, Poll, Waker};
+    use std::any::Any;
+    use std::panic::resume_unwind;
+    use std::ptr;
     use std::sync::Mutex;
+    use std::task::Wake;
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
     use tokio::task::JoinError;
     use tokio::task::spawn_blocking;
 
     use crate::actors::ActorExt;
-    use crate::entity::{AdmissionFailure, DrainFailure, DrainStage};
+    use crate::entity::family::assert_activation_metrics;
+    use crate::entity::{AdmissionFailure, DrainFailure, DrainStage, EntityMetrics};
     use crate::launch::ActorSpace;
 
     #[derive(Default)]
@@ -418,9 +445,10 @@ mod tests {
         )]
         retired: Mutex<
             Option<
-                oneshot::Sender<
+                oneshot::Sender<(
                     Result<ActorRetirement<StopOnShutdown<DeliveryLedger>, Never, ()>, JoinError>,
-                >,
+                    ActorRetirementReport,
+                )>,
             >,
         >,
     }
@@ -464,6 +492,7 @@ mod tests {
             id: &EntityId<u64>,
             activation: ActivationId,
             retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+            retirement_report: ActorRetirementReport,
         ) {
             assert_eq!((*id).into_inner(), 73);
             assert_eq!(activation.get().get(), 83);
@@ -473,17 +502,26 @@ mod tests {
                 .expect("retirement custody")
                 .take()
                 .expect("one native retirement");
-            let published = sender.send(retirement);
+            let published = sender.send((retirement, retirement_report));
             assert!(published.is_ok());
         }
     }
 
     #[tokio::test]
+    async fn native_entity_wrapper_and_direct_hosts_retain_exact_actor_retirement() {
+        native_entity_retirement_trace(None).await;
+    }
+
+    #[tokio::test]
+    async fn termination_notification_fault_keeps_completed_native_entity_retirement() {
+        native_entity_retirement_trace(Some(Arc::new(vec![131, 137]))).await;
+    }
+
     #[expect(
         clippy::too_many_lines,
-        reason = "Keep both original delivery allocations, actual stop, and complete native joined retirement in one trace."
+        reason = "Keep original deliveries, full native retirement and independent notification custody in one trace."
     )]
-    async fn native_entity_wrapper_and_direct_hosts_retain_exact_actor_retirement() {
+    async fn native_entity_retirement_trace(notification_fault: Option<Arc<Vec<u64>>>) {
         let hosts = Arc::new(ActorSpace::<DeliveryLedger>::new());
         let native_hosts = Arc::clone(&hosts);
         let (retired_sender, retired_receiver) = oneshot::channel();
@@ -534,8 +572,27 @@ mod tests {
         assert!(direct_delivery.is_ok());
         let fenced = runtime.fence(endpoint.clone()).await;
         assert!(fenced.is_ok());
-        // The current native port owns cancellation as well as shutdown. Keep
-        // the original Completed oracle by observing real stop before retiring its lease.
+        let (waiter, expected_notification) = match notification_fault {
+            Some(cause) => {
+                let original = Arc::downgrade(&cause);
+                let payload: Box<dyn Any + Send> = Box::new(cause);
+                let allocation = ptr::from_ref(payload.as_ref()).cast::<()>();
+                (
+                    Waker::from(Arc::new(TerminationWaiter {
+                        cause: Mutex::new(Some(payload)),
+                    })),
+                    Some((original, allocation)),
+                )
+            }
+            None => (Waker::noop().clone(), None),
+        };
+        let mut notification = pin!(endpoint.termination());
+        let before_shutdown = notification
+            .as_mut()
+            .poll(&mut Context::from_waker(&waiter));
+        assert!(before_shutdown.is_pending());
+        // Keep this registered waiter unpolled until its actual producer completes.
+        // The independent observer below preserves the complete selected stop fact.
         let requested = request_actor_shutdown(&endpoint, &lease.actor.control, Ingress::new());
         assert_eq!(requested, Ok(()));
         let actual_stopped = endpoint.termination().await;
@@ -548,8 +605,22 @@ mod tests {
                 RetirementMode::Graceful,
             )
             .await;
-        assert!(retired.is_ok());
-        let retirement = retired_receiver.await.expect("whole native retirement");
+        let notified = notification.await;
+        assert_eq!(notified, Ok(Exit::Normal));
+        assert_eq!(runtime.residents.available_permits(), 1);
+        assert_eq!(runtime.hydrations.available_permits(), 1);
+        let (retirement, retirement_report) = retired_receiver
+            .await
+            .expect("whole native retirement and its assessment");
+        assert_eq!(
+            retirement_report.retirement(),
+            RetirementAssessment::Established
+        );
+        let expected_failures = match &expected_notification {
+            Some(_) => ActorFailureAssessment::FailuresFound,
+            None => ActorFailureAssessment::NoFailuresFound,
+        };
+        assert_eq!(retirement_report.failures(), expected_failures);
         let Ok(ActorRetirement::Completed {
             behavior,
             settlements,
@@ -618,6 +689,25 @@ mod tests {
             assert_eq!(original, [113, 127]);
             assert_eq!(original.as_ptr(), allocation);
         }
+        match (retired, expected_notification) {
+            (Ok(()), None) => {}
+            (
+                Err(EntityRetirementFailure::TerminationNotificationFailed {
+                    error: RetirementNotificationError::Panicked { payload },
+                }),
+                Some((original, allocation)),
+            ) => {
+                assert_eq!(original.strong_count(), 1);
+                assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), allocation);
+                let cause = payload
+                    .downcast::<Arc<Vec<u64>>>()
+                    .expect("original waiter cause");
+                assert_eq!(cause.as_slice(), [131, 137]);
+            }
+            _ => panic!(
+                "the real sole notification fault remains distinct from clean native retirement"
+            ),
+        }
     }
 
     struct ShutdownConversionActor {
@@ -667,7 +757,21 @@ mod tests {
         }
     }
 
+    struct TerminationWaiter {
+        cause: Mutex<Option<Box<dyn Any + Send>>>,
+    }
+
+    impl Wake for TerminationWaiter {
+        fn wake(self: Arc<Self>) {
+            let cause = self.cause.lock().expect("one actual waiter cause").take();
+            if let Some(cause) = cause {
+                resume_unwind(cause);
+            }
+        }
+    }
+
     struct ShutdownConversionDefinition {
+        retirement_fault: Mutex<Option<Box<dyn Any + Send>>>,
         entries: Arc<Vec<u64>>,
         endpoint: Mutex<Option<ActorRef<ShutdownConversionActor>>>,
         #[expect(
@@ -692,6 +796,7 @@ mod tests {
                 EntityId<u64>,
                 ActivationId,
                 Result<ActorRetirement<ShutdownConversionActor, Never, ()>, tokio::task::JoinError>,
+                ActorRetirementReport,
             )>,
         >,
     }
@@ -748,13 +853,22 @@ mod tests {
             id: &EntityId<u64>,
             activation: ActivationId,
             retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, tokio::task::JoinError>,
+            retirement_report: ActorRetirementReport,
         ) {
             let prior = self
                 .retirement
                 .lock()
                 .expect("outside application callback owner")
-                .replace((*id, activation, retirement));
+                .replace((*id, activation, retirement, retirement_report));
             assert!(prior.is_none());
+            let fault = self
+                .retirement_fault
+                .lock()
+                .expect("one original callback fault")
+                .take();
+            if let Some(fault) = fault {
+                resume_unwind(fault);
+            }
         }
     }
 
@@ -788,11 +902,20 @@ mod tests {
         let rejected_conversion = catch_unwind(AssertUnwindSafe(|| {
             request_actor_shutdown(&original.actor, &original.control, Ingress::new())
         }));
-        let original = original
-            .task
-            .retire()
-            .await
-            .map(ActorRetirement::<ShutdownConversionActor, Never, ()>::from_local);
+        let (original, termination_notification) = original.task.retire().await;
+        let original_report =
+            ActorRetirementReport::from_joined(&original, &termination_notification);
+        assert_eq!(
+            original_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            original_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
+        let original =
+            original.map(ActorRetirement::<ShutdownConversionActor, Never, ()>::from_local);
+        assert!(termination_notification.is_ok());
         let Ok(ActorRetirement::OwnerCancelled {
             behavior,
             settlements,
@@ -836,7 +959,17 @@ mod tests {
         assert_eq!(child_failures, ());
         assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
 
+        let notification_values = Arc::new(vec![67_u64, 71]);
+        let notification_owner = Arc::downgrade(&notification_values);
+        let notification_fault: Box<dyn Any + Send> = Box::new(notification_values);
+        let notification_allocation = ptr::from_ref(notification_fault.as_ref()).cast::<()>();
+        let retirement_fault: Box<dyn Any + Send> = Box::new(Arc::new(vec![73_u64, 79]));
+        let retirement_allocation = ptr::from_ref(retirement_fault.as_ref()).cast::<()>();
+        let waiter = Waker::from(Arc::new(TerminationWaiter {
+            cause: Mutex::new(Some(notification_fault)),
+        }));
         let definition = Arc::new(ShutdownConversionDefinition {
+            retirement_fault: Mutex::new(Some(retirement_fault)),
             entries: inputs,
             endpoint: Mutex::new(None),
             forced: Mutex::new(Vec::new()),
@@ -858,6 +991,9 @@ mod tests {
             panic!("actual native lease is acquired")
         };
         let address = activated.endpoint.address();
+        let mut termination = pin!(activated.endpoint.termination());
+        let before_retirement = termination.as_mut().poll(&mut Context::from_waker(&waiter));
+        assert!(before_retirement.is_pending());
         let prior = definition
             .endpoint
             .lock()
@@ -876,6 +1012,7 @@ mod tests {
                 RetirementMode::Forced(reason),
             )
             .await;
+        let observed = termination.await;
         let acquired = definition
             .retirement
             .lock()
@@ -904,10 +1041,19 @@ mod tests {
                 retirement_failures,
                 terminal_report,
             }),
+            retirement_report,
         )) = acquired
         else {
             panic!("actual native callback receives its complete result")
         };
+        assert_eq!(
+            retirement_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            retirement_report.failures(),
+            ActorFailureAssessment::FailuresFound
+        );
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(additional_failures.is_empty());
@@ -931,14 +1077,44 @@ mod tests {
         assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
         assert_eq!(runtime.residents.available_permits(), 1);
         assert_eq!(runtime.hydrations.available_permits(), 1);
+        assert_eq!(
+            notification_owner.strong_count(),
+            1,
+            "the runtime retains the first original after the consuming callback panic"
+        );
         let Err(EntityRetirementFailure::ShutdownRequestPanicked {
-            shutdown_request: _,
+            termination_notification: Err(RetirementNotificationError::Panicked { payload }),
+            shutdown_request,
             forced: None,
-            retired: None,
+            retired: Some(retired_fault),
         }) = retired
         else {
-            panic!("the original conversion panic is independently retained")
+            panic!("conversion, termination notification and consuming callback faults coexist")
         };
+        assert_eq!(observed, Err(Crash::Cancelled));
+        let shutdown_cause = shutdown_request
+            .downcast::<&str>()
+            .expect("original shutdown conversion cause");
+        assert_eq!(
+            *shutdown_cause,
+            "original application shutdown conversion panic"
+        );
+        assert_eq!(
+            ptr::from_ref(payload.as_ref()).cast::<()>(),
+            notification_allocation
+        );
+        assert_eq!(
+            ptr::from_ref(retired_fault.as_ref()).cast::<()>(),
+            retirement_allocation
+        );
+        let first_cause = payload
+            .downcast::<Arc<Vec<u64>>>()
+            .expect("original waiter payload");
+        let later_cause = retired_fault
+            .downcast::<Arc<Vec<u64>>>()
+            .expect("original callback payload");
+        assert_eq!(first_cause.as_slice(), [67, 71]);
+        assert_eq!(later_cause.as_slice(), [73, 79]);
         let forced = definition
             .forced
             .lock()
@@ -952,6 +1128,60 @@ mod tests {
         assert_eq!(*forced_activation, activation);
         assert_eq!(*forced_reason, reason);
         assert_eq!(endpoint.address(), address);
+    }
+
+    #[tokio::test]
+    async fn exhausted_entity_allocation_retains_unstarted_state_and_releases_permits() {
+        let entries = Arc::new(vec![83_u64, 89]);
+        let definition = Arc::new(ShutdownConversionDefinition {
+            retirement_fault: Mutex::new(None),
+            entries: Arc::clone(&entries),
+            endpoint: Mutex::new(None),
+            forced: Mutex::new(Vec::new()),
+            retirement: Mutex::new(None),
+        });
+        let spaces = Arc::new(ActorSpace::<ShutdownConversionActor>::new());
+        let allocations = ApplicationAddresses::from_next(u64::MAX);
+        let metrics = Arc::new(EntityMetricState::default());
+        let runtime = bombay_entity_runtime(
+            definition,
+            Arc::clone(&spaces),
+            allocations.clone(),
+            EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN),
+            Arc::clone(&metrics),
+            Handle::current(),
+        );
+        for generation in [1, 2] {
+            let activation =
+                ActivationId::new(NonZeroU64::new(generation).expect("actual activation"));
+            let refused = runtime.activate(EntityId::new(97), activation).await;
+            let Err(EntityActivationError::AllocationRejected { behavior, reason }) = refused
+            else {
+                panic!(
+                    "exhaustion refuses before actor launch, including after permits are returned"
+                );
+            };
+            assert!(Arc::ptr_eq(&entries, &behavior.entries));
+            assert_eq!(behavior.entries.as_slice(), [83, 89]);
+            assert_eq!(reason, AllocationRejection::Exhausted);
+            assert_eq!(runtime.residents.available_permits(), 1);
+            assert_eq!(runtime.hydrations.available_permits(), 1);
+        }
+        assert!(spaces.space().resolve(&MailAddr(u64::MAX)).is_none());
+        let still_exhausted = allocations.allocate();
+        assert_eq!(still_exhausted, Err(AllocationRejection::Exhausted));
+        assert_activation_metrics(
+            &metrics,
+            EntityMetrics {
+                activations: 0,
+                hydration_failures: 0,
+                launch_failures: 2,
+                capacity_refusals: 0,
+                forced_retirements: 0,
+                peak_hydrations: 1,
+                residents: 0,
+            },
+        );
     }
 
     struct JoinedActor;
@@ -1014,6 +1244,7 @@ mod tests {
                 ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
                 tokio::task::JoinError,
             >,
+            _: ActorRetirementReport,
         ) {
             unreachable!("the join regression never retires an entity")
         }

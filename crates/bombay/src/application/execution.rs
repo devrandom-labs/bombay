@@ -11,7 +11,11 @@ use crate::local::effects::{
     NoParent,
 };
 use crate::local::ingress::{DEFAULT_USER_CAPACITY, StandardIngress};
-use crate::terminal::{ActorRetirement, RootOrigin};
+use crate::observe;
+use crate::terminal::{
+    ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, RetirementNotificationError,
+    RootOrigin, publish_retirement_report,
+};
 use crate::topology::Hosts;
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -61,7 +65,12 @@ where
         clippy::type_complexity,
         reason = "the existing concrete pair preserves original inputs and independent exact root custody without a new wrapper"
     )]
-    pub fn execute<Terminal, ChildFailures>(self) -> Result<(impl Future<Output = ()>, impl Future<Output = ApplicationOutcome<Self, Option<Never>, Option<Never>, (RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), Never, (Root, Spaces)>>), (Self, TryCurrentError)>
+    pub fn execute<Terminal, ChildFailures>(self) -> Result<(impl Future<Output = ()>, impl Future<Output = (ApplicationOutcome<Self,
+Option<Never>,
+Option<Never>,
+(),
+Never,
+(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>)>), (Self, TryCurrentError)>
 where
     Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
@@ -108,8 +117,6 @@ where
             Ready<Never>,
             _,
             _,
-            _,
-            _,
             (),
         >(
             executor,
@@ -149,9 +156,11 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
-            |root| root,
         );
-        let receiving = async move { receiving.await.into_absent() };
+        let receiving = async move {
+            let (work, root, termination_notification) = receiving.await;
+            (work.into_absent(), root, termination_notification)
+        };
         Ok((execution, receiving))
     }
 
@@ -165,7 +174,12 @@ where
     ///
     /// # Panics
     /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
-    pub async fn run<Terminal, ChildFailures>(self) -> Result<ApplicationOutcome<Self, Option<Never>, Option<Never>, (RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), Never, (Root, Spaces)>, (Self, TryCurrentError)>
+    pub async fn run<Terminal, ChildFailures>(self) -> Result<(ApplicationOutcome<Self,
+Option<Never>,
+Option<Never>,
+(),
+Never,
+(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>), (Self, TryCurrentError)>
 where
     Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
@@ -223,14 +237,12 @@ where
     ) -> Result<
         (
             impl Future<Output = ()>,
-            impl Future<Output = ApplicationOutcome<
-                Self,
-                Work,
-                <WorkFuture as Future>::Output,
-                (RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>),
-                (Root, Work, Never),
-                (Root, Spaces),
-            >>,
+            impl Future<Output = (ApplicationOutcome<Self,
+Work,
+<WorkFuture as Future>::Output,
+(),
+(Root, Work, Never),
+(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>)>,
         ),
         (Self, Work, TryCurrentError),
     >
@@ -282,8 +294,6 @@ where
             _,
             _,
             _,
-            _,
-            _,
             Never,
         >(
             executor,
@@ -322,9 +332,11 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
-            |root| root,
         );
-        let receiving = async move { receiving.await.into_supplied() };
+        let receiving = async move {
+            let (work, root, termination_notification) = receiving.await;
+            (work.into_supplied(), root, termination_notification)
+        };
         Ok((execution, receiving))
     }
 
@@ -343,17 +355,15 @@ where
         self,
         work: Work,
     ) -> Result<
-        ApplicationOutcome<
-            Self,
-            Work,
-            <WorkFuture as Future>::Output,
-            (
+        (ApplicationOutcome<Self,
+Work,
+<WorkFuture as Future>::Output,
+(),
+(Root, Work, Never),
+(Root, Spaces)>, Result<(
                 RootOrigin<Root>,
                 ActorRetirement<Root, Terminal, ChildFailures>,
-            ),
-            (Root, Work, Never),
-            (Root, Spaces),
-        >,
+            ), RecvError>, Result<ActorNotificationReceipts, RecvError>),
         (Self, Work, TryCurrentError),
     >
 where
@@ -429,7 +439,8 @@ where
                 (Root, Arc<Spaces>),
             >,
                 Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>,
-                Families::Shutdowns,
+                Result<ActorNotificationReceipts, RecvError>,
+            Families::Shutdowns,
             )>,
         ),
         (Self, Work, TryCurrentError),
@@ -467,7 +478,6 @@ where
             Err(error) => return Err((self, work, error)),
         };
         let entity_executor = executor.clone();
-        let (root_publication, received_root) = oneshot::channel();
         let (family_publications, received_families) =
             <Families::Installed as InstalledEntityFamilies>::shutdown_receiving();
         let (execution, receiving) = execute_application_with::<
@@ -479,8 +489,6 @@ where
             Terminal,
             Families::Installed,
             (Root, Work, Never),
-            _,
-            _,
             _,
             _,
             _,
@@ -534,18 +542,17 @@ where
                     Some(executor.spawn(installed_families.shutdown(publications)))
                 },
             ),
-            move |root| match root_publication.send(root) {
-                Ok(()) => {}
-                // The final receiving owner explicitly surrendered its receipt.
-                // Rejected send returns the exact original fact for one discharge.
-                Err(root) => drop(root),
-            },
         );
         let receiving = async move {
-            let work_outcome = receiving.await.into_supplied();
-            let root_retirement = received_root.await;
+            let (work, root_retirement, termination_notification) = receiving.await;
+            let work_outcome = work.into_supplied();
             let family_retirements = received_families.await;
-            (work_outcome, root_retirement, family_retirements)
+            (
+                work_outcome,
+                root_retirement,
+                termination_notification,
+                family_retirements,
+            )
         };
         Ok((execution, receiving))
     }
@@ -571,6 +578,7 @@ where
             (Root, Arc<Spaces>),
         >,
             Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>,
+            Result<ActorNotificationReceipts, RecvError>,
             Families::Shutdowns,
         ),
         (Self, Work, TryCurrentError),
@@ -640,17 +648,24 @@ where
         (
             impl Future<Output = ()>,
             impl Future<
-                Output = ApplicationOutcome<
-                    Self,
-                    Work,
-                    <WorkFuture as Future>::Output,
-                    (
-                        RootOrigin<Root>,
-                        ActorRetirement<Actor, Terminal, ChildFailures>,
-                    ),
-                    (Root, Work, StagingFailure),
-                    (Actor, ActorSpace<Root::Protocol>),
-                >,
+                Output = (
+                    ApplicationOutcome<
+                        Self,
+                        Work,
+                        <WorkFuture as Future>::Output,
+                        (),
+                        (Root, Work, StagingFailure),
+                        (Actor, ActorSpace<Root::Protocol>),
+                    >,
+                    Result<
+                        (
+                            RootOrigin<Root>,
+                            ActorRetirement<Actor, Terminal, ChildFailures>,
+                        ),
+                        RecvError,
+                    >,
+                    Result<ActorNotificationReceipts, RecvError>,
+                ),
             >,
         ),
         (Self, Work, TryCurrentError),
@@ -694,8 +709,6 @@ where
             Terminal,
             (),
             (Root, Work, StagingFailure),
-            _,
-            _,
             _,
             _,
             _,
@@ -754,9 +767,11 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
-            |root| root,
         );
-        let receiving = async move { receiving.await.into_supplied() };
+        let receiving = async move {
+            let (work, root, termination_notification) = receiving.await;
+            (work.into_supplied(), root, termination_notification)
+        };
         Ok((execution, receiving))
     }
 
@@ -780,17 +795,24 @@ where
         (
             impl Future<Output = ()>,
             impl Future<
-                Output = ApplicationOutcome<
-                    Self,
-                    Option<Never>,
-                    Option<Never>,
-                    (
-                        RootOrigin<Root>,
-                        ActorRetirement<Actor, Terminal, ChildFailures>,
-                    ),
-                    (Root, StagingFailure),
-                    (Actor, ActorSpace<Root::Protocol>),
-                >,
+                Output = (
+                    ApplicationOutcome<
+                        Self,
+                        Option<Never>,
+                        Option<Never>,
+                        (),
+                        (Root, StagingFailure),
+                        (Actor, ActorSpace<Root::Protocol>),
+                    >,
+                    Result<
+                        (
+                            RootOrigin<Root>,
+                            ActorRetirement<Actor, Terminal, ChildFailures>,
+                        ),
+                        RecvError,
+                    >,
+                    Result<ActorNotificationReceipts, RecvError>,
+                ),
             >,
         ),
         (Self, TryCurrentError),
@@ -838,8 +860,6 @@ where
             Never,
             fn(Never, ApplicationHandle<Root::Protocol, Actor::Event>) -> Ready<Never>,
             Ready<Never>,
-            _,
-            _,
             _,
             _,
             (),
@@ -895,9 +915,11 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
-            |root| root,
         );
-        let receiving = async move { receiving.await.into_absent() };
+        let receiving = async move {
+            let (work, root, termination_notification) = receiving.await;
+            (work.into_absent(), root, termination_notification)
+        };
         Ok((execution, receiving))
     }
 
@@ -914,17 +936,24 @@ where
     pub async fn run<Actor, StagingFailure, Terminal, ChildFailures>(
         self,
     ) -> Result<
-        ApplicationOutcome<
-            Self,
-            Option<Never>,
-            Option<Never>,
-            (
-                RootOrigin<Root>,
-                ActorRetirement<Actor, Terminal, ChildFailures>,
-            ),
-            (Root, StagingFailure),
-            (Actor, ActorSpace<Root::Protocol>),
-        >,
+        (
+            ApplicationOutcome<
+                Self,
+                Option<Never>,
+                Option<Never>,
+                (),
+                (Root, StagingFailure),
+                (Actor, ActorSpace<Root::Protocol>),
+            >,
+            Result<
+                (
+                    RootOrigin<Root>,
+                    ActorRetirement<Actor, Terminal, ChildFailures>,
+                ),
+                RecvError,
+            >,
+            Result<ActorNotificationReceipts, RecvError>,
+        ),
         (Self, TryCurrentError),
     >
     where
@@ -988,17 +1017,24 @@ where
         mut builder: Builder,
     ) -> Result<
         Result<
-            ApplicationOutcome<
-                Self,
-                Option<Never>,
-                Option<Never>,
-                (
-                    RootOrigin<Root>,
-                    ActorRetirement<Actor, Terminal, ChildFailures>,
-                ),
-                (Root, StagingFailure),
-                (Actor, ActorSpace<Root::Protocol>),
-            >,
+            (
+                ApplicationOutcome<
+                    Self,
+                    Option<Never>,
+                    Option<Never>,
+                    (),
+                    (Root, StagingFailure),
+                    (Actor, ActorSpace<Root::Protocol>),
+                >,
+                Result<
+                    (
+                        RootOrigin<Root>,
+                        ActorRetirement<Actor, Terminal, ChildFailures>,
+                    ),
+                    RecvError,
+                >,
+                Result<ActorNotificationReceipts, RecvError>,
+            ),
             (Self, TryCurrentError),
         >,
         (Self, Builder, RunError),
@@ -1053,17 +1089,24 @@ where
         self,
         work: Work,
     ) -> Result<
-        ApplicationOutcome<
-            Self,
-            Work,
-            <WorkFuture as Future>::Output,
-            (
-                RootOrigin<Root>,
-                ActorRetirement<Actor, Terminal, ChildFailures>,
-            ),
-            (Root, Work, StagingFailure),
-            (Actor, ActorSpace<Root::Protocol>),
-        >,
+        (
+            ApplicationOutcome<
+                Self,
+                Work,
+                <WorkFuture as Future>::Output,
+                (),
+                (Root, Work, StagingFailure),
+                (Actor, ActorSpace<Root::Protocol>),
+            >,
+            Result<
+                (
+                    RootOrigin<Root>,
+                    ActorRetirement<Actor, Terminal, ChildFailures>,
+                ),
+                RecvError,
+            >,
+            Result<ActorNotificationReceipts, RecvError>,
+        ),
         (Self, Work, TryCurrentError),
     >
     where
@@ -1521,9 +1564,7 @@ pub(in crate::application) fn execute_application_with<
     Work,
     Invoke,
     WorkFuture,
-    Cleanup,
     RetireUnstartedFamilies,
-    RetainRootRetirement,
     ColdWork,
     NoWork,
 >(
@@ -1536,19 +1577,32 @@ pub(in crate::application) fn execute_application_with<
         InstalledFamilies::ShutdownPublications,
         RetireUnstartedFamilies,
     ),
-    retain_root_retirement: RetainRootRetirement,
 ) -> (
     impl Future<Output = ()>,
     impl Future<
-        Output = ApplicationOutcome<
-            Inputs,
-            ApplicationWorkPresence<(Work, Invoke), NoWork>,
-            ApplicationWorkPresence<WorkFuture::Output, NoWork>,
-            Cleanup,
-            StagingInputs,
-            (Actor, Spaces),
-            ColdWork,
-        >,
+        Output = (
+            ApplicationOutcome<
+                Inputs,
+                ApplicationWorkPresence<(Work, Invoke), NoWork>,
+                ApplicationWorkPresence<WorkFuture::Output, NoWork>,
+                (),
+                StagingInputs,
+                (Actor, Spaces),
+                ColdWork,
+            >,
+            Result<
+                (
+                    RootOrigin<Owner>,
+                    ActorRetirement<
+                        Actor,
+                        Terminal,
+                        <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
+                    >,
+                ),
+                RecvError,
+            >,
+            Result<ActorNotificationReceipts, RecvError>,
+        ),
     >,
 )
 where
@@ -1618,24 +1672,11 @@ where
         ApplicationHandle<Actor::Protocol, Actor::Event, InstalledFamilies::Receptionists>,
     ) -> WorkFuture,
     WorkFuture: Future,
-    Cleanup: Send + 'static,
     RetireUnstartedFamilies: FnOnce(
         Handle,
         InstalledFamilies,
         InstalledFamilies::ShutdownPublications,
-    ) -> Option<JoinHandle<Cleanup>>,
-    RetainRootRetirement: FnOnce(
-            (
-                RootOrigin<Owner>,
-                ActorRetirement<
-                    Actor,
-                    Terminal,
-                    <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures,
-                >,
-            ),
-        ) -> Cleanup
-        + Send
-        + 'static,
+    ) -> Option<JoinHandle<()>>,
 {
     let (publication, work_result) = oneshot::channel();
     let original_work = ApplicationWorkPublication {
@@ -1645,6 +1686,8 @@ where
         )),
     };
     let (cleanup_publication, cleanup_result) = oneshot::channel();
+    let (root_publication, received_root) = oneshot::channel();
+    let (notification_publication, received_notification) = oneshot::channel();
     let execution = async move {
         let mut original_work = original_work;
         let startup_inputs = {
@@ -1702,7 +1745,7 @@ where
         };
         let interface_allocations = allocations.clone();
         let (permission, permitted) = oneshot::channel();
-        let (authority, startup, shutdown_control, actor_join) = {
+        let (authority, startup, shutdown_control, actor_join, termination_notification) = {
             let entered_executor = executor.enter();
             let address = MailAddr::APPLICATION_ROOT;
             let config = communication::Config::new(DEFAULT_USER_CAPACITY);
@@ -1753,22 +1796,44 @@ where
             drop(entered_executor);
             started
         };
+        let (retirement_publication, retirement_observation) = observe::pair();
         let (joined_publication, joined) = oneshot::channel();
         let origin = RootOrigin::<Owner>::new(MailAddr::APPLICATION_ROOT);
         let cleanup = executor.spawn(async move {
+            // Joining observes the actual actor; it does not request a stop.
+            // Publish its small report while application work can still await it.
+            let joined_actor = actor_join.await;
+            let termination_notification = match termination_notification.await {
+                Ok(notification) => notification,
+                Err(error) => Err(RetirementNotificationError::ReceiptClosed { error }),
+            };
+            let report =
+                ActorRetirementReport::from_joined(&joined_actor, &termination_notification);
+            let retirement_notification = publish_retirement_report(retirement_publication, report);
+            let notifications = ActorNotificationReceipts {
+                termination: termination_notification,
+                retirement: retirement_notification,
+            };
+            // Native handoff and Application-owned families keep their work barrier.
+            // All original values remain outside the report publication's unwind.
             match permitted.await {
                 Ok(()) | Err(_) => {}
             }
-            let retirement = match actor_join.await {
+            let retirement = match joined_actor {
                 Ok(local) => ActorRetirement::from_local(local),
                 Err(error) => ActorRetirement::ActorTaskFailed(error),
             };
-            let cleanup = retain_root_retirement((origin, retirement));
+            // Receiving first joins this producer. Neither transfer receiver has
+            // registered a waker while these original values are handed off.
+            let refused_root = root_publication.send((origin, retirement)).err();
+            let refused_notification = notification_publication.send(notifications).err();
             installed_families.shutdown(family_publications).await;
+            // Abandoning the whole receiving owner surrenders unread originals.
+            // Their disposal cannot preempt the already acquired family cleanup.
+            drop((refused_root, refused_notification));
             match joined_publication.send(()) {
                 Ok(()) | Err(()) => {}
             }
-            cleanup
         });
         match cleanup_publication.send(cleanup) {
             Ok(()) => {}
@@ -1787,6 +1852,7 @@ where
                         let application = ApplicationHandle::new(
                             actor,
                             shutdown_control,
+                            retirement_observation,
                             interface_allocations,
                             receptionists,
                         );
@@ -1837,7 +1903,7 @@ where
     };
     let result = async move {
         let custody = work_result.await;
-        match custody {
+        let outcome = match custody {
             Ok(ApplicationWorkCustody::Unstarted(application, work)) => {
                 ApplicationOutcome::Unstarted { application, work }
             }
@@ -1881,7 +1947,10 @@ where
                     }
                 }
             }
-        }
+        };
+        let root = received_root.await;
+        let termination_notification = received_notification.await;
+        (outcome, root, termination_notification)
     };
     (execution, result)
 }

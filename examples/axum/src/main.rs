@@ -2,6 +2,7 @@
 //! outside the Level-1 Behavior. Axum owns extraction and responses; Bombay
 //! owns local activation, delivery, exact rejection recovery, and termination.
 
+use bombay::ActorNotificationReceipts;
 use bombay::{ApplicationOutcome, ProjectTerminal};
 use tokio::runtime::Builder;
 mod domain;
@@ -51,17 +52,31 @@ fn main() {
             panic!("the explicit HTTP host is entered");
         });
     drop(application_host);
-    if let ApplicationOutcome::Completed {
-        output: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         panic!("the exact serving result and independently joined root remain complete");
     }
-    let ApplicationOutcome::Completed {
-        output: Ok(()),
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: Ok(()),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the exact serving result and independently joined root remain complete");
     };

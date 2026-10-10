@@ -12,18 +12,19 @@ use tokio::sync::oneshot::{self, error::RecvError};
 use tokio::task::JoinError;
 
 use behavior::{
-    ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
-    ClassifySettlement, Here, InjectEvent, Inside, InterpretationProgress, InterpreterRequest,
-    ItemSettlement, LogicalHostRequirements, Never, NoBirthProtocols, NoReturnToEmitter, Protocol,
-    finish_item, prepare_item,
+    ActionItem, AllocationRejection, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements,
+    BirthMode, ClassifySettlement, Here, InjectEvent, Inside, InterpretationProgress,
+    InterpreterRequest, ItemSettlement, LogicalHostRequirements, Never, NoBirthProtocols,
+    NoReturnToEmitter, Protocol, finish_item, prepare_item,
 };
 use behavior_actors::ShutdownRequested;
 use tokio::runtime::Handle;
 
-use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::launch::SpawnError;
 use crate::local::endpoint::ActorRef;
 use crate::topology::Hosts as LocalHosts;
+use crate::{ActorRetirement, ActorRetirementReport, RetirementNotificationError};
 
 use super::bombay::{
     BombayEntityRuntime, NativeEntityHost, NativeEntityLease, bombay_entity_runtime,
@@ -99,7 +100,9 @@ pub trait EntityDefinition: Send + Sync + 'static {
         failure: DrainFailure,
     );
 
-    /// Consume the original acquired actor result while borrowing its identity.
+    /// Consume the original acquired actor result and its runtime assessment while borrowing identity.
+    /// The assessment covers the actor-owned subtree before this application conversion.
+    /// Separate family conversion failures cannot rewrite that snapshot.
     /// Normal live retirement invokes this notification before later reactivation.
     /// Values consumed and destroyed inside a panicking callback are unavailable;
     /// outside keys, modes, prior results and original callback panics survive.
@@ -115,6 +118,7 @@ pub trait EntityDefinition: Send + Sync + 'static {
             ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
             JoinError,
         >,
+        retirement_report: ActorRetirementReport,
     );
 }
 
@@ -127,6 +131,7 @@ pub enum EntityRetirementFailure {
     /// The raw actor task ended without an acquired full actor retirement.
     #[error("actor retirement unavailable after actor task join")]
     ActorRetirementUnavailable {
+        termination_notification: Result<(), RetirementNotificationError>,
         shutdown_request: Option<Box<dyn Any + Send>>,
         forced: Option<Box<dyn Any + Send>>,
         retired: Option<Box<dyn Any + Send>>,
@@ -134,6 +139,7 @@ pub enum EntityRetirementFailure {
     /// Original consuming shutdown conversion panicked; later failures coexist.
     #[error("application shutdown conversion panicked during native retirement")]
     ShutdownRequestPanicked {
+        termination_notification: Result<(), RetirementNotificationError>,
         shutdown_request: Box<dyn Any + Send>,
         forced: Option<Box<dyn Any + Send>>,
         retired: Option<Box<dyn Any + Send>>,
@@ -141,12 +147,19 @@ pub enum EntityRetirementFailure {
     /// The forced-retirement notification panicked; its final notification still ran.
     #[error("application forced retirement notification panicked")]
     ForcedRetirementPanicked {
+        termination_notification: Result<(), RetirementNotificationError>,
         forced: Box<dyn Any + Send>,
         retired: Option<Box<dyn Any + Send>>,
     },
     /// The final consuming retirement notification panicked.
     #[error("application retirement notification panicked")]
-    RetirementPanicked { retired: Box<dyn Any + Send> },
+    RetirementPanicked {
+        termination_notification: Result<(), RetirementNotificationError>,
+        retired: Box<dyn Any + Send>,
+    },
+    /// Native join and application callbacks succeeded, but termination notification failed.
+    #[error("actor termination notification failed")]
+    TerminationNotificationFailed { error: RetirementNotificationError },
 }
 
 impl fmt::Debug for EntityRetirementFailure {
@@ -160,6 +173,9 @@ impl fmt::Debug for EntityRetirementFailure {
                 .finish_non_exhaustive(),
             Self::ForcedRetirementPanicked { .. } => formatter
                 .debug_struct("ForcedRetirementPanicked")
+                .finish_non_exhaustive(),
+            Self::TerminationNotificationFailed { .. } => formatter
+                .debug_struct("TerminationNotificationFailed")
                 .finish_non_exhaustive(),
             Self::RetirementPanicked { .. } => formatter
                 .debug_struct("RetirementPanicked")
@@ -207,8 +223,34 @@ where
     ResidentCapacity,
     /// Domain reconstruction failed before address allocation.
     Hydration(Hydration),
-    /// Actor launch failed with exact final state when state existed.
-    Launch(ActorRetirement<B, Terminal, ChildFailures>),
+    /// Address allocation refused before an actor task existed.
+    AllocationRejected {
+        behavior: B,
+        reason: AllocationRejection,
+    },
+    /// Actor launch failed with exact native state and its acquired notification.
+    Launch {
+        retirement: ActorRetirement<B, Terminal, ChildFailures>,
+        retirement_report: ActorRetirementReport,
+        termination_notification: Result<(), RetirementNotificationError>,
+    },
+}
+
+impl<Hydration, B, Terminal, ChildFailures>
+    EntityActivationError<Hydration, B, Terminal, ChildFailures>
+where
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+{
+    pub(crate) fn from_launch(failure: SpawnError<B, (Vec<Terminal>, ChildFailures)>) -> Self {
+        match failure.into_retirement() {
+            Ok((retirement, retirement_report, termination_notification)) => Self::Launch {
+                retirement,
+                retirement_report,
+                termination_notification,
+            },
+            Err((behavior, reason)) => Self::AllocationRejected { behavior, reason },
+        }
+    }
 }
 
 /// Fixed-cardinality observations for one native family.
@@ -281,6 +323,11 @@ impl EntityMetricState {
             residents: self.residents.load(Ordering::Relaxed),
         }
     }
+}
+
+#[cfg(test)]
+pub(super) fn assert_activation_metrics(metrics: &EntityMetricState, expected: EntityMetrics) {
+    assert_eq!(metrics.snapshot(), expected);
 }
 
 type InstalledRuntimeFor<D> = EntityRuntime<

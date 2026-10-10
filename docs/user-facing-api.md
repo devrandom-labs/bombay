@@ -49,8 +49,9 @@ where its constraints determine that destination; an explicit meaningful
 selection is allowed. No default, dummy value, or wrapper supplies missing
 information.
 
-The successful outer result owns `ApplicationOutcome`. It does not imply a
-completed actor or erase an initialization refusal. Its closed alternatives
+The successful outer result owns `(work_outcome, root_receiving,
+notification_receiving)`. The work outcome is `ApplicationOutcome`; its presence
+does not imply a completed actor or erase an initialization refusal. Its closed alternatives
 retain the actual phase and values:
 
 - `StagingRejected` returns the actual cold partial product.
@@ -72,13 +73,18 @@ Work. For supplied Work, `output` is the original bare `WorkFuture::Output`. A u
 `Err(error)` or `None` remains that exact output. The framework adds no `Some`
 layer and cannot fabricate absence when the supplied output type is unit.
 
-For non-family constructors, cleanup is
-`Result<(RootOrigin<Owner>, ActorRetirement<Actor, Terminal, ChildFailures>),
-ApplicationCleanupError>`. `PublicationClosed(RecvError)` retains the original
-cleanup-publication receiving error. `TaskFailed(JoinError)` retains the actual
-cleanup task error. The root's `ActorTaskFailed(JoinError)` variant separately
-owns the native actor failure. Preserve these distinct owners; do not infer
-absent actors or manufacture a JoinError from a closed channel. `Terminal` is the descendant destination.
+Work-phase cleanup is `Result<(), ApplicationCleanupError>`.
+`PublicationClosed(RecvError)` retains the original cleanup-publication receiving
+error; `TaskFailed(JoinError)` retains the actual cleanup task error. Alongside
+the work outcome, `root_receiving` is
+`Result<(RootOrigin<Owner>, ActorRetirement<Actor, Terminal, ChildFailures>), RecvError>`
+and `notification_receiving` is `Result<ActorNotificationReceipts, RecvError>`.
+The two named notification fields, `termination` and `retirement`, each retain
+success or their own original `RetirementNotificationError`. Acquired native and
+notification receipts survive a later cleanup-task failure. A closed receipt
+retains its actual receiving error; it cannot establish an absent actor or
+invent a JoinError. The native root's `ActorTaskFailed(JoinError)` separately
+owns actor-task failure. `Terminal` is the descendant destination.
 The root stays raw. A caller may use the existing `ProjectTerminal::project`
 outside the runtime to apply its own root projection policy, using the original
 origin and retirement without changing the actual Owner/Actor distinction.
@@ -100,7 +106,17 @@ let outcome = Application::new(service.stop_on_shutdown())
 Returning from Work does not request shutdown. The root's concrete Behavior
 must accept or transform `ShutdownRequested`; topology does not select policy.
 `ApplicationHandle::root()` projects delivery, and `lifecycle()` projects
-shutdown/termination authority. Observation is not the complete joined result.
+shutdown/termination authority. Its `retirement()` waits for a runtime-issued
+`ActorRetirementReport` after the actual actor and owned work have joined, while
+application Work can still run. Independent waits and cancellation of one wait
+do not consume this shared fact. The report separately assesses whether
+retirement was established and whether failures were found, none were found
+after complete checking, or checking was incomplete. It preserves known failure
+presence even when retirement is unestablished. Later report-notification or
+application conversion faults cannot rewrite the issued report. The complete
+native result remains with its existing owner; neither ordinary termination
+nor the report replaces it. Final native handoff and Entity family shutdown
+retain their Work-completion barrier.
 
 For cancellation or unwind recovery, use `execute` or `execute_with` to obtain
 separate execution and receiving futures. The paired constructor captures its
@@ -486,7 +502,7 @@ impl EntityDefinition for Accounts {
     }
 
     // Consume activation failure, actor-originated refusal, forced-drain,
-    // and exact final-retirement facts here.
+    // and exact native retirement with its read-only subtree assessment here.
     # /* ... */
 }
 
@@ -509,7 +525,7 @@ let application_receiving = application.run_with_entities(
 ```
 
 `application_receiving` is a `Result`: success retains
-`(work_outcome, root_receiving, family_receiving)`; host-entry rejection returns
+`(work_outcome, root_receiving, notification_receiving, family_receiving)`; host-entry rejection returns
 the original application, Work callable, and actual entered-host error.
 
 `EntityRef<Accounts>` retains the logical account ID, not an actor address or
@@ -533,7 +549,12 @@ Successful admission does not claim that the actor processed the command or
 that durable state committed. External rejection returns the exact owned
 command in `AdmissionFailure<Command>`. Hydration failure, resident-capacity
 refusal, host-launch retirement, forced drain, and final actor retirement are
-separate typed facts consumed by the definition.
+separate typed facts consumed by the definition. `EntityActivationError` keeps
+allocation refusal before an incarnation starts distinct from a started native
+retirement, its report and ordinary-notification result. `EntityDefinition::retired`
+receives the original native result and the independently derived read-only
+`ActorRetirementReport`. Family callback/conversion failures stay in family
+failure custody and cannot rewrite that actor-subtree assessment.
 
 The generic `EntityRuntime<I, C, R>`, `EntityId<I>`, directory kernel, and
 `LocalEntityRuntime` remain available under `bombay::entity` for integrations
@@ -550,9 +571,10 @@ Entity.
 Native lowering hydrates before address allocation, uses the application allocator, preserves
 forced-retirement provenance and descendant terminals, and launches the exact
 authored lifecycle stack. `run_with_entities` awaits the same paired owner as
-`execute_with_entities`. The result keeps Work outcome, root receiving, and the
-recursive family receiving product separate. Work cleanup has a unit normal
-result or a distinct `ApplicationCleanupError` for its receiving/task failure. The independent
+`execute_with_entities`. The result keeps Work outcome, root receiving,
+notification receiving, and the recursive family receiving product separate.
+Work cleanup has a unit normal result or a distinct `ApplicationCleanupError`
+for its receiving/task failure. The independent
 root receipt owns its exact origin plus `ActorRetirement`, including an original
 native actor failure in `ActorTaskFailed`; each family receipt owns
 its original role, complete shutdown, metrics, and native disposal cause.

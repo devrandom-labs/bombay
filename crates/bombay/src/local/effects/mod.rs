@@ -10,11 +10,12 @@ use crate::local::effects::observation::TerminationObservations;
 use crate::local::effects::timers::LocalTimers;
 use crate::local::execution::ActivationTasks;
 use crate::termination::{TerminalReportDisposition, Termination};
+use crate::{ActorFailureAssessment, ActorRetirementReport, RetirementAssessment};
 use behavior::{
     ActionSettlement, ActionSettlements, Behavior, BehaviorAddr, BehaviorMessage,
-    BehaviorSettlements, CreationSettlements, InjectEvent, InterpretCreations, InterpretSends,
-    InterpretationProgress, Never, Protocol, SendSettlements, SourceProgress,
-    SourceSettlementCustody, Step,
+    BehaviorSettlements, ClassifySettlement, CreationSettlements, InjectEvent, InterpretCreations,
+    InterpretSends, InterpretationProgress, Never, Protocol, SendSettlements, SettlementStatus,
+    SourceProgress, SourceSettlementCustody, Step,
 };
 use behavior_actors::ObservationId;
 use bombay_engine::ActionsOf;
@@ -47,6 +48,7 @@ where
             timers: inputs.timers,
             observations: inputs.observations,
             next_child_route: 0,
+            operation_failures: ActorFailureAssessment::NoFailuresFound,
             child_bindings: Some(child_bindings),
             activation_tasks: Some(ActivationTasks::new()),
             exact_observations: Arc::new(Mutex::new(Some(HashMap::new()))),
@@ -73,6 +75,7 @@ where
             timers: self.timers,
             observations: self.observations,
             next_child_route: self.next_child_route,
+            operation_failures: self.operation_failures,
             child_bindings: self.child_bindings,
             activation_tasks: self.activation_tasks,
             exact_observations: self.exact_observations,
@@ -144,6 +147,11 @@ where
                 *received = Some(CapabilityRetirement {
                     activation_tasks,
                     descendants: (Vec::new(), failures),
+                    operation_failures: owner.operation_failures,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::Established,
+                        ActorFailureAssessment::NoFailuresFound,
+                    ),
                     terminal_report: None,
                     retirement_failures: Vec::new(),
                 });
@@ -173,6 +181,7 @@ where
             &mut owner.child_bindings,
             &mut retirement.descendants.0,
             &mut retirement.descendants.1,
+            &mut retirement.descendant_report,
         )
         .await;
         if owner.child_bindings.is_some() {
@@ -330,7 +339,8 @@ where
             ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
             B::Event,
             Custody = B::SourceCustody,
-        > + Send,
+        > + ClassifySettlement
+        + Send,
     ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>:
         RetireCapabilities<Event = B::Event> + TerminalReportTransaction + Send,
 {
@@ -354,6 +364,16 @@ where
         };
         ActionsOf::<B>::interpret::<_, B::Event, behavior::Here>(progress, self.capabilities_mut())
             .await;
+        if let Some(InterpretationProgress::Completed(settlement)) = progress {
+            let failures = match settlement.settlement_status() {
+                SettlementStatus::Accepted => ActorFailureAssessment::NoFailuresFound,
+                SettlementStatus::Rejected | SettlementStatus::Corrupt => {
+                    ActorFailureAssessment::FailuresFound
+                }
+            };
+            let capabilities = self.capabilities_mut();
+            capabilities.operation_failures = capabilities.operation_failures.combine(failures);
+        }
         self.capabilities_mut()
             .finish_terminal_reports(terminal_disposition);
     }
@@ -448,6 +468,7 @@ pub(crate) struct ApplicationCapabilities<
     timers: LocalTimers<C::Event>,
     observations: TerminationObservations<MailAddr, C::Event>,
     next_child_route: u64,
+    operation_failures: ActorFailureAssessment,
     child_bindings: Option<Bindings>,
     activation_tasks: Option<ActivationTasks<C::Event>>,
     #[expect(
@@ -467,6 +488,8 @@ pub(crate) struct NoParent;
 pub(crate) struct CapabilityRetirement<E, Descendants> {
     pub(crate) activation_tasks: ActivationTasks<E>,
     pub(crate) descendants: Descendants,
+    pub(crate) operation_failures: ActorFailureAssessment,
+    pub(crate) descendant_report: ActorRetirementReport,
     pub(crate) terminal_report: Option<Result<(), Termination<MailAddr>>>,
     pub(crate) retirement_failures: Vec<Box<dyn Any + Send>>,
 }
@@ -494,10 +517,11 @@ mod atomic_interpretation_contract {
     use std::time::{Duration, Instant};
 
     use behavior::{
-        Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Creations, Delivery,
-        EstablishedDelivery, EstablishedRecipient, EventIngress, EventLayer, Here, InjectEvent,
-        Inside, InterpretItem, ItemSettlement, LogicalDeliveryReason, MessageProtocol, Never,
-        NoBirths, NoSends, Recipient, SendLayer, SourceAdmission, Step, User, UserEvent,
+        ActionSettlement, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Creations,
+        Delivery, EstablishedDelivery, EstablishedRecipient, EventIngress, EventLayer, Here,
+        InjectEvent, Inside, InterpretItem, Interpretation, InterpretationProgress, ItemSettlement,
+        LogicalDeliveryReason, MessageProtocol, Never, NoBirths, NoSends, Recipient, SendLayer,
+        SettledItem, SourceAdmission, Step, User, UserEvent,
     };
     use behavior_actors::atomic::{
         AssignWorker, Assignment, BeginActivation, CustomerDelivery, DiagnosticAction,
@@ -535,6 +559,7 @@ mod atomic_interpretation_contract {
     use crate::terminal::{ActorRetirement, LocalOutcome};
     use crate::topology::Hosts;
     use crate::{ActorExecutionOutcome, ActorSpace};
+    use crate::{ActorFailureAssessment, RetirementAssessment};
 
     struct Worker;
 
@@ -553,6 +578,127 @@ mod atomic_interpretation_contract {
     impl ProxyParent {}
 
     type LedgerProtocol = MessageProtocol<MailAddr, Vec<u64>>;
+
+    struct RetirementDeliverySource;
+
+    impl Behavior for RetirementDeliverySource {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = User<MailAddr, Never>;
+        type Sends = Vec<Delivery<LedgerProtocol>>;
+        type Birth = NoBirths;
+        type Ph = Never;
+        type Error = Never;
+
+        fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+            match event.message {}
+        }
+    }
+
+    #[tokio::test]
+    async fn retirement_keeps_refusal_assessment_after_exact_settlement_is_discharged() {
+        let (control, owner, mailbox, receiver) =
+            mailbox_channel::<User<MailAddr, Never>, User<MailAddr, Never>>(Config::new(1));
+        let (terminal_sender, terminal_receiver) = oneshot::channel();
+        let capabilities =
+            ApplicationCapabilities::<RetirementDeliverySource, _>::new_with_bindings(
+                ApplicationCapabilityInputs {
+                    address: MailAddr(139),
+                    actor_spaces: Arc::new(ActorSpace::<LedgerProtocol>::new()),
+                    allocations: ApplicationAddresses::new(),
+                    control,
+                    timers: LocalTimers::new(),
+                    observations: TerminationObservations::new(),
+                    terminal_reports: LocalTerminalReports::new(terminal_sender),
+                },
+                NoChildBindings::<Never>::default(),
+            );
+        let mut interpreter = ActionInterpreter::new(capabilities);
+        let mut empty = Some(InterpretationProgress::Original(Actions::cont()));
+        CommitActions::<RetirementDeliverySource>::commit(&mut interpreter, &mut empty).await;
+        assert_eq!(
+            interpreter.capabilities_mut().operation_failures,
+            ActorFailureAssessment::NoFailuresFound
+        );
+        let Some(InterpretationProgress::Completed(Interpretation::Complete(ActionSettlement {
+            creations,
+            sends,
+            become_,
+        }))) = empty.take()
+        else {
+            panic!("the complete empty operation was acquired")
+        };
+        assert!(creations.is_empty());
+        assert!(sends.is_empty());
+        assert!(matches!(become_, Step::Continue));
+
+        let values = vec![149, 151];
+        let allocation = values.as_ptr();
+        let mut delivery = Some(InterpretationProgress::Original(Actions::send(vec![
+            Delivery::new(Recipient::global(MailAddr(157)), values),
+        ])));
+        CommitActions::<RetirementDeliverySource>::commit(&mut interpreter, &mut delivery).await;
+        let Some(InterpretationProgress::Completed(Interpretation::Complete(ActionSettlement {
+            creations,
+            mut sends,
+            become_,
+        }))) = delivery.take()
+        else {
+            panic!("the complete refused operation was acquired")
+        };
+        assert!(creations.is_empty());
+        assert!(matches!(become_, Step::Continue));
+        assert_eq!(sends.len(), 1);
+        let SettledItem::Attempted(ItemSettlement::Rejected { item, reason }) = sends.remove(0)
+        else {
+            panic!("the missing recipient refuses its original delivery")
+        };
+        assert_eq!(reason, LogicalDeliveryReason::UnknownAddress);
+        assert_eq!(item.to.address(), MailAddr(157));
+        assert_eq!(item.message, [149, 151]);
+        assert_eq!(item.message.as_ptr(), allocation);
+        drop(item);
+
+        let mut later = Some(InterpretationProgress::Original(Actions::cont()));
+        CommitActions::<RetirementDeliverySource>::commit(&mut interpreter, &mut later).await;
+        let Some(InterpretationProgress::Completed(Interpretation::Complete(ActionSettlement {
+            creations,
+            sends,
+            become_,
+        }))) = later.take()
+        else {
+            panic!("the later complete empty operation was acquired")
+        };
+        assert!(creations.is_empty());
+        assert!(sends.is_empty());
+        assert!(matches!(become_, Step::Continue));
+        let mut interpreter = Some(interpreter);
+        let mut retirement = None;
+        <_ as CommitActions<RetirementDeliverySource>>::receive_retirement(
+            &mut interpreter,
+            &mut retirement,
+        )
+        .await;
+        assert!(interpreter.is_none());
+        let retirement = retirement.expect("the full original capability owner retired");
+        assert_eq!(
+            retirement.operation_failures,
+            ActorFailureAssessment::FailuresFound
+        );
+        assert_eq!(
+            retirement.descendant_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            retirement.descendant_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
+        assert!(retirement.activation_tasks.is_empty());
+        assert_eq!(retirement.descendants.0.len(), 0);
+        assert_eq!(retirement.descendants.1, ());
+        assert!(retirement.terminal_report.is_none());
+        assert!(retirement.retirement_failures.is_empty());
+        drop((owner, mailbox, receiver, terminal_receiver));
+    }
 
     #[tokio::test]
     #[expect(
@@ -2452,6 +2598,7 @@ mod atomic_interpretation_contract {
                 descendants,
                 capability_failures,
                 unread_owner_cancellation,
+                ..
             } = residual
             else {
                 panic!("whole local retirement");
@@ -2772,6 +2919,7 @@ mod atomic_interpretation_contract {
                 descendants,
                 capability_failures,
                 unread_owner_cancellation,
+                ..
             } = residual
             else {
                 panic!("whole local retirement");
@@ -3006,6 +3154,7 @@ mod live_capability_retirement {
             descendants,
             capability_failures,
             unread_owner_cancellation,
+            ..
         } = residual
         else {
             panic!("the failed live actor retains its actual retired environment");
@@ -3501,12 +3650,16 @@ mod capability_task_retirement {
             let CapabilityRetirement {
                 activation_tasks,
                 descendants,
+                operation_failures,
+                descendant_report,
                 terminal_report,
                 retirement_failures,
             } = lower;
             *received = Some(CapabilityRetirement {
                 activation_tasks,
                 descendants: (descendants, (activation, preparation)),
+                operation_failures,
+                descendant_report,
                 terminal_report,
                 retirement_failures,
             });
@@ -4891,7 +5044,7 @@ mod capability_task_retirement {
             preparation: Some(preparation),
             received: Vec::new(),
         };
-        let (authority, startup, (), task) =
+        let (authority, startup, (), task, termination_notification) =
             spawn_local_execution::<CapabilityParent, _, StandardIngress, _, _, _>(
                 roots.clone(),
                 Config::new(2),
@@ -4948,6 +5101,10 @@ mod capability_task_retirement {
         // Both background tasks remain owned by the original retirement path.
         let publication = startup.await;
         let joined = task.await;
+        let notification = termination_notification
+            .await
+            .expect("the actual termination producer transferred its result");
+        notification.expect("the ordinary termination publication succeeded");
         drop(authority);
         let outcome = match joined {
             Ok(outcome) => outcome,
@@ -5381,6 +5538,11 @@ impl<E, Descendants> CapabilityRetirement<E, Descendants> {
         Self {
             activation_tasks: ActivationTasks::new(),
             descendants,
+            operation_failures: ActorFailureAssessment::Incomplete,
+            descendant_report: ActorRetirementReport::new(
+                RetirementAssessment::NotEstablished,
+                ActorFailureAssessment::Incomplete,
+            ),
             terminal_report: None,
             retirement_failures: Vec::new(),
         }

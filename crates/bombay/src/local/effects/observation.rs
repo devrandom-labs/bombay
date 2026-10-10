@@ -138,11 +138,13 @@ where
                         endpoint,
                         control,
                         kind,
+                        retirement,
                         ..
                     }) => {
                         let actor = EstablishedActor::<Child>::issued(InstalledActor::new(
                             endpoint.clone(),
                             control.clone(),
+                            retirement.clone(),
                         ));
                         let child = CommittedChild::new(request.creation, *kind, actor);
                         self.inject_control_event::<_, Path>(EstablishedCreation::installed(child));
@@ -1003,7 +1005,7 @@ mod installed_shutdown_contract {
 
     use crate::terminal::{ActorRetirement, ChildOrigin, ProjectTerminal};
 
-    use crate::{LedgerProtocol, ShutdownLedger};
+    use crate::{ActorFailureAssessment, LedgerProtocol, RetirementAssessment, ShutdownLedger};
     type DirectLedger = StopOnShutdown<ShutdownLedger>;
     type NestedLedger = StopOnShutdown<DirectLedger>;
     #[derive(Default)]
@@ -1335,18 +1337,34 @@ mod installed_shutdown_contract {
                 (ShutdownId(37), Err(ShutdownRejection::AlreadyStopped))
             ]
         );
-        let (direct_retired, (direct_failures, ())) = direct_creator
+        let (direct_retired, (direct_failures, ()), direct_retirement_report) = direct_creator
             .child_bindings
             .take()
             .expect("original child bindings remain installed")
             .retire_child_tasks()
             .await;
-        let (nested_retired, (nested_failures, ())) = nested_creator
+        let (nested_retired, (nested_failures, ()), nested_retirement_report) = nested_creator
             .child_bindings
             .take()
             .expect("original child bindings remain installed")
             .retire_child_tasks()
             .await;
+        assert_eq!(
+            direct_retirement_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            direct_retirement_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
+        assert_eq!(
+            nested_retirement_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            nested_retirement_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
         assert!(direct_failures.is_empty());
         assert!(nested_failures.is_empty());
         let [ShutdownChildren::Direct { origin, retirement }] = direct_retired.as_slice() else {

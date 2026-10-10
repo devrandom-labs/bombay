@@ -4,6 +4,7 @@ use core::fmt;
 use core::marker::PhantomData;
 use core::ops::ControlFlow;
 use std::any::Any;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use behavior::{
     Behavior, BehaviorAddr, BehaviorMessage, BehaviorSettlements, ChildRole, CreationId,
@@ -13,6 +14,7 @@ use behavior::{
 use bombay_address::ClaimError;
 use bombay_engine::{ActionsOf, Completion, DriverError, SettlementFailure};
 
+use tokio::sync::oneshot::error::RecvError;
 use tokio::task::JoinError;
 
 use crate::ActorExecutionOutcome;
@@ -20,7 +22,212 @@ use crate::address::MailAddr;
 use crate::local::effects::ActionSettlementOf;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
 use crate::local::execution::{LocalRetirementRequest, OwnerCancellation};
+use crate::observe::Publisher;
 use crate::termination::Termination;
+
+/// Whether the actor and its owned subtree finished retiring.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RetirementAssessment {
+    /// Actual joined owners established complete retirement of the subtree.
+    Established,
+    /// Available evidence does not establish complete subtree retirement.
+    NotEstablished,
+}
+
+/// Failure evidence preserved by the actor's runtime owners.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ActorFailureAssessment {
+    /// At least one recorded actor or runtime failure was found.
+    FailuresFound,
+    /// Complete checking found no recorded actor or runtime failure.
+    NoFailuresFound,
+    /// Checking was incomplete and no failure has yet been established.
+    Incomplete,
+}
+
+impl ActorFailureAssessment {
+    pub(crate) const fn combine(self, later: Self) -> Self {
+        match (self, later) {
+            (Self::FailuresFound, _) | (_, Self::FailuresFound) => Self::FailuresFound,
+            (Self::Incomplete, _) | (_, Self::Incomplete) => Self::Incomplete,
+            (Self::NoFailuresFound, Self::NoFailuresFound) => Self::NoFailuresFound,
+        }
+    }
+}
+
+/// A runtime-issued assessment of one joined actor's owned subtree.
+///
+/// Retirement and failure evidence are independent: an actor can finish all
+/// retirement while retaining an execution or cleanup failure. Original state
+/// and errors remain in the native result; this snapshot owns no stop authority.
+/// Later report-notification or parent-conversion failures do not rewrite it.
+#[must_use = "the actor retirement assessment must be inspected or explicitly discharged"]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ActorRetirementReport {
+    retirement: RetirementAssessment,
+    failures: ActorFailureAssessment,
+}
+
+impl ActorRetirementReport {
+    /// Return whether complete retirement of the owned subtree was established.
+    #[must_use]
+    pub const fn retirement(&self) -> RetirementAssessment {
+        self.retirement
+    }
+
+    /// Return the independently retained failure assessment.
+    #[must_use]
+    pub const fn failures(&self) -> ActorFailureAssessment {
+        self.failures
+    }
+
+    pub(crate) const fn new(
+        retirement: RetirementAssessment,
+        failures: ActorFailureAssessment,
+    ) -> Self {
+        Self {
+            retirement,
+            failures,
+        }
+    }
+
+    pub(crate) const fn combine(self, later: Self) -> Self {
+        let retirement = match (self.retirement, later.retirement) {
+            (RetirementAssessment::Established, RetirementAssessment::Established) => {
+                RetirementAssessment::Established
+            }
+            (RetirementAssessment::NotEstablished, _)
+            | (_, RetirementAssessment::NotEstablished) => RetirementAssessment::NotEstablished,
+        };
+        Self::new(retirement, self.failures.combine(later.failures))
+    }
+
+    pub(crate) const fn with_failures(self, failures: ActorFailureAssessment) -> Self {
+        Self::new(self.retirement, self.failures.combine(failures))
+    }
+
+    /// Inspect retained runtime evidence without invoking application policy.
+    pub(crate) fn from_joined<B, Descendants>(
+        joined: &Result<LocalOutcome<B, Descendants>, JoinError>,
+        termination_notification: &Result<(), RetirementNotificationError>,
+    ) -> Self
+    where
+        B: BehaviorSettlements,
+    {
+        let report = match joined {
+            Ok(ActorExecutionOutcome::Completed {
+                residual,
+                additional_failures,
+                completion,
+                ..
+            }) => {
+                let report = residual.retirement_report();
+                let completion_failures = match completion {
+                    Completion::RetirementRequested(LocalRetirementRequest::CapabilityFailed(
+                        _,
+                    )) => ActorFailureAssessment::FailuresFound,
+                    Completion::Stopped
+                    | Completion::Exhausted
+                    | Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
+                        _,
+                    )) => ActorFailureAssessment::NoFailuresFound,
+                };
+                let additional_failures = if additional_failures.is_empty() {
+                    ActorFailureAssessment::NoFailuresFound
+                } else {
+                    ActorFailureAssessment::FailuresFound
+                };
+                report.with_failures(completion_failures.combine(additional_failures))
+            }
+            Ok(
+                ActorExecutionOutcome::BehaviorFailed { residual, .. }
+                | ActorExecutionOutcome::InitializationPanicked { residual, .. }
+                | ActorExecutionOutcome::TransitionPanicked { residual, .. }
+                | ActorExecutionOutcome::HostExecutionPanicked { residual, .. }
+                | ActorExecutionOutcome::ActivationPanicked { residual, .. }
+                | ActorExecutionOutcome::RetirementPanicked { residual, .. }
+                | ActorExecutionOutcome::InterpreterContractFailed { residual, .. }
+                | ActorExecutionOutcome::ActivationFailed { residual, .. }
+                | ActorExecutionOutcome::SettlementFailed { residual, .. },
+            ) => residual
+                .retirement_report()
+                .with_failures(ActorFailureAssessment::FailuresFound),
+            Ok(ActorExecutionOutcome::Panicked | ActorExecutionOutcome::Cancelled) | Err(_) => {
+                Self::new(
+                    RetirementAssessment::NotEstablished,
+                    ActorFailureAssessment::FailuresFound,
+                )
+            }
+        };
+        if termination_notification.is_err() {
+            report.with_failures(ActorFailureAssessment::FailuresFound)
+        } else {
+            report
+        }
+    }
+}
+
+/// Original results from the actor's two distinct notification stages.
+///
+/// These coexist with the native actor result. Publication can commit its fact
+/// and then encounter an observer panic; a fault does not retract that fact.
+#[must_use = "the original actor notification results must be inspected or explicitly discharged"]
+#[derive(Debug)]
+pub struct ActorNotificationReceipts {
+    /// Publication of ordinary actor termination, before final task settlement.
+    pub termination: Result<(), RetirementNotificationError>,
+    /// Publication of the joined actor-retirement report.
+    pub retirement: Result<(), RetirementNotificationError>,
+}
+
+impl ActorNotificationReceipts {
+    pub(crate) fn has_failures(&self) -> bool {
+        self.termination.is_err() || self.retirement.is_err()
+    }
+}
+
+pub(crate) fn publish_retirement_report(
+    publisher: Publisher<ActorRetirementReport>,
+    report: ActorRetirementReport,
+) -> Result<(), RetirementNotificationError> {
+    catch_unwind(AssertUnwindSafe(|| publisher.complete(report)))
+        .map_err(|payload| RetirementNotificationError::Panicked { payload })
+}
+
+/// The original failure of publishing an actor lifecycle notification.
+///
+/// An observer's panic does not retract a fact already committed by Observe.
+/// This error retains the original cause separately from the actor's native
+/// result. A closed receipt means its producer did not transfer a result;
+/// it does not establish whether publication succeeded.
+#[derive(thiserror::Error)]
+pub enum RetirementNotificationError {
+    /// A notification resumed the original panic from an observer.
+    #[error("an actor notification observer panicked")]
+    Panicked {
+        /// The original panic allocation, without cloning or conversion.
+        payload: Box<dyn Any + Send>,
+    },
+    /// The actual notification-result sender disappeared before transfer.
+    #[error("the actor notification receipt closed: {error}")]
+    ReceiptClosed {
+        /// The original error returned by the owning oneshot receiver.
+        #[source]
+        error: RecvError,
+    },
+}
+
+impl fmt::Debug for RetirementNotificationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Panicked { .. } => formatter.debug_struct("Panicked").finish_non_exhaustive(),
+            Self::ReceiptClosed { error } => formatter
+                .debug_struct("ReceiptClosed")
+                .field("error", error)
+                .finish(),
+        }
+    }
+}
 
 pub(crate) type LocalOutcome<B, Descendants> = ActorExecutionOutcome<
     B,
@@ -173,6 +380,8 @@ where
         additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
+        termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     /// Startup cleanup owns independent available facts after Core received the child input.
     StartupRetirementFailed {
@@ -183,6 +392,8 @@ where
         additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
+        termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     ActorTaskFailed {
         id: CreationId,
@@ -190,6 +401,7 @@ where
         origin: Origin,
         actor: EstablishedActor<Child>,
         error: JoinError,
+        notifications: Result<ActorNotificationReceipts, RecvError>,
     },
     ProjectionTaskFailed {
         id: CreationId,
@@ -197,6 +409,15 @@ where
         origin: Origin,
         actor: EstablishedActor<Child>,
         error: JoinError,
+        notifications: Result<ActorNotificationReceipts, RecvError>,
+    },
+    /// The projected native result is retained independently of this failure.
+    NotificationsFailed {
+        id: CreationId,
+        kind: CreationKind,
+        origin: Origin,
+        actor: EstablishedActor<Child>,
+        notifications: Result<ActorNotificationReceipts, RecvError>,
     },
 }
 
@@ -248,6 +469,19 @@ where
                 .field("kind", kind)
                 .field("origin", origin)
                 .field("error", error)
+                .finish_non_exhaustive(),
+            Self::NotificationsFailed {
+                id,
+                kind,
+                origin,
+                notifications,
+                ..
+            } => formatter
+                .debug_struct("NotificationsFailed")
+                .field("id", id)
+                .field("kind", kind)
+                .field("origin", origin)
+                .field("notifications", notifications)
                 .finish_non_exhaustive(),
         }
     }
@@ -952,6 +1186,8 @@ where
             unreachable!("the completed terminal projection received another outcome")
         };
         let LocalResidual::Retired {
+            operation_failures: _,
+            descendant_report: _,
             interpretation,
             source,
             settlements,
@@ -1046,6 +1282,11 @@ where
     }
     /// Project each actual received residual phase without discarding current
     /// progress, a refused report or coexisting execution/retirement failures.
+    ///
+    /// The owning caller first derives and separately preserves the joined
+    /// report. This native projection explicitly discharges its two Copy
+    /// assessment inputs after their combination into that report; all original
+    /// affine state, failures and settlement values remain in the native lanes.
     #[expect(
         clippy::too_many_lines,
         reason = "one exhaustive owning phase/failure conversion preserves every original typed field; forwarding functions or aliases would only relocate the same conservation obligation"
@@ -1059,6 +1300,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1100,6 +1343,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1147,6 +1392,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1188,6 +1435,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1235,6 +1484,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1282,6 +1533,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1301,6 +1554,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1343,6 +1598,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1363,6 +1620,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1406,6 +1665,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1449,6 +1710,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1491,6 +1754,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1539,6 +1804,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1585,6 +1852,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1626,6 +1895,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1665,6 +1936,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1706,6 +1979,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1751,6 +2026,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1792,6 +2069,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1835,6 +2114,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1882,6 +2163,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -2011,7 +2294,10 @@ mod capability_retirement_projection {
     use crate::MailAddr;
     use crate::local::environment::{LocalActivationRejection, LocalResidual};
     use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
-    use crate::terminal::{ActorRetirement, LocalOutcome};
+    use crate::terminal::{
+        ActorFailureAssessment, ActorRetirement, ActorRetirementReport, LocalOutcome,
+        RetirementAssessment,
+    };
     use bombay_engine::Completion;
 
     struct RetiringActor {
@@ -2038,6 +2324,70 @@ mod capability_retirement_projection {
         Stopped,
         OwnerCancellation,
         CapabilityFailed,
+    }
+
+    #[tokio::test]
+    async fn joined_report_preserves_primary_capability_failure_without_later_failures() {
+        let task = tokio::spawn(async { panic_any(Box::new(vec![191_u64, 193])) });
+        let original_task = task.id();
+        let error = task.await.expect_err("the actual capability task panics");
+        let joined: Result<LocalOutcome<RetiringActor, (Vec<u64>, ())>, _> =
+            Ok(ActorExecutionOutcome::Completed {
+                behavior: RetiringActor {
+                    values: vec![197, 199],
+                },
+                completion: Completion::RetirementRequested(
+                    LocalRetirementRequest::CapabilityFailed(error),
+                ),
+                additional_failures: Vec::new(),
+                residual: LocalResidual::Retired {
+                    operation_failures: ActorFailureAssessment::Incomplete,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete,
+                    ),
+                    interpretation: None,
+                    source: None,
+                    settlements: Vec::new(),
+                    received_interpretation: None,
+                    received_source: None,
+                    source_index: None,
+                    acquired_ingress: None,
+                    ingress: Drained {
+                        control: Vec::new(),
+                        user: Vec::new(),
+                    },
+                    activation_tasks: ActivationTasks::new(),
+                    descendants: (Vec::new(), ()),
+                    capability_failures: Vec::new(),
+                    terminal_report: None,
+                    retirement_failures: Vec::new(),
+                    unread_owner_cancellation: None,
+                },
+            });
+        let report = ActorRetirementReport::from_joined(&joined, &Ok(()));
+        assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+        // This synthetic native fixture cannot certify standard-owner retirement.
+        assert_eq!(report.retirement(), RetirementAssessment::NotEstablished);
+        let Ok(local) = joined else {
+            panic!("the assessed native outcome remains acquired");
+        };
+        let native = ActorRetirement::from_local(local);
+        let ActorRetirement::CapabilityFailed {
+            error,
+            behavior,
+            capability_failures,
+            additional_failures,
+            ..
+        } = native
+        else {
+            panic!("the original primary capability failure remains a separate native cause");
+        };
+        assert_eq!(error.id(), original_task);
+        assert!(error.is_panic());
+        assert_eq!(behavior.values, [197, 199]);
+        assert!(capability_failures.is_empty());
+        assert!(additional_failures.is_empty());
     }
 
     #[tokio::test]
@@ -2070,6 +2420,11 @@ mod capability_retirement_projection {
             };
             let residual = match cause {
                 RetirementCause::InitializationPanicked => LocalResidual::Prepared {
+                    operation_failures: ActorFailureAssessment::Incomplete,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete,
+                    ),
                     received_interpretation: None,
                     received_source: None,
                     source_index: None,
@@ -2083,6 +2438,11 @@ mod capability_retirement_projection {
                     unread_owner_cancellation: Some(()),
                 },
                 RetirementCause::BindingAbandoned => LocalResidual::Uncommitted {
+                    operation_failures: ActorFailureAssessment::Incomplete,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete,
+                    ),
                     initialization: InterpretationProgress::Original(Actions::cont()),
                     received_interpretation: None,
                     received_source: None,
@@ -2099,6 +2459,11 @@ mod capability_retirement_projection {
                 RetirementCause::Stopped
                 | RetirementCause::OwnerCancellation
                 | RetirementCause::CapabilityFailed => LocalResidual::Retired {
+                    operation_failures: ActorFailureAssessment::Incomplete,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete,
+                    ),
                     interpretation: None,
                     source: None,
                     settlements: Vec::new(),
