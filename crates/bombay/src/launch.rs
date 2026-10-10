@@ -5766,6 +5766,23 @@ mod root_join_custody {
                     .task
                     .is_some()
             );
+            let mut retiring = Box::pin(OwnedTask::receive_retirement(
+                &mut owned,
+                &mut native,
+                &mut notification,
+            ));
+            let refused_retirement = retiring.as_mut().poll(&mut Context::from_waker(&waker));
+            drop(retiring);
+            assert!(matches!(refused_retirement, Poll::Ready(())));
+            assert!(
+                owned
+                    .as_ref()
+                    .expect("the original owner remains")
+                    .cancellation
+                    .sender
+                    .is_some()
+            );
+
             match destinations {
                 RetirementDestinations::Native | RetirementDestinations::Both => {
                     let original = native
@@ -5842,10 +5859,17 @@ mod root_join_custody {
         }
     }
 
+    #[derive(Clone, Copy)]
+    enum ChildCompletion {
+        Stopped,
+        OwnerCancelled,
+    }
+
     fn assert_child_retirement(
         retirement: &ChildRetirement,
         expected_address: MailAddr,
         expected_finish: RootFinish,
+        expected_completion: ChildCompletion,
         allocation: usize,
     ) {
         let ChildRetirement {
@@ -5870,29 +5894,31 @@ mod root_join_custody {
             additional_failures,
             terminal_report,
             retirement_failures,
-        ) = match retirement {
-            ActorRetirement::Completed {
-                behavior,
-                interpretation,
-                source,
-                settlements,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                control,
-                user,
-                descendants,
-                child_failures: (),
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-                completion,
-            } => {
+        ) = match (retirement, expected_completion) {
+            (
+                ActorRetirement::Completed {
+                    behavior,
+                    interpretation,
+                    source,
+                    settlements,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    completion,
+                },
+                ChildCompletion::Stopped,
+            ) => {
                 assert!(matches!(completion, Completion::Stopped));
-                assert_eq!(expected_finish, RootFinish::Unpublished);
                 (
                     behavior,
                     interpretation,
@@ -5912,7 +5938,28 @@ mod root_join_custody {
                     retirement_failures,
                 )
             }
-            ActorRetirement::OwnerCancelled {
+            (
+                ActorRetirement::OwnerCancelled {
+                    behavior,
+                    interpretation,
+                    source,
+                    settlements,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                },
+                ChildCompletion::OwnerCancelled,
+            ) => (
                 behavior,
                 interpretation,
                 source,
@@ -5924,33 +5971,12 @@ mod root_join_custody {
                 control,
                 user,
                 descendants,
-                child_failures: (),
                 capability_failures,
                 unread_owner_cancellation,
                 additional_failures,
                 terminal_report,
                 retirement_failures,
-            } => {
-                assert_eq!(expected_finish, RootFinish::Stop);
-                (
-                    behavior,
-                    interpretation,
-                    source,
-                    settlements,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    control,
-                    user,
-                    descendants,
-                    capability_failures,
-                    unread_owner_cancellation,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                )
-            }
+            ),
             _ => panic!("the complete original native result keeps its actual completion policy"),
         };
         assert_eq!(behavior.values.as_slice(), [31, 37]);
@@ -5970,18 +5996,15 @@ mod root_join_custody {
         assert!(additional_failures.is_empty());
         assert!(terminal_report.is_none());
         assert!(retirement_failures.is_empty());
-        match expected_finish {
-            RootFinish::Unpublished => {
+        match expected_completion {
+            ChildCompletion::Stopped => {
                 assert_eq!(settlements.len(), 1);
                 let settlement = &settlements[0];
                 assert_eq!(settlement.sends, NoSends);
                 assert!(settlement.creations.is_empty());
                 assert!(matches!(settlement.become_, Step::Stop(Stopped)));
             }
-            RootFinish::Stop => assert!(settlements.is_empty()),
-            RootFinish::Cancel => {
-                panic!("the projected fixture has no unstarted cancellation case")
-            }
+            ChildCompletion::OwnerCancelled => assert!(settlements.is_empty()),
         }
     }
 
@@ -6027,6 +6050,7 @@ mod root_join_custody {
                 &other_native,
                 MailAddr(283),
                 RootFinish::Unpublished,
+                ChildCompletion::Stopped,
                 other_allocation,
             );
             let (mut native, mut notification) = match destinations {
@@ -6102,6 +6126,15 @@ mod root_join_custody {
                     .task
                     .is_some()
             );
+            assert!(
+                owned
+                    .as_ref()
+                    .expect("the original projector owner remains")
+                    .cancellation
+                    .sender
+                    .is_some()
+            );
+
             match destinations {
                 RetirementDestinations::Native | RetirementDestinations::Both => {
                     let original = native
@@ -6115,6 +6148,7 @@ mod root_join_custody {
                         original,
                         MailAddr(283),
                         RootFinish::Unpublished,
+                        ChildCompletion::Stopped,
                         other_allocation,
                     );
                     assert_eq!(other_state.strong_count(), 1);
@@ -6144,7 +6178,13 @@ mod root_join_custody {
                 .unwrap_or_else(|_| {
                     panic!("the original actor state remains after its first publication fault")
                 });
-            assert_child_retirement(outcome, MailAddr(293), RootFinish::Stop, allocation);
+            assert_child_retirement(
+                outcome,
+                MailAddr(293),
+                RootFinish::Stop,
+                ChildCompletion::OwnerCancelled,
+                allocation,
+            );
             let Err(RetirementNotificationError::Panicked { payload }) = notification
                 .as_ref()
                 .expect("the original first result is acquired")
@@ -6162,5 +6202,150 @@ mod root_join_custody {
             assert_eq!(original_state.strong_count(), 0);
             assert_eq!(original_panic.strong_count(), 0);
         }
+    }
+    struct ChildRetirementCustody {
+        address: MailAddr,
+        publication: oneshot::Sender<ChildRetirement>,
+        projection_panic: Box<dyn Any + Send>,
+    }
+
+    impl ProjectTerminal<ChildRetirementCustody, ActorRetirement<RootState, Self, ()>>
+        for ChildRetirement
+    {
+        fn project(
+            origin: ChildRetirementCustody,
+            retirement: ActorRetirement<RootState, Self, ()>,
+        ) -> Self {
+            let ChildRetirementCustody {
+                address,
+                publication,
+                projection_panic,
+            } = origin;
+            let transferred = publication.send(Self {
+                address,
+                retirement,
+            });
+            if let Err(original) = transferred {
+                drop(original);
+            }
+            resume_unwind(projection_panic)
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn termination_notification_survives_later_projection_panic_with_original_native_custody()
+    {
+        let values = Arc::new(vec![31, 37]);
+        let allocation = values.as_ptr() as usize;
+        let original_state = Arc::downgrade(&values);
+        let first_panic = Arc::new(vec![113_u8, 127]);
+        let first_original = Arc::downgrade(&first_panic);
+        let first_payload: Box<dyn Any + Send> = Box::new(first_panic);
+        let first_identity = ptr::from_ref(first_payload.as_ref());
+        let projection_panic = Arc::new(vec![131_u8, 137]);
+        let projection_original = Arc::downgrade(&projection_panic);
+        let projection_payload: Box<dyn Any + Send> = Box::new(projection_panic);
+        let projection_identity = ptr::from_ref(projection_payload.as_ref());
+        let decisions = Arc::new(Mutex::new(Vec::new()));
+        let interpreted = decisions.clone();
+        let mut actor = spawn_owned_with(
+            ActorSpace::new(),
+            Config::new(2),
+            MailAddr(307),
+            RootState {
+                values,
+                finish: RootFinish::Stop,
+            },
+            |_, _, _, _| ObserveActionsWithRetirement {
+                observe: move |actions: &ActionsOf<RootState>| {
+                    assert_eq!(actions.sends, NoSends);
+                    assert!(actions.creates.is_empty());
+                    interpreted.lock().unwrap().push(actions.become_);
+                },
+                retirement: (Vec::<ChildRetirement>::new(), ()),
+            },
+        )
+        .await
+        .expect("the exact live child is privately committed");
+        actor.acknowledge_binding();
+        let waiter = Arc::new(TerminationWaiter {
+            publication: Mutex::new(Some(NotificationWake::Unwind(first_payload))),
+            attempts: AtomicUsize::new(0),
+        });
+        let waker = Waker::from(waiter.clone());
+        let mut termination = Box::pin(actor.actor.termination());
+        let registered = termination.as_mut().poll(&mut Context::from_waker(&waker));
+        assert!(matches!(registered, Poll::Pending));
+        let (publication, native_receipt) = oneshot::channel();
+        let projected = ProjectedTask::project(
+            actor.task,
+            ChildRetirementCustody {
+                address: actor.actor.address(),
+                publication,
+                projection_panic: projection_payload,
+            },
+        );
+        let task_id = projected
+            .task
+            .as_ref()
+            .expect("the exact native projector join remains owned")
+            .id();
+        let sent = actor.control.send(EventLayer::Owned(ShutdownRequested));
+        sent.expect("the exact child accepts ordinary shutdown before its projection");
+        let (joined, notification) = projected.finish().await;
+        let error = match joined {
+            Err(error) => error,
+            Ok(original) => {
+                drop(original);
+                panic!("the actual parent projection preserves its genuine task panic");
+            }
+        };
+        assert_eq!(error.id(), task_id);
+        assert!(error.is_panic());
+        let projection_payload = error.into_panic();
+        assert!(ptr::eq(
+            ptr::from_ref(projection_payload.as_ref()),
+            projection_identity
+        ));
+        let Err(RetirementNotificationError::Panicked {
+            payload: first_payload,
+        }) = notification
+        else {
+            panic!("the first cause must transfer before the consuming projection can panic");
+        };
+        assert!(ptr::eq(
+            ptr::from_ref(first_payload.as_ref()),
+            first_identity
+        ));
+        assert_eq!(first_original.strong_count(), 1);
+        assert_eq!(projection_original.strong_count(), 1);
+        let native = native_receipt.await.expect("the original whole native retirement was explicitly transferred before projection unwind");
+        assert_child_retirement(
+            &native,
+            MailAddr(307),
+            RootFinish::Stop,
+            ChildCompletion::Stopped,
+            allocation,
+        );
+        assert_eq!(original_state.strong_count(), 1);
+        let terminated = termination.await;
+        assert_eq!(terminated, Ok(behavior_actors::Exit::Normal));
+        let replay = actor.actor.termination().await;
+        assert_eq!(replay, terminated);
+        assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            *decisions.lock().unwrap(),
+            [Step::Continue, Step::Stop(Stopped)]
+        );
+        drop((
+            native,
+            first_payload,
+            projection_payload,
+            actor.actor,
+            actor.control,
+        ));
+        assert_eq!(original_state.strong_count(), 0);
+        assert_eq!(first_original.strong_count(), 0);
+        assert_eq!(projection_original.strong_count(), 0);
     }
 }
