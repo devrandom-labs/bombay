@@ -6200,7 +6200,7 @@ Empty descendants use existing Never; no wrapper or no-op reader is retained.
 Automatically select distinct provider-owned receipts and ordinary async
 functions, explicit scope projections and required result-message constructors
 for this seam. They compile with two different concrete Application consumers.
-The comparative common provider wrapper adds48 lines forwarding original
+The comparative common provider wrapper adds44 lines forwarding original
 closed provider receipts and proves no unique state/transformation is needed;
 do not retain a new common wrapper or trait. Future production receipt issuance
 and provider API remain separate owning decisions. Evidence:
