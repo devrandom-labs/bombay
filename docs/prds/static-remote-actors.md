@@ -3339,7 +3339,8 @@ generated lock separately, at most 350 lines
 beside the existing 3,090 generated lines. Raise the complete delivery artifact
 cap from 4,000 to 4,800 lines before edits; 1,300 + 3,440 fits it. The runtime
 dependency graph remains unchanged. Only this private tool adds the owning
-SDK dependency and already selected `serde_json` 1.0.151; record the complete
+SDK dependency and existing locked `serde` 1.0.229 / `serde_json` 1.0.151;
+record the complete
 locked transitive graph and checksum relationships. New public types: zero.
 Actual private SDK geometry is 65 production Rust lines, 169 integration-test
 lines, 16 manifest lines and 221 generated lock lines. Adopt the recommended
@@ -3350,6 +3351,19 @@ delivery bounds are unchanged; no new runtime/public surface follows.
 The separate local runtime stage's 2,200 production / 3,000 test / five-type
 limits remain unchanged; the private release tool's production is additionally
 counted in the cumulative functional source record, not hidden as documentation.
+
+Exact Cargo request-argument correction before retention: the selected Cargo
+credential-process owner starts the SDK executable with `--cargo-plugin`;
+configured additional arguments arrive in typed `CredentialRequest.args`,
+not executable argv. Require exactly the audited cohort path in that existing
+SDK argument slice. The corrected actual invocation test fails three of four
+controls against the preliminary executable for this intended mismatch;
+publication/read are incorrectly refused before the owning args correction.
+Reuse the standard protocol rather than adding a second argument convention.
+This removes about eight private production lines. Restored SDK controls,
+strict checks and actual Cargo callback wiring without an available token
+remain required before publication; synthetic subprocess success alone does
+not prove that Cargo selected the provider or the real registry authorized it.
 
 Required Linux controlled CI passed for candidate `464715ca` in
 [run 38024228511](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38024228511),
