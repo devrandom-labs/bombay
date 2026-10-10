@@ -6239,3 +6239,210 @@ CI/CodeQL/Deny filters require a main target. Correct the target before pushing
 this documentation successor, which triggers ordinary required CI. Keep parent
 333 actual merge as a delivery prerequisite; do not weaken branch filters or
 claim missing checks passed. No Rust/lock bytes change.
+
+### Automatically selected UTF-8 routing reproduction stage
+
+Fresh owning source inspection found Resource::split_first_chunk slices suffix
+at byte1 although the first root chunk can be a multibyte UTF-8 character.
+Selected KeyExpr accepts UTF-8. This is a concrete unexecuted robustness
+candidate, not a defect proven by source inspection or remote acceptance.
+Select an owning regression on the actual Resource registration/resolution
+path before any production edit. Compare valid two-/three-/four-byte leading
+characters and slash/ASCII/empty controls; preserve the complete expected
+name/path split and routing result. Run pinned-Nix debug and optimized and
+require the intended Unicode boundary panic before granting defect credit.
+No mocked replacement splitter or new codec/grammar is allowed.
+
+Forecast controlled latest-main1291c3e two existing Rust paths:
+zenoh/src/net/tests/tables.rs (+up to35 test lines) and, only after the
+executed regression isolates its gap, owning dispatcher/resource.rs
+(prepare but do not apply a standard Rust str/char-boundary proposal,
+up to10 net production lines). Public types/API/dependencies/manifest/lock0.
+Existing Resource/KeyExpr/routing table owners and standard str APIs suffice;
+no new abstraction or crate gap is demonstrated. Coordinator must record
+the concrete recommendation/inversion before dependent production edits.
+Separate this narrow defect from larger quota investigation.
+
+Cross-owner tests/research7205 plus35 projects7240 within7300; research3135
+plus35 projects3170 within3200. Preserve generated artifacts/source snapshots
+separately. Source path union remains within320; root and controlled stage
+records remain independent and aggregate. Exact source, baseline, positives,
+inverses, restores, strict checks and delivery remain required. Any scope or
+diagnostic mismatch is recorded honestly, not credited as the intended law.
+The user's automatic recommended-choice instruction authorizes this choice.
+
+### UTF-8 reproduction and selected owning correction
+
+Actual owning Resource registration/resolution regression327fee75c5008299
+(+21 test lines) fails101 in debug and optimized at resource.rs653: byte1 is
+inside valid two-byte character é. Both runs name the intended character-
+boundary panic and one failed test; all initial source bytes match owner
+1f4722ebf2eec57616d24c0127af7daeaf491a104684c0ac805709aa9315ded2.
+Evidence /tmp/bombay-zenoh-utf8-original-campaign.json and actual profile logs.
+This establishes the narrow owner defect, not a TLS/remote or quota witness.
+
+Automatically select deriving the first character's UTF-8 width with standard
+str::chars().next()?.len_utf8(), then retaining the existing byte-search/split
+on the proven boundary. Empty suffix returns None through ?, ASCII/slash
+width remains1, and no allocation or semantic parsing replacement is added.
+Alternative char_indices scan is valid but replaces the existing efficient
+substring search with a full character scan. Special-casing ASCII/non-ASCII
+branches adds unnecessary duplicated policy. No new crate is needed for the
+standard string boundary operation; handwritten codec replacement is not used.
+Forecast owning production -2 net lines, existing test+21; no types/API/dep/lock.
+Keep every correct split and original Resource mapping/resolution fact.
+
+Add the exact owning test to the already existing debug/release controlled CI
+loop (up to4 config lines, third existing path). This concrete scope supplement
+is recorded before edits. Run focused healthy controls both profiles before
+broader owning library checks; original production bytes already demonstrate
+both intended failures. A final original-byte restoration/reapply sequence
+must leave only corrected source. Review strict format/lint and required CI,
+then actual reviewed PR merge, before recording this correction delivered.
+Larger declaration quotas remain independent investigation; no quota code or
+limits are authorized by this UTF-8 correction. Published1.10.1 archives remain
+their original bytes until a separately verified release delivers a successor.
+
+### UTF-8 independent tree-boundary oracle correction
+
+Initial corrected source0780c09f passes the21-line regression327fee75 in both
+profiles, but independent review found registration and whole-name resolution
+share the splitter. A flat-child mutant could pass those assertions. Select
+standard split_once('/') expected-prefix lookup, empty lookup preserving the
+original root Arc, and an ASCII-leading path with a later Unicode chunk before
+claiming complete path conservation. Forecast at most35 test lines still holds.
+Production remains the same minimal correction (actual+4/-7/net-3, not the
+earlier forecast-2), CI+3. A flat-child simulation must fail the independent
+prefix assertion; final original-byte inverse must still fail the original
+character-boundary law in both profiles. Retain prior source/campaign provenance
+separately; never assign old21-line proof the final stronger source hash.
+
+### Exact-child prerequisite delivery
+
+PR333 merged to mainacb6cc188f03ded29863d8d2565e3fd093e65558 at
+2026-10-10T13:25:15Z. Exact reviewedhead6cdb63679e40b5f0a7d2a4fa29c97af72c07451b
+had all six observed checks passing: Nix38051236713 completed12:48:37Z,
+CodeQL38051236701 plus summary, Deny38051236687, native TLS debug/release
+12:22:43Z/12:24:19Z. Required Driver/Observe fuzz and artifacts passed;
+scheduled optional Miri skipped, no Miri credit. Full CI log
+/tmp/bombay-child-stop-final-ci.log. Independent exact-head review:
+https://github.com/devrandom-labs/bombay/pull/333#pullrequestreview-5478906505.
+Actual merge uses normal PR rules with no bypass. This delivers the existing
+exact-child local shutdown exposure, not production authorization or NET1.
+
+### Held root work prerequisite delivery
+
+PR334 mergedfbc714c176792411ea00fdf73876c30aa17fd4ca at
+2026-10-10T13:27:30Z. Exact reviewedhead165d4340a4bfe6687297eef8c92ea857f5b4996b
+had all six observed checks passing: required Nix38052058178 at13:10:00Z,
+CodeQL38052058202 plus summary, Deny38052058176, native-TLS debug/release
+12:33:49Z/12:38:26Z. Driver/Observe fuzz and uploads passed; optional scheduled
+Miri skipped, no Miri credit. Full CI /tmp/bombay-root-owned-work-final-ci.log.
+Independent stage review5478950938 and final-main review5479106901 are recorded at
+https://github.com/devrandom-labs/bombay/pull/334. After333 actually merged,
+actual Git and GitHub compare showed only the two held-work paths; mainacb6cc1
+was tree-identical to reviewed parent6cdb636. GitHub PR's cached base/file list
+still showeda3a0187/cumulative paths, separately identified as stale metadata.
+Exact local comparison /tmp/bombay-root-owned-work-final-main-diff-proof.json
+retains authoritative source hashes. Normal PR merge, no bypass.
+
+This delivers real root-owned-work waiting and independent Application progress
+while retaining all original native/notification facts. Full same-parent child,
+shared-session, AUTH1/NET1 and production identity/resource gates stay open.
+
+### Automatically selected executable verification-service witness
+
+The existing permission550 test directly delivers a derived verification
+observation; the398-line issuance comparison compiles typed completions but
+emits no verification request and executes no startup. Neither proves the full
+ordinary service seam. Select two meaningful pure requestors (counter/arithmetic)
+that emit a named verification request in existing typed Actions, receive the
+original provider-owned typed completion, and emit a processing observation in
+Actions. Application-owned service code verifies the original borrowed protected/
+proof buffers through the selected ordinary async function, preserving exact
+request/result and allocated origin. No I/O, channels or clocks inside a fold.
+
+Each private untrusted request message owns its original bounded-fixture Boxes
+and correlation across the existing mailbox. Keep exact typed reply authority,
+provider, pure scope projection and mandatory result constructor as ordinary
+service-entrypoint arguments, following the measured398-line syntax. Copying
+those arguments into every request would duplicate configuration and needlessly
+create a generic wrapper. The actual domain request groups coexisting inputs;
+existing external-service/Actions interpretation performs its transformation.
+It deletes no production code and adds no production abstraction.
+Existing EstablishedDelivery/EstablishedRecipient, ordinary functions, Never,
+Observe-derived runtime reports and native receiving products remain owners.
+
+For both independent fixture providers execute accepted/invalid/stale/unavailable
+and one-field scope substitutions with each alternative's own valid byte-bound
+fixture proof. Compare to independently configured expected scope, never scope
+reparsed from incoming claims. Transfer original cause/payload allocations to the
+exact typed completion and preserve them in final native state. Each correlation
+gets one actual processing observation; later final Stop retains every lane,
+complete native residual/failure fields and both notification receipts. These
+protocols contain no protected-domain command/target capability: verification
+processing is never counted as remote command admission. Real admission ownership
+and final coherent permission/time check remain separate gates.
+
+Startup takes explicit mode/provider profile before creating the actual Application
+or export. Fake/missing production configuration returns original cold inputs
+and records zero actual startup/export observations; explicit test configuration
+executes the permitted service trace. No real-production positive is fabricated.
+First independent inversions: omit scope check; unavailable-to-invalid conversion;
+always-deny accepted evidence; implicit fake fallback/startup guard bypass. Each
+named assertion must occur after acquired native/notification cleanup where the
+trace permits it. Compile denials keep the required constructor/consumer/issuance
+constraints. Prepare ordinary compile controls before full runtime assumptions.
+
+Forecast four paths: new owning test verification_service.rs (650–850 expected,
+ceiling900), crates/bombay/Cargo.toml (+2 dev-only Serde/JSON workspace edges),
+Cargo.lock (only bombay-rs dependency edges), and this PRD. Coordinator owns
+manifest/lock edits. Zero production runtime/public types/API/new package identity
+or version/checksum refresh. Already selected Serde1.0.229/JSON1.0.151/Tokio1.53.1/
+thiserror2.0.20 supply the mechanisms. Fixture scope/generation labels are finite
+explicit conventions, not production identifiers, issuers, crypto/profile/defaults.
+Preserve prior403 authored metadata research without subtracting it as a reduction.
+
+Automatically raise cross-owner test/research7300 to8300 and research3200 to4200
+BEFORE authoring: actual7205 plus Unicode28 plus900 projects8133; research3135
+plus28 plus900 projects4063. Production2200/path320/defined public-type reserves
+otherwise remain unchanged. Broad quota/protocol/public-provider implementation
+is not included by this concrete witness selection. Fresh selected contracts and
+current mainfbc714c are required; private request scope contains no new public API.
+
+### Automatically selected native byte-pair packaging
+
+Select complete protected JSON in the native Zenoh ZBytes payload and the
+provider's unchanged opaque proof bytes in its native attachment. This reuses
+the selected transport and serializer without a new envelope/codec/dependency.
+Native publication, queries and sample replies preserve both buffers, including
+leading/trailing JSON whitespace. Both lengths and their checked sum must be
+bounded before copies/typed parsing; bounds remain a separate gate. Provider
+verification receives the original pair. Topic/encoding/native rewritten request
+IDs do not replace authenticated application scope or correlation.
+
+Alternative RawValue envelopes preserve internal token formatting but trim
+surrounding whitespace (selected serde_json de.rs1285–1292/raw.rs186–190), violating
+arbitrary already-protected whole-buffer conservation. They also require an
+unselected raw_value feature. Standard JSON-string envelopes preserve the full
+text through unescaping and remain viable, but add escaping/decoding/allocation
+and do not improve this selected native transport's typed surface. No handwritten
+framing, canonicalizer or crypto container is selected.
+
+For authenticated application refusals/results select ordinary protected sample
+replies using the same payload/attachment pair. Native Query::reply_err lacks an
+attachment slot; keep its errors/timeouts as native transport observations with
+original custody and uncertainty, never as authenticated actor verdicts. A
+standard JSON error envelope is an alternative but introduces a second packaging
+path. This policy selects the packaging distinction, not concrete reply fields,
+provider proof profile, signing authority, protocol version or public API.
+
+Fresh source evidence is published bombay-zenoh1.10.1 api/bytes.rs154–166,468–503,
+565–578; api/builders/query.rs102–109; api/builders/reply.rs125–133,234–283;
+zenoh-codec zenoh/mod.rs399–434; existing attachments.rs tests (not newly executed
+TLS/router proof). Vec conversion transfers ownership; borrowed buffers copy;
+to_bytes can allocate for fragmented buffers. Native slices/reader remain owning
+alternatives. Next ordinary Application prototype must verify both layouts,
+whole-buffer/Unicode/order/large-integer conservation, swapped/missing proof,
+fragmented/over-limit buffers and native-error versus signed-reply classification.
+No full transport authentication or protocol acceptance is claimed by inspection.
