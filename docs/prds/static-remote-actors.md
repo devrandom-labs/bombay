@@ -590,14 +590,20 @@ Rustls verifier is not a substitute for Zenoh's actual outgoing trust policy.
 
 An existing [upstream CA-selection proposal](https://github.com/eclipse-zenoh/zenoh/pull/2766)
 is open and unmerged at head `0b10f9d274c3142aa7ac5730e53a539c1402350e`.
+Fresh GitHub release/PR queries on 2026-10-09 UTC confirm that
+[1.10.1 remains the latest stable release](https://github.com/eclipse-zenoh/zenoh/releases/tag/1.10.1)
+(published 2026-09-07T11:55:18Z), and this proposal remains open with that same
+head and no merge date. No official replacement for the corrected copies is
+selected from that evidence.
 It adds an explicit public-root opt-out while preserving the owner's legacy
 default. Its base is version 1.10.0, so directly selecting that branch would
 violate the approved 1.10.1 contract. The user approved a controlled pinned copy
 with the backported correction, as recorded above. Normal registry installation
 and TLS-only published copies in a separate controlled source repository are
-now selected. Exact repository/package identities, dependency-graph coherence
-and any additional testability change
-remain open.
+now selected. Repository/package identities, owning testability corrections
+and local graph/archive verification are recorded in the accepted decisions
+and preparation evidence. Registry publication, consumer installation and
+Bombay integration remain open.
 The correction is implemented in isolated owning source; it has not been
 integrated into Bombay or published.
 
@@ -613,9 +619,9 @@ registry version when a Git-plus-version dependency is published, and a
 dependency's patches do not apply to consumers. A pinned-source deployment,
 documented consumer-root patch, and namespaced registered owner releases have
 different support obligations. The user selected normal registry-only
-distribution of TLS-only copies, requiring at least seven affected owner
-packages. Preserving the broader upstream transport feature surface was not
-selected. Verify an actual extracted-package consumer and the published closure;
+distribution of TLS-only copies: seven Zenoh owners plus the two subsequently
+approved configuration-generator owners. Preserving the broader upstream
+transport feature surface was not selected. Verify an actual extracted-package consumer and the published closure;
 a repository Git build cannot certify ordinary registry installation.
 Sources: [dependency locations](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#multiple-locations)
 and [patch scope](https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section).
@@ -2605,7 +2611,7 @@ This is a planned oracle, not a current passing test or a selected public API.
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +509 / -29 / net +480.
+Documentation: +521 / -35 / net +486.
 Previously recorded pinned-Nix law-manifest controls pass all nine in debug
 and optimized builds; they were not rerun for these documentation edits.
 Current document-link and whitespace checks pass; all twenty-five unexecuted
