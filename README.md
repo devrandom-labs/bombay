@@ -222,3 +222,7 @@ nix develop -c cargo clippy --workspace --all-targets -- -D warnings
 
 The toolchain is pinned in `rust-toolchain.toml`; `nix develop` provides the
 repository development shell.
+
+Nix checks omit debug symbols and incremental artifacts to limit build-disk
+use. They retain debug assertions and the full target/test selection. The
+development shell keeps Cargo's normal debugger settings.

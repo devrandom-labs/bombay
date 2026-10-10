@@ -81,6 +81,10 @@
           pname = "bombay-workspace";
           version = "0.1.0";
           strictDeps = true;
+          # Check artifacts retain assertions and failures without debugger data.
+          env.CARGO_PROFILE_DEV_DEBUG = "0";
+          env.CARGO_PROFILE_TEST_DEBUG = "0";
+          env.CARGO_INCREMENTAL = "0";
         };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
