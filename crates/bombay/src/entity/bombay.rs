@@ -13,7 +13,6 @@ use communication::Config;
 use tokio::runtime::Handle;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
-use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
 use crate::local::children::StructuralOrigins;
@@ -23,6 +22,7 @@ use crate::local::effects::{ActionInterpreter, ActionSettlementOf};
 use crate::local::effects::{ApplicationCapabilities, NoParent};
 use crate::local::endpoint::{ActorRef, request_actor_shutdown};
 use crate::topology::Hosts;
+use crate::{ActorRetirement, ActorRetirementReport};
 
 use super::family::{EntityCapacity, EntityDefinition, EntityMetricState, EntityRetirementFailure};
 use super::{
@@ -326,6 +326,8 @@ where
         // The same lease owns cancellation and join even when the actor ignores
         // ShutdownRequested. Its factual cause and queued inputs are returned.
         let (joined, termination_notification) = lease.actor.task.retire().await;
+        let retirement_report =
+            ActorRetirementReport::from_joined(&joined, &termination_notification);
         let joined = joined.map(ActorRetirement::from_local);
         // Only the final notification consumes the joined actor result. The
         // original key and resident permit remain owned outside that user call.
@@ -333,8 +335,12 @@ where
         let failure = match joined {
             Ok(joined) => {
                 let retired = catch_unwind(AssertUnwindSafe(|| {
-                    self.definition
-                        .retired(entity_id, activation_id, Ok(joined));
+                    self.definition.retired(
+                        entity_id,
+                        activation_id,
+                        Ok(joined),
+                        retirement_report,
+                    );
                 }))
                 .err();
                 match (shutdown_request, forced, retired) {
@@ -366,8 +372,12 @@ where
             }
             Err(failure) => {
                 let retired = catch_unwind(AssertUnwindSafe(|| {
-                    self.definition
-                        .retired(entity_id, activation_id, Err(failure));
+                    self.definition.retired(
+                        entity_id,
+                        activation_id,
+                        Err(failure),
+                        retirement_report,
+                    );
                 }))
                 .err();
                 Err(EntityRetirementFailure::ActorRetirementUnavailable {
@@ -389,8 +399,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::RetirementNotificationError;
     use crate::termination::Termination;
+    use crate::{ActorFailureAssessment, RetirementAssessment, RetirementNotificationError};
     use behavior::{
         Actions, ActiveTurn, AllocationRejection, BehaviorActed, NoBirths, NoSends, Step, User,
         UserEvent,
@@ -435,9 +445,10 @@ mod tests {
         )]
         retired: Mutex<
             Option<
-                oneshot::Sender<
+                oneshot::Sender<(
                     Result<ActorRetirement<StopOnShutdown<DeliveryLedger>, Never, ()>, JoinError>,
-                >,
+                    ActorRetirementReport,
+                )>,
             >,
         >,
     }
@@ -481,6 +492,7 @@ mod tests {
             id: &EntityId<u64>,
             activation: ActivationId,
             retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+            retirement_report: ActorRetirementReport,
         ) {
             assert_eq!((*id).into_inner(), 73);
             assert_eq!(activation.get().get(), 83);
@@ -490,7 +502,7 @@ mod tests {
                 .expect("retirement custody")
                 .take()
                 .expect("one native retirement");
-            let published = sender.send(retirement);
+            let published = sender.send((retirement, retirement_report));
             assert!(published.is_ok());
         }
     }
@@ -597,7 +609,18 @@ mod tests {
         assert_eq!(notified, Ok(Exit::Normal));
         assert_eq!(runtime.residents.available_permits(), 1);
         assert_eq!(runtime.hydrations.available_permits(), 1);
-        let retirement = retired_receiver.await.expect("whole native retirement");
+        let (retirement, retirement_report) = retired_receiver
+            .await
+            .expect("whole native retirement and its assessment");
+        assert_eq!(
+            retirement_report.retirement(),
+            RetirementAssessment::Established
+        );
+        let expected_failures = match &expected_notification {
+            Some(_) => ActorFailureAssessment::FailuresFound,
+            None => ActorFailureAssessment::NoFailuresFound,
+        };
+        assert_eq!(retirement_report.failures(), expected_failures);
         let Ok(ActorRetirement::Completed {
             behavior,
             settlements,
@@ -773,6 +796,7 @@ mod tests {
                 EntityId<u64>,
                 ActivationId,
                 Result<ActorRetirement<ShutdownConversionActor, Never, ()>, tokio::task::JoinError>,
+                ActorRetirementReport,
             )>,
         >,
     }
@@ -829,12 +853,13 @@ mod tests {
             id: &EntityId<u64>,
             activation: ActivationId,
             retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, tokio::task::JoinError>,
+            retirement_report: ActorRetirementReport,
         ) {
             let prior = self
                 .retirement
                 .lock()
                 .expect("outside application callback owner")
-                .replace((*id, activation, retirement));
+                .replace((*id, activation, retirement, retirement_report));
             assert!(prior.is_none());
             let fault = self
                 .retirement_fault
@@ -878,6 +903,16 @@ mod tests {
             request_actor_shutdown(&original.actor, &original.control, Ingress::new())
         }));
         let (original, termination_notification) = original.task.retire().await;
+        let original_report =
+            ActorRetirementReport::from_joined(&original, &termination_notification);
+        assert_eq!(
+            original_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            original_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
         let original =
             original.map(ActorRetirement::<ShutdownConversionActor, Never, ()>::from_local);
         assert!(termination_notification.is_ok());
@@ -1006,10 +1041,19 @@ mod tests {
                 retirement_failures,
                 terminal_report,
             }),
+            retirement_report,
         )) = acquired
         else {
             panic!("actual native callback receives its complete result")
         };
+        assert_eq!(
+            retirement_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            retirement_report.failures(),
+            ActorFailureAssessment::FailuresFound
+        );
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(additional_failures.is_empty());
@@ -1200,6 +1244,7 @@ mod tests {
                 ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
                 tokio::task::JoinError,
             >,
+            _: ActorRetirementReport,
         ) {
             unreachable!("the join regression never retires an entity")
         }

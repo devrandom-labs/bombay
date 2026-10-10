@@ -100,7 +100,9 @@ pub trait EntityDefinition: Send + Sync + 'static {
         failure: DrainFailure,
     );
 
-    /// Consume the original acquired actor result while borrowing its identity.
+    /// Consume the original acquired actor result and its runtime assessment while borrowing identity.
+    /// The assessment covers the actor-owned subtree before this application conversion.
+    /// Separate family conversion failures cannot rewrite that snapshot.
     /// Normal live retirement invokes this notification before later reactivation.
     /// Values consumed and destroyed inside a panicking callback are unavailable;
     /// outside keys, modes, prior results and original callback panics survive.
@@ -116,6 +118,7 @@ pub trait EntityDefinition: Send + Sync + 'static {
             ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
             JoinError,
         >,
+        retirement_report: ActorRetirementReport,
     );
 }
 
