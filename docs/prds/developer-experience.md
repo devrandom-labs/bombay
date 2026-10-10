@@ -1,7 +1,7 @@
 # Developer experience coordination
 
-Status: active. Application result consumption is being implemented; topology
-and terminal inference remain open. The paired work lives on `codex/developer-experience-docs`
+Status: active. Lossless result consumption and borrowed terminal inspection
+are implemented; inferred topology and recursive execution remain open. The paired work lives on `codex/developer-experience-docs`
 in Bombay and Behavior, based on Bombay main
 `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior main
 `d69f992b371c12ab34e73b18e45b8112c90a1508`.
@@ -44,10 +44,12 @@ composition and measurement gates still apply.
 The inferred-custody caller fixtures are pre-implementation acceptance tests.
 They cover the real counter, heterogeneous and repeated children, a plain state
 base, recursive creation/refusal, nominal born-role selection, and timer
-readiness from actual reports. They pass against the isolated candidate; the
-retained library lacks the custody API, so the feature worktree suite remains
-red. Candidate factory derivation also rejects valid pure actor declarations.
-These fixtures do not authorize retaining that production design.
+readiness from actual reports. Earlier candidates passed these fixtures but rejected valid pure birth aliases.
+The current isolated source copy uses retained ActorCustody and passes 16 finite
+journey tests in debug and optimization; recursive execution still fails six
+E0275 diagnostics. The retained library lacks the inferred API, so the feature
+worktree suite remains red. Independent source-port and factory reviews have
+not proved the joint alias/recursive law; these candidates remain unretained.
 
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried
@@ -57,9 +59,17 @@ or commit to implementing all networking and durability work in the DevX effort.
 The retirement consumption substep groups the identical 14 owned fields of
 20 alternatives into `ActorCustody`; all 24 outcomes remain. The real counter
 and startup-refusal journeys pass in debug and optimized builds, and a broken
-borrowed accessor fails both. Other callers are migrated only to that proven
+borrowed accessor fails both. Borrowed behavior and normal completion retain
+the original retirement for complete owned decisions; completion is not a claim
+that independent cleanup has no failures. Other callers are migrated only to that proven
 field grouping. Complete gates and measurements remain in the owning PRD;
 this does not close inferred application construction.
+
+The proven Behavior send-routing and facade rustdoc fixes are in owner
+[PR #89](https://github.com/devrandom-labs/bombay-behavior/pull/89), ready for
+review with native ten-gate/927-test verification, extracted package preflight
+and all exact-head CI including strict mutation passing. Publication and Bombay
+adoption remain open; current dependencies are unchanged.
 
 Begin with a compiling counter and heterogeneous-child journey that infers
 runner and terminal types while returning complete startup/retirement failures.
