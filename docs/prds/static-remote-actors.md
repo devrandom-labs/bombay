@@ -4157,3 +4157,68 @@ prefix checksum mismatch, an unexpectedly registered remainder, missing/extra
 selection and changed candidate bytes. Original archive audit and actual Cargo
 regeneration remain separate observed proofs. The source-preserving mode is
 preferred over changing VCS and silently publishing different artifacts.
+
+
+### Delegated recommendations and root report regression evidence
+
+The user's latest standing instruction is to select each recommended answer
+until they say otherwise. This replaces the earlier per-choice waiting rule.
+Continue recording each concrete recommendation, alternatives, consequences,
+uncertainties and scope before dependent implementation; do not reopen approved
+choices without changed evidence or claim that delegation supplies missing
+verification. The explicit scope checkpoints remain recorded under this
+continuing authorization.
+
+The actual work-barrier inversion moved the existing permission wait before
+root joining/report publication. Both debug and optimized public Application
+regressions failed with the intended assertion: the joined report was unavailable
+without the work-completion barrier. This proves the real service/work deadlock,
+not just a private classification predicate. The original execution source SHA
+was `300f5c7fd688c931f1a344a2c19e9a8725d86025f321130dc7a99419720cf775`;
+mutant `24519040c1eda2507f5b330663309455d99233ec97e3150f857b0dcc390d5ea3`.
+Both logs are retained at `/tmp/bombay-root-report-work-barrier-{debug,release}.log`.
+The ten-second limit detects the regression and is not a selected remote timeout.
+
+The primary-task-failure inversion changed only CapabilityFailed classification
+to NoFailuresFound. Both profiles failed the actual joined report assertion:
+Incomplete instead of FailuresFound, while later failure vectors were empty.
+The actor's original task JoinError and native payload remain independently
+asserted. Healthy terminal source SHA
+`0a114e17ffcb8a07cd82bfb4a9d5624a00494e64b3bca38bc866d5ac5de09810`;
+mutant `793edd24712c638956b18937aefedfae28511f5528cf8a24477b63242e250733`.
+Logs: `/tmp/bombay-primary-capability-report-{debug,release}.log`.
+Both owning files were restored byte-exact before the final healthy controls.
+
+Controlled partial-release candidate
+`d54c4be3ce971a8e044303bb6f1c321037edadf4`,
+[PR 2](https://github.com/devrandom-labs/bombay-zenoh/pull/2), touches six paths
+(the initial five-path estimate omitted the existing verification entrypoint).
+Actual private CI production is +173 lines; owning policy tests +80;
+workflow +13/-2, documentation +11; total +279/-2/net +277.
+Cumulative human-authored delivery is 1,445/1,700, generated baseline 3,311,
+complete artifact 4,756/5,300, controlled changed paths 74 and delivery extras 27.
+No runtime/public API/dependency change. The independent source review verifies
+fixed original run/source/ledger custody, exact five-prefix/four-absent guards,
+original-source Cargo archive equality, four-only SDK authority, current main
+recheck immediately before publication and original Cargo refusal/post-receipt
+preservation. Required CI, reviewed merge, merged automation CI and actual
+resumed upload remain pending; this is not publication completion.
+
+
+Final restored root controls pass: both actual public Application report tests
+and the primary capability failure report test each executed exactly once in
+both debug and optimized builds (three tests per profile, 305 independently
+listed combined library tests). Commands use pinned Nix, CARGO_INCREMENTAL=0,
+`cargo test --locked -p bombay-rs --lib [--release] FILTER --jobs 2 -- --nocapture`.
+Filters are `root_retirement_report_is_available_before_application_work_finishes`,
+`root_report_notification_fault_retains_native_result_and_committed_report`, and
+`joined_report_preserves_primary_capability_failure_without_later_failures`.
+The complete final control log is `/tmp/bombay-root-restored-controls.log`.
+These focused witnesses do not establish the remaining child/Entity campaigns,
+full workspace checks, distillation or remote acceptance.
+
+PR 2 readability follow-up only, head
+`3a8de94736f692172cc16f852f215330debe3b93`: workflow input now names current main
+versus retained source for resume; README retains its heading first. Actual
+stage +280/-3/net +277, unchanged scope and contract. Fresh exact-head required
+CI is [38030056828](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38030056828).
