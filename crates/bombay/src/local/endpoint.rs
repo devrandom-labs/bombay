@@ -83,7 +83,29 @@ where
         self.recipient.clone()
     }
 
-    pub(crate) fn request_shutdown<TargetPath>(
+    /// Request orderly shutdown of this exact installed child.
+    ///
+    /// This synchronous operation closes new user admission, then submits the
+    /// existing shutdown event. Previously acquired messages retain their
+    /// existing rights. It does not wait for mailbox capacity.
+    ///
+    /// Success establishes control submission only. Observe [`Self::retirement`]
+    /// for the runtime's joined-retirement assessment. Application-owned
+    /// services must check caller authority before requesting shutdown.
+    /// Behaviors represent shutdown in `Actions`; do not call this in a fold.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ShutdownRejection::AlreadyStopped`] when termination is known,
+    /// otherwise [`ShutdownRejection::AlreadyStopping`] when admission or the
+    /// control lane is unavailable. Rejection does not reopen user admission.
+    ///
+    /// # Panics
+    ///
+    /// Event injection or registered mailbox wakers can unwind after admission
+    /// closes or after the control event is submitted. Such partial effects are
+    /// not rolled back; unwinding proves neither refusal nor completed retirement.
+    pub fn request_shutdown<TargetPath>(
         &self,
         ingress: Ingress<ShutdownRequested, TargetPath>,
     ) -> Result<(), ShutdownRejection>

@@ -761,3 +761,12 @@ requires all of the following:
 13. workspace tests, compile tests, documentation tests, formatting, strict
     Clippy, Loom/model suites in owning repositories, and repository-wide
     obsolete-pattern scans are green.
+
+An application-owned service holding the runtime-issued `InstalledActor` may
+perform a fresh local permission check and its synchronous `request_shutdown`
+in one exclusive operation. The same existing control lane and typed ingress
+own submission; an `EstablishedRecipient` remains send-only. Successful
+submission is distinct from the shared joined-retirement report. The operation
+closes user admission before event injection/control submission; a rejected
+attempt does not reopen admission, and event/waker unwind may leave partial
+effects. Behavior folds still request shutdown through typed `Actions` lanes.

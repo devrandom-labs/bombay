@@ -1,12 +1,10 @@
-use behavior_actors::{
-    EstablishedShutdownResolved, ShutdownEstablished, ShutdownId, ShutdownRequested,
-};
+use behavior_actors::{ShutdownRejection, ShutdownRequested};
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, Births, ChildCreationOutcome, ChildHead,
     ClassifySettlement, CreateChild, CreationEvent, CreationSequence, CreationSettlement,
-    CreationSettlements, Creations, EstablishedActor, EstablishedDelivery, EventLayer, Here,
-    Ingress, InitializationTurn, InterpretInstalledActor, InterpreterRequests, ItemSettlement,
-    MessageProtocol, NoSends, SendLayer, SettledItem, SettlementStatus,
+    CreationSettlements, Creations, EstablishedActor, EstablishedDelivery, Here, Ingress,
+    InitializationTurn, InterpretInstalledActor, ItemSettlement, MessageProtocol, NoSends,
+    SettledItem, SettlementStatus,
 };
 use bombay::prelude::*;
 use bombay::{
@@ -21,21 +19,14 @@ use tokio::runtime::Builder;
 
 type Worker = StopOnShutdown<ChildLedger>;
 type CreatorChildren = Worker;
-type CreatorEvent = EventLayer<
-    EstablishedShutdownResolved<ChildLedger>,
-    CreationEvent<MailAddr, CreatorChildren, CreatorCommand>,
->;
-type CreatorSends = SendLayer<
-    InterpreterRequests<ShutdownEstablished<Worker, Here>>,
-    Vec<EstablishedDelivery<ServiceReplies>>,
->;
+type CreatorEvent = CreationEvent<MailAddr, CreatorChildren, CreatorCommand>;
+type CreatorSends = Vec<EstablishedDelivery<ServiceReplies>>;
 type ChildCreations = <Births<CreatorChildren> as CreationSettlements<MailAddr>>::Settlements;
 type ServiceReplies = MessageProtocol<MailAddr, ServiceReply>;
 
 enum ServiceReply {
     Exported(EstablishedActor<Worker>, EstablishedActor<Worker>),
     Processed(u64),
-    Shutdown(EstablishedShutdownResolved<ChildLedger>),
 }
 enum ChildCommand {
     Inspect(EstablishedRecipient<ServiceReplies>),
@@ -56,13 +47,11 @@ impl ChildLedger {
 
 enum CreatorCommand {
     Export(EstablishedRecipient<ServiceReplies>),
-    Stop(ShutdownEstablished<Worker, Here>),
 }
 #[derive(Default)]
 struct Creator {
     returned_creations: Vec<ChildCreations>,
     committed_children: Vec<EstablishedActor<Worker>>,
-    service_reply: Option<EstablishedRecipient<ServiceReplies>>,
 }
 impl Protocol for Creator {
     type Addr = MailAddr;
@@ -101,22 +90,7 @@ impl Behavior for Creator {
     }
     fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
         match event {
-            EventLayer::Owned(resolved) => {
-                let reply = self
-                    .service_reply
-                    .as_ref()
-                    .expect("the actual service owns its reply capability")
-                    .clone();
-                let sends = SendLayer::new(
-                    InterpreterRequests::new(Vec::new()),
-                    vec![EstablishedDelivery::new(
-                        reply,
-                        ServiceReply::Shutdown(resolved),
-                    )],
-                );
-                Ok(Actions::new(sends, Creations::empty(), Step::Continue))
-            }
-            EventLayer::Inner(CreationEvent::Settlements(settled)) => {
+            CreationEvent::Settlements(settled) => {
                 let original = settled.into_settlement();
                 let CreationSettlement::Settled(children) = &original else {
                     panic!("actual creation traversal")
@@ -133,7 +107,7 @@ impl Behavior for Creator {
                 self.returned_creations.push(original);
                 Ok(Actions::cont())
             }
-            EventLayer::Inner(CreationEvent::User(user)) => {
+            CreationEvent::User(user) => {
                 let command = user.message;
                 match command {
                     CreatorCommand::Export(reply) => {
@@ -141,25 +115,48 @@ impl Behavior for Creator {
                         else {
                             panic!("both actual child exports")
                         };
-                        self.service_reply = Some(reply.clone());
-                        let sends = SendLayer::new(
-                            InterpreterRequests::new(Vec::new()),
-                            vec![EstablishedDelivery::new(
-                                reply,
-                                ServiceReply::Exported(target_actor.clone(), sibling_actor.clone()),
-                            )],
-                        );
+                        let sends = vec![EstablishedDelivery::new(
+                            reply,
+                            ServiceReply::Exported(target_actor.clone(), sibling_actor.clone()),
+                        )];
                         Ok(Actions::new(sends, Creations::empty(), Step::Continue))
                     }
-                    CreatorCommand::Stop(request) => Ok(Actions::cont().with_send(request)),
                 }
             }
         }
     }
 }
 
+enum Permission {
+    Granted,
+    Revoked,
+}
+#[derive(Debug, PartialEq, Eq)]
+enum StopRejection {
+    Revoked,
+    Expired,
+    Shutdown(ShutdownRejection),
+}
 struct ChildService {
     installed: Option<InstalledActor<Worker>>,
+    permission: Permission,
+    now: u64,
+}
+fn request_permitted_shutdown(
+    service: &mut ChildService,
+    deadline: u64,
+) -> Result<(), StopRejection> {
+    match service.permission {
+        Permission::Revoked => return Err(StopRejection::Revoked),
+        Permission::Granted if service.now >= deadline => return Err(StopRejection::Expired),
+        Permission::Granted => {}
+    }
+    service
+        .installed
+        .as_ref()
+        .expect("the service owns its exact installed child")
+        .request_shutdown(Ingress::<ShutdownRequested, Here>::new())
+        .map_err(StopRejection::Shutdown)
 }
 impl InterpretInstalledActor<Worker> for ChildService {
     type Output = ();
@@ -170,7 +167,6 @@ impl InterpretInstalledActor<Worker> for ChildService {
 }
 
 #[expect(
-    clippy::large_enum_variant,
     clippy::type_complexity,
     reason = "the owning derive retains complete native actor products; this finite trace introduces no boxing or alias policy"
 )]
@@ -227,7 +223,11 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
                     else {
                         panic!("both full actor proofs")
                     };
-                    let mut service = ChildService { installed: None };
+                    let mut service = ChildService {
+                        installed: None,
+                        permission: Permission::Granted,
+                        now: 0,
+                    };
                     target_actor.clone().interpret_actor(&mut service);
                     let installed = service
                         .installed
@@ -270,28 +270,63 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
                     };
                     assert_eq!(amount, 17);
                     let sibling_address = before.from;
-                    let stop = ShutdownEstablished::new(
-                        ShutdownId(103),
-                        target_actor,
-                        Ingress::<ShutdownRequested, Here>::new(),
-                    );
-                    let submitted = replies.send(&creator, CreatorCommand::Stop(stop)).await;
-                    assert!(submitted.is_ok());
-                    let resolution = replies
-                        .receive()
-                        .await
-                        .expect("the actual shutdown source returns through parent Actions");
-                    assert_eq!(resolution.from, creator_address);
-                    let ServiceReply::Shutdown(EstablishedShutdownResolved::Accepted {
-                        id, ..
-                    }) = resolution.message
-                    else {
-                        panic!("actual exact shutdown accepted")
+                    let mut refused_attempts = Vec::new();
+                    let mut target_replies = Vec::new();
+                    let mut pending_reports = Vec::new();
+                    for (permission, now, expected) in [
+                        (Permission::Revoked, 0, StopRejection::Revoked),
+                        (Permission::Granted, 10, StopRejection::Expired),
+                    ] {
+                        service.permission = permission;
+                        service.now = now;
+                        let attempted = request_permitted_shutdown(&mut service, 10);
+                        refused_attempts.push((expected, attempted));
+                        let inspected = replies
+                            .send(
+                                &target_actor.recipient(),
+                                ChildCommand::Inspect(replies.recipient()),
+                            )
+                            .await;
+                        let target_reply = match inspected {
+                            Ok(()) => {
+                                Ok(replies.receive().await.expect("A's complete typed reply"))
+                            }
+                            Err(original) => Err(original),
+                        };
+                        target_replies.push(target_reply);
+                        let inspected = replies
+                            .send(
+                                &sibling_recipient,
+                                ChildCommand::Inspect(replies.recipient()),
+                            )
+                            .await;
+                        assert!(inspected.is_ok());
+                        let reply = replies
+                            .receive()
+                            .await
+                            .expect("B progresses after each refusal");
+                        let ServiceReply::Processed(amount) = reply.message else {
+                            panic!("B's complete typed reply")
+                        };
+                        assert_eq!(amount, 17);
+                        assert_eq!(reply.from, sibling_address);
+                        let mut joined = Box::pin(
+                            service
+                                .installed
+                                .as_ref()
+                                .expect("the same installed A")
+                                .retirement(),
+                        );
+                        let pending = joined
+                            .as_mut()
+                            .poll(&mut Context::from_waker(Waker::noop()));
+                        pending_reports.push(pending);
+                    }
+                    let permitted = request_permitted_shutdown(&mut service, 20);
+                    let report = match &permitted {
+                        Ok(()) => Some(retirement.await),
+                        Err(_) => None,
                     };
-                    assert_eq!(id, ShutdownId(103));
-                    let report = retirement.await;
-                    assert_eq!(report.retirement(), RetirementAssessment::Established);
-                    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
                     let after = replies
                         .send(
                             &sibling_recipient,
@@ -308,9 +343,25 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
                     };
                     assert_eq!(amount, 17);
                     assert_eq!(after.from, sibling_address);
+                    let repeated = report.as_ref().map(|_| {
+                        service
+                            .installed
+                            .as_ref()
+                            .expect("the original installed A remains owned")
+                            .request_shutdown(Ingress::<ShutdownRequested, Here>::new())
+                    });
                     let stopped = application.lifecycle().request_shutdown();
                     assert_eq!(stopped, Ok(()));
-                    (target_address, sibling_address)
+                    (
+                        target_address,
+                        sibling_address,
+                        refused_attempts,
+                        target_replies,
+                        pending_reports,
+                        permitted,
+                        report,
+                        repeated,
+                    )
                 }),
         )
         .unwrap_or_else(|failed| {
@@ -320,7 +371,17 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
     drop(host);
     let (
         ApplicationOutcome::Completed {
-            output: (target_address, sibling_address),
+            output:
+                (
+                    target_address,
+                    sibling_address,
+                    refused_attempts,
+                    target_replies,
+                    pending_reports,
+                    permitted,
+                    report,
+                    repeated,
+                ),
             cleanup: Ok(()),
         },
         Ok((origin, native)),
@@ -332,6 +393,36 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
     else {
         panic!("all original actor and notification products remain independent")
     };
+    assert_eq!(refused_attempts.len(), 2);
+    for (expected, attempted) in refused_attempts {
+        assert_eq!(
+            attempted,
+            Err(expected),
+            "the fresh stop check refuses after cleanup"
+        );
+    }
+    assert_eq!(target_replies.len(), 2);
+    for original in target_replies {
+        let Ok(reply) = original else {
+            panic!("a refused stop preserves A's user admission")
+        };
+        assert_eq!(reply.from, target_address);
+        let ServiceReply::Processed(amount) = reply.message else {
+            panic!("A's independent Actions reply remains exact")
+        };
+        assert_eq!(amount, 11);
+    }
+    assert_eq!(pending_reports.len(), 2);
+    for pending in pending_reports {
+        assert!(matches!(pending, Poll::Pending));
+    }
+    assert_eq!(permitted, Ok(()), "permitted stop succeeds after cleanup");
+    let Some(report) = report else {
+        panic!("the actual permitted retirement report remains owned")
+    };
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert_eq!(repeated, Some(Err(ShutdownRejection::AlreadyStopped)));
     let terminal: ChildTerminals = ProjectTerminal::project(origin, native);
     let ChildTerminals::Root {
         origin,
@@ -392,7 +483,7 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
     };
     assert!(creations.is_empty());
     assert!(matches!(settlement.sends.owned, NoSends));
-    assert!(settlement.sends.inner.owned.is_empty() && settlement.sends.inner.inner.is_empty());
+    assert!(settlement.sends.inner.is_empty());
     assert!(matches!(settlement.become_, Step::Stop(_)));
     assert_eq!(descendants.len(), 2);
     for child in &descendants {

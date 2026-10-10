@@ -98,7 +98,7 @@ tree:
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |
 | `topology.rs` | static `Hosts<P>` actor-space selection | public for deliberate advanced `App` composition; ordinary `Application` privately materializes its closed actor-space product |
 | `local/mod.rs` | curate the concrete local composition and its child modules | private module; canonical public capabilities are re-exported at crate root |
-| `local/endpoint.rs` | exact messaging endpoint, installed-actor proof and shutdown authority | root-curated `ActorRef`, `InstalledActor` and exact-payload `SendError`; `InstalledActor` has no public constructor or shutdown method |
+| `local/endpoint.rs` | exact messaging endpoint, installed-actor proof and shutdown authority | root-curated `ActorRef`, `InstalledActor` and exact-payload `SendError`; `InstalledActor` has no public constructor; its typed `request_shutdown` submits to the exact child control lane |
 | `local/ingress.rs` | mailbox admission, standard/Entity ingress and exact retirement drain | private; reuses Communication's mailbox |
 | `local/environment.rs` | prepared/live Engine port and exact residual custody | private; one standard local Environment for roots, children and Entity actors retains operation failures and descendant retirement assessments before native conversion |
 | `local/execution.rs` | actor-owned activation tasks, exact task failures and owner cancellation | private; task settlement remains with the actor owner |
