@@ -4694,3 +4694,144 @@ fallback remains conservative. Full remote R01–R25, production identity,
 durability and SHM obligations remain exactly deferred/unexecuted. The complete
 networking PRD is not feature-complete/distilled/merged. Draft PR330 still needs
 fresh final-head required Linux CI, final review and actual protected merge.
+
+### Actual joined-retirement prerequisite delivery
+
+[PR330](https://github.com/devrandom-labs/bombay/pull/330) merged through the
+protected normal PR route at2026-10-10T08:11:03Z, commit
+`017ec7603e0193e26129e0af6d10b8c04fdad78e`. Exact reviewed head
+`690e6283140ed238e6a62241960d8924aaa6eac6` passed all four observed checks:
+required [Nix CI38035053836](https://github.com/devrandom-labs/bombay/actions/runs/38035053836)
+completed successfully at08:06:48Z; CodeQL Analyze38035053829, CodeQL summary,
+and dependency Deny38035053856 also passed. Linux Nix reports269 checks passing;
+both bounded Driver/Observe fuzz campaigns and their artifact uploads pass.
+Optional Observe Miri steps were skipped and receive no execution credit.
+The final log is retained at `/tmp/bombay-joined-retirement-final-ci.log`.
+
+The [recorded review](https://github.com/devrandom-labs/bombay/pull/330#pullrequestreview-5478186173)
+reports independent nonauthor source review and retained proof inspection;
+it is correctly a COMMENTED review, not fabricated author approval or an
+independent test rerun. Active ruleset18433270 requires a PR and passing Nix
+check, zero formal approving reviews, no bypass; merge matched the exact head.
+Scoped prerequisite disposition is now merged. Full AUTH1/NET1 and every remote
+R01–R25 obligation retain their incomplete status.
+
+Final committed root delta against preparation maina9c5b7d covers56 paths,
+zero untracked: production +1592/-472/net1120; tests/fixtures +4429/-636/net3793;
+documentation +2401/-69/net2332; manifests/lock +0/-0; public API +5 newly
+defined types/-0. The complete row/source-hash checkpoint is retained at
+`/tmp/bombay-public-receipt-checkpoint.json`. This records capability growth,
+not code reduction. Cargo.lock remains byte-identical.
+
+### Next prerequisite: exact-recipient nonwaiting service admission
+
+Prepared 2026-10-10 under the user's reiterated automatic recommended-choice
+instruction. PR330 source remains frozen while its required final-head CI runs;
+this preparation is isolated and will receive a branch from latest main before
+any commit. No complete AUTH1/NET1 witness is claimed by the following stage.
+
+The public service can currently check permission and then await capacity;
+permission can change during that wait. Communication already owns a synchronous
+capacity-nonwaiting attempt with exact Full/Closed payload return. The existing
+matched public Application compile probe fails specifically because
+`ExternalActor::try_send` is missing. Reusing that operation permits the selected
+one-local-check-and-attempt law without a second queue, permit or mailbox.
+
+Automatically select the recommended narrow inherent operation on ExternalActor
+for an exact `EstablishedRecipient`, implemented by a private ActorRef
+projection. Deliberately re-export the existing Communication `TrySendError`
+through Bombay so callers can exhaustively match Full and Closed. Alternatives
+are extending the sealed ExternalTarget to stable Entity hydration, exposing raw
+senders, or a new error wrapper. Those either require a different unproven
+admission law, expose excess authority, or duplicate the existing truthful sum.
+This selection leaves stable Entity hydration unchanged and adds no public
+ActorRef operation. The actual external actor's allocated address supplies
+User::from; this does not authenticate a remote principal. Native error Debug
+requires a Debug payload and can print it: callers with move-only non-Debug
+messages use exhaustive matching, and the later bounded remote diagnostic path
+must not format private payloads. No Clone or Debug message bound is added.
+Capacity-nonwaiting is not wait-free: the existing admission mutex and queue
+implementation keep their own synchronization laws. The naming, exhaustive
+native sum and deliberate owner-error exposure were checked against the
+[Rust API naming guidelines](https://rust-lang.github.io/api-guidelines/naming.html),
+[type-safety guidelines](https://rust-lang.github.io/api-guidelines/type-safety.html)
+and [future-proofing guidelines](https://rust-lang.github.io/api-guidelines/future-proofing.html).
+
+Fresh source investigation also proves a smaller owning diagnostic defect.
+Communication selected0.1.3, exact source272a2343187b40615ab26c2d0d2e136010a16e77,
+is still its repository's latest main. Its existing mailbox-retirement test
+closes admission, obtains Closed, then uses the still-live Consumer to drain
+accepted work. UserClosed and TrySendError::Closed incorrectly display
+"consumer dropped". Select an owning correction to "user lane closed", with
+documentation distinguishing admission closure and consumer disappearance;
+leave ControlClosed unchanged. Alternatives retaining the incorrect inference
+or wrapping it in Bombay are rejected. This changes diagnostics only, not
+delivery, custody, public types, or retirement. A corrected published version
+and narrow locked selection require actual owning review/CI/publication evidence;
+no version is invented or integrated from this preparation alone.
+
+Change record before production: Bombay's three expected production paths are
+local/endpoint.rs, application/interface.rs and lib.rs, estimated +65/-2/net63,
+bounded at net70; owning public-Application test expansion is bounded at320
+lines. Communication uses one existing production source path (diagnostic text
+and rustdoc only, maximum8 net lines), its existing mailbox-retirement test
+(maximum45 net lines), and owning guidance/release records as required. Public
+types +0/-0; no trait, dependency family, codec, coordination owner, clock,
+resource default, registry, task or macro. Existing native mailbox, exact
+recipient interpreter, typed User origin and Application composition are reused.
+The public surface adds one service method and one deliberate existing-owner
+error re-export; zero newly defined types is not a claim of zero API growth.
+Before applying the prototype, narrow its target contract to
+`Target: Protocol<Addr = MailAddr>`: synchronous mailbox delivery creates no
+future or task, and the owning recipient/mailbox interpretation requires no
+message Send or static bound. The awaited ExternalTarget's stronger bounds
+belong to its Send future and must not be copied here. Existing endpoint
+establishment keeps its own requirements. A borrowed-message public control
+will prove that no unnecessary static message restriction has been retained.
+These additions stay within the recorded cumulative2200 production/4300 test
+ceilings and300 retained-source-path ceiling; recount before implementation.
+
+Verification first extends the actual existing owner closure control so both
+diagnostics are asserted while the Consumer drains the full accepted prefix;
+restoring either original text must fail its intended assertion in debug and
+optimized builds. Bombay's public control fills a real external mailbox,
+recovers the identical move-only allocation on Full, drains one slot, admits
+that original once, and preserves all remaining accepted inputs after closure.
+Repeated rejection of the same Closed payload must retain its allocation and
+truthful sender origins. Complete native root and notification results remain
+independently checked. That native projection witness is distinct from future
+permission/expiry provider tests and remote replay-ID protection. Coordination,
+time, retry scheduling and retained-byte limits remain unresolved contracts;
+this method alone does not complete R08 or authorize a remote command.
+
+Fresh pre-production consumer check executes the prepared public test against
+unmodified690e628 source: pinned Bombay Nix `cargo check --locked -p bombay-rs
+--test actor_interface --jobs 2`, separate existing metadata target, symbols0,
+incremental0, exits101. Exactly E0432 for the selected owner-error re-export
+and six E0599 occurrences for the missing service operation; no unrelated
+diagnostic. Log `/tmp/bombay-exact-admission-before-api.log`. Prepared owning
+test +183/-11/net172, SHA
+`a6ec17589fed88b6a871725142ee58570fb2eaffb9316f668b013808ba450c82`.
+This is the actual missing public operation regression, not a runtime policy
+inversion. Communication's old diagnostic fails its new assertion after the
+complete live-consumer prefix drain; owning debug proof exits101 as intended.
+The separate owning Rust1.95 pinned Nix/CI remains the strict owner gate; newer
+Bombay Rust1.99 reports inherited fetch_update deprecation during exploratory
+owner compilation. Do not fix that by inventing an atomic protocol, raising
+the owning minimum or suppressing its warning inside this diagnostic stage.
+
+Delivered-Zenoh runtime source readiness remains investigation rather than a
+selected command mechanism. At exact sourcee82481825e313ff14e5ea3a1d6e842040945372a,
+query-builder into_future invokes synchronous wait/send_request before polling;
+mark possible transmission before that foreign call. Auto consolidation can
+become Latest and collapse/delay replies; explicit None avoids that map but
+does not prove all count/byte bounds. Stable Querier retirement removes its
+pending local queries, not remote actor work; session timeout tasks may remain
+until timer/session cancellation. Routed per-face pending-query maps have no
+discovered count ceiling and accept request timeouts without a discovered
+maximum clamp. FIFO callbacks can block at capacity; Ring callbacks evict.
+Pub/sub avoids native query tables but needs an explicit typed receipt protocol.
+Compare actual bounded callback custody, cancellation, late replies, router
+retention and close/restart behavior in both approved TLS layouts before
+retaining either mechanism. No unexplored native capacity setting is assumed,
+no command/correlation schema is selected, and no full remote gate passes here.
