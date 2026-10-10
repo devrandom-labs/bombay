@@ -4058,3 +4058,15 @@ are conservatively production. Exact source-bound measurement remains in
 with no warnings. This is syntax/integration evidence only; new report tests
 and their inversions are not yet executed. The five-type, 2,200-production and
 3,000-test local stage and 250 cumulative-path bounds still apply.
+
+Select the actual quiet-startup oracle using the existing closed child/parent
+fixture: one rejected initialization retains its original error and input
+allocation in the complete Core settlement; a later live child actually
+retires; the native child-failure lane remains empty while the independently
+retained parent assessment is Established/FailuresFound. Estimated 120–170
+test lines plus fewer than 15 owning fixture lines. Deleting the actual
+startup-summary acquisition must fail the Found assertion in both builds.
+This directly tests the selected compact correction and does not substitute
+a hand-copied binding model or infer a creation route. Existing projector-panic
+coverage retains its original stop disposition. Combined source accounting
+will precede any concrete excess of the current stage envelope.
