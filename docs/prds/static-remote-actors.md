@@ -3069,6 +3069,43 @@ allocation or actual oneshot receipt error. Its names, getter convention and
 opaque Debug representation were checked against the official Rust API
 Guidelines. No default, clone, serialization or replacement error is added.
 
+Connected first-repair lowering (2026-10-10 UTC): the mandatory first-result
+receiver cannot be added to launch without updating its root, child and Entity
+consumers; Rust checks those owners even for the focused launch unit target.
+Use truthful first-only products in this draft connected source until the
+first custody gate passes. Preserve the original result in a separate field
+or tuple component; never fabricate the second publication's success or error.
+This is intermediate implementation of the already selected final contract,
+not a released alternative public API. Keep catalogue migration and actual
+joined-report publication behind the debug/optimized first-repair gate.
+Every started startup variant retains its first result. Its consuming native
+conversion returns `Result<(ActorRetirement, Result<(),
+RetirementNotificationError>), (Behavior, AllocationRejection)>`, so unstarted
+allocation cannot manufacture an actor notification. Child task failures and
+successful-projection notification failures preserve one origin and the same
+affine first cause; the final two-stage product replaces the draft first-only
+field when the real report publisher exists.
+
+Controlled dependency delivery decision (2026-10-10 UTC): the recommended
+separate `devrandom-labs/bombay-zenoh` repository is public, preserving exact
+upstream history and base `1211779c3647f5a96713dade452c546a07823580`.
+Bootstrap that unchanged base, then deliver corrections through a reviewed
+branch/PR with controlled required CI. Replace/remove inherited upstream
+automations that publish official packages or assume unsupported profiles;
+reuse Bombay's exact pinned Nix/toolchain inputs and pin CI actions. Keep
+publication manual after review and passing required checks. Adopt an extra
+18-path, 900-line CI/test/provenance envelope with no runtime production/API/
+dependency growth; raise the complete cumulative path ceiling to 250 before
+those edits (the earlier local potential union plus these paths reaches 238).
+Correct the same already-counted test's inline import and stale root guidance.
+The alternative retains incompatible upstream release automation or waits for
+an external release, neither satisfying controlled delivery. Nine registry
+names remain unregistered and latest official Zenoh remains 1.10.1 on this
+fresh check. Registry publishing credentials are currently unavailable;
+repository/PR/CI preparation can proceed independently. This is a concrete
+deployment prerequisite, not permission to mark dependency publication or
+the remote milestone complete.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
