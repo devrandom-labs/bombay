@@ -387,7 +387,10 @@ mod tests {
     use super::*;
     use crate::RetirementNotificationError;
     use crate::termination::Termination;
-    use behavior::{Actions, ActiveTurn, BehaviorActed, NoBirths, NoSends, Step, User, UserEvent};
+    use behavior::{
+        Actions, ActiveTurn, AllocationRejection, BehaviorActed, NoBirths, NoSends, Step, User,
+        UserEvent,
+    };
     use behavior_actors::{Crash, Exit, StopOnShutdown};
     use bombay_engine::Completion;
     use core::num::{NonZeroU64, NonZeroUsize};
@@ -404,7 +407,8 @@ mod tests {
     use tokio::task::spawn_blocking;
 
     use crate::actors::ActorExt;
-    use crate::entity::{AdmissionFailure, DrainFailure, DrainStage};
+    use crate::entity::family::assert_activation_metrics;
+    use crate::entity::{AdmissionFailure, DrainFailure, DrainStage, EntityMetrics};
     use crate::launch::ActorSpace;
 
     #[derive(Default)]
@@ -1019,6 +1023,60 @@ mod tests {
         assert_eq!(*forced_activation, activation);
         assert_eq!(*forced_reason, reason);
         assert_eq!(endpoint.address(), address);
+    }
+
+    #[tokio::test]
+    async fn exhausted_entity_allocation_retains_unstarted_state_and_releases_permits() {
+        let entries = Arc::new(vec![83_u64, 89]);
+        let definition = Arc::new(ShutdownConversionDefinition {
+            retirement_fault: Mutex::new(None),
+            entries: Arc::clone(&entries),
+            endpoint: Mutex::new(None),
+            forced: Mutex::new(Vec::new()),
+            retirement: Mutex::new(None),
+        });
+        let spaces = Arc::new(ActorSpace::<ShutdownConversionActor>::new());
+        let allocations = ApplicationAddresses::from_next(u64::MAX);
+        let metrics = Arc::new(EntityMetricState::default());
+        let runtime = bombay_entity_runtime(
+            definition,
+            Arc::clone(&spaces),
+            allocations.clone(),
+            EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN),
+            Arc::clone(&metrics),
+            Handle::current(),
+        );
+        for generation in [1, 2] {
+            let activation =
+                ActivationId::new(NonZeroU64::new(generation).expect("actual activation"));
+            let refused = runtime.activate(EntityId::new(97), activation).await;
+            let Err(EntityActivationError::AllocationRejected { behavior, reason }) = refused
+            else {
+                panic!(
+                    "exhaustion refuses before actor launch, including after permits are returned"
+                );
+            };
+            assert!(Arc::ptr_eq(&entries, &behavior.entries));
+            assert_eq!(behavior.entries.as_slice(), [83, 89]);
+            assert_eq!(reason, AllocationRejection::Exhausted);
+            assert_eq!(runtime.residents.available_permits(), 1);
+            assert_eq!(runtime.hydrations.available_permits(), 1);
+        }
+        assert!(spaces.space().resolve(&MailAddr(u64::MAX)).is_none());
+        let still_exhausted = allocations.allocate();
+        assert_eq!(still_exhausted, Err(AllocationRejection::Exhausted));
+        assert_activation_metrics(
+            &metrics,
+            EntityMetrics {
+                activations: 0,
+                hydration_failures: 0,
+                launch_failures: 2,
+                capacity_refusals: 0,
+                forced_retirements: 0,
+                peak_hydrations: 1,
+                residents: 0,
+            },
+        );
     }
 
     struct JoinedActor;

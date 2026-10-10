@@ -320,6 +320,11 @@ impl EntityMetricState {
     }
 }
 
+#[cfg(test)]
+pub(super) fn assert_activation_metrics(metrics: &EntityMetricState, expected: EntityMetrics) {
+    assert_eq!(metrics.snapshot(), expected);
+}
+
 type InstalledRuntimeFor<D> = EntityRuntime<
     <D as EntityDefinition>::Id,
     BehaviorMessage<<D as EntityDefinition>::Behavior>,
