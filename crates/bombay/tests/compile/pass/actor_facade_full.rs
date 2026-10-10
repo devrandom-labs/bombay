@@ -57,6 +57,18 @@ struct Parent;
 )]
 impl Parent {}
 
+// Declaring a child's reports does not promise a runnable local interpreter.
+type Proxy = bombay::atomic::StableProxy<Child, bombay::atomic::ImmediateActivation>;
+
+struct ProxyParent;
+
+#[bombay::actor(
+    message = Never,
+    births = { service: Proxy },
+    creation_settlements = retain_for_retirement,
+)]
+impl ProxyParent {}
+
 // Sender inference remains usable for pure Behavior authoring without a local host.
 struct SenderIndependent {
     total: u64,
@@ -89,6 +101,13 @@ fn main() {
     );
     accepts_role(ParentChild::Primary);
     accepts_role(ParentChild::Fallback);
+
+    let mut proxy_parent = ProxyParent;
+    let pure_parent = bombay::behavior::initialize(&mut proxy_parent)
+        .expect("declared birth capabilities preserve pure authoring");
+    assert!(pure_parent.creates.is_empty());
+    assert!(matches!(pure_parent.sends, bombay::behavior::NoSends));
+    assert!(matches!(pure_parent.become_, Step::Continue));
 
     fn accepts_behavior<B: Behavior>() {}
     accepts_behavior::<SenderAware>();
