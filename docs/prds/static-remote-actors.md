@@ -20,6 +20,19 @@ only their existing local laws. The final section records the audit corrections.
 
 ## User steering before design choices
 
+Current instruction (2026-10-09 UTC): the user said **"from now on autoselect
+the recommended answer everytime there is a question for me till I say
+otherwise"**. Adopt the recommended choice without another question or wait,
+recording its alternatives, rationale, consequences and remaining uncertainty.
+This includes recommended scope checkpoints; record their concrete expanded
+surface before production edits. This explicit delegation supersedes the prior
+per-choice approval/wait requirement below until revoked. It does not waive
+source verification, correctness laws, regressions, cumulative accounting,
+review, required CI or actual merge evidence. Do not infer that an unverified
+contract or unexecuted witness passes from this delegation.
+
+Historical steering requirement before this delegation:
+
 The user requires an explanation and an opportunity to steer **each new design
 choice before adoption**. An agent must present the concrete choice, viable
 alternatives, its recommendation, why it prefers that option, effects on the
@@ -2613,8 +2626,9 @@ It avoids a fifth public type but repeats stage-specific cases and conversions.
 The named product owns a newly demonstrated pair of coexisting authoritative
 facts, rather than shortening a nested spelling. This raises the
 expected public additions from four to five and requires a revised stage
-record. Mechanism, guard-unwind/cancellation custody, native handoff, receiving
-abandonment and exact source-classification rules remain unselected; no
+record. The first-publication mechanism is selected below; guard-unwind/
+cancellation verification, native handoff, receiving abandonment and exact
+source-classification rules remain open; no
 production edit is authorized by this representation decision. The earlier
 child coexisting-storage policy remains selected; exact child field/variant
 spelling must account for both stages before implementation.
@@ -2646,8 +2660,9 @@ manifest and lock are unchanged; retained source/test paths and public API
 additions remain zero. This establishes the intended failing local law before
 a repair; it does not satisfy full R11 or a passing feature witness.
 
-Prepared first-publication repair mechanism, **awaiting user selection**:
-create one additional locked Tokio oneshot pair per standard actor at launch.
+Accepted first-publication repair mechanism (2026-10-09 UTC): the user answered
+**"yeah approved"** to the additional Tokio receipt question. Create one
+additional locked Tokio oneshot pair per standard actor at launch.
 `LocalRetirement` owns its unique sender; the existing actor-task owner retains
 its receiver. Keep the acquired native outcome outside the unwind-catching
 closure, contain the existing termination publication's propagated observer
@@ -2668,15 +2683,16 @@ it needs a further missing-publication mechanism and does not directly supply
 the selected actual Tokio receipt-closure error. These are evaluated reuse
 alternatives, not adopted replacements.
 
-The recommended candidate adds one allocated channel per actor, no new task,
+The selected mechanism adds one allocated channel per actor, no new task,
 dependency or public type beyond the selected notification product. Allocation,
 async-frame size, startup refusal, abrupt task failure, cancellation, guard
 unwind and same-fact replay need concrete owner tests and resource accounting.
 A closed receiver returns the original cause to the producer; abandonment and
 potentially panicking panic-payload destruction require an explicit separate
-disposition, not silent successful notification. No production patch, verified
-repair or permission for this additional channel exists yet. The user question
-presents this mechanism and its consequences before dependent implementation.
+disposition, not silent successful notification. This approves the additional
+channel and its ownership/receiving order, not a receiving-abandonment policy
+or expanded production budget. No production patch or verified repair exists
+yet. Do not re-ask this selected mechanism without new contrary evidence.
 
 Independent first-publication review confirmed the causal source cut and the
 required precursor's intended assertion, using the reported fixture/evidence
@@ -2687,7 +2703,7 @@ termination classifications and affine publication replay denial before
 broader implementation. The two real notification-panic combination remains
 an unexecuted obligation before the second publisher can be retained.
 
-Mandatory Entity compatibility consequence, **design unselected**:
+Mandatory Entity compatibility consequence:
 `entity/bombay.rs` acquires the actor join before consuming its native result
 through `EntityDefinition::retired`; keep the exact result until that existing
 explicit application transfer. Existing `EntityRetirementFailure` in
@@ -2697,14 +2713,14 @@ termination-notification fault is none of those causes; neither returning
 `Ok(())` nor storing it as a user-callback panic is truthful. Its existing
 failure type can be extended with notification-only and coexisting custody,
 without adding another public type or changing the generic Entity runtime.
-Exact variant/field selection still requires user steering.
+The exact existing-enum extension is selected below.
 
 This Entity route currently has no second joined-report publisher. Do not
 populate the selected two-stage product with invented successful retirement
 notification or a closed receipt for a publication that was never attempted.
-Compare retaining the actually produced first-stage common notification result
-in Entity's existing failure contract with explicitly adding a second internal
-report publication. Neither is selected. Stable `EntityRef` remote export,
+Retain the actually produced first-stage common notification result in Entity's
+existing failure contract, as selected below, rather than adding a second
+internal report publication merely to fill the product. Stable `EntityRef` remote export,
 hydration and Entity-specific remote replay remain outside this PRD. Existing
 family runtime receiving already preserves its concrete retirement failure
 rows with their actual entity/activation/mode; reuse it unchanged where proven.
@@ -2721,6 +2737,111 @@ callback; the original Observe cause survives in the actual family failure row;
 resident permits and metrics settle; forced/shutdown/final-callback causes can
 coexist. Dropping only the new notification cause must fail that exact payload
 oracle in both profiles. No such test or Entity API change is implemented.
+
+Accepted Entity first-stage representation (2026-10-09 UTC): the user selected
+**extend existing Entity errors**. Retain the actual
+`termination_notification: Result<(), RetirementNotificationError>`
+beside each current `EntityRetirementFailure` variant's existing causes. Keep
+`ActorRetirementUnavailable`, `ShutdownRequestPanicked`,
+`ForcedRetirementPanicked` and `RetirementPanicked` with unchanged native/callback
+meaning and original opaque payloads. Add
+`TerminationNotificationFailed { error: RetirementNotificationError }` when
+the native join and all existing callbacks succeed but the real termination
+notification receipt contains a fault. The current failure-selection order
+remains; its selected variant retains the independent notification result.
+Return success only when the existing path and that acquired receipt both
+succeed. Receive the first-stage cause after actual actor join and before the
+consuming callback; hold it outside that callback. Preserve metrics/resident
+release and original Entity identity/activation/mode. This keeps
+`EntityDefinition::retired` and the generic Entity runtime unchanged, introduces
+no public type, and gives family receiving the original independent cause.
+
+The rejected alternative changes the application callback to consume the new receipt
+beside the native result, making notification-fault retention/discharge an
+application obligation. That permits application-specific disposition, but
+requires callback migrations and may destroy the cause inside a panicking
+consumer, as with its existing consuming native transfer. Merely adding a
+second internal report publisher to fit the roots/children product introduces
+an unproved extra publication with no current Entity consumer; it is not the
+recommended repair. No Entity report-export API is selected by either option.
+The selected existing-enum extension is a public variant/field change; its
+revised scope checkpoint must precede production edits. Independent source
+review confirmed the exhaustive existing cause precedence and coexistence
+without executing a new Entity regression. Do not re-ask this representation
+absent new contrary evidence.
+
+Accepted receiving-abandonment policy (2026-10-09 UTC): the user selected
+**explicit surrender; continue cleanup**:
+cancelling a borrowing receive preserves the original receiver and independently
+acquired native/notification destinations in their existing owner. Dropping
+the entire owning receiving capability explicitly surrenders its unread
+results; it cannot be reported as successful notification, successful remote
+stop, or proof of nonexecution. Existing producer/cleanup tasks continue their
+already owned retirement, without a new retention registry or detached task.
+Keep private first-stage receivers alive through actual actor join wherever
+the existing receiving owner remains live.
+
+If complete owner abandonment makes `oneshot::send` return the original cause,
+its disposal must not unwind before actual owned activation settlement. The
+existing producer must retain that refused original through its cleanup barrier
+before the selected explicit discharge. The exact fallback custody/disposal
+mechanism remains a separate implementation prerequisite; a bare ignored send
+or immediate payload drop is not accepted evidence. Guard paths retain their
+actual cancellation/panic classification and cannot claim unavailable native
+or asynchronous cleanup. Standard abort/double-panic/unbounded recursive panic
+destruction is not represented as recovered retirement.
+
+The rejected alternative provides an explicitly configured typed fallback consumer
+after primary-owner abandonment. It can retain abandoned results for another
+live application consumer, but requires an additional real receiving owner,
+public selection/retention contract and concrete ordinary-Rust proof; it cannot
+be an implicit global diagnostic store, leak or dynamic registry. The recommended
+explicit-discharge policy adds no alternate receiving API. This is
+not permission to erase causes held by a still-live parent or by an
+independently cancellable shared report observer.
+
+Selected refused-original custody mechanism under delegated recommendation
+(2026-10-09 UTC):
+existing root cleanup and child projection tasks can hold the private first
+receiver independently of a dropped public receiving future or parent join
+handle; the Entity retirement task can hold it across its native join. Those
+live-owner cases cannot justify a universal no-refusal claim. Dropping the
+consuming startup/retirement future or the whole `OwnedTask` can drop its sole
+receiver before actor completion, making Tokio's exact `send Err(original)`
+reachable.
+
+Use ordinary private
+`(LocalOutcome<B, Descendants>, Option<RetirementNotificationError>)` as
+`LocalRetirement`'s existing `Retirement::Output`. The optional value owns only
+an available original fault returned by refused receipt delivery; it does not
+duplicate a successfully transferred receipt or store delivery history. The
+existing actor task receives both, settles the original native residual, then
+disposes the refused cause under the selected abandonment policy. Public/native
+task output remains unchanged. This is an affine payload's custody across the
+existing settlement barrier, no new wrapper, public type, task, dependency or
+generic retirement method. Incremental estimate: +15–30 production lines in
+`launch.rs` beyond the channel mechanism, not a measured patch. Production
+edits still require the concrete expanded-scope record.
+
+The alternative proves receiver retention in every existing owner and startup/
+drop cut, leaving no refused payload during settlement. Current source does
+not establish that invariant, so ordinary live-owner examples alone are
+insufficient. A new retention registry, leaked cause or detached fallback task
+is not justified. Actual guard `Panicked`/`Cancelled` paths synchronously drop
+`Retirement::Output` and contain no acquired residual to settle; the return
+product does not turn them into established asynchronous retirement. Subsequent
+payload-disposal panic can remain an actual failure after settlement; exact
+disposal policy and guard assertions still require their concrete law/proof.
+
+Focused first-repair preparation estimates +150–275 production lines across
+the existing launch, root/child/startup receiving, common terminal and Entity
+owners, before this optional return product, report derivation/attachment and
+public migrations. This is an independently reviewed conditional estimate,
+not a production delta, bounded stage approval or temporary public API. The
+two-stage public product cannot contain a fabricated successful second
+notification before its real report publication exists. Establish private
+first-owner laws first; public delivery must integrate the actual second
+publisher and already selected final receiving contracts.
 
 Independent startup-conservation review (2026-10-09 UTC), no source edits:
 `local/effects/creation.rs` can return the child's original initialization
@@ -2743,7 +2864,7 @@ uses its invariant panic for unexpected `SpawnError` phases, including
 with a focused regression before deciding on any repair. This finding does
 not authorize expanding the existing startup contract.
 
-Prepared local-retirement implementation stage, **not yet authorized**:
+Historical local-retirement implementation-stage proposal:
 
 - Exact blocker: a service inside Application work cannot currently obtain a
   joined root report, and child/native products do not independently conserve
@@ -2767,7 +2888,7 @@ Prepared local-retirement implementation stage, **not yet authorized**:
   panic/cancellation while retaining root, notification and acquired family
   receipts; extend `child_projection_panic` with an actual Observe waiter
   panic followed by the existing consuming projection panic. Assert both
-original causes, genuine projector task identity, original actor/origin and
+  original causes, genuine projector task identity, original actor/origin and
   continued sibling joining. Sending the cause after conversion or dropping
   independent native receiving must fail those exact assertions.
   First protect the actual first-publication native/state law recorded above,
@@ -2798,8 +2919,8 @@ original causes, genuine projector task identity, original actor/origin and
 - Expected public additions: one common small report, its two closed
   assessment enums, the selected common notification error and the named
   two-stage notification receipts: five types, zero removals. The report
-  names/accessors and receipt product are selected; the first publication's
-  repair mechanism and final child field/variant spelling remain unselected.
+  names/accessors, receipt product and first-publication repair mechanism are
+  selected; final child field/variant spelling remains unselected.
   Reuse the approved ordinary existing lifecycle capabilities;
   do not add another public observation wrapper
   merely to hide existing concrete composition.
@@ -2829,11 +2950,79 @@ cumulative ceiling of 210 paths and 1,858 conservative functional lines.
 Retain the separately accounted downloaded snapshots and earlier test fixtures;
 the proposed +2,000 fixture ceiling is additional stage work, not a replacement
 for their existing accounting. The report/access/error/receipt selections are
-recorded above. Before production edits, settle the first-publication repair,
-final two-stage child fields/variants, Entity receiving, receiving-abandonment
+recorded above, including the first-publication Tokio receipt and Entity error
+extension. Before production edits, settle any refused-original fallback
+custody/disposal, final two-stage child fields/variants, receiving-abandonment
 policy and actual classification rules, record the revised complete path union
 and budget, then obtain explicit expanded-scope authorization required
 by AGENTS.md. No cap or design in this proposal is adopted by preparation.
+
+Delegated expanded-scope checkpoint (2026-10-09 UTC), before production edits:
+select the recommended complete local-retirement stage under the user's
+automatic recommendation authorization. Its smallest existing public failing
+regression is the recorded native-state conservation precursor (debug and
+optimized exit 101). Keep that law and the actual held-task/guard/replay
+regressions passing before broadening to joined-report publication or caller
+migration. This stage implements the selected local R11 prerequisite only;
+full AUTH1/NET1 remote witnesses remain unexecuted and mandatory.
+
+The checked conservative impact union contains 51 existing paths: 18 owning
+source paths, 17 integration callers, eight example callers, five current
+guidance paths and three existing compile fixtures. Source additions to the
+earlier inventory are `entity/{bombay,family,mod}.rs`,
+`worker_preparation.rs` and `actor_execution.rs`; the last two may need owning
+test/caller changes rather than new production semantics. Additional integration
+paths are `tests/{entity_runtime,entity_family,entity_errors,entity_directory}.rs`.
+Every existing path was verified on the tracked tree. Up to three additional
+descriptive compile-pass/fail/diagnostic paths may establish runtime-issued
+report construction denial. The four decision/index documents are already
+accounted. This is an impact envelope, not a claim that all listed files
+require edits.
+
+Recommended adopted cumulative path ceiling: 230, starting from the existing
+166-path correction envelope; the identified 54 potential additions reach 220.
+Expected local production growth: +1,000–1,800 lines; adopted stage ceiling
++2,200 net production lines, for at most 2,958 conservative cumulative
+functional lines with the existing 758. Adopt +3,000 net stage test/fixture
+lines, additional to the prior recorded correction tests. Five new public
+types and zero removals: `ActorRetirementReport`, `RetirementAssessment`,
+`ActorFailureAssessment`, `RetirementNotificationError`,
+`ActorNotificationReceipts`. Existing public enums/capabilities gain the
+selected fields/variants/methods; no new trait, macro, dependency, registry,
+mailbox, lifecycle owner or executor task is authorized. Record actual
+production/tests/public-surface changes at each logical checkpoint; raise a
+recommended envelope explicitly before exceeding it rather than hiding growth
+in separate branches or commits.
+
+Reuse the existing typed child bindings, runtime cleanup/projector/actor tasks,
+Observe shared facts, Tokio oneshot transfer, standard owned sums/products,
+native residuals and original result lanes. Replace obsolete native-root-as-
+cleanup callbacks with independent native and notification receiving. Root
+receiving keeps `Result<ActorNotificationReceipts, RecvError>` for the actual
+outer transfer: producer disappearance cannot invent either inner receipt.
+Choose `notifications: ActorNotificationReceipts` in existing actor/projector
+child failure records and a `NotificationsFailed` variant for coexisting
+notification faults with a successfully retained projected native value.
+This updates their original single-stage spelling without duplicating origin.
+Use the already locked `thiserror` for the flat common error; retain opaque
+standard panic payloads and exact actual receiving errors.
+
+On receiving-owner abandonment, retain refused originals in existing producer
+frames until their owned cleanup barrier completes, then explicitly dispose
+them. An actual later disposal panic may remain its genuine task failure;
+never claim cleanup or native recovery unavailable at guard/abort cuts. Root
+native/notification transfer refusals similarly cannot preempt existing family
+shutdown. No new fallback consumer or unbounded retention store is selected.
+
+Before the first production edit, finish the fresh selected-dependency/source
+verification and freeze the concrete shared contracts. Coordinator owns
+`terminal.rs`, public exports, Application receiving, manifests/lock, questions,
+scope accounting and integration. Isolate launch/child/Entity contributions
+where those contracts permit; no conflicting shared-file edits. Integrate
+early and run focused debug/optimized laws and intended inversions before
+mechanical public migrations. Required combined checks, minimization, review,
+CI and actual PR merges still gate delivery. This expanded stage is authorized
+by the user's delegated selection, not by the earlier 770-line allowance.
 
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
@@ -2877,6 +3066,43 @@ Prepared independent two-assessment oracles, all **unexecuted**:
 Use actual outside task/resource acquisition and original native lanes as the
 oracle, not a second call to the classifier. The failure scope is selected;
 exact classification rules and the implementation stage remain prerequisites.
+
+Fresh standard-owner classification preparation (2026-10-09 UTC), no edits:
+
+| Actual acquired evidence | Consequence of already selected independent assessments |
+| --- | --- |
+| Actor join or genuine activation work remains pending | No retirement report yet; inability/incomplete is not a substitute for the required actual join. |
+| Standard mailbox/address/control/interpreter retirement is acquired, every retained activation task is settled, and every actually created descendant has established resource proof | Retirement establishment is eligible independently of known native failures. `Prepared`/`Uncommitted`/`Retired` phase spelling alone is insufficient. |
+| A recorded Behavior, host, task, descendant or cleanup failure exists | Preserve known failure presence. Complete resource proof can coexist; missing proof does not turn the known cause into incomplete assessment. |
+| Fully settled normal stop, exhaustion or ordinary owner-retirement request, with complete coverage and no recorded scoped failures | Neither requested disposition alone is a failure; complete no-failure assessment still requires all owned proof, not an empty vector. |
+| Actual task panic/abrupt cancellation or residual-free panic/cancellation without full acquired owner results | Do not establish retirement; retain the actual known failure separately and preserve its original native cause. |
+| A real descendant's proof is missing, with no known scoped failure | Do not establish full subtree retirement or complete no-failure assessment. A typed genuinely empty child product is a distinct positive identity. |
+| Quiet startup initialization failure transferred into the Core creation receipt | Preserve its known failure assessment before native conversion, even when the later retirement binding contains no primary error or is absent from retirement order. Allocation refusal started no child task. |
+| First termination-notification fault acquired before report derivation | The already known runtime cause prevents complete no-failure assessment; it does not replace the original native completion or committed termination fact. |
+| Second report-notification fault occurs after report commitment | Keep that report immutable and preserve the new cause independently; a later parent subtree assessment can include its own subsequently acquired descendant/runtime causes. |
+
+These consequences follow the approved ownership, scope, publication timing
+and two-assessment law; do not re-ask their independence. Establishing resource
+proof across a caught cleanup panic still needs the actual standard-owner
+observable witness. A `RetirementPanicked` label neither defeats independently
+proved completion nor establishes missing completion. Runtime owners must
+retain descendant assessments before opaque projection, then aggregate them
+through existing bindings and the acquired `CapabilityRetirement`/`LocalResidual`
+while leaving original child values/errors in their owning lanes. This is
+current required evidence, not permission for a second classifier trait or
+traversal-history state.
+
+Selected refusal boundary under delegated recommendation (2026-10-09 UTC):
+actual recorded final runtime-operation failures, including child allocation
+refusal, contribute failure presence even when the actor handles the original
+typed result. Keep resource establishment independent and retain the exact
+original refusal in its existing action/creation receipt. The rejected
+alternative limits the summary to terminal/task/cleanup faults, leaving these
+failed runtime requests outside it. Ordinary negative domain replies do not
+become runtime faults, and retryable capacity pressure is not automatically a
+final failed operation. Use the existing owning contract's distinction, never
+generic `Err` introspection or a new settlement-classifier trait. This changes
+no supervision/propagation policy and stores no event history.
 Existing raw-task controls are in `launch.rs`, actual
 public Behavior failure in `tests/run_with.rs`, held/late activation settlement
 in `local/environment.rs`, multi-task custody in `local/execution.rs`, and
@@ -2945,7 +3171,7 @@ were subsequently selected above; their implementation remains scope-gated.
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +863 / -41 / net +822.
+Documentation: +1092 / -42 / net +1050.
 Previously recorded pinned-Nix law-manifest controls pass all nine in debug
 and optimized builds; they were not rerun for these documentation edits.
 Current document-link and whitespace checks pass; all twenty-five unexecuted
