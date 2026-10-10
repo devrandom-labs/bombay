@@ -51,6 +51,19 @@ E0275 diagnostics. The retained library lacks the inferred API, so the feature
 worktree suite remains red. Independent source-port and factory reviews have
 not proved the joint alias/recursive law; these candidates remain unretained.
 
+The original creation interpreter now has a focused custody falsifier: dropping
+one pending startup attempt leaves an empty request/reply row, no joined child,
+and destroys the original definition. Debug and optimized private original-
+contract executions fail the intended law under pinned Rust 1.99. Before the
+fixture was retained here: one owning creation test module, tests +205/-5,
+production/API/state/module delta zero. It checks exactly one original allocation,
+content and available correlation/provenance through the complete returned lanes.
+This deliberately red regression requires startup authority and join to enter
+parent-owned custody before awaiting; cleanup cancellation alone does not return
+ownership. Actual locked registry debug and optimized executions both fail; strict package
+Clippy and formatting pass. The paired owning PRD contains its law and aggregate
+checkpoint.
+
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried
 actor-owned capabilities. Presence in that map does not certify an execution

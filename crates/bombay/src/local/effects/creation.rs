@@ -670,13 +670,15 @@ mod child_projection_panic {
     use std::task::{Context, Poll, Waker};
 
     use behavior::{
-        ActionSettlement, Actions, BehaviorActed, BehaviorBase, ChildCreationOutcome, ChildHead,
-        CreateChild, CreationId, CreationKind, CreationSequence, CreationSettlement, Creations,
-        EventLayer, ItemSettlement, Never, NoSends, SendLayer, SettledItem, Step, Stopped,
+        ActionSettlement, Actions, BehaviorActed, BehaviorBase, Births, ChildCreationOutcome,
+        ChildHead, CreateChild, CreationId, CreationInterpretationCustody, CreationKind,
+        CreationSequence, CreationSettlement, Creations, EventLayer, Here, InterpretCreations,
+        InterpretItem, InterpretationProgress, ItemSettlement, Never, NoSends, SendLayer,
+        SettledItem, Step, Stopped, User,
     };
     use behavior_actors::{ShutdownRequested, StopOnShutdown};
     use bombay_engine::Completion;
-    use communication::Config;
+    use communication::{Config, mailbox_channel};
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
     use tokio::task::{Id, id};
@@ -688,7 +690,12 @@ mod child_projection_panic {
     use crate::local::children::ChildBindings;
     use crate::local::children::StructuralOrigins;
     use crate::local::effects::ActionInterpreter;
-    use crate::local::effects::{ApplicationCapabilities, ApplicationCapabilityInputs, NoParent};
+    use crate::local::effects::observation::TerminationObservations;
+    use crate::local::effects::reports::LocalTerminalReports;
+    use crate::local::effects::timers::LocalTimers;
+    use crate::local::effects::{
+        ApplicationCapabilities, ApplicationCapabilityInputs, NoParent, RetireCapabilities,
+    };
     use crate::local::endpoint::ExtractLocalEndpoint;
     use crate::terminal::{ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal};
     use crate::{ActorSpace, ActorSpaces};
@@ -803,6 +810,199 @@ mod child_projection_panic {
                 retirement => Self { origin, retirement },
             }
         }
+    }
+
+    struct StartupChildRetirement {
+        origin: ChildOrigin<ProjectionParent, ChildHead>,
+        retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+    }
+
+    impl
+        ProjectTerminal<
+            ChildOrigin<ProjectionParent, ChildHead>,
+            ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+        > for StartupChildRetirement
+    {
+        fn project(
+            origin: ChildOrigin<ProjectionParent, ChildHead>,
+            retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+        ) -> Self {
+            Self { origin, retirement }
+        }
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep the actual pending startup, parent retirement and complete original custody oracle together"
+    )]
+    #[expect(
+        clippy::default_trait_access,
+        reason = "the concrete constructor infers the binding type; the non-injective ChildBindings alias cannot name its Default implementation"
+    )]
+    fn pending_creation_cancellation_retains_child_custody() {
+        let runtime = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("one actual local actor executor");
+        let entries = Arc::new(vec![71, 73, 79]);
+        let original_allocation = entries.as_ptr();
+        let original_owner = Arc::downgrade(&entries);
+        let mut creations = CreationSequence::new();
+        let creation_id = creations.issue().expect("one actual creation identity");
+        let previous = creations
+            .issue()
+            .expect("one explicit previous incarnation identity");
+        let mut batch = Some(Creations::one(CreateChild::replacement(
+            creation_id,
+            previous,
+            ProjectionChild {
+                disposition: ChildDisposition::Continue,
+                entries,
+            }
+            .stop_on_shutdown(),
+        )));
+        let (pending, retirement, progress, route) = runtime.block_on(async {
+            let spaces = Arc::new(ProjectionSpaces {
+                parents: ActorSpace::new(),
+            });
+            let (control, source_owner, source_mailbox, source_receiver) =
+                mailbox_channel::<
+                    <StopOnShutdown<ProjectionParent> as behavior::Behavior>::Event,
+                    User<MailAddr, Never>,
+                >(Config::new(1));
+            let (terminal_sender, terminal_receiver) = oneshot::channel();
+            let mut capabilities = ApplicationCapabilities::<
+                StopOnShutdown<ProjectionParent>,
+                ProjectionSpaces,
+                NoParent,
+                ChildBindings<
+                    StopOnShutdown<ProjectionParent>,
+                    StartupChildRetirement,
+                    StructuralOrigins<ProjectionParent>,
+                >,
+                StructuralOrigins<ProjectionParent>,
+            >::new_with_bindings(
+                ApplicationCapabilityInputs {
+                    address: MailAddr::APPLICATION_ROOT,
+                    actor_spaces: spaces,
+                    allocations: ApplicationAddresses::new(),
+                    control,
+                    timers: LocalTimers::new(),
+                    observations: TerminationObservations::new(),
+                    terminal_reports: LocalTerminalReports::new(terminal_sender),
+                },
+                Default::default(),
+            );
+            let mut routed = None;
+            <_ as InterpretItem<
+                Creations<CreateChild<MailAddr, StopOnShutdown<ProjectionChild>>>,
+                (),
+                Here,
+            >>::interpret_item(&mut capabilities, &mut batch, &mut routed)
+            .await;
+            let Some(ItemSettlement::Accepted(routed)) = routed else {
+                panic!("the real batch reservation returns its original routed child");
+            };
+            let request = routed
+                .into_one()
+                .unwrap_or_else(|_| panic!("one original child keeps exactly one routed request"));
+            let route = request.route();
+            let mut progress = Some(InterpretationProgress::Interpreting(
+                CreationInterpretationCustody::Children(vec![(Some(request), None)]),
+            ));
+            let pending = {
+                let mut attempt = pin!(
+                    <Births<StopOnShutdown<ProjectionChild>> as InterpretCreations<
+                        MailAddr,
+                        _,
+                        (),
+                        Here,
+                    >>::interpret_creations(&mut progress, &mut capabilities)
+                );
+                attempt
+                    .as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+            };
+            let retirement = capabilities.retire().await;
+            // Let the detached startup task receive its real owner cancellation
+            // and complete cleanup before making the lifetime observation.
+            for _ in 0..16 {
+                tokio::task::yield_now().await;
+            }
+            drop((
+                source_owner,
+                source_mailbox,
+                source_receiver,
+                terminal_receiver,
+            ));
+            (pending, retirement, progress, route)
+        });
+        assert!(matches!(pending, Poll::Pending));
+        let Some(InterpretationProgress::Interpreting(CreationInterpretationCustody::Children(
+            mut rows,
+        ))) = progress
+        else {
+            panic!("one pending original creation retains its routed custody row");
+        };
+        assert_eq!(rows.len(), 1);
+        let (request, received) = rows.pop().expect("one original routed row");
+        eprintln!(
+            "original pending creation: request={}, reply={}, joined={}, child failures={}, surviving definitions={}",
+            request.is_some(),
+            received.is_some(),
+            retirement.descendants.0.len(),
+            retirement.descendants.1.0.len(),
+            original_owner.strong_count()
+        );
+        let returned = match (request, received) {
+            (Some(request), None) => Some(request),
+            (
+                None,
+                Some(ItemSettlement::Rejected { item, .. } | ItemSettlement::Corrupt { item, .. }),
+            ) => Some(item),
+            (
+                None,
+                Some(ItemSettlement::Accepted(
+                    ChildCreationOutcome::InitializationRejected { creation, .. }
+                    | ChildCreationOutcome::InitializationPanicked { creation }
+                    | ChildCreationOutcome::HostRejected { creation, .. },
+                )),
+            ) => Some(creation),
+            (None, Some(ItemSettlement::Accepted(ChildCreationOutcome::Established(child)))) => {
+                assert_eq!(child.id(), creation_id);
+                assert_eq!(child.kind(), CreationKind::replacement(previous));
+                None
+            }
+            (None, Some(ItemSettlement::Blocked { prerequisite, .. })) => match prerequisite {},
+            (None, None) => None,
+            (Some(_), Some(_)) => panic!("one creation cannot own both request and reply"),
+        };
+        let returned_entries = returned.map(|request| {
+            assert_eq!(request.id(), creation_id);
+            assert_eq!(request.kind(), CreationKind::replacement(previous));
+            assert_eq!(request.route(), route);
+            let (request, _) = request.into_parts();
+            let (_, child, _) = request.into_parts();
+            child.into_inner().entries
+        });
+        let entries = match (&returned_entries, retirement.descendants.0.as_slice()) {
+            (Some(entries), []) => entries,
+            (None, [terminal]) => {
+                assert_eq!(terminal.origin.nonce(), route);
+                let child = terminal
+                    .retirement
+                    .behavior()
+                    .expect("joined child retirement retains its original definition");
+                &child.base().entries
+            }
+            (None, []) => panic!(
+                "disposing a pending original creation must retain its original definition in progress, exact reply, or joined child retirement"
+            ),
+            _ => panic!("one original child definition has exactly one retained owner"),
+        };
+        assert_eq!(entries.as_ptr(), original_allocation);
+        assert_eq!(entries.as_slice(), [71, 73, 79]);
     }
 
     #[test]
