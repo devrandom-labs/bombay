@@ -69,6 +69,20 @@ struct ProxyParent;
 )]
 impl ProxyParent {}
 
+// Existing birth modes retain the same pure contract, including closed sums.
+type Services = bombay::behavior::Births<Proxy>;
+type MixedServices = bombay::behavior::Births<
+    bombay::behavior::ChildChoice<Child, bombay::behavior::ChildChoice<Proxy, Never>>,
+>;
+
+struct ServiceParent;
+#[bombay::actor(message = Never, births = Services, creation_settlements = retain_for_retirement)]
+impl ServiceParent {}
+
+struct MixedServiceParent;
+#[bombay::actor(message = Never, births = MixedServices, creation_settlements = retain_for_retirement)]
+impl MixedServiceParent {}
+
 // Sender inference remains usable for pure Behavior authoring without a local host.
 struct SenderIndependent {
     total: u64,
@@ -108,6 +122,18 @@ fn main() {
     assert!(pure_parent.creates.is_empty());
     assert!(matches!(pure_parent.sends, bombay::behavior::NoSends));
     assert!(matches!(pure_parent.become_, Step::Continue));
+
+    let services = bombay::behavior::initialize(&mut ServiceParent)
+        .expect("an existing birth mode preserves pure authoring");
+    assert!(services.creates.is_empty());
+    assert!(matches!(services.sends, bombay::behavior::NoSends));
+    assert!(matches!(services.become_, Step::Continue));
+
+    let mixed_services = bombay::behavior::initialize(&mut MixedServiceParent)
+        .expect("a heterogeneous birth mode preserves pure authoring");
+    assert!(mixed_services.creates.is_empty());
+    assert!(matches!(mixed_services.sends, bombay::behavior::NoSends));
+    assert!(matches!(mixed_services.become_, Step::Continue));
 
     fn accepts_behavior<B: Behavior>() {}
     accepts_behavior::<SenderAware>();
