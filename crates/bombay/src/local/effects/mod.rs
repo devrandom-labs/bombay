@@ -486,6 +486,8 @@ pub(crate) struct ActionInterpreter<Capabilities> {
 
 #[cfg(test)]
 mod atomic_interpretation_contract {
+    use crate::ActorCustody;
+
     use core::convert::Infallible;
     use core::future::Future;
     use core::pin::pin;
@@ -1713,23 +1715,26 @@ mod atomic_interpretation_contract {
         assert!(admitted.is_ok());
         assert!(released.is_ok());
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    terminal_report: retirement_terminal_report,
+                    retirement_failures: retirement_native_failures,
+                    additional_failures: retirement_additional_failures,
+                    child_failures: (),
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                },
             interpretation: retirement_interpretation,
             source: retirement_source,
-            received_interpretation: retirement_received_interpretation,
-            received_source: retirement_received_source,
-            source_index: retirement_source_index,
-            acquired_ingress: retirement_acquired_ingress,
-            terminal_report: retirement_terminal_report,
-            retirement_failures: retirement_native_failures,
-            additional_failures: retirement_additional_failures,
-            child_failures: (),
-            behavior,
             settlements,
-            control,
-            user,
-            descendants,
-            capability_failures,
-            unread_owner_cancellation,
             completion,
         } = retirement
         else {
@@ -3041,6 +3046,8 @@ mod live_capability_retirement {
 
 #[cfg(test)]
 mod capability_task_retirement {
+    use crate::ActorCustody;
+
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::launch::{ActorSpace, spawn_local_execution};
     use crate::local::children::ChildBindings;
@@ -4981,23 +4988,26 @@ mod capability_task_retirement {
             disposition,
         ) = match retirement {
             ActorRetirement::Completed {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        terminal_report,
+                        retirement_failures,
+                        additional_failures,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    },
                 interpretation,
                 source,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                terminal_report,
-                retirement_failures,
-                additional_failures,
                 settlements,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
                 completion,
             } => (
                 behavior,
@@ -5020,23 +5030,26 @@ mod capability_task_retirement {
                 Ok(completion),
             ),
             ActorRetirement::CapabilityFailed {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        terminal_report,
+                        retirement_failures,
+                        additional_failures,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    },
                 interpretation,
                 source,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                terminal_report,
-                retirement_failures,
-                additional_failures,
                 settlements,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
                 error,
             } => (
                 behavior,
@@ -5161,23 +5174,26 @@ mod capability_task_retirement {
             .pop()
             .expect("whole genuine child result after parent join");
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation: child_retirement_received_interpretation,
+                    received_source: child_retirement_received_source,
+                    source_index: child_retirement_source_index,
+                    acquired_ingress: child_retirement_acquired_ingress,
+                    terminal_report: child_retirement_terminal_report,
+                    retirement_failures: child_retirement_native_failures,
+                    additional_failures: child_retirement_additional_failures,
+                    behavior: child_behavior,
+                    control: child_control,
+                    user: child_user,
+                    descendants: child_descendants,
+                    child_failures: (),
+                    capability_failures: child_capabilities,
+                    unread_owner_cancellation: child_unread,
+                },
             interpretation: child_retirement_interpretation,
             source: child_retirement_source,
-            received_interpretation: child_retirement_received_interpretation,
-            received_source: child_retirement_received_source,
-            source_index: child_retirement_source_index,
-            acquired_ingress: child_retirement_acquired_ingress,
-            terminal_report: child_retirement_terminal_report,
-            retirement_failures: child_retirement_native_failures,
-            additional_failures: child_retirement_additional_failures,
-            behavior: child_behavior,
             settlements: child_settlements,
-            control: child_control,
-            user: child_user,
-            descendants: child_descendants,
-            child_failures: (),
-            capability_failures: child_capabilities,
-            unread_owner_cancellation: child_unread,
             completion: child_completion,
         } = child.retirement
         else {

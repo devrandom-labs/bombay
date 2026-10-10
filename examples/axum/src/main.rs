@@ -2,6 +2,7 @@
 //! outside the Level-1 Behavior. Axum owns extraction and responses; Bombay
 //! owns local activation, delivery, exact rejection recovery, and termination.
 
+use bombay::ActorCustody;
 use bombay::{ApplicationOutcome, ProjectTerminal};
 use tokio::runtime::Builder;
 mod domain;
@@ -74,24 +75,27 @@ pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
         origin,
         terminal:
             ActorRetirement::Completed {
-                child_failures: (),
-                capability_failures,
-                unread_owner_cancellation,
-                behavior,
+                custody:
+                    ActorCustody {
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                    },
                 settlements,
-                control,
-                user,
-                descendants,
                 completion,
                 interpretation,
                 source,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             },
     } = terminal
     else {

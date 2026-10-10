@@ -3,6 +3,7 @@
 //! shutdown. Behavior owns the closed roles and routes, Behavior Actors owns
 //! the shutdown plan, and Bombay only interprets and retains the result.
 
+use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
 use bombay::behavior::{
     BehaviorBase, BehaviorSettlements, ChildHead, ChildTail, Children, ClassifySettlement,
@@ -196,24 +197,27 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
-                child_failures: (journal_failures, (indexer_failures, ())),
-                capability_failures,
-                unread_owner_cancellation,
+                custody:
+                    ActorCustody {
+                        child_failures: (journal_failures, (indexer_failures, ())),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        control,
+                        user,
+                        descendants,
+                        behavior,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                    },
                 settlements,
-                control,
-                user,
-                descendants,
                 completion,
-                behavior,
                 interpretation,
                 source,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             },
     } = terminal
     else {
@@ -271,24 +275,27 @@ where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
-        child_failures: (),
-        capability_failures,
-        unread_owner_cancellation,
-        behavior,
+        custody:
+            ActorCustody {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                behavior,
+                control,
+                user,
+                descendants,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+            },
         settlements,
-        control,
-        user,
-        descendants,
         completion,
         interpretation,
         source,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
     } = terminal
     else {
         panic!("the indexer must complete its explicit shutdown")
@@ -320,24 +327,27 @@ where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
-        child_failures: (),
-        capability_failures,
-        unread_owner_cancellation,
-        behavior,
+        custody:
+            ActorCustody {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                behavior,
+                control,
+                user,
+                descendants,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+            },
         settlements,
-        control,
-        user,
-        descendants,
         completion,
         interpretation,
         source,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
     } = terminal
     else {
         panic!("the journal must complete its explicit shutdown")

@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -544,23 +545,26 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
     let (behavior, settlements, user, mut descendants, child_failures, capability_failures) =
         match profile_retirement {
             Ok(ActorRetirement::Completed {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation: None | Some(()),
+                    },
                 interpretation,
                 source,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
                 settlements,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation: None | Some(()),
                 completion,
             }) => {
                 assert!(interpretation.is_none());
@@ -584,23 +588,26 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
                 )
             }
             Ok(ActorRetirement::OwnerCancelled {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    },
                 interpretation,
                 source,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
                 settlements,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
             }) => {
                 assert!(interpretation.is_none());
                 assert!(source.is_none());
@@ -642,9 +649,13 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     match child_retirement {
         ActorRetirement::OwnerCancelled {
-            child_failures: (),
-            capability_failures,
-            unread_owner_cancellation,
+            custody:
+                ActorCustody {
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    ..
+                },
             ..
         } => {
             assert!(capability_failures.is_empty());
@@ -691,13 +702,17 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
     for (_, _, retirement) in retirements.iter() {
         let (settlements, user, descendants, capability_failures) = match retirement {
             Ok(ActorRetirement::Completed {
-                child_failures: (),
-                capability_failures,
-                unread_owner_cancellation: None | Some(()),
+                custody:
+                    ActorCustody {
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation: None | Some(()),
+                        control,
+                        user,
+                        descendants,
+                        ..
+                    },
                 settlements,
-                control,
-                user,
-                descendants,
                 completion,
                 ..
             }) => {
@@ -706,13 +721,17 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
                 (settlements, user, descendants, capability_failures)
             }
             Ok(ActorRetirement::OwnerCancelled {
-                child_failures: (),
-                capability_failures,
-                unread_owner_cancellation,
+                custody:
+                    ActorCustody {
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        control,
+                        user,
+                        descendants,
+                        ..
+                    },
                 settlements,
-                control,
-                user,
-                descendants,
                 ..
             }) => {
                 assert!(unread_owner_cancellation.is_none());

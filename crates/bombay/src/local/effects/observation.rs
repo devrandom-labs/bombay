@@ -974,6 +974,7 @@ mod tests {
 
 #[cfg(test)]
 mod installed_shutdown_contract {
+    use crate::ActorCustody;
 
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, ChildCreationOutcome,
@@ -1355,24 +1356,27 @@ mod installed_shutdown_contract {
         assert_eq!(origin.address(), direct_endpoint.address());
         assert_eq!(origin.nonce(), 0);
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    terminal_report: retirement_terminal_report,
+                    retirement_failures: retirement_native_failures,
+                    additional_failures: retirement_additional_failures,
+                    child_failures: (),
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                },
             interpretation: retirement_interpretation,
             source: retirement_source,
-            received_interpretation: retirement_received_interpretation,
-            received_source: retirement_received_source,
-            source_index: retirement_source_index,
-            acquired_ingress: retirement_acquired_ingress,
-            terminal_report: retirement_terminal_report,
-            retirement_failures: retirement_native_failures,
-            additional_failures: retirement_additional_failures,
-            child_failures: (),
-            behavior,
             settlements,
-            control,
-            user,
-            descendants,
             completion,
-            capability_failures,
-            unread_owner_cancellation,
         } = retirement
         else {
             panic!("direct completed result")
@@ -1405,24 +1409,27 @@ mod installed_shutdown_contract {
         assert_eq!(origin.address(), nested_endpoint.address());
         assert_eq!(origin.nonce(), 1);
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    terminal_report: retirement_terminal_report,
+                    retirement_failures: retirement_native_failures,
+                    additional_failures: retirement_additional_failures,
+                    child_failures: (),
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                },
             interpretation: retirement_interpretation,
             source: retirement_source,
-            received_interpretation: retirement_received_interpretation,
-            received_source: retirement_received_source,
-            source_index: retirement_source_index,
-            acquired_ingress: retirement_acquired_ingress,
-            terminal_report: retirement_terminal_report,
-            retirement_failures: retirement_native_failures,
-            additional_failures: retirement_additional_failures,
-            child_failures: (),
-            behavior,
             settlements,
-            control,
-            user,
-            descendants,
             completion,
-            capability_failures,
-            unread_owner_cancellation,
         } = retirement
         else {
             panic!("nested completed result")

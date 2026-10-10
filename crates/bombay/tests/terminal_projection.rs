@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, ChildRole, Never};
 use bombay::prelude::{
@@ -125,12 +126,16 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
         origin,
         terminal:
             ActorRetirement::Completed {
-                capability_failures,
-                unread_owner_cancellation,
-                control,
-                user,
-                descendants,
-                child_failures: (),
+                custody:
+                    ActorCustody {
+                        capability_failures,
+                        unread_owner_cancellation,
+                        control,
+                        user,
+                        descendants,
+                        child_failures: (),
+                        ..
+                    },
                 completion,
                 ..
             },

@@ -1,5 +1,7 @@
 //! The caller names domain roles and owns every retirement without a terminal enum.
 
+
+use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Never};
 use bombay::{ActorRetirement, Application, ChildRetirementSelection};
@@ -58,7 +60,13 @@ async fn main() {
     assert_eq!(value, 1);
     let (origin, retirement) = cleanup.expect("joined cleanup");
     assert_eq!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed { descendants, .. } = retirement else {
+    let ActorRetirement::Completed {
+custody: ActorCustody {
+descendants,
+..
+},
+..
+} = retirement else {
         panic!("root completed after its real counter reply");
     };
     assert_eq!(descendants.len(), 3);
@@ -76,7 +84,13 @@ async fn main() {
             .child_retirement(&Replica)
             .map(|replica| (replica.origin, core::ptr::from_ref(&*replica.retirement)));
         if let Some(audit) = report.child_retirement(&Audit) {
-            let ActorRetirement::OwnerCancelled { behavior, .. } = &*audit.retirement else {
+            let ActorRetirement::OwnerCancelled {
+custody: ActorCustody {
+behavior,
+..
+},
+..
+} = &*audit.retirement else {
                 panic!("root retirement cancelled the audit child");
             };
             assert_eq!(behavior.base().entries.as_ptr(), allocation);
@@ -91,7 +105,13 @@ async fn main() {
                 assert!(primary_before.is_none());
                 assert!(replica_before.is_none());
                 audit_addresses.push(audit.origin.address());
-                let ActorRetirement::OwnerCancelled { behavior, .. } = *audit.retirement else {
+                let ActorRetirement::OwnerCancelled {
+custody: ActorCustody {
+behavior,
+..
+},
+..
+} = *audit.retirement else {
                     panic!("audit outcome is preserved by consuming selection");
                 };
                 let entries = behavior.into_inner().entries;

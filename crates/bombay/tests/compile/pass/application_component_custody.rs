@@ -1,3 +1,5 @@
+
+use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorActed, BehaviorBase, MessageProtocol, Never, NoBirths, NoSends,
@@ -88,7 +90,13 @@ async fn main() {
     });
     assert_eq!(value, 1);
     let (_, retirement) = cleanup.expect("the complete component custody is joined");
-    let ActorRetirement::Completed { descendants, .. } = retirement else {
+    let ActorRetirement::Completed {
+custody: ActorCustody {
+descendants,
+..
+},
+..
+} = retirement else {
         panic!("the actual root retires");
     };
     assert_eq!(descendants.len(), 1);
@@ -102,7 +110,13 @@ async fn main() {
             drop(original);
             panic!("the declared audit owns the report");
         });
-    let ActorRetirement::OwnerCancelled { behavior, .. } = *report.retirement else {
+    let ActorRetirement::OwnerCancelled {
+custody: ActorCustody {
+behavior,
+..
+},
+..
+} = *report.retirement else {
         panic!("the owner cancelled the component after startup");
     };
     assert_eq!(behavior.base().entries.as_ptr(), allocation);

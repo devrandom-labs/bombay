@@ -102,46 +102,34 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
-                child_failures: (),
-                capability_failures,
-                unread_owner_cancellation,
-                behavior,
+                custody,
                 settlements,
-                control,
-                user,
-                descendants,
                 completion,
                 interpretation,
                 source,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             },
     } = terminal
     else {
         panic!("the application must preserve the root's completed terminal state")
     };
+    let () = custody.child_failures;
     assert!(interpretation.is_none());
     assert!(source.is_none());
-    assert!(additional_failures.is_empty());
-    assert!(received_interpretation.is_none());
-    assert!(received_source.is_none());
-    assert!(source_index.is_none());
-    assert!(acquired_ingress.is_none());
-    assert!(retirement_failures.is_empty());
-    assert!(terminal_report.is_none());
-    assert!(capability_failures.is_empty());
-    assert!(unread_owner_cancellation.is_none());
+    assert!(custody.additional_failures.is_empty());
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.retirement_failures.is_empty());
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.capability_failures.is_empty());
+    assert!(custody.unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    drop(behavior);
+    drop(custody.behavior);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-    assert!(descendants.is_empty());
+    assert!(custody.control.is_empty());
+    assert!(custody.user.is_empty());
+    assert!(custody.descendants.is_empty());
     assert_eq!(completion, Completion::Stopped);
 }

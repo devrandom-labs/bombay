@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
@@ -357,12 +358,15 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        child_failures: (child_failures, ()),
-
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                child_failures: (child_failures, ()),
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
-        descendants,
         ..
     } = terminal
     else {
@@ -379,12 +383,15 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
         };
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
-            child_failures: (child_failures, ()),
-
-            capability_failures,
-            unread_owner_cancellation,
+            custody:
+                ActorCustody {
+                    child_failures: (child_failures, ()),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    descendants,
+                    ..
+                },
             completion,
-            descendants,
             ..
         } = terminal
         else {
@@ -401,12 +408,15 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
             };
             assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
             let ActorRetirement::Completed {
-                child_failures: (),
-
-                capability_failures,
-                unread_owner_cancellation,
+                custody:
+                    ActorCustody {
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        descendants,
+                        ..
+                    },
                 completion,
-                descendants,
                 ..
             } = terminal
             else {
@@ -529,12 +539,15 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        child_failures: (child_failures, ()),
-
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                child_failures: (child_failures, ()),
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
-        descendants,
         settlements,
         ..
     } = terminal
@@ -577,11 +590,14 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
         };
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::OwnerCancelled {
-            child_failures: (child_failures, ()),
-
-            capability_failures,
-            unread_owner_cancellation,
-            descendants,
+            custody:
+                ActorCustody {
+                    child_failures: (child_failures, ()),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    descendants,
+                    ..
+                },
             ..
         } = terminal
         else {
@@ -601,12 +617,15 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let retirement = match terminal {
             ActorRetirement::Completed {
-                child_failures: (),
-
-                capability_failures,
-                unread_owner_cancellation,
+                custody:
+                    ActorCustody {
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        descendants,
+                        ..
+                    },
                 completion,
-                descendants,
                 ..
             } => {
                 assert!(capability_failures.is_empty());
@@ -616,11 +635,14 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
                 WorkerRetirement::Completed
             }
             ActorRetirement::OwnerCancelled {
-                child_failures: (),
-
-                capability_failures,
-                unread_owner_cancellation,
-                descendants,
+                custody:
+                    ActorCustody {
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        descendants,
+                        ..
+                    },
                 ..
             } => {
                 assert!(capability_failures.is_empty());

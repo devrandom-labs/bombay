@@ -1,6 +1,7 @@
 //! Run one fixed supervisor through worker failure, replacement, and shutdown.
 //! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
+use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
@@ -293,10 +294,14 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
-        descendants,
         ..
     } = terminal
     else {
@@ -315,10 +320,14 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
-        descendants,
         ..
     } = terminal
     else {
@@ -334,10 +343,14 @@ fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
         };
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
-            capability_failures,
-            unread_owner_cancellation,
+            custody:
+                ActorCustody {
+                    capability_failures,
+                    unread_owner_cancellation,
+                    descendants,
+                    ..
+                },
             completion,
-            descendants,
             ..
         } = terminal
         else {

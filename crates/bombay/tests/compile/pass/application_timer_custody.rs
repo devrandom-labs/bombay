@@ -1,5 +1,7 @@
 //! Real elapsed reports establish readiness in both timer/shutdown orders.
 
+
+use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, BirthMode, ChildReport,
@@ -174,10 +176,13 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
     assert_eq!(termination, Ok(Exit::Normal));
     let (_, retirement) = cleanup.expect("joined root and exact child custody");
     let ActorRetirement::Completed {
-        behavior,
-        descendants,
-        ..
-    } = retirement
+custody: ActorCustody {
+behavior,
+descendants,
+..
+},
+..
+} = retirement
     else {
         panic!("the reunion completed the root");
     };
@@ -188,11 +193,14 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         let report = match report.try_into_child_retirement(&TimerOutside) {
             Ok(child) => {
                 let ActorRetirement::OwnerCancelled {
-                    behavior,
-                    descendants,
-                    child_failures,
-                    ..
-                } = *child.retirement
+custody: ActorCustody {
+behavior,
+descendants,
+child_failures,
+..
+},
+..
+} = *child.retirement
                 else {
                     panic!("timer reaction continued, so owner cancellation returns its actor");
                 };
@@ -212,11 +220,14 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                 panic!("the unmatched role retains the second child");
             });
         let ActorRetirement::OwnerCancelled {
-            behavior,
-            descendants,
-            child_failures,
-            ..
-        } = *child.retirement
+custody: ActorCustody {
+behavior,
+descendants,
+child_failures,
+..
+},
+..
+} = *child.retirement
         else {
             panic!("shutdown outside preserves the same cancellation custody");
         };

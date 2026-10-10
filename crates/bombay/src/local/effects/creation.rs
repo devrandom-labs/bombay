@@ -659,6 +659,8 @@ fn routed_creation<Child>(
 
 #[cfg(test)]
 mod child_projection_panic {
+    use crate::ActorCustody;
+
     use std::any::Any;
     use std::future::Future;
     use std::panic::resume_unwind;
@@ -922,23 +924,26 @@ mod child_projection_panic {
             .expect("the projector panic must not substitute for the parent task result");
         let retirement = ActorRetirement::from_local(outcome);
         let ActorRetirement::Completed {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (mut failures, ()),
+                    capability_failures,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                    unread_owner_cancellation,
+                },
             interpretation,
             source,
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (mut failures, ()),
-            capability_failures,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
-            unread_owner_cancellation,
             completion,
         } = retirement
         else {
@@ -1064,23 +1069,26 @@ mod child_projection_panic {
                 unread_owner_cancellation,
             ) = match &terminal.retirement {
                 ActorRetirement::Completed {
-                    behavior,
+                    custody:
+                        ActorCustody {
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            child_failures: (),
+                            capability_failures,
+                            additional_failures,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            retirement_failures,
+                            terminal_report,
+                            unread_owner_cancellation,
+                        },
                     interpretation,
                     source,
                     settlements,
-                    control,
-                    user,
-                    descendants,
-                    child_failures: (),
-                    capability_failures,
-                    additional_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    retirement_failures,
-                    terminal_report,
-                    unread_owner_cancellation,
                     completion,
                 } => {
                     assert_eq!(*completion, Completion::Stopped);
@@ -1105,23 +1113,26 @@ mod child_projection_panic {
                     )
                 }
                 ActorRetirement::OwnerCancelled {
-                    behavior,
+                    custody:
+                        ActorCustody {
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            child_failures: (),
+                            capability_failures,
+                            additional_failures,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            retirement_failures,
+                            terminal_report,
+                            unread_owner_cancellation,
+                        },
                     interpretation,
                     source,
                     settlements,
-                    control,
-                    user,
-                    descendants,
-                    child_failures: (),
-                    capability_failures,
-                    additional_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    retirement_failures,
-                    terminal_report,
-                    unread_owner_cancellation,
                 } => {
                     assert_eq!(settlements.len(), 0);
                     assert_ne!(terminal.origin, origin);

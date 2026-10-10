@@ -253,6 +253,42 @@ where
     }
 }
 
+/// The complete coexisting custody retained after actor runtime retirement.
+///
+/// This product owns the original actor, unread communications, descendants,
+/// child failures and every acquired runtime lane. Primary outcomes and
+/// phase-specific unfinished actions remain in [`ActorRetirement`]. No field
+/// classifies success or grants new lifecycle authority.
+#[must_use = "retained actor custody must be inspected or explicitly discharged"]
+pub struct ActorCustody<BehaviorState, Root, ChildFailures>
+where
+    BehaviorState: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
+{
+    pub behavior: BehaviorState,
+    pub control: Vec<BehaviorState::Event>,
+    pub user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
+    pub descendants: Vec<Root>,
+    pub child_failures: ChildFailures,
+    pub capability_failures: Vec<JoinError>,
+    pub additional_failures:
+        Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
+    pub received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
+    pub received_source: Option<SourceCustody<BehaviorState::Settlements>>,
+    pub source_index: Option<usize>,
+    /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
+    /// passively reports the original zero-field owner-cancellation fact;
+    /// Break(Err(error)) owns the original capability `JoinError`. This report
+    /// grants no cancellation sender authority.
+    #[expect(
+        clippy::type_complexity,
+        reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
+    )]
+    pub acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
+    pub retirement_failures: Vec<Box<dyn Any + Send>>,
+    pub terminal_report: Option<Result<(), Termination<MailAddr>>>,
+    pub unread_owner_cancellation: Option<()>,
+}
+
 /// Complete retirement of one local actor.
 ///
 /// Every variant either retains final owned state or names the executor event
@@ -272,58 +308,15 @@ where
         reason: behavior::AllocationRejection,
     },
     InitializationRejected {
-        behavior: BehaviorState,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         error: BehaviorState::Error,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     InitializationPanicked {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         payload: Box<dyn Any + Send>,
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     HostCommitPanicked {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -331,55 +324,10 @@ where
                 BehaviorState::Settlements,
             >,
         >,
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
         payload: Box<dyn Any + Send>,
     },
     TransitionPanicked {
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         payload: Box<dyn Any + Send>,
         interpretation: Option<
             InterpretationProgress<
@@ -392,29 +340,7 @@ where
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
     },
     HostExecutionPanicked {
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         payload: Box<dyn Any + Send>,
         interpretation: Option<
             InterpretationProgress<
@@ -427,68 +353,24 @@ where
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
     },
     HostRejected {
-        behavior: BehaviorState,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: InterpretationProgress<
             ActionsOf<BehaviorState>,
             BehaviorState::InterpretationCustody,
             BehaviorState::Settlements,
         >,
         error: ClaimError<MailAddr>,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     BindingAbandoned {
-        behavior: BehaviorState,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: InterpretationProgress<
             ActionsOf<BehaviorState>,
             BehaviorState::InterpretationCustody,
             BehaviorState::Settlements,
         >,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     Completed {
-        behavior: BehaviorState,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -498,32 +380,10 @@ where
         >,
         source: Option<SourceProgress<BehaviorState::Settlements, BehaviorState::SourceCustody>>,
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
         completion: Completion,
     },
     BehaviorFailed {
-        behavior: BehaviorState,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -533,31 +393,10 @@ where
         >,
         source: Option<SourceProgress<BehaviorState::Settlements, BehaviorState::SourceCustody>>,
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
         error: BehaviorState::Error,
     },
     EffectsFailed {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -565,7 +404,6 @@ where
                 BehaviorState::Settlements,
             >,
         >,
-        behavior: BehaviorState,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -576,31 +414,9 @@ where
         source: Option<SourceProgress<BehaviorState::Settlements, BehaviorState::SourceCustody>>,
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
         error: SettlementFailure,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     OwnerCancelled {
-        behavior: BehaviorState,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -610,32 +426,10 @@ where
         >,
         source: Option<SourceProgress<BehaviorState::Settlements, BehaviorState::SourceCustody>>,
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     /// Live execution acquired this exact capability task failure as its primary cause.
     CapabilityFailed {
-        behavior: BehaviorState,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -645,143 +439,34 @@ where
         >,
         source: Option<SourceProgress<BehaviorState::Settlements, BehaviorState::SourceCustody>>,
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
         error: JoinError,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     PreparedRetirementPanicked {
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         payload: Box<dyn Any + Send>,
     },
     PreparedInterpreterContractFailed {
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
     },
     InitializationRetirementPanicked {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: InterpretationProgress<
             ActionsOf<BehaviorState>,
             BehaviorState::InterpretationCustody,
             BehaviorState::Settlements,
         >,
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
         payload: Box<dyn Any + Send>,
     },
     InitializationInterpreterContractFailed {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: InterpretationProgress<
             ActionsOf<BehaviorState>,
             BehaviorState::InterpretationCustody,
             BehaviorState::Settlements,
         >,
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     ActiveRetirementPanicked {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -791,32 +476,10 @@ where
         >,
         source: Option<SourceProgress<BehaviorState::Settlements, BehaviorState::SourceCustody>>,
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
         payload: Box<dyn Any + Send>,
     },
     ActiveActivationPanicked {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -826,32 +489,10 @@ where
         >,
         source: Option<SourceProgress<BehaviorState::Settlements, BehaviorState::SourceCustody>>,
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
         payload: Box<dyn Any + Send>,
     },
     ActiveInterpreterContractFailed {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -861,54 +502,9 @@ where
         >,
         source: Option<SourceProgress<BehaviorState::Settlements, BehaviorState::SourceCustody>>,
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
     },
     PreparedEffectsFailed {
-        behavior: BehaviorState,
-        control: Vec<BehaviorState::Event>,
-        user: Vec<User<MailAddr, BehaviorMessage<BehaviorState>>>,
-        descendants: Vec<Root>,
-        child_failures: ChildFailures,
-        capability_failures: Vec<JoinError>,
-        additional_failures:
-            Vec<DriverError<BehaviorState::Error, LocalActivationRejection<MailAddr>>>,
-        received_interpretation: Option<Interpretation<BehaviorState::Settlements>>,
-        received_source: Option<SourceCustody<BehaviorState::Settlements>>,
-        source_index: Option<usize>,
-        /// Continue retains the exact acquired event/exhaustion. Break(Ok(()))
-        /// passively reports the original zero-field owner-cancellation fact;
-        /// Break(Err(error)) owns the original capability `JoinError`. This report
-        /// grants no cancellation sender authority.
-        #[expect(
-            clippy::type_complexity,
-            reason = "this acquired source reply coexists with event/exhaustion and exact cancellation or capability JoinError; an alias would merely hide the owning equation"
-        )]
-        acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
-        retirement_failures: Vec<Box<dyn Any + Send>>,
-        terminal_report: Option<Result<(), Termination<MailAddr>>>,
-        unread_owner_cancellation: Option<()>,
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         error: SettlementFailure,
     },
     /// The executor returned no actor state or residual; the original task failure survives.
@@ -945,29 +541,65 @@ where
     /// This inspection leaves every owned value and cause in the retirement.
     #[must_use]
     pub const fn behavior(&self) -> Option<&BehaviorState> {
+        if let Self::AllocationRejected { behavior, .. } = self {
+            return Some(behavior);
+        }
+        match self.custody() {
+            Some(custody) => Some(&custody.behavior),
+            None => None,
+        }
+    }
+
+    /// Borrow every coexisting actor and runtime custody value.
+    ///
+    /// Allocation refusal precedes runtime custody. Executor failure, panic
+    /// and cancellation without returned state also have no custody product.
+    /// Presence does not certify success; the exact outcome remains in `self`.
+    ///
+    /// ```
+    /// struct Total(u32);
+    /// #[bombay::actor]
+    /// impl Total {
+    ///     fn receive(&mut self, value: u32) -> bombay::behavior::BehaviorActed<Self> {
+    ///         self.0 = value;
+    ///         Ok(bombay::behavior::Actions::cont())
+    ///     }
+    /// }
+    /// fn inspect(retirement: &bombay::ActorRetirement<Total, bombay::behavior::Never, ()>) {
+    ///     if let Some(custody) = retirement.custody() {
+    ///         let unread: &[bombay::behavior::User<bombay::MailAddr, u32>] = &custody.user;
+    ///         let total = custody.behavior.0;
+    ///         // The complete retirement, including its cause, remains owned by the caller.
+    ///     }
+    /// }
+    /// ```
+    #[must_use]
+    pub const fn custody(&self) -> Option<&ActorCustody<BehaviorState, Root, ChildFailures>> {
         match self {
-            Self::AllocationRejected { behavior, .. }
-            | Self::InitializationRejected { behavior, .. }
-            | Self::InitializationPanicked { behavior, .. }
-            | Self::HostCommitPanicked { behavior, .. }
-            | Self::TransitionPanicked { behavior, .. }
-            | Self::HostExecutionPanicked { behavior, .. }
-            | Self::HostRejected { behavior, .. }
-            | Self::BindingAbandoned { behavior, .. }
-            | Self::Completed { behavior, .. }
-            | Self::BehaviorFailed { behavior, .. }
-            | Self::EffectsFailed { behavior, .. }
-            | Self::OwnerCancelled { behavior, .. }
-            | Self::CapabilityFailed { behavior, .. }
-            | Self::PreparedRetirementPanicked { behavior, .. }
-            | Self::PreparedInterpreterContractFailed { behavior, .. }
-            | Self::InitializationRetirementPanicked { behavior, .. }
-            | Self::InitializationInterpreterContractFailed { behavior, .. }
-            | Self::ActiveRetirementPanicked { behavior, .. }
-            | Self::ActiveActivationPanicked { behavior, .. }
-            | Self::ActiveInterpreterContractFailed { behavior, .. }
-            | Self::PreparedEffectsFailed { behavior, .. } => Some(behavior),
-            Self::ActorTaskFailed(_) | Self::Panicked | Self::Cancelled => None,
+            Self::InitializationRejected { custody, .. }
+            | Self::InitializationPanicked { custody, .. }
+            | Self::HostCommitPanicked { custody, .. }
+            | Self::TransitionPanicked { custody, .. }
+            | Self::HostExecutionPanicked { custody, .. }
+            | Self::HostRejected { custody, .. }
+            | Self::BindingAbandoned { custody, .. }
+            | Self::Completed { custody, .. }
+            | Self::BehaviorFailed { custody, .. }
+            | Self::EffectsFailed { custody, .. }
+            | Self::OwnerCancelled { custody, .. }
+            | Self::CapabilityFailed { custody, .. }
+            | Self::PreparedRetirementPanicked { custody, .. }
+            | Self::PreparedInterpreterContractFailed { custody, .. }
+            | Self::InitializationRetirementPanicked { custody, .. }
+            | Self::InitializationInterpreterContractFailed { custody, .. }
+            | Self::ActiveRetirementPanicked { custody, .. }
+            | Self::ActiveActivationPanicked { custody, .. }
+            | Self::ActiveInterpreterContractFailed { custody, .. }
+            | Self::PreparedEffectsFailed { custody, .. } => Some(custody),
+            Self::AllocationRejected { .. }
+            | Self::ActorTaskFailed(_)
+            | Self::Panicked
+            | Self::Cancelled => None,
         }
     }
 
@@ -1015,66 +647,72 @@ where
                 OwnerCancellation,
             )) => {
                 return Self::OwnerCancelled {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                 };
             }
             Completion::RetirementRequested(LocalRetirementRequest::CapabilityFailed(error)) => {
                 return Self::CapabilityFailed {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     error,
                 };
             }
         };
         Self::Completed {
-            behavior,
+            custody: ActorCustody {
+                behavior,
+                control: ingress.control,
+                user: ingress.user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress: retirement_ingress(acquired_ingress),
+                unread_owner_cancellation,
+            },
             interpretation,
             source,
             settlements,
-            control: ingress.control,
-            user: ingress.user,
-            descendants,
-            child_failures,
-            capability_failures,
-            additional_failures,
-            terminal_report,
-            retirement_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress: retirement_ingress(acquired_ingress),
-            unread_owner_cancellation,
             completion,
         }
     }
@@ -1113,20 +751,22 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::InitializationRejected {
-                    behavior,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     error,
                 }
             }
@@ -1157,23 +797,25 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::BehaviorFailed {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     error,
                 }
             }
@@ -1201,20 +843,22 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::InitializationPanicked {
-                    behavior,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     payload,
                 }
             }
@@ -1245,23 +889,25 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::TransitionPanicked {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     payload,
                 }
             }
@@ -1292,23 +938,25 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::HostExecutionPanicked {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     payload,
                 }
             }
@@ -1355,21 +1003,23 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::HostCommitPanicked {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     initialization: None,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     payload,
                 }
             }
@@ -1418,21 +1068,23 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::HostCommitPanicked {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     initialization: Some(initialization),
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     payload,
                 }
             }
@@ -1461,21 +1113,23 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::HostRejected {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     initialization,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     error,
                 }
             }
@@ -1504,21 +1158,23 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::BindingAbandoned {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     initialization,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                 }
             }
             ActorExecutionOutcome::SettlementFailed {
@@ -1548,24 +1204,26 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::EffectsFailed {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
                     initialization: None,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     error,
                 }
             }
@@ -1594,24 +1252,26 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::EffectsFailed {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation: None,
                     source: None,
                     settlements: Vec::new(),
                     initialization: Some(initialization),
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     error,
                 }
             }
@@ -1639,20 +1299,22 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::PreparedEffectsFailed {
-                    behavior,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     error,
                 }
             }
@@ -1679,20 +1341,22 @@ where
                     "capability tasks must join before terminal projection"
                 );
                 Self::PreparedInterpreterContractFailed {
-                    behavior,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                 }
             }
             ActorExecutionOutcome::InterpreterContractFailed {
@@ -1719,21 +1383,23 @@ where
                     "capability tasks must join before terminal projection"
                 );
                 Self::InitializationInterpreterContractFailed {
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     initialization,
-                    behavior,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                 }
             }
             ActorExecutionOutcome::InterpreterContractFailed {
@@ -1762,23 +1428,25 @@ where
                     "capability tasks must join before terminal projection"
                 );
                 Self::ActiveInterpreterContractFailed {
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
-                    behavior,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                 }
             }
             ActorExecutionOutcome::RetirementPanicked {
@@ -1805,20 +1473,22 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::PreparedRetirementPanicked {
-                    behavior,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     payload,
                 }
             }
@@ -1847,21 +1517,23 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::InitializationRetirementPanicked {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     initialization,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     payload,
                 }
             }
@@ -1892,23 +1564,25 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::ActiveRetirementPanicked {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     payload,
                 }
             }
@@ -1939,23 +1613,25 @@ where
                     "terminal projection follows every original capability task join"
                 );
                 Self::ActiveActivationPanicked {
-                    behavior,
+                    custody: ActorCustody {
+                        behavior,
+                        control: ingress.control,
+                        user: ingress.user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                        unread_owner_cancellation,
+                    },
                     interpretation,
                     source,
                     settlements,
-                    control: ingress.control,
-                    user: ingress.user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
-                    unread_owner_cancellation,
                     payload,
                 }
             }
@@ -2032,6 +1708,8 @@ mod tests {
 
 #[cfg(test)]
 mod capability_retirement_projection {
+    use crate::ActorCustody;
+
     use std::panic::panic_any;
 
     use behavior::{
@@ -2208,21 +1886,24 @@ mod capability_retirement_projection {
             let (behavior, control, user, descendants, mut failures, terminal_report, unread) =
                 match ActorRetirement::from_local(outcome) {
                     ActorRetirement::InitializationPanicked {
+                        custody:
+                            ActorCustody {
+                                behavior,
+                                control,
+                                user,
+                                descendants,
+                                child_failures: (),
+                                capability_failures,
+                                terminal_report,
+                                unread_owner_cancellation,
+                                additional_failures,
+                                received_interpretation,
+                                received_source,
+                                source_index,
+                                acquired_ingress,
+                                retirement_failures,
+                            },
                         payload: _,
-                        behavior,
-                        control,
-                        user,
-                        descendants,
-                        child_failures: (),
-                        capability_failures,
-                        terminal_report,
-                        unread_owner_cancellation,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
                     } => {
                         assert!(additional_failures.is_empty());
                         assert!(received_interpretation.is_none());
@@ -2242,21 +1923,24 @@ mod capability_retirement_projection {
                         )
                     }
                     ActorRetirement::BindingAbandoned {
-                        behavior,
+                        custody:
+                            ActorCustody {
+                                behavior,
+                                control,
+                                user,
+                                descendants,
+                                child_failures: (),
+                                capability_failures,
+                                terminal_report,
+                                unread_owner_cancellation,
+                                additional_failures,
+                                received_interpretation,
+                                received_source,
+                                source_index,
+                                acquired_ingress,
+                                retirement_failures,
+                            },
                         initialization,
-                        control,
-                        user,
-                        descendants,
-                        child_failures: (),
-                        capability_failures,
-                        terminal_report,
-                        unread_owner_cancellation,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
                     } => {
                         assert!(additional_failures.is_empty());
                         assert!(received_interpretation.is_none());
@@ -2283,24 +1967,27 @@ mod capability_retirement_projection {
                         )
                     }
                     ActorRetirement::Completed {
-                        behavior,
+                        custody:
+                            ActorCustody {
+                                behavior,
+                                control,
+                                user,
+                                descendants,
+                                child_failures: (),
+                                capability_failures,
+                                terminal_report,
+                                unread_owner_cancellation,
+                                additional_failures,
+                                received_interpretation,
+                                received_source,
+                                source_index,
+                                acquired_ingress,
+                                retirement_failures,
+                            },
                         settlements,
-                        control,
-                        user,
-                        descendants,
-                        child_failures: (),
                         completion,
-                        capability_failures,
-                        terminal_report,
-                        unread_owner_cancellation,
                         interpretation,
                         source,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
                     } => {
                         assert!(interpretation.is_none());
                         assert!(source.is_none());
@@ -2324,23 +2011,26 @@ mod capability_retirement_projection {
                         )
                     }
                     ActorRetirement::OwnerCancelled {
-                        behavior,
+                        custody:
+                            ActorCustody {
+                                behavior,
+                                control,
+                                user,
+                                descendants,
+                                child_failures: (),
+                                capability_failures,
+                                terminal_report,
+                                unread_owner_cancellation,
+                                additional_failures,
+                                received_interpretation,
+                                received_source,
+                                source_index,
+                                acquired_ingress,
+                                retirement_failures,
+                            },
                         settlements,
-                        control,
-                        user,
-                        descendants,
-                        child_failures: (),
-                        capability_failures,
-                        terminal_report,
-                        unread_owner_cancellation,
                         interpretation,
                         source,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
                     } => {
                         assert!(interpretation.is_none());
                         assert!(source.is_none());
@@ -2363,24 +2053,27 @@ mod capability_retirement_projection {
                         )
                     }
                     ActorRetirement::CapabilityFailed {
-                        behavior,
+                        custody:
+                            ActorCustody {
+                                behavior,
+                                control,
+                                user,
+                                descendants,
+                                child_failures: (),
+                                capability_failures,
+                                terminal_report,
+                                unread_owner_cancellation,
+                                additional_failures,
+                                received_interpretation,
+                                received_source,
+                                source_index,
+                                acquired_ingress,
+                                retirement_failures,
+                            },
                         settlements,
-                        control,
-                        user,
-                        descendants,
-                        child_failures: (),
                         error,
-                        capability_failures,
-                        terminal_report,
-                        unread_owner_cancellation,
                         interpretation,
                         source,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
                     } => {
                         assert!(interpretation.is_none());
                         assert!(source.is_none());

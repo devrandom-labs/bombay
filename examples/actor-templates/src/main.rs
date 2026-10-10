@@ -1,6 +1,7 @@
 //! For learning how to select a standalone actor template and compose wrapper
 //! policy through `ActorExt` without implementing a custom Behavior.
 
+use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
 use tokio::runtime::Builder;
 mod processor;
@@ -156,24 +157,27 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
-                child_failures: (),
-                capability_failures,
-                unread_owner_cancellation,
-                behavior,
+                custody:
+                    ActorCustody {
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                    },
                 settlements,
-                control,
-                user,
-                descendants,
                 completion,
                 interpretation,
                 source,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             },
     } = terminal
     else {

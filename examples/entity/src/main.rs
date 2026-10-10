@@ -5,6 +5,7 @@
 //! is a fresh incarnation after fenced retirement; it is not Behavior Actors'
 //! explicit `StableProxy` worker-replacement policy.
 
+use bombay::ActorCustody;
 use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -255,24 +256,27 @@ where
         origin,
         terminal:
             ActorRetirement::Completed {
-                child_failures: (),
-                capability_failures,
-                unread_owner_cancellation,
+                custody:
+                    ActorCustody {
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        control,
+                        user,
+                        descendants,
+                        behavior,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                    },
                 settlements,
-                control,
-                user,
-                descendants,
                 completion,
-                behavior,
                 interpretation,
                 source,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             },
     } = terminal
     else {
@@ -307,24 +311,27 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
         .map(|retirement| {
             let (behavior, settlements, user, descendants, capability_failures) = match retirement {
                 Ok(ActorRetirement::Completed {
-                    child_failures: (),
-                    capability_failures,
-                    unread_owner_cancellation: None | Some(()),
-                    behavior,
+                    custody:
+                        ActorCustody {
+                            child_failures: (),
+                            capability_failures,
+                            unread_owner_cancellation: None | Some(()),
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            additional_failures,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            retirement_failures,
+                            terminal_report,
+                        },
                     settlements,
-                    control,
-                    user,
-                    descendants,
                     completion,
                     interpretation,
                     source,
-                    additional_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    retirement_failures,
-                    terminal_report,
                 }) => {
                     assert!(interpretation.is_none());
                     assert!(source.is_none());
@@ -348,23 +355,26 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
                     )
                 }
                 Ok(ActorRetirement::OwnerCancelled {
-                    child_failures: (),
-                    capability_failures,
-                    unread_owner_cancellation,
-                    behavior,
+                    custody:
+                        ActorCustody {
+                            child_failures: (),
+                            capability_failures,
+                            unread_owner_cancellation,
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            additional_failures,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            retirement_failures,
+                            terminal_report,
+                        },
                     settlements,
-                    control,
-                    user,
-                    descendants,
                     interpretation,
                     source,
-                    additional_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    retirement_failures,
-                    terminal_report,
                 }) => {
                     assert!(interpretation.is_none());
                     assert!(source.is_none());

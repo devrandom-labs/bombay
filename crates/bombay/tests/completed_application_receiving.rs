@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use core::future::{Future, poll_fn};
 use core::mem;
 use core::num::NonZeroUsize;
@@ -155,21 +156,24 @@ impl EntityDefinition for Accounts {
 fn assert_rejected_root(outcome: &AccountConclusion) {
     let AccountConclusion::Root { origin, terminal } = outcome;
     let ActorRetirement::InitializationRejected {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+            },
         error,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        unread_owner_cancellation,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
     } = terminal
     else {
         panic!("the complete actual initialization refusal remains owned");
@@ -197,6 +201,10 @@ fn assert_rejected_root(outcome: &AccountConclusion) {
     assert!(unread_owner_cancellation.is_none());
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete output, original custody, conversion panic and release trace; splitting it would obscure the independent ownership witness"
+)]
 #[tokio::test(flavor = "current_thread")]
 async fn completed_output_survives_actual_root_terminal_conversion_failure() {
     let output = Arc::new(vec![11, 19]);
@@ -230,24 +238,27 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
     };
     let retirement = joined;
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+            },
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        unread_owner_cancellation,
         completion,
         interpretation,
         source,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
     } = &retirement
     else {
         panic!("same standard root completed normally");
@@ -528,21 +539,24 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
     let (
         origin,
         ActorRetirement::InitializationRejected {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (child_failures, ()),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                },
             error,
-            control,
-            user,
-            descendants,
-            child_failures: (child_failures, ()),
-            capability_failures,
-            unread_owner_cancellation,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
         },
     ) = &returned
     else {
@@ -625,24 +639,27 @@ fn assert_completed_account(
     let Ok((
         origin,
         ActorRetirement::Completed {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                },
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
-            capability_failures,
-            unread_owner_cancellation,
             completion,
             interpretation,
             source,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
         },
     )) = cleanup
     else {
@@ -694,23 +711,26 @@ fn assert_cancelled_account(
     let Ok((
         origin,
         ActorRetirement::OwnerCancelled {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                },
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
-            capability_failures,
-            unread_owner_cancellation,
             interpretation,
             source,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
         },
     )) = cleanup
     else {
@@ -815,7 +835,14 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
             panic!("the recovered original callable runs on the recovered original application");
         };
         assert_completed_account(&cleanup);
-        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &cleanup else {
+        let Ok((
+            _,
+            ActorRetirement::Completed {
+                custody: ActorCustody { behavior, .. },
+                ..
+            },
+        )) = &cleanup
+        else {
             panic!("the recovered application owns its original root");
         };
         let exact_root = state_retained
@@ -1122,21 +1149,24 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
         let Ok((
             origin,
             ActorRetirement::InitializationRejected {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures: (),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                    },
                 error,
-                control,
-                user,
-                descendants,
-                child_failures: (),
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             },
         )) = &cleanup
         else {
@@ -1487,24 +1517,27 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
             Ok((
                 origin,
                 ActorRetirement::Completed {
-                    behavior,
+                    custody:
+                        ActorCustody {
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            child_failures: (),
+                            capability_failures,
+                            unread_owner_cancellation,
+                            additional_failures,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            retirement_failures,
+                            terminal_report,
+                        },
                     settlements,
-                    control,
-                    user,
-                    descendants,
-                    child_failures: (),
-                    capability_failures,
-                    unread_owner_cancellation,
                     completion,
                     interpretation,
                     source,
-                    additional_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    retirement_failures,
-                    terminal_report,
                 },
             )),
             (
@@ -1897,21 +1930,24 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
         Some((
             origin,
             ActorRetirement::InitializationRejected {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures: (current_failures, (earlier_failures, ())),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                    },
                 error,
-                control,
-                user,
-                descendants,
-                child_failures: (current_failures, (earlier_failures, ())),
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             },
         )) => {
             assert!(matches!(
@@ -2150,21 +2186,24 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
         let Ok((
             origin,
             ActorRetirement::InitializationRejected {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures: (child_failures, ()),
+                        capability_failures,
+                        unread_owner_cancellation,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                    },
                 error,
-                control,
-                user,
-                descendants,
-                child_failures: (child_failures, ()),
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             },
         )) = &cleanup
         else {
@@ -2671,24 +2710,27 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
         joined.unwrap_or_else(|_| panic!("the original active account joins successfully"));
     match &retirement {
         ActorRetirement::Completed {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation: None | Some(()),
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                },
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
-            capability_failures,
-            unread_owner_cancellation: None | Some(()),
             completion,
             interpretation,
             source,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
         } => {
             assert!(matches!(
                 (
@@ -2718,23 +2760,26 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             assert_eq!(*completion, Completion::Stopped);
         }
         ActorRetirement::OwnerCancelled {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                },
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
-            capability_failures,
-            unread_owner_cancellation,
             interpretation,
             source,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
         } => {
             assert!(matches!(
                 (
@@ -2764,10 +2809,14 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     let account_exact = original_account
         .upgrade()
         .is_some_and(|original| match &retirement {
-            ActorRetirement::Completed { behavior, .. }
-            | ActorRetirement::OwnerCancelled { behavior, .. } => {
-                Arc::ptr_eq(&original, &behavior.base().original)
+            ActorRetirement::Completed {
+                custody: ActorCustody { behavior, .. },
+                ..
             }
+            | ActorRetirement::OwnerCancelled {
+                custody: ActorCustody { behavior, .. },
+                ..
+            } => Arc::ptr_eq(&original, &behavior.base().original),
             _ => false,
         });
     let acquired_account = original_account.strong_count();
@@ -2783,24 +2832,27 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             Ok((
                 origin,
                 ActorRetirement::Completed {
-                    behavior,
+                    custody:
+                        ActorCustody {
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            child_failures: (),
+                            capability_failures,
+                            unread_owner_cancellation,
+                            additional_failures,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            retirement_failures,
+                            terminal_report,
+                        },
                     settlements,
-                    control,
-                    user,
-                    descendants,
-                    child_failures: (),
-                    capability_failures,
-                    unread_owner_cancellation,
                     completion,
                     interpretation,
                     source,
-                    additional_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    retirement_failures,
-                    terminal_report,
                 },
             )),
             (
@@ -3111,23 +3163,26 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                 panic!("the raw root is projected as the original root");
             };
             let ActorRetirement::Completed {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        child_failures: (child_failures, ()),
+                        capability_failures,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                        unread_owner_cancellation,
+                        mut descendants,
+                    },
                 interpretation,
                 source,
                 settlements,
-                control,
-                user,
-                mut descendants,
-                child_failures: (child_failures, ()),
-                capability_failures,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-                unread_owner_cancellation,
                 completion,
             } = terminal
             else {
@@ -3211,23 +3266,26 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
             };
             drop(committed);
             let ActorRetirement::OwnerCancelled {
-                behavior: child_behavior,
+                custody:
+                    ActorCustody {
+                        behavior: child_behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures: (),
+                        capability_failures,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                        unread_owner_cancellation,
+                    },
                 interpretation,
                 source,
                 settlements,
-                control,
-                user,
-                descendants,
-                child_failures: (),
-                capability_failures,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-                unread_owner_cancellation,
             } = child_terminal
             else {
                 panic!("root retirement joins its actually cancelled declared child");
@@ -3492,7 +3550,14 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
         panic!("Ready was acquired before disposal of the work future");
     };
     assert_cancelled_account(&cleanup);
-    let Ok((_, ActorRetirement::OwnerCancelled { behavior, .. })) = &cleanup else {
+    let Ok((
+        _,
+        ActorRetirement::OwnerCancelled {
+            custody: ActorCustody { behavior, .. },
+            ..
+        },
+    )) = &cleanup
+    else {
         panic!("the complete retirement oracle already established owner cancellation");
     };
     let exact_root = original_root
@@ -3565,7 +3630,14 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
         panic!("no output or recoverable uninvoked callable was acquired");
     };
     assert_cancelled_account(&cleanup);
-    let Ok((_, ActorRetirement::OwnerCancelled { behavior, .. })) = &cleanup else {
+    let Ok((
+        _,
+        ActorRetirement::OwnerCancelled {
+            custody: ActorCustody { behavior, .. },
+            ..
+        },
+    )) = &cleanup
+    else {
         panic!("the complete retirement oracle already established owner cancellation");
     };
     let exact_root = original_root
@@ -3786,7 +3858,14 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
             panic!("the exact recovered callable completes once on the new App");
         };
         assert_completed_account(&cleanup);
-        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &cleanup else {
+        let Ok((
+            _,
+            ActorRetirement::Completed {
+                custody: ActorCustody { behavior, .. },
+                ..
+            },
+        )) = &cleanup
+        else {
             panic!("the complete retry retirement retains its original root");
         };
         let exact_work = original_work
@@ -3920,7 +3999,14 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
             panic!("the exact acquired actor and original Work complete on retry");
         };
         assert_completed_account(&cleanup);
-        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &cleanup else {
+        let Ok((
+            _,
+            ActorRetirement::Completed {
+                custody: ActorCustody { behavior, .. },
+                ..
+            },
+        )) = &cleanup
+        else {
             panic!("the full joined retry result retains the original actor");
         };
         let joined_allocation = Arc::as_ptr(&behavior.base().original);
@@ -3966,6 +4052,8 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
 }
 
 mod family_cleanup {
+    use bombay::ActorCustody;
+
     use core::future::{Future, poll_fn};
     use core::num::NonZeroUsize;
     use core::pin::pin;
@@ -4135,10 +4223,14 @@ mod family_cleanup {
         // when the distinct owner-cancellation source was acquired first.
         match retirement {
             ActorRetirement::Completed {
+                custody:
+                    ActorCustody {
+                        control,
+                        unread_owner_cancellation,
+                        ..
+                    },
                 completion,
                 settlements,
-                control,
-                unread_owner_cancellation,
                 ..
             } => {
                 let expected_settlements = vec![ActionSettlement {
@@ -4156,9 +4248,13 @@ mod family_cleanup {
                 }
             }
             ActorRetirement::OwnerCancelled {
+                custody:
+                    ActorCustody {
+                        control,
+                        unread_owner_cancellation,
+                        ..
+                    },
                 settlements,
-                control,
-                unread_owner_cancellation,
                 ..
             } => {
                 assert_eq!(settlements.as_slice(), []);
@@ -4189,43 +4285,49 @@ mod family_cleanup {
             unread_owner_cancellation,
         ) = match retirement {
             ActorRetirement::Completed {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control: _,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                        unread_owner_cancellation,
+                    },
                 interpretation,
                 source,
                 settlements: _,
-                control: _,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-                unread_owner_cancellation,
                 completion: _,
             }
             | ActorRetirement::OwnerCancelled {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control: _,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                        unread_owner_cancellation,
+                    },
                 interpretation,
                 source,
                 settlements: _,
-                control: _,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-                unread_owner_cancellation,
             } => (
                 behavior,
                 interpretation,

@@ -1,6 +1,7 @@
 //! Run one bounded FIFO pool through Bombay's concrete local application.
 //! The pool owns admission, assignment, completion, and orderly worker drain.
 
+use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
 use tokio::runtime::Builder;
 mod worker;
@@ -187,9 +188,13 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        capability_failures,
-        unread_owner_cancellation,
-        descendants,
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
         ..
     } = terminal
@@ -209,10 +214,14 @@ fn assert_search_terminal(terminal: SearchTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
-        descendants,
         ..
     } = terminal
     else {

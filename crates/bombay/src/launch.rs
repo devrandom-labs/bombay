@@ -15,7 +15,9 @@ use crate::local::effects::ActionSettlementOf;
 use crate::local::effects::observation::TerminationObservations;
 use crate::local::effects::timers::LocalTimers;
 use crate::observe;
-use crate::terminal::{ActorRetirement, LocalOutcome, ProjectTerminal, retirement_ingress};
+use crate::terminal::{
+    ActorCustody, ActorRetirement, LocalOutcome, ProjectTerminal, retirement_ingress,
+};
 use crate::{ActorExecutionOutcome, Retirement};
 #[cfg(test)]
 use behavior::{
@@ -425,21 +427,23 @@ where
                 source_index,
                 acquired_ingress,
             } => ActorRetirement::InitializationRejected {
+                custody: ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress: retirement_ingress(acquired_ingress),
+                },
                 error,
-                behavior,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress: retirement_ingress(acquired_ingress),
             },
             Self::InitializationPanicked {
                 payload,
@@ -457,21 +461,23 @@ where
                 source_index,
                 acquired_ingress,
             } => ActorRetirement::InitializationPanicked {
+                custody: ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress: retirement_ingress(acquired_ingress),
+                },
                 payload,
-                behavior,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress: retirement_ingress(acquired_ingress),
             },
             Self::HostRejected {
                 initialization,
@@ -490,22 +496,24 @@ where
                 source_index,
                 acquired_ingress,
             } => ActorRetirement::HostRejected {
+                custody: ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress: retirement_ingress(acquired_ingress),
+                },
                 initialization,
                 error,
-                behavior,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress: retirement_ingress(acquired_ingress),
             },
             Self::BindingAbandoned {
                 initialization,
@@ -523,21 +531,23 @@ where
                 source_index,
                 acquired_ingress,
             } => ActorRetirement::BindingAbandoned {
+                custody: ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress: retirement_ingress(acquired_ingress),
+                },
                 initialization,
-                behavior,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress: retirement_ingress(acquired_ingress),
             },
             Self::Unpublished(outcome) => ActorRetirement::from_local(outcome),
             Self::ActorTaskFailed(error) => ActorRetirement::ActorTaskFailed(error),
@@ -1436,6 +1446,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::ActorCustody;
+
     use crate::terminal::ChildOrigin;
     use std::any::Any;
     use std::convert::Infallible;
@@ -2074,24 +2086,26 @@ mod tests {
             .expect_err("closed parent admission returns the exact terminal value");
         let ProbeTerminal::Probe { origin, terminal } = rejected;
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
+                    additional_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                },
             interpretation,
             source,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            terminal_report,
-            retirement_failures,
-            additional_failures,
-
-            capability_failures,
-            unread_owner_cancellation,
-            behavior,
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
             completion,
         } = terminal
         else {
@@ -2270,6 +2284,8 @@ mod ordinary_owner_retirement {
 
 #[cfg(test)]
 mod transitive_source_cancellation {
+    use crate::ActorCustody;
+
     use super::ActorExecution;
     use crate::ActorExecutionOutcome;
     use crate::MailAddr;
@@ -2636,24 +2652,26 @@ mod transitive_source_cancellation {
         };
         assert!(activation_tasks.is_empty());
         let ActorRetirement::OwnerCancelled {
+            custody:
+                ActorCustody {
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
+                    additional_failures,
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    behavior,
+                    control: admitted,
+                    user,
+                    descendants,
+                },
             interpretation,
             source,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            terminal_report,
-            retirement_failures,
-            additional_failures,
-
-            child_failures: (),
-            capability_failures,
-            unread_owner_cancellation,
-            behavior,
             settlements,
-            control: admitted,
-            user,
-            descendants,
         } = ActorRetirement::<SourceCycleActor, Never, ()>::from_local(retirement)
         else {
             panic!("the public exact projection preserves the same selected owner fact");
@@ -2717,6 +2735,8 @@ mod transitive_source_cancellation {
 
 #[cfg(all(test, tokio_unstable))]
 mod independent_actor_execution {
+    use crate::ActorCustody;
+
     use crate::actor_execution::tests::{
         allocations_during, begin_allocations, current_allocations, finish_allocations,
     };
@@ -4209,23 +4229,26 @@ mod independent_actor_execution {
         assert_eq!(termination, Ok(Exit::Normal));
         assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (child_failures, ()),
+                    capability_failures,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    unread_owner_cancellation,
+                },
             interpretation,
             source,
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (child_failures, ()),
-            capability_failures,
-            additional_failures,
-            terminal_report,
-            retirement_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            unread_owner_cancellation,
             completion,
         } = retirement
         else {
@@ -4295,23 +4318,26 @@ mod independent_actor_execution {
         assert_eq!(child_origin, projected_origin);
         assert_ne!(child_origin.address(), origin.address());
         let ActorRetirement::Completed {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                    capability_failures,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    unread_owner_cancellation,
+                },
             interpretation,
             source,
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
-            capability_failures,
-            additional_failures,
-            terminal_report,
-            retirement_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            unread_owner_cancellation,
             completion,
         } = terminal
         else {

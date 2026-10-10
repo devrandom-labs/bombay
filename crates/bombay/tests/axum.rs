@@ -1,6 +1,8 @@
 #![cfg(feature = "axum")]
+
 use axum::routing::get;
 use behavior_actors::ShutdownRequested;
+use bombay::ActorCustody;
 use bombay::ProjectTerminal;
 use bombay::behavior::{
     ActionSettlement, Behavior, BehaviorBase, ChildChoice, ChildCons, ChildCreationOutcome,
@@ -90,13 +92,17 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
 
     assert_eq!(calls.load(Ordering::SeqCst), 1);
     let ActorRetirement::Completed {
-        child_failures: (),
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                control,
+                user,
+                descendants,
+                ..
+            },
         settlements,
-        control,
-        user,
-        descendants,
         completion,
         ..
     } = retirement
@@ -401,23 +407,26 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
         );
     };
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                child_failures: (child_failures, ()),
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+                mut descendants,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        mut descendants,
-        child_failures: (child_failures, ()),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
         completion,
     } = retirement
     else {
@@ -490,23 +499,26 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     };
     assert_ne!(child_origin.address(), origin.address());
     let ActorRetirement::OwnerCancelled {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
     } = terminal
     else {
         panic!("the live declared child retains its actual parent-owned cancellation");
@@ -699,23 +711,26 @@ fn assert_joined_http_root(
     root_retirement: ActorRetirement<StopOnShutdown<Root>, Never, ()>,
 ) {
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
         completion,
     } = root_retirement
     else {

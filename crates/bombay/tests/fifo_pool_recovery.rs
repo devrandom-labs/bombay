@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
@@ -687,25 +688,27 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
         panic!("the root returns its terminal");
     };
     let ActorRetirement::Completed {
-        child_failures: (child_failures, ()),
-
-        capability_failures,
-        unread_owner_cancellation,
-        descendants,
-        behavior: _,
+        custody:
+            ActorCustody {
+                child_failures: (child_failures, ()),
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                behavior: _,
+                control: _,
+                user: _,
+                additional_failures: retirement_additional_failures,
+                received_interpretation: retirement_received_interpretation,
+                received_source: retirement_received_source,
+                source_index: retirement_source_index,
+                acquired_ingress: retirement_acquired_ingress,
+                retirement_failures: retirement_native_failures,
+                terminal_report: retirement_terminal_report,
+            },
         settlements: _,
-        control: _,
-        user: _,
         completion: _,
         interpretation: retirement_interpretation,
         source: retirement_source,
-        additional_failures: retirement_additional_failures,
-        received_interpretation: retirement_received_interpretation,
-        received_source: retirement_received_source,
-        source_index: retirement_source_index,
-        acquired_ingress: retirement_acquired_ingress,
-        retirement_failures: retirement_native_failures,
-        terminal_report: retirement_terminal_report,
     } = terminal
     else {
         panic!("the root completes its drain");
@@ -810,25 +813,27 @@ fn source_task_failure_terminates_the_active_pool() {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::CapabilityFailed {
-        child_failures: (child_failures, ()),
-
-        behavior,
+        custody:
+            ActorCustody {
+                child_failures: (child_failures, ()),
+                behavior,
+                control,
+                user,
+                descendants,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures: retirement_additional_failures,
+                received_interpretation: retirement_received_interpretation,
+                received_source: retirement_received_source,
+                source_index: retirement_source_index,
+                acquired_ingress: retirement_acquired_ingress,
+                retirement_failures: retirement_native_failures,
+                terminal_report: retirement_terminal_report,
+            },
         settlements,
-        control,
-        user,
-        descendants,
         error,
-        capability_failures,
-        unread_owner_cancellation,
         interpretation: retirement_interpretation,
         source: retirement_source,
-        additional_failures: retirement_additional_failures,
-        received_interpretation: retirement_received_interpretation,
-        received_source: retirement_received_source,
-        source_index: retirement_source_index,
-        acquired_ingress: retirement_acquired_ingress,
-        retirement_failures: retirement_native_failures,
-        terminal_report: retirement_terminal_report,
     } = terminal
     else {
         panic!("the failed source retains available pool state and the exact capability cause");
@@ -858,25 +863,27 @@ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        child_failures: (child_failures, ()),
-
-        capability_failures,
-        unread_owner_cancellation,
-        descendants,
+        custody:
+            ActorCustody {
+                child_failures: (child_failures, ()),
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                behavior: _,
+                control: _,
+                user: _,
+                additional_failures: retirement_additional_failures,
+                received_interpretation: retirement_received_interpretation,
+                received_source: retirement_received_source,
+                source_index: retirement_source_index,
+                acquired_ingress: retirement_acquired_ingress,
+                retirement_failures: retirement_native_failures,
+                terminal_report: retirement_terminal_report,
+            },
         completion,
-        behavior: _,
         settlements: _,
-        control: _,
-        user: _,
         interpretation: retirement_interpretation,
         source: retirement_source,
-        additional_failures: retirement_additional_failures,
-        received_interpretation: retirement_received_interpretation,
-        received_source: retirement_received_source,
-        source_index: retirement_source_index,
-        acquired_ingress: retirement_acquired_ingress,
-        retirement_failures: retirement_native_failures,
-        terminal_report: retirement_terminal_report,
     } = terminal
     else {
         panic!("the pool completes after its worker graph");
@@ -903,25 +910,27 @@ fn assert_recovered_pool_terminal(terminal: RecoveryTerminal) {
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         worker_nonces.push(origin.nonce());
         let ActorRetirement::Completed {
-            child_failures: (),
-
-            capability_failures,
-            unread_owner_cancellation,
+            custody:
+                ActorCustody {
+                    child_failures: (),
+                    capability_failures,
+                    unread_owner_cancellation,
+                    descendants,
+                    behavior: _,
+                    control: _,
+                    user: _,
+                    additional_failures: retirement_additional_failures,
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    retirement_failures: retirement_native_failures,
+                    terminal_report: retirement_terminal_report,
+                },
             completion,
-            descendants,
-            behavior: _,
             settlements: _,
-            control: _,
-            user: _,
             interpretation: retirement_interpretation,
             source: retirement_source,
-            additional_failures: retirement_additional_failures,
-            received_interpretation: retirement_received_interpretation,
-            received_source: retirement_received_source,
-            source_index: retirement_source_index,
-            acquired_ingress: retirement_acquired_ingress,
-            retirement_failures: retirement_native_failures,
-            terminal_report: retirement_terminal_report,
         } = terminal
         else {
             panic!("each worker completes rather than being cancelled");

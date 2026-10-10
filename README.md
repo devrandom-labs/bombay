@@ -58,6 +58,10 @@ coexists with the independent complete cleanup result. When no Work is supplied,
 owns the original actor `JoinError`. `ApplicationCleanupError::PublicationClosed`
 and `TaskFailed` separately retain cleanup receiving and cleanup-task errors.
 `Terminal` selects descendant projection, not automatic root projection.
+Borrow retained state with `retirement.behavior()` and shared runtime custody
+with `retirement.custody()`. Consuming matches move the named `custody` product;
+phase-specific outcomes and unfinished actions remain in the retirement.
+See the [retirement migration guidance](docs/user-facing-api.md) for field changes.
 For an empty descendant destination, `.run::<_, _, Never, _>().await` makes
 that choice explicit while the other axes remain inferred. Project the root
 outside the runtime only when the application selects that policy.

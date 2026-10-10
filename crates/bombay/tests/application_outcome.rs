@@ -2,7 +2,9 @@ use bombay::actors::ActorExt;
 use bombay::behavior::{
     AllocationRejection, BehaviorActed, BehaviorBase, ClassifySettlement, Never, SettlementStatus,
 };
-use bombay::{ActorRetirement, Application, ApplicationCleanupError, ApplicationOutcome};
+use bombay::{
+    ActorCustody, ActorRetirement, Application, ApplicationCleanupError, ApplicationOutcome,
+};
 use core::ptr;
 use std::cell::Cell;
 use std::rc::Rc;
@@ -238,17 +240,29 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
     let (origin, retirement) = cleanup.expect("joined root was received");
     assert_eq!(snapshot.value, 1);
     assert_eq!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
+    let custody = retirement.custody().expect("joined actor custody survives");
+    assert!(custody.user.is_empty());
+    assert_eq!(custody.descendants, []);
+    assert!(ptr::eq(
+        &raw const custody.behavior,
+        retirement.behavior().expect("state retained")
+    ));
     let borrowed = retirement
         .behavior()
         .expect("the joined actor remains inspectable");
-    let ActorRetirement::Completed { behavior, .. } = &retirement else {
+    let ActorRetirement::Completed {
+        custody: ActorCustody { behavior, .. },
+        ..
+    } = &retirement
+    else {
         panic!("the counter completed");
     };
     assert!(ptr::eq(borrowed, behavior));
     let ActorRetirement::Completed {
+        custody: ActorCustody {
+            user, descendants, ..
+        },
         settlements,
-        user,
-        descendants,
         completion,
         ..
     } = retirement
@@ -288,6 +302,19 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
             }
         )))
     ));
+    let custody = outcome
+        .cleanup()
+        .expect("startup cleanup received")
+        .as_ref()
+        .expect("startup refusal joined")
+        .1
+        .custody()
+        .expect("refusal retains full custody");
+    assert_eq!(
+        custody.behavior.base().original.audit.as_ptr(),
+        original_audit
+    );
+    assert_eq!(custody.user, []);
     let (_, retirement) = outcome
         .cleanup()
         .expect("startup cleanup was received")
@@ -318,7 +345,7 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
     assert_eq!(invoked.get(), 0);
     let (_, retirement) = cleanup.expect("startup rejection was joined");
     let ActorRetirement::InitializationRejected {
-        behavior,
+        custody: ActorCustody { behavior, .. },
         error: CounterRefusal::Initialization,
         ..
     } = retirement

@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use bombay::behavior::{NoSends, Step, Stopped};
 use std::error::Error;
 use std::future::Future;
@@ -792,21 +793,24 @@ async fn activation_failure_does_not_invoke_the_boundary() {
     let terminal: ApplicationTerminal<_> = ProjectTerminal::project(origin, retirement);
     let (origin, retirement) = into_root(terminal);
     let ActorRetirement::InitializationRejected {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         error,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
     } = retirement
     else {
         panic!("the exact initialization refusal remains a distinct root outcome");
@@ -871,23 +875,26 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     let (
         origin,
         ActorRetirement::BehaviorFailed {
-            child_failures: (),
-            capability_failures,
+            custody:
+                ActorCustody {
+                    child_failures: (),
+                    capability_failures,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                    unread_owner_cancellation,
+                    behavior: _behavior,
+                    control,
+                    user,
+                    descendants,
+                },
             interpretation,
             source,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
-            unread_owner_cancellation,
-            behavior: _behavior,
             settlements,
-            control,
-            user,
-            descendants,
             error: RootFailure,
         },
     ) = into_root(terminal)
@@ -1026,23 +1033,26 @@ fn assert_blocking_root_retirement(
     allocation: *const u64,
 ) {
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
         completion,
     } = retirement
     else {

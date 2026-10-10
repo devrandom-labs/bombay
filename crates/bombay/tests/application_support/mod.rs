@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use core::fmt;
 
 use bombay::behavior::{BehaviorSettlements, Never, Protocol};
@@ -44,24 +45,27 @@ where
     let (
         origin,
         ActorRetirement::Completed {
-            capability_failures,
-            unread_owner_cancellation,
-            behavior,
+            custody:
+                ActorCustody {
+                    capability_failures,
+                    unread_owner_cancellation,
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures: (),
+                    additional_failures: retirement_additional_failures,
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    retirement_failures: retirement_native_failures,
+                    terminal_report: retirement_terminal_report,
+                },
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
             completion,
             interpretation: retirement_interpretation,
             source: retirement_source,
-            additional_failures: retirement_additional_failures,
-            received_interpretation: retirement_received_interpretation,
-            received_source: retirement_received_source,
-            source_index: retirement_source_index,
-            acquired_ingress: retirement_acquired_ingress,
-            retirement_failures: retirement_native_failures,
-            terminal_report: retirement_terminal_report,
         },
     ) = into_root(terminal)
     else {

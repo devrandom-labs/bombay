@@ -54,6 +54,13 @@ records, seven executable examples, 45 catalogue entries and 19 inventoried
 actor-owned capabilities. Presence in that map does not certify an execution
 or commit to implementing all networking and durability work in the DevX effort.
 
+The retirement consumption substep groups the identical 14 owned fields of
+20 alternatives into `ActorCustody`; all 24 outcomes remain. The real counter
+and startup-refusal journeys pass in debug and optimized builds, and a broken
+borrowed accessor fails both. Other callers are migrated only to that proven
+field grouping. Complete gates and measurements remain in the owning PRD;
+this does not close inferred application construction.
+
 Begin with a compiling counter and heterogeneous-child journey that infers
 runner and terminal types while returning complete startup/retirement failures.
 Then prove supervisor and pool use before migrating the catalogue. A shorter

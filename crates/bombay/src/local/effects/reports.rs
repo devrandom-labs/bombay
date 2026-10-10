@@ -242,6 +242,8 @@ pub(crate) struct LocalParentReports<Event, Child, Position> {
 
 #[cfg(test)]
 mod parent_conversion_custody {
+    use crate::ActorCustody;
+
     use core::ptr;
     use std::panic::resume_unwind;
     use std::sync::{Arc, Mutex, PoisonError};
@@ -478,23 +480,26 @@ mod parent_conversion_custody {
             // The acknowledgement closes if any complete retirement oracle panics.
             let (publication, allocation) = observation;
             let ActorRetirement::Completed {
+                custody:
+                    ActorCustody {
+                        received_interpretation: retirement_received_interpretation,
+                        received_source: retirement_received_source,
+                        source_index: retirement_source_index,
+                        acquired_ingress: retirement_acquired_ingress,
+                        terminal_report: retirement_terminal_report,
+                        retirement_failures: retirement_native_failures,
+                        additional_failures: retirement_additional_failures,
+                        child_failures: (),
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        capability_failures,
+                        unread_owner_cancellation,
+                    },
                 interpretation: retirement_interpretation,
                 source: retirement_source,
-                received_interpretation: retirement_received_interpretation,
-                received_source: retirement_received_source,
-                source_index: retirement_source_index,
-                acquired_ingress: retirement_acquired_ingress,
-                terminal_report: retirement_terminal_report,
-                retirement_failures: retirement_native_failures,
-                additional_failures: retirement_additional_failures,
-                child_failures: (),
-                behavior,
                 settlements,
-                control,
-                user,
-                descendants,
-                capability_failures,
-                unread_owner_cancellation,
                 completion,
             } = &retirement
             else {
@@ -951,24 +956,27 @@ mod parent_conversion_custody {
         assert_eq!(terminal.origin.address(), origin.address());
         assert_eq!(terminal.origin, origin);
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation: child_retirement_received_interpretation,
+                    received_source: child_retirement_received_source,
+                    source_index: child_retirement_source_index,
+                    acquired_ingress: child_retirement_acquired_ingress,
+                    terminal_report: child_retirement_terminal_report,
+                    retirement_failures: child_retirement_native_failures,
+                    additional_failures: child_retirement_additional_failures,
+                    behavior: child,
+                    control: child_control,
+                    user: child_user,
+                    descendants: child_descendants,
+                    child_failures: (),
+                    capability_failures: child_failures,
+                    unread_owner_cancellation: child_unread,
+                },
             interpretation: child_retirement_interpretation,
             source: child_retirement_source,
-            received_interpretation: child_retirement_received_interpretation,
-            received_source: child_retirement_received_source,
-            source_index: child_retirement_source_index,
-            acquired_ingress: child_retirement_acquired_ingress,
-            terminal_report: child_retirement_terminal_report,
-            retirement_failures: child_retirement_native_failures,
-            additional_failures: child_retirement_additional_failures,
-            behavior: child,
             settlements: child_settlements,
-            control: child_control,
-            user: child_user,
-            descendants: child_descendants,
-            child_failures: (),
             completion: child_completion,
-            capability_failures: child_failures,
-            unread_owner_cancellation: child_unread,
         } = &terminal.retirement
         else {
             panic!("the original full child terminal remains available");
@@ -1031,21 +1039,24 @@ mod parent_conversion_custody {
             payload,
         ) = match ActorRetirement::from_local(outcome) {
             ActorRetirement::HostCommitPanicked {
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                        unread_owner_cancellation,
+                    },
                 initialization: Some(current),
-                behavior,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-                unread_owner_cancellation,
                 payload,
             } => (
                 current,
@@ -1067,23 +1078,26 @@ mod parent_conversion_custody {
                 payload,
             ),
             ActorRetirement::HostExecutionPanicked {
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                        unread_owner_cancellation,
+                    },
                 interpretation: Some(current),
                 source: None,
                 settlements: prior,
-                behavior,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-                unread_owner_cancellation,
                 payload,
             } => (
                 current,

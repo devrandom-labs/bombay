@@ -380,6 +380,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::ActorCustody;
+
     use super::*;
     use crate::termination::Termination;
     use behavior::{Actions, ActiveTurn, BehaviorActed, NoBirths, NoSends, Step, User, UserEvent};
@@ -551,24 +553,27 @@ mod tests {
         assert!(retired.is_ok());
         let retirement = retired_receiver.await.expect("whole native retirement");
         let Ok(ActorRetirement::Completed {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
+                    additional_failures,
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                },
             settlements,
-            control,
-            user,
-            descendants,
             completion,
             interpretation,
             source,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            terminal_report,
-            retirement_failures,
-            additional_failures,
-            child_failures,
-            capability_failures,
-            unread_owner_cancellation,
         }) = retirement
         else {
             panic!("native shutdown must preserve completed state")
@@ -794,23 +799,26 @@ mod tests {
             .await
             .map(ActorRetirement::<ShutdownConversionActor, Never, ()>::from_local);
         let Ok(ActorRetirement::OwnerCancelled {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                },
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures,
-            capability_failures,
-            unread_owner_cancellation,
             interpretation,
             source,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
         }) = original
         else {
             panic!("the surviving original affine owner joins its exact actor")
@@ -886,23 +894,26 @@ mod tests {
             returned_id,
             returned_activation,
             Ok(ActorRetirement::OwnerCancelled {
-                behavior,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation,
+                        additional_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress,
+                        retirement_failures,
+                        terminal_report,
+                    },
                 settlements,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
                 interpretation,
                 source,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
             }),
         )) = acquired
         else {

@@ -103,6 +103,21 @@ completion and failure alternatives; its presence does not imply success.
 value in the original retirement. Existing matches remain appropriate when
 your decision needs the exact phase or owned fields.
 
+`ActorRetirement::custody()` borrows the common `ActorCustody` product: actor
+state, unread control/user messages, descendants, child failures and acquired
+runtime values. Allocation refusal happens before this product exists; its
+original actor is still available through `behavior()`. Executor outcomes
+without returned actor state also have no custody product. Presence never
+certifies successful completion.
+
+Migration: the 20 alternatives with runtime custody now contain `custody`
+instead of repeating those 14 fields. Match `Completed { custody, completion,
+.. }` to consume the original product, or the exact failure variant to retain
+its primary cause. Read or move `custody.behavior`, `custody.user` and
+`custody.descendants` directly. Initialization progress, active interpretation,
+source progress, settlements and phase-specific errors remain in their original
+variants. All 24 alternatives and all owned values are preserved.
+
 Supplied Work receives the activated application's concrete handle:
 
 ```text

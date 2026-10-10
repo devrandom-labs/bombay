@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
@@ -367,11 +368,14 @@ fn assert_orderly_pool_terminal(terminal: PoolTerminal) {
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        child_failures: (child_failures, ()),
-
-        capability_failures,
-        unread_owner_cancellation,
-        descendants,
+        custody:
+            ActorCustody {
+                child_failures: (child_failures, ()),
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
         ..
     } = terminal
@@ -392,12 +396,15 @@ fn assert_orderly_pool_terminal(terminal: PoolTerminal) {
     };
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        child_failures: (),
-
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
-        descendants,
         ..
     } = terminal
     else {
