@@ -3106,6 +3106,28 @@ repository/PR/CI preparation can proceed independently. This is a concrete
 deployment prerequisite, not permission to mark dependency publication or
 the remote milestone complete.
 
+Dependency CI artifact accounting (2026-10-10 UTC): the prepared delivery
+surface contains exactly 18 additional paths and 649 verification/provenance/
+toolchain lines. Also count the copied exact Nix lock (116 lines) and the
+independently locked package consumer graph (2,974 lines) as retained generated
+artifacts. Adopt a 4,000-line complete CI/test/configuration artifact envelope,
+with the 900-line human-authored envelope unchanged. The 3,090 serialized lock
+lines do not become runtime production code or disappear from cumulative
+accounting. Runtime/API/dependency growth remains zero for this delivery stage;
+the local runtime stage's separate production/test limits remain unchanged.
+
+First retained repair evidence (2026-10-10 UTC): the launch-owning 95-line
+regression in isolated commit `96da855` runs actual local launch, Driver,
+ActorExecution and LocalRetirement. Its normal-observer control passes before
+the panicking observer case fails at the original-state conservation assertion
+(`strong_count` 0, required 1), in both debug and optimized builds (exit 101).
+The committed Observe fact is still normal termination; exact native fields,
+Actions decisions, payload allocation and released address remain separate
+assertions. The repair and connected first-result consumers are being
+integrated; no passing repair gate, full retirement report or remote witness
+is claimed yet. Shared common-error library checking passes through pinned
+Nix; that check alone is not the feature regression.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
