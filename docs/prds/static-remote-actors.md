@@ -749,13 +749,14 @@ port, not availability in ordinary Bombay Application. Prefer existing concrete
 composition if it meets the full law. No new wrapper is retained without the
 five abstraction-budget answers and ordinary-Rust comparisons required by AGENTS.
 
-`ExternalTarget` is sealed and its present `send_from` path awaits bounded
-mailbox capacity; it supplies no public capacity-reservation/try-admit port.
-Gate C must therefore test freshness while waiting, bounded pending sends and
-cancellation ownership on the actual public path, not merely its type
-visibility. ExternalActor's fixed 1,024-slot reply mailbox is an existing bound,
-not a bound on arbitrarily many pending futures. Do not open the sealed trait
-or add admission machinery without the precise failing law.
+`ExternalTarget` remains sealed and its `send_from` path awaits bounded
+mailbox capacity. Merged PR331 now supplies `ExternalActor::try_send` for an
+exact established recipient, reusing native Full/Closed original recovery;
+it does not add stable-family hydration or a capacity reservation. Gate C still
+requires fresh authority on every retry, bounded pending sends and cancellation
+ownership on the actual public path. ExternalActor's fixed 1,024-slot reply
+mailbox is an existing bound, not a bound on arbitrarily many pending futures.
+Do not open the sealed trait or add admission machinery without a failing law.
 
 Historical source-bound admission proposal (2026-10-09 UTC), unadopted at
 that checkpoint. The [next prerequisite decision](#next-prerequisite-exact-recipient-nonwaiting-service-admission)
@@ -5716,3 +5717,267 @@ introduces13 retained source/manifest/fixture paths within its16-path reserve.
 No new runtime abstraction or dependency is selected. Full remote feature,
 resource enforcement, identity, restart and remaining acceptance witnesses stay
 incomplete. Reviewed PR, exact CI and actual merge must precede delivery status.
+
+### Automatically selected exact-child service shutdown stage
+
+An application-owned service already receives the exact InstalledActor through
+InterpretInstalledActor, but its existing request_shutdown is private (actual
+E0624 in both profiles). The parent Actions route works, yet checking permission
+before queueing that parent request leaves a later unchecked shutdown attempt.
+Select public visibility for the existing InstalledActor.request_shutdown with
+its unchanged generic ingress, InjectEvent bound, implementation and owning
+control mailbox. The full installed capability remains runtime-issued; its
+constructor/fields and send-only projection remain private. No new runtime
+attachment, callback, trait, task, method spelling or authority store is needed.
+The alternative borrows private Application capabilities or adds another service
+attachment; that increases machinery without changing the owning operation.
+Root-only public lifecycle targeting cannot shut down the actual child.
+
+Keep a fixture-local exclusive permission/time owner around fresh validation
+and this existing synchronous operation. It closes user admission before
+submitting the control event and does not await mailbox capacity. Ok proves
+submission only, not actor termination or joined retirement. Earlier acquired
+messages retain their existing rights. A refusal never promises to reopen
+already closed admission. InjectEvent and registered wakers can unwind after
+closure or after submission; no rollback or successful retirement is implied.
+Document these exact partial-effect boundaries. This is not authorization for
+Behavior folds to perform effects or for production clock/provider selection.
+
+Smallest failing end-to-end regression: the genuine local service holding the
+installed target cannot invoke the exact existing operation after its fresh
+check because visibility is private. Extend the existing public Application
+child witness: known revoked/expired stop is refused with both target/sibling
+still useful; allowed exact stop publishes joined report while sibling works;
+repeated request after the report refuses AlreadyStopped. Preserve all native
+results and independent notifications. Independently invert permission checks,
+restore visibility denial, and retain send-only/no-event static denials where
+supported. Held actor-owned task/resource barriers remain a separate R11 gate.
+
+Forecast eight existing paths: owning endpoint.rs, child_service_stop.rs,
+module-boundaries.md, public-api-audit.md, runtime-capability-interfaces.md,
+this PRD, backlog status and the historical execution-ownership module map.
+Mark the former private-method description as the exact EXEC1 delivery record
+and point to this later choice rather than presenting contradictory guidance.
+Production Rust at most30 net documentation and
+visibility lines, zero executable-body growth; zero new defined public types
+or dependencies, one existing method made public. Child same-file ceiling600,
+up to99 additional test lines over501 before simplification. Existing production
+2200/test6400 reserves cover root1228+30 and cross-owner6300+99. Raise combined
+research reserve2300 to2400 before editing; no extra retained source paths.
+Source revision/lock remains exact research2b770de with merged9fc225ee contracts;
+all178 non-Communication lock records and owning private shutdown implementation
+remain unchanged. Preserve prior failing-law hashes rather than assigning older
+inversions to this new source. Independent research PR CI runs concurrently;
+this dependent feature branch must integrate its actual merge before final PR.
+
+### Research prerequisite submitted for actual delivery
+
+Research [PR332](https://github.com/devrandom-labs/bombay/pull/332) targets main
+at frozen head2b770def0b4adcaf241bb9c844480dfcea1ca95c. Independent non-author
+[comment review](https://github.com/devrandom-labs/bombay/pull/332#pullrequestreview-5478716751)
+finds no remaining ownership/API/minimization blocker after the concrete oracle
+corrections. It does not grant full feature acceptance or claim unexecuted CI.
+Required Nix and separate native debug/optimized Linux jobs run concurrently
+in38046976021; CodeQL38046976027 and advisory/license38046976072 are separate
+checks. No merge or completed CI is recorded at this checkpoint. The exact-child
+stage is isolated from the preserved user workspace and will integrate the real
+research merge before its own final review and PR.
+
+### Automatically selected portable owning declaration-pressure delivery
+
+Select the measured owning pressure witness's six-path retained stage: existing
+zenoh/src/net/tests/tables.rs and ci/verify-release.sh, three test PEM files and
+one fixture README under zenoh/tests/fixtures/declaration-pressure. Reuse exact
+literal certificate bytes already tested in controlled373d25a's native
+io/zenoh-transport/tests/unicast_openclose.rs::get_tls_certs. These localhost
+server/client fixtures remain valid until March2123. The seven distinct-role
+research certificates expire January6,2027; retaining those instead would give
+this owner campaign an unnecessarily short CI lifetime. No deployment roots,
+identity, certificate lifecycle or production rotation policy changes.
+
+Both producer/receiver use the existing test TLS principal but actual separate
+native sessions. The retained law is measured resource retention outside ACL
+publication keys and measured restoration, not identity isolation or quotas.
+Preserve source hashes, exact retained newline policy, minica attribution,
+EPL-2.0 OR Apache-2.0 provenance and public fixture-key warning in README; do
+not import a CA private key. This is fixture extraction, not cryptography code.
+
+Forecast ≤445 net test/fixture/CI/documentation lines: owning test ≤330 net,
+three PEMs67 lines, README≤40, existing CI≤12 configuration lines. Four new
+paths, six stage paths, production Rust/API/dependencies/manifest/lock0.
+Reuse the existing pinned-Nix controlled TLS CI job and its debug/release loop:
+exact ignored owning test with TLS-only features and portable certificate path,
+then strict owning library/test Clippy. No new workflow, publication or package
+version. Original omission inversions keep historical source identity; new
+retained fixtures require fresh native profile controls and exact-head CI.
+
+Automatically expand cumulative cross-owner test/fixture ceiling6400 to6600
+before retaining PEMs: current6300 plus child forecast99 plus fixtures67 is6466.
+Production ceiling2200 remains sufficient; CI increase≤12 is counted separately.
+The combined research2400 reserve covers1907+99+330+67=2403 only after raising
+it to2450. Raise retained-path reserve300 to320 rather than asserting the prior
+incomplete global inventory has an exact count. Unique source imports, generated
+locks and artifact copies remain separately accounted. Recommendations preserve
+all previous acceptance limits and require actual reviewed merge before delivery.
+
+### Authorized-control oracle refinement before final retention
+
+Coordinator review found the permitted-control test awaits retirement even if
+submission was refused. An always-denying implementation would hang instead of
+failing its intended permitted-result assertion after cleanup. Select retaining
+an optional actually acquired report and repeat receipt only after successful
+submission; perform ordinary parent cleanup in the refused case, then assert
+the required Ok/report/repeat facts from acquired originals. This adds at most15
+test lines in the same600-line file ceiling, no production/API/path changes.
+Independently simulate always-denying permitted admission and require its exact
+typed result mismatch after cleanup in both profiles. Keep older revocation and
+expiry inversions with their recorded source identities; rerun affected positive
+controls on the refined source. Avoid replacing this with an elapsed timeout
+whose expiry would establish no actor-law violation.
+
+### Actual Linux transport evidence and owning pressure fixture failure
+
+Research PR332 native Linux debug/release jobs114198354425/114198354400 pass.
+Downloaded artifacts11667797212/11667902224 each contain16 unique cases:12
+ordinary complete controls and4 exact late-worker-death refusals. Independent
+receipt/exit validation is `/tmp/bombay-remote-contract-linux-native-proof.json`;
+source/profiles remain frozen2b770def. Required Nix38046976021 remains pending.
+No merge or full remote gate is inferred from these native-only campaigns.
+
+Controlled pressure [PR3](https://github.com/devrandom-labs/bombay-zenoh/pull/3)
+head9f40c343ab00791dcf859655848a59e75435397b has actual non-author
+[comment review](https://github.com/devrandom-labs/bombay-zenoh/pull/3#pullrequestreview-5478745287).
+Its required Linux run38047637706 fails: producer native open times out,
+owner measures0 mappings, broken-pipe request and actual child exit101 survive,
+and owner native close succeeds. This is a fixture connectivity failure and
+has zero retention-law or semantic-inversion credit. Preserve exact logs
+`/tmp/bombay-zenoh-pressure-ci-failed.log`.
+
+Selected TLS utils.rs613–629 resolves only lookup_host.next and derives server
+name from the endpoint host; unicast.rs340–374 connects that address,415–457
+binds the same resolver result. The fixture listens127.0.0.1 but connectslocalhost;
+the same actual Linux log records localhost resolving::1 in its preceding
+successful TLS control. Select changing its single listener to tls/localhost:0
+so both endpoints share native resolution and DNSlocalhost certificate identity.
+Allow a two-line explanation, at most2 net test lines: same six paths, total≤425
+within445, owning test≤330, no production/certificate/timeout/verification change.
+An explicit SNI override is absent in this selected API; no custom resolver or
+fallback is needed for the fixture. Rerun native profile controls, strict checks
+and actual exact-head CI. Do not blindly rerun the failed source or weaken a check.
+The first local-cache origin push was not GitHub delivery; actual controlled
+remote base373d25a ancestry and correct branch push were verified before PR3.
+
+### Research prerequisite actually reviewed and merged
+
+[PR332](https://github.com/devrandom-labs/bombay/pull/332) merged at
+2026-10-10T11:47:54Z, commit a3a018790b4a0edb61d67e190d8978b1ce38464f,
+after exact head2b770def0b4adcaf241bb9c844480dfcea1ca95c independent comment
+review and all six observed checks passed: required Nix38046976021,
+its separate native TLS debug/optimized jobs, CodeQL38046976027 plus summary,
+and Deny38046976072. Required Driver/Observe fuzz and artifact uploads passed;
+optional scheduled Miri was not executed. Exact full CI log is
+`/tmp/bombay-remote-contract-final-ci.log`; Linux native artifacts retain16
+case-specific observations per profile. No full AUTH1/NET1/R01–R25 is closed.
+
+### Exact-child service shutdown final local verification
+
+Final endpoint61a872762a8261f5308fe0813551ad1863be489f7753f6fdb8b2f95729596c32
+has the exact prior method signature/bounds/body039a4394e2510c44f5a1c98cc1a4b180ef2fb42c7dac85bbf65cc648867c943f.
+Only documentation/visibility changes; locked graphaa2b8c7f9b4fb917976a13167718b6cb462ec01420ea426578ae5951f7cc5bab
+is byte-identical. Final test592 lines, SHA
+a59515a6ab23749c9794ad23d0d5937e5e3f86d54226457a8ed56f4e2c8647d6.
+Its17-command exact-source campaign preserves positives, three independent
+revoked/expired/always-denied inversion pairs, restored pairs, private visibility
+denials at both actual call sites (two E0624 each profile), final strict workspace/
+all-target Clippy and formatting. Every semantic inverse fails its named typed
+assertion after actual native/notification acquisition; no timeout-only credit.
+Evidence: `/tmp/bombay-child-stop-final-oracles.json`.
+
+Prior send-only E0599/no-shutdown E0277 static pairs retain their actual earlier
+source identities in `/tmp/bombay-fresh-child-campaign.json`. Standard Report and
+repeated AlreadyStopped controls use real installed authority. Fixture scope is
+local permission/time and leaf-child native ownership; production authentication,
+replay and genuine child-owned held work remain open. A separate agent reviewed
+the coordinator API/oracle changes; that agent authored the original test, so
+this is not described as wholly non-author review of every line.
+
+All five combined pinned-Nix commands pass on the exact final Rust sources:
+workspace build, workspace unit/integration/docs, all-target tests, format and
+strict workspace/all-target Clippy. Counts and exact argv/hashes/logs are
+`/tmp/bombay-exact-child-combined-checks.json`. Reviewed PR and its required
+exact-head CI and actual merge remain before marking this prerequisite delivered.
+
+### Automatically selected identity scope and issuance research
+
+Accept verifier handoff evidence binding the original protected JSON and its
+original caller, deployment, purpose, exact host/runtime/actor, protocol,
+operation and grant-authority scope. Application authorization separately compares
+that verified scope to the actual static export and permitted operation. Neither
+routing path, gateway local origin nor mTLS peer identity may replace original
+caller authority. Verifying caller alone is viable only with independent evidence
+that the exact claims were authenticated; otherwise scope substitution is possible.
+No concrete field spelling, AID grammar, generation issuer, proof container,
+signature algorithm or public provider API is selected by this decision.
+
+Select ordinary Rust comparison before new abstractions: two private provider-
+issued fixture receipt products with no Deserialize/raw public constructors,
+two concrete async verifier functions, required typed result-message constructors
+and ordinary explicit projection functions. Compare with the smallest common
+provider-private fixture receipt; its private constructor must not be advertised
+as a final public API for external Selo. A public raw constructor would weaken
+issuance denial. Only an actual ordinary-Rust residual gap can justify a trait.
+Use already selected SerdeJSON1.0.151/Serde1.0.229/Tokio1.53.1 and core AsyncFn;
+no new manifest, dependency, codec or cryptographic mechanism. Rust-stdin against
+Cargo-selected rlibs proves syntax, not ordinary consumer dependency closure.
+
+Strict DTO parsing uses existing derive deny_unknown_fields and duplicate-field
+rejection; generic Value insertion can erase duplicate keys. Own decoded strings
+so valid escaped JSON spellings remain eligible. Exact byte owner remains outside
+verification awaits. Accepted/invalid/stale/unavailable retain separate types and
+actual acquired unavailable cause. Explicit fixture startup mode permits selected
+deterministic functions; production-required mode with fake/missing provider must
+refuse before actual application/export startup, with no per-message fallback.
+No production-positive real provider is invented. Closed fixture identities do
+not select production actor naming; controller-AID-scoped stable names remain a
+recommendation pending fresh owning Selo evidence, with host/runtime/grant epoch
+separate. Production clock conversion/skew/cache/delegation remain undecided.
+
+Forecast up to400 authored research lines in one explicitly owned scratch/stdin
+probe including ordinary-product comparison, zero production/adopted public API/
+dependency/manifest paths. Static controls both profiles precede raw Deserialize,
+private-construction, raw substitution, omitted result constructor and mismatched
+consumer denials; no runtime/crypto/bounded-allocation credit from compilation.
+Count the unique authored probe separately from byte-identical variants/artifacts.
+Automatically expand total research2800 to3200 and cross-owner test/research6900
+to7300 before authoring, covering retained2730 plus400 and6449+351+400=7200.
+Source/API/public-type/path320 and production2200 reserves otherwise stay unchanged.
+Replay/correlation/reply slots must be reserved before native insertion/transmit:
+waker unwind after actual enqueue cannot reopen replay eligibility. Those W/B
+policies remain open; this scope/issuer probe must not claim to implement replay.
+
+### Exact-child stage complete change record before submission
+
+Combined workspace/docs562 passing and all-target561 passing tests each retain
+one existing ignored test; build/fmt/strict Clippy pass. Source and lock remain
+exact final hashes above. Independent coordinator-API/oracle review has no
+remaining blocker; full non-author PR review and exact-head CI remain required.
+
+Complete delta against research prerequisite0733f6f, including all tracked and
+untracked files: eight paths, production +23/-1/net22 (documentation/visibility,
+zero executable-body growth); tests +160/-69/net91; documentation +285/-11/net274;
+manifest/lock0; defined public types +0/-0; one existing method newly public,
+zero export changes. Cumulative root delta against a9c5b7d4:75 paths,
+production +1725/-475/net1250; tests +6720/-652/net6068;
+documentation +3743/-88/net3655; manifest/lock +2986/-3/net2983;
+defined public types +5/-0 from earlier runtime delivery. Exact machine records:
+`/tmp/bombay-exact-child-stage-checkpoint.json` and
+`/tmp/bombay-exact-child-cumulative-checkpoint.json`.
+
+Controlled pressure hostname successor is one existing path +3/-1/net2 over
+9f40; complete owning stage is tests+319/-3/net316, fixtures67, CI6, provenance36,
+total425net acrosssix paths, no production Rust/API/manifest/lock. Root6068 plus
+controlled383 is6451 tests/fixtures. Separate held-root test351 projects6802;
+new identity-scope research up to400 projects7202 within7300. These actual/forecast
+terms are distinct; do not add older snapshots again. Production configuration
+CI increments and generated lock artifact cost remain separately visible.
+Rebase onto actual main a3a01879 before final PR; source bytes must stay identical.
