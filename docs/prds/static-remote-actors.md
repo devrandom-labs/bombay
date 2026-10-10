@@ -6719,10 +6719,10 @@ campaign. Production/public API remains unchanged; do not mark full acceptance.
 
 Stage against actual mainfbc714c: seven paths, zero untracked; production
 +0/-0/net0; tests+1133/-21/net1112; manifest/lock+4/-0/net4;
-public API+0/-0 types and zero new methods. Documentation +491/-1/net490.
+public API+0/-0 types and zero new methods. Documentation +490/-1/net489.
 Cumulative root against a9c5b7d4:77 paths, production+1725/-475/net1250,
 tests+8192/-661/net7531, manifest/lock+2990/-3/net2987,
-defined public types+5/-0; documentation +4491/-88/net4403.
+defined public types+5/-0; documentation +4490/-88/net4402.
 Cross-owner retained test bound8347/8600; research4277/4500. Source snapshots
 and generated lock inventories remain separately classified. Complete tracked/
 untracked measurement algorithm and per-path hashes are retained in
