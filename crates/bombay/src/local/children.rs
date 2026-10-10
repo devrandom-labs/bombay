@@ -59,6 +59,10 @@ where
         Self {
             creations: HashMap::new(),
             creation_order: Vec::new(),
+            startup_report: ActorRetirementReport::new(
+                RetirementAssessment::Established,
+                ActorFailureAssessment::NoFailuresFound,
+            ),
             actors: ActorSpace::new(),
             tail: Some(Tail::default()),
             position: PhantomData,
@@ -139,6 +143,12 @@ where
                 panic!("one child creation identity settles once per occurrence")
             }
             Entry::Vacant(entry) => {
+                if let CreationBinding::StartupRejected {
+                    retirement_report, ..
+                } = &binding
+                {
+                    self.startup_report = self.startup_report.combine(*retirement_report);
+                }
                 if match &binding {
                     CreationBinding::Established { .. } => true,
                     CreationBinding::StartupRejected {
@@ -147,7 +157,6 @@ where
                         terminal_report,
                         retirement_failures,
                         termination_notification,
-                        retirement_report,
                         ..
                     } => {
                         primary_failure.is_some()
@@ -155,14 +164,6 @@ where
                             || terminal_report.is_some()
                             || !retirement_failures.is_empty()
                             || termination_notification.is_err()
-                            || !matches!(
-                                retirement_report.failures(),
-                                ActorFailureAssessment::NoFailuresFound
-                            )
-                            || !matches!(
-                                retirement_report.retirement(),
-                                RetirementAssessment::Established
-                            )
                     }
                     CreationBinding::Rejected => false,
                 } {
@@ -355,6 +356,7 @@ where
         let Some(owner) = bindings.as_mut() else {
             return;
         };
+        *descendant_report = descendant_report.combine(owner.startup_report);
         for id in &owner.creation_order {
             if let Some(
                 CreationBinding::Established {
@@ -572,6 +574,7 @@ where
 {
     creations: HashMap<CreationId, CreationBinding<Child, Root>>,
     creation_order: Vec<CreationId>,
+    startup_report: ActorRetirementReport,
     actors: ActorSpace<Child::Protocol>,
     tail: Option<Tail>,
     position: PhantomData<fn() -> (Position, Origins)>,
