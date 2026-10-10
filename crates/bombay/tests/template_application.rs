@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use core::time::Duration;
 use std::time::Instant;
 
@@ -88,18 +89,32 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
-    if let ApplicationOutcome::Completed {
-        output: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
-    let ApplicationOutcome::Completed {
-        output: None,
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: None,
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
@@ -128,18 +143,32 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
-    if let ApplicationOutcome::Completed {
-        output: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
-    let ApplicationOutcome::Completed {
-        output: None,
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: None,
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
@@ -168,18 +197,32 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
-    if let ApplicationOutcome::Completed {
-        output: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
-    let ApplicationOutcome::Completed {
-        output: None,
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: None,
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
@@ -208,18 +251,32 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
-    if let ApplicationOutcome::Completed {
-        output: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
-    let ApplicationOutcome::Completed {
-        output: None,
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: None,
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
@@ -265,10 +322,17 @@ fn machine_transition(
 async fn machine_template_runs_as_an_ordinary_application_root() {
     let root = Machine::<MailAddr, _, _, _, _>::new(0, MachinePhase::Closed, machine_transition);
 
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((root_origin, joined_actor)),
-    } = Application::new(root.stop_on_shutdown())
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = Application::new(root.stop_on_shutdown())
         .run_with(|application| async move {
             application
                 .root()
@@ -406,18 +470,32 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
-    if let ApplicationOutcome::Completed {
-        output: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::Completed {
+            output: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
-    let ApplicationOutcome::Completed {
-        output: None,
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: None,
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");

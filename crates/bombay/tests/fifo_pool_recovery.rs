@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
@@ -310,22 +311,21 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
             panic!("the pool runs both workers and shuts down");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
+    let terminal: RecoveryTerminal = ProjectTerminal::project(root_origin, joined_actor);
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
@@ -410,22 +410,21 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
             panic!("the interrupted job completes after replacement");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
+    let terminal: RecoveryTerminal = ProjectTerminal::project(root_origin, joined_actor);
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
@@ -542,22 +541,21 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
             panic!("the pool returns the failed job and drains");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
+    let terminal: RecoveryTerminal = ProjectTerminal::project(root_origin, joined_actor);
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
@@ -665,22 +663,21 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
             panic!("the pool drains after held preparation");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
+    let terminal: RecoveryTerminal = ProjectTerminal::project(root_origin, joined_actor);
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     let RecoveryTerminal::Root { terminal, .. } = terminal else {
@@ -787,22 +784,21 @@ fn source_task_failure_terminates_the_active_pool() {
             panic!("the pool reports source task failure");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
+    let terminal: RecoveryTerminal = ProjectTerminal::project(root_origin, joined_actor);
     assert_eq!(termination, Err(Crash::CapabilityFailed));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     let RecoveryTerminal::Root { origin, terminal } = terminal else {

@@ -2,6 +2,7 @@ use behavior_actors::{
     Barrier, BarrierGeneration, BarrierMembership, BarrierMessage, BarrierReleased, Cache,
     CacheConfiguration, CacheMessage, CacheResult, Latch, LatchMessage, LatchReleased,
 };
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use bombay::ProjectTerminal;
 use bombay::behavior::MessageProtocol;
@@ -80,10 +81,17 @@ fn cache_preserves_an_exact_external_customer() {
             panic!("the exact-customer cache application terminates normally");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
@@ -176,10 +184,17 @@ fn barrier_releases_two_exact_external_participants() {
             panic!("the exact-customer barrier application terminates normally");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
@@ -244,10 +259,17 @@ fn latch_releases_exact_external_participants() {
             panic!("the exact-route latch application terminates normally");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };

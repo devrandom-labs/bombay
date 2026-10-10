@@ -1,3 +1,4 @@
+use bombay::{ActorFailureAssessment, ActorNotificationReceipts, RetirementAssessment};
 use core::ptr;
 use std::panic::resume_unwind;
 use std::sync::Arc;
@@ -156,20 +157,34 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
-    if let ApplicationOutcome::NotInvoked {
-        work: _,
-        startup_error: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::NotInvoked {
+            work: _,
+            startup_error: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
-    let ApplicationOutcome::NotInvoked {
-        work: None,
-        startup_error: Some(_startup_error),
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::NotInvoked {
+            work: None,
+            startup_error: Some(_startup_error),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
@@ -294,20 +309,34 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
-    if let ApplicationOutcome::NotInvoked {
-        work: _,
-        startup_error: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::NotInvoked {
+            work: _,
+            startup_error: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
-    let ApplicationOutcome::NotInvoked {
-        work: None,
-        startup_error: Some(_startup_error),
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::NotInvoked {
+            work: None,
+            startup_error: Some(_startup_error),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
@@ -615,10 +644,17 @@ enum NestedTerminal {
 
 #[tokio::test(flavor = "current_thread")]
 async fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() {
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = App::new(
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = App::new(
         NestedRoot { birth_report: None }.stop_on_shutdown(),
         ActorSpace::new(),
     )
@@ -978,20 +1014,34 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
         });
-    if let ApplicationOutcome::NotInvoked {
-        work: _,
-        startup_error: _,
-        cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-    } = &application_outcome
+    if let (
+        ApplicationOutcome::NotInvoked {
+            work: _,
+            startup_error: _,
+            cleanup: Ok(()),
+        },
+        Ok((_, ActorRetirement::ActorTaskFailed(_))),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
-    let ApplicationOutcome::NotInvoked {
-        work: None,
-        startup_error: Some(_startup_error),
-        cleanup: Ok((origin, retirement)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::NotInvoked {
+            work: None,
+            startup_error: Some(_startup_error),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
@@ -1151,6 +1201,8 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
         additional_failures: initialization_additional_failures,
         terminal_report: initialization_terminal_report,
         retirement_failures: initialization_retirement_failures,
+        retirement_report,
+        termination_notification,
     } = failure
     else {
         panic!("initialization provenance is distinct from actor and projector task failures");
@@ -1158,6 +1210,15 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
     assert!(initialization_additional_failures.is_empty());
     assert!(initialization_terminal_report.is_none());
     assert!(initialization_retirement_failures.is_empty());
+    termination_notification.expect("the original startup notification succeeded");
+    assert_eq!(
+        retirement_report.retirement(),
+        RetirementAssessment::Established
+    );
+    assert_eq!(
+        retirement_report.failures(),
+        ActorFailureAssessment::FailuresFound
+    );
     assert_eq!(id, child_id);
     assert_eq!(kind, CreationKind::Birth);
     let child_origin: ChildOrigin<PanicParent, PanicParentChildrenChild> =

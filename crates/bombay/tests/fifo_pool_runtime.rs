@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
@@ -211,22 +212,21 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
             panic!("the pool runs its worker and shuts down");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: PoolTerminal = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
+    let terminal: PoolTerminal = ProjectTerminal::project(root_origin, joined_actor);
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_pool_terminal(terminal);
 }
@@ -341,22 +341,21 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
             panic!("the pool returns the full-backlog job and shuts down");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: PoolTerminal = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
+    let terminal: PoolTerminal = ProjectTerminal::project(root_origin, joined_actor);
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_pool_terminal(terminal);
 }

@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
@@ -328,20 +329,21 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
             panic!("the two-role supervisor runs its policy");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((origin, joined)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((origin, joined)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let retirement = match joined {
-        ActorRetirement::ActorTaskFailed(failure) => {
-            panic!("the actual supervisor actor task failed: {failure}")
-        }
-        retirement => retirement,
-    };
-    let terminal = SupervisorTerminal::project(origin, retirement);
+    let terminal = SupervisorTerminal::project(origin, joined);
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(
@@ -496,10 +498,17 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
             panic!("the second-role rejection is interpreted");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((origin, joined)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((origin, joined)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };

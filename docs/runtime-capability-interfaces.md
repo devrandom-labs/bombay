@@ -424,7 +424,10 @@ the definition's typed `admission_refused` consumer. Admission remains
 distinct from processing and durable completion.
 
 `EntityActivationError` distinguishes resident-capacity refusal, hydration
-failure, and exact actor launch retirement. Forced drains retain their complete
+failure, allocation refusal before launch, and a started native actor launch
+retirement with its report and first notification receipt. The existing
+`EntityDefinition::retired` callback receives the full native result beside its
+runtime-issued report; family callback/conversion faults remain separate. Forced drains retain their complete
 `DrainFailure`; normal retirement retains final state, residual ingress,
 descendant terminals, and completion. Shutdown closes family admission only
 after the root settles, drains every represented incarnation, and joins all
@@ -662,6 +665,11 @@ temporarily unresolved. Both are forbidden.
    before this settlement completes; application and parent task joins await
    the complete residual.
 9. Release the Bombay task owner.
+10. The existing joining owner derives and publishes the shared read-only actor
+    retirement report after acquiring the actual task result. It retains the
+    native result and both original notification receipts independently of later
+    application conversion or family cleanup. Root report publication proceeds
+    while application Work is live; final native handoff retains its Work barrier.
 
 The Address lease must retire before terminal publication: an observer that
 sees termination must never subsequently resolve that same incarnation as
@@ -684,7 +692,10 @@ owner on the entered caller host. `execute`/`execute_with`/`execute_axum` expose
 those two futures separately when receiving must survive dropped execution.
 Calling `run` without Work retains genuine absence. Supplied Work and
 `WorkFuture::Output` remain bare original values; a user Option or Result is
-unchanged. Ready output is owned before producer disposal. The actual raw root
+unchanged. Ready output is owned before producer disposal. Successful receiving
+returns the work outcome beside independent native-root and two-stage notification
+receipts; Entity receiving additionally retains its family receipts. Work-phase
+cleanup retains its own unit success or exact cleanup error. The actual raw root
 retains native actor failure in `ActorRetirement::ActorTaskFailed`.
 `ApplicationCleanupError` separately retains cleanup-publication receiving and
 cleanup-task failures. `Terminal` is a descendant projection destination, not

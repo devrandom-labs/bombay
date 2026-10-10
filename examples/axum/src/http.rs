@@ -1,3 +1,5 @@
+#[cfg(test)]
+use bombay::ActorNotificationReceipts;
 use std::future::Future;
 
 use axum::{
@@ -297,17 +299,31 @@ mod tests {
             drop(failed);
             panic!("the live caller host is entered");
         });
-        if let ApplicationOutcome::Completed {
-            output: _,
-            cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-        } = &outcome
+        if let (
+            ApplicationOutcome::Completed {
+                output: _,
+                cleanup: Ok(()),
+            },
+            Ok((_, ActorRetirement::ActorTaskFailed(_))),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = &outcome
         {
             panic!("the original serving result and joined root must both remain acquired");
         }
-        let ApplicationOutcome::Completed {
-            output: Ok(()),
-            cleanup: Ok((origin, retirement)),
-        } = outcome
+        let (
+            ApplicationOutcome::Completed {
+                output: Ok(()),
+                cleanup: Ok(()),
+            },
+            Ok((origin, retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
         else {
             panic!("the original serving result and joined root must both remain acquired");
         };

@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use core::future::{Future, poll_fn};
 use core::mem;
 use core::num::NonZeroUsize;
@@ -28,8 +29,9 @@ use bombay::entity::{
     EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityShutdown,
 };
 use bombay::{
-    ActorRetirement, ApplicationBehavior, ApplicationCleanupError, ApplicationDefinitionError,
-    ApplicationOutcome, ApplicationStagingError, ChildFailure, ChildOrigin, ProjectTerminal,
+    ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationBehavior,
+    ApplicationCleanupError, ApplicationDefinitionError, ApplicationOutcome,
+    ApplicationStagingError, ChildFailure, ChildOrigin, ProjectTerminal, RetirementAssessment,
     RootOrigin, TerminalProjection,
 };
 use bombay::{ActorSpace, ActorSpaces, App, Application, Hosts, MailAddr, actor};
@@ -146,8 +148,10 @@ impl EntityDefinition for Accounts {
         _: &EntityId<u64>,
         _: ActivationId,
         retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+        retirement_report: ActorRetirementReport,
     ) {
-        drop(retirement);
+        // This startup-only controller expects no incarnation receipt.
+        drop((retirement, retirement_report));
         panic!("no incarnation is requested by this startup controller");
     }
 }
@@ -198,6 +202,10 @@ fn assert_rejected_root(outcome: &AccountConclusion) {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one controller checks every native lane before consuming projection and then proves original output custody"
+)]
 async fn completed_output_survives_actual_root_terminal_conversion_failure() {
     let output = Arc::new(vec![11, 19]);
     let original_output = Arc::downgrade(&output);
@@ -221,10 +229,17 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
         })
         .await
         .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
-    let ApplicationOutcome::Completed {
-        output,
-        cleanup: Ok((origin, joined)),
-    } = outcome
+    let (
+        ApplicationOutcome::Completed {
+            output,
+            cleanup: Ok(()),
+        },
+        Ok((origin, joined)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = outcome
     else {
         panic!("completed original output and both actual cleanup boundaries are acquired");
     };
@@ -300,6 +315,10 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one actual startup-refusal controller proves native, family shutdown and original allocation custody together"
+)]
 fn actual_family_shutdown_survives_pure_root_startup_refusal() {
     let role = Arc::new(vec![41, 43]);
     let original_role = Arc::downgrade(&role);
@@ -330,7 +349,15 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
         .enable_all()
         .build()
         .expect("the synchronous refusal controller owns one enabled application host");
-    let (outcome, root_receiving, shutdowns) = application_host
+    let (
+        outcome,
+        root_receiving,
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+        shutdowns,
+    ) = application_host
         .block_on(
             application.run_with_entities::<AccountConclusion, _, _, _>(|_| async {
                 panic!("startup refusal leaves original work uninvoked");
@@ -339,7 +366,10 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
         .unwrap_or_else(|(application, work, error)| {
             drop((application, work));
             panic!("the explicit application host must be entered: {error}");
-        });
+        })
+    else {
+        panic!("the joined startup refusal retains both successful notifications");
+    };
     drop(application_host);
     let ApplicationOutcome::NotInvoked {
         work,
@@ -419,11 +449,18 @@ async fn application_startup_refusal_returns_whole_unprojected_root() {
     .await
     .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
     let outcome = match outcome {
-        ApplicationOutcome::NotInvoked {
-            work,
-            startup_error: Some(startup_error),
-            cleanup: Ok((origin, retirement)),
-        } => {
+        (
+            ApplicationOutcome::NotInvoked {
+                work,
+                startup_error: Some(startup_error),
+                cleanup: Ok(()),
+            },
+            Ok((origin, retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) => {
             drop((work, startup_error));
             AccountConclusion::project(origin, retirement)
         }
@@ -504,11 +541,18 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
         .await
         .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
     let (origin, retirement) = match outcome {
-        ApplicationOutcome::NotInvoked {
-            work,
-            startup_error: Some(startup_error),
-            cleanup: Ok((origin, retirement)),
-        } => {
+        (
+            ApplicationOutcome::NotInvoked {
+                work,
+                startup_error: Some(startup_error),
+                cleanup: Ok(()),
+            },
+            Ok((origin, retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) => {
             drop((work, startup_error));
             (origin, retirement)
         }
@@ -614,12 +658,12 @@ fn paired_account(original: Arc<Vec<u8>>) -> App<StopOnShutdown<ReceivingAccount
     reason = "the oracle reads both independent real join boundaries and the complete concrete actor retirement"
 )]
 fn assert_completed_account(
-    cleanup: &Result<
+    root_receipt: &Result<
         (
             RootOrigin<StopOnShutdown<ReceivingAccount>>,
             ActorRetirement<StopOnShutdown<ReceivingAccount>, AccountConclusion, ()>,
         ),
-        ApplicationCleanupError,
+        RecvError,
     >,
 ) {
     let Ok((
@@ -644,9 +688,9 @@ fn assert_completed_account(
             retirement_failures,
             terminal_report,
         },
-    )) = cleanup
+    )) = root_receipt
     else {
-        panic!("the standard account and cleanup join normally");
+        panic!("the standard account and root_receipt join normally");
     };
     assert!(matches!(
         (
@@ -683,12 +727,12 @@ fn assert_completed_account(
     reason = "the oracle reads both independent real join boundaries and the complete concrete actor retirement"
 )]
 fn assert_cancelled_account(
-    cleanup: &Result<
+    root_receipt: &Result<
         (
             RootOrigin<StopOnShutdown<ReceivingAccount>>,
             ActorRetirement<StopOnShutdown<ReceivingAccount>, AccountConclusion, ()>,
         ),
-        ApplicationCleanupError,
+        RecvError,
     >,
 ) {
     let Ok((
@@ -712,7 +756,7 @@ fn assert_cancelled_account(
             retirement_failures,
             terminal_report,
         },
-    )) = cleanup
+    )) = root_receipt
     else {
         panic!("the original authority cancels the still-live account");
     };
@@ -763,17 +807,28 @@ fn borrowed_local_work_returns_non_send_output_after_root_join() {
         let (execution, result) =
             pair.unwrap_or_else(|_| panic!("the original entered executor is available"));
         let ((), result) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = result else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = result
+        else {
             panic!("the original caller-local work completes");
         };
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         let exact = original
             .upgrade()
             .is_some_and(|original| Rc::ptr_eq(&original, &output.0));
         let contents = output.0.as_slice().to_vec();
         let borrowed_contents = output.1.as_slice().to_vec();
         let retained = original.strong_count();
-        drop((output, cleanup));
+        drop((output, root_receipt));
         let released = original.strong_count();
         assert!(exact);
         assert_eq!(contents, vec![79, 83]);
@@ -803,7 +858,8 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
             })
             .unwrap_or_else(|_| panic!("the original entered executor is available"));
         drop(execution);
-        let ApplicationOutcome::Unstarted { application, work } = result.await else {
+        let (ApplicationOutcome::Unstarted { application, work }, Err(_), Err(_)) = result.await
+        else {
             panic!("before-first-poll drop returns the whole original inputs");
         };
         let owned_before_retry = retained.strong_count();
@@ -811,11 +867,22 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
             .execute_with::<AccountConclusion, (), _, _>(work)
             .unwrap_or_else(|_| panic!("the exact original inputs retry in the live executor"));
         let ((), result) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = result else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = result
+        else {
             panic!("the recovered original callable runs on the recovered original application");
         };
-        assert_completed_account(&cleanup);
-        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &cleanup else {
+        assert_completed_account(&root_receipt);
+        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &root_receipt else {
             panic!("the recovered application owns its original root");
         };
         let exact_root = state_retained
@@ -825,7 +892,7 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
             .upgrade()
             .is_some_and(|original| Rc::ptr_eq(&original, &output));
         let contents = output.as_slice().to_vec();
-        drop((output, cleanup));
+        drop((output, root_receipt));
         let released = retained.strong_count();
         let state_released = state_retained.strong_count();
         assert_eq!(owned_before_retry, 1);
@@ -857,30 +924,48 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
         let mut execution = Box::pin(execution);
         let first_poll = poll_fn(|context| Poll::Ready(execution.as_mut().poll(context))).await;
         drop(execution);
-        let ApplicationOutcome::NotInvoked {
-            work,
-            startup_error,
-            cleanup,
-        } = result.await
+        let (
+            ApplicationOutcome::NotInvoked {
+                work,
+                startup_error,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = result.await
         else {
             panic!("the current-thread first poll starts the task but cannot yet acquire startup");
         };
-        assert_cancelled_account(&cleanup);
+        assert_cancelled_account(&root_receipt);
         let callable_retained = retained.strong_count();
-        drop(cleanup);
+        drop(root_receipt);
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
             .execute_with::<AccountConclusion, (), _, _>(work)
             .unwrap_or_else(|_| panic!("the original callable runs against a genuine new handle"));
         let ((), result) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = result else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = result
+        else {
             panic!("the recovered original callable completes on the new actor");
         };
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         let exact = retained
             .upgrade()
             .is_some_and(|original| Rc::ptr_eq(&original, &output));
         let contents = output.as_slice().to_vec();
-        drop((output, cleanup));
+        drop((output, root_receipt));
         let released = retained.strong_count();
         assert!(first_poll.is_pending());
         assert!(startup_error.is_none());
@@ -923,11 +1008,19 @@ fn owning_execution_drop_releases_pending_local_work_before_join() {
             Ok(()) | Err(()) => {}
         }
         let outcome = result.await;
-        let ApplicationOutcome::Interrupted { cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("invoked unfinished work is surrendered, not reconstructed");
         };
-        assert_cancelled_account(&cleanup);
-        drop(cleanup);
+        assert_cancelled_account(&root_receipt);
+        drop(root_receipt);
         ready.expect("the original work really started before owning drop");
         assert_eq!(work_released_before_join, 0);
     });
@@ -1004,15 +1097,26 @@ fn completed_root_does_not_surrender_pending_application_work() {
         let held_after_root_stop = retained.strong_count();
         let released = continuation.send(());
         let ((), outcome) = tokio::join!(&mut execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("the original work survives root completion and then completes");
         };
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         let exact = retained
             .upgrade()
             .is_some_and(|original| Rc::ptr_eq(&original, &output));
         let contents = output.as_slice().to_vec();
-        drop((output, cleanup));
+        drop((output, root_receipt));
         let surrendered = retained.strong_count();
         requested.expect("the original work admitted its typed shutdown request");
         released.expect("root completion did not destroy the original gated work");
@@ -1057,15 +1161,26 @@ fn missing_executor_returns_original_application_and_callable() {
                 panic!("the exact original input product retries in the entered executor")
             });
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("the recovered original callable completes");
         };
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         let exact = retained
             .upgrade()
             .is_some_and(|original| Rc::ptr_eq(&original, &output));
         let contents = output.as_slice().to_vec();
-        drop((output, cleanup));
+        drop((output, root_receipt));
         let output_released = retained.strong_count();
         let state_released = state_retained.strong_count();
         assert!(context_error.is_missing_context());
@@ -1111,11 +1226,18 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
             })
             .unwrap_or_else(|_| panic!("the entered executor is available"));
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::NotInvoked {
-            work,
-            startup_error,
-            cleanup,
-        } = outcome
+        let (
+            ApplicationOutcome::NotInvoked {
+                work,
+                startup_error,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
         else {
             panic!("actual initialization refusal preserves the uninvoked callable");
         };
@@ -1138,7 +1260,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 retirement_failures,
                 terminal_report,
             },
-        )) = &cleanup
+        )) = &root_receipt
         else {
             panic!("the complete original initialization refusal remains available");
         };
@@ -1167,7 +1289,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
         assert_eq!(capability_failures.len(), 0);
         assert!(unread_owner_cancellation.is_none());
         let callable_owned = retained.strong_count();
-        drop(cleanup);
+        drop(root_receipt);
         let root_released = root_retained.strong_count();
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
             .execute_with::<AccountConclusion, (), _, _>(work)
@@ -1175,15 +1297,26 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 panic!("the exact recovered callable retries on an actual new root")
             });
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("the original callable completes on its real retry");
         };
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         let exact_callable = retained
             .upgrade()
             .is_some_and(|original| Rc::ptr_eq(&original, &output));
         let contents = output.as_slice().to_vec();
-        drop((output, cleanup));
+        drop((output, root_receipt));
         let callable_released = retained.strong_count();
         assert!(startup_error.is_some());
         assert!(exact_root);
@@ -1226,17 +1359,28 @@ fn cancelled_borrowed_result_wait_preserves_same_receiver_and_completed_output()
         let output_owned = retained.strong_count();
         let requested = lifecycle.request_shutdown();
         let ((), outcome) = tokio::join!(&mut execution, result.as_mut());
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("the same original receiver retains completed caller-local output");
         };
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         let exact = retained
             .upgrade()
             .is_some_and(|original| Rc::ptr_eq(&original, &output));
         let contents = output.as_slice().to_vec();
-        drop((output, cleanup));
+        drop((output, root_receipt));
         let released = retained.strong_count();
-        requested.expect("the live root accepts the actual cleanup request");
+        requested.expect("the live root accepts the actual root_receipt request");
         assert!(waiting.is_pending());
         assert_eq!(output_owned, 1);
         assert!(exact);
@@ -1299,10 +1443,23 @@ fn ready_output_survives_work_destructor_panic_and_actual_root_join() {
         .await;
         drop(execution);
         let result = result.await;
-        let ApplicationOutcome::Completed { output, cleanup } = result else {
-            panic!("the already acquired Ready output survives W disposal and real actor cleanup");
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = result
+        else {
+            panic!(
+                "the already acquired Ready output survives W disposal and real actor root_receipt"
+            );
         };
-        assert_cancelled_account(&cleanup);
+        assert_cancelled_account(&root_receipt);
         let Err(payload) = execution_fault else {
             panic!("the caller receives the original work destructor fault independently");
         };
@@ -1312,7 +1469,7 @@ fn ready_output_survives_work_destructor_panic_and_actual_root_join() {
         let contents = output.as_slice().to_vec();
         let output_owned = original_output.strong_count();
         let cause_owned = original_payload.strong_count();
-        drop((output, cleanup));
+        drop((output, root_receipt));
         let output_released = original_output.strong_count();
         let cause_still_owned = original_payload.strong_count();
         drop(payload);
@@ -1385,8 +1542,9 @@ impl EntityDefinition for RetiringAccounts {
         id: &EntityId<u64>,
         activation: ActivationId,
         retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+        retirement_report: ActorRetirementReport,
     ) {
-        Accounts.retired(id, activation, retirement);
+        Accounts.retired(id, activation, retirement, retirement_report);
     }
 }
 
@@ -1507,6 +1665,10 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                     terminal_report,
                 },
             )),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
             (
                 Ok((
                     head,
@@ -1825,19 +1987,23 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
     let mut joined_refusal = None;
     let mut uninvoked_work_retained = None;
     match returned.take() {
-        Some(Ok(ApplicationOutcome::StagingRejected {
-            inputs:
-                (
-                    root,
-                    work,
-                    ApplicationStagingError::RoleDisposalPanicked {
-                        id,
-                        actor,
-                        children,
-                        cause,
-                    },
-                ),
-        })) => {
+        Some(Ok((
+            ApplicationOutcome::StagingRejected {
+                inputs:
+                    (
+                        root,
+                        work,
+                        ApplicationStagingError::RoleDisposalPanicked {
+                            id,
+                            actor,
+                            children,
+                            cause,
+                        },
+                    ),
+            },
+            Err(_),
+            Err(_),
+        ))) => {
             let mut creations = children.into_creates().into_iter();
             let creation = creations
                 .next()
@@ -1864,11 +2030,18 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
             // remain concrete owners outside the disposed user Role.
             cold_inputs = Some((root, work, actor, earlier, cause));
         }
-        Some(Ok(ApplicationOutcome::NotInvoked {
-            work,
-            startup_error: Some(startup_error),
-            cleanup: Ok((origin, retirement)),
-        })) => {
+        Some(Ok((
+            ApplicationOutcome::NotInvoked {
+                work,
+                startup_error: Some(startup_error),
+                cleanup: Ok(()),
+            },
+            Ok((origin, retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ))) => {
             uninvoked_work_retained = Some(original_work.strong_count());
             // This concrete consumer intentionally releases its returned uninvoked work.
             drop((work, startup_error));
@@ -2139,11 +2312,18 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
             })
             .unwrap_or_else(|_| panic!("the original executor is entered"));
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::NotInvoked {
-            work,
-            startup_error,
-            cleanup,
-        } = outcome
+        let (
+            ApplicationOutcome::NotInvoked {
+                work,
+                startup_error,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
         else {
             panic!("the actual refused root never invokes the original callable");
         };
@@ -2166,7 +2346,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
                 retirement_failures,
                 terminal_report,
             },
-        )) = &cleanup
+        )) = &root_receipt
         else {
             panic!("both real joins return the complete declared initialization refusal");
         };
@@ -2208,7 +2388,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
             .map(|child| child.as_slice().to_vec());
         let role_released = original_role.strong_count();
         let work_owned = original_work.strong_count();
-        drop((work, cleanup, startup_error));
+        drop((work, root_receipt, startup_error));
         let released = (
             original_root.strong_count(),
             original_child.strong_count(),
@@ -2294,19 +2474,23 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
             })
             .unwrap_or_else(|_| panic!("the original executor is entered"));
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::StagingRejected {
-            inputs:
-                (
-                    root,
-                    work,
-                    ApplicationStagingError::RoleDisposalPanicked {
-                        id,
-                        actor,
-                        children,
-                        cause,
-                    },
-                ),
-        } = outcome
+        let (
+            ApplicationOutcome::StagingRejected {
+                inputs:
+                    (
+                        root,
+                        work,
+                        ApplicationStagingError::RoleDisposalPanicked {
+                            id,
+                            actor,
+                            children,
+                            cause,
+                        },
+                    ),
+            },
+            Err(_),
+            Err(_),
+        ) = outcome
         else {
             panic!(
                 "the actual role fault returns cold partials without startup or cleanup fiction"
@@ -2448,6 +2632,7 @@ struct LiveAccounts {
                 EntityId<u64>,
                 ActivationId,
                 Result<ActorRetirement<StopOnShutdown<LiveAccount>, Never, ()>, JoinError>,
+                ActorRetirementReport,
             )>,
         >,
     >,
@@ -2522,11 +2707,12 @@ impl EntityDefinition for LiveAccounts {
         id: &EntityId<u64>,
         activation: ActivationId,
         retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+        retirement_report: ActorRetirementReport,
     ) {
         self.retired
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push((*id, activation, retirement));
+            .push((*id, activation, retirement, retirement_report));
     }
 }
 
@@ -2664,7 +2850,9 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
         .expect("the genuine admitted incarnation joins once");
     let remaining = retirement_rows.next();
     assert!(remaining.is_none());
-    let (id, activation, joined) = row;
+    let (id, activation, joined, report) = row;
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     println!("joined original Entity {id:?} activation {activation:?}");
     assert_eq!(id, EntityId::new(73));
     let retirement =
@@ -2803,6 +2991,10 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                     terminal_report,
                 },
             )),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
             (
                 Ok((
                     role,
@@ -3090,15 +3282,22 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
     let (work_id, projected_id, child_id, root_address, child_address) =
         caller_host.block_on(async {
             let ((), outcome) = tokio::join!(execution, result);
-            let ApplicationOutcome::Completed {
-                output: (output, borrowed, work_id),
-                cleanup,
-            } = outcome
+            let (
+                ApplicationOutcome::Completed {
+                    output: (output, borrowed, work_id),
+                    cleanup: Ok(()),
+                },
+                root_receipt,
+                Ok(ActorNotificationReceipts {
+                    termination: Ok(()),
+                    retirement: Ok(()),
+                }),
+            ) = outcome
             else {
                 panic!("the distinct caller receives its original complete work output");
             };
-            let Ok((origin, retirement)) = cleanup else {
-                panic!("both actual actor and cleanup joins complete");
+            let Ok((origin, retirement)) = root_receipt else {
+                panic!("both actual actor and root_receipt joins complete");
             };
             // The pair never projects root retirement; this is explicit caller policy on K.
             let projected = HostAccountConclusion::project(origin, retirement);
@@ -3374,14 +3573,14 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
     );
     let (work_id, control_work_id) = caller_host.block_on(async {
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::NotInvoked {
+        let (ApplicationOutcome::NotInvoked {
             work,
             startup_error,
             cleanup: Err(ApplicationCleanupError::TaskFailed(cleanup_failure)),
-        } = outcome
+        }, Err(root_closed), Err(notification_closed)) = outcome
         else {
             panic!(
-                "destroyed selected host returns the uninvoked callable and actual cleanup failure"
+                "destroyed selected host returns the uninvoked callable and actual root_receipt failure"
             );
         };
         assert!(cleanup_failure.is_cancelled());
@@ -3390,28 +3589,28 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         assert_eq!(invocations.get(), 0);
         assert_eq!(original_work.strong_count(), 1);
         assert_eq!(original_root.strong_count(), 0);
-        drop((cleanup_failure, startup_error));
+        drop((cleanup_failure, startup_error, root_closed, notification_closed));
         // Explicit caller retry uses a genuine new application; the destroyed actor has no fabricated residual.
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
             .execute_with::<AccountConclusion, (), _, _>(work)
             .unwrap_or_else(|_| panic!("the surviving caller host receives original work"));
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed {
+        let (ApplicationOutcome::Completed {
             output: (output, borrowed, work_id),
-            cleanup,
-        } = outcome
+            cleanup: Ok(()),
+        }, root_receipt, Ok(ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) })) = outcome
         else {
             panic!("the original callable completes on the explicit new application");
         };
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         assert_eq!(Rc::as_ptr(&output), original_work.as_ptr());
         assert_eq!(output.as_slice(), [307, 311]);
         assert_eq!(borrowed.as_slice(), [313, 317]);
         assert_eq!(invocations.get(), 1);
-        drop((output, cleanup));
+        drop((output, root_receipt));
         // The second execution has never been polled or staged, even though its selected host is gone.
         drop(control_execution);
-        let ApplicationOutcome::Unstarted { application, work } = control_result.await else {
+        let (ApplicationOutcome::Unstarted { application, work }, Err(_), Err(_)) = control_result.await else {
             panic!("destroyed host cannot turn untouched input into a begun application");
         };
         assert_eq!(control_invocations.get(), 0);
@@ -3428,19 +3627,19 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
                 panic!("the exact original application and work select the actual surviving host")
             });
         let ((), outcome) = tokio::join!(execution, result);
-        let ApplicationOutcome::Completed {
+        let (ApplicationOutcome::Completed {
             output: (output, borrowed, control_work_id),
-            cleanup,
-        } = outcome
+            cleanup: Ok(()),
+        }, root_receipt, Ok(ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) })) = outcome
         else {
             panic!("the original untouched control runs after explicit retry");
         };
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         assert_eq!(Rc::as_ptr(&output), original_control_work.as_ptr());
         assert_eq!(output.as_slice(), [331, 337]);
         assert_eq!(borrowed.as_slice(), [313, 317]);
         assert_eq!(control_invocations.get(), 1);
-        drop((output, cleanup));
+        drop((output, root_receipt));
         (work_id, control_work_id)
     });
     drop(caller_host);
@@ -3488,11 +3687,22 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
     let output_owned_before_join = original_output.strong_count();
     assert_eq!(output_owned_before_join, 1);
     let outcome = runtime.block_on(result.take().expect("the original receiver is retained"));
-    let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+    let (
+        ApplicationOutcome::Completed {
+            output,
+            cleanup: Ok(()),
+        },
+        root_receipt,
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = outcome
+    else {
         panic!("Ready was acquired before disposal of the work future");
     };
-    assert_cancelled_account(&cleanup);
-    let Ok((_, ActorRetirement::OwnerCancelled { behavior, .. })) = &cleanup else {
+    assert_cancelled_account(&root_receipt);
+    let Ok((_, ActorRetirement::OwnerCancelled { behavior, .. })) = &root_receipt else {
         panic!("the complete retirement oracle already established owner cancellation");
     };
     let exact_root = original_root
@@ -3509,7 +3719,7 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
     assert_eq!(contents, vec![173, 179]);
     assert_eq!(cause_owned, 1);
     assert_eq!(root_owned, 1);
-    drop((output, cleanup));
+    drop((output, root_receipt));
     let output_released = original_output.strong_count();
     let root_released = original_root.strong_count();
     let cause_still_owned = original_payload.strong_count();
@@ -3561,11 +3771,19 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     let same_panic = original_panic == received_panic;
     let work_released_before_join = original_work.strong_count();
     let outcome = runtime.block_on(result);
-    let ApplicationOutcome::Interrupted { cleanup } = outcome else {
+    let (
+        ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+        root_receipt,
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = outcome
+    else {
         panic!("no output or recoverable uninvoked callable was acquired");
     };
-    assert_cancelled_account(&cleanup);
-    let Ok((_, ActorRetirement::OwnerCancelled { behavior, .. })) = &cleanup else {
+    assert_cancelled_account(&root_receipt);
+    let Ok((_, ActorRetirement::OwnerCancelled { behavior, .. })) = &root_receipt else {
         panic!("the complete retirement oracle already established owner cancellation");
     };
     let exact_root = original_root
@@ -3576,7 +3794,7 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     assert!(exact_root);
     assert_eq!(work_released_before_join, 0);
     assert_eq!(cause_owned, 1);
-    drop(cleanup);
+    drop(root_receipt);
     let root_released = original_root.strong_count();
     let cause_still_owned = original_allocation.strong_count();
     drop(payload);
@@ -3757,18 +3975,23 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
             panic!("the supplied host accessor raises its original native cause");
         };
         let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
-        let ApplicationOutcome::Prepared {
-            inputs: (prepared_root, prepared_spaces),
-            work,
-            cleanup,
-        } = receiver.await
+        let (
+            ApplicationOutcome::Prepared {
+                inputs: (prepared_root, prepared_spaces),
+                work,
+                cleanup: setup_cleanup,
+            },
+            Err(_),
+            Err(_),
+        ) = receiver.await
         else {
             panic!("setup failure returns the original prepared inputs and uninvoked callable");
         };
         // This Work-only controller deliberately surrenders the acquired prepared inputs.
         // The separate prepared-root witness checks their retained lifetime.
         drop((prepared_root, prepared_spaces));
-        let Err(ApplicationCleanupError::PublicationClosed(publication_failure)) = cleanup else {
+        let Err(ApplicationCleanupError::PublicationClosed(publication_failure)) = setup_cleanup
+        else {
             panic!("this exact pre-spawn cut returns the actual publication error");
         };
         let publication_failure: RecvError = publication_failure;
@@ -3782,11 +4005,22 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
             .execute_with::<AccountConclusion, (), _, _>(work)
             .unwrap_or_else(|_| panic!("the same original host permits a genuine new App"));
         let ((), outcome) = tokio::join!(execution, receiver);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("the exact recovered callable completes once on the new App");
         };
-        assert_completed_account(&cleanup);
-        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &cleanup else {
+        assert_completed_account(&root_receipt);
+        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &root_receipt else {
             panic!("the complete retry retirement retains its original root");
         };
         let exact_work = original_work
@@ -3800,7 +4034,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         let borrowed_contents = output.1.to_vec();
         let invocations_after_retry = invocations.get();
         let cause_after_retry = original_cause.strong_count();
-        drop((output, cleanup, publication_failure));
+        drop((output, root_receipt, publication_failure));
         let work_after_discharge = original_work.strong_count();
         let retry_root_after_discharge = original_retry_root.strong_count();
         let cause_before_discharge = original_cause.strong_count();
@@ -3885,15 +4119,20 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
             panic!("the supplied host accessor raises its original native cause");
         };
         let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
-        let ApplicationOutcome::Prepared {
-            inputs: (prepared_root, prepared_spaces),
-            work,
-            cleanup,
-        } = receiver.await
+        let (
+            ApplicationOutcome::Prepared {
+                inputs: (prepared_root, prepared_spaces),
+                work,
+                cleanup: setup_cleanup,
+            },
+            Err(_),
+            Err(_),
+        ) = receiver.await
         else {
             panic!("the receiver retains actual prepared inputs and original uninvoked Work");
         };
-        let Err(ApplicationCleanupError::PublicationClosed(publication_failure)) = cleanup else {
+        let Err(ApplicationCleanupError::PublicationClosed(publication_failure)) = setup_cleanup
+        else {
             panic!("the pre-handoff publication returns its actual receiving error");
         };
         let publication_failure: RecvError = publication_failure;
@@ -3916,11 +4155,22 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
             .execute_with::<AccountConclusion, (), _, _>(work)
             .unwrap_or_else(|_| panic!("the same original host permits acquired-input retry"));
         let ((), outcome) = tokio::join!(execution, receiver);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("the exact acquired actor and original Work complete on retry");
         };
-        assert_completed_account(&cleanup);
-        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &cleanup else {
+        assert_completed_account(&root_receipt);
+        let Ok((_, ActorRetirement::Completed { behavior, .. })) = &root_receipt else {
             panic!("the full joined retry result retains the original actor");
         };
         let joined_allocation = Arc::as_ptr(&behavior.base().original);
@@ -3933,7 +4183,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         let invocations_after_retry = invocations.get();
         let root_after_retry = original_root.strong_count();
         let cause_after_retry = original_cause.strong_count();
-        drop((output, cleanup, publication_failure));
+        drop((output, root_receipt, publication_failure));
         let root_after_discharge = original_root.strong_count();
         let work_after_discharge = original_work.strong_count();
         let cause_before_discharge = original_cause.strong_count();
@@ -3987,8 +4237,8 @@ mod family_cleanup {
         EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityShutdown,
     };
     use bombay::{
-        ActorRetirement, ActorSpace, ActorSpaces, App, ApplicationCleanupError, ApplicationOutcome,
-        Completion, MailAddr,
+        ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, ActorSpace, ActorSpaces,
+        App, ApplicationCleanupError, ApplicationOutcome, Completion, MailAddr,
     };
     use tokio::runtime::{Builder, Handle};
     use tokio::sync::{OwnedSemaphorePermit, Semaphore, oneshot};
@@ -4116,8 +4366,11 @@ mod family_cleanup {
             _: &EntityId<u64>,
             _: ActivationId,
             retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+            retirement_report: ActorRetirementReport,
         ) {
-            drop(retirement);
+            // This cancellation witness explicitly discharges both acquired callback facts;
+            // it makes no claim about callback completeness or actor retirement.
+            drop((retirement, retirement_report));
         }
     }
 
@@ -4437,7 +4690,18 @@ mod family_cleanup {
         };
         let (executed, (acquired, requested, joined)) = tokio::join!(execute, close_host);
         // Host and cleanup cancellation finish before any oracle can unwind.
-        let (returned, root_receiving, family_receiving) = receiving.await;
+        let (
+            returned,
+            root_receiving,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+            family_receiving,
+        ) = receiving.await
+        else {
+            panic!("both original root notifications survive later cleanup cancellation");
+        };
         assert!(executed.is_ok());
         assert!(acquired.is_ok());
         assert!(requested.is_ok());
@@ -4796,13 +5060,24 @@ fn supplied_ready_unit_has_its_bare_original_output() {
                 panic!("the actual host is entered");
             });
         let ((), outcome) = tokio::join!(execution, receiving);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("actual supplied work retains its original acquired output");
         };
         let output: () = output;
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         let () = output;
-        drop(cleanup);
+        drop(root_receipt);
     });
 }
 
@@ -4825,13 +5100,24 @@ fn supplied_ready_work_error_has_its_bare_original_output() {
                 panic!("the actual host is entered");
             });
         let ((), outcome) = tokio::join!(execution, receiving);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("actual supplied work retains its original acquired output");
         };
         let output: Result<(), &'static str> = output;
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         assert_eq!(output, Err("original work error"));
-        drop(cleanup);
+        drop(root_receipt);
     });
 }
 
@@ -4856,15 +5142,26 @@ fn supplied_ready_local_rc_has_its_bare_original_output() {
                 panic!("the actual host is entered");
             });
         let ((), outcome) = tokio::join!(execution, receiving);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("actual supplied work retains its original acquired output");
         };
         let output: Rc<Vec<u64>> = output;
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         let same = Rc::ptr_eq(&original, &output);
         assert!(same);
         assert_eq!(output.as_slice(), &[71, 73]);
-        drop(cleanup);
+        drop(root_receipt);
     });
 }
 
@@ -4889,13 +5186,24 @@ fn supplied_ready_borrowed_has_its_bare_original_output() {
                 panic!("the actual host is entered");
             });
         let ((), outcome) = tokio::join!(execution, receiving);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("actual supplied work retains its original acquired output");
         };
         let output: &[u64] = output;
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         assert_eq!(output, &[79, 83]);
-        drop(cleanup);
+        drop(root_receipt);
     });
 }
 
@@ -4918,12 +5226,23 @@ fn supplied_ready_user_none_has_its_bare_original_output() {
                 panic!("the actual host is entered");
             });
         let ((), outcome) = tokio::join!(execution, receiving);
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (
+            ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            },
+            root_receipt,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
+        else {
             panic!("actual supplied work retains its original acquired output");
         };
         let output: Option<()> = output;
-        assert_completed_account(&cleanup);
+        assert_completed_account(&root_receipt);
         assert_eq!(output, None);
-        drop(cleanup);
+        drop(root_receipt);
     });
 }

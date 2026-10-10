@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use core::any::type_name;
 use tokio::runtime::Builder;
@@ -129,10 +130,17 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
             panic!("the application terminates normally");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
@@ -212,10 +220,17 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
             panic!("the application terminates normally");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (),
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
