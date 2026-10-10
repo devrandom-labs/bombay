@@ -41,6 +41,14 @@ pass; inference remains a separate open gate. The user authorized the expanded
 selected programme surface on 2026-10-09; its per-stage law, provenance,
 composition and measurement gates still apply.
 
+The inferred-custody caller fixtures are pre-implementation acceptance tests.
+They cover the real counter, heterogeneous and repeated children, a plain state
+base, recursive creation/refusal, nominal born-role selection, and timer
+readiness from actual reports. They pass against the isolated candidate; the
+retained library lacks the custody API, so the feature worktree suite remains
+red. Candidate factory derivation also rejects valid pure actor declarations.
+These fixtures do not authorize retaining that production design.
+
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried
 actor-owned capabilities. Presence in that map does not certify an execution

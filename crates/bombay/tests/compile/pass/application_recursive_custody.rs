@@ -1,0 +1,477 @@
+//! Inferred recursive creation, exact refusal and borrowed/owned nominal role custody.
+
+use bombay::actors::ActorExt;
+use bombay::behavior::Children;
+use bombay::behavior::{
+    Actions, BehaviorActed, CreateChild, CreationSequence, Creations, Never,
+};
+use bombay::lifecycle::StopOnShutdown;
+use bombay::{ActorRetirement, Application, ChildRetirementSelection};
+
+enum NodeStartup {
+    Grow { remaining: u32 },
+    Refuse { payload: Box<[u8]> },
+}
+
+#[derive(Debug, PartialEq)]
+enum NodeError {
+    InitializationRefused,
+}
+
+struct Node {
+    startup: NodeStartup,
+}
+
+#[bombay::actor(
+    message = Never,
+    error = NodeError,
+    births = { next: StopOnShutdown<Node> },
+    creation_settlements = retain_for_retirement,
+)]
+impl Node {
+    fn init(&mut self) -> BehaviorActed<Self> {
+        let remaining = match &self.startup {
+            NodeStartup::Grow { remaining } => *remaining,
+            NodeStartup::Refuse { .. } => return Err(NodeError::InitializationRefused),
+        };
+        if remaining == 0 {
+            return Ok(Actions::cont());
+        }
+        let mut creations = CreationSequence::new();
+        let id = creations.issue().expect("one creation fits the namespace");
+        let child = Node {
+            startup: NodeStartup::Grow {
+                remaining: remaining - 1,
+            },
+        }
+        .stop_on_shutdown();
+        Ok(Actions::create(Creations::one(CreateChild::birth(
+            id, child,
+        ))))
+    }
+}
+
+async fn nominal_recursive_creations() {
+    let outcome = Application::new(
+        Node {
+            startup: NodeStartup::Grow { remaining: 3 },
+        }
+        .stop_on_shutdown(),
+    )
+    .run_with(|application| async move {
+        application
+            .lifecycle()
+            .request_shutdown()
+            .expect("shutdown admitted");
+    })
+    .await
+    .unwrap_or_else(|original| {
+        drop(original);
+        panic!("entered host");
+    });
+    let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+        drop(original);
+        panic!("work completed");
+    });
+    let (_, retirement) = cleanup.expect("actual cleanup acquired");
+    let ActorRetirement::Completed { descendants, .. } = retirement else {
+        panic!("root completed");
+    };
+    let mut depth = 0;
+    let mut remaining = descendants;
+    while let Some(bombay::behavior::ChildChoice::Head(bombay::ChildRetirement {
+        origin,
+        retirement,
+    })) = remaining.pop()
+    {
+        assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
+        depth += 1;
+        let ActorRetirement::OwnerCancelled { descendants, .. } = *retirement else {
+            panic!("descendant retains parent retirement");
+        };
+        remaining.extend(descendants);
+    }
+    assert_eq!(depth, 3);
+}
+
+type ManagedNode = StopOnShutdown<Node>;
+
+struct Parent {
+    child: Option<CreateChild<bombay::MailAddr, ManagedNode>>,
+}
+
+#[derive(Debug)]
+enum ParentError {
+    ChildAlreadyTransferred,
+}
+
+#[bombay::actor(message = Never, error = ParentError, births = { branch: ManagedNode }, creation_settlements = retain_for_retirement)]
+impl Parent {
+    fn init(&mut self) -> BehaviorActed<Self> {
+        let child = self
+            .child
+            .take()
+            .ok_or(ParentError::ChildAlreadyTransferred)?;
+        Ok(Actions::create(Creations::one(child)))
+    }
+}
+
+async fn initialization_rejection_returns_the_original_child_and_work() {
+    let payload: Box<[u8]> = Box::from([7, 13]);
+    let allocation = payload.as_ptr();
+    let child = Node {
+        startup: NodeStartup::Refuse { payload },
+    }
+    .stop_on_shutdown();
+    let mut sequence = CreationSequence::new();
+    let id = sequence.issue().expect("one staged creation fits");
+    let root = Parent {
+        child: Some(CreateChild::birth(id, child)),
+    }
+    .stop_on_shutdown();
+    let work = Box::new(String::from("root work survived"));
+    let work_allocation = work.as_ptr();
+    let outcome = Application::new(root)
+        .run_with(move |application| async move {
+            application
+                .lifecycle()
+                .request_shutdown()
+                .expect("root shutdown admitted");
+            work
+        })
+        .await
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("entered host");
+        });
+    let (work, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+        drop(original);
+        panic!("root work completed beside child failure");
+    });
+    assert_eq!(work.as_ptr(), work_allocation);
+    let (_, retirement) = cleanup.expect("joined root");
+    let ActorRetirement::Completed {
+        settlements,
+        descendants,
+        child_failures: (child_failures, ()),
+        ..
+    } = retirement
+    else {
+        panic!("child rejection does not invent a failed root");
+    };
+    assert!(descendants.is_empty());
+    assert!(child_failures.is_empty());
+    let mut rejected_children = 0;
+    for action in settlements {
+        let bombay::behavior::CreationSettlement::Settled(creations) =
+            action.creations.into_settlement()
+        else {
+            panic!("the creation batch was routed");
+        };
+        for child in creations {
+            let bombay::behavior::SettledItem::Attempted(
+                bombay::behavior::ItemSettlement::Accepted(
+                    bombay::behavior::ChildCreationOutcome::InitializationRejected {
+                        creation,
+                        error,
+                    },
+                ),
+            ) = child
+            else {
+                panic!("the exact failed child returns in its accepted runtime reply");
+            };
+            assert_eq!(error, NodeError::InitializationRefused);
+            let (creation, _route) = creation.into_parts();
+            let (nonce, child, kind) = creation.into_parts();
+            assert_eq!(nonce, id);
+            assert_eq!(kind, bombay::behavior::CreationKind::Birth);
+            let NodeStartup::Refuse { payload } = child.into_inner().startup else {
+                panic!("the original definition survives");
+            };
+            assert_eq!(payload.as_ptr(), allocation);
+            assert_eq!(&*payload, &[7, 13]);
+            rejected_children += 1;
+        }
+    }
+    assert_eq!(rejected_children, 1);
+}
+
+async fn different_parent_keeps_its_role_and_recursive_descendants() {
+    let child = Node {
+        startup: NodeStartup::Grow { remaining: 2 },
+    }
+    .stop_on_shutdown();
+    let mut sequence = CreationSequence::new();
+    let id = sequence.issue().expect("one staged creation fits");
+    let root = Parent {
+        child: Some(CreateChild::birth(id, child)),
+    }
+    .stop_on_shutdown();
+    let outcome = Application::new(root)
+        .run_with(|application| async move {
+            application
+                .lifecycle()
+                .request_shutdown()
+                .expect("root shutdown admitted");
+        })
+        .await
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("entered host");
+        });
+    let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+        drop(original);
+        panic!("work returned");
+    });
+    let (_, retirement) = cleanup.expect("joined root");
+    let ActorRetirement::Completed {
+        mut descendants, ..
+    } = retirement
+    else {
+        panic!("parent completed");
+    };
+    let Some(bombay::behavior::ChildChoice::Head(bombay::ChildRetirement { origin, retirement })) =
+        descendants.pop()
+    else {
+        panic!("the direct child's parent role survives");
+    };
+    assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
+    assert!(descendants.is_empty());
+    let ActorRetirement::OwnerCancelled { descendants, .. } = *retirement else {
+        panic!("the child retains cancellation custody");
+    };
+    let mut depth = 0;
+    let mut descendants = descendants;
+    while let Some(bombay::behavior::ChildChoice::Head(bombay::ChildRetirement {
+        origin,
+        retirement,
+    })) = descendants.pop()
+    {
+        assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
+        let ActorRetirement::OwnerCancelled {
+            descendants: children,
+            ..
+        } = *retirement
+        else {
+            panic!("the descendant retains cancellation custody");
+        };
+        descendants.extend(children);
+        depth += 1;
+    }
+    assert_eq!(depth, 2);
+}
+
+async fn born_roles_select_the_original_parent_and_recursive_retirement() {
+    let mut sequence = CreationSequence::new();
+    let id = sequence.issue().expect("one actual parent birth fits");
+    let root = Parent {
+        child: Some(CreateChild::birth(
+            id,
+            Node {
+                startup: NodeStartup::Grow { remaining: 2 },
+            }
+            .stop_on_shutdown(),
+        )),
+    }
+    .stop_on_shutdown();
+    let outcome = Application::new(root)
+        .run_with(|application| async move {
+            application
+                .lifecycle()
+                .request_shutdown()
+                .expect("shutdown admitted");
+        })
+        .await
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("entered host");
+        });
+    let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+        drop(original);
+        panic!("work completed");
+    });
+    let (_, retirement) = cleanup.expect("complete parent retirement");
+    let ActorRetirement::Completed {
+        mut descendants, ..
+    } = retirement
+    else {
+        panic!("parent completed");
+    };
+    let report = descendants.pop().expect("direct child retired");
+    assert!(descendants.is_empty());
+    let before = report
+        .child_retirement(&ParentChild::Branch)
+        .map(|child| (child.origin, core::ptr::from_ref(&*child.retirement)))
+        .expect("declared parent role borrows exact custody");
+    let child = report
+        .try_into_child_retirement(&ParentChild::Branch)
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("declared parent role consumes exact custody");
+        });
+    assert_eq!(
+        (child.origin, core::ptr::from_ref(&*child.retirement)),
+        before
+    );
+    let ActorRetirement::OwnerCancelled { descendants, .. } = *child.retirement else {
+        panic!("the original child was cancelled by its owner");
+    };
+    let mut descendants = descendants;
+    let mut depth = 0;
+    while let Some(report) = descendants.pop() {
+        let before = report
+            .child_retirement(&NodeChild::Next)
+            .map(|child| (child.origin, core::ptr::from_ref(&*child.retirement)))
+            .expect("recursive role borrows the original box");
+        let child = report
+            .try_into_child_retirement(&NodeChild::Next)
+            .unwrap_or_else(|original| {
+                drop(original);
+                panic!("recursive role consumes the original box");
+            });
+        assert_eq!(
+            (child.origin, core::ptr::from_ref(&*child.retirement)),
+            before
+        );
+        let ActorRetirement::OwnerCancelled {
+            descendants: children,
+            ..
+        } = *child.retirement
+        else {
+            panic!("recursive cancellation custody stays intact");
+        };
+        descendants.extend(children);
+        depth += 1;
+    }
+    assert_eq!(depth, 2);
+}
+
+struct Siblings {
+    children: Option<[CreateChild<bombay::MailAddr, ManagedNode>; 2]>,
+}
+
+#[bombay::actor(message = Never, error = ParentError,
+    births = { primary: ManagedNode, replica: ManagedNode },
+    creation_settlements = retain_for_retirement)]
+impl Siblings {
+    fn init(&mut self) -> BehaviorActed<Self> {
+        let [primary, replica] = self
+            .children
+            .take()
+            .ok_or(ParentError::ChildAlreadyTransferred)?;
+        Ok(Actions::create(
+            Children::new()
+                .create(primary)
+                .create(replica)
+                .into_creates(),
+        ))
+    }
+}
+
+async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
+    let mut sequence = CreationSequence::new();
+    let primary = sequence.issue().expect("two sibling requests fit");
+    let replica = sequence.issue().expect("two sibling requests fit");
+    let root = Siblings {
+        children: Some([
+            CreateChild::birth(
+                primary,
+                Node {
+                    startup: NodeStartup::Grow { remaining: 0 },
+                }
+                .stop_on_shutdown(),
+            ),
+            CreateChild::birth(
+                replica,
+                Node {
+                    startup: NodeStartup::Grow { remaining: 0 },
+                }
+                .stop_on_shutdown(),
+            ),
+        ]),
+    }
+    .stop_on_shutdown();
+    let outcome = Application::new(root)
+        .run_with(|application| async move {
+            application
+                .lifecycle()
+                .request_shutdown()
+                .expect("shutdown admitted");
+        })
+        .await
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("entered host");
+        });
+    let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+        drop(original);
+        panic!("work completed");
+    });
+    let (_, retirement) = cleanup.expect("complete sibling retirement");
+    let ActorRetirement::Completed { descendants, .. } = retirement else {
+        panic!("parent completed");
+    };
+    assert_eq!(descendants.len(), 2);
+    let mut primary_addresses = Vec::new();
+    let mut replica_addresses = Vec::new();
+    for report in descendants {
+        let primary_before = report
+            .child_retirement(&SiblingsChild::Primary)
+            .map(|child| (child.origin, core::ptr::from_ref(&*child.retirement)));
+        let replica_before = report
+            .child_retirement(&SiblingsChild::Replica)
+            .map(|child| (child.origin, core::ptr::from_ref(&*child.retirement)));
+        let report = match report.try_into_child_retirement(&SiblingsChild::Primary) {
+            Ok(child) => {
+                assert_eq!(
+                    primary_before,
+                    Some((child.origin, core::ptr::from_ref(&*child.retirement)))
+                );
+                assert!(replica_before.is_none());
+                primary_addresses.push(child.origin.address());
+                let ActorRetirement::OwnerCancelled { descendants, .. } = *child.retirement else {
+                    panic!("the original primary was cancelled");
+                };
+                assert!(descendants.is_empty());
+                continue;
+            }
+            Err(original) => {
+                assert!(primary_before.is_none());
+                assert_eq!(
+                    replica_before,
+                    original
+                        .child_retirement(&SiblingsChild::Replica)
+                        .map(|child| { (child.origin, core::ptr::from_ref(&*child.retirement)) })
+                );
+                original
+            }
+        };
+        let child = report
+            .try_into_child_retirement(&SiblingsChild::Replica)
+            .unwrap_or_else(|original| {
+                drop(original);
+                panic!("the unmatched sibling retains its actual role");
+            });
+        assert_eq!(
+            replica_before,
+            Some((child.origin, core::ptr::from_ref(&*child.retirement)))
+        );
+        replica_addresses.push(child.origin.address());
+        let ActorRetirement::OwnerCancelled { descendants, .. } = *child.retirement else {
+            panic!("the original replica was cancelled");
+        };
+        assert!(descendants.is_empty());
+    }
+    assert_eq!(primary_addresses.len(), 1);
+    assert_eq!(replica_addresses.len(), 1);
+    assert_ne!(primary_addresses[0], replica_addresses[0]);
+}
+
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
+    nominal_recursive_creations().await;
+    initialization_rejection_returns_the_original_child_and_work().await;
+    different_parent_keeps_its_role_and_recursive_descendants().await;
+    born_roles_select_the_original_parent_and_recursive_retirement().await;
+    born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type().await;
+}
