@@ -2413,6 +2413,16 @@ This adds one expected public type; its exact name, owning fields and explicit
 receiving-abandonment policy remain unselected. Scope approval must precede
 implementation.
 
+Pending report-access decision: the submitted question recommends ordinary
+`ApplicationLifecycle::retirement()` and `InstalledActor::retirement()` methods,
+each returning an independently cancellable future for the same small shared
+report through Observe. Calling either requests no stop; service capability
+export follows existing Application/typed Actions wiring. Message-only
+`ActorRef` gains no report method. The alternative introduces a dedicated
+public read-only retirement capability and export path. No demonstrated need
+for that additional authority split has been found. Neither option is adopted
+without the user's answer; waiting limits and exact report fields remain open.
+
 Independent startup-conservation review (2026-10-09 UTC), no source edits:
 `local/effects/creation.rs` can return the child's original initialization
 error in its Core creation receipt and record a `StartupRejected` binding
@@ -2611,7 +2621,7 @@ This is a planned oracle, not a current passing test or a selected public API.
 Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
-Documentation: +521 / -35 / net +486.
+Documentation: +531 / -35 / net +496.
 Previously recorded pinned-Nix law-manifest controls pass all nine in debug
 and optimized builds; they were not rerun for these documentation edits.
 Current document-link and whitespace checks pass; all twenty-five unexecuted
