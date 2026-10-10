@@ -5981,3 +5981,261 @@ new identity-scope research up to400 projects7202 within7300. These actual/forec
 terms are distinct; do not add older snapshots again. Production configuration
 CI increments and generated lock artifact cost remain separately visible.
 Rebase onto actual main a3a01879 before final PR; source bytes must stay identical.
+
+### Automatically selected public root owned-work retirement witness
+
+Ordinary public FixedSupervisor composition compiles in debug/optimized
+metadata probes against exact selected0.23.0 Behavior/Actors and merged9fc225ee
+Bombay contracts. Candidate stdin7fd8c7e69a2e4144307b025ba7bd777974ac6f8212b010a44e764e2738754531,
+control333d94ed06e063ec6b6ec68a335109d6bdfa2514e2a455a4d16f52ad58de1a08;
+metadata-only compilation grants no runtime law or R11 completion credit.
+
+Select an optional affine first-preparation gate in existing test Workshop,
+using already locked Tokio1.53.1 oneshots and OwnedSemaphorePermit. Its genuine
+WorkerPreparationSource::prepare_first signals reaching the gate, waits release,
+then returns the existing WorkerSubmission. I/O stays inside the runtime-owned
+capability port, never a Behavior fold. Actor A's normal termination must occur
+while its actual owned preparation work/permit remains held and shared retirement
+observation stays Pending. Another ordinary Application B on the same caller-
+owned runtime must produce useful Actions replies before A's report is checked
+again. Explicitly release actual A work, acquire its report, then preserve both
+Applications' complete native results and independent notification products.
+
+Alternative fabricated ActivationPermit or injected arbitrary task would bypass
+private owning authority. A direct StopOnShutdown<StableProxy> start is not proven
+with current public ChildInputIngress lifting; no new API or macro is justified.
+Root-only public composition supplies the needed existing source owner. This
+witness does not establish same-parent CHILD or shared-network-session isolation;
+those remain distinct obligations. Do not drop/ignore native results as proof.
+
+Forecast two existing paths: fixed_supervisor_recovery.rs and this PRD. Tests
+expected160–230 net, ceiling300 including imports and full custody assertions;
+production Rust/config/API/dependencies/manifest/lock0. The private test gate
+owns only the real affine release/permit, no new runtime primitive. Automatically
+expand cumulative cross-owner test ceiling6600 to6900 and combined research
+reserve2450 to2800 before edits; retain production2200/path320 limits. Preserve
+all parallel candidate source identities and count each actual source delta.
+The source base is freshly fetched main9fc225ee, created before first commit.
+
+Run focused debug and optimized healthy controls first, then simulate bypass of
+spawn_local_execution's real settle_local_outcome(outcome).await at launch.rs1376.
+The existing independent permit/Pending oracle must fail after B's useful work;
+a timeout-only outcome is no inversion credit. Restore exact production bytes
+before positive/lint checks; retain only tests. Complete native returned
+WorkerPreparationReturned ingress must remain owned without opening its private
+payload. Any unexpected source-policy classification must be resolved from its
+actual original, not reclassified as successful retirement.
+
+### Held-work test formatting and custody scope checkpoint
+
+The first complete held-work draft projects +365/-5/net360 test lines in its
+one existing source path, exceeding the initial300 per-file estimate. The agent
+stopped before Cargo or further edits. Full root/proxy/worker fields and both
+receiving products, including a shared65-line exhaustive residual oracle, explain
+the increase. Select retaining those independent custody assertions and raise
+this same-file ceiling300 to380 before continuing. No production/API/dependency/
+manifest/lock changes. Do not weaken assertions to fit an underestimated forecast.
+
+Existing cross-owner tests6449 plus360 is6809 within6900; combined research2379
+plus360 is2739 within2800. No global ceiling or retained-path expansion is needed.
+Plain Rust source syntax compiled earlier; actual runtime behavior, settlement-
+bypass inversion and native failure classification are still unverified. A
+later control failure must be investigated from exact ownership rather than
+ignored or relabeled as proof.
+
+The held-work review also requires both final root Stop products' eight owning
+FixedSupervisor send lanes and outer NoSends, rather than only creation/verdict
+checks. Select those complete lane assertions before execution, up to20 further
+test lines, and raise the same-file ceiling380 to400. Existing global6900 and
+research2800 reserves cover6449+400=6849 and2379+400=2779; no other surface change.
+These are observable assertions, with every required operation evaluated before
+assertion. Private owning payloads remain opaque and retained.
+
+### Held-work inversion reaches independent progress before refusal
+
+The first real settlement-bypass mutant fails the initial Pending assertion,
+not the later B-progress assertion named by the original receipt matcher.
+Correct the historical evidence to the actual first-law failure; do not claim
+B progressed in that negative run. Positive controls prove both actual roots.
+Select capturing the first report using an independent shared observation and
+retaining its first permit count, then checking both initial facts only after
+B's useful Actions reply and the later Pending check. A completed Future must
+never be polled again. This reuses approved independent Observe consumption,
+adds at most10 test lines before style reductions within400, and preserves the
+native producer and explicit release. Fresh debug/optimized inversions must
+fail the named later Pending law after actual B progress. No production or API
+retention. Remove Clippy-proven obsolete expectations; ordinary let-else and
+sibling-role naming reduce fixture syntax without weakening native facts.
+
+### Automatically selected identity-probe scope correction
+
+Pinned rustfmt exposed409 authored lines against the400-line forecast before
+compilation. Remove the no-op cause-borrowing function; preserve actual native
+causes with the already selected thiserror2.0.20 derive, and pass startup mode
+and provider profile into the actual application composition. A separate guard
+with hardcoded test-mode startup would not prove refusal before startup. Select
+a450-line one-source research ceiling before further edits; forcing400 through
+line packing or generic projection machinery would weaken reviewability. This
+adds no production/public API/manifest/dependency or retained repository path.
+All tests must still distinguish compilation from runtime or crypto evidence.
+Retained research2732 plus450 projects3182 within3200; cross-owner test/research
+6802 plus450 projects7252 within7300. Source growth remains explicitly counted.
+The user's automatic recommended-choice instruction supplies authorization.
+
+### Held root work: exact final witness and delivered prerequisites
+
+Retain test source5f62609ba957f597c67c336309345a481ddf037c5213d89fd6c9bccd3f2420a8:
++360/-9/net351, no production/API/dependency/manifest/lock change. All three
+owning controls and restored controls pass debug and optimized; the real
+settlement-bypass inverse fails the later named Pending assertion after the
+other Application's useful reply in both profiles. Exact owning launch source
+c61f14e7c16ed22f3330131e67098dcb654cf6785fe827087b249c4b429d8656 is restored.
+Pinned fmt and owning strict Clippy pass in both profiles. Exact commands,
+source identities and logs: /tmp/bombay-root-owned-work-final-campaign.json.
+The original late returned-source ingress stays owned until native results
+are explicitly dropped; weak ownership counts prove that exact custody.
+Full combined checks, independent review, required CI and actual merge remain.
+This proves two separately owned Applications on one caller-owned runtime,
+not same-parent child or shared-session R11 isolation.
+
+Research prerequisite PR332 merged a3a018790b4a0edb61d67e190d8978b1ce38464f
+at2026-10-10T11:47:54Z after all six checks, including required Nix38046976021
+and both actual Linux native-TLS profiles. Independent exact-head review:
+https://github.com/devrandom-labs/bombay/pull/332#pullrequestreview-5478716751.
+Exact-child local service PR333 head6cdb63679e40b5f0a7d2a4fa29c97af72c07451b
+is submitted with five combined local commands passing; its reviewed CI/merge
+are still pending, so no merged credit.
+
+Controlled dependency pressure PR3 merged1291c3e019de19c2a2e1e713380383526347bb59
+at2026-10-10T12:14:36Z. Required Controlled TLS dependencies38048704318 passed
+on exact headed016e8ecc5ae37a28aa69548813d406767bdbb8 at12:06:23Z, including
+debug/release pressure controls and both real configuration-owner Miri tests.
+Full final CI log: /tmp/bombay-zenoh-pressure-final-ci.log. Exact successor review:
+https://github.com/devrandom-labs/bombay-zenoh/pull/3#pullrequestreview-5478893647.
+Initial38047637706 failed loopback address-family setup and gains no retention
+credit. Observed native declaration retention remains a blocker to actual bounds;
+the six-path425-net test/fixture/CI/provenance stage adds no quota enforcement.
+
+Independent read-only review of final test5f62609b authenticated actual source,
+lock and restored owner. No blocker; no whole-negative-cleanup credit: the
+negative assertion panic precedes release/native-product collection. Healthy
+controls establish that custody. Final source remains unchanged after moving
+onto actual merged maina3a01879. Review preserves the difference between local
+root isolation and future same-parent/shared-session requirements.
+
+### Parallel delivery of the combined source
+
+Select a draft held-work branch descended from reviewed child-stage6cdb636 while
+PR333's required CI runs, targeting main so existing branch-filtered CI executes.
+The temporary draft diff includes its explicitly named parent prerequisite.
+After PR333 actually merges, the retained PR diff must be the two held-work paths;
+final review, required CI and merge must concern this combined source. This avoids independent incompatible
+branch-local contracts; coordinator alone resolves the PRD append conflict,
+preserving both exact records. No source body or lock bytes change during this
+integration. Alternative serial submission would delay independent CI. A dependent
+draft is preparation, not completion or authorization to bypass failed checks.
+
+Prior combined checks on maina3a01879 pass: build, workspace/docs563, alltargets562,
+each retaining one existing ignored test, fmt and strict Clippy. Evidence writer
+initially used incorrect local/launch.rs path after a successful build; corrected
+to actual launch.rs without Rust rerun and preserved the build log. No new law
+credit arises from that bookkeeping correction. Its build duration is unrecorded.
+Repeat required combined checks because the parent child-stage source now enters
+the exact combined tree. Preserve the prior report separately.
+
+### Automatically selected stable actor namespace semantics
+
+Select stable actor identity as deployment plus namespace-controlling principal
+plus the application's explicit static local export name. The controller is
+the principal authorized to own that namespace; it is not silently the creator,
+delegator, current hosting node or local gateway. Same local spelling under
+different controllers identifies distinct actors. Conflicting assignments under
+one controller/deployment must refuse configuration. Keep host principal, runtime
+generation, actor generation, grant issuer/authority generation and request attempt
+separate; host/restart or key rotation must not silently replace an exact target.
+This preserves static placement without introducing a dynamic actor registry.
+
+Alternative globally unscoped strings require an additional collision/namespace
+authority policy. Runtime-local addresses cannot supply stable identity. One
+KERI identifier per actor adds keys and delegation not required by the approved
+node hierarchy. Select ordinary concrete Rust/static export products before any
+parser, trait, new public type or macro. No wire field names, normalization,
+length default, AID grammar, generation issuer or public API is selected here.
+Those remaining uncertainties require independent source/protocol witnesses.
+
+Fresh downstream Selo source80289b6b7cfb3f11ab2ff866c0e141599c835801 stays clean.
+Its selo-naming0.1.0 owns44-character shape-only AID/SAID and Http/Tcp routing
+qualification, not this actor contract. Its parser collects split chunks before
+arity checking; that is not a hostile-input allocation bound. Its selected graph
+contains cesr-rs0.11.1/keri-rs0.0.15; corrected registry candidates remain unadopted
+there. Neither source is a Bombay dependency or production acceptance proof.
+Source references: downstream docs/naming.md; crates/selo-naming/src/id.rs,
+parse.rs, resource.rs; docs/next-cesr-migration.md. No Selo migration/durability
+scope is introduced.
+
+Established KERI Authority::verify accepts original arbitrary byte slices; the
+existing crypto owner can therefore protect original Bombay JSON in a future
+compatible declared provider profile. Candidate keri-rs0.1.0 source5704a438
+explicitly states Verified does not encode authority/message bytes; that result
+is not a transferable certificate for a different request. KEL event receipts
+prove their own accepted event/endorsement facts, not command permission, actor
+admission or retirement. This research selects no crypto crate/proof container
+and claims no runtime verification. Keep trusted provider scope bound to original
+request bytes; do not reserialize JSON as a KERI event to invent that binding.
+
+### Ordinary identity issuance comparison: bounded static evidence
+
+Final formatted scratch /tmp/bombay-scope-issuance.rs is398 authored lines,
+SHA0d7095d605a7f56a9382314b817002203d49f86f90d5e4f0c2e1c0d8a106f8bf,
+plus five unique negative statements (byte-identical variant copies excluded).
+Exact healthy/restored debug and optimized metadata compilations pass with
+-Dwarnings; six independent static-denial classes fail in each profile:
+raw Deserialize E0277, private issuance E0451, raw DTO result E0308, missing
+required typed constructor E0061, wrong consumer associated Msg E0271, and
+wrong scope projection E0308. The latter consumer diagnostic was initially
+predicted E0308; correct the harness to actual E0271 without changing its law.
+Initial missing existing target Msg:Send+'static bound and redundant empty
+terminal product were setup findings, not intended static-denial credit.
+Empty descendants use existing Never; no wrapper or no-op reader is retained.
+
+Automatically select distinct provider-owned receipts and ordinary async
+functions, explicit scope projections and required result-message constructors
+for this seam. They compile with two different concrete Application consumers.
+The comparative common provider wrapper adds44 lines forwarding original
+closed provider receipts and proves no unique state/transformation is needed;
+do not retain a new common wrapper or trait. Future production receipt issuance
+and provider API remain separate owning decisions. Evidence:
+/tmp/bombay-scope-issuance-campaign.json and final-fmt.log. No executable,
+startup refusal, actual native outcome, crypto, replay, time or bounded-parser
+credit: metadata-only output is deliberately not an execution artifact.
+Extern artifacts preserve actual Cargo provenance and child-stage lockaa2b8c;
+the Nix shell's main-2 lock0c2f7e is recorded separately.
+
+### Held-work combined verification and complete scope record
+
+After integrating reviewed child-stage6cdb636, all five required pinned-Nix local
+commands pass on exact held-test5f62609b/endpoint61a872/child-testa59515/owner
+c61f14/lockaa2b8c: build, workspace/docs563 and alltargets562 (one existing
+ignored test each), fmt and strict all-target Clippy. Exact commands/source
+identities/logs: /tmp/bombay-root-owned-work-combined-checks.json. Prior isolated
+checks retain separate preintegration provenance. Public/API/body and source
+bytes remain exact. Independent full-test review found no blocker.
+
+Complete tracked/untracked stage against child6cdb636: two paths, production
++0/-0/net0; tests+360/-9/net351; documentation+258/-0/net258;
+manifest/lock0; public types+0/-0; no method/export change. Cumulative root
+against a9c5b7d4:75 paths, production+1725/-475/net1250; tests+7080/-661/net6419;
+documentation+4001/-88/net3913; manifest/lock+2986/-3/net2983;
+defined public types+5/-0 from the already merged retirement prerequisite.
+Exact complete accounting including untracked: /tmp/bombay-root-owned-work-
+stage-checkpoint.json and cumulative-checkpoint.json. Cross-owner root6419
+plus controlled pressure383 plus unique identity research403 totals7205
+within7300; retained research2732+403=3135 within3200. Generated locks and
+upstream snapshots remain separately counted. Reviewed required exact-head
+CI and actual merge to main remain before marking this witness delivered.
+
+Initial draft334 targeting the feature branch triggered no workflows: the existing
+CI/CodeQL/Deny filters require a main target. Correct the target before pushing
+this documentation successor, which triggers ordinary required CI. Keep parent
+333 actual merge as a delivery prerequisite; do not weaken branch filters or
+claim missing checks passed. No Rust/lock bytes change.
