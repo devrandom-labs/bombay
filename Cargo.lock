@@ -300,6 +300,8 @@ dependencies = [
  "loom",
  "parking_lot",
  "proptest",
+ "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "triomphe",

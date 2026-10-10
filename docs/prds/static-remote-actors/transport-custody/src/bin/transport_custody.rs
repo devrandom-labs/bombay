@@ -30,7 +30,10 @@ const FIXTURE_WAIT: Duration = Duration::from_secs(5);
 const REQUEST_KEY: &str = "research/custody/request";
 const RECEIPT_KEY: &str = "research/custody/receipt";
 const PROTECTED_TEXT: &str =
-    "{ \"amount\": 9007199254740993, \"marker\": \"static-remote-fixture\" }\n";
+    "\t { \"amount\": 9007199254740993, \"marker\": \"static-remote-fixture🦀\" }\n ";
+// Opaque comparison fixtures only; these bytes do not establish authenticity.
+const REQUEST_PROOF: &[u8] = b"\0fixture-request\xff\r\n";
+const REPLY_PROOF: &[u8] = b"\xfffixture-reply\0\n";
 
 #[derive(Clone, Copy, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -79,17 +82,38 @@ struct FixtureReceipt {
 #[derive(Serialize)]
 #[serde(tag = "event", rename_all = "snake_case")]
 enum TransportObservation {
-    Ready { role: WorkerRole },
-    PotentiallyTransmitted { operation: TransportOperation },
-    InvocationReturned { operation: TransportOperation },
-    Received { protected_text: String },
-    Receipt { receipt: FixtureReceipt },
-    NativeReplyError { payload: Vec<u8>, encoding: String },
-    ReceiverClosed { cause: String },
+    Ready {
+        role: WorkerRole,
+    },
+    PotentiallyTransmitted {
+        operation: TransportOperation,
+    },
+    InvocationReturned {
+        operation: TransportOperation,
+    },
+    Received {
+        protected_text: String,
+        proof: Vec<u8>,
+    },
+    Receipt {
+        receipt: FixtureReceipt,
+        proof: Vec<u8>,
+    },
+    NativeReplyError {
+        payload: Vec<u8>,
+        encoding: String,
+    },
+    ReceiverClosed {
+        cause: String,
+    },
     WaitExpired,
     WaitCancelled,
-    SessionCloseReturned { role: WorkerRole },
-    WorkerFailed { cause: String },
+    SessionCloseReturned {
+        role: WorkerRole,
+    },
+    WorkerFailed {
+        cause: String,
+    },
 }
 
 enum RequestIngress<'a> {
@@ -238,14 +262,21 @@ async fn matching_publication(publisher: &Publisher<'_>) -> Result<()> {
     .await?
 }
 
-fn fixture_receipt(payload: &ZBytes, observations: u64) -> Result<FixtureReceipt> {
+fn fixture_receipt(
+    payload: &ZBytes,
+    attachment: Option<&ZBytes>,
+    observations: u64,
+) -> Result<FixtureReceipt> {
+    let proof = attachment.ok_or_else(|| invalid_control("fixture request has no proof"))?;
+    assert_eq!(proof.to_bytes().as_ref(), REQUEST_PROOF);
     let protected_text = payload.try_to_string()?.into_owned();
     assert_eq!(protected_text.as_bytes(), PROTECTED_TEXT.as_bytes());
     let request: FixtureRequest = serde_json::from_str(&protected_text)?;
-    assert_eq!(request.marker, "static-remote-fixture");
+    assert_eq!(request.marker, "static-remote-fixture🦀");
     assert_eq!(request.amount, 9_007_199_254_740_993);
     observe(&TransportObservation::Received {
         protected_text: protected_text.clone(),
+        proof: proof.to_bytes().into_owned(),
     })?;
     Ok(FixtureReceipt {
         protected_text,
@@ -253,11 +284,16 @@ fn fixture_receipt(payload: &ZBytes, observations: u64) -> Result<FixtureReceipt
     })
 }
 
-fn received_receipt(payload: &ZBytes) -> Result<()> {
+fn received_receipt(payload: &ZBytes, attachment: Option<&ZBytes>) -> Result<()> {
+    let proof = attachment.ok_or_else(|| invalid_control("fixture reply has no proof"))?;
+    assert_eq!(proof.to_bytes().as_ref(), REPLY_PROOF);
     let receipt: FixtureReceipt = serde_json::from_slice(&payload.to_bytes())?;
     assert_eq!(receipt.protected_text.as_bytes(), PROTECTED_TEXT.as_bytes());
     assert!(receipt.observations > 0);
-    observe(&TransportObservation::Receipt { receipt })
+    observe(&TransportObservation::Receipt {
+        receipt,
+        proof: proof.to_bytes().into_owned(),
+    })
 }
 
 async fn recipient(session: &Session, operation: TransportOperation) -> Result<()> {
@@ -296,10 +332,13 @@ async fn recipient(session: &Session, operation: TransportOperation) -> Result<(
                         let payload = query
                             .payload()
                             .ok_or_else(|| invalid_control("fixture query has no payload"))?;
-                        let receipt = fixture_receipt(payload, observations)?;
+                        let receipt = fixture_receipt(payload, query.attachment(), observations)?;
                         let encoded = serde_json::to_vec(&receipt)?;
                         observe(&TransportObservation::PotentiallyTransmitted { operation })?;
-                        let invocation = query.reply(REQUEST_KEY, encoded).into_future();
+                        let invocation = query
+                            .reply(REQUEST_KEY, encoded)
+                            .attachment(REPLY_PROOF.to_vec())
+                            .into_future();
                         invocation.await?;
                         observe(&TransportObservation::InvocationReturned { operation })?;
                     }
@@ -309,12 +348,16 @@ async fn recipient(session: &Session, operation: TransportOperation) -> Result<(
                     } => {
                         let sample = timeout(FIXTURE_WAIT, subscriber.recv_async()).await??;
                         observations += 1;
-                        let receipt = fixture_receipt(sample.payload(), observations)?;
+                        let receipt =
+                            fixture_receipt(sample.payload(), sample.attachment(), observations)?;
                         let encoded = serde_json::to_vec(&receipt)?;
                         // A cancelled caller may no longer subscribe. Still invoke the native
                         // receipt publication; its return cannot establish remote delivery.
                         observe(&TransportObservation::PotentiallyTransmitted { operation })?;
-                        let invocation = publisher.put(encoded).into_future();
+                        let invocation = publisher
+                            .put(encoded)
+                            .attachment(REPLY_PROOF.to_vec())
+                            .into_future();
                         invocation.await?;
                         observe(&TransportObservation::InvocationReturned { operation })?;
                     }
@@ -359,6 +402,7 @@ async fn send_request(
             let invocation = querier
                 .get()
                 .payload(PROTECTED_TEXT.as_bytes().to_vec())
+                .attachment(REQUEST_PROOF.to_vec())
                 .with(FifoChannel::new(FIXTURE_CAPACITY))
                 .into_future();
             let replies = invocation.await?;
@@ -380,6 +424,7 @@ async fn send_request(
             observe(&TransportObservation::PotentiallyTransmitted { operation })?;
             let invocation = publisher
                 .put(PROTECTED_TEXT.as_bytes().to_vec())
+                .attachment(REQUEST_PROOF.to_vec())
                 .into_future();
             invocation.await?;
             observe(&TransportObservation::InvocationReturned { operation })?;
@@ -396,7 +441,7 @@ async fn await_receipt(pending: &PendingReceipt<'_>) -> Result<()> {
         PendingReceipt::Query { replies, .. } => {
             match timeout(FIXTURE_WAIT, replies.recv_async()).await {
                 Ok(Ok(reply)) => match reply.into_result() {
-                    Ok(sample) => received_receipt(sample.payload())?,
+                    Ok(sample) => received_receipt(sample.payload(), sample.attachment())?,
                     Err(cause) => observe(&TransportObservation::NativeReplyError {
                         payload: cause.payload().to_bytes().into_owned(),
                         encoding: cause.encoding().to_string(),
@@ -410,7 +455,7 @@ async fn await_receipt(pending: &PendingReceipt<'_>) -> Result<()> {
         }
         PendingReceipt::Publication { subscriber, .. } => {
             match timeout(FIXTURE_WAIT, subscriber.recv_async()).await {
-                Ok(Ok(sample)) => received_receipt(sample.payload())?,
+                Ok(Ok(sample)) => received_receipt(sample.payload(), sample.attachment())?,
                 Ok(Err(cause)) => observe(&TransportObservation::ReceiverClosed {
                     cause: cause.to_string(),
                 })?,

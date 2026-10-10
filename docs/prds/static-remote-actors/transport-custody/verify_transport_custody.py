@@ -7,7 +7,9 @@ from pathlib import Path
 import socket
 import sys
 
-PROTECTED_TEXT = '{ "amount": 9007199254740993, "marker": "static-remote-fixture" }\n'
+PROTECTED_TEXT = '\t { "amount": 9007199254740993, "marker": "static-remote-fixture🦀" }\n '
+REQUEST_PROOF = list(b'\0fixture-request\xff\r\n')
+REPLY_PROOF = list(b'\xfffixture-reply\0\n')
 CERTIFICATES = Path(sys.argv[2])
 EVIDENCE = Path(sys.argv[3])
 
@@ -43,6 +45,15 @@ class TransportWorker:
         assert encoded, (self.role, 'unexpected EOF', self.child.returncode)
         event = json.loads(encoded)
         self.events.append(event)
+        if event['event'] == 'worker_failed' and expected != 'worker_failed':
+            # Acquire the native close and exit before rejecting an unexpected worker error.
+            encoded_close = await asyncio.wait_for(self.child.stdout.readline(), 12)
+            assert encoded_close, (self.role, 'missing close after worker failure', event)
+            close = json.loads(encoded_close)
+            self.events.append(close)
+            assert close == {'event': 'session_close_returned', 'role': self.role}, close
+            exit_code = await asyncio.wait_for(self.child.wait(), 12)
+            assert exit_code == 1, (self.role, exit_code)
         assert event['event'] == expected, (self.role, expected, event)
         return event
 
@@ -99,6 +110,7 @@ async def campaign(executable, layout, operation, case):
             await recipient.command('RELEASE')
             received = await recipient.observe('received')
             assert received['protected_text'].encode() == PROTECTED_TEXT.encode(), received
+            assert received['proof'] == REQUEST_PROOF, received
             for milestone in ['potentially_transmitted', 'invocation_returned']:
                 event = await recipient.observe(milestone)
                 assert event['operation'] == operation, event
@@ -106,6 +118,7 @@ async def campaign(executable, layout, operation, case):
                 await caller.command('WAIT')
                 event = await caller.observe('receipt')
                 assert event['receipt'] == {'protected_text': PROTECTED_TEXT, 'observations': 1}, event
+                assert event['proof'] == REPLY_PROOF, event
         if case is ObservationCase.LATE_EXIT:
             caller.child.kill()
             await caller.child.wait()
