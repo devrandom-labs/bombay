@@ -138,11 +138,13 @@ where
                         endpoint,
                         control,
                         kind,
+                        retirement,
                         ..
                     }) => {
                         let actor = EstablishedActor::<Child>::issued(InstalledActor::new(
                             endpoint.clone(),
                             control.clone(),
+                            retirement.clone(),
                         ));
                         let child = CommittedChild::new(request.creation, *kind, actor);
                         self.inject_control_event::<_, Path>(EstablishedCreation::installed(child));
