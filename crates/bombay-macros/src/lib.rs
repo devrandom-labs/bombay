@@ -28,11 +28,8 @@ fn crate_path(found: FoundCrate) -> TokenStream2 {
 
 fn bombay_crate() -> syn::Result<TokenStream2> {
     if std::env::var("CARGO_PKG_NAME").as_deref() == Ok("bombay-rs") {
-        return if std::env::var("CARGO_CRATE_NAME").as_deref() == Ok("bombay") {
-            Ok(quote!(crate))
-        } else {
-            Ok(quote!(::bombay))
-        };
+        // The existing self alias also resolves in rustdoc's external crate.
+        return Ok(quote!(::bombay));
     }
     crate_name("bombay-rs").map(crate_path).map_err(|_| {
         Error::new(
