@@ -3329,9 +3329,15 @@ the extra path allowance from 20 to 24; the cumulative 250-path cap remains
 sufficient. Current human CI/provenance source is 833 lines. Allow at most
 170 new private Rust production lines, 140 test lines, 20 manifest lines and
 75 existing script/CI/document lines: expected at most 1,238 human lines,
-bounded by 1,250. Count the tool's generated lock separately, at most 350 lines
+bounded by 1,300. The exact per-owner archive closure proof additionally needs
+at most 15 Python lines: derive each required transitive closure from the
+approved 16 manifest edges, reject missing/duplicate/self registry identities,
+and invert a removed required edge. An aggregate count of 29 alone cannot
+establish this law. The concrete expected maximum becomes 1,253 human lines;
+the recommended 1,300 bound is adopted before these edits. Count the tool's
+generated lock separately, at most 350 lines
 beside the existing 3,090 generated lines. Raise the complete delivery artifact
-cap from 4,000 to 4,800 lines before edits; 1,250 + 3,440 fits it. The runtime
+cap from 4,000 to 4,800 lines before edits; 1,300 + 3,440 fits it. The runtime
 dependency graph remains unchanged. Only this private tool adds the owning
 SDK dependency and already selected `serde_json` 1.0.151; record the complete
 locked transitive graph and checksum relationships. New public types: zero.
