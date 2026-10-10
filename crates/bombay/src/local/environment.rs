@@ -1218,7 +1218,8 @@ mod tests {
             Arc::downgrade(&admission),
             observation,
         );
-        let installed = InstalledActor::<FenceProbe>::new(actor.clone(), control);
+        let (retirement_publisher, retirement) = pair();
+        let installed = InstalledActor::<FenceProbe>::new(actor.clone(), control, retirement);
 
         let actor_description = format!("{actor:?}");
         assert!(actor_description.contains("ActorRef"));
@@ -1226,7 +1227,7 @@ mod tests {
         let installed_description = format!("{installed:?}");
         assert!(installed_description.contains("InstalledActor"));
         assert!(installed_description.contains("MailAddr(73)"));
-        drop((publisher, admission, receiver));
+        drop((publisher, retirement_publisher, admission, receiver));
     }
 
     type ActivationEvent = EventLayer<ShutdownRequested, User<MailAddr, ()>>;
@@ -3060,7 +3061,6 @@ mod tests {
 
 #[cfg(test)]
 mod source_acquisition_custody {
-    use crate::MailAddr;
     use crate::launch::{ActorSpace, InertCapabilities};
     use crate::local::effects::ActionSettlementOf;
     use crate::local::effects::{CapabilityRetirement, CommitActions};
@@ -3068,6 +3068,7 @@ mod source_acquisition_custody {
     use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
     use crate::local::ingress::StandardIngress;
     use crate::observe;
+    use crate::{ActorFailureAssessment, ActorRetirementReport, MailAddr, RetirementAssessment};
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorSettlements, ClassifySettlement,
         Here, Interpretation, InterpretationProgress, MessageProtocol, Never, NoBirths, NoSends,
@@ -3702,7 +3703,7 @@ mod shutdown_admission_contract {
     use crate::local::endpoint::{ActorRef, InstalledActor};
     use crate::local::environment::LocalResidual;
     use crate::local::ingress::Admission;
-    use crate::observe;
+    use crate::observe::{self, pair};
     use behavior::{
         Actions, Become, Behavior, BehaviorActed, BehaviorBase, EventLayer, Here, Ingress, Inside,
         Never, NoSends, Step, Stopped, User,
@@ -3746,7 +3747,8 @@ mod shutdown_admission_contract {
             Arc::downgrade(&admission),
             observation,
         );
-        let installed = InstalledActor::<Target>::new(endpoint.clone(), control);
+        let (_retirement_publisher, retirement) = pair();
+        let installed = InstalledActor::<Target>::new(endpoint.clone(), control, retirement);
         let prefix = LedgerSubmission {
             entries: vec![67, 71],
         };
@@ -3854,7 +3856,9 @@ mod shutdown_admission_contract {
         )
         .await
         .unwrap_or_else(|_| panic!("old installed incarnation"));
-        let installed = InstalledActor::<Direct>::new(old.actor.clone(), old.control.clone());
+        let (_old_retirement_publisher, retirement) = pair();
+        let installed =
+            InstalledActor::<Direct>::new(old.actor.clone(), old.control.clone(), retirement);
         let requested = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
         let replay = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
         assert_eq!(requested, Ok(()));
@@ -3937,7 +3941,9 @@ mod shutdown_admission_contract {
         )
         .await
         .unwrap_or_else(|_| panic!("actual same-address nested replacement"));
-        let replacement = InstalledActor::<Nested>::new(fresh.actor.clone(), fresh.control.clone());
+        let (_fresh_retirement_publisher, retirement) = pair();
+        let replacement =
+            InstalledActor::<Nested>::new(fresh.actor.clone(), fresh.control.clone(), retirement);
         let stale = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
         let stale_replay = installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
         assert_eq!(stale, Err(ShutdownRejection::AlreadyStopped));

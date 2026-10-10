@@ -273,7 +273,10 @@ mod parent_conversion_custody {
     use crate::local::ingress::{Admission, StandardIngress};
     use crate::observe;
     use crate::terminal::{ActorRetirement, ChildOrigin, ProjectTerminal};
-    use crate::{ActorExecutionOutcome, ActorSpace};
+    use crate::{
+        ActorExecutionOutcome, ActorFailureAssessment, ActorRetirementReport, ActorSpace,
+        RetirementAssessment,
+    };
 
     static CONVERSION_SERIAL: Mutex<()> = Mutex::new(());
     #[expect(
@@ -582,6 +585,7 @@ mod parent_conversion_custody {
             third,
             startup,
             payload_count_before_cleanup,
+            actor_report,
         ) = runtime.block_on(async move {
             let (_control, owner, mailbox, mut receiver) =
                 mailbox_channel::<Never, User<MailAddr, Notice>>(Config::new(2));
@@ -710,6 +714,7 @@ mod parent_conversion_custody {
             let notification = termination_notification
                 .await
                 .expect("the actual termination producer transferred its result");
+            let actor_report = ActorRetirementReport::from_joined(&joined, &notification);
             notification.expect("the ordinary termination publication succeeded");
             drop(authority);
             // All control calls/transfers happen before these observations.
@@ -726,6 +731,7 @@ mod parent_conversion_custody {
                 third,
                 startup,
                 payload_count_before_cleanup,
+                actor_report,
             )
         });
         // Gate release and the actual raw root join precede executor destruction;
@@ -792,6 +798,11 @@ mod parent_conversion_custody {
             assert_eq!(error.id(), task_id);
             assert!(error.is_panic());
         }
+        assert_eq!(actor_report.retirement(), RetirementAssessment::Established);
+        assert_eq!(
+            actor_report.failures(),
+            ActorFailureAssessment::FailuresFound
+        );
         let parent_retained = parent_owner.upgrade();
         let child_retained = child_owner.upgrade();
         let capability_retained = capability_owner.upgrade();
@@ -867,6 +878,8 @@ mod parent_conversion_custody {
             terminal_report,
             retirement_failures,
             current,
+            operation_failures,
+            descendant_report,
         ) = match residual {
             LocalResidual::Uncommitted {
                 initialization,
@@ -881,6 +894,8 @@ mod parent_conversion_custody {
                 acquired_ingress,
                 terminal_report,
                 retirement_failures,
+                operation_failures,
+                descendant_report,
             } => (
                 descendants,
                 ingress,
@@ -894,6 +909,8 @@ mod parent_conversion_custody {
                 terminal_report,
                 retirement_failures,
                 Some(initialization),
+                operation_failures,
+                descendant_report,
             ),
             LocalResidual::Retired {
                 interpretation,
@@ -910,6 +927,8 @@ mod parent_conversion_custody {
                 acquired_ingress,
                 terminal_report,
                 retirement_failures,
+                operation_failures,
+                descendant_report,
             } => {
                 assert!(source.is_none());
                 (
@@ -925,12 +944,23 @@ mod parent_conversion_custody {
                     terminal_report,
                     retirement_failures,
                     interpretation.as_ref(),
+                    operation_failures,
+                    descendant_report,
                 )
             }
             LocalResidual::Prepared { .. } => {
                 panic!("the real conversion began with installed original Actions progress");
             }
         };
+        assert_eq!(*operation_failures, ActorFailureAssessment::NoFailuresFound);
+        assert_eq!(
+            descendant_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            descendant_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
         assert!(received_interpretation.is_none());
         assert!(received_source.is_none());
         assert!(source_index.is_none());
