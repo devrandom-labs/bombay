@@ -6125,13 +6125,14 @@ root isolation and future same-parent/shared-session requirements.
 
 ### Parallel delivery of the combined source
 
-Select a draft held-work PR stacked on reviewed child-stage6cdb636 while PR333's
-required CI runs. Its review diff is only the two held-work paths. Retarget the
-held-work PR to main after PR333 actually merges; final review, required CI and
-merge must concern this combined source. This avoids independent incompatible
+Select a draft held-work branch descended from reviewed child-stage6cdb636 while
+PR333's required CI runs, targeting main so existing branch-filtered CI executes.
+The temporary draft diff includes its explicitly named parent prerequisite.
+After PR333 actually merges, the retained PR diff must be the two held-work paths;
+final review, required CI and merge must concern this combined source. This avoids independent incompatible
 branch-local contracts; coordinator alone resolves the PRD append conflict,
 preserving both exact records. No source body or lock bytes change during this
-integration. Alternative serial submission would delay independent CI. A stacked
+integration. Alternative serial submission would delay independent CI. A dependent
 draft is preparation, not completion or authorization to bypass failed checks.
 
 Prior combined checks on maina3a01879 pass: build, workspace/docs563, alltargets562,
@@ -6221,10 +6222,10 @@ checks retain separate preintegration provenance. Public/API/body and source
 bytes remain exact. Independent full-test review found no blocker.
 
 Complete tracked/untracked stage against child6cdb636: two paths, production
-+0/-0/net0; tests+360/-9/net351; documentation+251/-0/net251;
++0/-0/net0; tests+360/-9/net351; documentation+258/-0/net258;
 manifest/lock0; public types+0/-0; no method/export change. Cumulative root
 against a9c5b7d4:75 paths, production+1725/-475/net1250; tests+7080/-661/net6419;
-documentation+3994/-88/net3906; manifest/lock+2986/-3/net2983;
+documentation+4001/-88/net3913; manifest/lock+2986/-3/net2983;
 defined public types+5/-0 from the already merged retirement prerequisite.
 Exact complete accounting including untracked: /tmp/bombay-root-owned-work-
 stage-checkpoint.json and cumulative-checkpoint.json. Cross-owner root6419
@@ -6232,3 +6233,9 @@ plus controlled pressure383 plus unique identity research403 totals7205
 within7300; retained research2732+403=3135 within3200. Generated locks and
 upstream snapshots remain separately counted. Reviewed required exact-head
 CI and actual merge to main remain before marking this witness delivered.
+
+Initial draft334 targeting the feature branch triggered no workflows: the existing
+CI/CodeQL/Deny filters require a main target. Correct the target before pushing
+this documentation successor, which triggers ordinary required CI. Keep parent
+333 actual merge as a delivery prerequisite; do not weaken branch filters or
+claim missing checks passed. No Rust/lock bytes change.
