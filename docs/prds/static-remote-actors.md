@@ -4101,3 +4101,59 @@ verify run immediately before that would repeat the same cold-job packaging
 without adding a correctness obligation. Keep verify available for future
 preview use, but no redundant verify-then-publish pair is required here. This
 changes no workflow, source, gate, credential authority or scope.
+
+### Actual publication prefix and bounded source-preserving continuation
+
+Required merged-main CI passed exact e82481825e313ff14e5ea3a1d6e842040945372a
+at 2026-10-10T05:44:54Z. The single manual publication run
+[38028659029](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38028659029)
+then published FIVE packages successfully: both configuration packages 2.2.0,
+link-commons, config and link-tls 1.10.1. Their live registry checksums match the
+original audited artifacts. Crates.io refused plugin-trait with HTTP 429 new
+crate rate limiting; link, transport and zenoh also remain absent. Cargo exit
+101 and before/after receipts are retained. Actual token authority succeeded
+for the published prefix; this is a rate-limit interruption, not an authorization
+blocker. Do not rerun the complete nine-package selection or regenerate a new
+source revision's artifacts under the already published versions.
+
+Auto-select the reviewed source-preserving continuation. Standard Cargo dry-run
+selecting exactly the four missing packages at the clean original e824 source,
+using their actual default/dependency features rather than flags for packages
+not selected, produces all FOUR archives byte-identical to the original Linux
+publication ledger. This is artifact-custody evidence, not another upload.
+The original retained cohort ledger SHA is
+`7de1e464c87156b91c735b086d886324d2d5bbbe5c28ef3c4c6229ed17962d4f`.
+
+The existing dispatcher cannot express a partial cohort. Before edits, authorize
+the bounded correction under the user's delegated recommendation: five CI and
+provenance paths, three new paths; new resume-release shell at most 110 lines,
+cohort policy using standard Python libraries at most 140, owning tests at most
+100, existing workflow and README at most 15 net lines each. Expected total
+human-authored expansion at most 380. Raise the delivery human ceiling from
+1,300 to **1,700** and complete artifact ceiling from 4,800 to **5,300**;
+generated baseline remains 3,311, so projected human 1,548 and artifact 4,859.
+Delivery extras grow from 24 to 27, controlled changed paths from 71 to 74;
+the 250 cumulative path ceiling and local Rust report-stage ceilings remain.
+The new shell/Python policy is private CI production, estimated at most 250
+lines, counted explicitly rather than described as documentation. It adds no
+runtime Rust, public type, dependency, credential codec or upload replacement.
+
+The new automation revision must pass its own protected PR, independent review
+and required main CI. It may resume only the fixed original failed dispatch
+run on e824 with exactly one named artifact and that exact ledger hash. Both
+the original source's passing required CI and current reviewed automation's
+passing required CI remain mandatory. Package source is a clean detached e824
+worktree, distinct from automation; no arbitrary old or failed source is allowed.
+Use standard GitHub artifact metadata/download with narrowly added actions:read.
+Audit all nine original candidates with the original source auditor, prove all
+five live prefix checksums, require precisely four missing versions, generate
+and compare the four standard Cargo candidates, re-audit the full cohort and
+restrict the existing SDK ledger to only the four original identities. Retain
+all nine post-operation receipts even if another refusal occurs. Another prefix
+needs a new reviewed exact continuation; no automatic retry or skip is selected.
+
+Policy controls and intended inversions cover wrong source/run/artifact ledger,
+prefix checksum mismatch, an unexpectedly registered remainder, missing/extra
+selection and changed candidate bytes. Original archive audit and actual Cargo
+regeneration remain separate observed proofs. The source-preserving mode is
+preferred over changing VCS and silently publishing different artifacts.
