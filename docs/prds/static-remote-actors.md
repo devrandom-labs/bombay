@@ -3024,6 +3024,51 @@ mechanical public migrations. Required combined checks, minimization, review,
 CI and actual PR merges still gate delivery. This expanded stage is authorized
 by the user's delegated selection, not by the earlier 770-line allowance.
 
+Fresh implementation readiness (2026-10-10 UTC): the complete selected
+Behavior instructions and the current owning sources/tests were reread.
+`Cargo.lock` remains SHA256
+`0c2f7ebde1e0f99a84525e2a73e3b3b3ecbbf6b657fb1a81ad46c864fc38ef87`.
+Behavior/Actors 0.23.0 and Macros 0.14.0 select
+`d69f992b371c12ab34e73b18e45b8112c90a1508`; Communication 0.1.3 selects
+`272a2343187b40615ab26c2d0d2e136010a16e77`; Address 0.3.0 selects
+`9f058dc03d1239e1ef5c3147a893b134a1e74a83`; the Timers 0.1.0 patch and
+checkout both select `13e884da7ab41781f52337b0038060e375b00ee0`.
+Tokio remains 1.53.1. The selected Behavior instruction checksum remains
+`2b7a9195b27f073fec18426da43e9840f8ef668f333b9ad55934f520a37ae226`.
+The independent review inspected Behavior's issued child shutdown authority,
+Communication close/drain/rejected originals, Address exact lease retirement,
+Timers' owned queue disposal, Observe's commit-before-wake behavior and Tokio
+oneshot's refused-original custody. No owning dependency change is required.
+These are fresh source checks, not passing new feature witnesses.
+
+Freeze the startup conservation contract under delegated recommendation:
+`SpawnError::AllocationRejected` remains genuinely unstarted, with its
+original behavior/reason and no invented actor report. Every started variant
+retains the required report and first notification result after actual join,
+before flattening native custody. Existing tuple/unit started variants become
+named variants; no correlated optional report/receipt fields. The Entity host
+keeps the private complete startup error until activation conversion. Extend
+the existing `EntityActivationError` sum with `AllocationRejected { behavior,
+reason }` and named `Launch { retirement, retirement_report,
+termination_notification }`. Replace its current native-only conversion.
+The alternative would erase an acquired notification cause or manufacture
+retirement for an allocation that started no task. No sixth public type,
+Entity report publisher, export or hydration policy is selected. Source
+feasibility is verified; startup, quiet rejection and Entity custody still
+require actual regressions.
+
+Keep report observation out of messaging-only `ActorRef` and Environment.
+Application owns the root Observe pair; child creation/projector/binding owns
+the child's pair, with the observation in `InstalledActor`. Existing bindings
+preserve child assessments before opaque application projection. First repair
+the reproduced ordinary-publication custody law in isolation; introduce the
+remaining report types and migrated public receiving only after its focused
+debug/optimized gate passes. The first shared production type is the already
+selected common `RetirementNotificationError`, retaining the exact panic
+allocation or actual oneshot receipt error. Its names, getter convention and
+opaque Debug representation were checked against the official Rust API
+Guidelines. No default, clone, serialization or replacement error is added.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
