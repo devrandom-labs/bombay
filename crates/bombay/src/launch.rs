@@ -17,7 +17,8 @@ use crate::local::effects::observation::TerminationObservations;
 use crate::local::effects::timers::LocalTimers;
 use crate::observe;
 use crate::terminal::{
-    ActorRetirement, LocalOutcome, ProjectTerminal, RetirementNotificationError, retirement_ingress,
+    ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, LocalOutcome,
+    ProjectTerminal, RetirementNotificationError, publish_retirement_report, retirement_ingress,
 };
 use crate::{ActorExecutionOutcome, Retirement};
 #[cfg(test)]
@@ -77,6 +78,7 @@ where
         acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
         unread_owner_cancellation: Option<()>,
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     InitializationPanicked {
         payload: Box<dyn Any + Send>,
@@ -94,6 +96,7 @@ where
         acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
         unread_owner_cancellation: Option<()>,
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     HostRejected {
         behavior: B,
@@ -113,6 +116,7 @@ where
         acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
         unread_owner_cancellation: Option<()>,
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     BindingAbandoned {
         behavior: B,
@@ -131,21 +135,26 @@ where
         acquired_ingress: Option<ControlFlow<LocalRetirementRequest, Option<B::Event>>>,
         unread_owner_cancellation: Option<()>,
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     Unpublished {
         outcome: LocalOutcome<B, Descendants>,
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     /// The executor returned no local outcome; its original task failure survives.
     ActorTaskFailed {
         error: JoinError,
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     Panicked {
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
     Cancelled {
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     },
 }
 
@@ -229,6 +238,7 @@ where
     fn from_local(
         outcome: LocalOutcome<B, Descendants>,
         termination_notification: Result<(), RetirementNotificationError>,
+        retirement_report: ActorRetirementReport,
     ) -> Self {
         let tasks = match &outcome {
             ActorExecutionOutcome::BehaviorFailed {
@@ -258,13 +268,18 @@ where
             return Self::Unpublished {
                 outcome,
                 termination_notification,
+                retirement_report,
             };
         }
+        // The joined report already combines both closed summaries. This existing
+        // native conversion keeps every original state, event, action and cause.
         match outcome {
             ActorExecutionOutcome::BehaviorFailed {
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants,
@@ -283,6 +298,7 @@ where
                 drop(activation_tasks);
                 Self::InitializationRejected {
                     termination_notification,
+                    retirement_report,
                     behavior,
                     error,
                     control: ingress.control,
@@ -303,6 +319,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants,
@@ -321,6 +339,7 @@ where
                 drop(activation_tasks);
                 Self::InitializationPanicked {
                     termination_notification,
+                    retirement_report,
                     behavior,
                     payload,
                     control: ingress.control,
@@ -341,6 +360,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -360,6 +381,7 @@ where
                 drop(activation_tasks);
                 Self::HostRejected {
                     termination_notification,
+                    retirement_report,
                     behavior,
                     initialization,
                     error,
@@ -381,6 +403,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -400,6 +424,7 @@ where
                 drop(activation_tasks);
                 Self::BindingAbandoned {
                     termination_notification,
+                    retirement_report,
                     behavior,
                     initialization,
                     control: ingress.control,
@@ -418,13 +443,16 @@ where
             }
             ActorExecutionOutcome::Panicked => Self::Panicked {
                 termination_notification,
+                retirement_report,
             },
             ActorExecutionOutcome::Cancelled => Self::Cancelled {
                 termination_notification,
+                retirement_report,
             },
             outcome => Self::Unpublished {
                 outcome,
                 termination_notification,
+                retirement_report,
             },
         }
     }
@@ -447,6 +475,7 @@ where
     ) -> Result<
         (
             ActorRetirement<B, Root, ChildFailures>,
+            ActorRetirementReport,
             Result<(), RetirementNotificationError>,
         ),
         (B, behavior::AllocationRejection),
@@ -454,6 +483,7 @@ where
         match self {
             Self::AllocationRejected { behavior, reason } => Err((behavior, reason)),
             Self::InitializationRejected {
+                retirement_report,
                 termination_notification,
                 error,
                 behavior,
@@ -487,9 +517,11 @@ where
                     source_index,
                     acquired_ingress: retirement_ingress(acquired_ingress),
                 },
+                retirement_report,
                 termination_notification,
             )),
             Self::InitializationPanicked {
+                retirement_report,
                 termination_notification,
                 payload,
                 behavior,
@@ -523,9 +555,11 @@ where
                     source_index,
                     acquired_ingress: retirement_ingress(acquired_ingress),
                 },
+                retirement_report,
                 termination_notification,
             )),
             Self::HostRejected {
+                retirement_report,
                 termination_notification,
                 initialization,
                 error,
@@ -561,9 +595,11 @@ where
                     source_index,
                     acquired_ingress: retirement_ingress(acquired_ingress),
                 },
+                retirement_report,
                 termination_notification,
             )),
             Self::BindingAbandoned {
+                retirement_report,
                 termination_notification,
                 initialization,
                 behavior,
@@ -597,28 +633,43 @@ where
                     source_index,
                     acquired_ingress: retirement_ingress(acquired_ingress),
                 },
+                retirement_report,
                 termination_notification,
             )),
             Self::Unpublished {
                 outcome,
+                retirement_report,
                 termination_notification,
             } => Ok((
                 ActorRetirement::from_local(outcome),
+                retirement_report,
                 termination_notification,
             )),
             Self::ActorTaskFailed {
                 error,
+                retirement_report,
                 termination_notification,
             } => Ok((
                 ActorRetirement::ActorTaskFailed(error),
+                retirement_report,
                 termination_notification,
             )),
             Self::Panicked {
+                retirement_report,
                 termination_notification,
-            } => Ok((ActorRetirement::Panicked, termination_notification)),
+            } => Ok((
+                ActorRetirement::Panicked,
+                retirement_report,
+                termination_notification,
+            )),
             Self::Cancelled {
+                retirement_report,
                 termination_notification,
-            } => Ok((ActorRetirement::Cancelled, termination_notification)),
+            } => Ok((
+                ActorRetirement::Cancelled,
+                retirement_report,
+                termination_notification,
+            )),
         }
     }
 }
@@ -699,7 +750,7 @@ where
     B: Behavior,
 {
     task: Option<JoinHandle<Result<Root, JoinError>>>,
-    termination_notification: oneshot::Receiver<Result<(), RetirementNotificationError>>,
+    notifications: oneshot::Receiver<ActorNotificationReceipts>,
     cancellation: OwnerCancellationAuthority,
     behavior: core::marker::PhantomData<fn() -> B>,
 }
@@ -852,11 +903,13 @@ where
     let termination_notification = termination_notification
         .await
         .unwrap_or_else(|error| Err(RetirementNotificationError::ReceiptClosed { error }));
+    let retirement_report = ActorRetirementReport::from_joined(&joined, &termination_notification);
     match joined {
-        Ok(outcome) => SpawnError::from_local(outcome, termination_notification),
+        Ok(outcome) => SpawnError::from_local(outcome, termination_notification, retirement_report),
         Err(error) => SpawnError::ActorTaskFailed {
             error,
             termination_notification,
+            retirement_report,
         },
     }
 }
@@ -877,6 +930,7 @@ where
     pub(crate) fn project<Origin, ChildFailures>(
         task: OwnedTask<B, (Vec<Root>, ChildFailures)>,
         origin: Origin,
+        retirement_publisher: observe::Publisher<ActorRetirementReport>,
     ) -> Self
     where
         Origin: Send + 'static,
@@ -895,17 +949,23 @@ where
             let notification = termination_notification
                 .await
                 .unwrap_or_else(|error| Err(RetirementNotificationError::ReceiptClosed { error }));
-            let refused_notification = notification_publication.send(notification).err();
+            let retirement_report = ActorRetirementReport::from_joined(&joined, &notification);
+            let retirement = publish_retirement_report(retirement_publisher, retirement_report);
+            let notifications = ActorNotificationReceipts {
+                termination: notification,
+                retirement,
+            };
+            let refused_notifications = notification_publication.send(notifications).err();
             let projected = match joined {
                 Ok(outcome) => Ok(Root::project(origin, ActorRetirement::from_local(outcome))),
                 Err(error) => Err(error),
             };
-            drop(refused_notification);
+            drop(refused_notifications);
             projected
         });
         Self {
             task: Some(task),
-            termination_notification: notification_receipt,
+            notifications: notification_receipt,
             cancellation,
             behavior: core::marker::PhantomData,
         }
@@ -925,15 +985,15 @@ where
     pub(crate) async fn receive_retirement(
         owned: &mut Option<Self>,
         received: &mut Option<Result<Result<Root, JoinError>, JoinError>>,
-        termination_notification: &mut Option<Result<(), RetirementNotificationError>>,
+        notifications: &mut Option<Result<ActorNotificationReceipts, oneshot::error::RecvError>>,
     ) {
-        if received.is_some() && termination_notification.is_some() {
+        if received.is_some() && notifications.is_some() {
             return;
         }
         if let Some(projection_task) = owned.as_mut()
             && projection_task.task.is_some()
         {
-            if received.is_some() || termination_notification.is_some() {
+            if received.is_some() || notifications.is_some() {
                 return;
             }
             projection_task.cancellation.request();
@@ -943,7 +1003,7 @@ where
                 return Poll::Ready(());
             };
             if let Some(task) = projection_task.task.as_mut() {
-                if received.is_some() || termination_notification.is_some() {
+                if received.is_some() || notifications.is_some() {
                     return Poll::Ready(());
                 }
                 match Pin::new(task).poll(context) {
@@ -955,13 +1015,11 @@ where
                     }
                 }
             }
-            if termination_notification.is_none() {
-                match Pin::new(&mut projection_task.termination_notification).poll(context) {
+            if notifications.is_none() {
+                match Pin::new(&mut projection_task.notifications).poll(context) {
                     Poll::Pending => return Poll::Pending,
                     Poll::Ready(notification) => {
-                        *termination_notification = Some(notification.unwrap_or_else(|error| {
-                            Err(RetirementNotificationError::ReceiptClosed { error })
-                        }));
+                        *notifications = Some(notification);
                     }
                 }
             }
@@ -976,19 +1034,17 @@ where
         self,
     ) -> (
         Result<Result<Root, JoinError>, JoinError>,
-        Result<(), RetirementNotificationError>,
+        Result<ActorNotificationReceipts, oneshot::error::RecvError>,
     ) {
         let Self {
             task,
-            termination_notification,
+            notifications,
             cancellation,
             behavior: _,
         } = self;
         let task = task.expect("the unobserved projected child owns its original join");
         let joined = cancellation.finish(task).await;
-        let notification = termination_notification
-            .await
-            .unwrap_or_else(|error| Err(RetirementNotificationError::ReceiptClosed { error }));
+        let notification = notifications.await;
         (joined, notification)
     }
 }
