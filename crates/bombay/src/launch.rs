@@ -4724,6 +4724,7 @@ mod root_join_custody {
     use bombay_engine::{ActionsOf, Completion, Driver};
     use communication::Config;
     use core::future::{Future, pending};
+    use core::pin::Pin;
     use core::task::{Context, Poll, Waker};
     use std::any::Any;
     use std::panic::resume_unwind;
@@ -5450,5 +5451,141 @@ mod root_join_custody {
             drop(payload);
             assert_eq!(original_panic.strong_count(), 0);
         }
+    }
+    struct RefusedNotification {
+        original: Arc<Vec<u8>>,
+        joined_tasks: Arc<AtomicUsize>,
+        disposal: Arc<Mutex<Vec<usize>>>,
+        disposal_panic: Option<Box<dyn Any + Send>>,
+    }
+
+    impl Drop for RefusedNotification {
+        fn drop(&mut self) {
+            self.disposal
+                .lock()
+                .unwrap()
+                .push(self.joined_tasks.load(Ordering::SeqCst));
+            assert_eq!(self.original.as_slice(), [79, 83]);
+            if let Some(payload) = self.disposal_panic.take() {
+                resume_unwind(payload);
+            }
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn termination_notification_receiver_abandonment_cannot_preempt_owned_task_settlement() {
+        let values = Arc::new(vec![31, 37]);
+        let original_state = Arc::downgrade(&values);
+        let original = Arc::new(vec![79_u8, 83]);
+        let refused_original = Arc::downgrade(&original);
+        let disposal_cause = Arc::new(vec![89_u8, 97]);
+        let disposal_original = Arc::downgrade(&disposal_cause);
+        let disposal_panic: Box<dyn Any + Send> = Box::new(disposal_cause);
+        let disposal_identity = ptr::from_ref(disposal_panic.as_ref());
+        let joined_tasks = Arc::new(AtomicUsize::new(0));
+        let disposal = Arc::new(Mutex::new(Vec::new()));
+        let payload = Box::new(RefusedNotification {
+            original,
+            joined_tasks: joined_tasks.clone(),
+            disposal: disposal.clone(),
+            disposal_panic: Some(disposal_panic),
+        });
+        let (complete, completed) = oneshot::channel();
+        let settled_tasks = joined_tasks.clone();
+        let mut activation_tasks = ActivationTasks::new();
+        activation_tasks.spawn(async move {
+            completed
+                .await
+                .expect("the original owned task remains held");
+            settled_tasks.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        });
+        let decisions = Arc::new(Mutex::new(Vec::new()));
+        let interpreted = decisions.clone();
+        let (admit, admitted) = oneshot::channel();
+        let (release, released) = oneshot::channel();
+        let (authority, startup, control, mut task, termination_notification) =
+            spawn_local_execution::<RootState, _, StandardIngress, _, _, _>(
+                ActorSpace::new(),
+                Config::new(2),
+                MailAddr::APPLICATION_ROOT,
+                RootState {
+                    values,
+                    finish: RootFinish::Stop,
+                },
+                |_, _, _, _| RootCleanup {
+                    decisions: interpreted,
+                    initializing: Some((None, admitted)),
+                    retiring: None,
+                    release: released,
+                    activation_tasks,
+                },
+                |environment| {
+                    let (publication, startup) = oneshot::channel();
+                    let control = environment.shutdown_control();
+                    let environment = environment.publish_with(move |actor| {
+                        drop(publication.send(actor));
+                    });
+                    (environment, startup, control)
+                },
+            );
+        let sent = admit.send(());
+        sent.expect("startup remains owned");
+        let actor = startup.await.expect("the original actor is active");
+        let waiter = Arc::new(TerminationWaiter {
+            publication: Mutex::new(Some(NotificationWake::Unwind(payload))),
+            attempts: AtomicUsize::new(0),
+        });
+        let waker = Waker::from(waiter.clone());
+        let mut registered = Box::pin(actor.termination());
+        let initial = registered.as_mut().poll(&mut Context::from_waker(&waker));
+        assert!(matches!(initial, Poll::Pending));
+        drop(termination_notification);
+        let control = control
+            .upgrade()
+            .expect("the exact actor retains its control");
+        let sent = control.send(EventLayer::Owned(ShutdownRequested));
+        sent.expect("the exact actor accepts shutdown");
+        let released = release.send(());
+        released.expect("capability retirement remains held");
+        let terminated = actor.termination().await;
+        assert_eq!(terminated, Ok(behavior_actors::Exit::Normal));
+        assert!(
+            disposal.lock().unwrap().is_empty(),
+            "a refused original cannot be disposed before owned-task settlement"
+        );
+        assert_eq!(joined_tasks.load(Ordering::SeqCst), 0);
+        assert_eq!(refused_original.strong_count(), 1);
+        assert_eq!(original_state.strong_count(), 1);
+        let joined = Pin::new(&mut task).poll(&mut Context::from_waker(Waker::noop()));
+        assert!(matches!(joined, Poll::Pending));
+        let released = complete.send(());
+        released.expect("the original activation task survives receiver abandonment");
+        let task_id = task.id();
+        let error = match task.await {
+            Err(error) => error,
+            Ok(outcome) => {
+                drop(outcome);
+                panic!("explicit disposal must retain its actual later destructor panic");
+            }
+        };
+        assert_eq!(error.id(), task_id);
+        assert!(error.is_panic());
+        assert_eq!(joined_tasks.load(Ordering::SeqCst), 1);
+        assert_eq!(*disposal.lock().unwrap(), [1]);
+        assert_eq!(refused_original.strong_count(), 0);
+        assert_eq!(original_state.strong_count(), 0);
+        let original = error.into_panic();
+        assert!(ptr::eq(ptr::from_ref(original.as_ref()), disposal_identity));
+        assert_eq!(disposal_original.strong_count(), 1);
+        assert_eq!(
+            *decisions.lock().unwrap(),
+            [Step::Continue, Step::Stop(Stopped)]
+        );
+        let replay = actor.termination().await;
+        assert_eq!(replay, terminated);
+        assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
+        drop((original, authority, registered, actor, control));
+        assert_eq!(disposal_original.strong_count(), 0);
     }
 }
