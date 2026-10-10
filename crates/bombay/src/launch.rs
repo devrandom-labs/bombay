@@ -438,6 +438,10 @@ where
         clippy::too_many_lines,
         reason = "one exhaustive owning phase/failure conversion preserves every original typed field; forwarding functions or aliases would only relocate the same conservation obligation"
     )]
+    #[expect(
+        clippy::type_complexity,
+        reason = "started native retirement and its independent notification coexist; unstarted rejection returns the original behavior and allocation reason without a fabricated receipt or hiding wrapper"
+    )]
     pub(crate) fn into_retirement(
         self,
     ) -> Result<
@@ -764,13 +768,13 @@ where
         received: &mut Option<Result<LocalOutcome<B, Descendants>, JoinError>>,
         termination_notification: &mut Option<Result<(), RetirementNotificationError>>,
     ) {
-        if let Some(actor_task) = owned.as_mut() {
-            if actor_task.task.is_some() {
-                if received.is_some() || termination_notification.is_some() {
-                    return;
-                }
-                actor_task.cancellation.request();
+        if let Some(actor_task) = owned.as_mut()
+            && actor_task.task.is_some()
+        {
+            if received.is_some() || termination_notification.is_some() {
+                return;
             }
+            actor_task.cancellation.request();
         }
         Self::receive_finish(owned, received, termination_notification).await;
     }
@@ -926,13 +930,13 @@ where
         if received.is_some() && termination_notification.is_some() {
             return;
         }
-        if let Some(projection_task) = owned.as_mut() {
-            if projection_task.task.is_some() {
-                if received.is_some() || termination_notification.is_some() {
-                    return;
-                }
-                projection_task.cancellation.request();
+        if let Some(projection_task) = owned.as_mut()
+            && projection_task.task.is_some()
+        {
+            if received.is_some() || termination_notification.is_some() {
+                return;
             }
+            projection_task.cancellation.request();
         }
         poll_fn(|context| {
             let Some(projection_task) = owned.as_mut() else {
