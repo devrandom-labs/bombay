@@ -58,6 +58,8 @@ coexists with the independent complete cleanup result. When no Work is supplied,
 owns the original actor `JoinError`. `ApplicationCleanupError::PublicationClosed`
 and `TaskFailed` separately retain cleanup receiving and cleanup-task errors.
 `Terminal` selects descendant projection, not automatic root projection.
+Inspect normal stop or exhaustion with `retirement.completion()`; independent
+child and cleanup failures still require their own decisions.
 Borrow retained state with `retirement.behavior()` and shared runtime custody
 with `retirement.custody()`. Consuming matches move the named `custody` product;
 phase-specific outcomes and unfinished actions remain in the retirement.

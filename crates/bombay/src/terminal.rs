@@ -533,6 +533,42 @@ impl<BehaviorState, Root, ChildFailures> ActorRetirement<BehaviorState, Root, Ch
 where
     BehaviorState: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
 {
+    /// Borrow the actor's normal completion without consuming its retirement.
+    ///
+    /// Only `Completed` returns a reason, distinguishing explicit stop from
+    /// source exhaustion. Failure and owner cancellation return `None` while
+    /// retaining their complete original values. A completion reason does not
+    /// certify that descendants or cleanup have no independent failures.
+    #[must_use]
+    pub const fn completion(&self) -> Option<&Completion> {
+        match self {
+            Self::Completed { completion, .. } => Some(completion),
+            Self::AllocationRejected { .. }
+            | Self::InitializationRejected { .. }
+            | Self::InitializationPanicked { .. }
+            | Self::HostCommitPanicked { .. }
+            | Self::TransitionPanicked { .. }
+            | Self::HostExecutionPanicked { .. }
+            | Self::HostRejected { .. }
+            | Self::BindingAbandoned { .. }
+            | Self::BehaviorFailed { .. }
+            | Self::EffectsFailed { .. }
+            | Self::OwnerCancelled { .. }
+            | Self::CapabilityFailed { .. }
+            | Self::PreparedRetirementPanicked { .. }
+            | Self::PreparedInterpreterContractFailed { .. }
+            | Self::InitializationRetirementPanicked { .. }
+            | Self::InitializationInterpreterContractFailed { .. }
+            | Self::ActiveRetirementPanicked { .. }
+            | Self::ActiveActivationPanicked { .. }
+            | Self::ActiveInterpreterContractFailed { .. }
+            | Self::PreparedEffectsFailed { .. }
+            | Self::ActorTaskFailed(_)
+            | Self::Panicked
+            | Self::Cancelled => None,
+        }
+    }
+
     /// Borrow the exact actor state retained by this retirement.
     ///
     /// State remains available after allocation, initialization and execution
@@ -1748,6 +1784,7 @@ mod capability_retirement_projection {
         InitializationPanicked,
         BindingAbandoned,
         Stopped,
+        Exhausted,
         OwnerCancellation,
         CapabilityFailed,
     }
@@ -1762,6 +1799,7 @@ mod capability_retirement_projection {
             RetirementCause::InitializationPanicked,
             RetirementCause::BindingAbandoned,
             RetirementCause::Stopped,
+            RetirementCause::Exhausted,
             RetirementCause::OwnerCancellation,
             RetirementCause::CapabilityFailed,
         ] {
@@ -1809,6 +1847,7 @@ mod capability_retirement_projection {
                     unread_owner_cancellation: Some(()),
                 },
                 RetirementCause::Stopped
+                | RetirementCause::Exhausted
                 | RetirementCause::OwnerCancellation
                 | RetirementCause::CapabilityFailed => LocalResidual::Retired {
                     interpretation: None,
@@ -1856,6 +1895,12 @@ mod capability_retirement_projection {
                     residual,
                     completion: Completion::Stopped,
                 },
+                RetirementCause::Exhausted => ActorExecutionOutcome::Completed {
+                    additional_failures: Vec::new(),
+                    behavior,
+                    residual,
+                    completion: Completion::Exhausted,
+                },
                 RetirementCause::OwnerCancellation => ActorExecutionOutcome::Completed {
                     additional_failures: Vec::new(),
                     behavior,
@@ -1883,8 +1928,20 @@ mod capability_retirement_projection {
                     }
                 }
             };
+            let retirement = ActorRetirement::from_local(outcome);
+            let completion = retirement.completion();
+            match cause {
+                RetirementCause::Stopped => assert_eq!(completion, Some(&Completion::Stopped)),
+                RetirementCause::Exhausted => {
+                    assert_eq!(completion, Some(&Completion::Exhausted));
+                }
+                RetirementCause::InitializationPanicked
+                | RetirementCause::BindingAbandoned
+                | RetirementCause::OwnerCancellation
+                | RetirementCause::CapabilityFailed => assert!(completion.is_none()),
+            }
             let (behavior, control, user, descendants, mut failures, terminal_report, unread) =
-                match ActorRetirement::from_local(outcome) {
+                match retirement {
                     ActorRetirement::InitializationPanicked {
                         custody:
                             ActorCustody {
@@ -1997,8 +2054,11 @@ mod capability_retirement_projection {
                         assert!(source_index.is_none());
                         assert!(acquired_ingress.is_none());
                         assert!(retirement_failures.is_empty());
-                        assert_eq!(cause, RetirementCause::Stopped);
-                        assert_eq!(completion, Completion::Stopped);
+                        assert!(matches!(
+                            (&cause, completion),
+                            (RetirementCause::Stopped, Completion::Stopped)
+                                | (RetirementCause::Exhausted, Completion::Exhausted)
+                        ));
                         assert_eq!(settlements.len(), 0);
                         (
                             behavior,

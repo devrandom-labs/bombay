@@ -95,6 +95,11 @@ outside the runtime to apply its own root projection policy, using the original
 origin and retirement without changing the actual Owner/Actor distinction.
 `ApplicationOutcome` is an explicit `bombay` root import, not a prelude export.
 
+Use `ActorRetirement::completion()` to borrow the normal stop or exhaustion
+reason. Failure and owner cancellation return `None`; inspection leaves the
+complete retirement untouched. A normal actor completion can coexist with
+child or late-joined capability failures, which remain in `custody()`.
+
 Use `ActorRetirement::behavior()` to borrow retained actor state before
 choosing how to consume the complete retirement. State is available in normal
 completion and failure alternatives; its presence does not imply success.

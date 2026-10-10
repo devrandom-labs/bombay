@@ -89,6 +89,7 @@ fn main() {
         retirement.behavior().is_some(),
         "the counter retains its actor for inspection before owned consumption"
     );
+    assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let terminal = <ApplicationTerminal<_> as ProjectTerminal<_, _>>::project(origin, retirement);
     assert_application_stopped(terminal);
 }

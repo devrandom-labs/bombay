@@ -240,6 +240,7 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
     let (origin, retirement) = cleanup.expect("joined root was received");
     assert_eq!(snapshot.value, 1);
     assert_eq!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
+    assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
     let custody = retirement.custody().expect("joined actor custody survives");
     assert!(custody.user.is_empty());
     assert_eq!(custody.descendants, []);
@@ -252,12 +253,17 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
         .expect("the joined actor remains inspectable");
     let ActorRetirement::Completed {
         custody: ActorCustody { behavior, .. },
+        completion,
         ..
     } = &retirement
     else {
         panic!("the counter completed");
     };
     assert!(ptr::eq(borrowed, behavior));
+    assert!(ptr::eq(
+        retirement.completion().expect("the original completion"),
+        completion
+    ));
     let ActorRetirement::Completed {
         custody: ActorCustody {
             user, descendants, ..
@@ -320,6 +326,7 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
         .expect("startup cleanup was received")
         .as_ref()
         .expect("startup rejection was joined");
+    assert!(retirement.completion().is_none());
     let original = &retirement
         .behavior()
         .expect("rejection retains its actor")
@@ -372,6 +379,7 @@ fn borrowed_actor_preserves_the_complete_allocation_rejection() {
             behavior: RejectedCounter { original },
             reason: AllocationRejection::AddressAlreadyClaimed,
         };
+    assert!(retirement.completion().is_none());
     let borrowed = retirement
         .behavior()
         .expect("allocation rejection retains the original actor");
@@ -395,6 +403,7 @@ async fn unavailable_actor_state_preserves_each_executor_cause() {
     let task = failure.id();
     let retirement: ActorRetirement<RejectedCounter, Never, ()> =
         ActorRetirement::ActorTaskFailed(failure);
+    assert!(retirement.completion().is_none());
     assert!(retirement.behavior().is_none());
     let ActorRetirement::ActorTaskFailed(failure) = retirement else {
         panic!("borrowed inspection retains the original task failure");
@@ -402,9 +411,11 @@ async fn unavailable_actor_state_preserves_each_executor_cause() {
     assert_eq!(failure.id(), task);
     assert!(failure.is_panic());
     let panicked: ActorRetirement<RejectedCounter, Never, ()> = ActorRetirement::Panicked;
+    assert!(panicked.completion().is_none());
     assert!(panicked.behavior().is_none());
     assert!(matches!(panicked, ActorRetirement::Panicked));
     let cancelled: ActorRetirement<RejectedCounter, Never, ()> = ActorRetirement::Cancelled;
+    assert!(cancelled.completion().is_none());
     assert!(cancelled.behavior().is_none());
     assert!(matches!(cancelled, ActorRetirement::Cancelled));
 }
