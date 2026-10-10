@@ -870,7 +870,9 @@ mod tests {
         assert_eq!(child_failures, ());
         assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
 
-        let notification_fault: Box<dyn Any + Send> = Box::new(Arc::new(vec![67_u64, 71]));
+        let notification_values = Arc::new(vec![67_u64, 71]);
+        let notification_owner = Arc::downgrade(&notification_values);
+        let notification_fault: Box<dyn Any + Send> = Box::new(notification_values);
         let notification_allocation = ptr::from_ref(notification_fault.as_ref()).cast::<()>();
         let retirement_fault: Box<dyn Any + Send> = Box::new(Arc::new(vec![73_u64, 79]));
         let retirement_allocation = ptr::from_ref(retirement_fault.as_ref()).cast::<()>();
@@ -977,6 +979,11 @@ mod tests {
         assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
         assert_eq!(runtime.residents.available_permits(), 1);
         assert_eq!(runtime.hydrations.available_permits(), 1);
+        assert_eq!(
+            notification_owner.strong_count(),
+            1,
+            "the runtime retains the first original after the consuming callback panic"
+        );
         let Err(EntityRetirementFailure::ShutdownRequestPanicked {
             termination_notification: Err(RetirementNotificationError::Panicked { payload }),
             shutdown_request,
