@@ -3395,6 +3395,91 @@ completed 2026-10-10 04:49:11 UTC. That pass applies to the earlier candidate;
 the persistent archive corrections and pre-upload veto require fresh checks
 on their combined committed source before review, merge or publication.
 
+First connected repair gate closed (2026-10-10 UTC): restored launch source
+SHA256 `87a7d3581bc1df099c67fa260da3eb3d53bf18d1d6e97dff01c2b20a60573761`
+passes all seven controls in both profiles, formatting and strict library
+Clippy. Four source-only mutations fail with intended exit 101 in both profiles:
+
+| Deliberately restored defect | Independent failed law |
+| --- | --- |
+| Propagate the first observer panic through native ownership | Original native-state allocation strong count 0, required 1. |
+| Dispose of a refused first cause before owned-task settlement | Disposal occurs while genuine owned work is still held. |
+| Infer join from occupied destinations and weaken refusal to joint occupancy | Both actor/projector tests detect consumption despite an occupied native-only or notification-only destination. |
+| Transfer the first cause after consuming child projection | The original cause is lost when that real projection panics. |
+
+Each mutation was restored byte-for-byte before the final seven-control run;
+no mutation was committed. An earlier first inverse failing only at receipt
+closure receives no native-conservation credit; the strengthened native-first
+oracle supplies the accepted proof. Exact commands use pinned Nix, locked
+Cargo, the owning library test target and both profiles; filters are
+`termination_notification_preserves_original_native_retirement`,
+`termination_notification_receiver_abandonment_cannot_preempt_owned_task_settlement`,
+`termination_notification_preserves_coexisting_destinations`, and
+`termination_notification_survives_later_projection_panic_with_original_native_custody`.
+
+All six Entity controls now execute and pass in each profile, with fresh
+strict production-library Clippy passing. Source SHA256 is
+`8b842279c2f41dcb52a50a4c065bf12948dbb0a1d9ce2aa0ad6f0315bac529b6`;
+the family/lock/manifest are unchanged. Exact enumeration includes actual
+allocation exhaustion, selected host, direct/wrapped native retirement,
+panicked task, shutdown-conversion fault and sole termination-notification
+fault. The shared target initially reused a four-test binary from another
+worktree; that run receives no six-test credit. Invalidate only the owning
+crate's freshness metadata when switching worktrees and require exact test
+enumeration, rather than assuming Cargo rebuilt from source timestamps.
+Actual fresh debug/release test binaries are respectively SHA256
+`9c0809f7aadde13955c34695f83c8587e46af970a6588d880293a8b915e8eb3f`
+and `63451d79fe3290798d9790212c28f3d2560761d9b53ec543a55481eb49f8371c`.
+The earlier Entity after-callback error-erasure inverse remains separate proof;
+no new inverse is claimed for the sole-notification case. These verified
+first-stage laws permit the already scoped joined-report lowering, not remote
+acceptance, minimization or delivery credit.
+
+Freeze the next connected report contracts before production lowering.
+Retain exactly the five selected public types. Private report construction
+and commutative combination belong to `ActorRetirementReport`; its two
+read-only assessments remain independent. Known failures dominate incomplete
+checking; complete absence of failures requires complete evidence. Capture
+the existing `ClassifySettlement` result inside the standard
+`ActionInterpreter::commit`, before Core consumes it, and carry its closed
+`ActorFailureAssessment` through the existing capability/residual owners.
+At actual join, derive the report only from closed native outcomes, retained
+assessments, unfinished progress and the first notification result. Invoke no
+application callback or new classifier trait at that handoff. Advanced/test
+interpreters without complete evidence explicitly retain `Incomplete`.
+
+`CapabilityRetirement` and all `LocalResidual` phases retain
+`operation_failures: ActorFailureAssessment` and
+`descendant_report: ActorRetirementReport`. Standard child retirement receives
+its aggregate in a caller-owned lane; the actual empty child product supplies
+the positive identity. Preserve a child's report before opaque application
+projection and quiet startup-receipt discharge. Combine acquired child proof
+before a later origin conversion; parent-owned projector/notification failures
+affect the parent's failure assessment without rewriting the child snapshot.
+The started `SpawnError` variants retain `retirement_report` beside their
+original native/first result; unstarted allocation retains no invented report.
+
+Child creation owns the Observe pair, passes its publisher to the existing
+projector and its observation to the binding/`InstalledActor`. Root Application
+owns its pair and passes the observation through `ApplicationHandle` to
+`ApplicationLifecycle`. Keep `ActorRef` and Environment free of report authority.
+The projector and existing root cleanup task catch only actual publication
+around a borrowed native result, retain both real causes in
+`ActorNotificationReceipts`, and transfer the product before consuming child
+projection or root-family cleanup. Root cleanup acquires the actor join and
+publishes while application work remains live; its existing permission barrier
+still precedes native handoff and family shutdown. Product receipt closure
+remains distinct from either inner notification result. Mechanical caller and
+guidance migration follows focused report laws, not compiler pressure.
+
+Coordinator owns terminal types, exports, root Application, lifecycle/endpoint
+APIs and integration. One isolated contributor owns launch/startup/projector;
+another owns child/capability/residual propagation, Entity startup custody and
+affected owning test fixtures, including existing worker-preparation forwarding.
+No new trait, macro, runtime task, registry, mailbox or dependency is selected.
+This remains within the approved local 2,200 production / 3,000 test / five-type
+stage and 250 cumulative paths; measure before any concrete excess.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
