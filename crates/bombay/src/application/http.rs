@@ -10,7 +10,7 @@ use crate::local::children::{
     ChildBindings, RetireChildTasks, RuntimeChildBindings, StructuralOrigins,
 };
 use crate::local::effects::CommitActions;
-use crate::terminal::{ActorRetirement, RootOrigin};
+use crate::terminal::{ActorRetirement, RetirementNotificationError, RootOrigin};
 use crate::topology::Hosts;
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -22,6 +22,7 @@ use std::io;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::runtime::{Handle, TryCurrentError};
+use tokio::sync::oneshot::error::RecvError;
 
 #[allow(
     private_bounds,
@@ -54,15 +55,13 @@ where
     ) -> Result<
         (
             impl Future<Output = ()>,
-            impl Future<Output = ApplicationOutcome<
-                (Self, Router, SocketAddr),
-                (Router, TcpListener),
-                Result<(), io::Error>,
-                (RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>),
-                (Self, Router, SocketAddr, io::Error),
-                (Root, Spaces),
-                (),
-            >>,
+            impl Future<Output = (ApplicationOutcome<(Self, Router, SocketAddr),
+(Router, TcpListener),
+Result<(), io::Error>,
+(),
+(Self, Router, SocketAddr, io::Error),
+(Root, Spaces),
+()>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<Result<(), RetirementNotificationError>, RecvError>)>,
         ),
         ((Self, Router, SocketAddr), TryCurrentError),
     >
@@ -105,8 +104,6 @@ where
             Terminal,
             (),
             (Self, Router, SocketAddr, io::Error),
-            _,
-            _,
             _,
             _,
             _,
@@ -198,9 +195,11 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
-            |root| root,
         );
-        let receiving = async move { receiving.await.into_http() };
+        let receiving = async move {
+            let (work, root, termination_notification) = receiving.await;
+            (work.into_http(), root, termination_notification)
+        };
         Ok((execution, receiving))
     }
 
@@ -219,15 +218,13 @@ where
         address: SocketAddr,
         router: Router,
     ) -> Result<
-        ApplicationOutcome<
-            (Self, Router, SocketAddr),
-            (Router, TcpListener),
-            Result<(), io::Error>,
-            (RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>),
-            (Self, Router, SocketAddr, io::Error),
-            (Root, Spaces),
-            (),
-        >,
+        (ApplicationOutcome<(Self, Router, SocketAddr),
+(Router, TcpListener),
+Result<(), io::Error>,
+(),
+(Self, Router, SocketAddr, io::Error),
+(Root, Spaces),
+()>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<Result<(), RetirementNotificationError>, RecvError>),
         ((Self, Router, SocketAddr), TryCurrentError),
     >
 where
@@ -300,21 +297,28 @@ where
         (
             impl Future<Output = ()>,
             impl Future<
-                Output = ApplicationOutcome<
-                    (Self, Router, SocketAddr),
-                    (Router, TcpListener),
-                    Result<(), io::Error>,
-                    (
-                        RootOrigin<Root>,
-                        ActorRetirement<Actor, Terminal, ChildFailures>,
-                    ),
-                    Result<
-                        (Self, Router, SocketAddr, io::Error),
-                        (Root, Router, StagingFailure, TcpListener),
+                Output = (
+                    ApplicationOutcome<
+                        (Self, Router, SocketAddr),
+                        (Router, TcpListener),
+                        Result<(), io::Error>,
+                        (),
+                        Result<
+                            (Self, Router, SocketAddr, io::Error),
+                            (Root, Router, StagingFailure, TcpListener),
+                        >,
+                        (Actor, ActorSpace<Root::Protocol>),
+                        (),
                     >,
-                    (Actor, ActorSpace<Root::Protocol>),
-                    (),
-                >,
+                    Result<
+                        (
+                            RootOrigin<Root>,
+                            ActorRetirement<Actor, Terminal, ChildFailures>,
+                        ),
+                        RecvError,
+                    >,
+                    Result<Result<(), RetirementNotificationError>, RecvError>,
+                ),
             >,
         ),
         ((Self, Router, SocketAddr), TryCurrentError),
@@ -360,8 +364,6 @@ where
                 (Self, Router, SocketAddr, io::Error),
                 (Root, Router, StagingFailure, TcpListener),
             >,
-            _,
-            _,
             _,
             _,
             _,
@@ -464,9 +466,11 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
-            |root| root,
         );
-        let receiving = async move { receiving.await.into_http() };
+        let receiving = async move {
+            let (work, root, termination_notification) = receiving.await;
+            (work.into_http(), root, termination_notification)
+        };
         Ok((execution, receiving))
     }
 
@@ -485,21 +489,28 @@ where
         address: SocketAddr,
         router: Router,
     ) -> Result<
-        ApplicationOutcome<
-            (Self, Router, SocketAddr),
-            (Router, TcpListener),
-            Result<(), io::Error>,
-            (
-                RootOrigin<Root>,
-                ActorRetirement<Actor, Terminal, ChildFailures>,
-            ),
-            Result<
-                (Self, Router, SocketAddr, io::Error),
-                (Root, Router, StagingFailure, TcpListener),
+        (
+            ApplicationOutcome<
+                (Self, Router, SocketAddr),
+                (Router, TcpListener),
+                Result<(), io::Error>,
+                (),
+                Result<
+                    (Self, Router, SocketAddr, io::Error),
+                    (Root, Router, StagingFailure, TcpListener),
+                >,
+                (Actor, ActorSpace<Root::Protocol>),
+                (),
             >,
-            (Actor, ActorSpace<Root::Protocol>),
-            (),
-        >,
+            Result<
+                (
+                    RootOrigin<Root>,
+                    ActorRetirement<Actor, Terminal, ChildFailures>,
+                ),
+                RecvError,
+            >,
+            Result<Result<(), RetirementNotificationError>, RecvError>,
+        ),
         ((Self, Router, SocketAddr), TryCurrentError),
     >
     where

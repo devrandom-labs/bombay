@@ -209,6 +209,7 @@ where
         additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
+        termination_notification: Result<(), RetirementNotificationError>,
     },
     /// Startup cleanup owns independent available facts after Core received the child input.
     StartupRetirementFailed {
@@ -219,6 +220,7 @@ where
         additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
+        termination_notification: Result<(), RetirementNotificationError>,
     },
     ActorTaskFailed {
         id: CreationId,
@@ -226,6 +228,7 @@ where
         origin: Origin,
         actor: EstablishedActor<Child>,
         error: JoinError,
+        termination_notification: Result<(), RetirementNotificationError>,
     },
     ProjectionTaskFailed {
         id: CreationId,
@@ -233,6 +236,15 @@ where
         origin: Origin,
         actor: EstablishedActor<Child>,
         error: JoinError,
+        termination_notification: Result<(), RetirementNotificationError>,
+    },
+    /// The projected native result is retained independently of this failure.
+    TerminationNotificationFailed {
+        id: CreationId,
+        kind: CreationKind,
+        origin: Origin,
+        actor: EstablishedActor<Child>,
+        error: RetirementNotificationError,
     },
 }
 
@@ -280,6 +292,19 @@ where
                 ..
             } => formatter
                 .debug_struct("ProjectionTaskFailed")
+                .field("id", id)
+                .field("kind", kind)
+                .field("origin", origin)
+                .field("error", error)
+                .finish_non_exhaustive(),
+            Self::TerminationNotificationFailed {
+                id,
+                kind,
+                origin,
+                error,
+                ..
+            } => formatter
+                .debug_struct("TerminationNotificationFailed")
                 .field("id", id)
                 .field("kind", kind)
                 .field("origin", origin)
