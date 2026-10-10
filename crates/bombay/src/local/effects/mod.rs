@@ -517,10 +517,11 @@ mod atomic_interpretation_contract {
     use std::time::{Duration, Instant};
 
     use behavior::{
-        Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Creations, Delivery,
-        EstablishedDelivery, EstablishedRecipient, EventIngress, EventLayer, Here, InjectEvent,
-        Inside, InterpretItem, ItemSettlement, LogicalDeliveryReason, MessageProtocol, Never,
-        NoBirths, NoSends, Recipient, SendLayer, SourceAdmission, Step, User, UserEvent,
+        ActionSettlement, Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Creations,
+        Delivery, EstablishedDelivery, EstablishedRecipient, EventIngress, EventLayer, Here,
+        InjectEvent, Inside, InterpretItem, Interpretation, InterpretationProgress, ItemSettlement,
+        LogicalDeliveryReason, MessageProtocol, Never, NoBirths, NoSends, Recipient, SendLayer,
+        SettledItem, SourceAdmission, Step, User, UserEvent,
     };
     use behavior_actors::atomic::{
         AssignWorker, Assignment, BeginActivation, CustomerDelivery, DiagnosticAction,
@@ -558,6 +559,7 @@ mod atomic_interpretation_contract {
     use crate::terminal::{ActorRetirement, LocalOutcome};
     use crate::topology::Hosts;
     use crate::{ActorExecutionOutcome, ActorSpace};
+    use crate::{ActorFailureAssessment, RetirementAssessment};
 
     struct Worker;
 
@@ -576,6 +578,131 @@ mod atomic_interpretation_contract {
     impl ProxyParent {}
 
     type LedgerProtocol = MessageProtocol<MailAddr, Vec<u64>>;
+
+    struct RetirementDeliverySource;
+
+    impl Behavior for RetirementDeliverySource {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = User<MailAddr, Never>;
+        type Sends = Vec<Delivery<LedgerProtocol>>;
+        type Birth = NoBirths;
+        type Ph = Never;
+        type Error = Never;
+
+        fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+            match event.message {}
+        }
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the complete before/refusal/after trace proves custody without retaining settlement history"
+    )]
+    async fn retirement_keeps_refusal_assessment_after_exact_settlement_is_discharged() {
+        let (control, owner, mailbox, receiver) =
+            mailbox_channel::<User<MailAddr, Never>, User<MailAddr, Never>>(Config::new(1));
+        let (terminal_sender, terminal_receiver) = oneshot::channel();
+        let capabilities =
+            ApplicationCapabilities::<RetirementDeliverySource, _>::new_with_bindings(
+                ApplicationCapabilityInputs {
+                    address: MailAddr(139),
+                    actor_spaces: Arc::new(ActorSpace::<LedgerProtocol>::new()),
+                    allocations: ApplicationAddresses::new(),
+                    control,
+                    timers: LocalTimers::new(),
+                    observations: TerminationObservations::new(),
+                    terminal_reports: LocalTerminalReports::new(terminal_sender),
+                },
+                NoChildBindings::<Never>::default(),
+            );
+        let mut interpreter = ActionInterpreter::new(capabilities);
+        let mut empty = Some(InterpretationProgress::Original(Actions::cont()));
+        CommitActions::<RetirementDeliverySource>::commit(&mut interpreter, &mut empty).await;
+        assert_eq!(
+            interpreter.capabilities_mut().operation_failures,
+            ActorFailureAssessment::NoFailuresFound
+        );
+        let Some(InterpretationProgress::Completed(Interpretation::Complete(ActionSettlement {
+            creations,
+            sends,
+            become_,
+        }))) = empty.take()
+        else {
+            panic!("the complete empty operation was acquired")
+        };
+        assert!(creations.is_empty());
+        assert!(sends.is_empty());
+        assert!(matches!(become_, Step::Continue));
+
+        let values = vec![149, 151];
+        let allocation = values.as_ptr();
+        let mut delivery = Some(InterpretationProgress::Original(Actions::send(vec![
+            Delivery::new(Recipient::global(MailAddr(157)), values),
+        ])));
+        CommitActions::<RetirementDeliverySource>::commit(&mut interpreter, &mut delivery).await;
+        let Some(InterpretationProgress::Completed(Interpretation::Complete(ActionSettlement {
+            creations,
+            mut sends,
+            become_,
+        }))) = delivery.take()
+        else {
+            panic!("the complete refused operation was acquired")
+        };
+        assert!(creations.is_empty());
+        assert!(matches!(become_, Step::Continue));
+        assert_eq!(sends.len(), 1);
+        let SettledItem::Attempted(ItemSettlement::Rejected { item, reason }) = sends.remove(0)
+        else {
+            panic!("the missing recipient refuses its original delivery")
+        };
+        assert_eq!(reason, LogicalDeliveryReason::UnknownAddress);
+        assert_eq!(item.to.address(), MailAddr(157));
+        assert_eq!(item.message, [149, 151]);
+        assert_eq!(item.message.as_ptr(), allocation);
+        drop(item);
+
+        let mut later = Some(InterpretationProgress::Original(Actions::cont()));
+        CommitActions::<RetirementDeliverySource>::commit(&mut interpreter, &mut later).await;
+        let Some(InterpretationProgress::Completed(Interpretation::Complete(ActionSettlement {
+            creations,
+            sends,
+            become_,
+        }))) = later.take()
+        else {
+            panic!("the later complete empty operation was acquired")
+        };
+        assert!(creations.is_empty());
+        assert!(sends.is_empty());
+        assert!(matches!(become_, Step::Continue));
+        let mut interpreter = Some(interpreter);
+        let mut retirement = None;
+        <_ as CommitActions<RetirementDeliverySource>>::receive_retirement(
+            &mut interpreter,
+            &mut retirement,
+        )
+        .await;
+        assert!(interpreter.is_none());
+        let retirement = retirement.expect("the full original capability owner retired");
+        assert_eq!(
+            retirement.operation_failures,
+            ActorFailureAssessment::FailuresFound
+        );
+        assert_eq!(
+            retirement.descendant_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            retirement.descendant_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
+        assert!(retirement.activation_tasks.is_empty());
+        assert!(retirement.descendants.0.is_empty());
+        assert_eq!(retirement.descendants.1, ());
+        assert!(retirement.terminal_report.is_none());
+        assert!(retirement.retirement_failures.is_empty());
+        drop((owner, mailbox, receiver, terminal_receiver));
+    }
 
     #[tokio::test]
     #[expect(
