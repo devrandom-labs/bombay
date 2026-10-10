@@ -3191,6 +3191,42 @@ Record the limit plainly: secret availability and dry-run success alone do
 not prove publishing permission. This reuses the owning standard client and
 adds no custom wire mechanism or hypothetical authority claim.
 
+First connected implementation checkpoint (2026-10-10 UTC), source
+`1cada80`/`eb6fa06`: all four launch `termination_notification` regressions
+pass in debug and optimized builds through pinned Nix:
+
+```text
+nix develop -c cargo test --locked -p bombay-rs --lib termination_notification -- --nocapture
+nix develop -c cargo test --locked --release -p bombay-rs --lib termination_notification -- --nocapture
+```
+
+Each campaign reports four passing tests, zero failures, 290 filtered tests.
+The original native-state law previously failed in both profiles before the
+repair. The held-task witness preserves native state and the exact first
+cause across a cancelled borrowed wait. Actual terminal-guard cancellation
+and unwind preserve their real task outcomes and committed classifications;
+reobservation does not invoke publication twice. Whole first-receiver
+abandonment keeps genuine owned work pending until release, then disposes
+the original error after its settlement; a destructor panic remains the
+actual later task failure. Coexisting-slot coverage and targeted disposal/
+propagation inversions are pending, so joined-report broadening remains gated.
+Actual Entity coexisting callback/notification and unstarted-allocation tests
+are also being verified independently. These local tests prove no remote
+authorization, replay protection or transport witness.
+
+Complete local tracked delta at this checkpoint, before this record update:
+18 paths, including 14 existing source paths and four already-accounted
+documents; no untracked files. Conservative production (all owning source
+before its first test module, including pre-module test-only declarations):
++781 / -401 / net +380. Tests: +786 / -69 / net +717. Public API: +1 type /
+-0 types; existing enums and receiving signatures are being integrated into
+the selected five-type final contract. Documentation: +1260 / -43 / net
++1217. This is net-positive capability/custody code, not code reduction.
+The extra `local/effects/reports.rs` owning test path is now counted in the
+impact union. Parallel unintegrated edits, controlled dependency source and
+CI artifacts remain separately counted under the cumulative stage envelope;
+passing focused tests alone do not establish distillation or delivery.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the
@@ -3335,7 +3371,7 @@ restoring permission-before-join must fail that specific readiness assertion.
 This is a planned oracle, not a current passing test. The public report methods
 were subsequently selected above; their implementation remains scope-gated.
 
-Resumed decision checkpoint against merge `a9c5b7d`: four already-accounted
+Historical preparation checkpoint against merge `a9c5b7d`: four already-accounted
 tracked documentation paths; no untracked files. Production: +0 / -0 / net 0;
 tests: +0 / -0 / net 0; public API: +0 types / -0 types.
 Documentation: +1092 / -42 / net +1050.
