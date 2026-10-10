@@ -10,7 +10,7 @@ use crate::local::children::{
     ChildBindings, RetireChildTasks, RuntimeChildBindings, StructuralOrigins,
 };
 use crate::local::effects::CommitActions;
-use crate::terminal::{ActorRetirement, RetirementNotificationError, RootOrigin};
+use crate::terminal::{ActorNotificationReceipts, ActorRetirement, RootOrigin};
 use crate::topology::Hosts;
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -61,7 +61,7 @@ Result<(), io::Error>,
 (),
 (Self, Router, SocketAddr, io::Error),
 (Root, Spaces),
-()>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<Result<(), RetirementNotificationError>, RecvError>)>,
+()>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>)>,
         ),
         ((Self, Router, SocketAddr), TryCurrentError),
     >
@@ -224,7 +224,7 @@ Result<(), io::Error>,
 (),
 (Self, Router, SocketAddr, io::Error),
 (Root, Spaces),
-()>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<Result<(), RetirementNotificationError>, RecvError>),
+()>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>),
         ((Self, Router, SocketAddr), TryCurrentError),
     >
 where
@@ -317,7 +317,7 @@ where
                         ),
                         RecvError,
                     >,
-                    Result<Result<(), RetirementNotificationError>, RecvError>,
+                    Result<ActorNotificationReceipts, RecvError>,
                 ),
             >,
         ),
@@ -509,7 +509,7 @@ where
                 ),
                 RecvError,
             >,
-            Result<Result<(), RetirementNotificationError>, RecvError>,
+            Result<ActorNotificationReceipts, RecvError>,
         ),
         ((Self, Router, SocketAddr), TryCurrentError),
     >

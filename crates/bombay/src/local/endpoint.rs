@@ -1,6 +1,7 @@
 use crate::address::MailAddr;
 use crate::local::ingress::{Admission, AdmissionClosure, EndpointMailbox, LocalIngress};
 use crate::observe::{Observation, affine_pair};
+use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
 use behavior::{
     Behavior, EstablishedRecipient, Ingress, InjectEvent, InterpretEstablished, Protocol, User,
@@ -45,6 +46,7 @@ where
         Self {
             recipient: self.recipient.clone(),
             control: self.control.clone(),
+            retirement: self.retirement.clone(),
             behavior: PhantomData,
         }
     }
@@ -54,12 +56,27 @@ impl<B> InstalledActor<B>
 where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
-    pub(crate) fn new(recipient: ActorRef<B::Protocol>, control: ControlSender<B::Event>) -> Self {
+    pub(crate) fn new(
+        recipient: ActorRef<B::Protocol>,
+        control: ControlSender<B::Event>,
+        retirement: Observation<ActorRetirementReport>,
+    ) -> Self {
         Self {
             recipient,
             control,
+            retirement,
             behavior: PhantomData,
         }
+    }
+
+    /// Observe the runtime's joined-retirement assessment for this exact child.
+    ///
+    /// Independent waits share the same published report. Cancelling one wait
+    /// does not consume it or cancel another observer. This proves a different
+    /// fact from ordinary termination and grants no additional stop authority.
+    pub fn retirement(&self) -> impl Future<Output = ActorRetirementReport> + use<B> {
+        let retirement = self.retirement.clone();
+        async move { retirement.await }
     }
 
     pub(crate) fn recipient(&self) -> ActorRef<B::Protocol> {
@@ -257,6 +274,7 @@ where
 {
     recipient: ActorRef<B::Protocol>,
     control: ControlSender<B::Event>,
+    retirement: Observation<ActorRetirementReport>,
     behavior: PhantomData<fn() -> B>,
 }
 

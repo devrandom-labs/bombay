@@ -1186,6 +1186,8 @@ where
             unreachable!("the completed terminal projection received another outcome")
         };
         let LocalResidual::Retired {
+            operation_failures: _,
+            descendant_report: _,
             interpretation,
             source,
             settlements,
@@ -1280,6 +1282,11 @@ where
     }
     /// Project each actual received residual phase without discarding current
     /// progress, a refused report or coexisting execution/retirement failures.
+    ///
+    /// The owning caller first derives and separately preserves the joined
+    /// report. This native projection explicitly discharges its two Copy
+    /// assessment inputs after their combination into that report; all original
+    /// affine state, failures and settlement values remain in the native lanes.
     #[expect(
         clippy::too_many_lines,
         reason = "one exhaustive owning phase/failure conversion preserves every original typed field; forwarding functions or aliases would only relocate the same conservation obligation"
@@ -1293,6 +1300,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1334,6 +1343,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1381,6 +1392,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1422,6 +1435,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1469,6 +1484,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1516,6 +1533,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1535,6 +1554,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1577,6 +1598,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1597,6 +1620,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1640,6 +1665,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1683,6 +1710,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1725,6 +1754,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1773,6 +1804,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1819,6 +1852,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1860,6 +1895,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -1899,6 +1936,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -1940,6 +1979,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -1985,6 +2026,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Prepared {
+                        operation_failures: _,
+                        descendant_report: _,
                         ingress,
                         activation_tasks,
                         descendants: (descendants, child_failures),
@@ -2026,6 +2069,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Uncommitted {
+                        operation_failures: _,
+                        descendant_report: _,
                         initialization,
                         ingress,
                         activation_tasks,
@@ -2069,6 +2114,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -2116,6 +2163,8 @@ where
                 behavior,
                 residual:
                     LocalResidual::Retired {
+                        operation_failures: _,
+                        descendant_report: _,
                         interpretation,
                         source,
                         settlements,
@@ -2245,7 +2294,10 @@ mod capability_retirement_projection {
     use crate::MailAddr;
     use crate::local::environment::{LocalActivationRejection, LocalResidual};
     use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
-    use crate::terminal::{ActorRetirement, LocalOutcome};
+    use crate::terminal::{
+        ActorFailureAssessment, ActorRetirement, ActorRetirementReport, LocalOutcome,
+        RetirementAssessment,
+    };
     use bombay_engine::Completion;
 
     struct RetiringActor {
@@ -2304,6 +2356,11 @@ mod capability_retirement_projection {
             };
             let residual = match cause {
                 RetirementCause::InitializationPanicked => LocalResidual::Prepared {
+                    operation_failures: ActorFailureAssessment::Incomplete,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete,
+                    ),
                     received_interpretation: None,
                     received_source: None,
                     source_index: None,
@@ -2317,6 +2374,11 @@ mod capability_retirement_projection {
                     unread_owner_cancellation: Some(()),
                 },
                 RetirementCause::BindingAbandoned => LocalResidual::Uncommitted {
+                    operation_failures: ActorFailureAssessment::Incomplete,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete,
+                    ),
                     initialization: InterpretationProgress::Original(Actions::cont()),
                     received_interpretation: None,
                     received_source: None,
@@ -2333,6 +2395,11 @@ mod capability_retirement_projection {
                 RetirementCause::Stopped
                 | RetirementCause::OwnerCancellation
                 | RetirementCause::CapabilityFailed => LocalResidual::Retired {
+                    operation_failures: ActorFailureAssessment::Incomplete,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete,
+                    ),
                     interpretation: None,
                     source: None,
                     settlements: Vec::new(),

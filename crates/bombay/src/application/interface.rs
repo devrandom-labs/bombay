@@ -4,7 +4,8 @@ use crate::entity::{
 };
 use crate::local::endpoint::{ActorRef, ExtractLocalEndpoint, SendError, request_actor_shutdown};
 use crate::local::ingress::{Admission, AdmissionClosure};
-use crate::observe::{Publisher, pair};
+use crate::observe::{Observation, Publisher, pair};
+use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
 use behavior::{
     AllocationRejection, EstablishedRecipient, Here, Ingress, InjectEvent, Never, Protocol, User,
@@ -34,6 +35,7 @@ impl<P: Protocol, Event, Families: Clone> Clone for ApplicationHandle<P, Event, 
         Self {
             root: self.root.clone(),
             shutdown_control: self.shutdown_control.clone(),
+            retirement: self.retirement.clone(),
             allocations: self.allocations.clone(),
             families: self.families.clone(),
         }
@@ -44,12 +46,14 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     pub(in crate::application) fn new(
         root: ActorRef<P>,
         shutdown_control: Weak<ControlSender<Event>>,
+        retirement: Observation<ActorRetirementReport>,
         allocations: ApplicationAddresses,
         families: Families,
     ) -> Self {
         Self {
             root,
             shutdown_control,
+            retirement,
             allocations,
             families,
         }
@@ -72,6 +76,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         ApplicationLifecycle {
             root: self.root.clone(),
             control: self.shutdown_control.clone(),
+            retirement: self.retirement.clone(),
         }
     }
 
@@ -129,6 +134,7 @@ impl<P: Protocol, Event> Clone for ApplicationLifecycle<P, Event> {
         Self {
             root: self.root.clone(),
             control: self.control.clone(),
+            retirement: self.retirement.clone(),
         }
     }
 }
@@ -151,6 +157,17 @@ impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
             return Err(self.root.shutdown_rejection());
         };
         request_actor_shutdown(&self.root, &control, Ingress::new())
+    }
+
+    /// Observe the exact root's joined-retirement assessment.
+    ///
+    /// The report is available while application work is still running; it
+    /// does not wait for final native-result handoff or Entity family shutdown.
+    /// Independent observers share the fact, and cancelling a borrowed wait
+    /// cannot cancel cleanup or another observer.
+    pub fn retirement(&self) -> impl Future<Output = ActorRetirementReport> + use<P, Event> {
+        let retirement = self.retirement.clone();
+        async move { retirement.await }
     }
 
     /// Observe termination of the exact root incarnation.
@@ -386,6 +403,7 @@ mod target_sealed {
 pub struct ApplicationHandle<P: Protocol, Event, Families = ()> {
     root: ActorRef<P>,
     shutdown_control: Weak<ControlSender<Event>>,
+    retirement: Observation<ActorRetirementReport>,
     allocations: ApplicationAddresses,
     families: Families,
 }
@@ -394,6 +412,7 @@ pub struct ApplicationHandle<P: Protocol, Event, Families = ()> {
 pub struct ApplicationLifecycle<P: Protocol, Event> {
     root: ActorRef<P>,
     control: Weak<ControlSender<Event>>,
+    retirement: Observation<ActorRetirementReport>,
 }
 
 const EXTERNAL_USER_CAPACITY: usize = 1_024;
@@ -473,12 +492,16 @@ mod installed_shutdown_contract {
     use crate::ActorSpace;
 
     use crate::address::{ApplicationAddresses, MailAddr};
-    use crate::application::ActorInterface;
     use crate::application::ApplicationLifecycle;
+    use crate::application::{ActorInterface, App, ApplicationOutcome};
     use crate::launch::launch_inert;
 
     use crate::local::endpoint::ExtractLocalEndpoint;
     use crate::local::environment::LocalResidual;
+    use crate::observe;
+    use crate::terminal::{ActorFailureAssessment, ActorRetirement, RetirementAssessment};
+    use tokio::sync::oneshot;
+    use tokio::time::{Duration, timeout};
 
     use crate::{LedgerProtocol, ShutdownLedger};
     #[tokio::test]
@@ -511,9 +534,11 @@ mod installed_shutdown_contract {
         )
         .await
         .unwrap_or_else(|_| panic!("old root launch"));
+        let (_old_report_publication, old_retirement) = observe::pair();
         let lifecycle = ApplicationLifecycle {
             root: old.actor.clone(),
             control: old.shutdown_control.clone(),
+            retirement: old_retirement,
         };
         let repeated_lifecycle = lifecycle.clone();
         let accepted = lifecycle.request_shutdown();
@@ -528,6 +553,8 @@ mod installed_shutdown_contract {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    operation_failures,
+                    descendant_report,
                     interpretation,
                     source,
                     settlements,
@@ -549,6 +576,15 @@ mod installed_shutdown_contract {
         else {
             panic!("joined old root")
         };
+        assert_eq!(operation_failures, ActorFailureAssessment::Incomplete);
+        assert_eq!(
+            descendant_report.retirement(),
+            RetirementAssessment::NotEstablished
+        );
+        assert_eq!(
+            descendant_report.failures(),
+            ActorFailureAssessment::Incomplete
+        );
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(received_interpretation.is_none());
@@ -600,9 +636,11 @@ mod installed_shutdown_contract {
         )
         .await
         .unwrap_or_else(|_| panic!("fresh root claim"));
+        let (_fresh_report_publication, fresh_retirement) = observe::pair();
         let fresh_lifecycle = ApplicationLifecycle {
             root: fresh.actor.clone(),
             control: fresh.shutdown_control.clone(),
+            retirement: fresh_retirement,
         };
         let old_request = lifecycle.request_shutdown();
         let replay = repeated_lifecycle.request_shutdown();
@@ -626,6 +664,8 @@ mod installed_shutdown_contract {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    operation_failures,
+                    descendant_report,
                     interpretation,
                     source,
                     settlements,
@@ -647,6 +687,15 @@ mod installed_shutdown_contract {
         else {
             panic!("whole joined replacement")
         };
+        assert_eq!(operation_failures, ActorFailureAssessment::Incomplete);
+        assert_eq!(
+            descendant_report.retirement(),
+            RetirementAssessment::NotEstablished
+        );
+        assert_eq!(
+            descendant_report.failures(),
+            ActorFailureAssessment::Incomplete
+        );
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(received_interpretation.is_none());
@@ -693,6 +742,114 @@ mod installed_shutdown_contract {
         let old_replay = lifecycle.request_shutdown();
         assert_eq!(old_replay, Err(ShutdownRejection::AlreadyStopped));
     }
+    #[tokio::test]
+    async fn root_retirement_report_is_available_before_application_work_finishes() {
+        let actors = ActorSpace::<LedgerProtocol>::new();
+        let payload = vec![157, 163];
+        let allocation = payload.as_ptr();
+        let (report_publication, report_received) = oneshot::channel();
+        let (release_work, work_released) = oneshot::channel();
+        let (execution, receiving) = App::new(
+            StopOnShutdown::new(ShutdownLedger {
+                entries: payload,
+                received: Vec::new(),
+            }),
+            actors.clone(),
+        )
+        .execute_with::<Never, (), _, _>(move |application| async move {
+            let lifecycle = application.lifecycle();
+            let requested = lifecycle.request_shutdown();
+            requested.expect("the exact root accepts its first stop request");
+            let report = lifecycle.retirement().await;
+            let published = report_publication.send(report);
+            published.expect("the independent work observer remains present");
+            work_released
+                .await
+                .expect("work has its explicit outside release");
+            report
+        })
+        .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
+        let mut execution = pin!(execution);
+        let report = timeout(Duration::from_secs(10), async {
+            tokio::select! {
+                report = report_received => report.expect("work acquired the actual joined report"),
+                () = &mut execution => panic!("work cannot finish before its outside release"),
+            }
+        })
+        .await
+        .expect("joined report must be available without the work-completion barrier");
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+        let missing = actors.resolve(&MailAddr::APPLICATION_ROOT);
+        assert!(missing.is_none());
+        let mut receiving = pin!(receiving);
+        let mut context = Context::from_waker(Waker::noop());
+        let pending_receiving = Future::poll(receiving.as_mut(), &mut context);
+        assert!(matches!(pending_receiving, Poll::Pending));
+        let released = release_work.send(());
+        released.expect("the report did not finish or cancel application work");
+        execution.await;
+        let (work, native, notifications) = receiving.await;
+        let ApplicationOutcome::Completed {
+            output,
+            cleanup: Ok(()),
+        } = work
+        else {
+            panic!("the actual caller-local work and cleanup finish independently");
+        };
+        assert_eq!(output, report);
+        let notifications = notifications.expect("both original notification results are retained");
+        notifications
+            .termination
+            .expect("ordinary termination succeeded");
+        notifications
+            .retirement
+            .expect("joined-report publication succeeded");
+        let (origin, native) =
+            native.expect("the native root result remains independently retained");
+        assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+        let ActorRetirement::Completed {
+            behavior,
+            completion: Completion::Stopped,
+            interpretation: None,
+            source: None,
+            settlements,
+            control,
+            user,
+            descendants,
+            child_failures: (),
+            capability_failures,
+            additional_failures,
+            received_interpretation: None,
+            received_source: None,
+            source_index: None,
+            acquired_ingress: None,
+            retirement_failures,
+            terminal_report: None,
+            unread_owner_cancellation: None,
+        } = native
+        else {
+            panic!("the exact stopped native root and all of its lanes survive");
+        };
+        assert_eq!(behavior.base().entries, [157, 163]);
+        assert_eq!(behavior.base().entries.as_ptr(), allocation);
+        assert!(behavior.base().received.is_empty());
+        assert!(control.is_empty() && user.is_empty());
+        assert!(descendants.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(retirement_failures.is_empty());
+        assert_eq!(settlements.len(), 1);
+        let settlement = settlements
+            .into_iter()
+            .next()
+            .expect("one actual stop settlement");
+        assert!(settlement.creations.is_empty());
+        assert!(matches!(settlement.sends.owned, NoSends));
+        assert!(matches!(settlement.sends.inner, NoSends));
+        assert!(matches!(settlement.become_, Step::Stop(Stopped)));
+    }
+
     #[tokio::test]
     async fn external_customer_owns_admission_without_behavior_shutdown() {
         let interface = ActorInterface::new((), ApplicationAddresses::new());

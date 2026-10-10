@@ -11,7 +11,11 @@ use crate::local::effects::{
     NoParent,
 };
 use crate::local::ingress::{DEFAULT_USER_CAPACITY, StandardIngress};
-use crate::terminal::{ActorRetirement, RetirementNotificationError, RootOrigin};
+use crate::observe;
+use crate::terminal::{
+    ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, RetirementNotificationError,
+    RootOrigin, publish_retirement_report,
+};
 use crate::topology::Hosts;
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -66,7 +70,7 @@ Option<Never>,
 Option<Never>,
 (),
 Never,
-(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<Result<(), RetirementNotificationError>, RecvError>)>), (Self, TryCurrentError)>
+(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>)>), (Self, TryCurrentError)>
 where
     Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
@@ -175,7 +179,7 @@ Option<Never>,
 Option<Never>,
 (),
 Never,
-(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<Result<(), RetirementNotificationError>, RecvError>), (Self, TryCurrentError)>
+(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>), (Self, TryCurrentError)>
 where
     Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
     Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
@@ -238,7 +242,7 @@ Work,
 <WorkFuture as Future>::Output,
 (),
 (Root, Work, Never),
-(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<Result<(), RetirementNotificationError>, RecvError>)>,
+(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>)>,
         ),
         (Self, Work, TryCurrentError),
     >
@@ -359,7 +363,7 @@ Work,
 (Root, Spaces)>, Result<(
                 RootOrigin<Root>,
                 ActorRetirement<Root, Terminal, ChildFailures>,
-            ), RecvError>, Result<Result<(), RetirementNotificationError>, RecvError>),
+            ), RecvError>, Result<ActorNotificationReceipts, RecvError>),
         (Self, Work, TryCurrentError),
     >
 where
@@ -435,7 +439,7 @@ where
                 (Root, Arc<Spaces>),
             >,
                 Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>,
-                Result<Result<(), RetirementNotificationError>, RecvError>,
+                Result<ActorNotificationReceipts, RecvError>,
             Families::Shutdowns,
             )>,
         ),
@@ -574,7 +578,7 @@ where
             (Root, Arc<Spaces>),
         >,
             Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>,
-            Result<Result<(), RetirementNotificationError>, RecvError>,
+            Result<ActorNotificationReceipts, RecvError>,
             Families::Shutdowns,
         ),
         (Self, Work, TryCurrentError),
@@ -660,7 +664,7 @@ where
                         ),
                         RecvError,
                     >,
-                    Result<Result<(), RetirementNotificationError>, RecvError>,
+                    Result<ActorNotificationReceipts, RecvError>,
                 ),
             >,
         ),
@@ -807,7 +811,7 @@ where
                         ),
                         RecvError,
                     >,
-                    Result<Result<(), RetirementNotificationError>, RecvError>,
+                    Result<ActorNotificationReceipts, RecvError>,
                 ),
             >,
         ),
@@ -948,7 +952,7 @@ where
                 ),
                 RecvError,
             >,
-            Result<Result<(), RetirementNotificationError>, RecvError>,
+            Result<ActorNotificationReceipts, RecvError>,
         ),
         (Self, TryCurrentError),
     >
@@ -1029,7 +1033,7 @@ where
                     ),
                     RecvError,
                 >,
-                Result<Result<(), RetirementNotificationError>, RecvError>,
+                Result<ActorNotificationReceipts, RecvError>,
             ),
             (Self, TryCurrentError),
         >,
@@ -1101,7 +1105,7 @@ where
                 ),
                 RecvError,
             >,
-            Result<Result<(), RetirementNotificationError>, RecvError>,
+            Result<ActorNotificationReceipts, RecvError>,
         ),
         (Self, Work, TryCurrentError),
     >
@@ -1597,7 +1601,7 @@ pub(in crate::application) fn execute_application_with<
                 ),
                 RecvError,
             >,
-            Result<Result<(), RetirementNotificationError>, RecvError>,
+            Result<ActorNotificationReceipts, RecvError>,
         ),
     >,
 )
@@ -1792,17 +1796,29 @@ where
             drop(entered_executor);
             started
         };
+        let (retirement_publication, retirement_observation) = observe::pair();
         let (joined_publication, joined) = oneshot::channel();
         let origin = RootOrigin::<Owner>::new(MailAddr::APPLICATION_ROOT);
         let cleanup = executor.spawn(async move {
-            match permitted.await {
-                Ok(()) | Err(_) => {}
-            }
+            // Joining observes the actual actor; it does not request a stop.
+            // Publish its small report while application work can still await it.
             let joined_actor = actor_join.await;
             let termination_notification = match termination_notification.await {
                 Ok(notification) => notification,
                 Err(error) => Err(RetirementNotificationError::ReceiptClosed { error }),
             };
+            let report =
+                ActorRetirementReport::from_joined(&joined_actor, &termination_notification);
+            let retirement_notification = publish_retirement_report(retirement_publication, report);
+            let notifications = ActorNotificationReceipts {
+                termination: termination_notification,
+                retirement: retirement_notification,
+            };
+            // Native handoff and Application-owned families keep their work barrier.
+            // All original values remain outside the report publication's unwind.
+            match permitted.await {
+                Ok(()) | Err(_) => {}
+            }
             let retirement = match joined_actor {
                 Ok(local) => ActorRetirement::from_local(local),
                 Err(error) => ActorRetirement::ActorTaskFailed(error),
@@ -1810,9 +1826,7 @@ where
             // Receiving first joins this producer. Neither transfer receiver has
             // registered a waker while these original values are handed off.
             let refused_root = root_publication.send((origin, retirement)).err();
-            let refused_notification = notification_publication
-                .send(termination_notification)
-                .err();
+            let refused_notification = notification_publication.send(notifications).err();
             installed_families.shutdown(family_publications).await;
             // Abandoning the whole receiving owner surrenders unread originals.
             // Their disposal cannot preempt the already acquired family cleanup.
@@ -1838,6 +1852,7 @@ where
                         let application = ApplicationHandle::new(
                             actor,
                             shutdown_control,
+                            retirement_observation,
                             interface_allocations,
                             receptionists,
                         );
