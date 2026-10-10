@@ -24,6 +24,9 @@ use zenoh::{
     sample::{Locality, Sample},
 };
 
+#[path = "../counter_application.rs"]
+mod counter_application;
+
 // Explicit comparison settings, never production resource defaults.
 const FIXTURE_CAPACITY: usize = 4;
 const FIXTURE_WAIT: Duration = Duration::from_secs(5);
@@ -41,6 +44,10 @@ enum WorkerRole {
     Router,
     Recipient,
     Caller,
+    RecordCounterCaller,
+    RecordCounterRecipient,
+    ScheduledCounterCaller,
+    ScheduledCounterRecipient,
 }
 
 enum ConnectionLayout {
@@ -82,6 +89,21 @@ struct FixtureReceipt {
 #[derive(Serialize)]
 #[serde(tag = "event", rename_all = "snake_case")]
 enum TransportObservation {
+    CounterProcessed {
+        request: u64,
+        value: u64,
+    },
+    CounterConsumed {
+        request: u64,
+        value: u64,
+    },
+    CounterNative {
+        value: u64,
+        commands: u64,
+    },
+    CounterClientNative {
+        replies: u64,
+    },
     Ready {
         role: WorkerRole,
     },
@@ -211,16 +233,30 @@ fn configuration(
         (WorkerRole::Router, ConnectionLayout::Peer) => {
             return Err(invalid_control("peer fixture has no router role").into());
         }
-        (WorkerRole::Recipient, ConnectionLayout::Peer) => {
-            ("peer", "recipient", vec![address], vec![])
-        }
-        (WorkerRole::Caller, ConnectionLayout::Peer) => ("peer", "caller", vec![], vec![address]),
-        (WorkerRole::Recipient, ConnectionLayout::RouterClient) => {
-            ("client", "recipient", vec![], vec![address])
-        }
-        (WorkerRole::Caller, ConnectionLayout::RouterClient) => {
-            ("client", "caller", vec![], vec![address])
-        }
+        (
+            WorkerRole::Recipient
+            | WorkerRole::RecordCounterRecipient
+            | WorkerRole::ScheduledCounterRecipient,
+            ConnectionLayout::Peer,
+        ) => ("peer", "recipient", vec![address], vec![]),
+        (
+            WorkerRole::Caller
+            | WorkerRole::RecordCounterCaller
+            | WorkerRole::ScheduledCounterCaller,
+            ConnectionLayout::Peer,
+        ) => ("peer", "caller", vec![], vec![address]),
+        (
+            WorkerRole::Recipient
+            | WorkerRole::RecordCounterRecipient
+            | WorkerRole::ScheduledCounterRecipient,
+            ConnectionLayout::RouterClient,
+        ) => ("client", "recipient", vec![], vec![address]),
+        (
+            WorkerRole::Caller
+            | WorkerRole::RecordCounterCaller
+            | WorkerRole::ScheduledCounterCaller,
+            ConnectionLayout::RouterClient,
+        ) => ("client", "caller", vec![], vec![address]),
     };
     let certificate = certificates.join(format!("{owner}-certificate.pem"));
     let private_key = certificates.join(format!("{owner}-private-key.pem"));
@@ -296,8 +332,11 @@ fn received_receipt(payload: &ZBytes, attachment: Option<&ZBytes>) -> Result<()>
     })
 }
 
-async fn recipient(session: &Session, operation: TransportOperation) -> Result<()> {
-    let ingress = match operation {
+async fn request_ingress(
+    session: &Session,
+    operation: TransportOperation,
+) -> Result<RequestIngress<'_>> {
+    Ok(match operation {
         TransportOperation::Query => RequestIngress::Query(
             session
                 .declare_queryable(REQUEST_KEY)
@@ -317,7 +356,11 @@ async fn recipient(session: &Session, operation: TransportOperation) -> Result<(
                 .congestion_control(CongestionControl::Block)
                 .await?,
         },
-    };
+    })
+}
+
+async fn recipient(session: &Session, operation: TransportOperation) -> Result<()> {
+    let ingress = request_ingress(session, operation).await?;
     observe(&TransportObservation::Ready {
         role: WorkerRole::Recipient,
     })?;
@@ -382,10 +425,12 @@ async fn recipient(session: &Session, operation: TransportOperation) -> Result<(
     Ok(())
 }
 
-async fn send_request(
-    session: &Session,
+async fn send_request<'session>(
+    session: &'session Session,
     operation: TransportOperation,
-) -> Result<PendingReceipt<'_>> {
+    protected: &[u8],
+    proof: &[u8],
+) -> Result<PendingReceipt<'session>> {
     match operation {
         TransportOperation::Query => {
             let querier = session
@@ -401,8 +446,8 @@ async fn send_request(
             observe(&TransportObservation::PotentiallyTransmitted { operation })?;
             let invocation = querier
                 .get()
-                .payload(PROTECTED_TEXT.as_bytes().to_vec())
-                .attachment(REQUEST_PROOF.to_vec())
+                .payload(protected.to_vec())
+                .attachment(proof.to_vec())
                 .with(FifoChannel::new(FIXTURE_CAPACITY))
                 .into_future();
             let replies = invocation.await?;
@@ -423,8 +468,8 @@ async fn send_request(
             matching_publication(&publisher).await?;
             observe(&TransportObservation::PotentiallyTransmitted { operation })?;
             let invocation = publisher
-                .put(PROTECTED_TEXT.as_bytes().to_vec())
-                .attachment(REQUEST_PROOF.to_vec())
+                .put(protected.to_vec())
+                .attachment(proof.to_vec())
                 .into_future();
             invocation.await?;
             observe(&TransportObservation::InvocationReturned { operation })?;
@@ -494,7 +539,10 @@ async fn caller(session: &Session, operation: TransportOperation) -> Result<()> 
                 if pending.is_some() {
                     return Err(invalid_control("fixture already owns a pending receipt").into());
                 }
-                pending = Some(send_request(session, operation).await?);
+                pending = Some(
+                    send_request(session, operation, PROTECTED_TEXT.as_bytes(), REQUEST_PROOF)
+                        .await?,
+                );
             }
             ControlCommand::Wait => {
                 await_receipt(
@@ -528,11 +576,26 @@ async fn execute(
     operation: TransportOperation,
     config: Config,
 ) -> Result<TransportReceipts> {
+    match role {
+        WorkerRole::RecordCounterCaller
+        | WorkerRole::RecordCounterRecipient
+        | WorkerRole::ScheduledCounterCaller
+        | WorkerRole::ScheduledCounterRecipient => {
+            return counter_application::execute(role, operation, config).await;
+        }
+        WorkerRole::Router | WorkerRole::Recipient | WorkerRole::Caller => {}
+    }
     let session = zenoh::open(config).await?;
     let outcome = match role {
         WorkerRole::Recipient => recipient(&session, operation).await,
         WorkerRole::Caller => caller(&session, operation).await,
         WorkerRole::Router => router_control(),
+        WorkerRole::RecordCounterCaller
+        | WorkerRole::RecordCounterRecipient
+        | WorkerRole::ScheduledCounterCaller
+        | WorkerRole::ScheduledCounterRecipient => {
+            unreachable!("counter roles retain their own Application/session custody")
+        }
     };
     let session_close = session.close().await;
     Ok(TransportReceipts {
@@ -570,6 +633,10 @@ fn main() -> Result<TransportReceipts> {
         "router" => WorkerRole::Router,
         "recipient" => WorkerRole::Recipient,
         "caller" => WorkerRole::Caller,
+        "record_counter_caller" => WorkerRole::RecordCounterCaller,
+        "record_counter_recipient" => WorkerRole::RecordCounterRecipient,
+        "scheduled_counter_caller" => WorkerRole::ScheduledCounterCaller,
+        "scheduled_counter_recipient" => WorkerRole::ScheduledCounterRecipient,
         _ => return Err(invalid_control("unknown worker role").into()),
     };
     let layout = match arguments[1].as_str() {

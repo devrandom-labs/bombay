@@ -57,10 +57,13 @@ class TransportWorker:
         assert event['event'] == expected, (self.role, expected, event)
         return event
 
-    async def close(self):
+    async def close(self, native_expected=None):
         if self.child is None or self.child.returncode is not None:
             raise AssertionError((self.role, 'unexpected exit before close observation', self.child.returncode if self.child else None))
         await self.command('EXIT')
+        if native_expected is not None:
+            native = await self.observe(native_expected['event'])
+            assert native == native_expected, native
         event = await self.observe('session_close_returned')
         assert event['role'] == self.role, event
         self.child.stdin.close()
@@ -152,5 +155,63 @@ async def observe_campaigns(executable):
         elif record['failures']:
             raise SystemExit(1)
 
+async def counter_campaign(executable, layout, operation, provider):
+    directory = EVIDENCE / (layout + '-' + operation + '-' + provider + '-counter')
+    directory.mkdir(parents=True, exist_ok=True)
+    with socket.socket() as port_claim:
+        port_claim.bind(('127.0.0.1', 0))
+        address = 'tls/localhost:' + str(port_claim.getsockname()[1])
+    roles = [provider + '_counter_recipient', provider + '_counter_caller']
+    if layout == 'router_client':
+        roles.insert(0, 'router')
+    workers = [TransportWorker(role, executable, layout, operation, address, directory) for role in roles]
+    record = {'layout': layout, 'operation': operation, 'provider': provider,
+              'binary_sha256': hashlib.sha256(Path(executable).read_bytes()).hexdigest(),
+              'failures': [], 'workers': []}
+    try:
+        for worker in workers:
+            await worker.start()
+        recipient, caller = workers[-2:]
+        await caller.command('RUN')
+        for request in [1, 2]:
+            for milestone in ['potentially_transmitted', 'invocation_returned']:
+                event = await caller.observe(milestone)
+                assert event['operation'] == operation, event
+            await recipient.command('RELEASE')
+            processed = await recipient.observe('counter_processed')
+            assert processed == {'event': 'counter_processed', 'request': request, 'value': 42}, processed
+            for milestone in ['potentially_transmitted', 'invocation_returned']:
+                event = await recipient.observe(milestone)
+                assert event['operation'] == operation, event
+            consumed = await caller.observe('counter_consumed')
+            assert consumed == {'event': 'counter_consumed', 'request': request, 'value': 42}, consumed
+        # Caller cleanup precedes recipient's post-close processing oracle.
+        await caller.close({'event': 'counter_client_native', 'replies': 2})
+        for worker in reversed(workers[:-2]):
+            await worker.close()
+        await recipient.close({'event': 'counter_native', 'value': 42, 'commands': 2})
+    except Exception as cause:
+        record['failures'].append(repr(cause))
+    finally:
+        for worker in workers:
+            await worker.abandon()
+            record['workers'].append({'role': worker.role, 'argv': worker.arguments,
+                                      'exit': worker.child.returncode if worker.child else None,
+                                      'events': worker.events})
+        (directory / 'observations.json').write_text(json.dumps(record, indent=2) + '\n')
+    print(json.dumps({key: record[key] for key in ['layout', 'operation', 'provider', 'failures']}), flush=True)
+    return record
+
+async def observe_counter_campaigns(executable):
+    records = []
+    for layout in ['peer', 'router_client']:
+        for operation in ['query', 'publication']:
+            for provider in ['record', 'scheduled']:
+                records.append(await counter_campaign(executable, layout, operation, provider))
+    (EVIDENCE / 'counter-campaigns.json').write_text(json.dumps(records, indent=2) + '\n')
+    if any(record['failures'] for record in records):
+        raise SystemExit(1)
+
 if __name__ == '__main__':
     asyncio.run(observe_campaigns(sys.argv[1]))
+    asyncio.run(observe_counter_campaigns(sys.argv[1]))

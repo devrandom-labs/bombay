@@ -42,10 +42,16 @@ checks passed, including both native TLS campaigns. Its typed local verification
 service and exact payload/proof custody tests preserve the full remote acceptance
 obligations. The controlled Unicode correction and successor release preparation
 also merged through [PR4](https://github.com/devrandom-labs/bombay-zenoh/pull/4)
-and [PR5](https://github.com/devrandom-labs/bombay-zenoh/pull/5); successor registry
-publication and final registry-only consumption remain open. The selected PRD
-records the additional endpoint-waker regression and unresolved resource-interest
-reclamation, identity, replay, bounds and actual actor-network integration gates.
+and [PR5](https://github.com/devrandom-labs/bombay-zenoh/pull/5). Successor1.10.2
+published through exact-main release38089508115; all nine actual registry archives
+and normal/maintainer registry-only consumer checks pass. Endpoint-waker witness
+[PR336](https://github.com/devrandom-labs/bombay/pull/336) merged
+2104559072b4321ab55beaea50dfa3a805a6723e after independent review and all six
+checks passed. Actual two-Application counter integration passes its restored
+24-case matrix in both profiles, scoped inversions and combined workspace checks;
+reviewed PR delivery remains open. The four-owner resource-interest correction
+is a separate verification workstream, with no full acceptance credit.
+The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
 
 Every internal `Blocked by` edge has its reciprocal `Unblocks` edge here.
