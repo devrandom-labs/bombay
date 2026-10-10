@@ -252,4 +252,6 @@ fn interface_denies_lifecycle_and_receive_authority_duplication() {
     cases.pass("tests/compile/pass/external_actor_error.rs");
     cases.compile_fail("tests/compile/fail/actor_interface_has_no_lifecycle.rs");
     cases.compile_fail("tests/compile/fail/external_actor_receiver_is_affine.rs");
+    cases.compile_fail("tests/compile/fail/retirement_report_is_runtime_issued.rs");
+    cases.compile_fail("tests/compile/fail/retirement_report_constructor_is_private.rs");
 }

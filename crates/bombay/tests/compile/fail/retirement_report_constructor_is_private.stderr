@@ -1,0 +1,13 @@
+error[E0624]: associated function `new` is private
+ --> tests/compile/fail/retirement_report_constructor_is_private.rs:2:50
+  |
+2 |       let _forged = bombay::ActorRetirementReport::new(
+  |                                                    ^^^ private associated function
+  |
+ ::: src/terminal.rs
+  |
+  | /     pub(crate) const fn new(
+  | |         retirement: RetirementAssessment,
+  | |         failures: ActorFailureAssessment,
+  | |     ) -> Self {
+  | |_____________- private associated function defined here

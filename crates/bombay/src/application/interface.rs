@@ -486,7 +486,10 @@ mod installed_shutdown_contract {
     use core::future::{Future, poll_fn};
     use core::pin::pin;
     use core::task::{Context, Poll, Waker};
-    use std::panic::panic_any;
+    use std::mem;
+    use std::panic::{panic_any, resume_unwind};
+    use std::ptr;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
     use std::task::Wake;
 
@@ -504,6 +507,7 @@ mod installed_shutdown_contract {
     use crate::terminal::{
         ActorFailureAssessment, ActorRetirement, RetirementAssessment, RetirementNotificationError,
     };
+    use crate::topology::Hosts;
     use tokio::sync::oneshot;
     use tokio::time::{Duration, timeout};
 
@@ -746,125 +750,192 @@ mod installed_shutdown_contract {
         let old_replay = lifecycle.request_shutdown();
         assert_eq!(old_replay, Err(ShutdownRejection::AlreadyStopped));
     }
+    enum LedgerSpaceDisposal {
+        Return,
+        #[expect(
+            clippy::redundant_allocation,
+            reason = "Box is the original panic carrier; Arc separately proves cause lifetime without opening or reboxing the native payload"
+        )]
+        Unwind(Box<Arc<Vec<u64>>>),
+    }
+
+    struct RetiringLedgerSpace {
+        actors: ActorSpace<LedgerProtocol>,
+        disposal: LedgerSpaceDisposal,
+        retired_spaces: Arc<AtomicUsize>,
+    }
+
+    impl Hosts<LedgerProtocol> for RetiringLedgerSpace {
+        fn space(&self) -> &ActorSpace<LedgerProtocol> {
+            &self.actors
+        }
+    }
+
+    impl Drop for RetiringLedgerSpace {
+        fn drop(&mut self) {
+            self.retired_spaces.fetch_add(1, Ordering::SeqCst);
+            match mem::replace(&mut self.disposal, LedgerSpaceDisposal::Return) {
+                LedgerSpaceDisposal::Return => {}
+                LedgerSpaceDisposal::Unwind(payload) => resume_unwind(payload),
+            }
+        }
+    }
+
     #[tokio::test]
     #[expect(
         clippy::too_many_lines,
-        reason = "one public Application controller proves the work barrier, independent observations and complete native custody"
+        reason = "one public Application controller proves independent report axes, actual space disposal, work barriers and complete native custody"
     )]
     async fn root_retirement_report_is_available_before_application_work_finishes() {
-        let actors = ActorSpace::<LedgerProtocol>::new();
-        let payload = vec![157, 163];
-        let allocation = payload.as_ptr();
-        let (report_publication, report_received) = oneshot::channel();
-        let (release_work, work_released) = oneshot::channel();
-        let (execution, receiving) = App::new(
-            StopOnShutdown::new(ShutdownLedger {
-                entries: payload,
-                received: Vec::new(),
-            }),
-            actors.clone(),
-        )
-        .execute_with::<Never, (), _, _>(move |application| async move {
-            let lifecycle = application.lifecycle();
-            {
-                let mut cancelled = pin!(lifecycle.retirement());
-                let mut context = Context::from_waker(Waker::noop());
-                let pending = Future::poll(cancelled.as_mut(), &mut context);
-                assert!(matches!(pending, Poll::Pending));
+        for disposal in [
+            LedgerSpaceDisposal::Return,
+            LedgerSpaceDisposal::Unwind(Box::new(Arc::new(vec![167, 173]))),
+        ] {
+            let expected_cause = match &disposal {
+                LedgerSpaceDisposal::Return => None,
+                LedgerSpaceDisposal::Unwind(payload) => Some((
+                    Arc::downgrade(payload.as_ref()),
+                    ptr::from_ref(payload.as_ref()).cast::<()>(),
+                )),
+            };
+            let expected_failures = match &expected_cause {
+                None => ActorFailureAssessment::NoFailuresFound,
+                Some(_) => ActorFailureAssessment::FailuresFound,
+            };
+            let actors = ActorSpace::<LedgerProtocol>::new();
+            let retired_spaces = Arc::new(AtomicUsize::new(0));
+            let payload = vec![157, 163];
+            let allocation = payload.as_ptr();
+            let (report_publication, report_received) = oneshot::channel();
+            let (release_work, work_released) = oneshot::channel();
+            let (execution, receiving) = App::new(
+                StopOnShutdown::new(ShutdownLedger {
+                    entries: payload,
+                    received: Vec::new(),
+                }),
+                RetiringLedgerSpace {
+                    actors: actors.clone(),
+                    disposal,
+                    retired_spaces: Arc::clone(&retired_spaces),
+                },
+            )
+            .execute_with::<Never, (), _, _>(move |application| async move {
+                let lifecycle = application.lifecycle();
+                {
+                    let mut cancelled = pin!(lifecycle.retirement());
+                    let mut context = Context::from_waker(Waker::noop());
+                    let pending = Future::poll(cancelled.as_mut(), &mut context);
+                    assert!(matches!(pending, Poll::Pending));
+                }
+                let independent = lifecycle.clone();
+                let requested = lifecycle.request_shutdown();
+                requested.expect("the exact root accepts its first stop request");
+                let report = lifecycle.retirement().await;
+                let independently_observed = independent.retirement().await;
+                assert_eq!(independently_observed, report);
+                let published = report_publication.send(report);
+                published.expect("the independent work observer remains present");
+                work_released
+                    .await
+                    .expect("work has its explicit outside release");
+                report
+            })
+            .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
+            let mut execution = pin!(execution);
+            let report = timeout(Duration::from_secs(10), async {
+                tokio::select! {
+                    report = report_received => report.expect("work acquired the actual joined report"),
+                    () = &mut execution => panic!("work cannot finish before its outside release"),
+                }
+            })
+            .await
+            .expect("joined report must be available without the work-completion barrier");
+            assert_eq!(retired_spaces.load(Ordering::SeqCst), 1);
+            assert_eq!(report.retirement(), RetirementAssessment::Established);
+            assert_eq!(report.failures(), expected_failures);
+            let missing = actors.resolve(&MailAddr::APPLICATION_ROOT);
+            assert!(missing.is_none());
+            let mut receiving = pin!(receiving);
+            let mut context = Context::from_waker(Waker::noop());
+            let pending_receiving = Future::poll(receiving.as_mut(), &mut context);
+            assert!(matches!(pending_receiving, Poll::Pending));
+            let released = release_work.send(());
+            released.expect("the report did not finish or cancel application work");
+            execution.await;
+            let (work, native, notifications) = receiving.await;
+            let ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            } = work
+            else {
+                panic!("the actual caller-local work and cleanup finish independently");
+            };
+            assert_eq!(output, report);
+            let notifications =
+                notifications.expect("both original notification results are retained");
+            notifications
+                .termination
+                .expect("ordinary termination succeeded");
+            notifications
+                .retirement
+                .expect("joined-report publication succeeded");
+            let (origin, native) =
+                native.expect("the native root result remains independently retained");
+            assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+            let ActorRetirement::Completed {
+                behavior,
+                completion: Completion::Stopped,
+                interpretation: None,
+                source: None,
+                settlements,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                additional_failures,
+                received_interpretation: None,
+                received_source: None,
+                source_index: None,
+                acquired_ingress: None,
+                retirement_failures,
+                terminal_report: None,
+                unread_owner_cancellation: None,
+            } = native
+            else {
+                panic!("the exact stopped native root and all of its lanes survive");
+            };
+            assert_eq!(behavior.base().entries, [157, 163]);
+            assert_eq!(behavior.base().entries.as_ptr(), allocation);
+            assert_eq!(behavior.base().received.len(), 0);
+            assert!(control.is_empty() && user.is_empty());
+            assert_eq!(descendants.len(), 0);
+            assert!(capability_failures.is_empty());
+            assert!(additional_failures.is_empty());
+            match expected_cause {
+                None => assert!(retirement_failures.is_empty()),
+                Some((original_cause, allocation)) => {
+                    assert_eq!(original_cause.strong_count(), 1);
+                    assert_eq!(retirement_failures.len(), 1);
+                    let payload = retirement_failures
+                        .into_iter()
+                        .next()
+                        .expect("the exact capability disposal cause remains native");
+                    assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), allocation);
+                    drop(payload);
+                    assert_eq!(original_cause.strong_count(), 0);
+                }
             }
-            let independent = lifecycle.clone();
-            let requested = lifecycle.request_shutdown();
-            requested.expect("the exact root accepts its first stop request");
-            let report = lifecycle.retirement().await;
-            let independently_observed = independent.retirement().await;
-            assert_eq!(independently_observed, report);
-            let published = report_publication.send(report);
-            published.expect("the independent work observer remains present");
-            work_released
-                .await
-                .expect("work has its explicit outside release");
-            report
-        })
-        .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
-        let mut execution = pin!(execution);
-        let report = timeout(Duration::from_secs(10), async {
-            tokio::select! {
-                report = report_received => report.expect("work acquired the actual joined report"),
-                () = &mut execution => panic!("work cannot finish before its outside release"),
-            }
-        })
-        .await
-        .expect("joined report must be available without the work-completion barrier");
-        assert_eq!(report.retirement(), RetirementAssessment::Established);
-        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
-        let missing = actors.resolve(&MailAddr::APPLICATION_ROOT);
-        assert!(missing.is_none());
-        let mut receiving = pin!(receiving);
-        let mut context = Context::from_waker(Waker::noop());
-        let pending_receiving = Future::poll(receiving.as_mut(), &mut context);
-        assert!(matches!(pending_receiving, Poll::Pending));
-        let released = release_work.send(());
-        released.expect("the report did not finish or cancel application work");
-        execution.await;
-        let (work, native, notifications) = receiving.await;
-        let ApplicationOutcome::Completed {
-            output,
-            cleanup: Ok(()),
-        } = work
-        else {
-            panic!("the actual caller-local work and cleanup finish independently");
-        };
-        assert_eq!(output, report);
-        let notifications = notifications.expect("both original notification results are retained");
-        notifications
-            .termination
-            .expect("ordinary termination succeeded");
-        notifications
-            .retirement
-            .expect("joined-report publication succeeded");
-        let (origin, native) =
-            native.expect("the native root result remains independently retained");
-        assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
-            behavior,
-            completion: Completion::Stopped,
-            interpretation: None,
-            source: None,
-            settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
-            capability_failures,
-            additional_failures,
-            received_interpretation: None,
-            received_source: None,
-            source_index: None,
-            acquired_ingress: None,
-            retirement_failures,
-            terminal_report: None,
-            unread_owner_cancellation: None,
-        } = native
-        else {
-            panic!("the exact stopped native root and all of its lanes survive");
-        };
-        assert_eq!(behavior.base().entries, [157, 163]);
-        assert_eq!(behavior.base().entries.as_ptr(), allocation);
-        assert_eq!(behavior.base().received.len(), 0);
-        assert!(control.is_empty() && user.is_empty());
-        assert_eq!(descendants.len(), 0);
-        assert!(capability_failures.is_empty());
-        assert!(additional_failures.is_empty());
-        assert!(retirement_failures.is_empty());
-        assert_eq!(settlements.len(), 1);
-        let settlement = settlements
-            .into_iter()
-            .next()
-            .expect("one actual stop settlement");
-        assert!(settlement.creations.is_empty());
-        assert!(matches!(settlement.sends.owned, NoSends));
-        assert!(matches!(settlement.sends.inner, NoSends));
-        assert!(matches!(settlement.become_, Step::Stop(Stopped)));
+            assert_eq!(settlements.len(), 1);
+            let settlement = settlements
+                .into_iter()
+                .next()
+                .expect("one actual stop settlement");
+            assert!(settlement.creations.is_empty());
+            assert!(matches!(settlement.sends.owned, NoSends));
+            assert!(matches!(settlement.sends.inner, NoSends));
+            assert!(matches!(settlement.become_, Step::Stop(Stopped)));
+        }
     }
 
     struct RetirementObserver {
