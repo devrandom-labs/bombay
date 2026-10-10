@@ -394,7 +394,7 @@ mod tests {
     use crate::RetirementNotificationError;
     use crate::termination::Termination;
     use behavior::{Actions, ActiveTurn, BehaviorActed, NoBirths, NoSends, Step, User, UserEvent};
-    use behavior_actors::{Exit, StopOnShutdown};
+    use behavior_actors::{Crash, Exit, StopOnShutdown};
     use bombay_engine::Completion;
     use core::num::{NonZeroU64, NonZeroUsize};
     use core::pin::pin;
@@ -981,14 +981,21 @@ mod tests {
         assert_eq!(runtime.hydrations.available_permits(), 1);
         let Err(EntityRetirementFailure::ShutdownRequestPanicked {
             termination_notification: Err(RetirementNotificationError::Panicked { payload }),
-            shutdown_request: _,
+            shutdown_request,
             forced: None,
             retired: Some(retired_fault),
         }) = retired
         else {
             panic!("conversion, termination notification and consuming callback faults coexist")
         };
-        assert!(observed.is_err());
+        assert_eq!(observed, Err(Crash::Cancelled));
+        let shutdown_cause = shutdown_request
+            .downcast::<&str>()
+            .expect("original shutdown conversion cause");
+        assert_eq!(
+            *shutdown_cause,
+            "original application shutdown conversion panic"
+        );
         assert_eq!(
             ptr::from_ref(payload.as_ref()).cast::<()>(),
             notification_allocation
