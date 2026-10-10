@@ -921,12 +921,11 @@ impl<B: BehaviorSettlements, U, Descendants> LocalResidual<B, U, Descendants> {
                         | None => ActorFailureAssessment::NoFailuresFound,
                     };
                     let source = match source {
-                        Some(SourceProgress::Original(_) | SourceProgress::Offering(_)) => {
-                            ActorFailureAssessment::Incomplete
-                        }
-                        Some(SourceProgress::Completed(SourceCustody::Admitted(_))) => {
-                            ActorFailureAssessment::Incomplete
-                        }
+                        Some(
+                            SourceProgress::Original(_)
+                            | SourceProgress::Offering(_)
+                            | SourceProgress::Completed(SourceCustody::Admitted(_)),
+                        ) => ActorFailureAssessment::Incomplete,
                         Some(SourceProgress::Completed(SourceCustody::Closed(_))) => {
                             ActorFailureAssessment::FailuresFound
                         }
@@ -4046,6 +4045,10 @@ mod shutdown_admission_contract {
 impl<B: BehaviorSettlements, U, Descendants, Capabilities>
     LocalResidual<B, U, (Descendants, Capabilities)>
 {
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the test-only affine projection preserves every original custody field in all three distinct residual phases without another product or callback"
+    )]
     pub(crate) fn separate_capabilities(self) -> (LocalResidual<B, U, Descendants>, Capabilities) {
         match self {
             Self::Prepared {

@@ -2369,7 +2369,10 @@ mod capability_retirement_projection {
         assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
         // This synthetic native fixture cannot certify standard-owner retirement.
         assert_eq!(report.retirement(), RetirementAssessment::NotEstablished);
-        let native = ActorRetirement::from_local(joined.expect("actual native outcome retained"));
+        let Ok(local) = joined else {
+            panic!("the assessed native outcome remains acquired");
+        };
+        let native = ActorRetirement::from_local(local);
         let ActorRetirement::CapabilityFailed {
             error,
             behavior,

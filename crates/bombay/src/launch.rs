@@ -2472,6 +2472,10 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one complete native child product proves exact origin, original state, descendants, and every residual lane"
+    )]
     async fn projected_child_retirement_preserves_origin_state_and_descendants() {
         let mut descendant_creations = CreationSequence::new();
         let descendant_nonce = descendant_creations
@@ -2627,6 +2631,10 @@ mod ordinary_owner_retirement {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the matched live-source and owner-retirement traces preserve every distinct native outcome and residual"
+    )]
     async fn ordinary_owner_retirement_is_distinct_from_live_source_exhaustion() {
         let final_payload = Arc::new(vec![8, 13, 21]);
         let allocation = final_payload.as_ptr();
@@ -2986,6 +2994,10 @@ mod transitive_source_cancellation {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the complete typed source trace distinguishes admitted receipts from the original unoffered suffix"
+    )]
     async fn typed_source_owner_retirement_preserves_admitted_and_unoffered_receipts() {
         let (publisher, termination) = observe::pair();
         let terminal_observer = termination.clone();
@@ -5228,6 +5240,10 @@ mod root_join_custody {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the held cleanup trace proves actual join ordering and complete native custody for retain and surrender policies"
+    )]
     async fn root_join_receipt_preserves_exact_outcome_through_cleanup() {
         for finish in [
             RootFinish::Stop,
@@ -5368,6 +5384,10 @@ mod root_join_custody {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the matched notification traces retain the original panic payload and complete native actor retirement"
+    )]
     async fn termination_notification_preserves_original_native_retirement() {
         for notification in [
             NotificationWake::Return,
@@ -5488,6 +5508,10 @@ mod root_join_custody {
         }
     }
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one held-task trace proves settlement ordering, cancelled borrowing waits, and complete native and notification custody"
+    )]
     async fn termination_notification_waits_for_owned_task_settlement_and_survives_wait_cancellation()
      {
         let values = Arc::new(vec![31, 37]);
@@ -5625,6 +5649,10 @@ mod root_join_custody {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the matched guard cancellation and unwind traces retain each actual join cause and notification payload"
+    )]
     async fn termination_notification_survives_actual_terminal_guard_cancellation_and_unwind() {
         for guard in [
             GuardRetirement::Cancel,
@@ -5711,12 +5739,11 @@ mod root_join_custody {
             let mut termination = Box::pin(actor.termination());
             let registered = termination.as_mut().poll(&mut Context::from_waker(&waker));
             assert!(matches!(registered, Poll::Pending));
-            match expected_guard.1 {
-                None => task.abort(),
-                Some(_) => {
-                    let released = release.send(());
-                    released.expect("the outside unwind gate remains owned");
-                }
+            if expected_guard.1.is_none() {
+                task.abort();
+            } else {
+                let released = release.send(());
+                released.expect("the outside unwind gate remains owned");
             }
             let error = task
                 .await
@@ -5772,6 +5799,10 @@ mod root_join_custody {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the held-task and destructor trace proves receiver abandonment cannot dispose the original cause before settlement"
+    )]
     async fn termination_notification_receiver_abandonment_cannot_preempt_owned_task_settlement() {
         let values = Arc::new(vec![31, 37]);
         let original_state = Arc::downgrade(&values);
@@ -5915,6 +5946,10 @@ mod root_join_custody {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the complete occupied-destination matrix proves unchanged custody before join and resumed acquisition after join"
+    )]
     async fn termination_notification_preserves_coexisting_destinations_before_actual_actor_join() {
         for destinations in [
             RetirementDestinations::Native,
@@ -6095,7 +6130,7 @@ mod root_join_custody {
             }
             match destinations {
                 RetirementDestinations::Notification | RetirementDestinations::Both => {
-                    assert!(matches!(notification, Some(Ok(()))))
+                    assert!(matches!(notification, Some(Ok(()))));
                 }
                 RetirementDestinations::Native => assert!(notification.is_none()),
             }
@@ -6171,6 +6206,10 @@ mod root_join_custody {
         OwnerCancelled,
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the exhaustive native child assertion preserves original allocation, completion, all residual fields, and every settlement lane"
+    )]
     fn assert_child_retirement(
         retirement: &ChildRetirement,
         expected_address: MailAddr,
@@ -6294,8 +6333,8 @@ mod root_join_custody {
         assert!(received_source.is_none());
         assert!(source_index.is_none());
         assert!(acquired_ingress.is_none());
-        assert!(control.is_empty());
-        assert!(user.is_empty());
+        assert_eq!(control.len(), 0);
+        assert_eq!(user.len(), 0);
         assert!(descendants.is_empty());
         assert!(capability_failures.is_empty());
         assert!(unread_owner_cancellation.is_none());
@@ -6310,11 +6349,15 @@ mod root_join_custody {
                 assert!(settlement.creations.is_empty());
                 assert!(matches!(settlement.become_, Step::Stop(Stopped)));
             }
-            ChildCompletion::OwnerCancelled => assert!(settlements.is_empty()),
+            ChildCompletion::OwnerCancelled => assert_eq!(settlements.len(), 0),
         }
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the complete occupied-destination matrix proves projector join ordering and preserves both real notification stages"
+    )]
     async fn termination_notification_preserves_coexisting_destinations_before_actual_projector_join()
      {
         for destinations in [
@@ -6490,7 +6533,7 @@ mod root_join_custody {
                             termination: Ok(()),
                             retirement: Ok(())
                         }))
-                    ))
+                    ));
                 }
                 RetirementDestinations::Native => assert!(notification.is_none()),
             }
@@ -6578,6 +6621,10 @@ mod root_join_custody {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the complete first-notification and later-projection panic trace retains both original causes and native state"
+    )]
     async fn termination_notification_survives_later_projection_panic_with_original_native_custody()
     {
         for report_notification in [
@@ -6750,6 +6797,10 @@ mod root_join_custody {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the held-task trace proves report publication follows actual join and preserves original native and notification custody"
+    )]
     async fn joined_child_report_waits_for_owned_tasks_and_preserves_notification_custody() {
         for report_notification in [
             NotificationWake::Return,

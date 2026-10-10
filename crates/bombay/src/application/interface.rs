@@ -747,6 +747,10 @@ mod installed_shutdown_contract {
         assert_eq!(old_replay, Err(ShutdownRejection::AlreadyStopped));
     }
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one public Application controller proves the work barrier, independent observations and complete native custody"
+    )]
     async fn root_retirement_report_is_available_before_application_work_finishes() {
         let actors = ActorSpace::<LedgerProtocol>::new();
         let payload = vec![157, 163];
@@ -846,9 +850,9 @@ mod installed_shutdown_contract {
         };
         assert_eq!(behavior.base().entries, [157, 163]);
         assert_eq!(behavior.base().entries.as_ptr(), allocation);
-        assert!(behavior.base().received.is_empty());
+        assert_eq!(behavior.base().received.len(), 0);
         assert!(control.is_empty() && user.is_empty());
-        assert!(descendants.is_empty());
+        assert_eq!(descendants.len(), 0);
         assert!(capability_failures.is_empty());
         assert!(additional_failures.is_empty());
         assert!(retirement_failures.is_empty());
@@ -923,7 +927,7 @@ mod installed_shutdown_contract {
             report
         })
         .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
-        let (_, (work, native, notifications)) = timeout(Duration::from_secs(10), async {
+        let ((), (work, native, notifications)) = timeout(Duration::from_secs(10), async {
             tokio::join!(execution, receiving)
         })
         .await

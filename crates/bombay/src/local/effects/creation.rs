@@ -1439,7 +1439,7 @@ mod child_projection_panic {
             behavior.base().disposition,
             ChildDisposition::Continue
         ));
-        assert!(settlements.is_empty());
+        assert_eq!(settlements.len(), 0);
         assert!(descendants.is_empty());
         assert!(capability_failures.is_empty());
         assert!(additional_failures.is_empty());

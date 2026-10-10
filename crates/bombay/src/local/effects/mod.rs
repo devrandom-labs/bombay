@@ -595,10 +595,6 @@ mod atomic_interpretation_contract {
     }
 
     #[tokio::test]
-    #[expect(
-        clippy::too_many_lines,
-        reason = "the complete before/refusal/after trace proves custody without retaining settlement history"
-    )]
     async fn retirement_keeps_refusal_assessment_after_exact_settlement_is_discharged() {
         let (control, owner, mailbox, receiver) =
             mailbox_channel::<User<MailAddr, Never>, User<MailAddr, Never>>(Config::new(1));
@@ -697,7 +693,7 @@ mod atomic_interpretation_contract {
             ActorFailureAssessment::NoFailuresFound
         );
         assert!(retirement.activation_tasks.is_empty());
-        assert!(retirement.descendants.0.is_empty());
+        assert_eq!(retirement.descendants.0.len(), 0);
         assert_eq!(retirement.descendants.1, ());
         assert!(retirement.terminal_report.is_none());
         assert!(retirement.retirement_failures.is_empty());
