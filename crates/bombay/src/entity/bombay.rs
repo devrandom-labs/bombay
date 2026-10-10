@@ -492,11 +492,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn native_entity_wrapper_and_direct_hosts_retain_exact_actor_retirement() {
+        native_entity_retirement_trace(None).await;
+    }
+
+    #[tokio::test]
+    async fn termination_notification_fault_keeps_completed_native_entity_retirement() {
+        native_entity_retirement_trace(Some(Arc::new(vec![131, 137]))).await;
+    }
+
     #[expect(
         clippy::too_many_lines,
-        reason = "Keep both original delivery allocations, actual stop, and complete native joined retirement in one trace."
+        reason = "Keep original deliveries, full native retirement and independent notification custody in one trace."
     )]
-    async fn native_entity_wrapper_and_direct_hosts_retain_exact_actor_retirement() {
+    async fn native_entity_retirement_trace(notification_fault: Option<Arc<Vec<u64>>>) {
         let hosts = Arc::new(ActorSpace::<DeliveryLedger>::new());
         let native_hosts = Arc::clone(&hosts);
         let (retired_sender, retired_receiver) = oneshot::channel();
@@ -547,8 +556,27 @@ mod tests {
         assert!(direct_delivery.is_ok());
         let fenced = runtime.fence(endpoint.clone()).await;
         assert!(fenced.is_ok());
-        // The current native port owns cancellation as well as shutdown. Keep
-        // the original Completed oracle by observing real stop before retiring its lease.
+        let (waiter, expected_notification) = match notification_fault {
+            Some(cause) => {
+                let original = Arc::downgrade(&cause);
+                let payload: Box<dyn Any + Send> = Box::new(cause);
+                let allocation = ptr::from_ref(payload.as_ref()).cast::<()>();
+                (
+                    Waker::from(Arc::new(TerminationWaiter {
+                        cause: Mutex::new(Some(payload)),
+                    })),
+                    Some((original, allocation)),
+                )
+            }
+            None => (Waker::noop().clone(), None),
+        };
+        let mut notification = pin!(endpoint.termination());
+        let before_shutdown = notification
+            .as_mut()
+            .poll(&mut Context::from_waker(&waiter));
+        assert!(before_shutdown.is_pending());
+        // Keep this registered waiter unpolled until its actual producer completes.
+        // The independent observer below preserves the complete selected stop fact.
         let requested = request_actor_shutdown(&endpoint, &lease.actor.control, Ingress::new());
         assert_eq!(requested, Ok(()));
         let actual_stopped = endpoint.termination().await;
@@ -561,7 +589,10 @@ mod tests {
                 RetirementMode::Graceful,
             )
             .await;
-        assert!(retired.is_ok());
+        let notified = notification.await;
+        assert_eq!(notified, Ok(Exit::Normal));
+        assert_eq!(runtime.residents.available_permits(), 1);
+        assert_eq!(runtime.hydrations.available_permits(), 1);
         let retirement = retired_receiver.await.expect("whole native retirement");
         let Ok(ActorRetirement::Completed {
             behavior,
@@ -630,6 +661,25 @@ mod tests {
                 .into_message();
             assert_eq!(original, [113, 127]);
             assert_eq!(original.as_ptr(), allocation);
+        }
+        match (retired, expected_notification) {
+            (Ok(()), None) => {}
+            (
+                Err(EntityRetirementFailure::TerminationNotificationFailed {
+                    error: RetirementNotificationError::Panicked { payload },
+                }),
+                Some((original, allocation)),
+            ) => {
+                assert_eq!(original.strong_count(), 1);
+                assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), allocation);
+                let cause = payload
+                    .downcast::<Arc<Vec<u64>>>()
+                    .expect("original waiter cause");
+                assert_eq!(cause.as_slice(), [131, 137]);
+            }
+            _ => panic!(
+                "the real sole notification fault remains distinct from clean native retirement"
+            ),
         }
     }
 
