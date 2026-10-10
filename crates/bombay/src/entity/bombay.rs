@@ -391,6 +391,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::RetirementNotificationError;
     use crate::termination::Termination;
     use behavior::{Actions, ActiveTurn, BehaviorActed, NoBirths, NoSends, Step, User, UserEvent};
     use behavior_actors::{Exit, StopOnShutdown};
@@ -398,7 +399,11 @@ mod tests {
     use core::num::{NonZeroU64, NonZeroUsize};
     use core::pin::pin;
     use core::task::{Context, Poll, Waker};
+    use std::any::Any;
+    use std::panic::resume_unwind;
+    use std::ptr;
     use std::sync::Mutex;
+    use std::task::Wake;
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
     use tokio::task::JoinError;
@@ -677,7 +682,21 @@ mod tests {
         }
     }
 
+    struct TerminationWaiter {
+        cause: Mutex<Option<Box<dyn Any + Send>>>,
+    }
+
+    impl Wake for TerminationWaiter {
+        fn wake(self: Arc<Self>) {
+            let cause = self.cause.lock().expect("one actual waiter cause").take();
+            if let Some(cause) = cause {
+                resume_unwind(cause);
+            }
+        }
+    }
+
     struct ShutdownConversionDefinition {
+        retirement_fault: Mutex<Option<Box<dyn Any + Send>>>,
         entries: Arc<Vec<u64>>,
         endpoint: Mutex<Option<ActorRef<ShutdownConversionActor>>>,
         #[expect(
@@ -765,6 +784,14 @@ mod tests {
                 .expect("outside application callback owner")
                 .replace((*id, activation, retirement));
             assert!(prior.is_none());
+            let fault = self
+                .retirement_fault
+                .lock()
+                .expect("one original callback fault")
+                .take();
+            if let Some(fault) = fault {
+                resume_unwind(fault);
+            }
         }
     }
 
@@ -845,7 +872,15 @@ mod tests {
         assert_eq!(child_failures, ());
         assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
 
+        let notification_fault: Box<dyn Any + Send> = Box::new(Arc::new(vec![67_u64, 71]));
+        let notification_allocation = ptr::from_ref(notification_fault.as_ref()).cast::<()>();
+        let retirement_fault: Box<dyn Any + Send> = Box::new(Arc::new(vec![73_u64, 79]));
+        let retirement_allocation = ptr::from_ref(retirement_fault.as_ref()).cast::<()>();
+        let waiter = Waker::from(Arc::new(TerminationWaiter {
+            cause: Mutex::new(Some(notification_fault)),
+        }));
         let definition = Arc::new(ShutdownConversionDefinition {
+            retirement_fault: Mutex::new(Some(retirement_fault)),
             entries: inputs,
             endpoint: Mutex::new(None),
             forced: Mutex::new(Vec::new()),
@@ -867,6 +902,9 @@ mod tests {
             panic!("actual native lease is acquired")
         };
         let address = activated.endpoint.address();
+        let mut termination = pin!(activated.endpoint.termination());
+        let before_retirement = termination.as_mut().poll(&mut Context::from_waker(&waiter));
+        assert!(before_retirement.is_pending());
         let prior = definition
             .endpoint
             .lock()
@@ -885,6 +923,7 @@ mod tests {
                 RetirementMode::Forced(reason),
             )
             .await;
+        let observed = termination.await;
         let acquired = definition
             .retirement
             .lock()
@@ -941,14 +980,31 @@ mod tests {
         assert_eq!(runtime.residents.available_permits(), 1);
         assert_eq!(runtime.hydrations.available_permits(), 1);
         let Err(EntityRetirementFailure::ShutdownRequestPanicked {
-            termination_notification: Ok(()),
+            termination_notification: Err(RetirementNotificationError::Panicked { payload }),
             shutdown_request: _,
             forced: None,
-            retired: None,
+            retired: Some(retired_fault),
         }) = retired
         else {
-            panic!("the original conversion panic is independently retained")
+            panic!("conversion, termination notification and consuming callback faults coexist")
         };
+        assert!(observed.is_err());
+        assert_eq!(
+            ptr::from_ref(payload.as_ref()).cast::<()>(),
+            notification_allocation
+        );
+        assert_eq!(
+            ptr::from_ref(retired_fault.as_ref()).cast::<()>(),
+            retirement_allocation
+        );
+        let first_cause = payload
+            .downcast::<Arc<Vec<u64>>>()
+            .expect("original waiter payload");
+        let later_cause = retired_fault
+            .downcast::<Arc<Vec<u64>>>()
+            .expect("original callback payload");
+        assert_eq!(first_cause.as_slice(), [67, 71]);
+        assert_eq!(later_cause.as_slice(), [73, 79]);
         let forced = definition
             .forced
             .lock()
