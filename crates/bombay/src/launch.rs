@@ -648,7 +648,7 @@ pub(crate) struct OwnedTask<B, Descendants>
 where
     B: BehaviorSettlements,
 {
-    task: JoinHandle<LocalOutcome<B, Descendants>>,
+    task: Option<JoinHandle<LocalOutcome<B, Descendants>>>,
     termination_notification: oneshot::Receiver<Result<(), RetirementNotificationError>>,
     cancellation: OwnerCancellationAuthority,
 }
@@ -694,7 +694,7 @@ pub(crate) struct ProjectedTask<B, Root>
 where
     B: Behavior,
 {
-    task: JoinHandle<Result<Root, JoinError>>,
+    task: Option<JoinHandle<Result<Root, JoinError>>>,
     termination_notification: oneshot::Receiver<Result<(), RetirementNotificationError>>,
     cancellation: OwnerCancellationAuthority,
     behavior: core::marker::PhantomData<fn() -> B>,
@@ -722,15 +722,22 @@ where
         received: &mut Option<Result<LocalOutcome<B, Descendants>, JoinError>>,
         termination_notification: &mut Option<Result<(), RetirementNotificationError>>,
     ) {
+        if received.is_some() && termination_notification.is_some() {
+            return;
+        }
         poll_fn(|context| {
             let Some(actor_task) = owned.as_mut() else {
                 return Poll::Ready(());
             };
-            if received.is_none() {
-                match Pin::new(&mut actor_task.task).poll(context) {
+            if let Some(task) = actor_task.task.as_mut() {
+                if received.is_some() || termination_notification.is_some() {
+                    return Poll::Ready(());
+                }
+                match Pin::new(task).poll(context) {
                     Poll::Pending => return Poll::Pending,
                     Poll::Ready(joined) => {
                         *received = Some(joined);
+                        drop(actor_task.task.take());
                         actor_task.cancellation.disarm();
                     }
                 }
@@ -757,8 +764,11 @@ where
         received: &mut Option<Result<LocalOutcome<B, Descendants>, JoinError>>,
         termination_notification: &mut Option<Result<(), RetirementNotificationError>>,
     ) {
-        if received.is_none() {
-            if let Some(actor_task) = owned.as_mut() {
+        if let Some(actor_task) = owned.as_mut() {
+            if actor_task.task.is_some() {
+                if received.is_some() || termination_notification.is_some() {
+                    return;
+                }
                 actor_task.cancellation.request();
             }
         }
@@ -874,6 +884,7 @@ where
             termination_notification,
             cancellation,
         } = task;
+        let actor_task = actor_task.expect("a newly bound child owns its original actor join");
         let (notification_publication, notification_receipt) = oneshot::channel();
         let task = tokio::spawn(async move {
             let joined = actor_task.await;
@@ -889,7 +900,7 @@ where
             projected
         });
         Self {
-            task,
+            task: Some(task),
             termination_notification: notification_receipt,
             cancellation,
             behavior: core::marker::PhantomData,
@@ -912,8 +923,14 @@ where
         received: &mut Option<Result<Result<Root, JoinError>, JoinError>>,
         termination_notification: &mut Option<Result<(), RetirementNotificationError>>,
     ) {
-        if received.is_none() {
-            if let Some(projection_task) = owned.as_mut() {
+        if received.is_some() && termination_notification.is_some() {
+            return;
+        }
+        if let Some(projection_task) = owned.as_mut() {
+            if projection_task.task.is_some() {
+                if received.is_some() || termination_notification.is_some() {
+                    return;
+                }
                 projection_task.cancellation.request();
             }
         }
@@ -921,11 +938,15 @@ where
             let Some(projection_task) = owned.as_mut() else {
                 return Poll::Ready(());
             };
-            if received.is_none() {
-                match Pin::new(&mut projection_task.task).poll(context) {
+            if let Some(task) = projection_task.task.as_mut() {
+                if received.is_some() || termination_notification.is_some() {
+                    return Poll::Ready(());
+                }
+                match Pin::new(task).poll(context) {
                     Poll::Pending => return Poll::Pending,
                     Poll::Ready(joined) => {
                         *received = Some(joined);
+                        drop(projection_task.task.take());
                         projection_task.cancellation.disarm();
                     }
                 }
@@ -959,6 +980,7 @@ where
             cancellation,
             behavior: _,
         } = self;
+        let task = task.expect("the unobserved projected child owns its original join");
         let joined = cancellation.finish(task).await;
         let notification = termination_notification
             .await
@@ -1208,7 +1230,7 @@ where
             started,
             control,
             OwnedTask {
-                task,
+                task: Some(task),
                 cancellation,
                 termination_notification,
             },
@@ -4705,14 +4727,18 @@ mod independent_actor_execution {
 mod root_join_custody {
     use crate::address::MailAddr;
     use crate::launch::{
-        InertCapabilities, LocalRetirement, ObserveInertActions, OwnedTask, spawn_local_execution,
+        InertCapabilities, LocalRetirement, ObserveActionsWithRetirement, ObserveInertActions,
+        OwnedTask, ProjectedTask, SpawnError, spawn_local_execution, spawn_owned_with,
+        spawn_root_with,
     };
     use crate::local::effects::ActionSettlementOf;
     use crate::local::effects::{CapabilityRetirement, CommitActions};
     use crate::local::environment::{LocalEnvironment, LocalResidual};
     use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
     use crate::local::ingress::StandardIngress;
-    use crate::terminal::{LocalOutcome, RetirementNotificationError};
+    use crate::terminal::{
+        ActorRetirement, LocalOutcome, ProjectTerminal, RetirementNotificationError,
+    };
     use crate::termination::TerminationPublication;
     use crate::{ActorExecution, ActorExecutionOutcome, ActorSpace, observe};
     use behavior::{
@@ -5277,7 +5303,7 @@ mod root_join_custody {
         let terminated = actor.termination().await;
         assert_eq!(terminated, Ok(behavior_actors::Exit::Normal));
         let mut owned = Some(OwnedTask {
-            task,
+            task: Some(task),
             cancellation: authority,
             termination_notification,
         });
@@ -5352,13 +5378,21 @@ mod root_join_custody {
             drop(report);
             let (notification_publication, notification_receipt) = oneshot::channel();
             let (_authority, cancellation) = oneshot::channel();
+            let decisions = Arc::new(Mutex::new(Vec::new()));
+            let interpreted = decisions.clone();
             let environment = LocalEnvironment::<RootState, _, StandardIngress>::prepare(
                 MailAddr::APPLICATION_ROOT,
                 addresses.clone(),
                 Config::new(2),
                 termination,
                 cancellation,
-                |_, _, _| ObserveInertActions(|_: &ActionsOf<RootState>| {}),
+                |_, _, _| {
+                    ObserveInertActions(move |actions: &ActionsOf<RootState>| {
+                        assert_eq!(actions.sends, NoSends);
+                        assert!(actions.creates.is_empty());
+                        interpreted.lock().unwrap().push(actions.become_);
+                    })
+                },
             );
             let (publication, startup) = oneshot::channel();
             let environment = environment.publish_with(move |actor| {
@@ -5447,6 +5481,7 @@ mod root_join_custody {
             assert_eq!(replayed, terminated);
             assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
             assert_eq!(original_state.strong_count(), 0);
+            assert_eq!(*decisions.lock().unwrap(), [Step::Continue]);
             assert!(addresses.resolve(&MailAddr::APPLICATION_ROOT).is_none());
             drop(payload);
             assert_eq!(original_panic.strong_count(), 0);
@@ -5587,5 +5622,545 @@ mod root_join_custody {
         assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
         drop((original, authority, registered, actor, control));
         assert_eq!(disposal_original.strong_count(), 0);
+    }
+    #[derive(Clone, Copy)]
+    enum RetirementDestinations {
+        Native,
+        Notification,
+        Both,
+    }
+
+    struct CoexistingRetirementWaiter {
+        attempts: AtomicUsize,
+    }
+
+    impl Wake for CoexistingRetirementWaiter {
+        fn wake(self: Arc<Self>) {
+            self.wake_by_ref();
+        }
+
+        fn wake_by_ref(self: &Arc<Self>) {
+            self.attempts.fetch_add(1, Ordering::SeqCst);
+            panic!("an occupied receiving destination cannot register a producer waiter");
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn termination_notification_preserves_coexisting_destinations_before_actual_actor_join() {
+        for destinations in [
+            RetirementDestinations::Native,
+            RetirementDestinations::Notification,
+            RetirementDestinations::Both,
+        ] {
+            let other_values = Arc::new(vec![31, 37]);
+            let other_allocation = other_values.as_ptr() as usize;
+            let other_state = Arc::downgrade(&other_values);
+            let unrelated = spawn_root_with(
+                ActorSpace::new(),
+                Config::new(2),
+                MailAddr(281),
+                RootState {
+                    values: other_values,
+                    finish: RootFinish::Unpublished,
+                },
+                |_, _, _, _| {
+                    ObserveInertActions(|actions: &ActionsOf<RootState>| {
+                        assert_eq!(actions.sends, NoSends);
+                        assert!(actions.creates.is_empty());
+                        assert!(matches!(actions.become_, Step::Stop(Stopped)));
+                    })
+                },
+            )
+            .await;
+            let Err(SpawnError::Unpublished {
+                outcome: other_native,
+                termination_notification: other_notification,
+            }) = unrelated
+            else {
+                drop(unrelated);
+                panic!("the unrelated actor's actual original retirement remains owned");
+            };
+            assert_root_retirement(&other_native, RootFinish::Unpublished, other_allocation);
+            let (mut native, mut notification) = match destinations {
+                RetirementDestinations::Native => {
+                    other_notification.expect("the unrelated actual publication succeeded");
+                    (Some(Ok(other_native)), None)
+                }
+                RetirementDestinations::Notification => {
+                    drop(other_native);
+                    (None, Some(other_notification))
+                }
+                RetirementDestinations::Both => (Some(Ok(other_native)), Some(other_notification)),
+            };
+            let values = Arc::new(vec![31, 37]);
+            let allocation = values.as_ptr() as usize;
+            let original_state = Arc::downgrade(&values);
+            let panic = Arc::new(vec![101_u8, 103]);
+            let original_panic = Arc::downgrade(&panic);
+            let payload: Box<dyn Any + Send> = Box::new(panic);
+            let identity = ptr::from_ref(payload.as_ref());
+            let decisions = Arc::new(Mutex::new(Vec::new()));
+            let interpreted = decisions.clone();
+            let (admit, admitted) = oneshot::channel();
+            let (release, released) = oneshot::channel();
+            let (authority, startup, control, task, termination_notification) =
+                spawn_local_execution::<RootState, _, StandardIngress, _, _, _>(
+                    ActorSpace::new(),
+                    Config::new(2),
+                    MailAddr::APPLICATION_ROOT,
+                    RootState {
+                        values,
+                        finish: RootFinish::Stop,
+                    },
+                    |_, _, _, _| RootCleanup {
+                        decisions: interpreted,
+                        initializing: Some((None, admitted)),
+                        retiring: None,
+                        release: released,
+                        activation_tasks: ActivationTasks::new(),
+                    },
+                    |environment| {
+                        let (publication, startup) = oneshot::channel();
+                        let control = environment.shutdown_control();
+                        let environment = environment.publish_with(move |actor| {
+                            drop(publication.send(actor));
+                        });
+                        (environment, startup, control)
+                    },
+                );
+            let admitted = admit.send(());
+            admitted.expect("the real actor startup remains owned");
+            let actor = startup.await.expect("the exact producer is active");
+            let waiter = Arc::new(TerminationWaiter {
+                publication: Mutex::new(Some(NotificationWake::Unwind(payload))),
+                attempts: AtomicUsize::new(0),
+            });
+            let waker = Waker::from(waiter.clone());
+            let mut termination = Box::pin(actor.termination());
+            let registered = termination.as_mut().poll(&mut Context::from_waker(&waker));
+            assert!(matches!(registered, Poll::Pending));
+            let mut owned = Some(OwnedTask {
+                task: Some(task),
+                cancellation: authority,
+                termination_notification,
+            });
+            let blocked = Arc::new(CoexistingRetirementWaiter {
+                attempts: AtomicUsize::new(0),
+            });
+            let waker = Waker::from(blocked.clone());
+            let mut receiving = Box::pin(OwnedTask::receive_finish(
+                &mut owned,
+                &mut native,
+                &mut notification,
+            ));
+            let admission = receiving.as_mut().poll(&mut Context::from_waker(&waker));
+            drop(receiving);
+            assert!(
+                matches!(admission, Poll::Ready(())),
+                "occupied destinations must refuse acquisition without polling either producer"
+            );
+            assert!(
+                owned
+                    .as_ref()
+                    .expect("the exact owner remains retained")
+                    .task
+                    .is_some()
+            );
+            match destinations {
+                RetirementDestinations::Native | RetirementDestinations::Both => {
+                    let original = native
+                        .as_ref()
+                        .expect("the unrelated native slot remains")
+                        .as_ref()
+                        .unwrap_or_else(|_| panic!("the unrelated native result is unchanged"));
+                    assert_root_retirement(original, RootFinish::Unpublished, other_allocation);
+                    assert_eq!(other_state.strong_count(), 1);
+                }
+                RetirementDestinations::Notification => assert!(native.is_none()),
+            }
+            match destinations {
+                RetirementDestinations::Notification | RetirementDestinations::Both => {
+                    assert!(matches!(notification, Some(Ok(()))))
+                }
+                RetirementDestinations::Native => assert!(notification.is_none()),
+            }
+            assert_eq!(blocked.attempts.load(Ordering::SeqCst), 0);
+            assert_eq!(waiter.attempts.load(Ordering::SeqCst), 0);
+            assert_eq!(original_state.strong_count(), 1);
+            drop(native.take());
+            drop(notification.take());
+            assert_eq!(other_state.strong_count(), 0);
+            let control = control
+                .upgrade()
+                .expect("the exact actor's control remains live");
+            let sent = control.send(EventLayer::Owned(ShutdownRequested));
+            sent.expect("the exact actor accepts shutdown after occupied slots are cleared");
+            let released = release.send(());
+            released.expect("the original capability retirement remains held");
+            OwnedTask::receive_finish(&mut owned, &mut native, &mut notification).await;
+            assert!(owned.is_none());
+            let outcome = native
+                .as_ref()
+                .expect("the actual native result is acquired")
+                .as_ref()
+                .unwrap_or_else(|_| {
+                    panic!("early receipt polling cannot erase native actor custody")
+                });
+            assert_root_retirement(outcome, RootFinish::Stop, allocation);
+            let Err(RetirementNotificationError::Panicked { payload }) = notification
+                .as_ref()
+                .expect("the actual first result is acquired")
+            else {
+                panic!("the original first publication cause remains separately owned");
+            };
+            assert!(ptr::eq(ptr::from_ref(payload.as_ref()), identity));
+            let terminated = termination.await;
+            assert_eq!(terminated, Ok(behavior_actors::Exit::Normal));
+            assert_eq!(blocked.attempts.load(Ordering::SeqCst), 0);
+            assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
+            assert_eq!(
+                *decisions.lock().unwrap(),
+                [Step::Continue, Step::Stop(Stopped)]
+            );
+            OwnedTask::receive_finish(&mut owned, &mut native, &mut notification).await;
+            drop((native, notification, actor, control));
+            assert_eq!(original_state.strong_count(), 0);
+            assert_eq!(original_panic.strong_count(), 0);
+        }
+    }
+    struct ChildRetirement {
+        address: MailAddr,
+        retirement: ActorRetirement<RootState, Self, ()>,
+    }
+
+    impl ProjectTerminal<MailAddr, ActorRetirement<RootState, Self, ()>> for ChildRetirement {
+        fn project(address: MailAddr, retirement: ActorRetirement<RootState, Self, ()>) -> Self {
+            Self {
+                address,
+                retirement,
+            }
+        }
+    }
+
+    fn assert_child_retirement(
+        retirement: &ChildRetirement,
+        expected_address: MailAddr,
+        expected_finish: RootFinish,
+        allocation: usize,
+    ) {
+        let ChildRetirement {
+            address,
+            retirement,
+        } = retirement;
+        assert_eq!(*address, expected_address);
+        let (
+            behavior,
+            interpretation,
+            source,
+            settlements,
+            received_interpretation,
+            received_source,
+            source_index,
+            acquired_ingress,
+            control,
+            user,
+            descendants,
+            capability_failures,
+            unread_owner_cancellation,
+            additional_failures,
+            terminal_report,
+            retirement_failures,
+        ) = match retirement {
+            ActorRetirement::Completed {
+                behavior,
+                interpretation,
+                source,
+                settlements,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                completion,
+            } => {
+                assert!(matches!(completion, Completion::Stopped));
+                assert_eq!(expected_finish, RootFinish::Unpublished);
+                (
+                    behavior,
+                    interpretation,
+                    source,
+                    settlements,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    control,
+                    user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                )
+            }
+            ActorRetirement::OwnerCancelled {
+                behavior,
+                interpretation,
+                source,
+                settlements,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                control,
+                user,
+                descendants,
+                child_failures: (),
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+            } => {
+                assert_eq!(expected_finish, RootFinish::Stop);
+                (
+                    behavior,
+                    interpretation,
+                    source,
+                    settlements,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    control,
+                    user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                )
+            }
+            _ => panic!("the complete original native result keeps its actual completion policy"),
+        };
+        assert_eq!(behavior.values.as_slice(), [31, 37]);
+        assert_eq!(behavior.values.as_ptr() as usize, allocation);
+        assert_eq!(behavior.finish, expected_finish);
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert!(received_interpretation.is_none());
+        assert!(received_source.is_none());
+        assert!(source_index.is_none());
+        assert!(acquired_ingress.is_none());
+        assert!(control.is_empty());
+        assert!(user.is_empty());
+        assert!(descendants.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(unread_owner_cancellation.is_none());
+        assert!(additional_failures.is_empty());
+        assert!(terminal_report.is_none());
+        assert!(retirement_failures.is_empty());
+        match expected_finish {
+            RootFinish::Unpublished => {
+                assert_eq!(settlements.len(), 1);
+                let settlement = &settlements[0];
+                assert_eq!(settlement.sends, NoSends);
+                assert!(settlement.creations.is_empty());
+                assert!(matches!(settlement.become_, Step::Stop(Stopped)));
+            }
+            RootFinish::Stop => assert!(settlements.is_empty()),
+            RootFinish::Cancel => {
+                panic!("the projected fixture has no unstarted cancellation case")
+            }
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn termination_notification_preserves_coexisting_destinations_before_actual_projector_join()
+     {
+        for destinations in [
+            RetirementDestinations::Native,
+            RetirementDestinations::Notification,
+            RetirementDestinations::Both,
+        ] {
+            let other_values = Arc::new(vec![31, 37]);
+            let other_allocation = other_values.as_ptr() as usize;
+            let other_state = Arc::downgrade(&other_values);
+            let mut unrelated = spawn_owned_with(
+                ActorSpace::new(),
+                Config::new(2),
+                MailAddr(283),
+                RootState {
+                    values: other_values,
+                    finish: RootFinish::Unpublished,
+                },
+                |_, _, _, _| ObserveActionsWithRetirement {
+                    observe: |actions: &ActionsOf<RootState>| {
+                        assert_eq!(actions.sends, NoSends);
+                        assert!(actions.creates.is_empty());
+                        assert!(matches!(actions.become_, Step::Stop(Stopped)));
+                    },
+                    retirement: (Vec::<ChildRetirement>::new(), ()),
+                },
+            )
+            .await
+            .expect("the unrelated exact child is privately committed");
+            unrelated.acknowledge_binding();
+            let (other_native, other_notification) =
+                ProjectedTask::project(unrelated.task, unrelated.actor.address())
+                    .finish()
+                    .await;
+            let other_native = other_native
+                .expect("the actual unrelated projector joined")
+                .expect("the actual unrelated actor joined");
+            assert_child_retirement(
+                &other_native,
+                MailAddr(283),
+                RootFinish::Unpublished,
+                other_allocation,
+            );
+            let (mut native, mut notification) = match destinations {
+                RetirementDestinations::Native => {
+                    other_notification.expect("the unrelated actual publication succeeded");
+                    (Some(Ok(Ok(other_native))), None)
+                }
+                RetirementDestinations::Notification => {
+                    drop(other_native);
+                    (None, Some(other_notification))
+                }
+                RetirementDestinations::Both => {
+                    (Some(Ok(Ok(other_native))), Some(other_notification))
+                }
+            };
+            let values = Arc::new(vec![31, 37]);
+            let allocation = values.as_ptr() as usize;
+            let original_state = Arc::downgrade(&values);
+            let panic = Arc::new(vec![107_u8, 109]);
+            let original_panic = Arc::downgrade(&panic);
+            let payload: Box<dyn Any + Send> = Box::new(panic);
+            let identity = ptr::from_ref(payload.as_ref());
+            let decisions = Arc::new(Mutex::new(Vec::new()));
+            let interpreted = decisions.clone();
+            let mut actor = spawn_owned_with(
+                ActorSpace::new(),
+                Config::new(2),
+                MailAddr(293),
+                RootState {
+                    values,
+                    finish: RootFinish::Stop,
+                },
+                |_, _, _, _| ObserveActionsWithRetirement {
+                    observe: move |actions: &ActionsOf<RootState>| {
+                        assert_eq!(actions.sends, NoSends);
+                        assert!(actions.creates.is_empty());
+                        interpreted.lock().unwrap().push(actions.become_);
+                    },
+                    retirement: (Vec::<ChildRetirement>::new(), ()),
+                },
+            )
+            .await
+            .expect("the exact producer child is privately committed");
+            actor.acknowledge_binding();
+            let waiter = Arc::new(TerminationWaiter {
+                publication: Mutex::new(Some(NotificationWake::Unwind(payload))),
+                attempts: AtomicUsize::new(0),
+            });
+            let waker = Waker::from(waiter.clone());
+            let mut termination = Box::pin(actor.actor.termination());
+            let registered = termination.as_mut().poll(&mut Context::from_waker(&waker));
+            assert!(matches!(registered, Poll::Pending));
+            let mut owned = Some(ProjectedTask::project(actor.task, actor.actor.address()));
+            let blocked = Arc::new(CoexistingRetirementWaiter {
+                attempts: AtomicUsize::new(0),
+            });
+            let waker = Waker::from(blocked.clone());
+            let mut receiving = Box::pin(ProjectedTask::receive_retirement(
+                &mut owned,
+                &mut native,
+                &mut notification,
+            ));
+            let admission = receiving.as_mut().poll(&mut Context::from_waker(&waker));
+            drop(receiving);
+            assert!(
+                matches!(admission, Poll::Ready(())),
+                "occupied destinations cannot request retirement or poll either producer"
+            );
+            assert!(
+                owned
+                    .as_ref()
+                    .expect("the exact projector owner remains")
+                    .task
+                    .is_some()
+            );
+            match destinations {
+                RetirementDestinations::Native | RetirementDestinations::Both => {
+                    let original = native
+                        .as_ref()
+                        .expect("the unrelated native remains")
+                        .as_ref()
+                        .unwrap_or_else(|_| panic!("the actual unrelated projector joined"))
+                        .as_ref()
+                        .unwrap_or_else(|_| panic!("the actual unrelated actor joined"));
+                    assert_child_retirement(
+                        original,
+                        MailAddr(283),
+                        RootFinish::Unpublished,
+                        other_allocation,
+                    );
+                    assert_eq!(other_state.strong_count(), 1);
+                }
+                RetirementDestinations::Notification => assert!(native.is_none()),
+            }
+            match destinations {
+                RetirementDestinations::Notification | RetirementDestinations::Both => {
+                    assert!(matches!(notification, Some(Ok(()))))
+                }
+                RetirementDestinations::Native => assert!(notification.is_none()),
+            }
+            assert_eq!(blocked.attempts.load(Ordering::SeqCst), 0);
+            assert_eq!(waiter.attempts.load(Ordering::SeqCst), 0);
+            assert_eq!(original_state.strong_count(), 1);
+            drop(native.take());
+            drop(notification.take());
+            assert_eq!(other_state.strong_count(), 0);
+            ProjectedTask::receive_retirement(&mut owned, &mut native, &mut notification).await;
+            assert!(owned.is_none());
+            let outcome = native
+                .as_ref()
+                .expect("the actual projected native is acquired")
+                .as_ref()
+                .unwrap_or_else(|_| panic!("the original projector keeps native custody"))
+                .as_ref()
+                .unwrap_or_else(|_| {
+                    panic!("the original actor state remains after its first publication fault")
+                });
+            assert_child_retirement(outcome, MailAddr(293), RootFinish::Stop, allocation);
+            let Err(RetirementNotificationError::Panicked { payload }) = notification
+                .as_ref()
+                .expect("the original first result is acquired")
+            else {
+                panic!("the first publication fault coexists with original native custody");
+            };
+            assert!(ptr::eq(ptr::from_ref(payload.as_ref()), identity));
+            let terminated = termination.await;
+            assert_eq!(terminated, Err(behavior_actors::Crash::Cancelled));
+            assert_eq!(blocked.attempts.load(Ordering::SeqCst), 0);
+            assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
+            assert_eq!(*decisions.lock().unwrap(), [Step::Continue]);
+            ProjectedTask::receive_retirement(&mut owned, &mut native, &mut notification).await;
+            drop((native, notification, actor.actor, actor.control));
+            assert_eq!(original_state.strong_count(), 0);
+            assert_eq!(original_panic.strong_count(), 0);
+        }
     }
 }
