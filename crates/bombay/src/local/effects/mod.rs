@@ -4948,7 +4948,9 @@ mod capability_task_retirement {
         // Both background tasks remain owned by the original retirement path.
         let publication = startup.await;
         let joined = task.await;
-        let notification = termination_notification.await.expect("the actual termination producer transferred its result");
+        let notification = termination_notification
+            .await
+            .expect("the actual termination producer transferred its result");
         notification.expect("the ordinary termination publication succeeded");
         drop(authority);
         let outcome = match joined {

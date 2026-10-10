@@ -707,7 +707,9 @@ mod parent_conversion_custody {
                 Ok(()) | Err(()) => {}
             }
             let joined = task.await;
-            let notification = termination_notification.await.expect("the actual termination producer transferred its result");
+            let notification = termination_notification
+                .await
+                .expect("the actual termination producer transferred its result");
             notification.expect("the ordinary termination publication succeeded");
             drop(authority);
             // All control calls/transfers happen before these observations.
