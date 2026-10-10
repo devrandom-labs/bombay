@@ -2327,6 +2327,67 @@ mod capability_retirement_projection {
     }
 
     #[tokio::test]
+    async fn joined_report_preserves_primary_capability_failure_without_later_failures() {
+        let task = tokio::spawn(async { panic_any(Box::new(vec![191_u64, 193])) });
+        let original_task = task.id();
+        let error = task.await.expect_err("the actual capability task panics");
+        let joined: Result<LocalOutcome<RetiringActor, (Vec<u64>, ())>, _> =
+            Ok(ActorExecutionOutcome::Completed {
+                behavior: RetiringActor {
+                    values: vec![197, 199],
+                },
+                completion: Completion::RetirementRequested(
+                    LocalRetirementRequest::CapabilityFailed(error),
+                ),
+                additional_failures: Vec::new(),
+                residual: LocalResidual::Retired {
+                    operation_failures: ActorFailureAssessment::Incomplete,
+                    descendant_report: ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete,
+                    ),
+                    interpretation: None,
+                    source: None,
+                    settlements: Vec::new(),
+                    received_interpretation: None,
+                    received_source: None,
+                    source_index: None,
+                    acquired_ingress: None,
+                    ingress: Drained {
+                        control: Vec::new(),
+                        user: Vec::new(),
+                    },
+                    activation_tasks: ActivationTasks::new(),
+                    descendants: (Vec::new(), ()),
+                    capability_failures: Vec::new(),
+                    terminal_report: None,
+                    retirement_failures: Vec::new(),
+                    unread_owner_cancellation: None,
+                },
+            });
+        let report = ActorRetirementReport::from_joined(&joined, &Ok(()));
+        assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+        // This synthetic native fixture cannot certify standard-owner retirement.
+        assert_eq!(report.retirement(), RetirementAssessment::NotEstablished);
+        let native = ActorRetirement::from_local(joined.expect("actual native outcome retained"));
+        let ActorRetirement::CapabilityFailed {
+            error,
+            behavior,
+            capability_failures,
+            additional_failures,
+            ..
+        } = native
+        else {
+            panic!("the original primary capability failure remains a separate native cause");
+        };
+        assert_eq!(error.id(), original_task);
+        assert!(error.is_panic());
+        assert_eq!(behavior.values, [197, 199]);
+        assert!(capability_failures.is_empty());
+        assert!(additional_failures.is_empty());
+    }
+
+    #[tokio::test]
     #[allow(
         clippy::too_many_lines,
         reason = "one complete typed projection trace observes all three residual phases and their separate primary causes"

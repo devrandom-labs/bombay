@@ -4015,3 +4015,46 @@ the report without restoring a discharged error or creating history, a list,
 a registry or a new type (one owning path, estimated 12–20 production lines).
 The actual quiet-startup regression must prove this distinction; ordinary
 creation rejection and genuine startup-cleanup failures retain existing custody.
+
+### Entity native conversion conserves the same acquired assessment
+
+The connected source audit found one additional real native flatten: successful
+Entity retirement also converts LocalOutcome into ActorRetirement. Auto-select
+passing the already approved runtime-issued ActorRetirementReport beside the
+original native result through EntityDefinition's existing consuming retired
+callback. Derive it from actual joined custody and the first notification before
+conversion; no second publisher, callback, wrapper, task or public type is added.
+The alternative explicitly discharges these summaries from a native-only Entity
+contract, which would withhold already acquired failure evidence when settlement
+policy has consumed the corresponding native error. Keeping that independent
+evidence is preferred. This extends an existing callback by one report argument;
+its implementations require explicit migration. Existing family failure rows
+continue preserving actual callback, task and notification causes; callback
+panics cannot rewrite the report already supplied. Estimated 5–10 production
+lines plus necessary existing caller parameters and assertions, within the
+2,200-production/five-type/250-path stage. Reverify the six owning Entity laws
+with observable report assessments in debug and optimized builds, including the
+original native and notification custody inversions. Full remote Entity routing
+and production durability remain outside this milestone.
+
+Entity report scope remains the joined actor's owned subtree. External family
+owner callbacks (forced retirement, shutdown-request conversion and consuming
+retired notification) have separate existing native family failure custody;
+they are not failures inside that actor merely because they occur before its
+report is derived. Preserve those original causes independently without
+inserting them into the actor report. The alternative widens the same report
+to unrelated caller/family-owner operations and loses its exact target scope.
+Runtime-owned effect/interpreter and descendant failures inside the actor
+remain included, as selected. This freezes the existing scoped report law and
+adds no production mechanism.
+
+Connected root checkpoint after 4ce918d, including all tracked/untracked changes:
+21 paths, no untracked files; conservative production +1,448/-418/net +1,030,
+tests +2,017/-86/net +1,931, documentation +1,667/-42/net +1,625, manifest/lock
++0/-0, public API +5 types/-0. Source prefixes before their first test module
+are conservatively production. Exact source-bound measurement remains in
+`/tmp/bombay-report-connected-checkpoint.json`. The root library passes
+`nix develop -c env CARGO_INCREMENTAL=0 cargo check --locked -p bombay-rs --lib --jobs 2`
+with no warnings. This is syntax/integration evidence only; new report tests
+and their inversions are not yet executed. The five-type, 2,200-production and
+3,000-test local stage and 250 cumulative-path bounds still apply.
