@@ -4070,3 +4070,24 @@ This directly tests the selected compact correction and does not substitute
 a hand-copied binding model or infer a creation route. Existing projector-panic
 coverage retains its original stop disposition. Combined source accounting
 will precede any concrete excess of the current stage envelope.
+
+### Actual controlled-source merge and continued local integration
+
+Controlled source [PR 1](https://github.com/devrandom-labs/bombay-zenoh/pull/1)
+merged by the ordinary protected PR path at 2026-10-10T05:26:19Z, commit
+`e82481825e313ff14e5ea3a1d6e842040945372a`. Required merged-main CI is
+[run 38027503275](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38027503275);
+it is still running, so registry publication remains pending. This records
+controlled dependency-source delivery only, not NET1/AUTH1 implementation or
+full actor acceptance. Fresh merged-main standard Cargo publish dry-run and
+non-dry package commands produced identical hashes for all nine packages, with
+all 29 archived checksum/live edges and six inversions passing. Actual uploads,
+registry authorization and ordinary no-override consumers remain open.
+
+Combined local production also compiles after the Entity callback correction.
+The first actual `cargo test --locked -p bombay-rs --lib --no-run --jobs 2`
+through pinned Nix failed at 54ae576 with 23 test-source migration errors and
+three warnings: report fields/imports and the new exact observation constructor
+were missing from some existing fixtures. No new test ran and no semantic
+inversion credit is assigned. Owners are repairing their existing fixture
+contracts before the combined debug/optimized report campaign.
