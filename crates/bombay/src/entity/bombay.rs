@@ -247,7 +247,9 @@ where
             Ok(address) => address,
             Err(reason) => {
                 self.metrics.launch_failed();
-                return Err(EntityActivationError::AllocationRejected { behavior, reason });
+                return Err(EntityActivationError::from_launch(
+                    SpawnError::AllocationRejected { behavior, reason },
+                ));
             }
         };
         let mut actor = Arc::clone(&self.actors)
@@ -255,15 +257,7 @@ where
             .await
             .map_err(|failure| {
                 self.metrics.launch_failed();
-                match failure.into_retirement() {
-                    Ok((retirement, termination_notification)) => EntityActivationError::Launch {
-                        retirement,
-                        termination_notification,
-                    },
-                    Err((behavior, reason)) => {
-                        EntityActivationError::AllocationRejected { behavior, reason }
-                    }
-                }
+                EntityActivationError::from_launch(failure)
             })?;
         actor.acknowledge_binding();
         self.metrics.activation_succeeded();

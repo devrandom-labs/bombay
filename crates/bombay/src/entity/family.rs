@@ -21,6 +21,7 @@ use behavior_actors::ShutdownRequested;
 use tokio::runtime::Handle;
 
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::launch::SpawnError;
 use crate::local::endpoint::ActorRef;
 use crate::topology::Hosts as LocalHosts;
 use crate::{ActorRetirement, RetirementNotificationError};
@@ -229,6 +230,22 @@ where
         retirement: ActorRetirement<B, Terminal, ChildFailures>,
         termination_notification: Result<(), RetirementNotificationError>,
     },
+}
+
+impl<Hydration, B, Terminal, ChildFailures>
+    EntityActivationError<Hydration, B, Terminal, ChildFailures>
+where
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+{
+    pub(crate) fn from_launch(failure: SpawnError<B, (Vec<Terminal>, ChildFailures)>) -> Self {
+        match failure.into_retirement() {
+            Ok((retirement, termination_notification)) => Self::Launch {
+                retirement,
+                termination_notification,
+            },
+            Err((behavior, reason)) => Self::AllocationRejected { behavior, reason },
+        }
+    }
 }
 
 /// Fixed-cardinality observations for one native family.
