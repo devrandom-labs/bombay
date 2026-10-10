@@ -3365,6 +3365,30 @@ strict checks and actual Cargo callback wiring without an available token
 remain required before publication; synthetic subprocess success alone does
 not prove that Cargo selected the provider or the real registry authorized it.
 
+Independent archived-reference falsifier before retaining the validation fix:
+delete the live `bombay-zenoh-config` root's `bombay-validated-struct`
+dependency reference while retaining every package record and checksum. The
+preliminary checker accepted this mutation: inventory and transitive closure
+alone do not prove actual graph edges. The retained intended regression fails
+with `lock reference inversion unexpectedly accepted`. Adopt the recommended
+at-most-25-line validation in the same auditor: require exactly one source-free
+owning node, resolve each controlled Cargo dependency reference by its actual
+name, optional version and source, and compare every direct controlled edge
+to the selected manifest graph. Keep the complete inventory/checksum proofs.
+This fits the existing 1,300-line envelope and adds no path/runtime/API/dependency.
+The corresponding restored and missing-owner negatives must pass before release.
+
+The SDK's four actual-invocation controls now pass in debug and optimized
+builds, strict Clippy passes in both, and removing only its digest comparison
+makes the existing changed-publication test fail in each profile. Restored
+controls pass after exact source restoration. Actual Cargo selects the explicit
+singleton provider and refuses the preparatory read with the credential absent
+(exit 101), before any upload. This proves callback wiring and refusal, not
+real token authority or successful publication. Use the selected Cargo owner's
+`registry.credential-provider` setting: an empty global provider list restores
+builtin defaults and is not an exclusion mechanism. No builtin-token fallback
+or command-line token belongs in this controlled invocation.
+
 Required Linux controlled CI passed for candidate `464715ca` in
 [run 38024228511](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38024228511),
 completed 2026-10-10 04:49:11 UTC. That pass applies to the earlier candidate;
