@@ -20,7 +20,7 @@ only their existing local laws. The final section records the audit corrections.
 
 ## User steering before design choices
 
-Current instruction (2026-10-09 UTC): the user said **"from now on autoselect
+Current instruction (2026-10-09 UTC, reaffirmed 2026-10-10 UTC): the user said **"from now on autoselect
 the recommended answer everytime there is a question for me till I say
 otherwise"**. Adopt the recommended choice without another question or wait,
 recording its alternatives, rationale, consequences and remaining uncertainty.
@@ -3226,6 +3226,124 @@ The extra `local/effects/reports.rs` owning test path is now counted in the
 impact union. Parallel unintegrated edits, controlled dependency source and
 CI artifacts remain separately counted under the cumulative stage envelope;
 passing focused tests alone do not establish distillation or delivery.
+
+Updated first-repair checkpoint (2026-10-10 UTC), combined source `5daa052`:
+seven launch controls pass in both debug and optimized builds. They extend
+the four earlier controls with actual coexisting native-only,
+notification-only and jointly occupied destinations for both owning task
+forms, and the same first observer panic followed by a consuming child
+projection panic. Actual joined custody, resumed borrowed acquisition,
+complete native transfer and both original causes are independent assertions.
+The launch source SHA256 is
+`be74e5fb71ca460cba0a0281dd05d1c697fb88c2e60552848c41e5a9a4f3e1f3`.
+Targeted inversions and warning-clean checking are underway; joined-report
+production remains gated until restored controls pass.
+
+Five Entity controls pass in both profiles, including actual unstarted address
+exhaustion and coexisting notification/shutdown/retired-callback failures.
+An intended mutation erasing the acquired first cause after the real consuming
+retired callback fails in both profiles (exit 101) at the original allocation
+custody assertion: strong count 0, required 1. Complete native identity,
+lanes and permit release are asserted before that failure. Mutant SHA256
+`37e1523062443818c4b015f013a865e13b4b7a5a828106e6dcce3e6a2c20327a`
+was not retained. Restoring source SHA256
+`cd2c01125d8304aa5cc8851d13a56af50d97f1888b6d6e630124b0db76a44451`
+restored five passing controls in each profile. The newly integrated real
+notification-only Entity case has not yet executed; it receives no pass credit.
+No remote or full joined-retirement acceptance follows from these tests.
+
+The complete combined tracked delta against `a9c5b7d` is 18 paths and no
+untracked files. Conservative source-prefix accounting includes test-only
+declarations before the first owning test module:
+
+```text
+production: +834 / -404 / net +430
+tests:      +1617 / -70 / net +1547
+public API: +1 type / -0 types
+documents:  +1296 / -43 / net +1253
+```
+
+This remains inside the selected local stage envelope. Shared public products,
+root ordering, manifests and integration remain coordinator-owned; one agent
+at a time uses the shared local Cargo target with incremental compilation off.
+Isolated source work and the controlled dependency campaign continue in parallel.
+
+Controlled-source delivery review (2026-10-10 UTC):
+[draft PR 1](https://github.com/devrandom-labs/bombay-zenoh/pull/1), candidate
+`464715ca9d1403b4bf54836704bd9e072cc4c870`, preserves the upstream base and
+full history. Required controlled CI is running; neither a merge nor registry
+publication is established. The independent review found that archived
+`Cargo.lock` identities and all 29 corrected checksum-bearing edges need a
+persistent CI check, not only a supplemental rehearsal. Add that check with
+wrong-checksum and official-identity inversions. Enforce each archive's exact
+clean source revision as well as its manifest, source inventory and licenses.
+
+The selected Cargo 1.99.0 revision
+`5f94df4789f005f9a352888e8355ffc645b7ed0e` regenerates actual publish candidates
+in `target/package/tmp-crate`. Earlier `cargo package` archives are a different
+cohort. A post-upload checksum of the earlier path cannot prove which bytes
+Cargo sent. Use standard Cargo's nine-package publish selection and its owning
+dependency ordering, preserving the selected `json_get,json5` feature graph.
+Auditing the actual publish candidates before release and registry receipts
+after release remain mandatory. Publication can commit a prefix; Cargo rejects
+an already published selection rather than silently skipping it. Preserve that
+prefix and exact source/checksums, stop on a real refusal, and verify a concrete
+standard-client resume selection before retrying. Never claim an atomic release,
+overwrite a version, or treat dry-run as authenticated permission.
+
+Recommended pre-upload custody choice, adopted under delegated steering
+before edits: use the Cargo team's existing `cargo-credential` SDK 0.4.11
+for a private, unpublished release credential executable. Fresh crates.io
+inspection confirms latest stable 0.4.11, not yanked, archive SHA256
+`5de74202293b2bc090da20d0b475aa74821caf0e901f29ba97003353886a5b42`.
+Its actual archived `src/lib.rs` is byte-identical to the inspected selected
+Cargo revision's SDK source; Rust 2024/MSRV 1.95 fits pinned Rust 1.99.
+Cargo computes `Operation::Publish { name, vers, cksum }` from its retained
+actual tarball immediately before upload. The SDK owns typed operations and
+standard JSON IPC; no handwritten credential protocol, codec or uploader.
+
+The direct private `ReleaseCredential` implements the existing `Credential`
+trait. An immutable standard map retains only audited package/version/digest
+identities needed for the release decision. Permit the exact crates.io registry,
+its preparatory read and those nine exact publish operations; reject every
+other registry/action/operation without fallback. Load the original secret
+only after the requested operation passes the policy. Return the SDK's
+`CacheControl::Never` and operation-dependent credentials, explicitly configure
+this sole provider, and keep the workflow secret outside Cargo's builtin token
+environment names. The SDK-required boolean is inherited protocol metadata,
+not a new Bombay semantic state flag. This adds no actor API or runtime policy.
+
+The alternatives are Cargo's existing token-from-stdout provider, whose session
+cache does not recheck every uploaded digest, and source/dry-run determinism
+plus post-upload comparisons, which can detect changed bytes only after an
+irreversible upload. The selected owning SDK permits a veto before that boundary.
+It does not establish registry authorization, protect against a compromised
+runner, or make a multi-package upload atomic. Actual SDK subprocess tests with
+synthetic fixture credentials must prove valid operations, independent read
+and publish decisions, and refusal of changed names/versions/digests/registries
+before credential return. No real token may be read into logs or test evidence.
+
+Concrete revised dependency-delivery envelope: four additional private tool
+paths (`Cargo.toml`, `Cargo.lock`, `src/main.rs`, owning integration test) raise
+the extra path allowance from 20 to 24; the cumulative 250-path cap remains
+sufficient. Current human CI/provenance source is 833 lines. Allow at most
+170 new private Rust production lines, 140 test lines, 20 manifest lines and
+75 existing script/CI/document lines: expected at most 1,238 human lines,
+bounded by 1,250. Count the tool's generated lock separately, at most 350 lines
+beside the existing 3,090 generated lines. Raise the complete delivery artifact
+cap from 4,000 to 4,800 lines before edits; 1,250 + 3,440 fits it. The runtime
+dependency graph remains unchanged. Only this private tool adds the owning
+SDK dependency and already selected `serde_json` 1.0.151; record the complete
+locked transitive graph and checksum relationships. New public types: zero.
+The separate local runtime stage's 2,200 production / 3,000 test / five-type
+limits remain unchanged; the private release tool's production is additionally
+counted in the cumulative functional source record, not hidden as documentation.
+
+Required Linux controlled CI passed for candidate `464715ca` in
+[run 38024228511](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38024228511),
+completed 2026-10-10 04:49:11 UTC. That pass applies to the earlier candidate;
+the persistent archive corrections and pre-upload veto require fresh checks
+on their combined committed source before review, merge or publication.
 
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
