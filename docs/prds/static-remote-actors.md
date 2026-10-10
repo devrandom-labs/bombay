@@ -4091,3 +4091,13 @@ three warnings: report fields/imports and the new exact observation constructor
 were missing from some existing fixtures. No new test ran and no semantic
 inversion credit is assigned. Owners are repairing their existing fixture
 contracts before the combined debug/optimized report campaign.
+
+Recommended release scheduling under delegated selection: after required
+merged-main CI succeeds, dispatch the existing manual publish operation once.
+Its owning script already enforces exact current main and its passing required
+check, executes standard Cargo dry-run, audits actual candidates, gates the real
+archive checksum and retains before/after registry receipts. A separate manual
+verify run immediately before that would repeat the same cold-job packaging
+without adding a correctness obligation. Keep verify available for future
+preview use, but no redundant verify-then-publish pair is required here. This
+changes no workflow, source, gate, credential authority or scope.
