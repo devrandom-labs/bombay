@@ -1,5 +1,11 @@
 # EXEC: application execution and local actor ownership
 
+**Historical delivery record:** PR326 records the execution contract delivered on
+2026-10-08. The subsequent [joined-retirement prerequisite](static-remote-actors.md)
+supersedes its native-in-cleanup result and root-retirement callback spelling.
+Use the [current application API](../user-facing-api.md) for caller syntax;
+retain the older observations below as source-bound delivery evidence.
+
 Date: 2026-09-29. Owner: Bombay. Backlog ID: `EXEC1`.
 
 **Revision note (2026-10-01):** The ARC-001 shutdown authority change has

@@ -1,5 +1,12 @@
 # Application execution API decision record
 
+**Historical API decision:** this record describes the contract delivered by
+EXEC/PR326. The [joined-retirement prerequisite](../static-remote-actors.md)
+supersedes its native-in-cleanup and root-retirement callback representation.
+The [current caller guide](../../user-facing-api.md) owns the independent native
+and notification receipt syntax. Earlier proofs below retain their original
+source/contract scope.
+
 ## Accepted API (2026-10-07)
 
 DG-API is accepted and its exact candidate is integrated on

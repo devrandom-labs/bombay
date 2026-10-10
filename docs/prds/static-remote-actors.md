@@ -4462,3 +4462,235 @@ the exact selected toolchain/dependency graph:
 This remains a debug test profile, not optimized proof or a relaxed assertion
 policy. The full required Linux Nix/coverage/law/loom/fuzz gates remain mandatory
 in CI; resource failure supplies no semantic inversion or completion credit.
+
+
+### Runtime-issued report static-denial witness before edits
+
+The read-only report law already excludes application construction and mutable
+fields, but the public suite lacks its own attempted-forgery denial. Recommend
+one compile-fail fixture that tries to construct ActorRetirementReport from its
+two public assessment values. Add it to the existing interface-authority suite;
+the actual public Application report tests are the executed positive consumers.
+This observes the selected public law rather than mirroring its classifier.
+Expected two new fixture paths (Rust plus actual stderr), one existing test path,
+at most 30 net test/fixture lines, zero production/API/dependency growth. A
+source-byte backup for its owning visibility inversion also counts in the
+300-path envelope. The alternative is relying only on source inspection of
+private fields; reject that because an accidental later visibility change must
+fail the public regression. Temporarily expose the exact two owning fields,
+require the denial suite to fail because the forbidden fixture compiles, restore
+byte-exact and rerun. No such production visibility is retained.
+
+All-target local debug verification also passes, including actual benchmark
+smoke execution: 556 passed, zero failed, one parent-controlled ignored test
+across 57 target summaries. Workspace/doc command separately passes 557 tests
+across 62 summaries; the ignored descriptor-limited child is exercised only by
+its owning parent. Both actual changed Entity trybuild stderr fixtures match.
+Log `/tmp/bombay-combined-all-target-tests.log`; command is the prior low-symbol
+pinned workspace invocation with `--all-targets`. Draft
+[PR330](https://github.com/devrandom-labs/bombay/pull/330), head49e0a46, has required
+Linux Nix CI38033069536 running. Ownership review and any resulting focused
+correction remain before readiness; there is no merged report claim.
+
+
+Static-denial refinement before the second fixture: independent review confirms
+both Rust construction routes need coverage. An accidental public constructor
+could forge a report even with private fields. Add a separate private-constructor
+fixture and its actual stderr beside the literal denial; expected four new
+fixture paths, one existing suite, at most 60 net test/fixture lines, zero
+production/API/dependency changes. Each exact visibility inversion must fail
+because that otherwise forbidden case compiles; restore and rerun. This is the
+same already-approved runtime-issued report law, not an additional report owner.
+
+
+### Actual standard-capability disposal-panic witness before edits
+
+Independent minimization identifies no additional production owner/API defect,
+but the completed-retirement-with-cleanup-failure promise lacks an actual final
+standard-capability destructor panic witness. Existing Established/FailuresFound
+cases cover Behavior, activation or first notification failures. Automatically
+select the smallest real public Application regression: extend the existing
+ShutdownLedger report/work-barrier controller with normal disposal and an
+original-payload panic in a test-only Hosts<LedgerProtocol> product's Drop.
+The outside controller retains only the real ActorSpace clone; prove the final
+ApplicationCapabilities owner actually disposes the product after owned resources
+retire. No opaque interpreter fixture may certify standard resource completion.
+
+Both cases preserve the full native state, exact allocation and complete action
+lanes. The panic case requires Established plus FailuresFound, the original
+opaque cleanup cause retained in the native result, successful independent
+notification receipts, and an already absent root address. Observe original Box
+allocation identity without downcasting or opening the private panic; Arc Weak
+custody persists until explicit native discharge. Normal disposal keeps the
+complete empty-failure control. Hold Work until the report is acquired in both.
+Expected one existing source/test path, +80–120 net test/fixture lines, zero
+production/public types/dependencies. The existing 4,300-test envelope remains.
+A retained prepared patch is counted under the 300-path scope. The alternative
+is weakening the completion/failure promise; reject that because the user
+selected preserving cleanup failure after full retirement.
+
+The intended owner classification inversion makes resource completion
+NotEstablished solely when native retirement_failures is nonempty. Both
+profiles must fail the independent completion assertion, then restored controls
+must pass. This is a verification blocker before report-prerequisite distillation,
+not authorization for another runtime owner or broader unrelated refactor.
+
+
+### Controlled dependency prerequisite: actual delivery
+
+The controlled dependency stage is delivered, independently of AUTH1/NET1.
+Reviewed source PR1 merged at e82481825e313ff14e5ea3a1d6e842040945372a;
+required candidate CI 38026158685 and merged-main CI 38027503275 passed.
+Reviewed resumption PR2 merged at 373d25a9261e4d3a6b5e2ab739142fad448c2ed0;
+required candidate CI 38030056828 and merged-main CI 38031719465 passed.
+[Final publication 38032849420](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38032849420)
+succeeded at 07:03:17 UTC using reviewed automation 373d and original package source
+e824. Artifact 11662807342 digest
+`ac2a47921204237a149b60fd1f004fa72ba516e72376cc6800483a0e139c70c6`
+retains original and remaining ledgers, actual before/after receipts and all nine
+archives at `/tmp/bombay-resumed-published-cohort/retained-source/target/package`.
+
+Coordinator independently compares all nine actual Cargo-fetched registry
+archive bytes against original audited archives and checks every checksum below.
+The final after receipt exactly matches the original nine-package ledger; before
+retains the exact five published records and four actual absent responses.
+
+| Published package | Version | Exact registry/archive SHA256 |
+| --- | --- | --- |
+| bombay-validated-struct | 2.2.0 | `b1b9764c93caf9628a9c391a92132f1bc84a8816b01ff486cc18b08101e2c3c7` |
+| bombay-validated-struct-macros | 2.2.0 | `602d3538d65be50613f90d69dd21c504d4e894ae2ae13c41ba89163fd4b33b55` |
+| bombay-zenoh | 1.10.1 | `708e420be07e49c00326fcebb5daf7df72dd92769eae28d9aed649c53a7648b2` |
+| bombay-zenoh-config | 1.10.1 | `84f764e6cc4f3c122b87f5ad715460c54e09fc95b690919740defe4e264ed482` |
+| bombay-zenoh-link | 1.10.1 | `40ff7d86f5e5da473ca7e05ca452c2782971ef3eb45ee1ac8c80a7b7fd9a5c91` |
+| bombay-zenoh-link-commons | 1.10.1 | `ef9224e682a1cf8f57bb4fc88f98ac6a1f51036fc6f82b7b1c05dfcbafa8e37c` |
+| bombay-zenoh-link-tls | 1.10.1 | `29075698e973b6d270f1d7e170209b70b4a2d14eac7aca61b559a29861c0246c` |
+| bombay-zenoh-plugin-trait | 1.10.1 | `7f706fdfff554904c5c87ffee53ceeb5c16c81d720444e4add2877753af09b64` |
+| bombay-zenoh-transport | 1.10.1 | `3adae45298b79e80fc6c3494a4e26b84b5f347ee71aa83d5db85df9db8f6b627` |
+
+Normal registry-only consumer verification passes with no Cargo source override,
+Git dependency or path dependency. Pinned Nix runs formatting, strict all-target
+Clippy and executable assertions for default, retained maintainer and maintainer
+macro profiles. Logs `/tmp/bombay-zenoh-registry-consumer-{metadata,clippy,default,maintainer,format}.log`;
+consumer `/tmp/bombay-zenoh-registry-consumer`. Assertions check selected TLS and
+unsupported transports, private-root selection configuration, corrected owning
+macro payload/allocation preservation and nominal error identities.
+
+Coordinator independently reads the original archive lock and resolved normal
+consumer lock: all 296 retained external name/version/source/checksum records
+unchanged; 15 archive-only dev/test nodes pruned; only the local consumer root
+added. All nine controlled nodes are actual registry entries with original
+checksums. Consumer lock 3,018 lines respects its 3,500-line allowance. Controlled
+human 1,445 + generated 3,311= 4,756/5,300; with consumer lock the observed artifact
+subtotal is 7,774 rather than the earlier planned 8,256 ceiling. No dependency
+upgrade or replacement of an official package identity. Both controlled source
+trees are clean at their exact delivered commits.
+
+This closes the dependency publication/ordinary-install prerequisite only.
+It does not supply Bombay protected admission, remote authentication, protocol,
+resource/correlation/replay bounds, actual remote Applications or any full
+R01–R25 acceptance witness. Root manifests/lock still have no Zenoh integration.
+
+
+The actual standard-disposal control passes debug and optimized, observing one
+final host-product disposal before Work release, exact lease disappearance,
+Established/FailuresFound and its original opaque Box/Arc custody. The resource
+classification inversion fails exactly NotEstablished versus Established in
+both profiles; owning source is restored byte-exact. Strict Clippy vetoes the
+test's intentional Box<Arc<Vec<u64>>> allocation, not production code: this Box
+is the exact original Rust panic carrier, while Arc Weak independently observes
+cause lifetime. Automatically select one variant-scoped, reasoned
+`expect(clippy::redundant_allocation)` rather than reboxing the cause, removing
+its independent lifetime witness, or inventing a test wrapper to hide the type.
+Expected four annotation lines, no semantic/production/API change. Full strict
+checking and final combined controls must pass; this is no blanket allowance.
+
+
+Current-guidance residue audit confirms the remaining native-in-cleanup Rust
+patterns belong only to advanced internal Application tests, whose deliberate
+kernel contract remains distinct from ordinary public App. EXEC's delivered
+PRD and API decision still described the superseded public spelling without a
+clear historical notice; add two short source-bound notices pointing to current
+caller guidance rather than rewriting earlier delivery evidence. Two additional
+existing document paths count under 300; zero Rust/API change. The old native
+root callback has no production occurrence.
+
+
+### Joined-retirement prerequisite minimization and final local verification
+
+Independent bounded source review finds no production ownership/API blocker.
+Retained ownership is one existing runtime composition: Observe publishes
+shared completed facts; actual actor/projector/cleanup tasks transfer affine
+native and notification causes; the parent keeps complete native results.
+Report acquisition precedes consuming application conversion and the root Work
+barrier. Entity family/callback failures remain separately owned and cannot
+rewrite an issued actor-subtree report. The old root-retirement callback is
+removed, and public callers use ordinary named products/tuple matching rather
+than compatibility wrappers. No new trait, task, registry, mailbox, runtime
+framework, cryptographic implementation, macro or dependency is retained.
+
+Exactly five added public types each express a proven distinction: retirement
+establishment, independent failure completeness, a runtime-issued read-only
+report, the two original notification results, and their original failure sum.
+Fields and constructor stay private; no Default, serialization, raw-report
+constructor or ActorRef stop authority is introduced. Existing owners derive
+facts; applications receive or explicitly discharge original results. Actual
+root/child/Entity/capability/startup tests and public Application integration
+justify these seams. Removing either report axis confuses finished cleanup
+with clean execution; folding native/notification custody back into Work loses
+facts after independent failure. The read-only report owns no original payload.
+
+The two external construction-denial fixtures execute their intended E0451 and
+E0624 diagnostics. Exposing the two exact fields causes only the literal fixture
+to compile unexpectedly; exposing only the constructor causes only its fixture
+to compile unexpectedly. Both owning inversions exit101 with the intended
+trybuild "Expected test case to fail to compile, but it succeeded" assertion;
+restored suites pass. Healthy terminal SHA
+`e18d1563fd48349660b65241589635d007f7efa11a61bbf74b62e012cb8f4fff`;
+field mutant `f06c230af343c79abf17babc1c5086cdacf3e982c962e0d90c423ea16cfe849a`;
+constructor mutant `2d2a9e55c3ef52ec6ec4b5d96c6ab0952b31a4affdb9576d5f236805fc0cdf72`.
+Logs `/tmp/bombay-runtime-issued-report-{fields,constructor}-inverse.log`.
+Actual diagnostic acquisition used TRYBUILD=overwrite only for new fixtures;
+final full suite runs normally and preserves all unrelated diagnostics.
+
+Actual standard final-host disposal panic control passes normal/panic cases in
+both debug and optimized; independent count proves one real final-owner Drop
+before Work release and the real lease is absent. Complete native lanes, exact
+original panic Box allocation and independent Arc lifetime survive. Resource
+completion remains Established while failures are Found; both original
+notification results are successful. The intended resource-classification
+inversion fails NotEstablished versus Established in both profiles, exit101.
+Healthy Environment SHA
+`ddcd78c0d4f601ce1991543894661c53031851e96a0be5495f8b639c8d618295`;
+mutant `b1ede6fbd271eef93cda71374a5df192c5c9c18dc06904ac941fecb15f0d3bc2`.
+Source restored byte-exact. Logs `/tmp/bombay-actual-cleanup-report-inverse-{debug,release}.log`;
+final exact restored optimized control `/tmp/bombay-actual-cleanup-report-final-release.log`.
+
+Final combined all-target debug suite passes556 tests across57 target summaries,
+zero failures, one deliberately parent-controlled ignored child; both new report
+construction denials and changed Entity denial fixtures match. Command:
+`nix develop -c env CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test --locked --workspace --all-targets --jobs 2`;
+log `/tmp/bombay-final-report-workspace-all-targets.log`. The earlier workspace
+command additionally passed documentation tests. All305 default library tests
+also pass optimized after restoring the cleanup classification; final annotation
+has its focused optimized restored control. Strict Clippy across the workspace
+and all targets passes, log `/tmp/bombay-final-report-clippy-restored.log`.
+Pinned final formatting and Git whitespace checking pass. Cargo.lock/manifests
+remain unchanged. The small intentional test panic carrier has one justified
+variant-scoped allocation expectation; no blanket allowance.
+
+Complete root measurement before this final evidence paragraph:56 changed
+paths including four new denial fixtures; production +1,592/-472/net +1,120;
+tests/fixtures +4,429/-636/net +3,793; documentation +2,320/-69/net +2,251;
+manifests/lock +0/-0; public API +5 types/-0. Source/row hashes remain in
+`/tmp/bombay-public-receipt-checkpoint.json`; the final committed checkpoint
+recounts this complete evidence text too. No source/test/API ceiling exceeded.
+
+Disposition: the scoped local joined-retirement prerequisite is distilled;
+its independent review's two verification blockers are now executed and closed.
+This disposition covers the report composition and migrated callers only.
+A dedicated real pre-publication projector-cancellation campaign and independent
+finite report algebra table are not claimed as executed; the missing-report
+fallback remains conservative. Full remote R01–R25, production identity,
+durability and SHM obligations remain exactly deferred/unexecuted. The complete
+networking PRD is not feature-complete/distilled/merged. Draft PR330 still needs
+fresh final-head required Linux CI, final review and actual protected merge.
