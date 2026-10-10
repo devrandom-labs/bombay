@@ -522,7 +522,8 @@ mod installed_shutdown_contract {
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let old_termination = lifecycle.termination().await;
         assert_eq!(old_termination, Ok(Exit::Normal));
-        let old_result = old.task.finish().await;
+        let (old_result, termination_notification) = old.task.finish().await;
+        termination_notification.expect("the actual ordinary termination notification succeeded");
         let Ok(ActorExecutionOutcome::Completed {
             behavior,
             residual:
@@ -619,7 +620,8 @@ mod installed_shutdown_contract {
         assert_eq!(new_request, Ok(()));
         let stopped = fresh_termination.await;
         assert_eq!(stopped, Ok(Exit::Normal));
-        let retired = fresh.task.finish().await;
+        let (retired, termination_notification) = fresh.task.finish().await;
+        termination_notification.expect("the actual ordinary termination notification succeeded");
         let Ok(ActorExecutionOutcome::Completed {
             behavior,
             residual:

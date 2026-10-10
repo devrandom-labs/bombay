@@ -2619,9 +2619,10 @@ mod tests {
             drop(actor.control);
             let mut task = Some(actor.task);
             let mut received = None;
+            let mut termination_notification = None;
             let mut cleanup = Vec::new();
             {
-                let attempt = OwnedTask::receive_retirement(&mut task, &mut received);
+                let attempt = OwnedTask::receive_retirement(&mut task, &mut received, &mut termination_notification);
                 let mut attempt = pin!(attempt);
                 let poll = poll_fn(|context| Poll::Ready(attempt.as_mut().poll(context))).await;
                 cleanup.push(match poll { Poll::Pending => IndexCleanup::Waiting, Poll::Ready(()) => IndexCleanup::Returned });
@@ -2629,14 +2630,16 @@ mod tests {
             let second_release = releases.remove(0).send(());
             let later_running = (&mut starts[2]).await;
             {
-                let attempt = OwnedTask::receive_retirement(&mut task, &mut received);
+                let attempt = OwnedTask::receive_retirement(&mut task, &mut received, &mut termination_notification);
                 let mut attempt = pin!(attempt);
                 let poll = poll_fn(|context| Poll::Ready(attempt.as_mut().poll(context))).await;
                 cleanup.push(match poll { Poll::Pending => IndexCleanup::Waiting, Poll::Ready(()) => IndexCleanup::Returned });
             }
             let later_release = releases.remove(0).send(());
-            OwnedTask::receive_retirement(&mut task, &mut received).await;
+            OwnedTask::receive_retirement(&mut task, &mut received, &mut termination_notification).await;
             let joined = received.expect("the outside receiver acquires the actual whole actor result");
+            let notification = termination_notification.expect("the outside receiver acquires the original notification result");
+            notification.expect("the ordinary termination publication succeeded");
             let termination = endpoint.termination().await;
             let retired_endpoint = addresses.resolve(&MailAddr(119));
             drop(later_request);

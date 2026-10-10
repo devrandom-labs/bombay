@@ -1561,9 +1561,10 @@ mod tests {
         release_task
             .send(())
             .expect("the activation task retains its release receiver");
-        let outcome = retirement
+        let (outcome, termination_notification) = retirement
             .await
             .expect("the owner joins without erasing available actor values");
+        termination_notification.expect("the actual ordinary termination notification succeeded");
         let Ok(ActorExecutionOutcome::Completed {
             completion:
                 Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
@@ -3674,7 +3675,8 @@ mod shutdown_admission_contract {
         assert_eq!(replay, Err(ShutdownRejection::AlreadyStopping));
         let terminal = old.actor.termination().await;
         assert_eq!(terminal, Ok(Exit::Normal));
-        let retired = old.task.finish().await;
+        let (retired, termination_notification) = old.task.finish().await;
+        termination_notification.expect("the actual ordinary termination notification succeeded");
         let Ok(ActorExecutionOutcome::Completed {
             behavior,
             residual:
@@ -3773,7 +3775,8 @@ mod shutdown_admission_contract {
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let stopped = publication.await;
         assert_eq!(stopped, Ok(Exit::Normal));
-        let retired = fresh.task.finish().await;
+        let (retired, termination_notification) = fresh.task.finish().await;
+        termination_notification.expect("the actual ordinary termination notification succeeded");
         let Ok(ActorExecutionOutcome::Completed {
             behavior,
             residual:

@@ -4891,7 +4891,7 @@ mod capability_task_retirement {
             preparation: Some(preparation),
             received: Vec::new(),
         };
-        let (authority, startup, (), task) =
+        let (authority, startup, (), task, termination_notification) =
             spawn_local_execution::<CapabilityParent, _, StandardIngress, _, _, _>(
                 roots.clone(),
                 Config::new(2),
@@ -4948,6 +4948,8 @@ mod capability_task_retirement {
         // Both background tasks remain owned by the original retirement path.
         let publication = startup.await;
         let joined = task.await;
+        let notification = termination_notification.await.expect("the actual termination producer transferred its result");
+        notification.expect("the ordinary termination publication succeeded");
         drop(authority);
         let outcome = match joined {
             Ok(outcome) => outcome,

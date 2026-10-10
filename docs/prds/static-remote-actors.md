@@ -3166,6 +3166,31 @@ authority without exposing the credential, then record registry checksums
 and the clean normal-install consumer. No push/schedule publication trigger,
 invented token authority or registry success is implied by secret availability.
 
+Receiving conservation refinement before edit: an outside native slot may
+already contain an independent result. Its occupancy is not proof that this
+owner's actual producer was joined. Preserve the existing coexisting-slot law
+for native-only, notification-only and both occupied destinations. Store the
+existing affine join capability as `Option<JoinHandle<_>>` in OwnedTask and
+ProjectedTask: while it is present, occupied destinations refuse acquisition
+without consuming the owner; after actual join, its consumed absence permits
+resuming first-result acquisition without polling a completed handle again.
+Do not substitute `is_finished`, arbitrary destination content or a semantic
+boolean for actual join custody. Add actual held-producer/hostile-waker tests
+and resumed-acquisition controls in both profiles. This adds no public type,
+task, registry or duplicated native result; it corrects a source-level
+custody gap in the connected first repair.
+
+Publishing authority refinement: crates.io's account APIs require session
+authentication and do not provide a general independent API-token authority
+probe; Cargo dry-run does not authenticate publication. Reject a fabricated
+`/me` preflight or custom registry upload. The manual workflow verifies exact
+reviewed/CI-passing source, secret presence, registry availability and package
+rehearsal; ordinary Cargo/crates.io enforces actual PublishNew scope on the
+first authorized upload. Stop on its real refusal without bypassing it.
+Record the limit plainly: secret availability and dry-run success alone do
+not prove publishing permission. This reuses the owning standard client and
+adds no custom wire mechanism or hypothetical authority claim.
+
 The earlier proposed new-path union was checked against the actual tracked tree:
 thirteen owning source files plus the twenty-six existing public callers have
 thirty-four distinct paths, because five sources occur in both sets. Add the

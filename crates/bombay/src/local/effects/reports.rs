@@ -615,7 +615,7 @@ mod parent_conversion_custody {
                 turns: 0,
                 returned: Vec::new(),
             };
-            let (authority, startup, (), task) =
+            let (authority, startup, (), task, termination_notification) =
                 spawn_local_execution::<Parent, _, StandardIngress, _, _, _>(
                     roots,
                     Config::new(1),
@@ -707,6 +707,8 @@ mod parent_conversion_custody {
                 Ok(()) | Err(()) => {}
             }
             let joined = task.await;
+            let notification = termination_notification.await.expect("the actual termination producer transferred its result");
+            notification.expect("the ordinary termination publication succeeded");
             drop(authority);
             // All control calls/transfers happen before these observations.
             assert!(earlier_occupied.is_ok());
