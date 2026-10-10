@@ -83,6 +83,25 @@ struct MixedServiceParent;
 #[bombay::actor(message = Never, births = MixedServices, creation_settlements = retain_for_retirement)]
 impl MixedServiceParent {}
 
+// A staged child remains a pure definition even when its own births need reports.
+type NestedServices = bombay::behavior::Births<ServiceParent>;
+
+struct ServiceNursery;
+
+#[bombay::actor(message = Never, births = NestedServices, creation_settlements = retain_for_retirement)]
+impl ServiceNursery {
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
+    fn init(&mut self) -> BehaviorActed<Self> {
+        let mut creations = bombay::behavior::CreationSequence::new();
+        let id = creations
+            .issue()
+            .expect("a fresh sequence has its first creation ID");
+        Ok(Actions::create(bombay::behavior::Creations::one(
+            bombay::behavior::CreateChild::birth(id, ServiceParent),
+        )))
+    }
+}
+
 // Sender inference remains usable for pure Behavior authoring without a local host.
 struct SenderIndependent {
     total: u64,
@@ -134,6 +153,26 @@ fn main() {
     assert!(mixed_services.creates.is_empty());
     assert!(matches!(mixed_services.sends, bombay::behavior::NoSends));
     assert!(matches!(mixed_services.become_, Step::Continue));
+
+    let nested_services = bombay::behavior::initialize(&mut ServiceNursery)
+        .expect("nested reporting births preserve pure initialization");
+    assert!(matches!(nested_services.sends, bombay::behavior::NoSends));
+    assert!(matches!(nested_services.become_, Step::Continue));
+    let child = nested_services
+        .creates
+        .into_one()
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("pure initialization retains exactly its staged child request")
+        });
+    assert_eq!(child.kind(), bombay::behavior::CreationKind::Birth);
+    let (_, mut service, provenance) = child.into_parts();
+    assert_eq!(provenance, bombay::behavior::CreationKind::Birth);
+    let staged_service = bombay::behavior::initialize(&mut service)
+        .expect("a staged definition has no runtime ingress obligation");
+    assert!(staged_service.creates.is_empty());
+    assert!(matches!(staged_service.sends, bombay::behavior::NoSends));
+    assert!(matches!(staged_service.become_, Step::Continue));
 
     fn accepts_behavior<B: Behavior>() {}
     accepts_behavior::<SenderAware>();
