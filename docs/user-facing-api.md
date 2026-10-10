@@ -431,6 +431,16 @@ truthful message origin, clones only its exact reply capability, and keeps the
 receiver affine. `ApplicationLifecycle<P, E>` is the separate shutdown and
 termination authority.
 
+For application service code that must retain a message when capacity is full,
+`caller.try_send(&exact_recipient, message)` returns immediately with respect
+to mailbox capacity. Match `bombay::TrySendError::Full(original)` or
+`Closed(original)` to recover that same owned message. A later retry needs a
+fresh permission check; this call performs no authentication. Closed admission
+does not prove completed actor retirement. Borrowed, move-only and non-Debug
+messages are supported where existing endpoint construction allows them.
+The native error's Debug formatting can reveal its payload; keep private
+payloads out of public diagnostics. Stable Entity admission uses `send`.
+
 The direct interface send is intentionally exact. A logical `Recipient<P>` is
 relative to a selected Address namespace and cannot be made transport-neutral
 by copying its numeric address. Such capabilities remain useful for stable

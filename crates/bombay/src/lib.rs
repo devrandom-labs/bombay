@@ -33,6 +33,7 @@ pub use crate::application::{
 };
 pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};
+pub use communication::TrySendError;
 mod actor_execution;
 mod actor_outcome;
 mod address;

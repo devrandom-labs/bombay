@@ -7,7 +7,7 @@ use behavior::{
     Behavior, EstablishedRecipient, Ingress, InjectEvent, InterpretEstablished, Protocol, User,
 };
 use behavior_actors::{ShutdownRejection, ShutdownRequested};
-use communication::{ControlSender, MailboxRef, UserClosed};
+use communication::{ControlSender, MailboxRef, TrySendError, UserClosed};
 use core::fmt;
 use core::future::Future;
 use core::marker::PhantomData;
@@ -189,6 +189,35 @@ impl<P: Protocol> ActorRef<P> {
         }
     }
 
+    pub(crate) fn try_send_from(
+        &self,
+        from: P::Addr,
+        message: P::Msg,
+    ) -> Result<(), TrySendError<P::Msg>> {
+        match &self.endpoint {
+            EndpointMailbox::Standard { mailbox, .. } => mailbox
+                .try_send(User::new(from, message))
+                .map_err(|rejected| match rejected {
+                    TrySendError::Full(user) => TrySendError::Full(user.message),
+                    TrySendError::Closed(user) => TrySendError::Closed(user.message),
+                }),
+            EndpointMailbox::Entity { mailbox, .. } => mailbox
+                .try_send(LocalIngress::Message(User::new(from, message)))
+                .map_err(|rejected| match rejected {
+                    TrySendError::Full(LocalIngress::Message(user)) => {
+                        TrySendError::Full(user.message)
+                    }
+                    TrySendError::Closed(LocalIngress::Message(user)) => {
+                        TrySendError::Closed(user.message)
+                    }
+                    TrySendError::Full(LocalIngress::Fence(_))
+                    | TrySendError::Closed(LocalIngress::Fence(_)) => {
+                        unreachable!("ordinary ActorRef delivery creates only message ingress")
+                    }
+                }),
+        }
+    }
+
     pub(crate) async fn fence(&self) -> Result<(), crate::entity::FenceFailure> {
         let (publisher, observation) = affine_pair();
         let EndpointMailbox::Entity { mailbox, .. } = &self.endpoint else {
@@ -308,11 +337,83 @@ pub(crate) struct ExtractLocalEndpoint;
 #[cfg(test)]
 mod delivery_rejection {
     use crate::address::MailAddr;
-    use crate::local::ingress::LocalIngress;
-    use behavior::User;
-    use communication::UserClosed;
+    use crate::local::ingress::{Admission, AdmissionClosure, EndpointMailbox, LocalIngress};
+    use crate::observe;
+    use behavior::{MessageProtocol, Never, User};
+    use communication::{Config, Received, TrySendError, UserClosed, mailbox_channel};
+    use std::sync::Arc;
 
-    use super::SendError;
+    use super::{ActorRef, SendError};
+
+    #[tokio::test]
+    async fn exact_entity_endpoint_keeps_full_and_closed_originals_and_ordered_prefix() {
+        let (control, owner, mailbox, mut receiver) =
+            mailbox_channel::<Never, LocalIngress<MailAddr, Box<[u8]>>>(Config::new(2));
+        let admission = Arc::new(Admission::new(owner));
+        let (termination_publication, termination) = observe::pair();
+        let endpoint = ActorRef::<MessageProtocol<MailAddr, Box<[u8]>>>::new(
+            MailAddr(211),
+            EndpointMailbox::Entity {
+                mailbox,
+                admission: Arc::downgrade(&admission),
+            },
+            termination,
+        );
+        let origin = MailAddr(223);
+        let first = vec![11, 13].into_boxed_slice();
+        let first_allocation = first.as_ptr();
+        let second = vec![17, 19].into_boxed_slice();
+        let second_allocation = second.as_ptr();
+        let first_admitted = endpoint.try_send_from(origin, first);
+        let second_admitted = endpoint.try_send_from(origin, second);
+        assert!(first_admitted.is_ok());
+        assert!(second_admitted.is_ok());
+        let original = vec![23, 29].into_boxed_slice();
+        let original_allocation = original.as_ptr();
+        let full = endpoint.try_send_from(origin, original);
+        let original = match full {
+            Err(TrySendError::Full(original)) => original,
+            Err(TrySendError::Closed(_)) => panic!("live Entity mailbox pressure is not closure"),
+            Ok(()) => panic!("the full Entity mailbox cannot accept another message"),
+        };
+        assert_eq!(original.as_ref(), [23, 29]);
+        assert_eq!(original.as_ptr(), original_allocation);
+        let closed = admission.close();
+        assert!(matches!(closed, AdmissionClosure::Closed));
+        let refused = endpoint.try_send_from(origin, original);
+        let original = match refused {
+            Err(TrySendError::Closed(original)) => original,
+            Err(TrySendError::Full(_)) => panic!("Entity closure wins over remaining pressure"),
+            Ok(()) => panic!("closed Entity admission cannot accept a message"),
+        };
+        assert_eq!(original.as_ref(), [23, 29]);
+        assert_eq!(original.as_ptr(), original_allocation);
+        let replayed = endpoint.try_send_from(origin, original);
+        let original = match replayed {
+            Err(TrySendError::Closed(original)) => original,
+            Err(TrySendError::Full(_)) => panic!("Entity closure remains final on replay"),
+            Ok(()) => panic!("replay cannot reopen the exact Entity mailbox"),
+        };
+        assert_eq!(original.as_ref(), [23, 29]);
+        assert_eq!(original.as_ptr(), original_allocation);
+        drop(original);
+        for (allocation, bytes) in [(first_allocation, [11, 13]), (second_allocation, [17, 19])] {
+            let accepted_ingress = receiver.recv().await;
+            let Some(Received::User(LocalIngress::Message(user))) = accepted_ingress else {
+                panic!("each original Entity prefix message survives before closure");
+            };
+            assert_eq!(user.from, origin);
+            assert_eq!(user.message.as_ref(), bytes);
+            assert_eq!(user.message.as_ptr(), allocation);
+        }
+        let closed = receiver.recv().await;
+        assert!(matches!(closed, Some(Received::UserLaneClosed)));
+        drop(control);
+        let exhausted = receiver.recv().await;
+        assert!(exhausted.is_none());
+        // This primitive projection test supplies no actor termination fact.
+        drop((endpoint, admission, receiver, termination_publication));
+    }
 
     #[test]
     fn rejected_user_delivery_recovers_the_exact_owned_payload() {

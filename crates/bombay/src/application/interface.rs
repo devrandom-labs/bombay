@@ -11,7 +11,7 @@ use behavior::{
     AllocationRejection, EstablishedRecipient, Here, Ingress, InjectEvent, Never, Protocol, User,
 };
 use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
-use communication::{Consumer, ControlSender, Received, mailbox_channel};
+use communication::{Consumer, ControlSender, Received, TrySendError, mailbox_channel};
 use core::fmt;
 use core::future::Future;
 use std::sync::{Arc, Weak};
@@ -359,6 +359,33 @@ where
         Target: ExternalTarget,
     {
         target.send_from(self.address, message)
+    }
+
+    /// Attempt delivery to an exact actor without waiting for mailbox capacity.
+    ///
+    /// Uses this external actor's allocated address as `User::from`. The
+    /// recipient never resolves or retargets to a replacement. This operation
+    /// performs no remote authentication; a caller enforcing permission must
+    /// recheck it before each attempt. Existing mailbox synchronization remains.
+    /// Stable Entity resolution and hydration use [`Self::send`] instead.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TrySendError::Full`] or [`TrySendError::Closed`] with the exact
+    /// original message. Closure establishes refused admission, not actor
+    /// termination or joined retirement. Error Debug can reveal the payload;
+    /// non-Debug messages remain supported through exhaustive matching.
+    pub fn try_send<Target>(
+        &self,
+        target: &EstablishedRecipient<Target>,
+        message: Target::Msg,
+    ) -> Result<(), TrySendError<Target::Msg>>
+    where
+        Target: Protocol<Addr = MailAddr>,
+    {
+        let mut interpreter = ExtractLocalEndpoint;
+        let endpoint = target.clone().interpret(&mut interpreter);
+        endpoint.try_send_from(self.address, message)
     }
 
     /// Receive the next message and its truthful actor origin.

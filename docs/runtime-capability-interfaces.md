@@ -75,7 +75,7 @@ snapshots retain their own exact revisions and do not prove new signatures.
 | Behavior | crates.io `bombay-behavior 0.23.0` and `bombay-behavior-macros 0.14.0`, archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
 | Behavior Actors | crates.io `bombay-behavior-actors 0.23.0`, same archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
 | Address | crates.io `bombay-address 0.3.0`, checksum `8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc` | exclusive non-resolvable reservation, exact publication lease and retirement, opaque resolution |
-| Communication | crates.io checksum `eb0dc8a057efce6e387c9bc24955ffb020b2c138c5ce6b10c1f6c211d32ad268`, package `bombay-communication 0.1.3` | two-lane mailbox, delivery, backpressure, affine user-admission retirement |
+| Communication | crates.io checksum `d500dd06337251a02642e8170010fcf64d3c2dcf2a605397ae0abcbfbcbe541f`, package `bombay-communication 0.1.4` | two-lane mailbox, delivery, backpressure, affine user-admission retirement |
 | Observe | Bombay-private import of semantic commit `b3b5f36a3b514713012086dfc72f5327d15fe2b2` plus exact Loom-bound fix `ef2ea13e65889aa3bf713822041e032020e98d73` from `feat/affine-observation` | keyed exact-generation facts plus shared and affine unkeyed publication pairs; no separately published actor API |
 | Timers | Git `bombay-timers 0.1.0` at exact revision `13e884da7ab41781f52337b0038060e375b00ee0` | single-owner generation-safe timer queue |
 
@@ -124,6 +124,16 @@ Its send method admits a `User` with the external actor's own address as
 origin. Its receiver returns the complete `User` so reply provenance is not
 discarded. Closure precedes terminal publication, and stale exact recipients
 reject without retargeting.
+
+Application-owned service code can use `ExternalActor::try_send` for one exact
+`EstablishedRecipient` without waiting for mailbox capacity. Communication's
+existing `TrySendError` returns the original message as Full or Closed; closure
+does not establish actor termination or joined retirement. This operation
+creates no future/task and adds no message Clone, Debug, Send or static bound.
+Existing endpoint construction keeps its own requirements. The caller owns
+permission checks, retained pending messages and fresh checks on retries;
+synchronous mailbox synchronization is not a wait-free execution promise.
+Stable Entity resolution/hydration continues through the awaited send path.
 
 The interface's direct send accepts only `EstablishedRecipient<Target>`. This
 is not an arbitrary restriction: a logical `Recipient<Target>` resolves in one
@@ -284,12 +294,16 @@ leak, stress, property, and Loom coverage. Bombay must reuse these semantics,
 not wrap them in Tokio channels.
 
 Communication 0.1.2 allowed a surviving pre-close send to keep admission open
-for a new post-close send. The selected 0.1.3 corrects that defect while retaining
+for a new post-close send. Version 0.1.3 corrected that defect while retaining
 already accepted messages and returning exact rejected payloads. Both the
 original failure and released correction are verified through actual ActorRef
 in debug and optimized builds; see
 [EXEC's delivery record](prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
-That prerequisite correction does not accept the remaining EXEC laws.
+The selected 0.1.4 retains that correction and describes refused user admission
+as lane closure rather than inferring consumer disappearance. The owning
+[release record](prds/static-remote-actors.md#owning-closure-correction-delivery-and-registry-selection)
+preserves its source, CI and registry evidence. That prerequisite correction
+does not accept the remaining EXEC laws.
 
 ### Affine user-admission retirement
 
