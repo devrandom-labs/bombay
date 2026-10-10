@@ -6446,3 +6446,286 @@ alternatives. Next ordinary Application prototype must verify both layouts,
 whole-buffer/Unicode/order/large-integer conservation, swapped/missing proof,
 fragmented/over-limit buffers and native-error versus signed-reply classification.
 No full transport authentication or protocol acceptance is claimed by inspection.
+
+### Verification fixture scope-result representation
+
+Automatically select an ordinary Result success pair (original provider receipt,
+closed ScopeMatch::Matched or Mismatched), retaining the original verifier error
+in Err. The required concrete completion constructor consumes original raw request
+and that result. This records the application's scope comparison separately from
+the provider's authenticity without fabricating Invalid for valid wrong-scope
+evidence. Scope is checked by the plain projection before receipt transfer.
+
+Alternative Result plus a three-state ScopeAssessment alongside it admits false
+Err-with-Matched combinations and duplicates the absence of verified evidence.
+Repeating the check inside both concrete requestors duplicates policy/configuration.
+A new generic checked-receipt wrapper adds surface unnecessary for the standard
+Result/pair composition. No public provider API is selected by this fixture.
+The private two-variant sum owns one proven policy distinction; no bool, common
+trusted receipt, wrapper, trait or runtime is introduced. Native originals and
+raw allocations remain conserved. Update static controls to this concrete
+fixture constructor; earlier398-line syntax retains its own provenance.
+
+### Broader owner checks expose inactive-transport tests
+
+All ten final28-line UTF-8 campaign outcomes match their intended laws: healthy
+positive/restored pairs pass, flat-path inverses fail independent ancestor lookup,
+original-owner inverses fail the Unicode boundary, both profiles. Corrected
+owner0780c09f is exactly restored. Broad owning debug library then has32 passes,
+nine failures and two existing ignored cases. All nine failures invoke tcp in
+interceptor-cache/link-weight fixtures despite the approved TLS-only Cargo
+profile; no Unicode/root split failure remains. This is a verification failure,
+not an all-tests pass or authentication/quota result. Evidence:
+/tmp/bombay-zenoh-utf8-combined-checks.json and combined-owning-debug.log.
+
+Select first restoring original owning production bytes for a broad baseline
+control, preserving current stronger test. Expected identical nine unsupported-
+TCP failures plus the independently proven Unicode failure; restore correction
+afterward. If source confirms both entire fixture modules require excluded TCP,
+match their existing test-module declarations to the inherited inactive
+transport_tcp flag, retaining upstream test code. This is the already approved
+remove-unsupported-options/retain-inactive-source policy, not a new transport.
+Alternative turning TCP back on violates the selected runtime profile; blanket
+ignoring or lint weakening would claim unsupported fixtures passed.
+
+Forecast one additional existing test-module path, two cfg lines (up to4 net
+test lines) plus at most explanatory comments; no production/public/dependency/
+manifest/lock expansion. New total owner stage four paths: source-3, tests28 plus
+up to4, CI3. Record actual baseline outcomes before dependent eligibility edits,
+then run all eligible owning tests in debug/optimized and strict checks. Existing
+full native TLS campaigns remain separate. This budget fits cross-owner8300 and
+research4200. No bigger resource-quota redesign is included.
+
+Original broad baseline reproduces exactly31 pass/10 fail/two existing ignored: 
+all same nine unsupported-TCP fixture failures plus the intended Unicode boundary
+regression. Source restores exactly0780c09f afterward. Evidence
+/tmp/bombay-zenoh-utf8-original-broad-baseline.json/.log. Both complete modules
+select only tcp locators; existing inherited transport_tcp check-cfg flag names
+are already registered while that Cargo feature remains unavailable. Apply the
+two matching test-module cfg lines. No test is marked ignored; unsupported
+transport source remains inactive, eligible tests and native TLS campaigns remain
+required. Actual added test-module delta+2, within forecast4.
+
+### Verification witness complete-custody size checkpoint
+
+Pinned formatting measures587 test lines for the raw fixtures/providers, both
+pure consumers and ordinary service functions. The agent stopped before the
+900-line forecast was exceeded. Two actual public Application entrypoints,
+exhaustive native receiving, post-cleanup cause/allocation checks and cold-start
+controls forecast another400–550 lines; the earlier estimate omitted their
+complete custody syntax. Select retaining those assertions rather than line
+packing, erasing native facts or adding a generic runtime wrapper/macro.
+
+Automatically raise the same new-file ceiling900 to1200 before remaining source
+edits, cross-owner8300 to8600 and research4200 to4500: actual7205 plus Unicode30
+plus1200 projects8435; research3135 plus30 plus1200 projects4365. Unicode30
+includes the28-line final regression and two transport-eligibility cfg lines;
+its CI/config/production deltas remain separately accounted. Four fixture-stage
+paths and zero production runtime/public types/API/package/version changes
+remain fixed. The owning helpers must have real independent concrete uses;
+reject no-op readers, nested aliases, generic runtime plumbing or discarded
+original results. Compile controls and actual targeted inversions remain gates.
+
+### UTF-8 correction final local verification and minimization
+
+Final controlled stage has four existing paths, zero untracked files: production
+Rust +4/-7/net-3; owning tests +30/-0/net30; CI configuration +3/-0/net3;
+public types +0/-0; no manifest, lock, dependency or public API change.
+The private character-width correction reuses standard Rust str/char APIs;
+independent ancestor/root/mapping assertions retain the owning registration law.
+Source and accounting: /tmp/bombay-zenoh-utf8-final-checkpoint.json.
+
+All six final eligible checks pass: owning library tests debug and optimized
+each32 passed/0 failed/two inherited ignored producer/pressure cases; strict
+Clippy library/tests both profiles; workspace formatting; CI shell syntax.
+The existing CI explicitly executes the ignored pressure parent separately.
+Exact commands/outcomes and source hashes are in
+/tmp/bombay-zenoh-utf8-eligible-checks.json. Initial evidence-writer regex omitted
+counts; recover counts from the original successful logs, with no command rerun.
+Preserve original nine unsupported-TCP failures and baseline Unicode panic in
+the earlier records. Ten focused positive/inverse/restored outcomes remain
+separate, including the independent ancestor inversion. Read-only independent
+review found no retained source/minimization blocker.
+
+Proceed with a focused controlled PR against main, actual-head review and
+required CI before merge. Published1.10.1 still contains the original defect;
+a separately verified successor release remains a delivery prerequisite. This
+is no routing quota, production identity or full remote-feature acceptance.
+
+### Native payload and opaque-proof custody witness
+
+Before transport-fixture edits, select extending the already retained native
+TLS custody fixture with Zenoh's existing payload/attachment builders and
+Query/Sample accessors. Both request operations carry complete JSON payload
+and a distinct opaque request-proof attachment; both ordinary sample replies
+carry their own distinct reply-proof attachment. Compare both buffers at the
+actual recipient/caller and in the independent subprocess controller. Include
+leading/trailing whitespace, a multibyte JSON marker and the existing integer
+above2^53. Provider bytes include non-text values and remain opaque; these finite
+fixture constants are not a cryptographic proof/profile or production defaults.
+
+The native API/source checks in the preceding packaging record apply to the
+unchanged published1.10.1 graph. The Unicode routing fix concerns resource names;
+this fixture retains ASCII routing keys and exercises multibyte payload only.
+No protection algorithm, identity port/public schema, codec or crate is added.
+Original enqueue/receipt/cancellation/late-worker-death/close distinctions remain
+observable and their original errors remain retained. Actual sample reply is
+used, while native reply errors remain transport facts without proof attachment.
+
+Smallest failing witness omits/substitutes a request or response attachment and
+fails the actual buffer equality/required attachment before crediting receipt.
+Run healthy and original-byte conservation controls in debug and optimized,
+then invert each transmission direction independently and restore exact bytes.
+No authentication, actor admission, fragmented-buffer allocation bound, native
+reply-error campaign or full R02/R07/R13 acceptance is claimed.
+
+Expected two existing fixture paths plus the selected PRD; no manifest/lock or
+production runtime changes, zero public types. Forecast up to100 net test lines
+across Rust/Python (including any independent inversions retained): conservative
+cross-owner8435+100=8535 within8600; research4365+100=4465 within4500.
+Reject a new envelope/wrapper/codec: native typed builders already own both
+transport buffers. Keep the two existing semantic receiving functions as owners
+of their respective request/reply observations. Fresh branch from actual main
+before first commit, separate from verification-service source.
+
+### Verification witness concrete custody lint checkpoint
+
+The999-line first complete draft passes all three debug runtime controls:
+both providers process18 cases each; fake/missing production provider refuses
+before creation/export. This is fixture evidence, not production identity.
+Strict Clippy initially identifies type_complexity at seven concrete native
+record/receipt/constructor sites, large_enum_variant in both concrete protocols
+(original raw/result328 bytes beside recipient80), too_many_arguments in the
+plain eight-input service and too_many_lines in the two temporal controllers
+(109 logical lines each through actual native receiving).
+
+Automatically select narrowly located #[expect] annotations with their exact
+custody reasons for those four style lints, retaining strict -D warnings for
+every other lint and requiring each expectation to remain fulfilled. Existing
+ordinary destructuring exposes complete native facts. Boxing adds allocation;
+a wrapper/alias hides original owners without a semantic gap; splitting the
+small complete temporal trace scatters its acquisition boundary. The functions
+and concrete types have independent provider/consumer uses. No blanket
+allowance, semantic lint relaxation or production/public API change is allowed.
+Resolve remaining ordinary style issues directly, including synchronous record
+lookup lifted into the selected async service closure, module imports and owning
+generated-method UFCS. Actual diagnostic sites/source hashes retain their own
+evidence; a compiler/style complaint is no architecture or feature-denial proof.
+
+### Native attachment negative custody detail
+
+Both original positive transport profiles pass their16 cases and strict Clippy;
+formatting passes. Before inverted attachment tests, preserve an unexpected
+worker-failure observation by acquiring that worker's actual native close and
+exit1 before rejecting its trace in the existing Python observer. Forecast
+nine additional controller lines, still within the100-line test allowance.
+This makes missing-request/reply-proof error custody visible; other workers
+may still be deliberately killed after a negative and receive no cleanup credit.
+A failed close remains a separate failure and cannot count as successful close.
+No network authentication is inferred from the fixture proof bytes.
+
+### UTF-8 owning correction delivered; successor separately selected
+
+Controlled PR4 https://github.com/devrandom-labs/bombay-zenoh/pull/4 reviewed
+exact6c7bb4bf4ab77741f239c47354c4dc85df0a5621 and merged through the normal
+PR after required Controlled TLS dependencies38058616998 passed14:34:37Z.
+Actual merge4bbd1d6f04f6512de9bf675b74db1dd832f5bb14 at20:33:26Z
+2026-10-10. The preserved CI log /tmp/bombay-zenoh-utf8-final-ci.log confirms
+actual Unicode and declaration-pressure owners in both profiles and two real
+configuration Miri tests. Review commit/custody and local inversions remain
+separate. Source merged is not published dependency correction yet.
+
+Adopt the source-grounded successor recommendation: publish only top-level
+bombay-zenoh1.10.2 with eight unchanged exact published dependency identities.
+The top owns this fix; no reverse production dependency requires its version,
+and bumping/rebuilding all nine would replace immutable archives unnecessarily.
+Use the explicit single-package archive/publication path and unchanged existing
+credential SDK, retaining initial-cohort/resumption semantics separately.
+Proposal /tmp/bombay-zenoh-successor-release-proposal.md SHA
+2fb012b4f1e15f885b6f9bdf717c821ee3326a67e544ddd1748c8e866fe14ee8
+records11 existing paths, forecast110–190 net script/verifier/docs lines and
+220 ceiling before recount; production Rust/public types/dependencies0.
+Narrow both locks: only top source version changes; all other complete records
+remain identical. Audit one current-source successor archive plus eight exact
+published archives/checksums/original VCS instead of falsely assigning current
+VCS to them. Registry availability, exact checksum and ordinary registry-only
+consumer remain required. No publication or release-preparation pass claimed.
+
+### Integrated service and transport witnesses
+
+Copy the independently prepared1054-line verification fixture byte-exact into
+the coordinator tree: SHAabc2659e5d217cc330877621e15a6ac689f9be8029934b3de84e45c2e3b107e7.
+Two actual public Application requestors emit typed verification Actions, receive
+original distinct provider results through required concrete constructors, and
+emit genuine typed processing Actions. Eighteen cases/provider retain original
+allocations/correlation/origin/scope and original malformed-JSON/oneshot errors.
+Fake/missing production startup retains original cold input and refuses before
+creation/export. Final Stop lanes and complete native/both notification receipts
+are acquired before semantic assertions. Scheduled provider proves real oneshot
+transfer/closure with sender before await, not delayed/concurrent verification.
+
+Three controls pass both profiles; strict owning Clippy both profiles and fmt
+pass. Five semantic inversion pairs—scope omission, unavailable-to-invalid,
+always-deny accepted, fake fallback and missing fallback—fail after native
+acquisition, each exact restoration passes. Five static denial pairs at actual
+service calls: missing constructorE0061, wrong constructor/projectionE0308, both
+receipt DeserializeE0277 and private constructionE0451. An earlier predicted
+E0271 was harness setup, excluded from static credit. Exact commands/artifact
+custody: /tmp/bombay-verification-service-final-campaign.json; inverse-campaign
+and static-final-campaign retain separate source/diagnostic provenance.
+
+Native transport extension is copied exact0aaac48c04fc64d282904d5886465f60f668c45005a5a5dfdc7b1c50652d28db;
+controller3d89e5248a582dde7a0f6ae86c033a3b824d313f7809d0d2b98c0792355b282c.
+Opaque distinct request/reply buffers and complete JSON whitespace, Unicode and
+integer above2^53 survive actual TLS peer/router-client query/publication.
+Healthy/restored each profile has12 ordinary complete-close cases plus four
+intentional late-death close refusals. Omit request attachment:12 actual worker
+failures/profile; omit reply:8/profile, each affected worker native close and
+exit1 acquired before independent trace rejection. Other negative workers are
+killed and receive no cleanup credit. Original byte-equality laws remain.
+Evidence /tmp/bombay-native-proof-positive-checks.json and inversions.json.
+Rust test delta+65/-20/net45; controller+14/-1/net13, total58 within100.
+
+No production runtime, public provider API, cryptography, replay, resource limit
+or full R01–R25 acceptance is claimed. Source review, combined checks, required
+CI and actual research PR delivery remain gates. Root coordinator owns shared
+manifests/locks/documents; separate agents verify opposite contributions.
+
+Verification campaign command provenance: healthy/final/inverse/static JSON
+records inner subprocess Cargo argv. Actual producing launcher was
+`nix develop /Users/joel/orca/workspaces/bombay/main-2 -c env
+CARGO_TARGET_DIR=/Users/joel/orca/workspaces/bombay/main-2/target
+CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+CARGO_BUILD_JOBS=2 python3 -`, with orchestration script on stdin and cwd
+/tmp/bombay-verification-service. Every recorded Cargo subprocess ran in that
+pinned shell/environment. Standalone initial/refined Clippy used the identical
+launcher/environment followed directly by Cargo. Single-file formatting used
+`nix develop /Users/joel/orca/workspaces/bombay/main-2 -c rustfmt --edition2024
+crates/bombay/tests/verification_service.rs` (actual two argv tokens
+`--edition 2024`); final workspace fmt used recorded inner Cargo argv.
+No release-debug override was set; selected workspace release policy applies.
+Observed rustc1.99.0(b940084d7), Cargo1.99.0(5f94df478). Provenance clarification
+does not rerun or retrospectively change earlier commands/results.
+
+Combined-source checks pass on /tmp/bombay-remote-next-contracts: pinned Cargo
+build workspace, test workspace including docs, all-target tests, rustfmt check
+and strict workspace/all-target Clippy. Exact full outer commands/counts/source
+hashes are in /tmp/bombay-next-contracts-combined-checks.json. Opposite-source
+independent agents find no source/minimization blockers in either retained
+witness, within the explicitly limited research claims. Verification provenance
+clarification above resolves the inner-argv receipt issue without rerunning that
+campaign. Production/public API remains unchanged; do not mark full acceptance.
+
+### Service/proof research final change record
+
+Stage against actual mainfbc714c: seven paths, zero untracked; production
++0/-0/net0; tests+1133/-21/net1112; manifest/lock+4/-0/net4;
+public API+0/-0 types and zero new methods. Documentation +491/-1/net490.
+Cumulative root against a9c5b7d4:77 paths, production+1725/-475/net1250,
+tests+8192/-661/net7531, manifest/lock+2990/-3/net2987,
+defined public types+5/-0; documentation +4491/-88/net4403.
+Cross-owner retained test bound8347/8600; research4277/4500. Source snapshots
+and generated lock inventories remain separately classified. Complete tracked/
+untracked measurement algorithm and per-path hashes are retained in
+/tmp/bombay-next-contracts-measure.py, stage-checkpoint.json and cumulative-checkpoint.json.
+Required CI and actual PR merge remain unproved at this checkpoint.
