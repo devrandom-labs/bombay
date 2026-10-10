@@ -6845,6 +6845,11 @@ mod root_join_custody {
             completed.expect("the original child-owned task remains held");
             let (native, notifications) = joining.await;
             assert_eq!(completed_tasks.load(Ordering::SeqCst), 1);
+            assert_eq!(
+                original_state.strong_count(),
+                1,
+                "joined report notification must conserve the original acquired native child state"
+            );
             let native = native
                 .expect("the actual projector joins")
                 .expect("the actual child keeps its native result");
