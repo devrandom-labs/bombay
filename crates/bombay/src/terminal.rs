@@ -937,6 +937,40 @@ impl<BehaviorState, Root, ChildFailures> ActorRetirement<BehaviorState, Root, Ch
 where
     BehaviorState: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
 {
+    /// Borrow the exact actor state retained by this retirement.
+    ///
+    /// State remains available after allocation, initialization and execution
+    /// failures as well as normal completion. Its presence does not certify
+    /// success. Only `ActorTaskFailed`, `Panicked` and `Cancelled` lack state.
+    /// This inspection leaves every owned value and cause in the retirement.
+    #[must_use]
+    pub const fn behavior(&self) -> Option<&BehaviorState> {
+        match self {
+            Self::AllocationRejected { behavior, .. }
+            | Self::InitializationRejected { behavior, .. }
+            | Self::InitializationPanicked { behavior, .. }
+            | Self::HostCommitPanicked { behavior, .. }
+            | Self::TransitionPanicked { behavior, .. }
+            | Self::HostExecutionPanicked { behavior, .. }
+            | Self::HostRejected { behavior, .. }
+            | Self::BindingAbandoned { behavior, .. }
+            | Self::Completed { behavior, .. }
+            | Self::BehaviorFailed { behavior, .. }
+            | Self::EffectsFailed { behavior, .. }
+            | Self::OwnerCancelled { behavior, .. }
+            | Self::CapabilityFailed { behavior, .. }
+            | Self::PreparedRetirementPanicked { behavior, .. }
+            | Self::PreparedInterpreterContractFailed { behavior, .. }
+            | Self::InitializationRetirementPanicked { behavior, .. }
+            | Self::InitializationInterpreterContractFailed { behavior, .. }
+            | Self::ActiveRetirementPanicked { behavior, .. }
+            | Self::ActiveActivationPanicked { behavior, .. }
+            | Self::ActiveInterpreterContractFailed { behavior, .. }
+            | Self::PreparedEffectsFailed { behavior, .. } => Some(behavior),
+            Self::ActorTaskFailed(_) | Self::Panicked | Self::Cancelled => None,
+        }
+    }
+
     #[expect(
         clippy::too_many_lines,
         reason = "one closed Completion conversion retains every original typed field and invariant; another forwarding function would only relocate the same conservation law"

@@ -1,6 +1,9 @@
 use bombay::actors::ActorExt;
-use bombay::behavior::{BehaviorActed, ClassifySettlement, Never, SettlementStatus};
+use bombay::behavior::{
+    AllocationRejection, BehaviorActed, BehaviorBase, ClassifySettlement, Never, SettlementStatus,
+};
 use bombay::{ActorRetirement, Application, ApplicationCleanupError, ApplicationOutcome};
+use core::ptr;
 use std::cell::Cell;
 use std::rc::Rc;
 use tokio::sync::oneshot;
@@ -235,6 +238,13 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
     let (origin, retirement) = cleanup.expect("joined root was received");
     assert_eq!(snapshot.value, 1);
     assert_eq!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
+    let borrowed = retirement
+        .behavior()
+        .expect("the joined actor remains inspectable");
+    let ActorRetirement::Completed { behavior, .. } = &retirement else {
+        panic!("the counter completed");
+    };
+    assert!(ptr::eq(borrowed, behavior));
     let ActorRetirement::Completed {
         settlements,
         user,
@@ -278,6 +288,20 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
             }
         )))
     ));
+    let (_, retirement) = outcome
+        .cleanup()
+        .expect("startup cleanup was received")
+        .as_ref()
+        .expect("startup rejection was joined");
+    let original = &retirement
+        .behavior()
+        .expect("rejection retains its actor")
+        .base()
+        .original;
+    assert_eq!(
+        (original.value, original.audit.as_ptr()),
+        (10, original_audit)
+    );
     let returned = outcome
         .try_into_completed()
         .err()
@@ -307,4 +331,53 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
         (10, original_audit)
     );
     drop(work);
+}
+
+#[test]
+fn borrowed_actor_preserves_the_complete_allocation_rejection() {
+    let original = CounterSnapshot {
+        value: 31,
+        audit: Box::from([37, 41]),
+    };
+    let allocation = original.audit.as_ptr();
+    let retirement: ActorRetirement<RejectedCounter, Never, ()> =
+        ActorRetirement::AllocationRejected {
+            behavior: RejectedCounter { original },
+            reason: AllocationRejection::AddressAlreadyClaimed,
+        };
+    let borrowed = retirement
+        .behavior()
+        .expect("allocation rejection retains the original actor");
+    assert_eq!(
+        (borrowed.original.value, borrowed.original.audit.as_ptr()),
+        (31, allocation)
+    );
+    let ActorRetirement::AllocationRejected { behavior, reason } = retirement else {
+        panic!("inspection preserves the complete original rejection");
+    };
+    assert_eq!(reason, AllocationRejection::AddressAlreadyClaimed);
+    assert_eq!(behavior.original.audit.as_ptr(), allocation);
+    assert_eq!(&*behavior.original.audit, &[37, 41]);
+}
+
+#[tokio::test]
+async fn unavailable_actor_state_preserves_each_executor_cause() {
+    let failure = tokio::spawn(async { panic!("original actor task failed") })
+        .await
+        .expect_err("the task's original panic remains native");
+    let task = failure.id();
+    let retirement: ActorRetirement<RejectedCounter, Never, ()> =
+        ActorRetirement::ActorTaskFailed(failure);
+    assert!(retirement.behavior().is_none());
+    let ActorRetirement::ActorTaskFailed(failure) = retirement else {
+        panic!("borrowed inspection retains the original task failure");
+    };
+    assert_eq!(failure.id(), task);
+    assert!(failure.is_panic());
+    let panicked: ActorRetirement<RejectedCounter, Never, ()> = ActorRetirement::Panicked;
+    assert!(panicked.behavior().is_none());
+    assert!(matches!(panicked, ActorRetirement::Panicked));
+    let cancelled: ActorRetirement<RejectedCounter, Never, ()> = ActorRetirement::Cancelled;
+    assert!(cancelled.behavior().is_none());
+    assert!(matches!(cancelled, ActorRetirement::Cancelled));
 }

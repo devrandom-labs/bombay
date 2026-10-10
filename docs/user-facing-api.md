@@ -95,6 +95,14 @@ outside the runtime to apply its own root projection policy, using the original
 origin and retirement without changing the actual Owner/Actor distinction.
 `ApplicationOutcome` is an explicit `bombay` root import, not a prelude export.
 
+Use `ActorRetirement::behavior()` to borrow retained actor state before
+choosing how to consume the complete retirement. State is available in normal
+completion and failure alternatives; its presence does not imply success.
+`ActorTaskFailed`, `Panicked` and `Cancelled` have no retained actor and return
+`None`. Inspection preserves every cause, effect, unread message and child
+value in the original retirement. Existing matches remain appropriate when
+your decision needs the exact phase or owned fields.
+
 Supplied Work receives the activated application's concrete handle:
 
 ```text
