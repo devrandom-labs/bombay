@@ -51,6 +51,10 @@ pub(crate) trait NativeEntityHost<B, Terminal, ChildFailures>: Send + Sync + Siz
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
 {
+    #[expect(
+        clippy::type_complexity,
+        reason = "the native actor and startup rejection retain their distinct owning results"
+    )]
     fn launch_entity(
         self: Arc<Self>,
         address: MailAddr,
