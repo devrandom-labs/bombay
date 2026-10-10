@@ -3341,6 +3341,12 @@ cap from 4,000 to 4,800 lines before edits; 1,300 + 3,440 fits it. The runtime
 dependency graph remains unchanged. Only this private tool adds the owning
 SDK dependency and already selected `serde_json` 1.0.151; record the complete
 locked transitive graph and checksum relationships. New public types: zero.
+Actual private SDK geometry is 65 production Rust lines, 169 integration-test
+lines, 16 manifest lines and 221 generated lock lines. Adopt the recommended
+180-line owning-test subcap before retaining the complete tool contribution;
+the original 140-line estimate was too small for actual typed subprocess
+request/reply coverage. The complete 1,300 human / 4,800 artifact / 24-path
+delivery bounds are unchanged; no new runtime/public surface follows.
 The separate local runtime stage's 2,200 production / 3,000 test / five-type
 limits remain unchanged; the private release tool's production is additionally
 counted in the cumulative functional source record, not hidden as documentation.
