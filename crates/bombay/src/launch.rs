@@ -4459,7 +4459,10 @@ mod root_join_custody {
     use communication::Config;
     use core::future::{Future, pending};
     use core::task::{Context, Poll, Waker};
+    use std::panic::panic_any;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex, Weak};
+    use std::task::Wake;
     use tokio::sync::oneshot;
     use tokio::task::JoinHandle;
 
@@ -4793,4 +4796,96 @@ mod root_join_custody {
             }
         }
     }
+    enum NotificationWake {
+        Complete,
+        Panicked(Arc<Vec<u8>>),
+    }
+
+    struct TerminationWaiter {
+        publication: Mutex<Option<NotificationWake>>,
+        attempts: AtomicUsize,
+    }
+
+    impl Wake for TerminationWaiter {
+        fn wake(self: Arc<Self>) {
+            self.wake_by_ref();
+        }
+
+        fn wake_by_ref(self: &Arc<Self>) {
+            self.attempts.fetch_add(1, Ordering::SeqCst);
+            let publication = self.publication.lock().unwrap().take();
+            match publication {
+                Some(NotificationWake::Complete) | None => {}
+                Some(NotificationWake::Panicked(original)) => panic_any(original),
+            }
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn termination_notification_preserves_original_native_retirement() {
+        for notification in [
+            NotificationWake::Complete,
+            NotificationWake::Panicked(Arc::new(vec![43, 47])),
+        ] {
+            let addresses = ActorSpace::new();
+            let values = Arc::new(vec![31, 37]);
+            let allocation = values.as_ptr() as usize;
+            let original_state = Arc::downgrade(&values);
+            let decisions = Arc::new(Mutex::new(Vec::new()));
+            let interpreted = decisions.clone();
+            let (admit, admitted) = oneshot::channel();
+            let (release, released) = oneshot::channel();
+            let (authority, startup, control, task) =
+                spawn_local_execution::<RootState, _, StandardIngress, _, _, _>(
+                    addresses.clone(),
+                    Config::new(2),
+                    MailAddr::APPLICATION_ROOT,
+                    RootState { values, finish: RootFinish::Stop },
+                    |_, _, _, _| RootCleanup {
+                        decisions: interpreted,
+                        initializing: Some((None, admitted)),
+                        retiring: None,
+                        release: released,
+                    },
+                    |environment| {
+                        let (publication, startup) = oneshot::channel();
+                        let control = environment.shutdown_control();
+                        let environment = environment.publish_with(move |actor| {
+                            drop(publication.send(actor));
+                        });
+                        (environment, startup, control)
+                    },
+                );
+            let sent = admit.send(());
+            sent.expect("the original startup remains owned");
+            let actor = startup.await.expect("the root is active");
+            let waiter = Arc::new(TerminationWaiter {
+                publication: Mutex::new(Some(notification)),
+                attempts: AtomicUsize::new(0),
+            });
+            let waker = Waker::from(waiter.clone());
+            let mut termination = Box::pin(actor.termination());
+            let registered = termination.as_mut().poll(&mut Context::from_waker(&waker));
+            assert!(matches!(registered, Poll::Pending));
+            let control = control.upgrade().expect("the exact root retains its control");
+            let accepted = control.send(EventLayer::Owned(ShutdownRequested));
+            accepted.expect("the exact shutdown is accepted");
+            let released = release.send(());
+            released.expect("the owning retirement remains waiting");
+            let joined = task.await;
+            let terminated = termination.await;
+            assert_eq!(terminated, Ok(behavior_actors::Exit::Normal));
+            assert_eq!(waiter.attempts.load(Ordering::SeqCst), 1);
+            assert_eq!(original_state.strong_count(), 1,
+                "termination notification must conserve the original acquired native actor state");
+            let outcome = joined.expect("notification cannot erase the native joined result");
+            assert_root_retirement(&outcome, RootFinish::Stop, allocation);
+            assert_eq!(*decisions.lock().unwrap(),
+                [Step::Continue, Step::Stop(Stopped)]);
+            assert!(addresses.resolve(&MailAddr::APPLICATION_ROOT).is_none());
+            drop((outcome, actor, control, authority));
+            assert_eq!(original_state.strong_count(), 0);
+        }
+    }
+
 }
