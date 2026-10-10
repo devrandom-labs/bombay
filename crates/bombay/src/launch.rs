@@ -2158,8 +2158,16 @@ mod tests {
             Err(SpawnError::Unpublished {
                 outcome,
                 termination_notification,
+                retirement_report,
             }) => {
                 termination_notification.expect("the actual first publication succeeded");
+                assert_eq!(
+                    retirement_report,
+                    ActorRetirementReport::new(
+                        RetirementAssessment::NotEstablished,
+                        ActorFailureAssessment::Incomplete
+                    )
+                );
                 outcome
             }
             Err(error) => panic!("the committed root was misclassified: {error:?}"),
@@ -2244,6 +2252,7 @@ mod tests {
 
         let Err(SpawnError::HostRejected {
             termination_notification,
+            retirement_report,
             additional_failures,
             received_interpretation,
             received_source,
@@ -2264,6 +2273,13 @@ mod tests {
             panic!("reservation refusal must preserve the exact uncommitted root")
         };
         termination_notification.expect("the actual first publication succeeded");
+        assert_eq!(
+            retirement_report,
+            ActorRetirementReport::new(
+                RetirementAssessment::NotEstablished,
+                ActorFailureAssessment::FailuresFound
+            )
+        );
         assert!(capability_failures.is_empty());
         assert!(unread_owner_cancellation.is_none());
         assert!(additional_failures.is_empty());
@@ -2419,6 +2435,14 @@ mod tests {
         else {
             panic!("abandonment must return the exact uncommitted child and actions")
         };
+        assert_eq!(operation_failures, ActorFailureAssessment::Incomplete);
+        assert_eq!(
+            descendant_report,
+            ActorRetirementReport::new(
+                RetirementAssessment::NotEstablished,
+                ActorFailureAssessment::Incomplete
+            )
+        );
         assert!(received_interpretation.is_none());
         assert!(received_source.is_none());
         assert!(source_index.is_none());
@@ -2533,14 +2557,6 @@ mod tests {
         else {
             panic!("the projected child must preserve its completed disposition")
         };
-        assert_eq!(operation_failures, ActorFailureAssessment::Incomplete);
-        assert_eq!(
-            descendant_report,
-            ActorRetirementReport::new(
-                RetirementAssessment::NotEstablished,
-                ActorFailureAssessment::Incomplete
-            )
-        );
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(received_interpretation.is_none());
@@ -2584,6 +2600,7 @@ mod ordinary_owner_retirement {
     use crate::local::execution::{LocalRetirementRequest, OwnerCancellation};
     use crate::local::ingress::StandardIngress;
     use crate::observe;
+    use crate::terminal::{ActorFailureAssessment, ActorRetirementReport, RetirementAssessment};
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, EventLayer, Here, InjectEvent,
         MessageProtocol, Never, NoBirths, NoSends, User,
@@ -5133,6 +5150,7 @@ mod root_join_custody {
         outcome: &LocalOutcome<RootState, ()>,
         finish: RootFinish,
         allocation: usize,
+        expected_descendant_report: ActorRetirementReport,
     ) {
         let ActorExecutionOutcome::Completed {
             behavior,
@@ -5178,14 +5196,8 @@ mod root_join_custody {
         else {
             panic!("retirement keeps all ambient fields")
         };
-        assert_eq!(operation_failures, ActorFailureAssessment::Incomplete);
-        assert_eq!(
-            descendant_report,
-            ActorRetirementReport::new(
-                RetirementAssessment::Established,
-                ActorFailureAssessment::NoFailuresFound
-            )
-        );
+        assert_eq!(*operation_failures, ActorFailureAssessment::Incomplete);
+        assert_eq!(*descendant_report, expected_descendant_report);
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(received_interpretation.is_none());
@@ -5301,7 +5313,15 @@ mod root_join_custody {
                         Some(startup) => Some(startup.await.expect_err("root unpublished")),
                         None => None,
                     };
-                    assert_root_retirement(&outcome, finish, allocation);
+                    assert_root_retirement(
+                        &outcome,
+                        finish,
+                        allocation,
+                        ActorRetirementReport::new(
+                            RetirementAssessment::Established,
+                            ActorFailureAssessment::NoFailuresFound,
+                        ),
+                    );
                     let notified = verified.send(());
                     notified.expect("the root oracle receiver remains");
                     (outcome, startup_rejection)
@@ -5425,7 +5445,15 @@ mod root_join_custody {
                 "termination notification must conserve the original acquired native actor state"
             );
             let outcome = joined.expect("notification cannot erase the native joined result");
-            assert_root_retirement(&outcome, RootFinish::Stop, allocation);
+            assert_root_retirement(
+                &outcome,
+                RootFinish::Stop,
+                allocation,
+                ActorRetirementReport::new(
+                    RetirementAssessment::Established,
+                    ActorFailureAssessment::NoFailuresFound,
+                ),
+            );
             let notification = termination_notification
                 .await
                 .expect("the actual first producer transferred");
@@ -5562,7 +5590,15 @@ mod root_join_custody {
             .take()
             .expect("the actual native join is acquired")
             .expect("the native actor state survives");
-        assert_root_retirement(&outcome, RootFinish::Stop, allocation);
+        assert_root_retirement(
+            &outcome,
+            RootFinish::Stop,
+            allocation,
+            ActorRetirementReport::new(
+                RetirementAssessment::Established,
+                ActorFailureAssessment::NoFailuresFound,
+            ),
+        );
         assert_eq!(
             *decisions.lock().unwrap(),
             [Step::Continue, Step::Stop(Stopped)]
@@ -5908,12 +5944,28 @@ mod root_join_custody {
             let Err(SpawnError::Unpublished {
                 outcome: other_native,
                 termination_notification: other_notification,
+                retirement_report: other_report,
             }) = unrelated
             else {
                 drop(unrelated);
                 panic!("the unrelated actor's actual original retirement remains owned");
             };
-            assert_root_retirement(&other_native, RootFinish::Unpublished, other_allocation);
+            assert_root_retirement(
+                &other_native,
+                RootFinish::Unpublished,
+                other_allocation,
+                ActorRetirementReport::new(
+                    RetirementAssessment::NotEstablished,
+                    ActorFailureAssessment::Incomplete,
+                ),
+            );
+            assert_eq!(
+                other_report,
+                ActorRetirementReport::new(
+                    RetirementAssessment::NotEstablished,
+                    ActorFailureAssessment::Incomplete
+                )
+            );
             let (mut native, mut notification) = match destinations {
                 RetirementDestinations::Native => {
                     other_notification.expect("the unrelated actual publication succeeded");
@@ -6028,7 +6080,15 @@ mod root_join_custody {
                         .expect("the unrelated native slot remains")
                         .as_ref()
                         .unwrap_or_else(|_| panic!("the unrelated native result is unchanged"));
-                    assert_root_retirement(original, RootFinish::Unpublished, other_allocation);
+                    assert_root_retirement(
+                        original,
+                        RootFinish::Unpublished,
+                        other_allocation,
+                        ActorRetirementReport::new(
+                            RetirementAssessment::NotEstablished,
+                            ActorFailureAssessment::Incomplete,
+                        ),
+                    );
                     assert_eq!(other_state.strong_count(), 1);
                 }
                 RetirementDestinations::Notification => assert!(native.is_none()),
@@ -6061,7 +6121,15 @@ mod root_join_custody {
                 .unwrap_or_else(|_| {
                     panic!("early receipt polling cannot erase native actor custody")
                 });
-            assert_root_retirement(outcome, RootFinish::Stop, allocation);
+            assert_root_retirement(
+                outcome,
+                RootFinish::Stop,
+                allocation,
+                ActorRetirementReport::new(
+                    RetirementAssessment::Established,
+                    ActorFailureAssessment::NoFailuresFound,
+                ),
+            );
             let Err(RetirementNotificationError::Panicked { payload }) = notification
                 .as_ref()
                 .expect("the actual first result is acquired")
@@ -6291,6 +6359,14 @@ mod root_join_custody {
                 RootFinish::Unpublished,
                 ChildCompletion::Stopped,
                 other_allocation,
+            );
+            let other_report = other_report.await;
+            assert_eq!(
+                other_report,
+                ActorRetirementReport::new(
+                    RetirementAssessment::NotEstablished,
+                    ActorFailureAssessment::Incomplete
+                )
             );
             let (mut native, mut notification) = match destinations {
                 RetirementDestinations::Native => {
