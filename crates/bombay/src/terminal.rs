@@ -13,6 +13,7 @@ use behavior::{
 use bombay_address::ClaimError;
 use bombay_engine::{ActionsOf, Completion, DriverError, SettlementFailure};
 
+use tokio::sync::oneshot::error::RecvError;
 use tokio::task::JoinError;
 
 use crate::ActorExecutionOutcome;
@@ -21,6 +22,41 @@ use crate::local::effects::ActionSettlementOf;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
 use crate::local::execution::{LocalRetirementRequest, OwnerCancellation};
 use crate::termination::Termination;
+
+/// The original failure of publishing an actor lifecycle notification.
+///
+/// An observer's panic does not retract a fact already committed by Observe.
+/// This error retains the original cause separately from the actor's native
+/// result. A closed receipt means its producer did not transfer a result;
+/// it does not establish whether publication succeeded.
+#[derive(thiserror::Error)]
+pub enum RetirementNotificationError {
+    /// A notification resumed the original panic from an observer.
+    #[error("an actor notification observer panicked")]
+    Panicked {
+        /// The original panic allocation, without cloning or conversion.
+        payload: Box<dyn Any + Send>,
+    },
+    /// The actual notification-result sender disappeared before transfer.
+    #[error("the actor notification receipt closed: {error}")]
+    ReceiptClosed {
+        /// The original error returned by the owning oneshot receiver.
+        #[source]
+        error: RecvError,
+    },
+}
+
+impl fmt::Debug for RetirementNotificationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Panicked { .. } => formatter.debug_struct("Panicked").finish_non_exhaustive(),
+            Self::ReceiptClosed { error } => formatter
+                .debug_struct("ReceiptClosed")
+                .field("error", error)
+                .finish(),
+        }
+    }
+}
 
 pub(crate) type LocalOutcome<B, Descendants> = ActorExecutionOutcome<
     B,

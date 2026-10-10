@@ -59,7 +59,8 @@ pub use crate::local::endpoint::{ActorRef, InstalledActor, SendError};
 pub use crate::local::environment::LocalActivationRejection;
 pub(crate) use crate::retirement::Retirement;
 pub use crate::terminal::{
-    ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RootOrigin,
+    ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RetirementNotificationError,
+    RootOrigin,
 };
 pub use crate::topology::Hosts;
 pub use crate::worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
