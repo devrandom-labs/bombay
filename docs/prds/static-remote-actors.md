@@ -4077,9 +4077,10 @@ Controlled source [PR 1](https://github.com/devrandom-labs/bombay-zenoh/pull/1)
 merged by the ordinary protected PR path at 2026-10-10T05:26:19Z, commit
 `e82481825e313ff14e5ea3a1d6e842040945372a`. Required merged-main CI is
 [run 38027503275](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38027503275);
-it is still running, so registry publication remains pending. This records
-controlled dependency-source delivery only, not NET1/AUTH1 implementation or
-full actor acceptance. Fresh merged-main standard Cargo publish dry-run and
+it subsequently passed at 2026-10-10T05:44:54Z. This records controlled
+dependency-source delivery only, not NET1/AUTH1 implementation or full actor
+acceptance. The later publication-prefix record below identifies the actual
+five published versions and the four pending versions. Fresh merged-main standard Cargo publish dry-run and
 non-dry package commands produced identical hashes for all nine packages, with
 all 29 archived checksum/live edges and six inversions passing. Actual uploads,
 registry authorization and ordinary no-override consumers remain open.
@@ -4230,7 +4231,7 @@ The combined root controls pass in both profiles, and the fresh owning launch
 campaign independently lists all 305 tests and passes its selected eight tests
 in both profiles. Its intended source inversions remain running. Complete the
 same report prerequisite by migrating existing callers; this adds no new actor
-or retirement law. There are 74 obsolete native-in-cleanup patterns across 21
+or retirement law. There are 69 obsolete native-in-cleanup patterns across 19
 existing integration/example paths, plus ten Entity callback implementations
 and current guidance. The smallest existing end-to-end regression is that these
 actual public examples/integration targets fail to compile against the new
@@ -4258,3 +4259,206 @@ recount and an explicit further bounded recommendation precede any excess.
 The global 250-path ceiling remains. Isolated Entity migration preparation and
 root Application migration have disjoint owning edits; the coordinator alone
 integrates their imports/contracts, documentation and scope accounting.
+
+
+Public migration checkpoint, complete root working tree against a9c5b7d:
+44 changed paths, no untracked paths; production +1,565/-456/net +1,109;
+tests/fixtures +4,159/-536/net +3,623; documentation +1,949/-66/net +1,883;
+manifest/lock +0/-0; public API +5 types/-0. Exact source-bound rows are retained
+in `/tmp/bombay-public-receipt-checkpoint.json`. Source prefixes before the first
+cfg(test) module are counted conservatively as production. Current stage bounds
+2,200 production, 4,300 tests/fixtures and five public types are respected.
+
+The 69 ordinary native-in-cleanup patterns have been replaced by direct Rust
+work/native/notification matching. Existing cancellation and prepared/cold
+receivers are also migrating: actual closed native/notification receivers cannot
+be converted into successful actor absence. Original consuming projection,
+allocation ownership, native panic and exact callback failure assertions stay
+with their concrete consumers. Four current guidance documents now describe
+the independently retained receipts, read-only report axes, early root report
+publication and paired Entity native/report callback. Historical execution
+ownership delivery documents remain evidence of that earlier contract.
+
+Parallel compilation uses the separate metadata-only target
+`/tmp/bombay-public-receipt-check-target` (196 MiB at the first checkpoint),
+while isolated owning debug/optimized inversion campaigns keep exclusive use
+of ROOT/target. Pinned command:
+`nix develop -c env CARGO_TARGET_DIR=/tmp/bombay-public-receipt-check-target CARGO_INCREMENTAL=0 cargo check --locked --workspace --all-targets --keep-going --jobs 2`.
+Three observed checks retain logs at `/tmp/bombay-public-receipt-check{,-second,-third}.log`.
+They correctly expose uncompleted public consumer migration; they are not failing
+semantic regressions. The third leaves Entity callback/source consumers and one
+HTTP bind-refusal return pattern, whose direct tuple correction is now applied.
+Combined workspace compilation, all required verification and delivery remain
+pending. Core source and Cargo.lock are unchanged during this caller migration.
+
+
+The owning launch campaign passes all eight restored controls in both profiles;
+all three source inversions fail their intended native/report/notification
+custody assertions in both profiles, with byte-exact restoration and matching
+initial/final binaries. Its strict production Clippy run found one genuine
+`match_same_arms` veto at local/environment.rs:924: Original/Offering and
+Completed(Admitted) source states both correctly assess Incomplete. Before the
+owning correction, select one exhaustive grouped pattern rather than a lint
+suppression. Expected one existing source path, -3 net production lines,
+zero semantic/API/type/dependency change. No new mirrored test is needed;
+existing focused assessment controls remain, and combined strict checking must
+pass. The Entity/standard settlement/quiet-startup campaign now owns the shared
+test target; coordinator verification uses the separate metadata target.
+
+
+Exact owning Entity caller migration ae4396d is integrated after its twelve
+fresh controls passed both profiles. Coordinator resolved only the nested
+notification/report import and added the independent notification receipt to
+the two existing Entity Application return sites. Callback/native/report
+assertions are unchanged from the contribution. Mechanical .stderr span updates
+remain unverified until actual trybuild. Combined workspace/all-target compilation
+then passed with one test-only HTTP import warning; that import is now cfg(test).
+Strict production library Clippy passes on the corrected grouped match (actual
++5/-6/net -1, versus the earlier -3 estimate). All checks use pinned Nix.
+
+Workspace strict checking also identified one caller test's 105/100 line count.
+Its existing pre-projection match merely forwarded every successful retirement
+and separately rejected ActorTaskFailed; the owning complete terminal assertion
+already denies every noncompleted native variant. Pass the unchanged original
+native enum directly to existing ProjectTerminal in the two pool callers,
+preserving every native error for that consumer and removing the redundant
+pre-projection branch. This adds no helper, type, trait or lint suppression.
+The complete pool/worker observable assertions remain intact. Full strict
+workspace and combined tests still remain required.
+
+
+Controlled resumption automation [PR 2](https://github.com/devrandom-labs/bombay-zenoh/pull/2)
+merged at 2026-10-10T06:39:56Z through ordinary protected review, commit
+`373d25a9261e4d3a6b5e2ab739142fad448c2ed0`. Exact candidate required CI
+[38030056828](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38030056828)
+passed at 06:37:46Z. Independent coordinator
+[review](https://github.com/devrandom-labs/bombay-zenoh/pull/2#pullrequestreview-5477927259)
+is a COMMENTED review, not a fabricated formal author approval. Required exact
+merged-main [CI 38031719465](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38031719465)
+is running. Actual resumption remains gated; package source stays original e824.
+
+Before the registry-only consumer's first Cargo resolution, account for its
+fourth existing-evidence path, Cargo.lock, beside the three previously counted
+consumer source paths. Authorize at most 3,500 generated lock lines as separate
+registry-consumer graph/checksum evidence, not controlled source or handwritten
+production. The controlled delivery remains human 1,445 plus generated 3,311 =
+4,756/5,300; including this additional evidence the planned aggregate is at most
+8,256 artifact lines. There is no new handwritten source, dependency selection,
+Cargo override or public type. The selected normal registry graph and all nine
+controlled checksums must be verified before consumer credit. Reconcile the
+complete unique source/evidence path union before the generated addition; if
+that concrete union exceeds 250, record a bounded recommended expansion first.
+No real upload or registry-consumer success is claimed from this preparation.
+
+
+Registry consumer reproducibility recommendation: seed its fourth evidence
+path with exact Cargo.lock bytes from the already audited original
+bombay-zenoh-1.10.1 archive, then let ordinary Cargo resolve the registry-only
+consumer against that lock. This avoids adopting unrelated fresh semver upgrades.
+Cargo owns the transition from source-absent controlled package nodes to actual
+published registry identities; all nine checksum receipts must match the original
+cohort. Retained external name/version/checksum records must stay selected.
+No manual lock rewriting, dependency override, new manifest or dependency choice
+is added. Any other concrete graph difference is a finding before adoption.
+This resolution remains after all nine actual publication receipts.
+
+All-target strict Clippy exposed test-only diagnostic quality obligations that
+library-only Clippy cannot cover: observable empty assertions, an explicit unit
+pattern, semicolon/style choices, stale length expectations, long complete
+native/temporal witnesses, and a literal Result unwrap in a classifier control.
+Retain every full trace and original-cause assertion. Prefer direct existing
+native projection over a redundant pre-projection match where the owning
+terminal assertion already denies noncompletion; no new compatibility adapter
+or assertion helper is selected. Use ordinary explicit patterns and length
+assertions where element equality would impose irrelevant traits. For a complete
+inseparable exhaustive native-product or temporal controller, a narrowly scoped
+`expect(too_many_lines)` with its actual ownership rationale is preferable to
+inventing wrappers solely to hide lines; remove stale expectations. No blanket
+lint allowance or semantic relaxation is selected. Expected existing paths only,
+zero public API/dependency growth, at most 80 net test annotation/assertion lines;
+current 2,200/4,300/five-type stage bounds still apply. Run combined strict checks
+and affected debug/optimized controls after these nonsemantic test corrections.
+
+
+### Combined local report verification checkpoint
+
+The complete ROOT working tree against a9c5b7d now contains 50 changed paths,
+zero untracked paths: production +1,592/-472/net +1,120; tests/fixtures
++4,322/-636/net +3,686; documentation +2,068/-66/net +2,002; manifests/lock
++0/-0; public API +5 types/-0. This measurement precedes this evidence paragraph
+and status-index correction. Rows and current source hashes are retained in
+`/tmp/bombay-public-receipt-checkpoint.json`. The existing stage limits remain
+2,200 net production, 4,300 net tests/fixtures and exactly five new public types.
+
+Combined strict all-target checking passes:
+`nix develop -c env CARGO_TARGET_DIR=/tmp/bombay-public-receipt-check-target CARGO_INCREMENTAL=0 cargo clippy --locked --workspace --all-targets --keep-going --jobs 2 -- -D warnings`.
+Actual exit 0; log `/tmp/bombay-public-receipt-clippy-third.log`.
+The nonsemantic corrections preserve complete traces, remove redundant native
+identity matches, and use narrowly reasoned expectations for inseparable
+controllers; no blanket lint allowance, public abstraction or dependency change.
+Pinned formatting and Git whitespace checking pass.
+
+Combined default library debug verification executes all 305 tests: passed,
+zero failed/ignored/filtered. Command:
+`nix develop -c env CARGO_INCREMENTAL=0 cargo test --locked -p bombay-rs --lib --jobs 2`;
+log `/tmp/bombay-combined-report-debug.log`. This includes all migrated owning
+root, launch, Entity, quiet-startup and settlement controls together, rather than
+claiming combined proof from isolated binaries. Optimized combined verification,
+full workspace checks, source/API minimization, reviewed PR and required CI
+remain pending. No remote acceptance row is closed by this prerequisite.
+
+
+### Reconciled cumulative source scope and publication resumption
+
+Independent accounting finds that the earlier 246-path subtotal omitted retained
+proposal/inversion patches. It was historical-plus-measured arithmetic, not a
+complete enumerated union: historical 166 (including five retired intermediate
+names), ROOT 50 minus four confirmed historical overlaps, controlled source 74
+minus its original 47, registry consumer four and migration scripts three.
+The complete historical 166-member ledger is unavailable; do not invent it.
+Three launch inversion patches and three prepared migration/style patches add
+six counted paths under the existing proposal-patch precedent; the distinct
+counter draft and two source-byte backups bring the known conservative count
+to at least 255. Count these rather than silently treating research as free.
+
+Automatically adopt the recommended bounded cumulative expansion from 250 to
+**300 retained non-snapshot source/probe/proposal/fixture/document paths** before
+further source additions or the registry consumer lock. This preserves the
+necessary real inversion fixtures and exact-restoration custody. The alternative
+is deleting useful review/inversion evidence merely to fit the old count; reject
+that. Runtime-generated logs, binaries, Cargo/Nix outputs and archive receipts
+retain their separate artifact records and byte/line custody; this expansion
+does not exclude handwritten source or proposed source patches. The actual
+retained artifact inventory and historical-count uncertainty must remain
+visible. Local 2,200-production/4,300-test/five-type ceilings and controlled
+1,700-human/5,300-artifact ceilings remain unchanged. Recount any new source
+before exceeding this bounded recommendation.
+
+Controlled automation exact merged-main CI 38031719465 passed at 06:59:08Z on
+373d25a9261e4d3a6b5e2ab739142fad448c2ed0. The single authorized four-package
+[resumption run 38032849420](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38032849420)
+is dispatched against immutable original package source e8248182. Actual final
+registry receipts and registry-only consumer results remain pending.
+
+Combined optimized default library controls now also pass: all 305 tests,
+zero failed/ignored/filtered. Command:
+`nix develop -c env CARGO_INCREMENTAL=0 cargo test --locked -p bombay-rs --lib --release --jobs 2`;
+log `/tmp/bombay-combined-report-release.log`. Required workspace build passes:
+`nix develop -c env CARGO_INCREMENTAL=0 cargo build --locked --workspace --jobs 2`;
+log `/tmp/bombay-combined-workspace-build.log`. Fresh remote main is still the
+a9c5b7d baseline; work remains on the requested feature branch.
+
+The full default workspace test build failed from host disk exhaustion while
+writing the giant consumer test's debug symbols, not from a semantic oracle.
+Log `/tmp/bombay-combined-workspace-tests.log`. No passing workspace claim.
+After Cargo exited, reclaim only that failed build's generated object files and
+obsolete previous-version giant-test debug-symbol objects, preserving successful
+executables, source, locks, all proof logs and dependency archives. Exact removed
+paths/bytes are recorded in `/tmp/bombay-failed-debug-output-reclamation.json`;
+6.1 GiB is available after reclamation. Recommended local retry disables debug
+symbols only, retaining debug assertions, ordinary ownership/drop behavior and
+the exact selected toolchain/dependency graph:
+`nix develop -c env CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test --locked --workspace --jobs 2`.
+This remains a debug test profile, not optimized proof or a relaxed assertion
+policy. The full required Linux Nix/coverage/law/loom/fuzz gates remain mandatory
+in CI; resource failure supplies no semantic inversion or completion credit.
