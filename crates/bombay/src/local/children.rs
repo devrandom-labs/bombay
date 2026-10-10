@@ -259,7 +259,8 @@ pub(crate) trait RetireChildTasks {
     #[cfg(test)]
     fn retire_child_tasks(
         self,
-    ) -> impl core::future::Future<Output = (Vec<Self::Root>, Self::Failures)> + Send;
+    ) -> impl core::future::Future<Output = (Vec<Self::Root>, Self::Failures, ActorRetirementReport)>
+    + Send;
 }
 
 impl<Root> RetireChildTasks for NoChildBindings<Root> {
@@ -290,8 +291,15 @@ impl<Root> RetireChildTasks for NoChildBindings<Root> {
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
     #[cfg(test)]
-    async fn retire_child_tasks(self) -> (Vec<Self::Root>, ()) {
-        (Vec::new(), ())
+    async fn retire_child_tasks(self) -> (Vec<Self::Root>, (), ActorRetirementReport) {
+        (
+            Vec::new(),
+            (),
+            ActorRetirementReport::new(
+                RetirementAssessment::Established,
+                ActorFailureAssessment::NoFailuresFound,
+            ),
+        )
     }
 }
 
@@ -518,7 +526,7 @@ where
     }
 
     #[cfg(test)]
-    async fn retire_child_tasks(self) -> (Vec<Self::Root>, Self::Failures) {
+    async fn retire_child_tasks(self) -> (Vec<Self::Root>, Self::Failures, ActorRetirementReport) {
         // Historical consuming adapter only. New affine callers keep these
         // original inputs and destinations outside their operation future.
         let mut bindings = Some(self);
@@ -539,7 +547,7 @@ where
             bindings.is_none(),
             "the concrete child product completes retirement"
         );
-        (retired, failures)
+        (retired, failures, descendant_report)
     }
 }
 
