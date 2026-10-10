@@ -267,6 +267,7 @@ where
                             control: installed.control,
                             task: Some(task),
                             joined: None,
+                            termination_notification: None,
                         },
                     );
                 let acknowledgement = binding.send(());
@@ -300,6 +301,7 @@ where
                 additional_failures,
                 terminal_report,
                 retirement_failures,
+                termination_notification,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -327,6 +329,7 @@ where
                             additional_failures,
                             terminal_report,
                             retirement_failures,
+                            termination_notification,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationRejected {
@@ -344,6 +347,7 @@ where
                 additional_failures,
                 terminal_report,
                 retirement_failures,
+                termination_notification,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -371,6 +375,7 @@ where
                             additional_failures,
                             terminal_report,
                             retirement_failures,
+                            termination_notification,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationPanicked {
@@ -388,6 +393,7 @@ where
                 additional_failures,
                 terminal_report,
                 retirement_failures,
+                termination_notification,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -423,6 +429,7 @@ where
                             additional_failures,
                             terminal_report,
                             retirement_failures,
+                            termination_notification,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
@@ -441,6 +448,7 @@ where
                 additional_failures,
                 terminal_report,
                 retirement_failures,
+                termination_notification,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -470,6 +478,7 @@ where
                             additional_failures,
                             terminal_report,
                             retirement_failures,
+                            termination_notification,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
@@ -478,26 +487,30 @@ where
                     reason: CreationRejection::EnvironmentFailed,
                 })
             }
-            Err(SpawnError::Unpublished(ActorExecutionOutcome::ActivationPanicked {
-                behavior,
-                residual:
-                    LocalResidual::Uncommitted {
-                        initialization: InterpretationProgress::Original(initialization),
-                        ingress,
-                        activation_tasks,
-                        descendants: (descendants, child_failures),
-                        capability_failures,
-                        terminal_report,
-                        retirement_failures,
-                        received_interpretation: None,
-                        received_source: None,
-                        source_index: None,
-                        acquired_ingress: None,
-                        unread_owner_cancellation,
+            Err(SpawnError::Unpublished {
+                termination_notification,
+                outcome:
+                    ActorExecutionOutcome::ActivationPanicked {
+                        behavior,
+                        residual:
+                            LocalResidual::Uncommitted {
+                                initialization: InterpretationProgress::Original(initialization),
+                                ingress,
+                                activation_tasks,
+                                descendants: (descendants, child_failures),
+                                capability_failures,
+                                terminal_report,
+                                retirement_failures,
+                                received_interpretation: None,
+                                received_source: None,
+                                source_index: None,
+                                acquired_ingress: None,
+                                unread_owner_cancellation,
+                            },
+                        additional_failures,
+                        payload,
                     },
-                additional_failures,
-                payload,
-            })) => {
+            }) => {
                 // This branch is reached only after the real private committed
                 // receiver closed. No ACK or initialization interpreter ran.
                 assert!(activation_tasks.is_empty());
@@ -523,6 +536,7 @@ where
                             additional_failures,
                             terminal_report,
                             retirement_failures,
+                            termination_notification,
                         },
                     );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
@@ -851,7 +865,7 @@ mod child_projection_panic {
             later_entries: Some(later_entries),
         }
         .stop_on_shutdown();
-        let (reported, parent_poll, shutdown, received, remaining_owner) =
+        let (reported, parent_poll, shutdown, received, remaining_owner, termination_notification) =
             runtime.block_on(async move {
                 let actor_spaces = Arc::new(spaces);
                 let root = spawn_root_with(
@@ -888,11 +902,16 @@ mod child_projection_panic {
                 .unwrap_or_else(|_| panic!("the actual parent publishes both committed births"));
                 let mut owned = Some(root.task);
                 let mut received = None;
+                let mut termination_notification = None;
                 let reported = projected.await;
                 // The eager synchronous callback transfers then unwinds in the same
                 // task poll. No await separates publication from its native panic.
                 let parent_poll = {
-                    let mut waiting = pin!(OwnedTask::receive_finish(&mut owned, &mut received));
+                    let mut waiting = pin!(OwnedTask::receive_finish(
+                        &mut owned,
+                        &mut received,
+                        &mut termination_notification
+                    ));
                     waiting
                         .as_mut()
                         .poll(&mut Context::from_waker(Waker::noop()))
@@ -901,9 +920,17 @@ mod child_projection_panic {
                     Some(control) => control.send(EventLayer::Owned(ShutdownRequested)),
                     None => panic!("the parent remains live until its explicit shutdown"),
                 };
-                OwnedTask::receive_finish(&mut owned, &mut received).await;
+                OwnedTask::receive_finish(&mut owned, &mut received, &mut termination_notification)
+                    .await;
                 drop(root.actor);
-                (reported, parent_poll, shutdown, received, owned)
+                (
+                    reported,
+                    parent_poll,
+                    shutdown,
+                    received,
+                    owned,
+                    termination_notification,
+                )
             });
         drop(runtime);
         let stale_custody = PROJECTION_CUSTODY
@@ -913,6 +940,7 @@ mod child_projection_panic {
         drop(stale_custody);
         // Native root join and executor cleanup precede every custody oracle.
         assert!(remaining_owner.is_none());
+        assert!(matches!(termination_notification, Some(Ok(()))));
         assert!(matches!(parent_poll, Poll::Pending));
         assert!(shutdown.is_ok());
         let (projection_task, first_terminal) =
@@ -1003,6 +1031,7 @@ mod child_projection_panic {
         assert_eq!(failures.len(), 1);
         let failure = failures.remove(0);
         let ChildFailure::ProjectionTaskFailed {
+            termination_notification: Ok(()),
             id,
             kind,
             origin,

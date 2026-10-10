@@ -12,18 +12,18 @@ use tokio::sync::oneshot::{self, error::RecvError};
 use tokio::task::JoinError;
 
 use behavior::{
-    ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
-    ClassifySettlement, Here, InjectEvent, Inside, InterpretationProgress, InterpreterRequest,
-    ItemSettlement, LogicalHostRequirements, Never, NoBirthProtocols, NoReturnToEmitter, Protocol,
-    finish_item, prepare_item,
+    ActionItem, AllocationRejection, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements,
+    BirthMode, ClassifySettlement, Here, InjectEvent, Inside, InterpretationProgress,
+    InterpreterRequest, ItemSettlement, LogicalHostRequirements, Never, NoBirthProtocols,
+    NoReturnToEmitter, Protocol, finish_item, prepare_item,
 };
 use behavior_actors::ShutdownRequested;
 use tokio::runtime::Handle;
 
-use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::local::endpoint::ActorRef;
 use crate::topology::Hosts as LocalHosts;
+use crate::{ActorRetirement, RetirementNotificationError};
 
 use super::bombay::{
     BombayEntityRuntime, NativeEntityHost, NativeEntityLease, bombay_entity_runtime,
@@ -127,6 +127,7 @@ pub enum EntityRetirementFailure {
     /// The raw actor task ended without an acquired full actor retirement.
     #[error("actor retirement unavailable after actor task join")]
     ActorRetirementUnavailable {
+        termination_notification: Result<(), RetirementNotificationError>,
         shutdown_request: Option<Box<dyn Any + Send>>,
         forced: Option<Box<dyn Any + Send>>,
         retired: Option<Box<dyn Any + Send>>,
@@ -134,6 +135,7 @@ pub enum EntityRetirementFailure {
     /// Original consuming shutdown conversion panicked; later failures coexist.
     #[error("application shutdown conversion panicked during native retirement")]
     ShutdownRequestPanicked {
+        termination_notification: Result<(), RetirementNotificationError>,
         shutdown_request: Box<dyn Any + Send>,
         forced: Option<Box<dyn Any + Send>>,
         retired: Option<Box<dyn Any + Send>>,
@@ -141,12 +143,19 @@ pub enum EntityRetirementFailure {
     /// The forced-retirement notification panicked; its final notification still ran.
     #[error("application forced retirement notification panicked")]
     ForcedRetirementPanicked {
+        termination_notification: Result<(), RetirementNotificationError>,
         forced: Box<dyn Any + Send>,
         retired: Option<Box<dyn Any + Send>>,
     },
     /// The final consuming retirement notification panicked.
     #[error("application retirement notification panicked")]
-    RetirementPanicked { retired: Box<dyn Any + Send> },
+    RetirementPanicked {
+        termination_notification: Result<(), RetirementNotificationError>,
+        retired: Box<dyn Any + Send>,
+    },
+    /// Native join and application callbacks succeeded, but termination notification failed.
+    #[error("actor termination notification failed")]
+    TerminationNotificationFailed { error: RetirementNotificationError },
 }
 
 impl fmt::Debug for EntityRetirementFailure {
@@ -160,6 +169,9 @@ impl fmt::Debug for EntityRetirementFailure {
                 .finish_non_exhaustive(),
             Self::ForcedRetirementPanicked { .. } => formatter
                 .debug_struct("ForcedRetirementPanicked")
+                .finish_non_exhaustive(),
+            Self::TerminationNotificationFailed { .. } => formatter
+                .debug_struct("TerminationNotificationFailed")
                 .finish_non_exhaustive(),
             Self::RetirementPanicked { .. } => formatter
                 .debug_struct("RetirementPanicked")
@@ -207,8 +219,16 @@ where
     ResidentCapacity,
     /// Domain reconstruction failed before address allocation.
     Hydration(Hydration),
-    /// Actor launch failed with exact final state when state existed.
-    Launch(ActorRetirement<B, Terminal, ChildFailures>),
+    /// Address allocation refused before an actor task existed.
+    AllocationRejected {
+        behavior: B,
+        reason: AllocationRejection,
+    },
+    /// Actor launch failed with exact native state and its acquired notification.
+    Launch {
+        retirement: ActorRetirement<B, Terminal, ChildFailures>,
+        termination_notification: Result<(), RetirementNotificationError>,
+    },
 }
 
 /// Fixed-cardinality observations for one native family.

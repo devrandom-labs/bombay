@@ -2,7 +2,7 @@ use crate::address::MailAddr;
 use crate::launch::{ActorSpace, ProjectedTask};
 use crate::local::endpoint::{ActorRef, InstalledActor};
 use crate::local::environment::LocalActivationRejection;
-use crate::terminal::{ChildFailure, ChildOrigin};
+use crate::terminal::{ChildFailure, ChildOrigin, RetirementNotificationError};
 use crate::termination::Termination;
 use behavior::{
     Behavior, BirthMode, ChildHead, ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences,
@@ -141,12 +141,14 @@ where
                         additional_failures,
                         terminal_report,
                         retirement_failures,
+                        termination_notification,
                         ..
                     } => {
                         primary_failure.is_some()
                             || !additional_failures.is_empty()
                             || terminal_report.is_some()
                             || !retirement_failures.is_empty()
+                            || termination_notification.is_err()
                     }
                     CreationBinding::Rejected => false,
                 } {
@@ -357,10 +359,11 @@ where
                     endpoint,
                     task,
                     joined,
+                    termination_notification,
                     ..
                 } => {
-                    ProjectedTask::receive_retirement(task, joined).await;
-                    if task.is_some() || joined.is_none() {
+                    ProjectedTask::receive_retirement(task, joined, termination_notification).await;
+                    if task.is_some() || joined.is_none() || termination_notification.is_none() {
                         return;
                     }
                     // Any origin construction borrows the original binding;
@@ -389,10 +392,27 @@ where
                     endpoint,
                     control,
                     joined: Some(joined),
+                    termination_notification: Some(termination_notification),
                     ..
                 } => match joined {
-                    Ok(Ok(terminal)) => retired.push(terminal),
+                    Ok(Ok(terminal)) => {
+                        retired.push(terminal);
+                        if let Err(error) = termination_notification {
+                            failures
+                                .0
+                                .push(ChildFailure::TerminationNotificationFailed {
+                                    id,
+                                    kind,
+                                    origin,
+                                    actor: EstablishedActor::issued(InstalledActor::new(
+                                        endpoint, control,
+                                    )),
+                                    error,
+                                });
+                        }
+                    }
                     Ok(Err(error)) => failures.0.push(ChildFailure::ActorTaskFailed {
+                        termination_notification,
                         id,
                         kind,
                         origin,
@@ -400,6 +420,7 @@ where
                         error,
                     }),
                     Err(error) => failures.0.push(ChildFailure::ProjectionTaskFailed {
+                        termination_notification,
                         id,
                         kind,
                         origin,
@@ -413,10 +434,12 @@ where
                     additional_failures,
                     terminal_report,
                     retirement_failures,
+                    termination_notification,
                     ..
                 } => match primary_failure {
                     Some(DriverError::InitializationPanicked(payload)) => {
                         failures.0.push(ChildFailure::InitializationPanicked {
+                            termination_notification,
                             id,
                             kind,
                             origin,
@@ -427,6 +450,7 @@ where
                         });
                     }
                     primary_failure => failures.0.push(ChildFailure::StartupRetirementFailed {
+                        termination_notification,
                         id,
                         kind,
                         origin,
@@ -436,7 +460,7 @@ where
                         retirement_failures,
                     }),
                 },
-                CreationBinding::Established { joined: None, .. } | CreationBinding::Rejected => {
+                CreationBinding::Established { .. } | CreationBinding::Rejected => {
                     unreachable!("only an observed complete row crosses structural extraction");
                 }
             }
@@ -498,6 +522,7 @@ pub(crate) enum CreationBinding<Child: Behavior, Root> {
         control: ControlSender<Child::Event>,
         task: Option<ProjectedTask<Child, Root>>,
         joined: Option<Result<Result<Root, JoinError>, JoinError>>,
+        termination_notification: Option<Result<(), RetirementNotificationError>>,
     },
     Rejected,
     StartupRejected {
@@ -508,6 +533,7 @@ pub(crate) enum CreationBinding<Child: Behavior, Root> {
         additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
+        termination_notification: Result<(), RetirementNotificationError>,
     },
 }
 

@@ -59,7 +59,7 @@ where
     ) -> impl Future<
         Output = Result<
             NativeEntityActor<B, Terminal, ChildFailures>,
-            ActorRetirement<B, Terminal, ChildFailures>,
+            SpawnError<B, (Vec<Terminal>, ChildFailures)>,
         >,
     > + Send;
 }
@@ -96,7 +96,7 @@ where
         behavior: B,
     ) -> Result<
         NativeEntityActor<B, Terminal, ChildFailures>,
-        ActorRetirement<B, Terminal, ChildFailures>,
+        SpawnError<B, (Vec<Terminal>, ChildFailures)>,
     > {
         let addresses = <N as Hosts<B::Protocol>>::space(&self).clone();
         spawn_owned_entity_with(
@@ -120,7 +120,6 @@ where
             },
         )
         .await
-        .map_err(crate::launch::SpawnError::into_retirement)
     }
 }
 
@@ -248,19 +247,23 @@ where
             Ok(address) => address,
             Err(reason) => {
                 self.metrics.launch_failed();
-                let failure = SpawnError::<D::Behavior, (Vec<D::Terminal>, D::ChildFailures)>::AllocationRejected {
-                    behavior,
-                    reason,
-                };
-                return Err(EntityActivationError::Launch(failure.into_retirement()));
+                return Err(EntityActivationError::AllocationRejected { behavior, reason });
             }
         };
         let mut actor = Arc::clone(&self.actors)
             .launch_entity(address, self.allocations.clone(), behavior)
             .await
-            .map_err(|retirement| {
+            .map_err(|failure| {
                 self.metrics.launch_failed();
-                EntityActivationError::Launch(retirement)
+                match failure.into_retirement() {
+                    Ok((retirement, termination_notification)) => EntityActivationError::Launch {
+                        retirement,
+                        termination_notification,
+                    },
+                    Err((behavior, reason)) => {
+                        EntityActivationError::AllocationRejected { behavior, reason }
+                    }
+                }
             })?;
         actor.acknowledge_binding();
         self.metrics.activation_succeeded();
@@ -324,12 +327,8 @@ where
         // Graceful names the successful fence, not guaranteed actor stopping.
         // The same lease owns cancellation and join even when the actor ignores
         // ShutdownRequested. Its factual cause and queued inputs are returned.
-        let joined = lease
-            .actor
-            .task
-            .retire()
-            .await
-            .map(ActorRetirement::from_local);
+        let (joined, termination_notification) = lease.actor.task.retire().await;
+        let joined = joined.map(ActorRetirement::from_local);
         // Only the final notification consumes the joined actor result. The
         // original key and resident permit remain owned outside that user call.
 
@@ -341,19 +340,29 @@ where
                 }))
                 .err();
                 match (shutdown_request, forced, retired) {
-                    (None, None, None) => Ok(()),
+                    (None, None, None) => termination_notification.map_err(|error| {
+                        EntityRetirementFailure::TerminationNotificationFailed { error }
+                    }),
                     (Some(shutdown_request), forced, retired) => {
                         Err(EntityRetirementFailure::ShutdownRequestPanicked {
+                            termination_notification,
                             shutdown_request,
                             forced,
                             retired,
                         })
                     }
                     (None, Some(forced), retired) => {
-                        Err(EntityRetirementFailure::ForcedRetirementPanicked { forced, retired })
+                        Err(EntityRetirementFailure::ForcedRetirementPanicked {
+                            termination_notification,
+                            forced,
+                            retired,
+                        })
                     }
                     (None, None, Some(retired)) => {
-                        Err(EntityRetirementFailure::RetirementPanicked { retired })
+                        Err(EntityRetirementFailure::RetirementPanicked {
+                            termination_notification,
+                            retired,
+                        })
                     }
                 }
             }
@@ -364,6 +373,7 @@ where
                 }))
                 .err();
                 Err(EntityRetirementFailure::ActorRetirementUnavailable {
+                    termination_notification,
                     shutdown_request,
                     forced,
                     retired,
@@ -788,11 +798,10 @@ mod tests {
         let rejected_conversion = catch_unwind(AssertUnwindSafe(|| {
             request_actor_shutdown(&original.actor, &original.control, Ingress::new())
         }));
-        let original = original
-            .task
-            .retire()
-            .await
-            .map(ActorRetirement::<ShutdownConversionActor, Never, ()>::from_local);
+        let (original, termination_notification) = original.task.retire().await;
+        let original =
+            original.map(ActorRetirement::<ShutdownConversionActor, Never, ()>::from_local);
+        assert!(termination_notification.is_ok());
         let Ok(ActorRetirement::OwnerCancelled {
             behavior,
             settlements,
@@ -932,6 +941,7 @@ mod tests {
         assert_eq!(runtime.residents.available_permits(), 1);
         assert_eq!(runtime.hydrations.available_permits(), 1);
         let Err(EntityRetirementFailure::ShutdownRequestPanicked {
+            termination_notification: Ok(()),
             shutdown_request: _,
             forced: None,
             retired: None,
