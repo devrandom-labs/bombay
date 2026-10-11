@@ -142,5 +142,19 @@ recorded before campaign execution; never lower a floor to obtain acceptance.
    the actual merge and durable evidence are recorded before changing NET1 to
    `merged`. This does not complete PLACE1/MNE1/DIST1/OPS1/SELO1.
 
-The PRD is currently at design preparation. This audit verifies the specification
-and coverage mapping; it does not advance any feature to active or feature-complete.
+The full PRD remains incomplete. The specification audit and partial local
+prerequisites do not establish feature-complete or merged AUTH1/NET1.
+
+### Local per-request Read ownership prerequisite
+
+The ordinary Counter test
+`separate_read_ports_preserve_cancelled_waits_and_refuse_late_replies` uses actual
+public Application ports, one per Read. It independently acquires values0/1/2,
+proves cancellation drops only a borrowed pending wait, observes settled-port
+closure, and retains the exact late direct-send payload and native ClosedRecipient
+settlement. The actor continues; joined retirement records established retirement
+and failures found. Work, native and both notification outcomes are acquired
+before semantic assertions. The PRD records debug/optimized controls, three
+intended inverse pairs, exact restores, combined workspace checks and review.
+This is a prerequisite for R04/R06/R13, not their full protected remote witness;
+production identity, wire correlation, transport and resource obligations remain.

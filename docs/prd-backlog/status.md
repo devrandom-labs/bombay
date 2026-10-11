@@ -94,10 +94,20 @@ was skipped. This contribution does not close any full remote acceptance row.
 The native Session query-ID correction merged through controlled Zenoh PR7
 (9cc83867dce5804a172d7b582fd3b4c2550257fe), after exact-head review and
 passing required CI, including two executed Miri tests. Controlled1.10.4
-publication awaits the exact-main CI result and registry-only consumer proof.
+publication run38136194227 passes after exact-main CI; actual all-nine registry
+archives and the clean public consumer are verified. Standalone published-source
+unit compilation exposed an implicit unstable-feature dependency in its test;
+the owning configuration import correction passes both profiles with only TLS
+enabled. Controlled source/CI and successor delivery remain pending; Bombay still
+selects verified1.10.3.
 The next Counter contribution proves actor-processing receipts, native Overflow
 and intended debug/optimized inversions. All four required workspace commands
-pass through pinned Nix; its focused PR, required CI and merge remain pending.
+pass through pinned Nix; focused PR348 merged reviewed2b97d9df with all six CI
+checks passing. Actual guarded merge101cfb8ff03635d00f991ecaa3224f9971f01eb9 occurred
+at2026-10-11T12:19:08Z after independent final CI inspection. Fresh Read
+ownership and runtime-assignment controls pass both profiles and independent
+scoped review; Read combined checks pass. Its delivery and complete authenticated Scope
+implementation remain open.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
 

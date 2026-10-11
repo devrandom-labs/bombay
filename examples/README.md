@@ -54,6 +54,12 @@ the checked increment succeeds. The ordinary binary checks both admissions,
 snapshot2 and processing sequence1 after acquiring native retirement and both
 notification receipts. A snapshot alone does not acknowledge an increment.
 
+The owning Read test creates a separate typed reply port for each request.
+Cancelling a borrowed receive preserves that request's reply; closing a settled
+port refuses late replies with their original payloads. The Counter continues
+through a fresh port, while its native result retains the rejected send and its
+retirement report records the failure. This is local ownership evidence.
+
 ```text
 src/main.rs       executable Application request/reply and lifecycle shutdown
 src/counter.rs    state, protocol, messages, receive logic, and invariant
