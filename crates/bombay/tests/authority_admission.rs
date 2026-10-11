@@ -1,4 +1,4 @@
-//! Private local composition evidence; no production provider, replay or network protocol.
+//! Private local admission/replay evidence; no production identity or networking contract.
 use bombay::behavior::{BehaviorBase, EstablishedDelivery, MessageProtocol, Protocol};
 use bombay::prelude::*;
 use bombay::{ActorNotificationReceipts, ApplicationOutcome, TrySendError};
@@ -86,14 +86,40 @@ fn protected_command() -> ProtectedCommand {
     }
 }
 mod record_provider {
+    use super::replay::{Identity, ProtectedRecord};
     use super::{AdmissionCase, Instant, ProtectedCommand, Scope, VerificationError, oneshot};
     pub(super) struct Receipt {
+        identity: Option<Identity>,
         amount: u64,
         scope: Scope,
         deadline: Option<Instant>,
     }
     pub(super) fn projection(receipt: &Receipt) -> (u64, Scope, Option<Instant>) {
         (receipt.amount, receipt.scope, receipt.deadline)
+    }
+    pub(super) fn identity(receipt: &Receipt) -> Option<Identity> {
+        receipt.identity
+    }
+    pub(super) async fn verify_replay(
+        original: &ProtectedCommand,
+        claimed: Identity,
+        configured: &[ProtectedRecord],
+        deadline: Instant,
+    ) -> Result<Receipt, VerificationError> {
+        for (identity, protected, proof) in configured {
+            if *identity == claimed
+                && protected.as_slice() == original.payload.as_ref()
+                && proof.as_slice() == original.proof.as_ref()
+            {
+                return Ok(Receipt {
+                    identity: Some(*identity),
+                    amount: 2,
+                    scope: identity.binding.target,
+                    deadline: Some(deadline),
+                });
+            }
+        }
+        Err(VerificationError::Invalid)
     }
     pub(super) async fn verify(
         original: &ProtectedCommand,
@@ -116,6 +142,7 @@ mod record_provider {
             return Err(VerificationError::Invalid);
         }
         Ok(Receipt {
+            identity: None,
             amount: 2,
             scope: match case {
                 AdmissionCase::Scope => Scope::DifferentTarget,
@@ -129,14 +156,47 @@ mod record_provider {
     }
 }
 mod scheduled_provider {
+    use super::replay::{Identity, ProtectedRecord};
     use super::{AdmissionCase, Instant, ProtectedCommand, Scope, VerificationError, oneshot};
     pub(super) struct Receipt {
+        identity: Option<Identity>,
         amount: u64,
         scope: Scope,
         deadline: Option<Instant>,
     }
     pub(super) fn projection(receipt: &Receipt) -> (u64, Scope, Option<Instant>) {
         (receipt.amount, receipt.scope, receipt.deadline)
+    }
+    pub(super) fn identity(receipt: &Receipt) -> Option<Identity> {
+        receipt.identity
+    }
+    pub(super) async fn verify_replay(
+        original: &ProtectedCommand,
+        claimed: Identity,
+        configured: &[ProtectedRecord],
+        deadline: Instant,
+    ) -> Result<Receipt, VerificationError> {
+        let (publication, receiving) = oneshot::channel();
+        let mut verified = Err(VerificationError::Invalid);
+        for (identity, protected, proof) in configured {
+            if *identity == claimed
+                && protected.as_slice() == original.payload.as_ref()
+                && proof.as_slice() == original.proof.as_ref()
+            {
+                verified = Ok(Receipt {
+                    identity: Some(*identity),
+                    amount: 2,
+                    scope: identity.binding.target,
+                    deadline: Some(deadline),
+                });
+                break;
+            }
+        }
+        let sent = publication.send(verified);
+        assert!(sent.is_ok());
+        receiving
+            .await
+            .map_err(|cause| VerificationError::Unavailable(Some(cause)))?
     }
     pub(super) async fn verify(
         original: &ProtectedCommand,
@@ -160,6 +220,7 @@ mod scheduled_provider {
                     Err(VerificationError::Invalid)
                 }
                 _ => Ok(Receipt {
+                    identity: None,
                     amount: 2,
                     scope: match case {
                         AdmissionCase::Scope => Scope::DifferentTarget,
@@ -304,6 +365,36 @@ where
     P: Protocol<Addr = MailAddr>,
 {
     let pending = owner.pending.front_mut().expect("the reserved request");
+    attempt_pending(
+        pending,
+        owner.permission,
+        owner.now,
+        owner.expected_target,
+        service,
+        target,
+        projection,
+        construct,
+        recover,
+    )
+}
+#[expect(
+    clippy::too_many_arguments,
+    reason = "queue and replay retention share the same exact owning admission operation"
+)]
+fn attempt_pending<R, P>(
+    pending: &mut PendingAdmission<R>,
+    permission: Permission,
+    now: Instant,
+    expected_target: Scope,
+    service: &ExternalActor<Replies>,
+    target: &EstablishedRecipient<P>,
+    projection: fn(&R) -> (u64, Scope, Option<Instant>),
+    construct: fn(ProtectedCommand, R) -> P::Msg,
+    recover: fn(P::Msg) -> (ProtectedCommand, R),
+) -> Option<Refusal>
+where
+    P: Protocol<Addr = MailAddr>,
+{
     let prior = replace(&mut pending.admission, Admission::PossiblyAdmitted);
     let Admission::VerifiedCommand(original, evidence) = prior else {
         let refusal = match &prior {
@@ -315,13 +406,7 @@ where
     };
     let evidence = Ok(evidence);
     let mut observation = None;
-    if let Some(reason) = reject(
-        &evidence,
-        owner.permission,
-        owner.now,
-        owner.expected_target,
-        projection,
-    ) {
+    if let Some(reason) = reject(&evidence, permission, now, expected_target, projection) {
         pending.admission = Admission::Refused(original, evidence, reason);
         observation = Some(reason);
     } else {
@@ -1118,4 +1203,1010 @@ fn bounded_originals<R>(expected_target: Scope) {
 fn pending_original_limits_include_completed_unreceived_dispositions() {
     bounded_originals::<record_provider::Receipt>(Scope::Counter);
     bounded_originals::<scheduled_provider::Receipt>(Scope::Arithmetic);
+}
+
+mod replay {
+    use super::{
+        Admission, AdmissionCase, AdmissionService, Arithmetic, ArithmeticCommand, Builder,
+        Counter, CounterCommand, Instant, PendingAdmission, ProtectedCommand, Refusal, Replies,
+        RootTerminal, Scope, Snapshot, VerificationError, arithmetic_recovery, assert_completed,
+        attempt_pending, counter_recovery, nonzero, record_provider, scheduled_provider,
+    };
+    use bombay::behavior::{BehaviorBase, Protocol};
+    use bombay::prelude::*;
+    use bombay::{ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+    use core::ops::AsyncFn;
+    use std::collections::BTreeMap;
+    use std::future::Future;
+    use std::mem::{replace, size_of};
+    use std::pin::pin;
+    use std::task::{Context, Poll, Waker};
+    use std::time::Duration;
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(super) struct Binding {
+        deployment: u64,
+        caller: u64,
+        runtime: u64,
+        actor: u64,
+        pub(super) target: Scope,
+    }
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(super) struct Identity {
+        pub(super) binding: Binding,
+        sequence: u64,
+    }
+    pub(super) type ProtectedRecord = (Identity, [u8; 2], [u8; 1]);
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ReplayRefusal {
+        Unbound,
+        Binding,
+        Conflict,
+        Capacity,
+        Reservation(Refusal),
+        Exhausted,
+    }
+    struct Retained<R> {
+        protected: Box<[u8]>,
+        pending: PendingAdmission<R>,
+    }
+    struct Replay<R> {
+        binding: Binding,
+        admissions: AdmissionService<R>,
+        entries: BTreeMap<u64, Retained<R>>,
+    }
+    fn issue(
+        next: &mut Option<u64>,
+        binding: Binding,
+        original: ProtectedCommand,
+    ) -> Result<(Identity, ProtectedCommand), (ReplayRefusal, ProtectedCommand)> {
+        let Some(sequence) = *next else {
+            return Err((ReplayRefusal::Exhausted, original));
+        };
+        *next = sequence.checked_add(1);
+        Ok((Identity { binding, sequence }, original))
+    }
+    #[expect(
+        clippy::type_complexity,
+        reason = "new refusals and duplicate originals preserve distinct concrete provider receipts"
+    )]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the shared native operation receives concrete explicit constructors"
+    )]
+    fn submit<R, P>(
+        owner: &mut Replay<R>,
+        service: &ExternalActor<Replies>,
+        target: &EstablishedRecipient<P>,
+        original: ProtectedCommand,
+        receipt: R,
+        identity: fn(&R) -> Option<Identity>,
+        projection: fn(&R) -> (u64, Scope, Option<Instant>),
+        construct: fn(ProtectedCommand, R) -> P::Msg,
+        recover: fn(P::Msg) -> (ProtectedCommand, R),
+    ) -> Result<
+        (Option<Refusal>, Option<(ProtectedCommand, R)>),
+        (ReplayRefusal, ProtectedCommand, R),
+    >
+    where
+        P: Protocol<Addr = MailAddr>,
+    {
+        let Some(confirmed) = identity(&receipt) else {
+            return Err((ReplayRefusal::Unbound, original, receipt));
+        };
+        if confirmed.binding != owner.binding {
+            return Err((ReplayRefusal::Binding, original, receipt));
+        }
+        if let Some(retained) = owner.entries.get_mut(&confirmed.sequence) {
+            if retained.protected.as_ref() != original.payload.as_ref() {
+                return Err((ReplayRefusal::Conflict, original, receipt));
+            }
+            let attempted = attempt_pending(
+                &mut retained.pending,
+                owner.admissions.permission,
+                owner.admissions.now,
+                owner.binding.target,
+                service,
+                target,
+                projection,
+                construct,
+                recover,
+            );
+            return Ok((attempted, Some((original, receipt))));
+        }
+        if owner.entries.len() >= owner.admissions.count_limit.get() {
+            return Err((ReplayRefusal::Capacity, original, receipt));
+        }
+        let comparison_charge = original.payload.len();
+        let Some(charged) = owner.admissions.charged.checked_add(comparison_charge) else {
+            return Err((
+                ReplayRefusal::Reservation(Refusal::ByteAccountingOverflow),
+                original,
+                receipt,
+            ));
+        };
+        if charged > owner.admissions.byte_limit.get() {
+            return Err((
+                ReplayRefusal::Reservation(Refusal::TotalBytes),
+                original,
+                receipt,
+            ));
+        }
+        let protected = Box::from(original.payload.as_ref());
+        owner.admissions.charged += comparison_charge;
+        let reserved = owner.admissions.retain(original);
+        if let Err((reason, original)) = reserved {
+            owner.admissions.charged -= comparison_charge;
+            return Err((ReplayRefusal::Reservation(reason), original, receipt));
+        }
+        let mut pending = owner
+            .admissions
+            .pending
+            .pop_front()
+            .expect("actual reservation transfers to replay custody");
+        let Admission::AwaitingVerification(original) =
+            replace(&mut pending.admission, Admission::PossiblyAdmitted)
+        else {
+            panic!("provider result joins the retained original");
+        };
+        pending.admission = Admission::VerifiedCommand(original, receipt);
+        owner
+            .entries
+            .insert(confirmed.sequence, Retained { protected, pending });
+        let retained = owner
+            .entries
+            .get_mut(&confirmed.sequence)
+            .expect("reserved before native attempt");
+        let attempted = attempt_pending(
+            &mut retained.pending,
+            owner.admissions.permission,
+            owner.admissions.now,
+            owner.binding.target,
+            service,
+            target,
+            projection,
+            construct,
+            recover,
+        );
+        Ok((attempted, None))
+    }
+    #[derive(Clone, Copy, Debug)]
+    enum Case {
+        Live,
+        Replacement,
+        Exhaustion,
+    }
+    #[expect(
+        clippy::type_complexity,
+        reason = "every actual submission keeps its nonclone originals until native cleanup"
+    )]
+    struct Observations<R> {
+        owner: Replay<R>,
+        submissions: Vec<
+            Result<
+                (Option<Refusal>, Option<(ProtectedCommand, R)>),
+                (ReplayRefusal, ProtectedCommand, R),
+            >,
+        >,
+        snapshots: Vec<Snapshot>,
+        allocations: Vec<(*const u8, *const u8)>,
+        rejected_allocations: Vec<(*const u8, *const u8)>,
+        exhaustion: Option<(ReplayRefusal, ProtectedCommand)>,
+        pending: Poll<()>,
+        senders: Vec<MailAddr>,
+        closed: Option<Result<(), TrySendError<(ProtectedCommand, R)>>>,
+    }
+    fn binding(target: Scope, runtime: u64) -> Binding {
+        Binding {
+            deployment: 11,
+            caller: 13,
+            runtime,
+            actor: 17,
+            target,
+        }
+    }
+    fn request(proof: u8, changed: u8) -> ProtectedCommand {
+        ProtectedCommand {
+            payload: vec![2, changed].into_boxed_slice(),
+            proof: vec![proof].into_boxed_slice(),
+        }
+    }
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "ordinary functions connect two concrete providers and real endpoint replacement"
+    )]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "all actual submissions survive until complete native retirement and temporal assertions"
+    )]
+    async fn exercise<R, P, V>(
+        case: Case,
+        target_scope: Scope,
+        service: &mut ExternalActor<Replies>,
+        target: &EstablishedRecipient<P>,
+        old_target: Option<&EstablishedRecipient<P>>,
+        reconnect: impl FnOnce() -> ExternalActor<Replies>,
+        verify: V,
+        unbound: impl AsyncFn(&ProtectedCommand, Instant) -> Result<R, VerificationError>,
+        identity: fn(&R) -> Option<Identity>,
+        projection: fn(&R) -> (u64, Scope, Option<Instant>),
+        prefix: fn(usize) -> P::Msg,
+        construct: fn(ProtectedCommand, R) -> P::Msg,
+        recover: fn(P::Msg) -> (ProtectedCommand, R),
+        snapshot: fn(EstablishedRecipient<Replies>) -> P::Msg,
+    ) -> Observations<R>
+    where
+        P: Protocol<Addr = MailAddr>,
+        P::Msg: Send + 'static,
+        V: AsyncFn(
+            &ProtectedCommand,
+            Identity,
+            &[ProtectedRecord],
+            Instant,
+        ) -> Result<R, VerificationError>,
+    {
+        let now = Instant::now();
+        let deadline = now
+            .checked_add(Duration::from_secs(60))
+            .expect("finite fixture validity");
+        let old = match case {
+            Case::Exhaustion => binding(target_scope, 29),
+            _ => binding(target_scope, 19),
+        };
+        let current = match case {
+            Case::Replacement => binding(target_scope, 23),
+            _ => old,
+        };
+        let sequence = match case {
+            Case::Exhaustion => u64::MAX,
+            _ => 0,
+        };
+        let mut next = Some(sequence);
+        let footprint = size_of::<PendingAdmission<R>>();
+        let owner = Replay {
+            binding: current,
+            admissions: AdmissionService::new(
+                now,
+                target_scope,
+                nonzero(2),
+                nonzero(footprint + 16),
+                nonzero(8 * footprint + 128),
+            ),
+            entries: BTreeMap::new(),
+        };
+        let mut observed = Observations {
+            owner,
+            submissions: Vec::new(),
+            snapshots: Vec::new(),
+            allocations: Vec::new(),
+            rejected_allocations: Vec::new(),
+            exhaustion: None,
+            pending: Poll::Ready(()),
+            senders: vec![service.address()],
+            closed: None,
+        };
+        let first = Identity {
+            binding: old,
+            sequence,
+        };
+        let second = Identity {
+            binding: old,
+            sequence: 1,
+        };
+        let third = Identity {
+            binding: old,
+            sequence: match case {
+                Case::Exhaustion => 0,
+                _ => 2,
+            },
+        };
+        let configured = [
+            (first, [2, 7], [41]),
+            (second, [2, 7], [42]),
+            (first, [2, 8], [43]),
+            (third, [2, 7], [44]),
+            (first, [2, 7], [45]),
+        ];
+        if matches!(case, Case::Live) {
+            for sequence in 0..1_024 {
+                let sent = service.try_send(target, prefix(sequence));
+                match sent {
+                    Ok(()) => {}
+                    Err(original) => {
+                        drop(original);
+                        panic!("native prefix fits");
+                    }
+                }
+            }
+        }
+        let original = request(41, 7);
+        observed
+            .allocations
+            .push((original.payload.as_ptr(), original.proof.as_ptr()));
+        let (claimed, original) = match case {
+            Case::Replacement => (first, original),
+            _ => issue(&mut next, current, original).expect("first checked identity"),
+        };
+        let receipt = verify(&original, claimed, &configured, deadline)
+            .await
+            .expect("configured authenticated original");
+        let submitted = submit(
+            &mut observed.owner,
+            service,
+            target,
+            original,
+            receipt,
+            identity,
+            projection,
+            construct,
+            recover,
+        );
+        observed.submissions.push(submitted);
+        if matches!(case, Case::Exhaustion) {
+            let original = request(44, 7);
+            observed
+                .rejected_allocations
+                .push((original.payload.as_ptr(), original.proof.as_ptr()));
+            let exhausted = issue(&mut next, current, original);
+            match exhausted {
+                Ok((claimed, original)) => {
+                    let receipt = verify(&original, claimed, &configured, deadline)
+                        .await
+                        .expect("configured overflow inverse");
+                    let submitted = submit(
+                        &mut observed.owner,
+                        service,
+                        target,
+                        original,
+                        receipt,
+                        identity,
+                        projection,
+                        construct,
+                        recover,
+                    );
+                    observed.submissions.push(submitted);
+                }
+                Err(original) => observed.exhaustion = Some(original),
+            }
+        }
+        if matches!(case, Case::Live) {
+            let (claimed, original) =
+                issue(&mut next, current, request(42, 7)).expect("second checked identity");
+            observed
+                .allocations
+                .push((original.payload.as_ptr(), original.proof.as_ptr()));
+            let receipt = verify(&original, claimed, &configured, deadline)
+                .await
+                .expect("second authenticated original");
+            let submitted = submit(
+                &mut observed.owner,
+                service,
+                target,
+                original,
+                receipt,
+                identity,
+                projection,
+                construct,
+                recover,
+            );
+            observed.submissions.push(submitted);
+            {
+                let retained = observed
+                    .owner
+                    .entries
+                    .get_mut(&0)
+                    .expect("actual Full reservation");
+                let mut wait = pin!(&mut retained.pending.notification);
+                let mut context = Context::from_waker(Waker::noop());
+                observed.pending = wait.as_mut().poll(&mut context).map(|result| {
+                    result.expect("actual admission notification");
+                });
+            }
+
+            let original = request(45, 7);
+            let receipt = verify(&original, first, &configured, deadline)
+                .await
+                .expect("fresh evidence same authenticated identity/body");
+            let submitted = submit(
+                &mut observed.owner,
+                service,
+                target,
+                original,
+                receipt,
+                identity,
+                projection,
+                construct,
+                recover,
+            );
+            observed.submissions.push(submitted);
+        }
+        let sent = service.send(target, snapshot(service.recipient())).await;
+        assert!(sent.is_ok());
+        observed.snapshots.push(
+            service
+                .receive()
+                .await
+                .expect("native prefix barrier")
+                .message,
+        );
+        if matches!(case, Case::Live) {
+            for sequence in [0, 1] {
+                let retained = observed
+                    .owner
+                    .entries
+                    .get_mut(&sequence)
+                    .expect("same Full original");
+                let attempted = attempt_pending(
+                    &mut retained.pending,
+                    observed.owner.admissions.permission,
+                    observed.owner.admissions.now,
+                    target_scope,
+                    service,
+                    target,
+                    projection,
+                    construct,
+                    recover,
+                );
+                observed.submissions.push(Ok((attempted, None)));
+            }
+        }
+        if !matches!(case, Case::Replacement) {
+            let original = request(41, 7);
+            let receipt = verify(&original, first, &configured, deadline)
+                .await
+                .expect("admitted duplicate authenticated");
+            let submitted = submit(
+                &mut observed.owner,
+                service,
+                target,
+                original,
+                receipt,
+                identity,
+                projection,
+                construct,
+                recover,
+            );
+            observed.submissions.push(submitted);
+        }
+        let sent = service.send(target, snapshot(service.recipient())).await;
+        assert!(sent.is_ok());
+        observed.snapshots.push(
+            service
+                .receive()
+                .await
+                .expect("actual processing completion")
+                .message,
+        );
+        if matches!(case, Case::Live) {
+            let original = request(43, 8);
+            observed
+                .rejected_allocations
+                .push((original.payload.as_ptr(), original.proof.as_ptr()));
+            let receipt = verify(&original, first, &configured, deadline)
+                .await
+                .expect("changed protected bytes independently authenticate");
+            observed.submissions.push(submit(
+                &mut observed.owner,
+                service,
+                target,
+                original,
+                receipt,
+                identity,
+                projection,
+                construct,
+                recover,
+            ));
+            let (claimed, original) =
+                issue(&mut next, current, request(44, 7)).expect("new checked identity");
+            observed
+                .rejected_allocations
+                .push((original.payload.as_ptr(), original.proof.as_ptr()));
+            let receipt = verify(&original, claimed, &configured, deadline)
+                .await
+                .expect("new full-retention identity authenticates");
+            observed.submissions.push(submit(
+                &mut observed.owner,
+                service,
+                target,
+                original,
+                receipt,
+                identity,
+                projection,
+                construct,
+                recover,
+            ));
+            for retained in observed.owner.entries.values_mut() {
+                if matches!(retained.pending.admission, Admission::Accepted) {
+                    let notified = (&mut retained.pending.notification).await;
+                    assert!(notified.is_ok());
+                }
+            }
+            let original = request(41, 7);
+            let receipt = verify(&original, first, &configured, deadline)
+                .await
+                .expect("after consuming actual notification");
+            observed.submissions.push(submit(
+                &mut observed.owner,
+                service,
+                target,
+                original,
+                receipt,
+                identity,
+                projection,
+                construct,
+                recover,
+            ));
+            service.close_admission();
+            let drained = service.receive().await;
+            assert!(drained.is_none());
+            let replaced = replace(service, reconnect());
+            drop(replaced);
+            observed.senders.push(service.address());
+            let sent = service.send(target, prefix(1_024)).await;
+            assert!(sent.is_ok());
+            let original = request(45, 7);
+            let receipt = verify(&original, first, &configured, deadline)
+                .await
+                .expect("same authenticated binding after local connection replacement");
+            observed.submissions.push(submit(
+                &mut observed.owner,
+                service,
+                target,
+                original,
+                receipt,
+                identity,
+                projection,
+                construct,
+                recover,
+            ));
+            let original = request(41, 7);
+            observed
+                .rejected_allocations
+                .push((original.payload.as_ptr(), original.proof.as_ptr()));
+            let receipt = unbound(&original, deadline)
+                .await
+                .expect("ordinary provider original remains unbound");
+            observed.submissions.push(submit(
+                &mut observed.owner,
+                service,
+                target,
+                original,
+                receipt,
+                identity,
+                projection,
+                construct,
+                recover,
+            ));
+        }
+        if let Some(old_target) = old_target {
+            let original = request(41, 7);
+            observed
+                .rejected_allocations
+                .push((original.payload.as_ptr(), original.proof.as_ptr()));
+            let receipt = verify(&original, first, &configured, deadline)
+                .await
+                .expect("old exact recipient command");
+            let command = construct(original, receipt);
+            observed.closed = Some(match service.try_send(old_target, command) {
+                Ok(()) => Ok(()),
+                Err(TrySendError::Closed(command)) => Err(TrySendError::Closed(recover(command))),
+                Err(TrySendError::Full(command)) => Err(TrySendError::Full(recover(command))),
+            });
+        }
+        let sent = service.send(target, snapshot(service.recipient())).await;
+        assert!(sent.is_ok());
+        observed.snapshots.push(
+            service
+                .receive()
+                .await
+                .expect("final independent actor trace")
+                .message,
+        );
+        observed
+    }
+    #[expect(
+        clippy::too_many_lines,
+        reason = "all three actual replay traces conserve original provider refusals and native observations"
+    )]
+    fn assert_observations<R>(
+        case: Case,
+        observed: &Observations<R>,
+        identity: fn(&R) -> Option<Identity>,
+        expected: usize,
+        value: u64,
+    ) {
+        let final_snapshot = observed.snapshots.last().expect("actual final trace");
+        assert_eq!(
+            final_snapshot.protected, expected,
+            "live binding replay cannot second-admit"
+        );
+        assert_eq!(final_snapshot.value, value);
+        let mut refused = observed
+            .submissions
+            .iter()
+            .filter_map(|submission| submission.as_ref().err());
+        match case {
+            Case::Live => {
+                assert!(matches!(observed.pending, Poll::Pending));
+                assert_eq!(observed.owner.entries.len(), 2);
+                for (position, expected_reason) in [
+                    ReplayRefusal::Conflict,
+                    ReplayRefusal::Capacity,
+                    ReplayRefusal::Unbound,
+                ]
+                .iter()
+                .enumerate()
+                {
+                    let (reason, original, receipt) =
+                        refused.next().expect("acquired actual replay refusal");
+                    assert_eq!(reason, expected_reason);
+                    assert_eq!(
+                        (original.payload.as_ptr(), original.proof.as_ptr()),
+                        observed.rejected_allocations[position]
+                    );
+                    match expected_reason {
+                        ReplayRefusal::Unbound => assert_eq!(identity(receipt), None),
+                        _ => assert_eq!(
+                            identity(receipt),
+                            Some(Identity {
+                                binding: observed.owner.binding,
+                                sequence: match expected_reason {
+                                    ReplayRefusal::Capacity => 2,
+                                    _ => 0,
+                                }
+                            })
+                        ),
+                    }
+                }
+                assert!(refused.next().is_none());
+                let native_full: Vec<_> = observed.submissions[..3]
+                    .iter()
+                    .map(|submission| submission.as_ref().ok().map(|(refusal, _)| *refusal))
+                    .collect();
+                assert_eq!(native_full, [Some(Some(Refusal::Full)); 3]);
+                assert_eq!(observed.snapshots[0].protected, 0);
+                assert_ne!(observed.senders[0], observed.senders[1]);
+            }
+            Case::Replacement => {
+                let (reason, original, receipt) =
+                    refused.next().expect("old authenticated binding refused");
+                assert_eq!(*reason, ReplayRefusal::Binding);
+                assert_eq!(
+                    (original.payload.as_ptr(), original.proof.as_ptr()),
+                    observed.allocations[0]
+                );
+                let confirmed = identity(receipt).expect("old confirmed binding");
+                assert_eq!(
+                    confirmed.binding,
+                    binding(observed.owner.binding.target, 19)
+                );
+                assert_eq!(observed.owner.binding.runtime, 23);
+                assert!(refused.next().is_none());
+                assert!(observed.owner.entries.is_empty());
+                let Some(Err(TrySendError::Closed((original, receipt)))) = &observed.closed else {
+                    panic!("actual old exact recipient must be Closed");
+                };
+                assert_eq!(
+                    (original.payload.as_ptr(), original.proof.as_ptr()),
+                    observed.rejected_allocations[0]
+                );
+                let confirmed = identity(receipt).expect("closed original evidence");
+                assert_eq!(
+                    confirmed.binding,
+                    binding(observed.owner.binding.target, 19)
+                );
+            }
+            Case::Exhaustion => {
+                let Some((reason, original)) = &observed.exhaustion else {
+                    panic!("actual checked exhaustion refusal");
+                };
+                assert_eq!(*reason, ReplayRefusal::Exhausted);
+                assert_eq!(
+                    (original.payload.as_ptr(), original.proof.as_ptr()),
+                    observed.rejected_allocations[0]
+                );
+                assert!(observed.owner.entries.contains_key(&u64::MAX));
+                assert_eq!(observed.owner.entries.len(), 1);
+                assert!(refused.next().is_none());
+            }
+        }
+        for retained in observed.owner.entries.values() {
+            assert_eq!(retained.protected.as_ref(), [2, 7]);
+            assert!(matches!(retained.pending.admission, Admission::Accepted));
+        }
+        for submission in &observed.submissions {
+            if let Ok((_, Some((original, receipt)))) = submission {
+                assert_eq!(original.payload.as_ref(), [2, 7]);
+                assert_eq!(
+                    identity(receipt).expect("duplicate bound receipt").binding,
+                    observed.owner.binding
+                );
+            }
+        }
+    }
+    fn assert_prefix(prefix: &[(MailAddr, usize)], senders: &[MailAddr], case: Case) {
+        for (position, (from, sequence)) in prefix.iter().enumerate() {
+            assert_eq!(*sequence, position);
+            assert_eq!(*from, senders[usize::from(position == 1_024)]);
+        }
+        assert_eq!(
+            prefix.len(),
+            match case {
+                Case::Live => 1_025,
+                _ => 0,
+            }
+        );
+    }
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "actual old owner retirement, replacement and full Counter originals precede replay assertions"
+    )]
+    fn counter_retains_live_binding_replay() {
+        let mut retired = None;
+        for case in [Case::Live, Case::Replacement, Case::Exhaustion] {
+            let host = Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("finite host");
+            let previous = match case {
+                Case::Replacement => retired.as_ref(),
+                _ => None,
+            };
+            let received = host
+                .block_on(
+                    Application::new(Counter::default().stop_on_shutdown())
+                        .run_with::<RootTerminal<StopOnShutdown<Counter>>, _, _, _, _, _>(
+                            |application| async move {
+                                let mut service = application
+                                    .interface(())
+                                    .external::<Replies>()
+                                    .expect("typed service");
+                                let target = application.root().established_recipient();
+                                let observations = exercise(
+                                    case,
+                                    Scope::Counter,
+                                    &mut service,
+                                    &target,
+                                    previous,
+                                    || {
+                                        application
+                                            .interface(())
+                                            .external::<Replies>()
+                                            .expect("new local service connection")
+                                    },
+                                    record_provider::verify_replay,
+                                    async |original, deadline| {
+                                        record_provider::verify(
+                                            original,
+                                            AdmissionCase::Granted,
+                                            deadline,
+                                            None,
+                                        )
+                                        .await
+                                    },
+                                    record_provider::identity,
+                                    record_provider::projection,
+                                    CounterCommand::Prefix,
+                                    CounterCommand::Protected,
+                                    counter_recovery,
+                                    CounterCommand::Snapshot,
+                                )
+                                .await;
+                                service.close_admission();
+                                let drained = service.receive().await;
+                                assert!(drained.is_none());
+                                let stopped = application.lifecycle().request_shutdown();
+                                assert_eq!(stopped, Ok(()));
+                                (observations, target)
+                            },
+                        ),
+                )
+                .unwrap_or_else(|original| {
+                    drop(original);
+                    panic!("actual startup");
+                });
+            drop(host);
+            let (
+                ApplicationOutcome::Completed {
+                    output: (observations, target),
+                    cleanup: Ok(()),
+                },
+                Ok((origin, terminal)),
+                Ok(ActorNotificationReceipts {
+                    termination: Ok(()),
+                    retirement: Ok(()),
+                }),
+            ) = received
+            else {
+                panic!("complete native and notification originals");
+            };
+            let ActorRetirement::Completed { behavior, .. } = &terminal else {
+                panic!("native Counter");
+            };
+            let expected = match case {
+                Case::Live => 2,
+                Case::Replacement => 0,
+                Case::Exhaustion => 1,
+            };
+            assert_eq!(
+                behavior.base().protected.len(),
+                expected,
+                "retained replay identities permit only unique native admissions"
+            );
+            assert_observations(
+                case,
+                &observations,
+                record_provider::identity,
+                expected,
+                2 * expected as u64,
+            );
+            assert_eq!(behavior.base().value, 2 * expected as u64);
+            for (position, (from, original, receipt)) in
+                behavior.base().protected.iter().enumerate()
+            {
+                assert_eq!(*from, observations.senders[0]);
+                assert_eq!(
+                    (original.payload.as_ptr(), original.proof.as_ptr()),
+                    observations.allocations[position]
+                );
+                assert_eq!(
+                    record_provider::identity(receipt).expect("original authenticated identity"),
+                    Identity {
+                        binding: observations.owner.binding,
+                        sequence: match case {
+                            Case::Exhaustion => u64::MAX,
+                            _ => position as u64,
+                        }
+                    }
+                );
+            }
+            assert_prefix(&behavior.base().prefix, &observations.senders, case);
+            assert_completed(RootTerminal::Root { origin, terminal }, None);
+            drop(observations); // The volatile ledger is destroyed before the replacement Application exists.
+            retired = Some(target);
+        }
+    }
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "actual old owner retirement, replacement and full Arithmetic originals precede replay assertions"
+    )]
+    fn arithmetic_retains_live_binding_replay() {
+        let mut retired = None;
+        for case in [Case::Live, Case::Replacement, Case::Exhaustion] {
+            let host = Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("finite host");
+            let previous = match case {
+                Case::Replacement => retired.as_ref(),
+                _ => None,
+            };
+            let received = host
+                .block_on(
+                    Application::new(
+                        Arithmetic {
+                            prefix: Vec::new(),
+                            protected: Vec::new(),
+                            value: 3,
+                        }
+                        .stop_on_shutdown(),
+                    )
+                    .run_with::<RootTerminal<StopOnShutdown<Arithmetic>>, _, _, _, _, _>(
+                        |application| async move {
+                            let mut service = application
+                                .interface(())
+                                .external::<Replies>()
+                                .expect("typed service");
+                            let target = application.root().established_recipient();
+                            let observations = exercise(
+                                case,
+                                Scope::Arithmetic,
+                                &mut service,
+                                &target,
+                                previous,
+                                || {
+                                    application
+                                        .interface(())
+                                        .external::<Replies>()
+                                        .expect("new local service connection")
+                                },
+                                scheduled_provider::verify_replay,
+                                async |original, deadline| {
+                                    scheduled_provider::verify(
+                                        original,
+                                        AdmissionCase::Granted,
+                                        deadline,
+                                        None,
+                                    )
+                                    .await
+                                },
+                                scheduled_provider::identity,
+                                scheduled_provider::projection,
+                                ArithmeticCommand::Prefix,
+                                ArithmeticCommand::Protected,
+                                arithmetic_recovery,
+                                ArithmeticCommand::Snapshot,
+                            )
+                            .await;
+                            service.close_admission();
+                            let drained = service.receive().await;
+                            assert!(drained.is_none());
+                            let stopped = application.lifecycle().request_shutdown();
+                            assert_eq!(stopped, Ok(()));
+                            (observations, target)
+                        },
+                    ),
+                )
+                .unwrap_or_else(|original| {
+                    drop(original);
+                    panic!("actual startup");
+                });
+            drop(host);
+            let (
+                ApplicationOutcome::Completed {
+                    output: (observations, target),
+                    cleanup: Ok(()),
+                },
+                Ok((origin, terminal)),
+                Ok(ActorNotificationReceipts {
+                    termination: Ok(()),
+                    retirement: Ok(()),
+                }),
+            ) = received
+            else {
+                panic!("complete native and notification originals");
+            };
+            let ActorRetirement::Completed { behavior, .. } = &terminal else {
+                panic!("native Arithmetic");
+            };
+            let expected = match case {
+                Case::Live => 2,
+                Case::Replacement => 0,
+                Case::Exhaustion => 1,
+            };
+            assert_eq!(
+                behavior.base().protected.len(),
+                expected,
+                "retained replay identities permit only unique native admissions"
+            );
+            let value = match case {
+                Case::Live => 12,
+                Case::Replacement => 3,
+                Case::Exhaustion => 6,
+            };
+            assert_observations(
+                case,
+                &observations,
+                scheduled_provider::identity,
+                expected,
+                value,
+            );
+            assert_eq!(behavior.base().value, value);
+            for (position, (from, original, receipt)) in
+                behavior.base().protected.iter().enumerate()
+            {
+                assert_eq!(*from, observations.senders[0]);
+                assert_eq!(
+                    (original.payload.as_ptr(), original.proof.as_ptr()),
+                    observations.allocations[position]
+                );
+                assert_eq!(
+                    scheduled_provider::identity(receipt).expect("original authenticated identity"),
+                    Identity {
+                        binding: observations.owner.binding,
+                        sequence: match case {
+                            Case::Exhaustion => u64::MAX,
+                            _ => position as u64,
+                        }
+                    }
+                );
+            }
+            assert_prefix(&behavior.base().prefix, &observations.senders, case);
+            assert_completed(RootTerminal::Root { origin, terminal }, None);
+            drop(observations);
+            retired = Some(target);
+        }
+    }
 }

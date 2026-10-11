@@ -8592,3 +8592,122 @@ the unretained replay comparison has its own measured checkpoint. Owning
 retirement inversions/Miri and publication/consumer evidence precede adoption;
 no new law is inferred from a version edit. Required submitted-head review/CI
 and actual merge remain necessary before recording this adoption delivered.
+
+Replay final healthy-source checkpoint: SHA
+1590600fdc3ba48d21a86ff98a315c4d86c2e7c26acd59c78c5b71d953312a25,
++1099/-7/net1092 within retained1100. Strict owning Clippy passes; final-style
+full debug/optimized controls remain separately collected before inversions.
+Pinned rustfmt measurement of the six prepared cuts finds16 unique added
+source lines: forget-admitted9, binding omission0, capacity1, checked-wrap1,
+conflict1, unbound fallback4. Original context copies do not count as newly
+authored source, but the full formatted negative edits do.
+
+Recommended unique-inverse ceiling increases8→16 before mutant application.
+Retained1100 plus16 gives authored-stage1116; cumulative13300 remains
+sufficient for prior12110 plus1116=13226. The four actual native-count and
+two post-native typed-refusal laws remain intact; no source packing or extra
+state perturbation is authorized. The earlier separate provider sealing proof
+is not claimed as a new replay private-construction inversion. Every negative
+run must reach its intended independent oracle and restore exact healthy source.
+
+Successor adoption PR341 is open at exact2d2d3ecdcdf6b071def338d6af9a13fba49166b2
+from actual main1f867335, with reviewPRR_kwDOTCRE7M8AAAABRrhkIA. Required
+complete-source CI and actual Linux artifacts are in progress; no adoption merge
+or full feature completion is recorded. Its immutable submission includes the
+verified .3 graph and then-current decision/delivery records. Later replay
+measurements are coordinator-only pending records until their own delivery.
+
+Next implementation gate from independent eligibility audit: ordinary local
+Application/service composition, typed completion constructors, exact native
+admission/retirement and exclusive authority-update progress have concrete
+proof. Stop re-researching those owners. First AUTH1 local implementation does
+not require wire compatibility, live Zenoh or production KERI. The actual
+remaining B gate is one source-verified bounded provider/command/error profile
+and application-owned consumer: reserve its conservative original/evidence/
+comparison/result custody before verification and retain charges through
+unreceived completion. Fixture Box/header and replay-map counts alone cannot
+claim that production profile. Current provider deadline arguments and finite
+assignment numbers also do not prove production clock sampling, provider-owned
+freshness or configured assignment-to-recipient authority. Freeze those precise
+contracts before production edits, using existing standard/Tokio/native owners;
+no new public facade/trait/macro follows from the comparison.
+
+Replay exact1590600f campaign completed24 commands: twelve intended negative
+commands exit101 at both providers' executed independent oracles; twelve
+restored commands pass2/2. Log-hash custody and exact source restoration are
+retained in /tmp/bombay-replay-inverse-campaign.json, SHA
+cdf8baa9eed6ff1d97a09ed73dcf61587f8fc74672b49530ed2cb579383125b5.
+Final independent diagnostic/source review remains a gate.
+
+Select one final finite fixture refinement before edits: Exhaustion's separate
+Application receives a distinct configured runtime assignment29, rather than
+reusing Live19 after Replacement23. This preserves the selected test-level
+no-reused-assignment policy; it supplies no production fresh issuer or global
+fencing. Keep within1100 by removing redundant observations, without weakening
+any custody/oracle. Preserve completed1590600f campaign as the prior exact-stage
+evidence. Final controls/lint and the affected checked-wrap inverse pair must
+run on the refined exact source; unaffected cuts remain explicitly tied to their
+original source stage. The source header accurately labels private admission/
+replay evidence with no production identity/network protocol.
+
+
+Replay final source and independent custody checkpoint: retained source
+28412beeedb9ff581a5165bf4904fa14b14a6c6577a8250df35418b93950d4e2,
+2212 lines, tests+1099/-8/net1091; production/API/dependencies unchanged.
+The six-law campaign remains tied to exact1590600f. Final source changes only
+the truthful private-evidence header, distinct Exhaustion assignment29 and
+stronger complete old-binding assertions. Eight additional commands on exact
+28412 include full five-test controls in debug/optimized profiles, checked-wrap
+negative/restored pairs, owning strict Clippy and formatting. All32 command logs
+are independently rehashed in /tmp/bombay-replay-root-custody-proof.json.
+Four native-count omissions produce6/2,1/0,3/2 and2/1 admissions respectively;
+conflict omission yields Capacity rather than Conflict and unbound omission
+loses the required typed refusal, after native/notification custody is acquired.
+Do not describe these latter two as extra native admissions. All restored
+controls pass; final campaign SHA
+f95e437199c22fd93cb7a835962166e45251f19c388b3465b6b10a0364dc47f9.
+Existing local sender replacement is not a Zenoh reconnect. Numeric configured
+assignments are not a production freshness issuer. No protected-reply cache,
+whole-heap bound or complete AUTH1/NET1 acceptance follows from this comparison.
+
+PR341's corrected submitted head is5621637b6568e87084f02200b11824fe0bdc30e8,
+reviewPRR_kwDOTCRE7M8AAAABRrjSvw. Its two-document correction aligns readiness
+and AUTH1 prerequisites without changing source, graph or earlier semantic
+inputs. Only checks/artifacts on5621637 can authorize its actual merge; the old
+2d2d3ec submission remains historical evidence, not current-head CI credit.
+
+Next resource-profile preparation: two protected Box buffers and heap-free
+provider receipts/errors do not by themselves bound verification cells,
+notification cells, replay-map allocation or returned-but-unconsumed originals.
+Select ordinary pre-reserved standard storage as the first comparison; evaluate
+nonwaiting Tokio owned permits as an alternative before selection. Awaited
+reservation introduces waiting callers, and mailbox capacity ends before
+service result consumption. Prepare one actual application-owned service
+consumer that reserves explicit count/storage before verifier invocation,
+retains charges through stalled verification, borrowed cancellation and unread
+completion, and releases operation reservation only on explicit consumption.
+Replay protection remains separately retained. No public facade is authorized
+by this preparation, and no default limits are inferred. Existing arbitrary
+waker resources, allocator/RSS and shared runtime allocations require separate
+claims; the supported profile must state exactly which storage it accounts.
+
+
+Combined replay delivery checkpoint: all five required pinned-Nix commands pass
+on the integration source: workspace all-target tests571 passed/0 failed/one
+existing ignored test; workspace build; workspace tests including documentation;
+rustfmt check; strict workspace all-target Clippy. Exact command/log hashes are
+in /tmp/bombay-replay-combined-checks.json. The source-only independent coordinator
+review finds the retained entries installed before native attempt and the same
+existing authoritative admission states conserved across Full/refusal/acceptance;
+no extra lifecycle, mailbox or runtime owner is introduced. Author evidence
+reconciliation is separately identified as author provenance, not independent
+approval. Required submitted-head CI and actual reviewed merge remain gates.
+
+Complete tracked/untracked checkpoint before this paragraph: stage two paths,
+production+0/-0/net0,tests+1099/-8/net1091,documentation+98/-0/net98,
+public types+0/-0, manifests/lock unchanged. Cumulative Bombay81 paths,
+production+1725/-475/net1250,tests+12186/-661/net11525,
+documentation+6496/-89/net6407, five previously delivered public types.
+Across-owner retained tests13201 remain below13300;16 unique negative-edit lines
+are separately authored, not repeated copies. Core Rust2051 remains unchanged.
+No production feature is marked merged by these private comparison checks.
