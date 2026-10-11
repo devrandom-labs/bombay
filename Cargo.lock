@@ -240,6 +240,9 @@ name = "bombay-example-counter"
 version = "0.1.0"
 dependencies = [
  "bombay-rs",
+ "dhat",
+ "futures-util",
+ "thiserror",
  "tokio",
 ]
 
