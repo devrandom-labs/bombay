@@ -13,9 +13,8 @@ use crate::terminal::{ActorRetirement, RootOrigin};
 use crate::topology::Hosts;
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
-    ChildOccurrenceProduct, ClassifySettlement, Here, InjectEvent, Never, Protocol,
+    ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
-use behavior_actors::ShutdownRequested;
 use core::fmt;
 use core::future::{Future, Ready, poll_fn};
 use core::ops::AsyncFnOnce;
@@ -98,7 +97,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
@@ -266,7 +265,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
@@ -348,7 +347,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
@@ -487,7 +486,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
@@ -618,7 +617,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
@@ -694,7 +693,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
@@ -757,7 +756,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
@@ -1298,7 +1297,7 @@ where
         + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>
         + Send
         + 'static,
-    Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    Actor::Event: Send + 'static,
     BehaviorMessage<Actor>: Send + 'static,
     Actor::Sends: Send + 'static,
     Actor::Error: Send + 'static,

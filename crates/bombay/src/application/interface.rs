@@ -7,7 +7,7 @@ use crate::local::ingress::{Admission, AdmissionClosure};
 use crate::observe::{Publisher, pair};
 use crate::termination::Termination;
 use behavior::{
-    AllocationRejection, EstablishedRecipient, Here, Ingress, InjectEvent, Never, Protocol, User,
+    AllocationRejection, EstablishedRecipient, Ingress, InjectEvent, Never, Protocol, User,
 };
 use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
 use communication::{Consumer, ControlSender, Received, mailbox_channel};
@@ -135,14 +135,16 @@ impl<P: Protocol, Event> Clone for ApplicationLifecycle<P, Event> {
 
 impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
     /// Request shutdown through the root lifecycle lane.
+    /// The unique typed ingress path is inferred through actor layers.
+    /// An absent or ambiguous shutdown lane cannot be inferred.
     ///
     /// # Errors
     ///
     /// Returns the exact rejection when the root is already stopping or has
     /// already stopped.
-    pub fn request_shutdown(&self) -> Result<(), ShutdownRejection>
+    pub fn request_shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
     where
-        Event: InjectEvent<ShutdownRequested, Here>,
+        Event: InjectEvent<ShutdownRequested, ShutdownPath>,
     {
         if self.root.termination_observation().try_get().is_some() {
             return Err(ShutdownRejection::AlreadyStopped);
@@ -150,7 +152,11 @@ impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
         let Some(control) = self.control.upgrade() else {
             return Err(self.root.shutdown_rejection());
         };
-        request_actor_shutdown(&self.root, &control, Ingress::new())
+        request_actor_shutdown(
+            &self.root,
+            &control,
+            Ingress::<ShutdownRequested, ShutdownPath>::new(),
+        )
     }
 
     /// Observe termination of the exact root incarnation.

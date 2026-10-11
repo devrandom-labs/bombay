@@ -11,9 +11,8 @@ use crate::terminal::{ActorRetirement, RootOrigin};
 use crate::topology::Hosts;
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
-    ChildOccurrenceProduct, ClassifySettlement, Here, InjectEvent, Never, Protocol,
+    ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
-use behavior_actors::{ShutdownRejection, ShutdownRequested};
 use core::future::Future;
 use std::io;
 use std::net::SocketAddr;
@@ -36,6 +35,8 @@ where
     /// composition. Staging refusal retains actual remaining root/declarations,
     /// router and acquired listener. Each phase is explicit in the existing result.
     /// No root terminal conversion runs inside serving or the execution kernel.
+    /// Pinned Axum graceful serving finishes after root termination and has no
+    /// serving-error transition; execution needs no root shutdown capability.
     ///
     /// # Errors
     /// Missing host returns untouched cold inputs. `StagingRejected` inputs contain
@@ -83,7 +84,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
@@ -168,23 +169,13 @@ where
                                 >| {
                                     let lifecycle = application.lifecycle();
                                     let server_shutdown = lifecycle.termination();
-                                    let serve = axum::serve(listener, router(application.clone()))
+                                    axum::serve(listener, router(application.clone()))
                                         .with_graceful_shutdown(async move {
                                             match server_shutdown.await {
                                                 Ok(_) | Err(_) => {}
                                             }
                                         })
-                                        .await;
-                                    if serve.is_err() {
-                                        match lifecycle.request_shutdown() {
-                                            Ok(())
-                                            | Err(
-                                                ShutdownRejection::AlreadyStopping
-                                                | ShutdownRejection::AlreadyStopped,
-                                            ) => {}
-                                        }
-                                    }
-                                    serve
+                                        .await
                                 },
                             )),
                             None,
@@ -265,7 +256,7 @@ where
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,

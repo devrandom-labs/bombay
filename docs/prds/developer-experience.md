@@ -102,11 +102,38 @@ supervisor replacement, FIFO and born/cold roles run in both profiles.
 Exact root/member selection rejects swapped and duplicate cold roles. Explicit
 logical root hosting shares the registered namespace. Public/sibling scope
 access runs complete counter journeys; private generated aliases/registration
-remain inaccessible. These are bounded private proofs, not retained production
-or completed acceptance. Remaining work includes interface minimization,
-canonical runner coverage, acquired-family-prefix cancellation, child logical
-hosting, complete HTTP recovery and final compiler/runtime costs. Detailed
+remain inaccessible. All source patches are now removed from that prototype:32 journey runs and12
+compile denials pass both profiles against registry Core/Actors0.24.0,
+macros0.14.1 and Communication0.1.5. Explicit child-family selection resolves
+actual worker addresses, keeps same-type roles distinct across replacement and
+removes their leases on retirement. These are bounded private proofs, not
+retained production or completed acceptance. Selecting the existing parent terminal family at the native port resolves
+root/descendant coherence without a marker. A root-only complete-interpreter
+proof then executes16 recursive/refusal/counter journeys across both profiles.
+A sealed public operational constructor now executes12 foreign recursive/refusal
+journeys across both profiles and keeps independent report ingress denials. The
+focused macro lowering executes counter, recursive root in both wrapper orders,
+natural completion, supervisor replacement and FIFO in both builds. This remains
+unretained prototype evidence, with cold/generic-root and complete final custody
+acceptance open.
+Remaining work includes root/interface minimization, canonical runner coverage,
+acquired-family-prefix and hosted cancellation/refusal, complete HTTP recovery
+and final compiler/runtime costs. Detailed
 proofs and requirement dispositions live only in the owning PRD.
+
+Shutdown capability now belongs only to the requesting operation. The unique
+lifecycle ingress is inferred through both root wrapper orders; execution and
+HTTP accept naturally completing domain actors without a shutdown lane. Pinned
+Axum graceful serving has no error transition, so its unreachable shutdown
+branch is deleted. Seven focused tests per profile preserve complete retirement,
+request replay and missing/ambiguous-lane denial; the original-source inverse
+rejects only E0277 and restores bytes exactly. Four real HTTP bind-refusal/retry
+runs,301 all-feature library tests, full workspace compilation, strict Clippy
+and formatting pass. Production+26/-30/net-4, tests+334/-0, types/modules0;
+fresh full native Nix passes17 gates and fails four on the same unfinished
+topology/custody pass fixtures. Nextest runs579 tests:578 pass, one topology
+suite fails and one child is skipped. No disk/signing failure or waiver applies. Evidence:
+/private/tmp/bombay-application-shutdown-pv2wsny6.
 
 Scope coverage of270 backlog rows,100 failure records, seven examples,45
 catalogue entries and19 capabilities remains in the owning evidence appendix.
