@@ -1,7 +1,8 @@
 # Static remote actor acceptance
 
 Normative companion to the [PRD](../static-remote-actors.md). This document
-contains planned oracles, not implemented tests or proof of feature completion.
+contains full planned oracles and scoped prerequisite evidence, not proof of
+feature completion.
 Every full R01–R25 witness is **unexecuted** until its evidence record is
 populated. Executed prerequisite probes do not close a full witness. The PRD's
 profile limits and user-steering requirements apply to every row. The user
@@ -158,3 +159,22 @@ before semantic assertions. The PRD records debug/optimized controls, three
 intended inverse pairs, exact restores, combined workspace checks and review.
 This is a prerequisite for R04/R06/R13, not their full protected remote witness;
 production identity, wire correlation, transport and resource obligations remain.
+
+### Local complete configured Scope prerequisite
+
+The authorized Counter's two concrete provider consumers retain the original
+receipt and compare deployment, caller, controller, actor, host, protocol,
+runtime generation and actor generation before replay lookup. Current grant
+issuer/revision and allowed operation are checked there and on every native
+nonwaiting mailbox attempt. Actual Full retries preserve the accepted prefix
+and refuse a waiting command after any independently changed grant input.
+Both actual Applications acquire their original Work/native/notification results
+before effect assertions. Borrowed live-runtime provenance, checked issuance,
+old assignment and same-owner proof rotation have local controls.
+
+The PRD records21 tests per profile and19 paired deliberate defects, separating
+setup failures from intended oracles and retained-binary restorations from fresh
+Cargo checks. These are prerequisites for R03/R08/R12, with no production KERI,
+global freshness, durable fencing, actual reconnect or full protected remote
+acceptance credit. Combined-source checks, reviewed PR/CI and merge are separate
+delivery gates; full rows remain open.

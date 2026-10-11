@@ -59,8 +59,12 @@ reviewed head2b97d9df6ba258a6eec15b802d8f1d2ed4eef71d with all six checks passin
 The actual normal guarded merge is101cfb8ff03635d00f991ecaa3224f9971f01eb9
 at2026-10-11T12:19:08Z after final independent CI inspection. Fresh Read ownership and
 runtime-assignment controls pass both profiles and independent scoped review;
-Read combined workspace checks pass; its delivery remains open, and the complete
-authenticated Scope composition is not yet implemented. These local contributions
+Read [PR349](https://github.com/devrandom-labs/bombay/pull/349) merged at
+2026-10-11T13:15:08Z as12d9c8493261badf0b14b364b2b71d5dcf19f927 after
+exact-head technical review and all six checks passed. Complete
+configured Scope is implemented locally: 21 tests pass in both profiles; final
+inversions and scoped independent review pass; combined workspace checks pass.
+Reviewed PR/CI/merge delivery remains pending. These local contributions
 do not close production KERI or the full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
@@ -11674,3 +11678,308 @@ additional record remains within selected11200 documentation ceiling. Required
 workspace commands passed the identical source tree; documentation-only updates
 require no repeat Rust execution. Source independent review68620209 and all20
 focused commands remain valid; exact submitted-head review/CI/merge are gates.
+
+
+Selected Scope syntax refinement: the existing optional startup tuple borrows
+its actual AssignmentAuthority beside Binding/deadline. That existing owner
+already retains the live Runtime and independent configured grant inputs;
+copy those into the existing service only after its first-poll entered-host
+check immediately precedes synchronous Application Handle capture. Duplicating
+Runtime/issuer/revision/operation inputs at every call is rejected. Issue outside
+a host only after entering that same borrowed host; no new attachment or wrapper.
+Operation-only regression retention expects the number of distinct literal
+expected accepted operations (Increment/Read), not a hardcoded2 or a count copied
+from the service's replay vector. Existing actual native Read/nonmutation and
+all native/notification acquisition stay intact. Caps unchanged.
+
+Independent controlled review found a custody gap: the new extraction reopened
+the archive after validation without its earlier expected checksum. Before edits,
+select passing the owning auditor's already supported ledger output into the
+final read_archive call. Require its selected version and string checksum, and
+compare the actual same read bytes with that earlier digest; do not compute a
+new self-approving digest. This reuses the owning auditor, not another extractor
+or parallel verification implementation. Add the actual changed-gzip/refused
+extraction control and exact restoration. The selected70 functional lines remain
+the limit; original clean archive/source tests and all eight supports stay gates.
+
+
+Controlled CI evidence retention refinement selected before its workflow edit:
+metadata/normalized manifest/lock and paired native outputs are written to
+target/package, while the current upload retains only .crate archives and skips
+on failure. Extend that existing artifact's paths to packaged-query-* and the
+audited cohort ledger, and run its upload with always(). This preserves actual
+profile evidence and original failure output without another artifact framework.
+Alternative log-only output omits the actual captured metadata; reject it. About
+five workflow lines; stage functional70→80, cumulative875 unchanged, gate tests30
+unchanged. Enforce the already selected checksum string requirement before
+read_archive so None cannot activate its optional-checksum path.
+
+
+Before final Scope admission edits, source review identified a real missing law:
+associate checks the grant once, but a Ready/Full retry rechecks only permission
+and expiry. A known grant issuer/revision/allowed-operation change can therefore
+admit an old receipt while Granted remains set. Select one existing service
+input/field for its provider's borrowed receipt-to-Scope projection, deleting
+associate's repeated projection argument. Every Ready/Full check-and-attempt
+reads that actual retained receipt and compares its scope to current configured
+binding/grant before native try_send, with no await. This adds no wrapper,
+public interface, dependency, erased receipt or duplicated Scope. Settled original
+outcomes remain intact. Implicitly translating every grant change into Revoked
+is rejected because it hides the confirmed grant distinction.
+
+Extend the actual Full-mailbox regression with separate known issuer, revision
+and operation changes: preserve the accepted prefix, refuse the original waiting
+command with Grant, and acquire original native/work/notification facts. Current
+pre-correction21 debug/optimized tests pass but prove only the earlier scope
+stage; preserve them as historical. Production forecast94→at most119 within180;
+retained raw test additions572→about612, so select raw test cap600→650 before
+edits (plus80 unique inverse lines), cumulative20000 unchanged. Strict Clippy's
+pre-final101-line associate finding is an actual lint failure; it neither chooses
+architecture nor licenses an allowance. Remeasure idiomatic corrected source
+and run all affected final controls/inverses before retaining it.
+
+
+Read PR349 is actually open at e82e87a5fd3543431d4548e14af42462c7336773
+from main101cfb8. Five committed paths total637 additions/8 removals, including
+the reviewed test+210/-1. Final independent review77130bdd is posted as technical
+comment6109031955; it is not formal human approval. Five companion checks now
+pass; required Nix38139144694/job114469190328 remains live. Actual Linux native
+proof084277af independently rehashes both raw ZIPs and117 files/30 classes per
+profile; testedmerge de42bf59 tree0a273e18 equals submittede82e87a5. Fixture sources
+remain unchanged and compile registry1.10.3, so native transport evidence does
+not substitute for the new ordinary Read test. Whole-run gh CLI log retrieval
+refused while the Nix job is live; direct completed-job API retrieved both native
+logs without restarting any job. Reviewed verifier reuse changes only PR/run/
+job/artifact/source constants; original tool/source evidence is retained.
+
+The selected final-grant regression actually exposes the original missing law
+in both profiles: after real Full and a known grant change, actual Counter1025
+violates independently expected1024 after native cleanup. Pre-fix source and
+logs remain in the complete-scope controls. No corrected-result credit is yet
+inferred. The independent archived-source checksum review and its subsequent
+correction retain missing-digest/changed-gzip refusal before Cargo; the latter
+uses an explicitly intercepted subprocess boundary, not native test execution.
+
+
+Selected Scope inversion execution refinement: retain healthy debug/optimized
+executables with exact sourcec9ca2709, lock and binary hashes. After each actual
+mutant Cargo run, restore/check exact healthy source, then execute the retained
+healthy executable through pinned Nix. This proves an actual restored control
+without claiming a fresh compilation each time. Alternative38 redundant healthy
+Cargo builds adds about20 minutes without changing source provenance. Recommend
+retained artifact custody and actual executions; final whole Cargo runs in both
+profiles, strict/fmt and combined checks remain mandatory. Record command kinds,
+raw outputs, every source restore and original artifact hashes; no relaxed oracle
+or reduced19-mutant campaign is selected.
+
+Controlled final source review4a06b14e finds no scoped blocker after the expected
+digest handoff, None guard and workflow evidence retention. All12 current paths
+are receipted; functional automation+72/-0/net72 and gate tests+29/-0/net29;
+Rust test import+1/-1/net0; production Rust+0/-0/net0; public API+0/-0; no new
+dependency. Both complete locks change only the local top1.10.4→1.10.5 record
+(366/305 other records unchanged). Native workspace controls execute one exact
+query test per profile; actual isolated packaged-source controls remain pending.
+Create the clean candidate commit next so the existing release/archive auditor
+can verify authentic clean VCS custody, then run full required verification and
+actual isolated gate/inversions. A dirty-package allowance is rejected for the
+release evidence; committing the candidate is not delivery or a passing gate.
+
+
+### Bounded JSON crate comparison selected — research only
+
+The selected serde_json1.0.151 declaration preflight/RawValue uses iterative
+ignore_value without its normal recursion guard; direct strict decoding still
+owns duplicate/unknown-field and supported-schema refusal. Value validation
+materializes a tree, loses duplicates if used as a conversion intermediate, and
+rejects future lexical1e400. RawValue uses the same skipping mechanism. Do not
+replace the original-byte declaration/body contract or claim a decoder bound
+from those existing positive controls.
+
+Crate-first candidate review0536a06d inspected actual released
+json-event-parser0.2.3, checksum574b0cd5e90ee2ba03a66d0611fc9a09c9a0c28b2ecc2dc8a181dd31a53ca5d7,
+VCS83d1205792122921f8dbff78d68330f7ecf7b453. Its existing LowLevelJsonParser
+exposes a stack-state budget and lexical borrowed numbers; disabled async-tokio
+means no runtime dependency. Primary API/source:
+https://docs.rs/json-event-parser/0.2.3/src/json_event_parser/read.rs.html.
+Source checks len>max before pushing, permitting one extra entry; state budget
+is not identical to logical nesting. Strings with escapes and error formatting
+allocate before decoded-length checks. Its published test-suite fixture omits
+the referenced suite submodule, and inspection alone is no executed proof.
+Other evaluated candidates: json-syntax0.12.5 retains lexical numbers and
+duplicates but allocates a full tree with no established depth bound;
+eventson0.1.0 offers fixed storage but has less maturity/source verification.
+Neither is selected.
+
+Recommend a disposable ordinary-Rust comparison using the released event parser
+for syntax/event recognition, calibrated parser-state and logical nesting limits,
+then the existing direct Serde declaration/body decoder on the SAME immutable
+original bytes. This evaluates an owning crate's mechanism; no handwritten
+scanner, format, parser replacement, production dependency or public API is
+selected. Existing serde_json remains the chosen serializer. Candidate adoption
+requires actual controls, allocation measurements, independently reviewed
+contracts and a separately recorded production/manifest stage.
+
+Root selects an isolated research manifest pinning existing Serde1.0.229,
+JSON1.0.151 and DHAT0.3.3 plus candidate json-event-parser=0.2.3 with defaults
+disabled. Its lock is independent; root manifests/lock and the real service
+remain unchanged. Use one fresh target outside both active Cargo lanes; pinned
+Nix only. Research cap80 Rust adapter lines and200 test lines, at most40 authored
+controller lines, one manifest/lock plus one Rust path. Cumulative test allowance
+20000→20500 before those edits, all other current caps unchanged. These values
+are experiment ceilings; they are not production resource defaults.
+
+Use independent depth/byte/token boundary vectors, valid future1e400, escaped
+Unicode and escaped-duplicate metadata, trailing input, BOM/nonobject, invalid
+UTF8 and unpaired-surrogate future values, repeated errors and scratch-heavy
+strings. Calibrate actual logical D/D+1 and parser state limits, stop on first
+error without recovery, and profile requested allocations independently with
+DHAT. Preserve originals and exact causes. Explicit probe inputs such as B8192
+and D8 serve only the measured comparison. A stricter future-string refusal
+versus existing ignored-value compatibility is an unresolved production policy;
+observe/classify both paths without silently choosing it. Prove omitted nesting
+and byte gates fail their named independent oracles in both profiles and restore.
+No native-admission, whole heap, transport quota, production identity or full
+R02/R05 acceptance follows from this standalone comparison.
+
+The first formatted JSON probe measures 68 adapter lines and 210 fixture/test
+lines (278 total). Select the recommended research-only test ceiling of 210
+instead of 200 before compilation or retention, preserving the requested
+independent allocation, Unicode and boundary assertions. The adapter ceiling
+remains 80; the cumulative test allowance remains 20500. Root manifests, lock,
+production dependencies and public APIs remain unchanged.
+
+Controlled candidate b639d92a completed the full unmodified release-verification
+script with exit 0, including both default-TLS named native controls on its
+actual normalized 1.10.5 package. Receipt:
+/tmp/bombay-zenoh-1105-full-verification/receipt.json; complete-log SHA
+6545f7ad340bea1f766207483e104e69b92064d0a73d04ed733a6213f55be1ab.
+All twelve frozen source hashes remain unchanged and the tree is clean.
+Disposable gate inversions, PR review/CI, merge, publication and verification
+of the unchanged registry release remain pending; Bombay still selects 1.10.3.
+
+Controlled [PR8](https://github.com/devrandom-labs/bombay-zenoh/pull/8) now submits
+exact clean b639d92a. Nonauthor exact-commit review c3e31720 verifies all twelve
+commit blobs and the full local required-script/package evidence; its supplement
+is posted as a technical review, not formal human approval. Required Linux
+CI38142212195/job114478219814 is live. Original Config-import compilation fails
+with E0609 before execution in both profiles, each followed by an exact restored
+named-test pass. Actual hidden-feature metadata and zero-test success are also
+refused at their intended gate; final restoration and campaign receipt remain
+pending. This PR has no production Rust, public API or dependency additions.
+
+Read PR349 delivery is actual: normal guarded merge preserved reviewed head
+e82e87a5 and produced12d9c8493261badf0b14b364b2b71d5dcf19f927 at
+2026-10-11T13:15:08Z. Independent final proof daed68c4 verifies the actual fifth
+Read test in coverage, debug and optimized Linux groups (5/5 each), Driver2048
+and all four Observe1024 campaigns. Miri is explicitly skipped. The tested
+synthetic merge has the same complete tree as the reviewed head. No admin bypass
+or formal human approval is claimed. Coordinator fast-forward preserves all four
+dirty documents byte-for-byte; backup and retained stash are recorded in
+/tmp/bombay-coordinator-pr349-reconciliation/receipt.json. Full remote acceptance
+remains open.
+
+Controlled candidate consolidated proof859b2279 now records all eight completed
+disposable commands with their intended static/gate failures and actual restored
+named-test controls. Both packaged default-TLS executables and immutable archive
+checksum1b924f4355b98d513cb3074f13ba4529a03d28f875044dae6527d4109a3a78d5
+are retained. Changed-gzip and absent-checksum refusals intercept Cargo and receive
+no native-test credit. The clean candidate is unchanged; PR8 required CI,
+merge/publication and unchanged registry-source witnesses remain pending.
+
+Scope campaign now completes19/19 intended defects in both profiles, each
+followed by an actual retained healthy-binary control. Two additional records
+preserve a malformed temporary match-arm setup failure and an initially
+unclassified semantic failure; neither substitutes for a final intended kill.
+The configured empty-issuer omission first violates the post-native checked
+generation oracle31 versus30, before the typed-refusal oracle; record that
+actual causal assertion without weakening or moving the retained tests.
+Final fresh Cargo/format/strict checks and independent review remain pending.
+
+JSON comparison sourceb77b9953 measures68 adapter/210 test lines. Four controls
+pass in both profiles; byte and nesting omissions fail their intended assertions
+in both profiles, with exact restores and final controls. Strict/fmt pass.
+Receipt: /tmp/bombay-json-bounds-probe/evidence/final-receipt.json. Candidate
+metadata has no enabled features/runtime dependencies; all33 shared package
+versions/checksums/resolved edges match the root lock. Measured requested peak
+bytes for lexical/declaration paths are16/0 (73-byte strict input),16/128 (deep
+future input),2056/0 (escaped future input). These finite measurements are not
+a whole-heap bound. Future invalid UTF8/surrogates remain an unresolved production
+classification; no adoption is inferred.
+
+The JSON controller retained40 lines but also authored four superseded lines;
+count44 cumulative unique lines, exceeding the earlier40 authored ceiling.
+Preserve that accounting discrepancy rather than relabel or omit the history.
+Before further edits, select a48-line cumulative controller ceiling for the
+additional token-limit inversion: the existing65-byte token boundary must fail
+when only that token check is omitted, in both profiles, with exact restoration.
+No retained Rust/test/model/dependency change is needed; cumulative20500 remains
+sufficient. This closes the adapter's token-gate evidence before any production
+adoption decision, without weakening the earlier byte/nesting witnesses.
+
+Token supplement67c1f628 completes that selected falsifier in both profiles,
+with both exact restored controls passing. Prior24 records remain separate;
+four additional records bring the observed comparison to28 commands. Retained
+controller41/cumulative authored48 are counted honestly. Exact original source,
+lock and final executable hashes remain unchanged.
+
+**Whole-input Unicode decision, selected under delegated recommendations.**
+Require valid UTF8 and paired Unicode surrogate escapes throughout the protected
+JSON, including unknown/future fields, before compatibility classification.
+Alternative: preserve Serde's ignored-future-value acceptance of malformed text.
+Recommend complete validation so malformed protected input cannot acquire
+eligibility merely by placing it in an unsupported field/version. Consequence:
+those observed ignored-value cases become malformed-input refusals instead of
+unsupported-version reports. Valid future lexical numbers such as1e400 still
+reach explicit incompatibility; no numeric conversion or normalization is added.
+This is Bombay's declared interoperability policy, not a claim that Serde's
+ignored-value behavior matches the selected lexical crate or a universal JSON
+standard guarantee. Valid escaped Unicode remains accepted. Existing exact-byte
+proof and original custody rules remain; these observations alone still select
+no production dependency, schema, resource default or whole-heap guarantee.
+
+Next independent preparation is a concrete protected-consumer proposal, not
+another parser implementation. Reuse the measured original-byte direct Serde
+path, complete configured Scope, existing request/reply/lifecycle owners and
+the newly selected Unicode policy. The earlier schema comparison demonstrates
+why streaming structs can reject before tagged Content buffering; its exact
+allocation review remains authoritative. Prepare all seven required meanings,
+producer/intended-consumer and operation/kind consistency, direct decoding and
+fixed Cursor encoding, actual Application ingress, and original receipt ownership.
+Compare the ordinary forms against the existing incomplete proposals; do not
+retain an invented binding epoch, macro, provider-common trusted receipt, new
+public API, production dependency, defaults or foreign-operation selection.
+One proposal document, at most150 lines; no Rust or shared-file edits in this
+preparation. Coordinator must select a concrete reviewed contract and record
+implementation scope before the dependent source exists. This investigation
+runs independently of Scope delivery and the controlled PR's required CI.
+
+Scope final receipt7a228a81 records fresh21/21 suites in debug and optimized
+builds, strict all-target Clippy and formatting, explicit-test CLI success and
+default startup's original TestProvider refusal. Final independent review88bee2f3
+rehashes all six logs and the exact source/patch/lock; no scoped blocker.
+Coordinator created feat/complete-counter-scope-delivery from actual latest main
+12d9c849 before any commit, preserving earlier dirty records. Integration copies
+only frozen healthy sourcec9ca2709, after comparing the unchanged prior owner and
+confirming lane release. Root manifests and lock5336430f remain unchanged.
+
+All four combined workspace commands pass through pinned Nix on that integrated
+source: build, workspace tests, fmt check and strict all-target Clippy. Actual
+test output totals609 passed/0failed/1ignored across70 harness summaries,
+including documentation tests. Receipt7911462c and full raw command logs remain
+in /tmp/bombay-complete-counter-scope-workspace-gates. Existing28-line evidence
+controller is reused with workspace/source/output constants; authored automation
+and measurement fragments remain separately accounted, not hidden as output.
+
+Integration checkpoint: five paths, no untracked files; production+199/-87/net112;
+tests+633/-112/net521; public API+0/-0; manifests/locks0. The earlier default
+diff alignment+201/-89 has identical net112; final counts match git numstat.
+Current documentation+345/-5/net340. Cumulative root union against
+a9c5b7d4 has87 paths: production+3703/-495/net3208; tests+17479/-661/net16818;
+documentation+9910/-96/net9814; manifests/locks+3183/-3/net3180. Counter's existing
+cfg-only support/factory are correctly classified as tests rather than production.
+Separately retained cross-owner conservative core4019/4150, controlled functional
+857/875, cumulative test20500, documentation11200, paths320 and public types5
+remain the current approved ceilings. Scope controllers/history,79-line receipt
+collector and16 unique added inverse Rust lines are separate authored evidence;
+source snapshots/logs do not become new capability code. Final staged/committed
+measurement, exact-head review, required CI and actual merge remain gates.

@@ -70,6 +70,11 @@ same Counter and typed requester Applications. Its application-owned service
 verifies two finite providers, checks current permission at nonwaiting mailbox
 admission, retains replay protection, and preserves original request/evidence
 and native retirement results. A Read is a snapshot, not an Increment receipt.
+The configured receipt identifies its deployment, caller, controller, actor,
+host, protocol and runtime/actor generations. The service checks that complete
+identity and its current grant before replay lookup and on every mailbox retry.
+Assignments remain tied to the borrowed live Tokio runtime. These checks prove
+the explicit finite test profile; they do not establish production identity.
 Running this binary without `--explicit-test` refuses startup before any export.
 Production identity and remote-network acceptance remain open.
 
