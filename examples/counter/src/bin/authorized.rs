@@ -19,7 +19,10 @@ use std::num::NonZeroUsize;
 use std::panic::{AssertUnwindSafe, resume_unwind};
 use std::ptr;
 use std::time::{Duration, Instant};
-use tokio::{runtime::Builder, sync::oneshot};
+use tokio::{
+    runtime::{Builder, Handle, Id, Runtime, TryCurrentError},
+    sync::oneshot,
+};
 
 #[path = "../counter.rs"]
 mod counter;
@@ -36,15 +39,26 @@ enum CounterOperation {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Binding {
-    deployment: u64,
-    caller: u64,
-    runtime: u64,
-    actor: u64,
+    deployment: &'static str,
+    caller: &'static str,
+    controller: &'static str,
+    actor: &'static str,
+    host: &'static str,
+    protocol: &'static str,
+    runtime_generation: u64,
+    actor_generation: u64,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Identity {
     binding: Binding,
     sequence: u64,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Scope {
+    identity: Identity,
+    operation: CounterOperation,
+    grant_issuer: &'static str,
+    authority_generation: u64,
 }
 #[derive(Clone, Copy)]
 enum Permission {
@@ -86,6 +100,9 @@ enum StartupRefusal {
     Exhausted,
     Allocation(TryReserveError),
     Accounting,
+    Grant,
+    RuntimeUnavailable(TryCurrentError),
+    RuntimeMismatch { expected: Id, entered: Id },
 }
 impl fmt::Display for StartupRefusal {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -101,6 +118,14 @@ impl fmt::Display for StartupRefusal {
             Self::Accounting => {
                 formatter.write_str("Counter resource accounting cannot be established")
             }
+            Self::Grant => formatter.write_str("the configured Counter grant is invalid"),
+            Self::RuntimeUnavailable(cause) => {
+                write!(formatter, "Counter host is unavailable: {cause}")
+            }
+            Self::RuntimeMismatch { expected, entered } => write!(
+                formatter,
+                "Counter assignment belongs to runtime {expected}, not entered runtime {entered}"
+            ),
         }
     }
 }
@@ -108,9 +133,13 @@ impl Error for StartupRefusal {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Allocation(cause) => Some(cause),
-            Self::TestProvider | Self::MissingAssignment | Self::Exhausted | Self::Accounting => {
-                None
-            }
+            Self::RuntimeUnavailable(cause) => Some(cause),
+            Self::TestProvider
+            | Self::MissingAssignment
+            | Self::Exhausted
+            | Self::Accounting
+            | Self::Grant
+            | Self::RuntimeMismatch { .. } => None,
         }
     }
 }
@@ -149,6 +178,7 @@ enum CounterRefusal {
     Stale,
     Unavailable,
     Binding,
+    Grant,
     Conflict,
     RetentionFull,
     Revoked,
@@ -161,11 +191,31 @@ enum CounterRefusal {
 }
 // Trusted finite authority survives the actual local Application executions.
 // It proves only this explicit profile contract; no cold restart durability.
-struct AssignmentAuthority {
+struct AssignmentAuthority<'host> {
+    host: &'host Runtime,
+    runtime_generation: u64,
+    grant_issuer: &'static str,
+    authority_generation: u64,
+    permitted_operations: &'static [CounterOperation],
     next: Option<u64>,
 }
-impl AssignmentAuthority {
+impl AssignmentAuthority<'_> {
+    fn check_host(&self) -> Result<(), StartupRefusal> {
+        let entered = Handle::try_current().map_err(StartupRefusal::RuntimeUnavailable)?;
+        let expected = self.host.handle().id();
+        if entered.id() != expected {
+            return Err(StartupRefusal::RuntimeMismatch {
+                expected,
+                entered: entered.id(),
+            });
+        }
+        Ok(())
+    }
     fn issue(&mut self) -> Result<(Binding, Instant), StartupRefusal> {
+        self.check_host()?;
+        if self.grant_issuer.is_empty() || self.permitted_operations.is_empty() {
+            return Err(StartupRefusal::Grant);
+        }
         let Some(actor) = self.next else {
             return Err(StartupRefusal::Exhausted);
         };
@@ -175,10 +225,14 @@ impl AssignmentAuthority {
         self.next = actor.checked_add(1);
         Ok((
             Binding {
-                deployment: 11,
-                caller: 17,
-                runtime: 23,
-                actor,
+                deployment: "test-deployment",
+                caller: "caller",
+                controller: "controller",
+                actor: "counter",
+                host: "counter-host",
+                protocol: "counter-protocol",
+                runtime_generation: self.runtime_generation,
+                actor_generation: actor,
             },
             deadline,
         ))
@@ -237,6 +291,10 @@ struct CounterReplayRecord {
 // One incoming vector and one live replay vector; no per-request observation.
 struct CounterAuthorization<R> {
     binding: Binding,
+    grant_issuer: &'static str,
+    authority_generation: u64,
+    permitted_operations: &'static [CounterOperation],
+    projection: fn(&R) -> &Scope,
     deadline: Instant,
     target: EstablishedRecipient<Counter>,
     permission: Permission,
@@ -267,6 +325,10 @@ impl<R> CounterAuthorization<R> {
     fn new(
         mode: StartupMode,
         assignment: Option<(Binding, Instant, EstablishedRecipient<Counter>)>,
+        grant_issuer: &'static str,
+        authority_generation: u64,
+        permitted_operations: &'static [CounterOperation],
+        projection: fn(&R) -> &Scope,
         limits: CounterLimits,
     ) -> Result<Self, StartupRefusal> {
         if let StartupMode::ProductionRequired = mode {
@@ -275,6 +337,9 @@ impl<R> CounterAuthorization<R> {
         let Some((binding, deadline, target)) = assignment else {
             return Err(StartupRefusal::MissingAssignment);
         };
+        if grant_issuer.is_empty() || permitted_operations.is_empty() {
+            return Err(StartupRefusal::Grant);
+        }
         let mut pending = Vec::new();
         let mut retained = Vec::new();
         pending
@@ -298,6 +363,10 @@ impl<R> CounterAuthorization<R> {
         }
         Ok(Self {
             binding,
+            grant_issuer,
+            authority_generation,
+            permitted_operations,
+            projection,
             deadline,
             target,
             permission: Permission::Granted,
@@ -353,7 +422,6 @@ impl<R> CounterAuthorization<R> {
     fn associate(
         &mut self,
         position: usize,
-        projection: fn(&R) -> (Identity, CounterOperation),
         service: &ExternalActor<CounterRequests>,
         replies: &EstablishedRecipient<CounterValue>,
     ) {
@@ -361,7 +429,7 @@ impl<R> CounterAuthorization<R> {
             return;
         };
         let verified = match evidence {
-            Ok(receipt) => Ok(projection(receipt)),
+            Ok(receipt) => Ok((self.projection)(receipt)),
             Err(VerificationError::Invalid) => Err(CounterRefusal::Invalid),
             Err(VerificationError::Stale) => Err(CounterRefusal::Stale),
             Err(VerificationError::Unavailable(_)) => Err(CounterRefusal::Unavailable),
@@ -371,11 +439,13 @@ impl<R> CounterAuthorization<R> {
                 self.refuse(position, refusal);
                 return;
             }
-            Ok((identity, _)) if identity.binding != self.binding => {
-                self.refuse(position, CounterRefusal::Binding);
-                return;
+            Ok(scope) => {
+                if let Some(refusal) = self.scope_refusal(scope) {
+                    self.refuse(position, refusal);
+                    return;
+                }
+                (scope.identity, scope.operation)
             }
-            Ok(confirmed) => confirmed,
         };
         let found = self
             .retained
@@ -464,6 +534,18 @@ impl<R> CounterAuthorization<R> {
             retained => self.pending[position].verification = retained,
         }
     }
+    fn scope_refusal(&self, scope: &Scope) -> Option<CounterRefusal> {
+        if scope.identity.binding != self.binding {
+            Some(CounterRefusal::Binding)
+        } else if scope.grant_issuer != self.grant_issuer
+            || scope.authority_generation != self.authority_generation
+            || !self.permitted_operations.contains(&scope.operation)
+        {
+            Some(CounterRefusal::Grant)
+        } else {
+            None
+        }
+    }
     fn attempt(&mut self, correlation: u64, service: &ExternalActor<CounterRequests>) {
         self.attempt_at(correlation, Instant::now(), service);
     }
@@ -474,6 +556,16 @@ impl<R> CounterAuthorization<R> {
         now: Instant,
         service: &ExternalActor<CounterRequests>,
     ) {
+        let scope_refusal = self
+            .pending
+            .iter()
+            .find(|entry| entry.correlation == correlation)
+            .and_then(|pending| match &pending.verification {
+                Verification::Native { receipt, .. } => {
+                    self.scope_refusal((self.projection)(receipt))
+                }
+                _ => None,
+            });
         let Some(pending) = self
             .pending
             .iter_mut()
@@ -487,11 +579,11 @@ impl<R> CounterAuthorization<R> {
         let prior = replace(delivery, CounterDelivery::PossiblyAdmitted);
         *delivery = match prior {
             CounterDelivery::Ready(command) | CounterDelivery::Full(command) => {
-                let refusal = match self.permission {
+                let refusal = scope_refusal.or_else(|| match self.permission {
                     Permission::Revoked => Some(CounterRefusal::Revoked),
                     Permission::Granted if now >= self.deadline => Some(CounterRefusal::Expired),
                     Permission::Granted => None,
-                };
+                });
                 if let Some(refusal) = refusal {
                     CounterDelivery::Refused { command, refusal }
                 } else {
@@ -580,18 +672,17 @@ async fn acquire_verification<R>(
 }
 
 // Provider-local distinct receipts; not cryptographic evidence or a wire profile.
-type ProtectedRecord = (Identity, CounterOperation, [u8; 1], [u8; 1]);
+type ProtectedRecord = (Scope, [u8; 1], [u8; 1]);
 mod record_provider {
     use super::{
-        AuthorityFreshness, CounterOperation, CounterRequest, Identity, ProtectedRecord,
-        ProviderAvailability, VerificationError, oneshot,
+        AuthorityFreshness, CounterRequest, ProtectedRecord, ProviderAvailability, Scope,
+        VerificationError, oneshot,
     };
     pub(super) struct Receipt {
-        identity: Identity,
-        operation: CounterOperation,
+        scope: Scope,
     }
-    pub(super) fn projection(receipt: &Receipt) -> (Identity, CounterOperation) {
-        (receipt.identity, receipt.operation)
+    pub(super) fn projection(receipt: &Receipt) -> &Scope {
+        &receipt.scope
     }
     pub(super) async fn verify(
         original: &CounterRequest,
@@ -609,14 +700,11 @@ mod record_provider {
                 Err(VerificationError::Stale)
             }
             (ProviderAvailability::Available, AuthorityFreshness::Current) => {
-                for (identity, operation, protected, proof) in configured {
+                for (scope, protected, proof) in configured {
                     if protected.as_slice() == original.protected.as_ref()
                         && proof.as_slice() == original.proof.as_ref()
                     {
-                        return Ok(Receipt {
-                            identity: *identity,
-                            operation: *operation,
-                        });
+                        return Ok(Receipt { scope: *scope });
                     }
                 }
                 Err(VerificationError::Invalid)
@@ -626,20 +714,19 @@ mod record_provider {
 }
 mod scheduled_provider {
     use super::{
-        AuthorityFreshness, CounterOperation, CounterRequest, Identity, ProtectedRecord,
-        ProviderAvailability, VerificationError, oneshot,
+        AuthorityFreshness, CounterRequest, ProtectedRecord, ProviderAvailability, Scope,
+        VerificationError, oneshot,
     };
     pub(super) struct Receipt {
-        identity: Identity,
-        operation: CounterOperation,
+        scope: Scope,
         #[expect(
             dead_code,
             reason = "opaque provider-owned evidence remains owned through caller receipt; heapful custody is measured without disclosing its bytes"
         )]
         evidence: Box<[u8]>,
     }
-    pub(super) fn projection(receipt: &Receipt) -> (Identity, CounterOperation) {
-        (receipt.identity, receipt.operation)
+    pub(super) fn projection(receipt: &Receipt) -> &Scope {
+        &receipt.scope
     }
     pub(super) async fn verify(
         original: &CounterRequest,
@@ -655,20 +742,16 @@ mod scheduled_provider {
                     AuthorityFreshness::Stale => Err(VerificationError::Stale),
                     AuthorityFreshness::Current => configured
                         .iter()
-                        .find(|(_, _, protected, proof)| {
+                        .find(|(_, protected, proof)| {
                             protected.as_slice() == original.protected.as_ref()
                                 && proof.as_slice() == original.proof.as_ref()
                         })
-                        .map_or(
-                            Err(VerificationError::Invalid),
-                            |(identity, operation, _, _)| {
-                                Ok(Receipt {
-                                    identity: *identity,
-                                    operation: *operation,
-                                    evidence: vec![19].into_boxed_slice(),
-                                })
-                            },
-                        ),
+                        .map_or(Err(VerificationError::Invalid), |(scope, _, _)| {
+                            Ok(Receipt {
+                                scope: *scope,
+                                evidence: vec![19].into_boxed_slice(),
+                            })
+                        }),
                 };
                 match publication.send(verified) {
                     Ok(()) => {}
@@ -890,10 +973,10 @@ where
 )]
 async fn run_counter_profile<R>(
     mode: StartupMode,
-    assignment: Option<(Binding, Instant)>,
+    assignment: Option<(&AssignmentAuthority<'_>, Binding, Instant)>,
     configured: &[ProtectedRecord],
     provider: impl AsyncFn(&CounterRequest, &[ProtectedRecord]) -> Result<R, VerificationError>,
-    projection: fn(&R) -> (Identity, CounterOperation),
+    projection: fn(&R) -> &Scope,
     verification_maximum: usize,
     execution_case: CounterWorkCase,
     expected_reports: [CounterStatus; 3],
@@ -902,9 +985,13 @@ async fn run_counter_profile<R>(
     if let StartupMode::ProductionRequired = mode {
         return Err(StartupRefusal::TestProvider);
     }
-    let Some((binding, deadline)) = assignment else {
+    let Some((authority, binding, deadline)) = assignment else {
         return Err(StartupRefusal::MissingAssignment);
     };
+    authority.check_host()?;
+    if authority.grant_issuer.is_empty() || authority.permitted_operations.is_empty() {
+        return Err(StartupRefusal::Grant);
+    }
     // This one acquisition block is also invoked by owning fault cases. Opaque
     // Work/native types stay inferred; validation runs only after all receiving.
     let acquisition = async {
@@ -978,6 +1065,10 @@ async fn run_counter_profile<R>(
                     service = Some(CounterAuthorization::new(
                         StartupMode::ExplicitTest,
                         Some((binding, deadline, target.clone())),
+                        authority.grant_issuer,
+                        authority.authority_generation,
+                        authority.permitted_operations,
+                        projection,
                         limits,
                     ));
                     if let Some(Ok(authorization)) = service.as_mut() {
@@ -1101,7 +1192,6 @@ async fn run_counter_profile<R>(
                                                         .await;
                                                         authorization.associate(
                                                             position,
-                                                            projection,
                                                             &requests,
                                                             &replies.recipient(),
                                                         );
@@ -1572,14 +1662,11 @@ async fn run_counter_profile<R>(
                 let configured_receipt = configured
                     .iter()
                     .find(|record| {
-                        record.2.as_slice() == original.protected.as_ref()
-                            && record.3.as_slice() == original.proof.as_ref()
+                        record.1.as_slice() == original.protected.as_ref()
+                            && record.2.as_slice() == original.proof.as_ref()
                     })
                     .expect("independent configured protected authority");
-                assert_eq!(
-                    projection(&receipt),
-                    (configured_receipt.0, configured_receipt.1)
-                );
+                assert_eq!(projection(&receipt), &configured_receipt.0);
                 assert_eq!(operation, expected_operation);
             }
             (
@@ -1596,14 +1683,11 @@ async fn run_counter_profile<R>(
                 let configured_receipt = configured
                     .iter()
                     .find(|record| {
-                        record.2.as_slice() == original.protected.as_ref()
-                            && record.3.as_slice() == original.proof.as_ref()
+                        record.1.as_slice() == original.protected.as_ref()
+                            && record.2.as_slice() == original.proof.as_ref()
                     })
                     .expect("independent configured protected authority");
-                assert_eq!(
-                    projection(&receipt),
-                    (configured_receipt.0, configured_receipt.1)
-                );
+                assert_eq!(projection(&receipt), &configured_receipt.0);
             }
             (
                 CounterStatus::Refused(CounterRefusal::Invalid),
@@ -1627,6 +1711,23 @@ async fn run_counter_profile<R>(
                 },
             ) => {
                 println!("actual provider receipt-closure cause: {original}");
+            }
+            (
+                CounterStatus::Refused(expected),
+                Verification::Refused {
+                    evidence: Ok(receipt),
+                    refusal,
+                },
+            ) if matches!(expected, CounterRefusal::Binding | CounterRefusal::Grant) => {
+                let configured_receipt = configured
+                    .iter()
+                    .find(|record| {
+                        record.1.as_slice() == original.protected.as_ref()
+                            && record.2.as_slice() == original.proof.as_ref()
+                    })
+                    .expect("independent refused Scope remains owned with actual R");
+                assert_eq!(projection(&receipt), &configured_receipt.0);
+                assert_eq!(refusal, expected);
             }
             retained => match &retained {
                 (
@@ -1661,14 +1762,10 @@ async fn run_counter_profile<R>(
         }
     }
     assert!(authorization.pending.is_empty());
-    let expected_retention = if expected_reports
+    let expected_retention = [CounterOperation::Increment, CounterOperation::Read]
         .iter()
-        .any(|status| matches!(status, CounterStatus::Accepted(_)))
-    {
-        2
-    } else {
-        0
-    };
+        .filter(|operation| expected_reports.contains(&CounterStatus::Accepted(**operation)))
+        .count();
     assert_eq!(authorization.retained.len(), expected_retention);
     Ok(())
 }
@@ -1676,20 +1773,28 @@ async fn run_counter_profile<R>(
 fn configured_counter_grants(binding: Binding) -> [ProtectedRecord; 2] {
     [
         (
-            Identity {
-                binding,
-                sequence: 0,
+            Scope {
+                identity: Identity {
+                    binding,
+                    sequence: 0,
+                },
+                operation: CounterOperation::Increment,
+                grant_issuer: "grant-controller",
+                authority_generation: 7,
             },
-            CounterOperation::Increment,
             *b"I",
             [41],
         ),
         (
-            Identity {
-                binding,
-                sequence: 1,
+            Scope {
+                identity: Identity {
+                    binding,
+                    sequence: 1,
+                },
+                operation: CounterOperation::Read,
+                grant_issuer: "grant-controller",
+                authority_generation: 7,
             },
-            CounterOperation::Read,
             *b"R",
             [41],
         ),
@@ -1708,12 +1813,19 @@ fn main() -> Result<(), StartupRefusal> {
         .enable_all()
         .build()
         .expect("caller-owned explicit host");
-    let mut authority = AssignmentAuthority { next: Some(29) };
-    let (binding, deadline) = authority.issue()?;
+    let mut authority = AssignmentAuthority {
+        host: &host,
+        runtime_generation: 23,
+        grant_issuer: "grant-controller",
+        authority_generation: 7,
+        permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+        next: Some(29),
+    };
+    let (binding, deadline) = host.block_on(async { authority.issue() })?;
     let configured = configured_counter_grants(binding);
     host.block_on(run_counter_profile(
         StartupMode::ExplicitTest,
-        Some((binding, deadline)),
+        Some((&authority, binding, deadline)),
         &configured,
         async |original, records| {
             record_provider::verify(
@@ -1734,11 +1846,11 @@ fn main() -> Result<(), StartupRefusal> {
         ],
         1,
     ))?;
-    let (binding, deadline) = authority.issue()?;
+    let (binding, deadline) = host.block_on(async { authority.issue() })?;
     let configured = configured_counter_grants(binding);
     host.block_on(run_counter_profile(
         StartupMode::ExplicitTest,
-        Some((binding, deadline)),
+        Some((&authority, binding, deadline)),
         &configured,
         async |original, records| {
             scheduled_provider::verify(
@@ -1765,6 +1877,53 @@ fn main() -> Result<(), StartupRefusal> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn complete_scope_reaches_both_private_provider_consumers() {
+        let binding = Binding {
+            deployment: "test-deployment",
+            caller: "caller",
+            controller: "controller",
+            actor: "counter",
+            host: "counter-host",
+            protocol: "counter-protocol",
+            runtime_generation: 23,
+            actor_generation: 29,
+        };
+        let scope = Scope {
+            identity: Identity {
+                binding,
+                sequence: 0,
+            },
+            operation: CounterOperation::Increment,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+        };
+        let configured = [(scope, *b"I", [41])];
+        let original = CounterRequest {
+            protected: vec![b'I'].into_boxed_slice(),
+            proof: vec![41].into_boxed_slice(),
+        };
+        let host = Builder::new_current_thread().enable_all().build().unwrap();
+        let recorded = host
+            .block_on(record_provider::verify(
+                &original,
+                &configured,
+                AuthorityFreshness::Current,
+                ProviderAvailability::Available,
+            ))
+            .unwrap_or_else(|_| panic!("the independently configured record verifies"));
+        let scheduled = host
+            .block_on(scheduled_provider::verify(
+                &original,
+                &configured,
+                AuthorityFreshness::Current,
+                ProviderAvailability::Available,
+            ))
+            .unwrap_or_else(|_| panic!("the independently configured scheduled evidence verifies"));
+        assert_eq!(record_provider::projection(&recorded), &scope);
+        assert_eq!(scheduled_provider::projection(&scheduled), &scope);
+    }
     use std::cell::{Ref, RefCell};
 
     #[test]
@@ -1773,18 +1932,27 @@ mod tests {
             .enable_all()
             .build()
             .expect("explicit host");
-        let mut authority = AssignmentAuthority { next: Some(29) };
+        let mut authority = AssignmentAuthority {
+            host: &host,
+            runtime_generation: 23,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+            permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+            next: Some(29),
+        };
         for execution_case in [
             CounterWorkCase::CounterBeforePublication,
             CounterWorkCase::CounterAfterPublication,
             CounterWorkCase::RequesterBeforePublication,
             CounterWorkCase::RequesterAfterPublication,
         ] {
-            let (binding, deadline) = authority.issue().expect("configured finite authority");
+            let (binding, deadline) = host
+                .block_on(async { authority.issue() })
+                .expect("configured finite authority");
             let configured = configured_counter_grants(binding);
             let acquired = host.block_on(run_counter_profile(
                 StartupMode::ExplicitTest,
-                Some((binding, deadline)),
+                Some((&authority, binding, deadline)),
                 &configured,
                 async |original, records| {
                     record_provider::verify(
@@ -1815,12 +1983,21 @@ mod tests {
             .enable_all()
             .build()
             .expect("explicit host");
-        let mut authority = AssignmentAuthority { next: Some(29) };
-        let (binding, deadline) = authority.issue().expect("configured finite authority");
+        let mut authority = AssignmentAuthority {
+            host: &host,
+            runtime_generation: 23,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+            permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+            next: Some(29),
+        };
+        let (binding, deadline) = host
+            .block_on(async { authority.issue() })
+            .expect("configured finite authority");
         let configured = configured_counter_grants(binding);
         let acquired = host.block_on(run_counter_profile(
             StartupMode::ExplicitTest,
-            Some((binding, deadline)),
+            Some((&authority, binding, deadline)),
             &configured,
             async |original, records| {
                 record_provider::verify(
@@ -1850,29 +2027,38 @@ mod tests {
             .enable_all()
             .build()
             .expect("explicit host");
-        let mut authority = AssignmentAuthority { next: Some(29) };
-        let (binding, deadline) = authority.issue().expect("configured finite authority");
+        let mut authority = AssignmentAuthority {
+            host: &host,
+            runtime_generation: 23,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+            permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+            next: Some(29),
+        };
+        let (binding, deadline) = host
+            .block_on(async { authority.issue() })
+            .expect("configured finite authority");
         let configured = configured_counter_grants(binding);
         // This concrete receipt is a real non-Send read lease of the configured
         // authority record. No marker, Rc-cloned receipt or extra observation.
         let authority_records = RefCell::new(configured);
         let acquired = host.block_on(run_counter_profile(
             StartupMode::ExplicitTest,
-            Some((binding, deadline)),
+            Some((&authority, binding, deadline)),
             &configured,
             async |original, expected| {
                 let records = authority_records.borrow();
                 let position = records.iter().position(|record| {
                     expected.contains(record)
-                        && original.protected.as_ref() == record.2
-                        && original.proof.as_ref() == record.3
+                        && original.protected.as_ref() == record.1
+                        && original.proof.as_ref() == record.2
                 });
                 match position {
                     Some(position) => Ok(Ref::map(records, |records| &records[position])),
                     None => Err(VerificationError::Invalid),
                 }
             },
-            |record| (record.0, record.1),
+            |record| &record.0,
             256,
             CounterWorkCase::Healthy,
             [
@@ -1901,19 +2087,18 @@ mod pending_verification {
             .build()
             .expect("explicit host");
         host.block_on(async {
-            let mut authority = AssignmentAuthority { next: Some(29) };
+            let mut authority = AssignmentAuthority {
+                host: &host,
+                runtime_generation: 23,
+                grant_issuer: "grant-controller",
+                authority_generation: 7,
+                permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+                next: Some(29),
+            };
             let (binding, deadline) = authority
                 .issue()
                 .unwrap_or_else(|_| panic!("finite assignment"));
-            let records = [(
-                Identity {
-                    binding,
-                    sequence: 0,
-                },
-                CounterOperation::Increment,
-                *b"I",
-                [41],
-            )];
+            let records = [configured_counter_grants(binding)[0]];
             let mut original = Some(CounterRequest {
                 protected: Box::from(*b"I"),
                 proof: Box::from([41]),
@@ -1940,6 +2125,10 @@ mod pending_verification {
                     *authorization_storage = Some(CounterAuthorization::new(
                         StartupMode::ExplicitTest,
                         Some((binding, deadline, target.clone())),
+                        "grant-controller",
+                        7,
+                        &[CounterOperation::Increment, CounterOperation::Read],
+                        record_provider::projection,
                         CounterLimits {
                             incoming: NonZeroUsize::new(2).expect("explicit count"),
                             retained: NonZeroUsize::new(2).expect("explicit count"),
@@ -1991,12 +2180,7 @@ mod pending_verification {
                             None,
                         ));
                     }
-                    authorization.associate(
-                        0,
-                        record_provider::projection,
-                        &requests,
-                        &replies.recipient(),
-                    );
+                    authorization.associate(0, &requests, &replies.recipient());
                     authorization.attempt(correlation, &requests);
                     let sent = requests
                         .send(&target, CounterMessage::Read(replies.recipient()))
@@ -2072,10 +2256,7 @@ mod pending_verification {
                 (original.protected.as_ref(), original.proof.as_ref()),
                 (&b"I"[..], &[41][..])
             );
-            assert_eq!(
-                record_provider::projection(&receipt),
-                (records[0].0, CounterOperation::Increment)
-            );
+            assert_eq!(record_provider::projection(&receipt), &records[0].0);
             let Some(Ok(authorization)) = counter_authorization else {
                 panic!("original setup cause");
             };
@@ -2094,6 +2275,9 @@ mod full_retry {
     enum CounterRetryPolicy {
         KnownRevocation,
         DeadlineReached,
+        GrantIssuerChanged,
+        AuthorityGenerationChanged,
+        OperationRemoved,
         Granted,
     }
 
@@ -2102,6 +2286,9 @@ mod full_retry {
         for policy in [
             CounterRetryPolicy::KnownRevocation,
             CounterRetryPolicy::DeadlineReached,
+            CounterRetryPolicy::GrantIssuerChanged,
+            CounterRetryPolicy::AuthorityGenerationChanged,
+            CounterRetryPolicy::OperationRemoved,
             CounterRetryPolicy::Granted,
         ] {
             counter_full_retry(policy);
@@ -2118,7 +2305,14 @@ mod full_retry {
             .build()
             .expect("explicit host");
         host.block_on(async {
-            let mut authority = AssignmentAuthority { next: Some(29) };
+            let mut authority = AssignmentAuthority {
+                host: &host,
+                runtime_generation: 23,
+                grant_issuer: "grant-controller",
+                authority_generation: 7,
+                permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+                next: Some(29),
+            };
             let (binding, deadline) = authority.issue().expect("finite authorized assignment");
             let records = configured_counter_grants(binding);
             let mut original = Some(CounterRequest {
@@ -2147,6 +2341,10 @@ mod full_retry {
                     *authorization_storage = Some(CounterAuthorization::new(
                         StartupMode::ExplicitTest,
                         Some((binding, deadline, target.clone())),
+                        "grant-controller",
+                        7,
+                        &[CounterOperation::Increment, CounterOperation::Read],
+                        record_provider::projection,
                         CounterLimits {
                             incoming: NonZeroUsize::new(2).expect("finite input"),
                             retained: NonZeroUsize::new(2).expect("finite input"),
@@ -2176,12 +2374,7 @@ mod full_retry {
                         .await
                     })
                     .await;
-                    authorization.associate(
-                        0,
-                        record_provider::projection,
-                        &requests,
-                        &replies.recipient(),
-                    );
+                    authorization.associate(0, &requests, &replies.recipient());
                     // No await occurs while filling: this current-thread actor
                     // cannot drain until owning try_send actually returns Full.
                     // This bound matches the selected Application default in
@@ -2208,6 +2401,20 @@ mod full_retry {
                     if let CounterRetryPolicy::KnownRevocation = policy {
                         authorization.permission = Permission::Revoked;
                     }
+                    match policy {
+                        CounterRetryPolicy::GrantIssuerChanged => {
+                            authorization.grant_issuer = "other-grant-controller";
+                        }
+                        CounterRetryPolicy::AuthorityGenerationChanged => {
+                            authorization.authority_generation = 8;
+                        }
+                        CounterRetryPolicy::OperationRemoved => {
+                            authorization.permitted_operations = &[CounterOperation::Read];
+                        }
+                        CounterRetryPolicy::KnownRevocation
+                        | CounterRetryPolicy::DeadlineReached
+                        | CounterRetryPolicy::Granted => {}
+                    }
                     let original_deadline = authorization.deadline;
                     let expired_at = match policy {
                         CounterRetryPolicy::DeadlineReached => {
@@ -2217,7 +2424,11 @@ mod full_retry {
                             authorization.deadline = expired_at;
                             Some(expired_at)
                         }
-                        CounterRetryPolicy::KnownRevocation | CounterRetryPolicy::Granted => None,
+                        CounterRetryPolicy::KnownRevocation
+                        | CounterRetryPolicy::Granted
+                        | CounterRetryPolicy::GrantIssuerChanged
+                        | CounterRetryPolicy::AuthorityGenerationChanged
+                        | CounterRetryPolicy::OperationRemoved => None,
                     };
                     // Real Read is a FIFO observation of the accepted prefix;
                     // it drains capacity without pretending to acknowledge Increment.
@@ -2290,9 +2501,11 @@ mod full_retry {
             // Native effect oracle FIRST, after complete native/notification custody.
             let expected = match policy {
                 CounterRetryPolicy::Granted => accepted + 1,
-                CounterRetryPolicy::KnownRevocation | CounterRetryPolicy::DeadlineReached => {
-                    accepted
-                }
+                CounterRetryPolicy::KnownRevocation
+                | CounterRetryPolicy::DeadlineReached
+                | CounterRetryPolicy::GrantIssuerChanged
+                | CounterRetryPolicy::AuthorityGenerationChanged
+                | CounterRetryPolicy::OperationRemoved => accepted,
             };
             assert_eq!(
                 after.message, expected,
@@ -2345,6 +2558,15 @@ mod full_retry {
                         refusal: CounterRefusal::Expired,
                     },
                 )
+                | (
+                    CounterRetryPolicy::GrantIssuerChanged
+                    | CounterRetryPolicy::AuthorityGenerationChanged
+                    | CounterRetryPolicy::OperationRemoved,
+                    CounterDelivery::Refused {
+                        command: CounterMessage::Increment,
+                        refusal: CounterRefusal::Grant,
+                    },
+                )
                 | (CounterRetryPolicy::Granted, CounterDelivery::Accepted) => {}
                 (_, retained) => {
                     drop(retained);
@@ -2356,7 +2578,14 @@ mod full_retry {
                     assert_eq!(authorization.deadline, expired_at);
                     assert_eq!(original_deadline, deadline);
                 }
-                (CounterRetryPolicy::KnownRevocation | CounterRetryPolicy::Granted, None) => {
+                (
+                    CounterRetryPolicy::KnownRevocation
+                    | CounterRetryPolicy::Granted
+                    | CounterRetryPolicy::GrantIssuerChanged
+                    | CounterRetryPolicy::AuthorityGenerationChanged
+                    | CounterRetryPolicy::OperationRemoved,
+                    None,
+                ) => {
                     assert_eq!(authorization.deadline, original_deadline);
                 }
                 _ => panic!("exact deadline observations"),
@@ -2369,10 +2598,7 @@ mod full_retry {
                 (original.protected.as_ref(), original.proof.as_ref()),
                 (&b"I"[..], &[41][..])
             );
-            assert_eq!(
-                record_provider::projection(&receipt),
-                (records[0].0, CounterOperation::Increment)
-            );
+            assert_eq!(record_provider::projection(&receipt), &records[0].0);
             assert!(authorization.pending.is_empty());
             assert_eq!(authorization.retained.len(), 1);
             assert!(authorization.reserved_bytes < held);
@@ -2554,7 +2780,7 @@ mod allocation_profile {
         replies: &EstablishedRecipient<CounterValue>,
         configured: &[ProtectedRecord],
         provider: &impl AsyncFn(&CounterRequest, &[ProtectedRecord]) -> Result<R, VerificationError>,
-        projection: fn(&R) -> (Identity, CounterOperation),
+        projection: fn(&R) -> &Scope,
         order: IdentityOrder,
     ) -> CounterAllocationObservations<R> {
         // Refused inputs and the release channel belong to the test caller.
@@ -2567,6 +2793,10 @@ mod allocation_profile {
             CounterAuthorization::new(
                 StartupMode::ExplicitTest,
                 Some((binding, deadline, target)),
+                "grant-controller",
+                7,
+                &[CounterOperation::Increment, CounterOperation::Read],
+                projection,
                 CounterLimits {
                     incoming: NonZeroUsize::new(2).expect("explicit count"),
                     retained: NonZeroUsize::new(2).expect("explicit count"),
@@ -2644,7 +2874,7 @@ mod allocation_profile {
                 provider(original, configured).await
             })
             .await;
-            authorization.associate(position, projection, requests, replies);
+            authorization.associate(position, requests, replies);
             measured.count_original = authorization.consume(*correlation);
         }
         if measured
@@ -2689,7 +2919,7 @@ mod allocation_profile {
         authorization.permission = Permission::Revoked;
         for position in 0..2 {
             let ((), requested) = requested_allocations(|| {
-                authorization.associate(position, projection, requests, replies);
+                authorization.associate(position, requests, replies);
             });
             measured.comparison_requests[position] = requested;
             let correlation = authorization.pending[position].correlation;
@@ -2726,7 +2956,7 @@ mod allocation_profile {
             })
             .await;
             let ((), storage) = requested_allocations(|| {
-                authorization.associate(position, projection, requests, replies);
+                authorization.associate(position, requests, replies);
             });
             measured.duplicate_requests = storage;
             measured.duplicate_ledger_len = authorization.retained.len();
@@ -2769,7 +2999,7 @@ mod allocation_profile {
                     provider(original, configured).await
                 })
                 .await;
-                authorization.associate(position, projection, requests, replies);
+                authorization.associate(position, requests, replies);
                 consumed = authorization.consume(*correlation);
             }
             *observation = Some(CounterByteRefusalObservation {
@@ -2786,7 +3016,7 @@ mod allocation_profile {
     }
     fn assert_counter_storage<R>(
         measured: &CounterAllocationObservations<R>,
-        projection: fn(&R) -> (Identity, CounterOperation),
+        projection: fn(&R) -> &Scope,
         configured: &[ProtectedRecord],
     ) {
         let Ok(authorization) = &measured.authorization else {
@@ -2882,7 +3112,7 @@ mod allocation_profile {
     }
     fn assert_counter_refused_commands<R>(
         measured: &CounterAllocationObservations<R>,
-        projection: fn(&R) -> (Identity, CounterOperation),
+        projection: fn(&R) -> &Scope,
         configured: &[ProtectedRecord],
     ) {
         for (admission, allocation) in measured.originals.iter().zip(measured.original_allocations)
@@ -2911,12 +3141,12 @@ mod allocation_profile {
             let expected = configured
                 .iter()
                 .find(|record| {
-                    record.2.as_slice() == original.protected.as_ref()
-                        && record.3.as_slice() == original.proof.as_ref()
+                    record.1.as_slice() == original.protected.as_ref()
+                        && record.2.as_slice() == original.proof.as_ref()
                 })
                 .expect("independently configured original authority record");
-            assert_eq!(projection(receipt), (expected.0, expected.1));
-            assert_eq!(expected.1, *operation);
+            assert_eq!(projection(receipt), &expected.0);
+            assert_eq!(expected.0.operation, *operation);
             let protected = match operation {
                 CounterOperation::Increment => b'I',
                 CounterOperation::Read => b'R',
@@ -2931,7 +3161,7 @@ mod allocation_profile {
     }
     fn assert_counter_duplicate_receipt<R>(
         measured: &CounterAllocationObservations<R>,
-        projection: fn(&R) -> (Identity, CounterOperation),
+        projection: fn(&R) -> &Scope,
         configured: &[ProtectedRecord],
     ) {
         assert_eq!(measured.duplicate_requests, (0, 0));
@@ -2959,9 +3189,9 @@ mod allocation_profile {
         };
         let expected = configured
             .iter()
-            .find(|record| record.2 == *b"I" && record.3 == [41])
+            .find(|record| record.1 == *b"I" && record.2 == [41])
             .expect("independent duplicate authority record");
-        assert_eq!(projection(receipt), (expected.0, expected.1));
+        assert_eq!(projection(receipt), &expected.0);
         let Some(Ok(correlation)) = &measured.duplicate_reservation else {
             panic!("original local duplicate correlation");
         };
@@ -3078,7 +3308,14 @@ mod allocation_profile {
             .build()
             .expect("explicit host");
         host.block_on(async {
-            let mut authority = AssignmentAuthority { next: Some(29) };
+            let mut authority = AssignmentAuthority {
+                host: &host,
+                runtime_generation: 23,
+                grant_issuer: "grant-controller",
+                authority_generation: 7,
+                permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+                next: Some(29),
+            };
             let (binding, deadline) = authority
                 .issue()
                 .unwrap_or_else(|_| panic!("finite assignment"));
@@ -3239,10 +3476,14 @@ mod allocation_profile {
         // This code runs only in AllocationRole::Isolated, after the actual
         // Application/native component controls above, with no active profiler.
         let configured = configured_counter_grants(Binding {
-            deployment: 11,
-            caller: 17,
-            runtime: 23,
-            actor: 29,
+            deployment: "test-deployment",
+            caller: "caller",
+            controller: "controller",
+            actor: "counter",
+            host: "counter-host",
+            protocol: "counter-protocol",
+            runtime_generation: 23,
+            actor_generation: 29,
         });
         let originals = [
             counter_request(b'X'),
@@ -3280,10 +3521,14 @@ fn finite_provider_contract_preserves_stale_and_unavailable() {
         .expect("explicit host");
     host.block_on(async {
         let binding = Binding {
-            deployment: 11,
-            caller: 17,
-            runtime: 23,
-            actor: 29,
+            deployment: "test-deployment",
+            caller: "caller",
+            controller: "controller",
+            actor: "counter",
+            host: "counter-host",
+            protocol: "counter-protocol",
+            runtime_generation: 23,
+            actor_generation: 29,
         };
         let configured = configured_counter_grants(binding);
         let original = CounterRequest {
@@ -3340,13 +3585,20 @@ mod provider_refusals {
             AuthorityFreshness,
             ProviderAvailability,
         ) -> Result<R, VerificationError>,
-        projection: fn(&R) -> (Identity, CounterOperation),
+        projection: fn(&R) -> &Scope,
     ) {
         let host = Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("explicit host");
-        let mut authority = AssignmentAuthority { next: Some(29) };
+        let mut authority = AssignmentAuthority {
+            host: &host,
+            runtime_generation: 23,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+            permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+            next: Some(29),
+        };
         for case in [
             CounterEvidenceCase::Accepted,
             CounterEvidenceCase::Invalid,
@@ -3354,7 +3606,9 @@ mod provider_refusals {
             CounterEvidenceCase::UnavailableCurrent,
             CounterEvidenceCase::UnavailableStale,
         ] {
-            let (binding, deadline) = authority.issue().expect("finite configured assignment");
+            let (binding, deadline) = host
+                .block_on(async { authority.issue() })
+                .expect("finite configured assignment");
             let configured = configured_counter_grants(binding);
             let (records, freshness, availability, expected_reports, expected_snapshot) = match case
             {
@@ -3401,7 +3655,7 @@ mod provider_refusals {
             // The actual existing function owns acquisition and all native oracles.
             let result = host.block_on(run_counter_profile(
                 StartupMode::ExplicitTest,
-                Some((binding, deadline)),
+                Some((&authority, binding, deadline)),
                 records,
                 async |original, records| {
                     provider(original, records, freshness, availability).await
@@ -3414,6 +3668,382 @@ mod provider_refusals {
             ));
             result.expect("configured provider profile refused startup");
         }
+    }
+}
+
+#[cfg(test)]
+mod complete_scope {
+    use super::*;
+
+    #[derive(Clone, Copy, Debug)]
+    enum CounterScopeCase {
+        Valid,
+        Deployment,
+        Caller,
+        Controller,
+        Actor,
+        Host,
+        Protocol,
+        RuntimeGeneration,
+        ActorGeneration,
+        GrantIssuer,
+        AuthorityGeneration,
+        IncrementOnly,
+        ReadOnly,
+        OldAssignment,
+    }
+
+    #[test]
+    fn record_scopes_refuse_before_replay_and_native_mutation() {
+        counter_scopes(&record_provider::verify, record_provider::projection);
+    }
+
+    #[test]
+    fn scheduled_scopes_refuse_before_replay_and_native_mutation() {
+        counter_scopes(&scheduled_provider::verify, scheduled_provider::projection);
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Explicit independent scope inputs use the existing full native acquisition before oracles."
+    )]
+    fn counter_scopes<R>(
+        provider: &impl AsyncFn(
+            &CounterRequest,
+            &[ProtectedRecord],
+            AuthorityFreshness,
+            ProviderAvailability,
+        ) -> Result<R, VerificationError>,
+        projection: fn(&R) -> &Scope,
+    ) {
+        let host = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("explicit host");
+        let mut authority = AssignmentAuthority {
+            host: &host,
+            runtime_generation: 23,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+            permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+            next: Some(29),
+        };
+        let (previous, _) = host
+            .block_on(async { authority.issue() })
+            .expect("previous assignment");
+        for case in [
+            CounterScopeCase::Valid,
+            CounterScopeCase::Deployment,
+            CounterScopeCase::Caller,
+            CounterScopeCase::Controller,
+            CounterScopeCase::Actor,
+            CounterScopeCase::Host,
+            CounterScopeCase::Protocol,
+            CounterScopeCase::RuntimeGeneration,
+            CounterScopeCase::ActorGeneration,
+            CounterScopeCase::GrantIssuer,
+            CounterScopeCase::AuthorityGeneration,
+            CounterScopeCase::IncrementOnly,
+            CounterScopeCase::ReadOnly,
+            CounterScopeCase::OldAssignment,
+        ] {
+            println!("actual finite Counter Scope case: {case:?}");
+            authority.permitted_operations = &[CounterOperation::Increment, CounterOperation::Read];
+            let (binding, deadline) = host
+                .block_on(async { authority.issue() })
+                .expect("new authorized assignment");
+            let mut configured = configured_counter_grants(binding);
+            for (scope, _, _) in &mut configured {
+                match case {
+                    CounterScopeCase::Valid
+                    | CounterScopeCase::IncrementOnly
+                    | CounterScopeCase::ReadOnly => {}
+                    CounterScopeCase::Deployment => {
+                        scope.identity.binding.deployment = "other-deployment";
+                    }
+                    CounterScopeCase::Caller => scope.identity.binding.caller = "other-caller",
+                    CounterScopeCase::Controller => {
+                        scope.identity.binding.controller = "other-controller";
+                    }
+                    CounterScopeCase::Actor => scope.identity.binding.actor = "other-actor",
+                    CounterScopeCase::Host => scope.identity.binding.host = "other-host",
+                    CounterScopeCase::Protocol => {
+                        scope.identity.binding.protocol = "other-protocol";
+                    }
+                    CounterScopeCase::RuntimeGeneration => {
+                        scope.identity.binding.runtime_generation = 24;
+                    }
+                    CounterScopeCase::ActorGeneration => {
+                        scope.identity.binding.actor_generation = 0;
+                    }
+                    CounterScopeCase::GrantIssuer => scope.grant_issuer = "other-grant-controller",
+                    CounterScopeCase::AuthorityGeneration => scope.authority_generation = 8,
+                    CounterScopeCase::OldAssignment => scope.identity.binding = previous,
+                }
+            }
+            let (expected, snapshot) = match case {
+                CounterScopeCase::Valid => (
+                    [
+                        CounterStatus::Accepted(CounterOperation::Increment),
+                        CounterStatus::Accepted(CounterOperation::Increment),
+                        CounterStatus::Accepted(CounterOperation::Read),
+                    ],
+                    1,
+                ),
+                CounterScopeCase::IncrementOnly => {
+                    authority.permitted_operations = &[CounterOperation::Increment];
+                    (
+                        [
+                            CounterStatus::Accepted(CounterOperation::Increment),
+                            CounterStatus::Accepted(CounterOperation::Increment),
+                            CounterStatus::Refused(CounterRefusal::Grant),
+                        ],
+                        1,
+                    )
+                }
+                CounterScopeCase::ReadOnly => {
+                    authority.permitted_operations = &[CounterOperation::Read];
+                    (
+                        [
+                            CounterStatus::Refused(CounterRefusal::Grant),
+                            CounterStatus::Refused(CounterRefusal::Grant),
+                            CounterStatus::Accepted(CounterOperation::Read),
+                        ],
+                        0,
+                    )
+                }
+                CounterScopeCase::GrantIssuer | CounterScopeCase::AuthorityGeneration => {
+                    ([CounterStatus::Refused(CounterRefusal::Grant); 3], 0)
+                }
+                CounterScopeCase::Deployment
+                | CounterScopeCase::Caller
+                | CounterScopeCase::Controller
+                | CounterScopeCase::Actor
+                | CounterScopeCase::Host
+                | CounterScopeCase::Protocol
+                | CounterScopeCase::RuntimeGeneration
+                | CounterScopeCase::ActorGeneration
+                | CounterScopeCase::OldAssignment => {
+                    ([CounterStatus::Refused(CounterRefusal::Binding); 3], 0)
+                }
+            };
+            let original = host.block_on(run_counter_profile(
+                StartupMode::ExplicitTest,
+                Some((&authority, binding, deadline)),
+                &configured,
+                async |request, records| {
+                    provider(
+                        request,
+                        records,
+                        AuthorityFreshness::Current,
+                        ProviderAvailability::Available,
+                    )
+                    .await
+                },
+                projection,
+                256,
+                CounterWorkCase::Healthy,
+                expected,
+                snapshot,
+            ));
+            original.expect("selected finite Scope consumer preserves originals");
+        }
+    }
+}
+
+#[cfg(test)]
+mod runtime_scope {
+    use super::*;
+
+    async fn counter_on_assignment(
+        mode: StartupMode,
+        assignment: Option<(&AssignmentAuthority<'_>, Binding, Instant)>,
+        configured: &[ProtectedRecord],
+    ) -> Result<(), StartupRefusal> {
+        run_counter_profile(
+            mode,
+            assignment,
+            configured,
+            async |original, records| {
+                record_provider::verify(
+                    original,
+                    records,
+                    AuthorityFreshness::Current,
+                    ProviderAvailability::Available,
+                )
+                .await
+            },
+            record_provider::projection,
+            256,
+            CounterWorkCase::Healthy,
+            [
+                CounterStatus::Accepted(CounterOperation::Increment),
+                CounterStatus::Accepted(CounterOperation::Increment),
+                CounterStatus::Accepted(CounterOperation::Read),
+            ],
+            1,
+        )
+        .await
+    }
+
+    #[test]
+    fn issued_assignment_cannot_move_between_live_hosts() {
+        let host = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("owning host");
+        let other = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("other live host");
+        let mut authority = AssignmentAuthority {
+            host: &host,
+            runtime_generation: 23,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+            permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+            next: Some(29),
+        };
+        let (binding, deadline) = host
+            .block_on(async { authority.issue() })
+            .expect("issued on owning host");
+        let configured = configured_counter_grants(binding);
+        let acquired = other.block_on(counter_on_assignment(
+            StartupMode::ExplicitTest,
+            Some((&authority, binding, deadline)),
+            &configured,
+        ));
+        let entered = other.handle().id();
+        let expected = host.handle().id();
+        let Err(StartupRefusal::RuntimeMismatch {
+            expected: refused_owner,
+            entered: refused_host,
+        }) = acquired
+        else {
+            panic!("moving an issued assignment must refuse before export");
+        };
+        assert_eq!(refused_owner, expected);
+        assert_eq!(refused_host, entered);
+        assert_ne!(expected, entered);
+        assert_eq!(authority.next, Some(30));
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Keep original startup causes, independent native consumers and checked issuance observations together."
+    )]
+    fn cold_invalid_and_exhausted_authority_never_reissues_an_assignment() {
+        let host = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("owning host");
+        let other = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("other live host");
+        let mut authority = AssignmentAuthority {
+            host: &host,
+            runtime_generation: 23,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+            permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+            next: Some(29),
+        };
+        let cold = counter_on_assignment(StartupMode::ExplicitTest, None, &[])
+            .now_or_never()
+            .expect("cold refusal is ready");
+        let production = counter_on_assignment(StartupMode::ProductionRequired, None, &[])
+            .now_or_never()
+            .expect("fake production refuses before startup");
+        let unavailable = authority.issue();
+        let wrong_host = other.block_on(async { authority.issue() });
+        let next_after_refusals = authority.next;
+        let (first, first_deadline) = host
+            .block_on(async { authority.issue() })
+            .expect("first finite assignment");
+        let unavailable_consumer = counter_on_assignment(
+            StartupMode::ExplicitTest,
+            Some((&authority, first, first_deadline)),
+            &[],
+        )
+        .now_or_never()
+        .expect("unentered consumer refuses immediately");
+        let first_result = host.block_on(counter_on_assignment(
+            StartupMode::ExplicitTest,
+            Some((&authority, first, first_deadline)),
+            &configured_counter_grants(first),
+        ));
+        authority.grant_issuer = "";
+        let empty_issuer = host.block_on(async { authority.issue() });
+        let invalid_consumer = host.block_on(counter_on_assignment(
+            StartupMode::ExplicitTest,
+            Some((&authority, first, first_deadline)),
+            &configured_counter_grants(first),
+        ));
+        authority.grant_issuer = "grant-controller";
+        authority.permitted_operations = &[];
+        let empty_operations = host.block_on(async { authority.issue() });
+        let empty_consumer = host.block_on(counter_on_assignment(
+            StartupMode::ExplicitTest,
+            Some((&authority, first, first_deadline)),
+            &configured_counter_grants(first),
+        ));
+        let next_after_grant_refusals = authority.next;
+        authority.permitted_operations = &[CounterOperation::Increment, CounterOperation::Read];
+        let (replacement, replacement_deadline) = host
+            .block_on(async { authority.issue() })
+            .expect("replacement finite assignment");
+        let replacement_result = host.block_on(counter_on_assignment(
+            StartupMode::ExplicitTest,
+            Some((&authority, replacement, replacement_deadline)),
+            &configured_counter_grants(replacement),
+        ));
+        authority.next = Some(u64::MAX);
+        let last = host.block_on(async { authority.issue() });
+        let exhausted = host.block_on(async { authority.issue() });
+        let exhausted_again = host.block_on(async { authority.issue() });
+        assert!(matches!(cold, Err(StartupRefusal::MissingAssignment)));
+        assert!(matches!(production, Err(StartupRefusal::TestProvider)));
+        let Err(StartupRefusal::RuntimeUnavailable(cause)) = unavailable else {
+            panic!("retain actual unavailable-host cause");
+        };
+        assert!(cause.is_missing_context());
+        let Err(StartupRefusal::RuntimeMismatch { expected, entered }) = wrong_host else {
+            panic!("wrong host cannot issue authority");
+        };
+        assert_eq!(expected, host.handle().id());
+        assert_eq!(entered, other.handle().id());
+        assert_eq!(next_after_refusals, Some(29));
+        let Err(StartupRefusal::RuntimeUnavailable(cause)) = &unavailable_consumer else {
+            panic!("consumer retains original host cause");
+        };
+        let reported = unavailable_consumer
+            .as_ref()
+            .err()
+            .and_then(Error::source)
+            .expect("actual host error source");
+        assert_eq!(
+            ptr::from_ref(reported).cast::<()>(),
+            ptr::from_ref(cause).cast::<()>()
+        );
+        assert!(cause.is_missing_context());
+        assert!(first_result.is_ok());
+        assert!(replacement_result.is_ok());
+        assert_eq!(first.runtime_generation, 23);
+        assert_eq!(replacement.runtime_generation, first.runtime_generation);
+        assert_eq!(first.actor_generation, 29);
+        assert_eq!(replacement.actor_generation, 30);
+        assert_eq!(next_after_grant_refusals, Some(30));
+        assert!(matches!(empty_issuer, Err(StartupRefusal::Grant)));
+        assert!(matches!(empty_operations, Err(StartupRefusal::Grant)));
+        assert!(matches!(invalid_consumer, Err(StartupRefusal::Grant)));
+        assert!(matches!(empty_consumer, Err(StartupRefusal::Grant)));
+        let (last, _) = last.expect("last finite assignment can be issued");
+        assert_eq!(last.actor_generation, u64::MAX);
+        assert!(matches!(exhausted, Err(StartupRefusal::Exhausted)));
+        assert!(matches!(exhausted_again, Err(StartupRefusal::Exhausted)));
+        assert_eq!(authority.next, None);
     }
 }
 
@@ -3451,14 +4081,21 @@ mod proof_rotation {
             AuthorityFreshness,
             ProviderAvailability,
         ) -> Result<R, VerificationError>,
-        projection: fn(&R) -> (Identity, CounterOperation),
+        projection: fn(&R) -> &Scope,
     ) {
         let host = Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("explicit host");
         host.block_on(async {
-            let mut authority = AssignmentAuthority { next: Some(29) };
+            let mut authority = AssignmentAuthority {
+                host: &host,
+                runtime_generation: 23,
+                grant_issuer: "grant-controller",
+                authority_generation: 7,
+                permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+                next: Some(29),
+            };
             let (binding, deadline) = authority.issue().expect("finite authorized assignment");
             let (publication, ports) = oneshot::channel();
             let (permitted, permission) = oneshot::channel();
@@ -3503,6 +4140,10 @@ mod proof_rotation {
                         service = Some(CounterAuthorization::new(
                             StartupMode::ExplicitTest,
                             Some((binding, deadline, target.clone())),
+                            "grant-controller",
+                            7,
+                            &[CounterOperation::Increment, CounterOperation::Read],
+                            projection,
                             CounterLimits {
                                 incoming: NonZeroUsize::new(2).expect("configured input"),
                                 retained: NonZeroUsize::new(2).expect("configured input"),
@@ -3521,7 +4162,11 @@ mod proof_rotation {
                                 if let CounterProof::Replacement = proof {
                                     // This is trusted configuration, not incoming bytes.
                                     // The same authorization owner/identity stays live.
-                                    configured[0].3 = [42];
+                                    configured[0].2 = [42];
+                                    configured[0].0.grant_issuer = "rotated-grant-controller";
+                                    configured[0].0.authority_generation = 8;
+                                    authorization.grant_issuer = "rotated-grant-controller";
+                                    authorization.authority_generation = 8;
                                 }
                                 let proof_byte = match proof {
                                     CounterProof::Original | CounterProof::Retired => 41,
@@ -3561,12 +4206,7 @@ mod proof_rotation {
                                     },
                                 )
                                 .await;
-                                authorization.associate(
-                                    position,
-                                    projection,
-                                    &requests,
-                                    &replies.recipient(),
-                                );
+                                authorization.associate(position, &requests, &replies.recipient());
                                 authorization.attempt(correlation, &requests);
                                 let report = authorization.report(correlation);
                                 let read = requests
@@ -3688,26 +4328,16 @@ mod proof_rotation {
                     ) => {
                         assert_eq!(
                             projection(&receipt),
-                            (
-                                Identity {
-                                    binding,
-                                    sequence: 0
-                                },
-                                CounterOperation::Increment
-                            )
+                            &configured_counter_grants(binding)[0].0
                         );
                     }
                     (CounterProof::Replacement, Verification::Duplicate { receipt, report }) => {
-                        assert_eq!(
-                            projection(&receipt),
-                            (
-                                Identity {
-                                    binding,
-                                    sequence: 0
-                                },
-                                CounterOperation::Increment
-                            )
-                        );
+                        let expected_scope = Scope {
+                            grant_issuer: "rotated-grant-controller",
+                            authority_generation: 8,
+                            ..configured_counter_grants(binding)[0].0
+                        };
+                        assert_eq!(projection(&receipt), &expected_scope);
                         assert_eq!(report.correlation, correlation);
                         assert_eq!(
                             report.status,
@@ -3769,7 +4399,14 @@ mod closed_counter {
             .build()
             .expect("explicit owning host");
         host.block_on(async {
-            let mut authority = AssignmentAuthority { next: Some(29) };
+            let mut authority = AssignmentAuthority {
+                host: &host,
+                runtime_generation: 23,
+                grant_issuer: "grant-controller",
+                authority_generation: 7,
+                permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+                next: Some(29),
+            };
             let (binding, deadline) = authority
                 .issue()
                 .unwrap_or_else(|_| panic!("finite configured authority"));
@@ -3816,6 +4453,10 @@ mod closed_counter {
                         authorization = Some(CounterAuthorization::new(
                             StartupMode::ExplicitTest,
                             Some((binding, deadline, target)),
+                            "grant-controller",
+                            7,
+                            &[CounterOperation::Increment, CounterOperation::Read],
+                            record_provider::projection,
                             CounterLimits {
                                 incoming: NonZeroUsize::new(1).expect("explicit incoming count"),
                                 retained: NonZeroUsize::new(1).expect("explicit retained count"),
@@ -3847,12 +4488,7 @@ mod closed_counter {
                                     },
                                 )
                                 .await;
-                                authorization.associate(
-                                    position,
-                                    record_provider::projection,
-                                    &requests,
-                                    &replies.recipient(),
-                                );
+                                authorization.associate(position, &requests, &replies.recipient());
                                 authorization.attempt(*correlation, &requests);
                                 report = authorization.report(*correlation);
                                 admission = authorization.consume(*correlation);
@@ -3927,10 +4563,7 @@ mod closed_counter {
                 Some((recovered.protected.as_ptr(), recovered.proof.as_ptr())),
                 pointers
             );
-            assert_eq!(
-                record_provider::projection(receipt),
-                (configured[0].0, CounterOperation::Increment)
-            );
+            assert_eq!(record_provider::projection(receipt), &configured[0].0);
             assert!(original.is_none());
             let Some(Ok(authorization)) = &authorization else {
                 panic!("actual original service constructor result");

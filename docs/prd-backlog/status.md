@@ -106,8 +106,14 @@ pass through pinned Nix; focused PR348 merged reviewed2b97d9df with all six CI
 checks passing. Actual guarded merge101cfb8ff03635d00f991ecaa3224f9971f01eb9 occurred
 at2026-10-11T12:19:08Z after independent final CI inspection. Fresh Read
 ownership and runtime-assignment controls pass both profiles and independent
-scoped review; Read combined checks pass. Its delivery and complete authenticated Scope
-implementation remain open.
+scoped review. Read PR349 merged12d9c8493261badf0b14b364b2b71d5dcf19f927
+at2026-10-11T13:15:08Z after exact-head technical review and all six checks passed.
+Linux CI executed its fifth Read test in debug, coverage and optimized builds;
+required Driver/Observe fuzz passed, Miri was skipped. Complete configured Scope
+is implemented locally with21 tests passing in each profile; final inversions,
+scoped review and all four combined workspace checks pass. Reviewed PR/CI/merge
+delivery remains open. Controlled1.10.5 candidate passes its complete
+local release/package gate and scoped adverse controls; PR8 required CI is live.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
 
