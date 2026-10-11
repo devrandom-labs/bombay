@@ -5,7 +5,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bombay::ChildFailure;
-use bombay::ProjectTerminal;
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, ChildChoice, ChildCons, ChildCreationOutcome, ChildHead,
     ChildReport, ChildTail, ClassifySettlement, CreateChild, CreationId, CreationKind,
@@ -175,7 +174,7 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: ApplicationTerminal = ProjectTerminal::project(origin, retirement);
+    let terminal: ApplicationTerminal = (origin, retirement).into();
 
     let ApplicationTerminal::Root {
         origin,
@@ -317,7 +316,7 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: DeclaredApplicationTerminal = ProjectTerminal::project(origin, retirement);
+    let terminal: DeclaredApplicationTerminal = (origin, retirement).into();
 
     let DeclaredApplicationTerminal::Root {
         origin,
@@ -653,7 +652,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: NestedTerminal = ProjectTerminal::project(
+    let terminal: NestedTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -661,7 +660,8 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     let child_termination =
         termination.expect("the child report must complete before the watchdog");
     assert_eq!(child_termination, Ok(Exit::Normal));
@@ -1013,7 +1013,7 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: PanicTerminal = ProjectTerminal::project(origin, retirement);
+    let terminal: PanicTerminal = (origin, retirement).into();
     let PanicTerminal::Root {
         origin,
         terminal:

@@ -8,7 +8,6 @@ mod worker;
 
 use core::convert::Infallible;
 
-use bombay::ProjectTerminal;
 use bombay::atomic::{
     ActivationPolicy, ActorDrainPolicy, Assignment, BacklogCapacity, DiagnosticDisposition,
     FifoCommand, FifoOutcome, FifoPool, ImmediateActivation, Interruption, OrderedRoles,
@@ -169,7 +168,7 @@ fn run_search_pool() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: SearchTerminal = ProjectTerminal::project(
+    let terminal: SearchTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -177,7 +176,8 @@ fn run_search_pool() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(termination, Ok(Exit::Normal));
     assert_search_terminal(terminal);
 }

@@ -3,8 +3,7 @@ use crate::address::MailAddr;
 use crate::launch::{OwnedActor, OwnedTask, ProjectedTask, SpawnError, spawn_owned_execution};
 use crate::local::children::{
     ChildCreationAt, ChildOriginAt, ChildStartupFailures, CreationBinding, DirectChildFailures,
-    NestedBindings, NestedChildBindings, RetireChildTasks, StartupRetirementCustody,
-    StructuralOrigins,
+    NestedBindings, RetireChildTasks, StartupRetirementCustody, StructuralOrigins,
 };
 use crate::local::effects::reports::LocalParentReports;
 use crate::local::effects::{
@@ -14,7 +13,7 @@ use crate::local::effects::{
 use crate::local::endpoint::InstalledActor;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
 use crate::local::ingress::DEFAULT_USER_CAPACITY;
-use crate::terminal::{ActorRetirement, ProjectTerminal};
+use crate::terminal::ProjectTerminal;
 use crate::worker_preparation::{WorkerPreparationSource, settle_worker_preparation};
 use behavior::{
     ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -121,7 +120,7 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Position, Child> EstablishChild<Position, Child>
+impl<C, N, P, Bindings, Origins, Position, Child, Descendants> EstablishChild<Position, Child>
     for ApplicationCapabilities<C, N, P, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + BehaviorBase,
@@ -130,13 +129,19 @@ where
     N: Send + Sync + 'static,
     P: Send,
     Position: 'static,
+    <Child::Birth as BirthMode>::Child: behavior::ChildOccurrenceProduct<
+            crate::local::children::RuntimeChildBindings<
+                Descendants,
+                StructuralOrigins<Child::Base>,
+            >,
+        >,
     Bindings: ChildCreationAt<
             Position,
             Child = Child,
             Root = BindingTerminal<Bindings>,
             Origins = Origins,
-        > + NestedChildBindings<Child>
-        + RetireChildTasks
+            Descendants = Descendants,
+        > + RetireChildTasks
         + Send,
     <Child::Birth as BirthMode>::Child:
         behavior::ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
@@ -154,34 +159,35 @@ where
     Child::SourceCustody: Send + 'static,
     <Child::Birth as BirthMode>::Child: Send + 'static,
     BindingTerminal<Bindings>: Send + 'static,
-    NestedBindings<Bindings, Child>:
-        Default + RetireChildTasks<Root = BindingTerminal<Bindings>> + Send + 'static,
+    NestedBindings<Child, Descendants>: Default
+        + RetireChildTasks<Root = Descendants, Failures = ChildStartupFailures<Child>>
+        + Send
+        + 'static,
     ActionInterpreter<
         ApplicationCapabilities<
             Child,
             N,
             LocalParentReports<C::Event, Child, C::Birth>,
-            NestedBindings<Bindings, Child>,
+            NestedBindings<Child, Descendants>,
             StructuralOrigins<Child::Base>,
         >,
     >: CommitActions<
             Child,
             Retired = (
-                Vec<BindingTerminal<Bindings>>,
-                <NestedBindings<Bindings, Child> as RetireChildTasks>::Failures,
+                Vec<Descendants>,
+                <NestedBindings<Child, Descendants> as RetireChildTasks>::Failures,
             ),
         > + Send
         + 'static,
     Origins: ChildOriginAt<Position, Child>,
     BindingTerminal<Bindings>: ProjectTerminal<
             Origins::Origin,
-            ActorRetirement<
-                Child,
-                BindingTerminal<Bindings>,
-                <NestedBindings<Bindings, Child> as RetireChildTasks>::Failures,
-            >,
+            Child,
+            ChildStartupFailures<Child>,
+            Descendants = Descendants,
         >,
-    <NestedBindings<Bindings, Child> as RetireChildTasks>::Failures: Send + 'static,
+    Descendants: Send + 'static,
+    <NestedBindings<Child, Descendants> as RetireChildTasks>::Failures: Send + 'static,
 {
     #[allow(
         clippy::too_many_lines,
@@ -233,7 +239,7 @@ where
                         Child,
                         N,
                         NoParent,
-                        NestedBindings<Bindings, Child>,
+                        NestedBindings<Child, Descendants>,
                         StructuralOrigins<Child::Base>,
                     >::new_with_bindings(
                         ApplicationCapabilityInputs {
@@ -245,7 +251,7 @@ where
                             observations,
                             terminal_reports,
                         },
-                        NestedBindings::<Bindings, Child>::default(),
+                        NestedBindings::<Child, Descendants>::default(),
                     )
                     .with_parent(
                         LocalParentReports::<C::Event, Child, C::Birth>::new(id, parent),
@@ -897,9 +903,11 @@ mod child_projection_panic {
     impl
         ProjectTerminal<
             ChildOrigin<ProjectionParent, ChildHead>,
-            ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+            StopOnShutdown<ProjectionChild>,
+            (),
         > for ChildTerminal
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<ProjectionParent, ChildHead>,
             retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
@@ -936,9 +944,11 @@ mod child_projection_panic {
     impl
         ProjectTerminal<
             ChildOrigin<ProjectionParent, ChildHead>,
-            ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+            StopOnShutdown<ProjectionChild>,
+            (),
         > for StartupChildRetirement
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<ProjectionParent, ChildHead>,
             retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
@@ -990,12 +1000,10 @@ mod child_projection_panic {
         retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,
     }
 
-    impl
-        ProjectTerminal<
-            ChildOrigin<LedgerCreator, ChildHead>,
-            ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,
-        > for LedgerChildRetirement
+    impl ProjectTerminal<ChildOrigin<LedgerCreator, ChildHead>, StopOnShutdown<ShutdownLedger>, ()>
+        for LedgerChildRetirement
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<LedgerCreator, ChildHead>,
             retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,
@@ -1710,9 +1718,11 @@ mod child_projection_panic {
     impl
         ProjectTerminal<
             ChildOrigin<ProjectionParent, ChildHead>,
-            ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+            StopOnShutdown<ProjectionChild>,
+            (),
         > for StartupProjectionRetirement
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<ProjectionParent, ChildHead>,
             retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
@@ -2179,11 +2189,13 @@ mod child_projection_panic {
                 crate::local::children::CreationBinding<
                     StopOnShutdown<ProjectionChild>,
                     StartupChildRetirement,
+                    StartupChildRetirement,
                 >,
             >(),
             core::mem::align_of::<
                 crate::local::children::CreationBinding<
                     StopOnShutdown<ProjectionChild>,
+                    StartupChildRetirement,
                     StartupChildRetirement,
                 >,
             >(),

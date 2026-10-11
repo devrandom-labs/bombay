@@ -2,9 +2,9 @@
 
 use core::marker::PhantomData;
 
+use actor_runtime::Hosts;
 use actor_runtime::behavior::{Actions, BehaviorActed, Never, NoBirths, NoSends};
 use actor_runtime::prelude::{ActorRetirement, Protocol, RootOrigin};
-use actor_runtime::{Hosts, ProjectTerminal};
 
 // These caller-owned names must not capture paths emitted by the macros.
 mod bombay {
@@ -59,10 +59,10 @@ mod tests {
     use actor_runtime::behavior::{User, delegate_transition, initialize};
 
     fn accepts_projection<
-        T: ProjectTerminal<
-                RootOrigin<NamedActor<u8>>,
-                ActorRetirement<NamedActor<u8>, NamedTerminal, ()>,
-            >,
+        T: From<(
+            RootOrigin<NamedActor<u8>>,
+            ActorRetirement<NamedActor<u8>, NamedTerminal, ()>,
+        )>,
     >() {
     }
 

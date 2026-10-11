@@ -7,7 +7,6 @@ use core::convert::Infallible;
 use core::time::Duration;
 use tokio::runtime::Builder;
 
-use bombay::ProjectTerminal;
 use bombay::actors::ActorExt as _;
 use bombay::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
@@ -274,7 +273,7 @@ fn run_supervision() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: SupervisorTerminal = ProjectTerminal::project(
+    let terminal: SupervisorTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -282,7 +281,8 @@ fn run_supervision() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_restarted_worker_retirement(terminal);

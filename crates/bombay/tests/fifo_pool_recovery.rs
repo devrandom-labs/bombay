@@ -13,7 +13,6 @@ use behavior_actors::atomic::{
     RestartLimit, RestartRelease, SubmissionId, WorkerSource, WorkerSubmission, fifo, pool_worker,
 };
 use behavior_actors::{Crash, Exit, StopOnShutdown};
-use bombay::ProjectTerminal;
 use bombay::behavior::{Actions, ChildHead, MessageProtocol, Never};
 use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
@@ -318,7 +317,7 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
+    let terminal: RecoveryTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -326,7 +325,8 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
@@ -418,7 +418,7 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
+    let terminal: RecoveryTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -426,7 +426,8 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
@@ -550,7 +551,7 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
+    let terminal: RecoveryTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -558,7 +559,8 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_recovered_pool_terminal(terminal);
@@ -673,7 +675,7 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
+    let terminal: RecoveryTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -681,7 +683,8 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     let RecoveryTerminal::Root { terminal, .. } = terminal else {
@@ -797,7 +800,7 @@ fn source_task_failure_terminates_the_active_pool() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RecoveryTerminal = ProjectTerminal::project(
+    let terminal: RecoveryTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -805,7 +808,8 @@ fn source_task_failure_terminates_the_active_pool() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(termination, Err(Crash::CapabilityFailed));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     let RecoveryTerminal::Root { origin, terminal } = terminal else {

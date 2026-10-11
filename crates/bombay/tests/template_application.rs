@@ -5,7 +5,6 @@ use behavior_actors::{
     Activate, Machine, Move, Stash, StashRoute, StopOnShutdown, TimerElapsed, TimerGeneration,
     TimerId,
 };
-use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Become, Behavior, BehaviorActed, BehaviorBase, Never, NoBirths, Protocol,
@@ -104,7 +103,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement).into();
     assert_completed(terminal, None);
 }
 
@@ -144,7 +143,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement).into();
     assert_completed(terminal, None);
 }
 
@@ -184,7 +183,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement).into();
     assert_completed(terminal, None);
 }
 
@@ -224,7 +223,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement).into();
     assert_completed(terminal, None);
 }
 
@@ -294,7 +293,7 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -302,7 +301,8 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_completed(terminal, None);
 }
 
@@ -422,6 +422,6 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement).into();
     assert_completed(terminal, None);
 }

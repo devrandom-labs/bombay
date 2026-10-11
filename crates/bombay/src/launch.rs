@@ -767,14 +767,15 @@ where
     ActionSettlementOf<B>: Send + 'static,
     Root: Send + 'static,
 {
-    pub(crate) fn project<Origin, ChildFailures>(
-        task: OwnedTask<B, (Vec<Root>, ChildFailures)>,
+    pub(crate) fn project<Origin, Descendants, ChildFailures>(
+        task: OwnedTask<B, (Vec<Descendants>, ChildFailures)>,
         origin: Origin,
     ) -> Self
     where
         Origin: Send + 'static,
+        Descendants: Send + 'static,
         ChildFailures: Send + 'static,
-        Root: ProjectTerminal<Origin, ActorRetirement<B, Root, ChildFailures>>,
+        Root: ProjectTerminal<Origin, B, ChildFailures, Descendants = Descendants>,
     {
         let OwnedTask {
             task: actor_task,
@@ -4149,11 +4150,10 @@ mod independent_actor_execution {
     > = Mutex::new(None);
 
     impl
-        ProjectTerminal<
-            ChildOrigin<ExecutionParent, ChildHead>,
-            ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
-        > for CompletedExecutionChild
+        ProjectTerminal<ChildOrigin<ExecutionParent, ChildHead>, StopOnShutdown<ExecutionChild>, ()>
+        for CompletedExecutionChild
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<ExecutionParent, ChildHead>,
             terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,

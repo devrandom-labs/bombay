@@ -3,7 +3,6 @@ use behavior_actors::{
     CacheConfiguration, CacheMessage, CacheResult, Latch, LatchMessage, LatchReleased,
 };
 use bombay::ApplicationOutcome;
-use bombay::ProjectTerminal;
 use bombay::behavior::MessageProtocol;
 use bombay::prelude::*;
 use tokio::runtime::Builder;
@@ -87,7 +86,7 @@ fn cache_preserves_an_exact_external_customer() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -95,7 +94,8 @@ fn cache_preserves_an_exact_external_customer() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_completed(terminal, None);
 }
 
@@ -183,7 +183,7 @@ fn barrier_releases_two_exact_external_participants() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -191,7 +191,8 @@ fn barrier_releases_two_exact_external_participants() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_completed(terminal, None);
 }
 
@@ -251,7 +252,7 @@ fn latch_releases_exact_external_participants() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -259,6 +260,7 @@ fn latch_releases_exact_external_participants() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_completed(terminal, None);
 }

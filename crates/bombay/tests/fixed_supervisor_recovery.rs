@@ -20,9 +20,7 @@ use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
     TerminalProjection,
 };
-use bombay::{
-    ActorSpace, ActorSpaces, App, ProjectTerminal, WorkerPreparationSource, WorkerPreparationStart,
-};
+use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::mpsc;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -342,7 +340,7 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
         }
         retirement => retirement,
     };
-    let terminal = SupervisorTerminal::project(origin, retirement);
+    let terminal = SupervisorTerminal::from((origin, retirement));
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(
@@ -519,7 +517,7 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         }
         retirement => retirement,
     };
-    let terminal = SupervisorTerminal::project(origin, retirement);
+    let terminal = SupervisorTerminal::from((origin, retirement));
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(

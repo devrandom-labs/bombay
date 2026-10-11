@@ -77,9 +77,11 @@ enum AccountConclusion {
 impl
     ProjectTerminal<
         RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        ActorRetirement<StopOnShutdown<ReceivingAccount>, Self, ()>,
+        StopOnShutdown<ReceivingAccount>,
+        (),
     > for AccountConclusion
 {
+    type Descendants = Self;
     fn project(
         origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
         terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Self, ()>,
@@ -528,7 +530,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
             panic!("declared application initialization refuses before publication");
         }
     };
-    let returned = DeclaredAccountConclusion::project(origin, retirement);
+    let returned = DeclaredAccountConclusion::from((origin, retirement));
     let returned = match returned {
         DeclaredAccountConclusion::Root { origin, terminal } => (origin, terminal),
         DeclaredAccountConclusion::Account { origin, terminal } => {
@@ -3022,24 +3024,22 @@ enum HostAccountConclusion {
 impl
     ProjectTerminal<
         RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        ActorRetirement<
-            ApplicationBehavior<
-                StopOnShutdown<ReceivingAccount>,
-                ChildCons<MailAddr, ReceivingAccount, NoChildren>,
-            >,
-            Self,
-            (
-                Vec<
-                    ChildFailure<
-                        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-                        ReceivingAccount,
-                    >,
-                >,
-                (),
-            ),
+        ApplicationBehavior<
+            StopOnShutdown<ReceivingAccount>,
+            ChildCons<MailAddr, ReceivingAccount, NoChildren>,
         >,
+        (
+            Vec<
+                ChildFailure<
+                    ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
+                    ReceivingAccount,
+                >,
+            >,
+            (),
+        ),
     > for HostAccountConclusion
 {
+    type Descendants = Self;
     fn project(
         origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
         terminal: ActorRetirement<
@@ -3070,9 +3070,11 @@ impl
 impl
     ProjectTerminal<
         ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-        ActorRetirement<ReceivingAccount, Self, ()>,
+        ReceivingAccount,
+        (),
     > for HostAccountConclusion
 {
+    type Descendants = Self;
     fn project(
         origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
         terminal: ActorRetirement<ReceivingAccount, Self, ()>,

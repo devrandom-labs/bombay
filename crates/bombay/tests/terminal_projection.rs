@@ -1,11 +1,11 @@
 use bombay::ActorCustody;
+use bombay::ApplicationOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, ChildRole, Never};
 use bombay::prelude::{
     ActorRetirement, Application, ChildOrigin, Completion, MailAddr, RootOrigin, StopOnShutdown,
     TerminalProjection,
 };
-use bombay::{ApplicationOutcome, ProjectTerminal};
 
 struct Root;
 
@@ -69,7 +69,7 @@ enum RoleTerminal {
 
 fn accepts_projection<Origin, Terminal, Root>()
 where
-    Root: ProjectTerminal<Origin, Terminal>,
+    Root: From<(Origin, Terminal)>,
 {
 }
 
@@ -121,7 +121,7 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: ApplicationTerminal = ProjectTerminal::project(origin, retirement);
+    let terminal: ApplicationTerminal = (origin, retirement).into();
     let ApplicationTerminal::Root {
         origin,
         terminal:
@@ -156,6 +156,7 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
 #[test]
 fn projection_shape_is_compile_checked() {
     let cases = trybuild::TestCases::new();
+    cases.pass("tests/compile/pass/terminal_inclusion_sources.rs");
     cases.compile_fail("tests/compile/fail/terminal_projection_incomplete_variant.rs");
     cases.compile_fail("tests/compile/fail/terminal_projection_duplicate_pair.rs");
     cases.compile_fail("tests/compile/fail/terminal_projection_wrong_role.rs");

@@ -7,7 +7,7 @@ use std::any::Any;
 
 use behavior::{
     Behavior, BehaviorAddr, BehaviorMessage, BehaviorSettlements, ChildRole, CreationId,
-    CreationKind, EstablishedActor, Interpretation, InterpretationProgress, Protocol,
+    CreationKind, EstablishedActor, Interpretation, InterpretationProgress, Never, Protocol,
     SourceCustody, SourceProgress, User,
 };
 use bombay_address::ClaimError;
@@ -178,10 +178,20 @@ impl<Owner, Role> PartialEq for ChildOrigin<Owner, Role> {
 
 impl<Owner, Role> Eq for ChildOrigin<Owner, Role> {}
 
-/// Total static lift from one exact terminal source into an application sum.
-pub trait ProjectTerminal<Origin, Terminal> {
-    /// Preserve the supplied origin and terminal value in the application sum.
-    fn project(origin: Origin, terminal: Terminal) -> Self;
+/// Native actor projection; child raw descendants are selected before launch.
+/// Pure owned presentation uses `From<(Origin, Retirement)>`.
+pub trait ProjectTerminal<Origin, Actor, ChildFailures>
+where
+    Actor: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+{
+    /// The descendant report family owned by the child before projection.
+    type Descendants;
+
+    /// Consume the exact origin and complete retirement in the native policy context.
+    fn project(
+        origin: Origin,
+        terminal: ActorRetirement<Actor, Self::Descendants, ChildFailures>,
+    ) -> Self;
 }
 
 /// Available failure of one exact child creation or installed incarnation.

@@ -90,9 +90,11 @@ cleanup-publication receiving error. `TaskFailed(JoinError)` retains the actual
 cleanup task error. The root's `ActorTaskFailed(JoinError)` variant separately
 owns the native actor failure. Preserve these distinct owners; do not infer
 absent actors or manufacture a JoinError from a closed channel. `Terminal` is the descendant destination.
-The root stays raw. A caller may use the existing `ProjectTerminal::project`
-outside the runtime to apply its own root projection policy, using the original
-origin and retirement without changing the actual Owner/Actor distinction.
+The root stays raw. A derived application sum receives its exact owned pair
+with `(origin, retirement).into()`. `ProjectTerminal<Origin, Actor, ChildFailures>`
+is the native interpreter port: its associated `Descendants` selects the child
+retirement tree before launch, independently of the projected report. Explicit
+native policies retain their original task context and failure causes.
 `ApplicationOutcome` is an explicit `bombay` root import, not a prelude export.
 
 Use `ActorRetirement::completion()` to borrow the normal stop or exhaustion

@@ -1041,12 +1041,10 @@ mod installed_shutdown_contract {
             retirement: ActorRetirement<NestedLedger, Self, ()>,
         },
     }
-    impl
-        ProjectTerminal<
-            ChildOrigin<ShutdownObserver, ChildHead>,
-            ActorRetirement<DirectLedger, Self, ()>,
-        > for ShutdownChildren
+    impl ProjectTerminal<ChildOrigin<ShutdownObserver, ChildHead>, DirectLedger, ()>
+        for ShutdownChildren
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<ShutdownObserver, ChildHead>,
             retirement: ActorRetirement<DirectLedger, Self, ()>,
@@ -1054,12 +1052,10 @@ mod installed_shutdown_contract {
             Self::Direct { origin, retirement }
         }
     }
-    impl
-        ProjectTerminal<
-            ChildOrigin<ShutdownObserver, ChildHead>,
-            ActorRetirement<NestedLedger, Self, ()>,
-        > for ShutdownChildren
+    impl ProjectTerminal<ChildOrigin<ShutdownObserver, ChildHead>, NestedLedger, ()>
+        for ShutdownChildren
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<ShutdownObserver, ChildHead>,
             retirement: ActorRetirement<NestedLedger, Self, ()>,
@@ -1089,6 +1085,7 @@ mod installed_shutdown_contract {
                 ShutdownChildren,
                 StructuralOrigins<ShutdownObserver>,
                 NoChildBindings<ShutdownChildren>,
+                ShutdownChildren,
             >,
             StructuralOrigins<ShutdownObserver>,
         >::new_with_bindings(
@@ -1118,6 +1115,7 @@ mod installed_shutdown_contract {
                 ShutdownChildren,
                 StructuralOrigins<ShutdownObserver>,
                 NoChildBindings<ShutdownChildren>,
+                ShutdownChildren,
             >,
             StructuralOrigins<ShutdownObserver>,
         >::new_with_bindings(

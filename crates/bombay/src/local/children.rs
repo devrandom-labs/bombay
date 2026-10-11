@@ -59,8 +59,17 @@ impl<Root, Origins, Position, Child, Tail> ChildOccurrenceMember<Position, Child
 where
     Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
+    Origins: ChildOriginAt<Position, Child>,
+    Root: ProjectTerminal<Origins::Origin, Child, ChildStartupFailures<Child>>,
 {
-    type Member = ChildBinding<Position, Child, Root, Origins, Tail>;
+    type Member = ChildBinding<
+        Position,
+        Child,
+        Root,
+        Origins,
+        Tail,
+        <Root as ProjectTerminal<Origins::Origin, Child, ChildStartupFailures<Child>>>::Descendants,
+    >;
 }
 
 impl<Root> Default for NoChildBindings<Root> {
@@ -69,8 +78,8 @@ impl<Root> Default for NoChildBindings<Root> {
     }
 }
 
-impl<Position, Child, Root, Origins, Tail> Default
-    for ChildBinding<Position, Child, Root, Origins, Tail>
+impl<Position, Child, Root, Origins, Tail, Descendants> Default
+    for ChildBinding<Position, Child, Root, Origins, Tail, Descendants>
 where
     Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
@@ -120,8 +129,8 @@ pub(crate) trait ChildBindingAtCursor<Target, Cursor> {
     fn creation_at(&self, id: CreationId) -> Option<ChildAuthority<'_, Self::Child>>;
 }
 
-impl<Target, Child, Root, Origins, Tail> ChildBindingAtCursor<Target, ChildHead>
-    for ChildBinding<Target, Child, Root, Origins, Tail>
+impl<Target, Child, Root, Origins, Tail, Descendants> ChildBindingAtCursor<Target, ChildHead>
+    for ChildBinding<Target, Child, Root, Origins, Tail, Descendants>
 where
     Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
@@ -147,9 +156,9 @@ where
     }
 }
 
-impl<Target, Cursor, Position, Head, Root, Origins, Tail>
+impl<Target, Cursor, Position, Head, Root, Origins, Tail, Descendants>
     ChildBindingAtCursor<Target, ChildTail<Cursor>>
-    for ChildBinding<Position, Head, Root, Origins, Tail>
+    for ChildBinding<Position, Head, Root, Origins, Tail, Descendants>
 where
     Head: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Head>: ChildOccurrenceProduct<DirectChildFailures<Head::Base>>,
@@ -176,17 +185,21 @@ pub(crate) trait ChildCreationAt<Position> {
             >,
         > + BehaviorBase;
     type Root;
+    type Descendants;
     type Origins;
 
     fn creation_mut(
         &mut self,
         id: CreationId,
-    ) -> Option<&mut CreationBinding<Self::Child, Self::Root>>;
-    fn take_creation(&mut self, id: CreationId) -> CreationBinding<Self::Child, Self::Root>;
+    ) -> Option<&mut CreationBinding<Self::Child, Self::Root, Self::Descendants>>;
+    fn take_creation(
+        &mut self,
+        id: CreationId,
+    ) -> CreationBinding<Self::Child, Self::Root, Self::Descendants>;
     fn record_creation(
         &mut self,
         id: CreationId,
-        binding: CreationBinding<Self::Child, Self::Root>,
+        binding: CreationBinding<Self::Child, Self::Root, Self::Descendants>,
     );
     fn child_actors(&self) -> ActorSpace<<Self::Child as Behavior>::Protocol>;
 }
@@ -197,21 +210,25 @@ where
 {
     type Child = Bindings::Child;
     type Root = Bindings::Root;
+    type Descendants = Bindings::Descendants;
     type Origins = Bindings::Origins;
 
     fn creation_mut(
         &mut self,
         id: CreationId,
-    ) -> Option<&mut CreationBinding<Self::Child, Self::Root>> {
+    ) -> Option<&mut CreationBinding<Self::Child, Self::Root, Self::Descendants>> {
         self.creation_mut_at(id)
     }
-    fn take_creation(&mut self, id: CreationId) -> CreationBinding<Self::Child, Self::Root> {
+    fn take_creation(
+        &mut self,
+        id: CreationId,
+    ) -> CreationBinding<Self::Child, Self::Root, Self::Descendants> {
         self.take_creation_at(id)
     }
     fn record_creation(
         &mut self,
         id: CreationId,
-        binding: CreationBinding<Self::Child, Self::Root>,
+        binding: CreationBinding<Self::Child, Self::Root, Self::Descendants>,
     ) {
         self.record_creation_at(id, binding);
     }
@@ -232,43 +249,55 @@ pub(crate) trait ChildCreationAtCursor<Target, Cursor> {
             >,
         > + BehaviorBase;
     type Root;
+    type Descendants;
     type Origins;
 
     fn creation_mut_at(
         &mut self,
         id: CreationId,
-    ) -> Option<&mut CreationBinding<Self::Child, Self::Root>>;
-    fn take_creation_at(&mut self, id: CreationId) -> CreationBinding<Self::Child, Self::Root>;
+    ) -> Option<&mut CreationBinding<Self::Child, Self::Root, Self::Descendants>>;
+    fn take_creation_at(
+        &mut self,
+        id: CreationId,
+    ) -> CreationBinding<Self::Child, Self::Root, Self::Descendants>;
     fn record_creation_at(
         &mut self,
         id: CreationId,
-        binding: CreationBinding<Self::Child, Self::Root>,
+        binding: CreationBinding<Self::Child, Self::Root, Self::Descendants>,
     );
     fn child_actors_at(&self) -> ActorSpace<<Self::Child as Behavior>::Protocol>;
 }
 
-impl<Target, Child, Root, Origins, Tail> ChildCreationAtCursor<Target, ChildHead>
-    for ChildBinding<Target, Child, Root, Origins, Tail>
+impl<Target, Child, Root, Origins, Tail, Descendants> ChildCreationAtCursor<Target, ChildHead>
+    for ChildBinding<Target, Child, Root, Origins, Tail, Descendants>
 where
     Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
 {
     type Child = Child;
     type Root = Root;
+    type Descendants = Descendants;
     type Origins = Origins;
 
     fn creation_mut_at(
         &mut self,
         id: CreationId,
-    ) -> Option<&mut CreationBinding<Self::Child, Self::Root>> {
+    ) -> Option<&mut CreationBinding<Self::Child, Self::Root, Self::Descendants>> {
         self.creations.get_mut(&id)
     }
-    fn take_creation_at(&mut self, id: CreationId) -> CreationBinding<Self::Child, Self::Root> {
+    fn take_creation_at(
+        &mut self,
+        id: CreationId,
+    ) -> CreationBinding<Self::Child, Self::Root, Self::Descendants> {
         self.creations
             .remove(&id)
             .expect("the creator owns this exact startup row")
     }
-    fn record_creation_at(&mut self, id: CreationId, binding: CreationBinding<Child, Root>) {
+    fn record_creation_at(
+        &mut self,
+        id: CreationId,
+        binding: CreationBinding<Child, Root, Descendants>,
+    ) {
         match self.creations.entry(id) {
             Entry::Occupied(_) => {
                 panic!("one child creation identity settles once per occurrence")
@@ -308,9 +337,9 @@ where
     }
 }
 
-impl<Target, Cursor, Position, Head, Root, Origins, Tail>
+impl<Target, Cursor, Position, Head, Root, Origins, Tail, Descendants>
     ChildCreationAtCursor<Target, ChildTail<Cursor>>
-    for ChildBinding<Position, Head, Root, Origins, Tail>
+    for ChildBinding<Position, Head, Root, Origins, Tail, Descendants>
 where
     Head: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Head>: ChildOccurrenceProduct<DirectChildFailures<Head::Base>>,
@@ -318,18 +347,22 @@ where
 {
     type Child = Tail::Child;
     type Root = Tail::Root;
+    type Descendants = Tail::Descendants;
     type Origins = Tail::Origins;
 
     fn creation_mut_at(
         &mut self,
         id: CreationId,
-    ) -> Option<&mut CreationBinding<Self::Child, Self::Root>> {
+    ) -> Option<&mut CreationBinding<Self::Child, Self::Root, Self::Descendants>> {
         self.tail
             .as_mut()
             .expect("live occurrence retains its tail")
             .creation_mut_at(id)
     }
-    fn take_creation_at(&mut self, id: CreationId) -> CreationBinding<Self::Child, Self::Root> {
+    fn take_creation_at(
+        &mut self,
+        id: CreationId,
+    ) -> CreationBinding<Self::Child, Self::Root, Self::Descendants> {
         self.tail
             .as_mut()
             .expect("live occurrence retains its tail")
@@ -338,7 +371,7 @@ where
     fn record_creation_at(
         &mut self,
         id: CreationId,
-        binding: CreationBinding<Self::Child, Self::Root>,
+        binding: CreationBinding<Self::Child, Self::Root, Self::Descendants>,
     ) {
         self.tail
             .as_mut()
@@ -352,29 +385,6 @@ where
             .expect("live child occurrence retains its tail")
             .child_actors_at()
     }
-}
-
-/// Derive the same exact binding representation for a newly installed child.
-pub(crate) trait NestedChildBindings<Child>
-where
-    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
-    ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
-{
-    type Bindings: Default + RetireChildTasks<Failures = ChildStartupFailures<Child>>;
-}
-
-impl<Child, Bindings> NestedChildBindings<Child> for Bindings
-where
-    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
-    ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
-    Bindings: RetireChildTasks,
-    ChildNode<Child>: ChildOccurrenceProduct<
-        RuntimeChildBindings<Bindings::Root, StructuralOrigins<Child::Base>>,
-    >,
-    ChildBindings<Child, Bindings::Root, StructuralOrigins<Child::Base>>:
-        Default + RetireChildTasks<Failures = ChildStartupFailures<Child>>,
-{
-    type Bindings = ChildBindings<Child, Bindings::Root, StructuralOrigins<Child::Base>>;
 }
 
 pub(crate) trait RetireChildTasks {
@@ -435,12 +445,13 @@ impl<Root> RetireChildTasks for NoChildBindings<Root> {
     }
 }
 
-impl<Position, Child, Root, Origins, Tail> RetireChildTasks
-    for ChildBinding<Position, Child, Root, Origins, Tail>
+impl<Position, Child, Root, Origins, Tail, Descendants> RetireChildTasks
+    for ChildBinding<Position, Child, Root, Origins, Tail, Descendants>
 where
     Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
     ChildStartupFailures<Child>: Send + 'static,
+    Descendants: Send + 'static,
     Child::InterpretationCustody: Send + 'static,
     Child::SourceCustody: Send + 'static,
     Child::Sends: Send + 'static,
@@ -451,8 +462,12 @@ where
     <Child::Protocol as behavior::Protocol>::Msg: Send,
     Child::Event: Send + 'static,
     Child::Error: Send + 'static,
-    Root: ProjectTerminal<Origins::Origin, ActorRetirement<Child, Root, ChildStartupFailures<Child>>>
-        + Send
+    Root: ProjectTerminal<
+            Origins::Origin,
+            Child,
+            ChildStartupFailures<Child>,
+            Descendants = Descendants,
+        > + Send
         + 'static,
     Origins: ChildOriginAt<Position, Child>,
     Tail: RetireChildTasks<Root = Root> + Send,
@@ -762,12 +777,12 @@ pub(crate) type ChildBindings<Owner, Root, Origins> =
 pub(crate) struct NoChildBindings<Root = behavior::Never>(PhantomData<fn() -> Root>);
 
 /// Creation outcomes, hosting, and ordered task custody for one occurrence.
-pub(crate) struct ChildBinding<Position, Child, Root, Origins, Tail>
+pub(crate) struct ChildBinding<Position, Child, Root, Origins, Tail, Descendants>
 where
     Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
 {
-    creations: HashMap<CreationId, CreationBinding<Child, Root>>,
+    creations: HashMap<CreationId, CreationBinding<Child, Root, Descendants>>,
     creation_order: Vec<CreationId>,
     actors: ActorSpace<Child::Protocol>,
     tail: Option<Tail>,
@@ -778,7 +793,7 @@ where
     clippy::large_enum_variant,
     reason = "raw and projected retirement retain distinct affine payloads; ownership does not require indirection"
 )]
-pub(crate) enum StartupRetirementCustody<Child, Root>
+pub(crate) enum StartupRetirementCustody<Child, Root, Descendants>
 where
     Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
@@ -788,13 +803,13 @@ where
             clippy::type_complexity,
             reason = "the native task retains its exact actor and direct child retirement product"
         )]
-        task: Option<OwnedTask<Child, (Vec<Root>, ChildStartupFailures<Child>)>>,
+        task: Option<OwnedTask<Child, (Vec<Descendants>, ChildStartupFailures<Child>)>>,
         #[expect(
             clippy::type_complexity,
             reason = "the outside destination acquires the original raw actor outcome before native task disposal"
         )]
         received: Option<
-            Result<LocalOutcome<Child, (Vec<Root>, ChildStartupFailures<Child>)>, JoinError>,
+            Result<LocalOutcome<Child, (Vec<Descendants>, ChildStartupFailures<Child>)>, JoinError>,
         >,
     },
     Projection {
@@ -807,7 +822,7 @@ where
     clippy::large_enum_variant,
     reason = "one existing registry row owns each current custody phase; no allocation law requires added indirection"
 )]
-pub(crate) enum CreationBinding<Child, Root>
+pub(crate) enum CreationBinding<Child, Root, Descendants>
 where
     Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     ChildNode<Child>: ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
@@ -822,13 +837,13 @@ where
             clippy::type_complexity,
             reason = "the native task retains its exact actor and direct child retirement product"
         )]
-        task: Option<OwnedTask<Child, (Vec<Root>, ChildStartupFailures<Child>)>>,
+        task: Option<OwnedTask<Child, (Vec<Descendants>, ChildStartupFailures<Child>)>>,
     },
     RetiringStartup {
         kind: CreationKind,
         address: MailAddr,
         route: u64,
-        custody: StartupRetirementCustody<Child, Root>,
+        custody: StartupRetirementCustody<Child, Root, Descendants>,
     },
     Established {
         kind: CreationKind,
@@ -850,8 +865,8 @@ where
     },
 }
 
-pub(crate) type NestedBindings<Bindings, Child> =
-    <Bindings as NestedChildBindings<Child>>::Bindings;
+pub(crate) type NestedBindings<Child, Descendants> =
+    ChildBindings<Child, Descendants, StructuralOrigins<<Child as BehaviorBase>::Base>>;
 
 #[cfg(test)]
 mod tests {
@@ -877,9 +892,10 @@ mod tests {
         (),
         StructuralOrigins<Worker>,
         NoChildBindings<()>,
+        (),
     >;
     type FirstOccurrence =
-        ChildBinding<ChildHead, Worker, (), StructuralOrigins<Worker>, LaterOccurrence>;
+        ChildBinding<ChildHead, Worker, (), StructuralOrigins<Worker>, LaterOccurrence, ()>;
 
     fn creation_authority<Child, Bindings>(
         bindings: &Bindings,

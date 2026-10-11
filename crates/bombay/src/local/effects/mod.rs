@@ -518,7 +518,7 @@ mod atomic_interpretation_contract {
     use crate::actor;
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::application::ActorInterface;
-    use crate::local::children::ChildBindings;
+    use crate::local::children::ChildBinding;
     use crate::local::children::NoChildBindings;
     use crate::local::children::StructuralOrigins;
     use crate::local::effects::CommitActions;
@@ -1962,7 +1962,14 @@ mod atomic_interpretation_contract {
                 ProxyParent,
                 (),
                 super::NoParent,
-                ChildBindings<ProxyParent, Never, StructuralOrigins<ProxyParent>>,
+                ChildBinding<
+                    behavior::ChildHead,
+                    Proxy,
+                    Never,
+                    StructuralOrigins<ProxyParent>,
+                    NoChildBindings,
+                    Never,
+                >,
             >,
         >();
     }
@@ -4815,12 +4822,10 @@ mod capability_task_retirement {
         origin: ChildOrigin<CapabilityParent, ChildHead>,
         retirement: ActorRetirement<CapabilityChild, Self, ()>,
     }
-    impl
-        ProjectTerminal<
-            ChildOrigin<CapabilityParent, ChildHead>,
-            ActorRetirement<CapabilityChild, Self, ()>,
-        > for CapabilityChildTerminal
+    impl ProjectTerminal<ChildOrigin<CapabilityParent, ChildHead>, CapabilityChild, ()>
+        for CapabilityChildTerminal
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<CapabilityParent, ChildHead>,
             retirement: ActorRetirement<CapabilityChild, Self, ()>,

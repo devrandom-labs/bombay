@@ -10,7 +10,6 @@ use behavior_actors::atomic::{
     RestartLimit, RestartRelease, StableProxy, Strategy, WorkerSource, WorkerSubmission, fixed,
 };
 use behavior_actors::{Exit, StopOnShutdown};
-use bombay::ProjectTerminal;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{ChildHead, MessageProtocol, Never};
 use bombay::prelude::{
@@ -235,7 +234,7 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: SupervisorTerminal = ProjectTerminal::project(
+    let terminal: SupervisorTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -243,7 +242,8 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_supervisor_terminal(terminal);

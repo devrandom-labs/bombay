@@ -898,9 +898,11 @@ mod child_input_custody {
     impl
         ProjectTerminal<
             ChildOrigin<LedgerSupervisor, ChildHead>,
-            ActorRetirement<LedgerProxy, Self, ChildStartupFailures<LedgerProxy>>,
+            LedgerProxy,
+            ChildStartupFailures<LedgerProxy>,
         > for LedgerServiceRetirement
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<LedgerSupervisor, ChildHead>,
             retirement: ActorRetirement<LedgerProxy, Self, ChildStartupFailures<LedgerProxy>>,
@@ -908,12 +910,10 @@ mod child_input_custody {
             Self::Proxy { origin, retirement }
         }
     }
-    impl
-        ProjectTerminal<
-            ChildOrigin<LedgerProxy, ChildHead>,
-            ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,
-        > for LedgerServiceRetirement
+    impl ProjectTerminal<ChildOrigin<LedgerProxy, ChildHead>, StopOnShutdown<ShutdownLedger>, ()>
+        for LedgerServiceRetirement
     {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<LedgerProxy, ChildHead>,
             retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,

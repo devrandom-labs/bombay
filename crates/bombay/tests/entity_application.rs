@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use behavior_actors::StopOnShutdown;
+use bombay::ApplicationOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, ChildHead, ClassifySettlement, CreateChild,
@@ -19,7 +20,6 @@ use bombay::{
     ActorRetirement, ActorSpace, ActorSpaces, App, ChildFailure, ChildOrigin, MailAddr,
     TerminalProjection,
 };
-use bombay::{ApplicationOutcome, ProjectTerminal};
 use bombay_engine::Completion;
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
@@ -490,7 +490,7 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
     };
     let (root_origin, joined_actor) =
         root_receiving.expect("the independent original root retirement is acquired");
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -498,7 +498,8 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     let (profile_receiving, tail) = shutdowns;
     let (ProfilesRole, (profile_shutdown, profile_metrics, profile_family_disposal_failure)) =

@@ -17,7 +17,6 @@ use behavior_actors::{
     FinalizeOnShutdown, ReportTerminalOutcome, RestartDenial, ShutdownRequested,
     SupervisionFailureReason,
 };
-use bombay::ProjectTerminal;
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, EventLayer, InitializationTurn, InterpreterRequests,
     NoBirths, User,
@@ -378,7 +377,7 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -386,7 +385,8 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(rejected, RootCommand::Stop);
     assert_completed_root(terminal, None);
@@ -415,7 +415,7 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -423,7 +423,8 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(output, Err("boundary refused its own work"));
     assert_completed_root(terminal, None);
@@ -458,7 +459,7 @@ fn run_is_the_unit_boundary_specialization() {
             drop(application_outcome);
             panic!("the original startup phase and complete joined root remain exact");
         };
-        let terminal: ApplicationTerminal<_> = ProjectTerminal::project(origin, retirement);
+        let terminal: ApplicationTerminal<_> = (origin, retirement).into();
         terminal
     };
     assert_completed_root(terminal, None);
@@ -485,7 +486,7 @@ fn run_is_the_unit_boundary_specialization() {
             panic!("the generic boundary must withhold the unpublished root");
         };
         drop((work, startup_error));
-        ProjectTerminal::project(origin, retirement)
+        (origin, retirement).into()
     };
     assert_completed_root(terminal, None);
 }
@@ -531,7 +532,7 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -539,7 +540,8 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(termination.0, Ok(Exit::Normal));
     assert_eq!(termination.1, Err(ShutdownRejection::AlreadyStopped));
@@ -568,7 +570,7 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -576,7 +578,8 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(termination, Ok(Exit::LinkDied(MailAddr(19))));
     assert_completed_root(terminal, Some(()));
@@ -606,7 +609,7 @@ async fn continuing_report_cannot_select_the_later_stop_outcome() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -614,7 +617,8 @@ async fn continuing_report_cannot_select_the_later_stop_outcome() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_completed_root(terminal, None);
@@ -652,7 +656,7 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -660,7 +664,8 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(
         termination,
@@ -698,7 +703,7 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -706,7 +711,8 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_completed_root(terminal, None);
@@ -753,7 +759,7 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -761,7 +767,8 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(finalization, Some(FinalizationEvent::Finalized));
     assert_completed_root(terminal, None);
 }
@@ -790,7 +797,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
         panic!("startup refusal returns the unpublished complete root retirement");
     };
     drop((work, startup_error));
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: ApplicationTerminal<_> = (origin, retirement).into();
     let (origin, retirement) = into_root(terminal);
     let ActorRetirement::InitializationRejected {
         custody:
@@ -862,7 +869,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -870,7 +877,8 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     let (
         origin,
@@ -948,7 +956,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let ordinary_terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let ordinary_terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -956,7 +964,8 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     let ApplicationOutcome::Completed {
         output: explicit,
@@ -985,7 +994,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let explicit_terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let explicit_terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -993,7 +1002,8 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
 
     assert_eq!(ordinary, explicit);
     assert_completed_root(ordinary_terminal, None);

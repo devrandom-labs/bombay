@@ -10,7 +10,6 @@ use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
-use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, BehaviorSettlements, ClassifySettlement, EventLayer,
@@ -217,7 +216,7 @@ fn main() {
     };
     let (root_origin, joined_actor) =
         root_receiving.expect("the independent original root retirement is acquired");
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -225,7 +224,8 @@ fn main() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     let (head_receiving, ()) = shutdowns;
     let (AccountsRole, (shutdown, metrics, family_disposal_failure)) =
         head_receiving.expect("the complete original account family retirement is acquired");

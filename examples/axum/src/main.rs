@@ -3,7 +3,7 @@
 //! owns local activation, delivery, exact rejection recovery, and termination.
 
 use bombay::ActorCustody;
-use bombay::{ApplicationOutcome, ProjectTerminal};
+use bombay::ApplicationOutcome;
 use tokio::runtime::Builder;
 mod domain;
 mod http;
@@ -66,7 +66,7 @@ fn main() {
     else {
         panic!("the exact serving result and independently joined root remain complete");
     };
-    let terminal = OrderBookTerminal::project(origin, retirement);
+    let terminal = OrderBookTerminal::from((origin, retirement));
     assert_application_stopped(terminal);
 }
 

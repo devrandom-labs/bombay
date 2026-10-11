@@ -3,7 +3,6 @@
 use axum::routing::get;
 use behavior_actors::ShutdownRequested;
 use bombay::ActorCustody;
-use bombay::ProjectTerminal;
 use bombay::behavior::{
     ActionSettlement, Behavior, BehaviorBase, ChildChoice, ChildCons, ChildCreationOutcome,
     CreationKind, CreationSettlement, Creations, EventLayer, ItemSettlement, NoChildren, NoSends,
@@ -400,7 +399,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     let HttpTerminal::Root {
         origin,
         terminal: retirement,
-    } = HttpTerminal::project(origin, retirement)
+    } = HttpTerminal::from((origin, retirement))
     else {
         panic!(
             "the genuine root projection preserves the original Root owner and composed Actor retirement"

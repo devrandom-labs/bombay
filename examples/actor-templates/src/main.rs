@@ -8,7 +8,6 @@ mod processor;
 
 use core::time::Duration;
 
-use bombay::ProjectTerminal;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 use processor::{ProcessorMessage, ProcessorPhase, ProcessorState, transition};
@@ -91,7 +90,7 @@ fn run_receive_timeout() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal = ApplicationTerminal::project(
+    let terminal = ApplicationTerminal::from((
         origin,
         match retirement {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -99,7 +98,7 @@ fn run_receive_timeout() {
             }
             retirement => retirement,
         },
-    );
+    ));
     assert_application_stopped(terminal);
 }
 
@@ -136,7 +135,7 @@ fn run_shutdown() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal = ApplicationTerminal::project(
+    let terminal = ApplicationTerminal::from((
         origin,
         match retirement {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -144,7 +143,7 @@ fn run_shutdown() {
             }
             retirement => retirement,
         },
-    );
+    ));
     assert_application_stopped(terminal);
 }
 

@@ -10,7 +10,6 @@ use behavior_actors::atomic::{
     OrderedRoles, PoolFailureReaction, PoolRecovery, SubmissionId, WorkerSubmission, fifo,
 };
 use behavior_actors::{Exit, StopOnShutdown};
-use bombay::ProjectTerminal;
 use bombay::behavior::{ChildHead, MessageProtocol, Never};
 use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
@@ -219,7 +218,7 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: PoolTerminal = ProjectTerminal::project(
+    let terminal: PoolTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -227,7 +226,8 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_pool_terminal(terminal);
 }
@@ -349,7 +349,7 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: PoolTerminal = ProjectTerminal::project(
+    let terminal: PoolTerminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -357,7 +357,8 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_eq!(termination, Ok(Exit::Normal));
     assert_orderly_pool_terminal(terminal);
 }

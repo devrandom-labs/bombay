@@ -115,7 +115,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::OrderBookTerminal;
-    use bombay::{ApplicationOutcome, ProjectTerminal};
+    use bombay::ApplicationOutcome;
     use std::io::{Read, Write};
     use std::net::{SocketAddr, TcpListener, TcpStream};
     use std::sync::{Arc, Mutex, mpsc};
@@ -311,7 +311,7 @@ mod tests {
         else {
             panic!("the original serving result and joined root must both remain acquired");
         };
-        let terminal = OrderBookTerminal::project(origin, retirement);
+        let terminal = OrderBookTerminal::from((origin, retirement));
         assert_application_stopped(terminal);
     }
 

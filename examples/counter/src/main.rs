@@ -5,7 +5,6 @@
 use tokio::runtime::Builder;
 mod counter;
 
-use bombay::ProjectTerminal;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 
@@ -90,7 +89,7 @@ fn main() {
         "the counter retains its actor for inspection before owned consumption"
     );
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let terminal = <ApplicationTerminal<_> as ProjectTerminal<_, _>>::project(origin, retirement);
+    let terminal: ApplicationTerminal<_> = (origin, retirement).into();
     assert_application_stopped(terminal);
 }
 

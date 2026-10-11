@@ -26,84 +26,40 @@ owns reusable compositions. Simplify at the owner that can derive the repeated
 information. Preserve affine custody, creation provenance, service lanes,
 initialization order and static capability distinctions.
 
-## Scope and next work
+## Current implementation and open acceptance
 
-The owning PRD now contains the single DX01–DX28 implementation checklist and
-the pre-edit application-result conservation law. Fresh pinned-shell child
-compile-pass/denial and result-consumption debug/optimized witnesses pass.
-This is a bounded stage-1 substep; it does not close the counter/heterogeneous
-inference gate or authorize broad migration. All requirement dispositions,
-change measurements and remaining acceptance live in the owning PRD.
+The paired owning PRD contains the single DX01–DX28 checklist, per-stage laws,
+exact change measurements and requirement dispositions. The user authorized the
+expanded selected programme surface on 2026-10-09; provenance, composition and
+verification gates still apply. Timers 0.2.0 is published and pinned.
 
-The Timers delivery prerequisite now uses published 0.2.0 rather than a
-workspace-only patch. Package verification and an unpatched extracted consumer
-pass; inference remains a separate open gate. The user authorized the expanded
-selected programme surface on 2026-10-09; its per-stage law, provenance,
-composition and measurement gates still apply.
+Retained startup creation now puts the actual receipt, control and task in
+parent custody before awaiting. Initialization and native failures preserve
+original definitions and explicit birth/replacement provenance; no unavailable
+startup creates fake lifecycle authority. Closed child control returns its
+original typed input. Retirement ignores rows that own neither tasks nor failures.
+These changes are committed at `4fd7ad6`, `29da7a4` and `3c34bee`.
 
-The inferred-custody caller fixtures are pre-implementation acceptance tests.
-They cover the real counter, heterogeneous and repeated children, a plain state
-base, recursive creation/refusal, nominal born-role selection, and timer
-readiness from actual reports. Earlier candidates passed these fixtures but rejected valid pure birth aliases.
-The current isolated source copy uses retained ActorCustody and passes 16 finite
-journey tests in debug and optimization; recursive execution still fails six
-E0275 diagnostics. The retained library lacks the inferred API, so the feature
-worktree suite remains red. Independent source-port and factory reviews have
-not proved the joint alias/recursive law; these candidates remain unretained.
+The retained native projection batch separates raw child descendants from the
+projected report. The original real leaf witness fails E0277 because the
+interpreter demands the report type instead of the leaf's `Never` subtree.
+The isolated fix passes all 300 library tests in debug and optimization, native
+projector panic/raw/projection retry, both timer/shutdown orders, supervision,
+FIFO source refusal, pure inclusion and eight terminal denials. Full workspace
+compilation passes. It uses standard owned `(origin, retirement).into()` for
+derived sum presentation; handwritten native policies retain executor/panic
+semantics through the existing typed port. Actual worktree verification passes the same 300 library/eight native journey
+tests in both profiles, all eight terminal denials, full workspace/all-target
+strict Clippy, formatting and the counter executable. Exact commit evidence and
+limits belong in the owning PRD; this is not inferred assembly acceptance.
 
-The original creation interpreter now has a focused custody falsifier: dropping
-one pending startup attempt leaves an empty request/reply row, no joined child,
-and destroys the original definition. Debug and optimized private original-
-contract executions fail the intended law under pinned Rust 1.99. Before the
-fixture was retained here: one owning creation test module, tests +205/-5,
-production/API/state/module delta zero. It checks exactly one original allocation,
-content and available correlation/provenance through the complete returned lanes.
-This deliberately red regression requires startup authority and join to enter
-parent-owned custody before awaiting; cleanup cancellation alone does not return
-ownership. Actual locked registry debug and optimized executions both fail; strict package
-Clippy and formatting pass. The paired owning PRD contains its law and aggregate
-checkpoint.
-
-The retained runtime batch repairs that original witness. Its pre-edit
-laws and vetoes live in the owning PRD: parent-owned startup receipt/control/join
-before await; complete native failure without invented authority; read-only
-binding access independent of raw payload storage; and exact creation ID/kind
-in every terminal child origin. Reuse the existing creation/receiving kernels,
-ordered retirement, occurrence walk and origin maps. Expected seven existing
-runtime modules; the pre-edit estimate was production +690/-170/net520 and
-tests +863/-39/net824. The final scoped measurements are production
-+655/-175/net480 and tests +922/-44/net878;
-zero new public types or production modules. CreationBinding changes 3→5,
-startup custody Raw | Projection, and ChildFailure changes 4→6. The paired
-Core storage projection and unavailable receipt have independently failing
-consumer witnesses; they are required development dependencies of this batch.
-Private combined debug/optimized failure, cancellation, replay, sibling,
-delivery and provenance tests pass. The actual runtime passes all 297 library
-tests and strict library/test Clippy using temporary command-line patches to
-the paired owners. The original 297-test library also passes optimization.
-The registry lockfile remains unchanged; published owner delivery and full
-repository gates remain open. No catalogue migration or publication follows
-from these focused results.
-
-Generic child-input admission now returns the complete original request when
-the control receiver closes. The selected ingress owns embedding and inverse;
-EventLayer forwards both, retaining foreign events. The generic interpreter
-no longer requires unrelated shutdown ingress. Actual two native/composition
-regressions and the existing Core custody test pass debug and optimized; all
-299 runtime library tests and strict library/test Clippy pass with paired owner
-patches. Runtime production +22/-10/net12, tests +504, zero new types/states;
-owner law, pre-edit compile veto and final gates remain in the owning PRD.
-
-The startup correction preserves truthful failure reporting: a joined
-initialization refusal already returns its complete child/error, so a fact-free
-rejection row emits no second startup failure. The existing registry reconciles
-creation order with the current owned row, retaining rejection tombstones and
-order for real tasks/facts. Pre-edit scope was one registry method plus its
-owning test module, under +10 production lines, no new types/states. Actual
-production +6/-3/net3 and tests +150; the original complete caller fails only
-its phantom-failure assertion, then passes debug and optimized. All 300 runtime
-library tests and strict library/test Clippy pass. Law, checkpoint and remaining
-full gates live in the owning PRD.
+Inferred caller fixtures remain deliberately red on retained source. The larger
+private inference prototype now passes the finite counter and heterogeneous
+children with complete terminal custody, but recursive creation still fails the
+`CommitActions`/`EstablishChild` capability cycle. Legal pure generic/nested birth
+aliases must remain valid while resolving it. The narrower native fix adds no
+inferred metadata, actor-facade runtime construction or Application inference.
+No broad policy/catalogue migration is authorized by these focused passes.
 
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried

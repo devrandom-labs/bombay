@@ -29,7 +29,9 @@ Bombay's terminal projection uses separate `RootOrigin<Owner>` and
 `ChildOrigin<Owner, Role>` products. A root retains its exact address; a child
 retains its exact address and required creator-local nonce. The existing
 `ChildRole` proof maps a structural child position to its declared role, and
-`ProjectTerminal` preserves the exact retirement payload. Root/child
+total owned `From` inclusion preserves the exact retirement payload. Native
+`ProjectTerminal<Origin, Actor, ChildFailures>` selects the raw descendant family
+before launch and executes once in the existing projection task. Root/child
 provenance cannot be changed through an optional nonce or a projection cast.
 
 ## One runtime, two halves
@@ -689,8 +691,11 @@ unchanged. Ready output is owned before producer disposal. The actual raw root
 retains native actor failure in `ActorRetirement::ActorTaskFailed`.
 `ApplicationCleanupError` separately retains cleanup-publication receiving and
 cleanup-task failures. `Terminal` is a descendant projection destination, not
-an implicit root conversion. `ProjectTerminal` is an explicit application
-policy over original typed origin and retirement.
+an implicit root conversion. Derived sums use `(origin, retirement).into()`
+for total presentation. `ProjectTerminal` is the native policy over the original
+origin and complete actor retirement; its associated `Descendants` need not be
+the projected report. Native callbacks preserve their actual executor context
+and panic custody.
 
 `Application::run_blocking` takes the caller's configured Tokio Builder and
 drives that same pair. Nested blocking rejects before effects; build failure

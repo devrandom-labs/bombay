@@ -465,9 +465,8 @@ mod parent_conversion_custody {
         retirement: ActorRetirement<Child, Self, ()>,
     }
 
-    impl ProjectTerminal<ChildOrigin<Parent, ChildHead>, ActorRetirement<Child, Self, ()>>
-        for ChildTerminal
-    {
+    impl ProjectTerminal<ChildOrigin<Parent, ChildHead>, Child, ()> for ChildTerminal {
+        type Descendants = Self;
         fn project(
             origin: ChildOrigin<Parent, ChildHead>,
             retirement: ActorRetirement<Child, Self, ()>,

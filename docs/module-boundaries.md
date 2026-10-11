@@ -118,10 +118,13 @@ tree:
 `crates/bombay-macros` owns three syntax-only projections: the narrow
 `#[bombay::actor]` facade delegates to Behavior's owning actor expansion,
 `TerminalProjection` lifts exact actor retirements into an application-owned
-sum using explicit child-source markers and Rust's `ChildRole` proofs, and
+sum through total owned `From` inclusions using explicit child-source markers
+and Rust's `ChildRole` proofs, and
 transitional `ActorSpaces` derives static protocol-host proofs from explicit
 field annotations. Neither derives type identity from a spelling. None
 owns actor semantics, an effect algebra, lifecycle policy, or runtime behavior.
+The same inclusion implements the existing native projection port for a
+declared sum; native descendant selection belongs to the interpreter port.
 Bombay has no protocol macro.
 
 Communication UC1, Observe UO1, actor-owned timers, exact report preservation,

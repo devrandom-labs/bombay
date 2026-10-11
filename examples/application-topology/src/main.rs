@@ -5,13 +5,13 @@
 
 use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
+use bombay::ChildFailure;
 use bombay::behavior::{
     BehaviorBase, BehaviorSettlements, ChildHead, ChildTail, Children, ClassifySettlement,
     CreationSequence, Never, SettlementStatus,
 };
 use bombay::lifecycle::shutdown_after_children;
 use bombay::prelude::*;
-use bombay::{ChildFailure, ProjectTerminal};
 use tokio::runtime::Builder;
 
 const INDEXER_NONCE: u64 = 0;
@@ -176,7 +176,7 @@ fn main() {
     };
 
     assert_eq!(termination, Ok(Exit::Normal));
-    let terminal = ApplicationTerminal::project(
+    let terminal = ApplicationTerminal::from((
         origin,
         match retirement {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -184,7 +184,7 @@ fn main() {
             }
             retirement => retirement,
         },
-    );
+    ));
     assert_terminal_tree(terminal);
 }
 

@@ -253,7 +253,8 @@ pub fn actor_spaces(input: TokenStream) -> TokenStream {
 ///
 /// Each variant must contain exactly the named fields `origin` and `terminal`.
 /// The derive adds no terminal policy; it only maps each declared pair to its
-/// owning variant through Bombay's `ProjectTerminal` trait.
+/// owning variant through standard owned `From` inclusion. Native actor projection
+/// uses the same inclusion inside the existing child projection task.
 #[proc_macro_derive(
     TerminalProjection,
     attributes(application_actor, structural_child, declared_child)
@@ -330,10 +331,10 @@ fn expand_terminal_projection(input: &DeriveInput) -> syn::Result<TokenStream2> 
         };
         let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
         projections.push(quote! {
-            impl #impl_generics #bombay::ProjectTerminal<#source, #terminal>
+            impl #impl_generics ::core::convert::From<(#source, #terminal)>
                 for #name #type_generics #where_clause
             {
-                fn project(origin: #source, terminal: #terminal) -> Self {
+                fn from((origin, terminal): (#source, #terminal)) -> Self {
                     Self::#variant_name {
                         origin: #declared_origin,
                         terminal: #projected_terminal,
@@ -343,7 +344,46 @@ fn expand_terminal_projection(input: &DeriveInput) -> syn::Result<TokenStream2> 
         });
     }
 
+    projections.push(native_terminal_projection(input, &bombay));
     Ok(quote!(#(#projections)*))
+}
+
+fn native_terminal_projection(input: &DeriveInput, bombay: &TokenStream2) -> TokenStream2 {
+    let name = &input.ident;
+    let mut native = input.generics.clone();
+    let [source, actor, failures] =
+        ["__BombayOrigin", "__BombayActor", "__BombayFailures"].map(|stem| {
+            let mut candidate = stem.to_owned();
+            while native.params.iter().any(|parameter| match parameter {
+                syn::GenericParam::Type(value) => value.ident == candidate,
+                syn::GenericParam::Const(value) => value.ident == candidate,
+                syn::GenericParam::Lifetime(_) => false,
+            }) {
+                candidate.push('_');
+            }
+            let name = Ident::new(&candidate, Span::mixed_site());
+            native.params.push(parse_quote!(#name));
+            name
+        });
+    native.make_where_clause().predicates.push(parse_quote!(
+        #actor: #bombay::behavior::BehaviorSettlements<
+            Protocol: #bombay::behavior::Protocol<Addr = #bombay::MailAddr>,
+            Ph = #bombay::behavior::Never>
+    ));
+    native.make_where_clause().predicates.push(parse_quote!(
+        Self: ::core::convert::From<(#source, #bombay::ActorRetirement<#actor, Self, #failures>)>
+    ));
+    let (native_impl, _, native_where) = native.split_for_impl();
+    let (_, type_generics, _) = input.generics.split_for_impl();
+    quote! {
+        impl #native_impl #bombay::ProjectTerminal<#source, #actor, #failures>
+            for #name #type_generics #native_where {
+            type Descendants = Self;
+            fn project(origin: #source, terminal: #bombay::ActorRetirement<#actor, Self, #failures>) -> Self {
+                ::core::convert::From::from((origin, terminal))
+            }
+        }
+    }
 }
 
 enum OriginProjection<'a> {

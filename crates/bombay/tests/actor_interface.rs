@@ -2,7 +2,6 @@ use bombay::ApplicationOutcome;
 use core::any::type_name;
 use tokio::runtime::Builder;
 
-use bombay::ProjectTerminal;
 use bombay::behavior::EstablishedDelivery;
 use bombay::prelude::*;
 
@@ -136,7 +135,7 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -144,7 +143,8 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_completed(terminal, None);
 }
 
@@ -219,7 +219,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -227,7 +227,8 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
             }
             retirement => retirement,
         },
-    );
+    )
+        .into();
     assert_completed(terminal, None);
 }
 
