@@ -55,8 +55,9 @@ limits belong in the owning PRD; this is not inferred assembly acceptance.
 
 Inferred caller fixtures remain deliberately red on retained source. The larger
 private inference prototype now passes the finite counter and heterogeneous
-children with complete terminal custody, but recursive creation still fails the
-`CommitActions`/`EstablishChild` capability cycle. Legal pure generic/nested birth
+children with complete terminal custody. Recursive metadata itself now fails
+before launch (E0275), independently of the remaining
+`CommitActions`/`EstablishChild` execution cycle. Legal pure generic/nested birth
 aliases must remain valid while resolving it. The narrower native fix adds no
 inferred metadata, actor-facade runtime construction or Application inference.
 No broad policy/catalogue migration is authorized by these focused passes.
@@ -80,6 +81,13 @@ The proven Behavior send-routing and facade rustdoc fixes are in owner
 review with native ten-gate/927-test verification, extracted package preflight
 and all exact-head CI including strict mutation passing. Publication and Bombay
 adoption remain open; current dependencies are unchanged.
+
+The fresh authoritative `102fc2d` Nix check has four native passes and seventeen
+failures against the published Behavior/Actors 0.23.0 API, before inferred caller
+compilation. Signing and disk exhaustion did not fail; 35 GB remained.
+The owning PRD records exact diagnostics, gates and the requested crates.io /
+Awesome Rust comparison. No candidate dependency resolves the proven recursive
+eligibility equation yet; none was added.
 
 Begin with a compiling counter and heterogeneous-child journey that infers
 runner and terminal types while returning complete startup/retirement failures.
