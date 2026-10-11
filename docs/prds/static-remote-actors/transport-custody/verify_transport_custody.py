@@ -1,4 +1,4 @@
-"""Observe native TLS transport milestones; no actor or crypto admission credit."""
+"""Finite native TLS/Counter observations; no production identity or replay proof."""
 import asyncio
 import enum
 import hashlib
@@ -45,7 +45,8 @@ class TransportWorker:
         assert encoded, (self.role, 'unexpected EOF', self.child.returncode)
         event = json.loads(encoded)
         self.events.append(event)
-        if event['event'] == 'worker_failed' and expected != 'worker_failed':
+        expected_events = (expected,) if isinstance(expected, str) else expected
+        if event['event'] == 'worker_failed' and 'worker_failed' not in expected_events:
             # Acquire the native close and exit before rejecting an unexpected worker error.
             encoded_close = await asyncio.wait_for(self.child.stdout.readline(), 12)
             assert encoded_close, (self.role, 'missing close after worker failure', event)
@@ -54,7 +55,7 @@ class TransportWorker:
             assert close == {'event': 'session_close_returned', 'role': self.role}, close
             exit_code = await asyncio.wait_for(self.child.wait(), 12)
             assert exit_code == 1, (self.role, exit_code)
-        assert event['event'] == expected, (self.role, expected, event)
+        assert event['event'] in expected_events, (self.role, expected, event)
         return event
 
     async def close(self, native_expected=None):
@@ -178,6 +179,8 @@ async def counter_campaign(executable, layout, operation, provider):
                 event = await caller.observe(milestone)
                 assert event['operation'] == operation, event
             await recipient.command('RELEASE')
+            received = await recipient.observe('counter_received')
+            assert received == {'event': 'counter_received', 'request': request}, received
             processed = await recipient.observe('counter_processed')
             assert processed == {'event': 'counter_processed', 'request': request, 'value': 42}, processed
             for milestone in ['potentially_transmitted', 'invocation_returned']:
@@ -212,6 +215,86 @@ async def observe_counter_campaigns(executable):
     if any(record['failures'] for record in records):
         raise SystemExit(1)
 
+async def overlap_campaign(executable, provider, component):
+    directory = EVIDENCE / (provider + '-overlap-' + component)
+    directory.mkdir(parents=True, exist_ok=True)
+    with socket.socket() as port_claim:
+        port_claim.bind(('127.0.0.1', 0))
+        address = 'tls/localhost:' + str(port_claim.getsockname()[1])
+    assignments = {
+        'host': ['another-node', '3', '5'],
+        'runtime': ['delegated-node', '4', '5'],
+        'actor_generation': ['delegated-node', '3', '6'],
+    }
+    router = TransportWorker('router', executable, 'router_client', 'query', address, directory)
+    recipients = []
+    for name in ['selected', 'overlapping']:
+        recipient_directory = directory / name
+        recipient_directory.mkdir(exist_ok=True)
+        recipients.append(TransportWorker(provider + '_counter_recipient', executable,
+                                         'router_client', 'query', address, recipient_directory))
+    selected, overlapping = recipients
+    selected.arguments.extend(['delegated-node', '3', '5'])
+    overlapping.arguments.extend(assignments[component])
+    caller = TransportWorker(provider + '_counter_caller', executable,
+                             'router_client', 'query', address, directory)
+    workers = [router, selected, overlapping, caller]
+    record = {'provider': provider, 'component': component,
+              'binary_sha256': hashlib.sha256(Path(executable).read_bytes()).hexdigest(),
+              'failures': [], 'workers': []}
+    arrivals, dispositions = [], []
+    try:
+        for worker in workers:
+            await worker.start()
+        await caller.command('RUN')
+        for request in [1, 2]:
+            for milestone in ['potentially_transmitted', 'invocation_returned']:
+                await caller.observe(milestone)
+            # Both queryables must acquire the same command; matching presence alone is insufficient.
+            for recipient in recipients:
+                await recipient.command('RELEASE')
+            for recipient in recipients:
+                arrivals.append((recipient.directory.name, await recipient.observe('counter_received')))
+                disposition = await recipient.observe(('counter_processed', 'counter_target_refused'))
+                dispositions.append((recipient.directory.name, disposition))
+                if disposition['event'] == 'counter_processed':
+                    for milestone in ['potentially_transmitted', 'invocation_returned']:
+                        await recipient.observe(milestone)
+            await caller.observe('counter_consumed')
+        await caller.close({'event': 'counter_client_native', 'replies': 2})
+        await router.close()
+        await selected.close({'event': 'counter_native', 'value': 42, 'commands': 2})
+        await overlapping.close({'event': 'counter_native', 'value': 41, 'commands': 0})
+        # The independent no-admission oracle follows all original native products and actual closes.
+        assert arrivals == [(name, {'event': 'counter_received', 'request': request})
+                            for request in [1, 2] for name in ['selected', 'overlapping']], arrivals
+        assert dispositions == [entry for request in [1, 2] for entry in [
+            ('selected', {'event': 'counter_processed', 'request': request, 'value': 42}),
+            ('overlapping', {'event': 'counter_target_refused', 'request': request,
+                             'refusal': component})]], dispositions
+    except Exception as cause:
+        record['failures'].append(repr(cause))
+    finally:
+        for worker in workers:
+            await worker.abandon()
+            record['workers'].append({'role': worker.role, 'assignment': worker.directory.name,
+                                      'argv': worker.arguments,
+                                      'exit': worker.child.returncode if worker.child else None,
+                                      'events': worker.events})
+        (directory / 'observations.json').write_text(json.dumps(record, indent=2) + '\n')
+    print(json.dumps({key: record[key] for key in ['provider', 'component', 'failures']}), flush=True)
+    return record
+
+async def observe_overlap_campaigns(executable):
+    records = []
+    for provider in ['record', 'scheduled']:
+        for component in ['host', 'runtime', 'actor_generation']:
+            records.append(await overlap_campaign(executable, provider, component))
+    (EVIDENCE / 'overlap-campaigns.json').write_text(json.dumps(records, indent=2) + '\n')
+    if any(record['failures'] for record in records):
+        raise SystemExit(1)
+
 if __name__ == '__main__':
     asyncio.run(observe_campaigns(sys.argv[1]))
     asyncio.run(observe_counter_campaigns(sys.argv[1]))
+    asyncio.run(observe_overlap_campaigns(sys.argv[1]))

@@ -427,6 +427,28 @@ fn expected_operation(request: u64) -> Operation {
         _ => unreachable!("finite fixture identities"),
     }
 }
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(super) enum TargetRefusal {
+    Host,
+    Runtime,
+    ActorGeneration,
+}
+fn check_recipient_target(
+    claimed_scope: &Scope,
+    receiver_scope: &Scope,
+) -> Result<(), TargetRefusal> {
+    if claimed_scope.host != receiver_scope.host {
+        return Err(TargetRefusal::Host);
+    }
+    if claimed_scope.runtime != receiver_scope.runtime {
+        return Err(TargetRefusal::Runtime);
+    }
+    if claimed_scope.actor_generation != receiver_scope.actor_generation {
+        return Err(TargetRefusal::ActorGeneration);
+    }
+    Ok(())
+}
 fn valid_request(
     claim: &ProtectedRequest,
     request: u64,
@@ -503,14 +525,29 @@ pub(super) async fn execute(
     role: WorkerRole,
     operation: TransportOperation,
     config: Config,
+    local_assignment: &[String],
 ) -> TransportResult<TransportReceipts> {
+    let mut local_scope = configured_scope(Operation::Increment, "command");
+    match local_assignment {
+        [] => {}
+        [host, runtime, actor_generation] => {
+            local_scope.host = host.clone();
+            local_scope.runtime = runtime.parse()?;
+            local_scope.actor_generation = actor_generation.parse()?;
+        }
+        _ => {
+            return Err(
+                invalid_control("host/runtime/actor-generation assignment required").into(),
+            );
+        }
+    }
     let session = zenoh::open(config).await?;
     match role {
         WorkerRole::RecordCounterRecipient => {
-            recipient(role, Provider::Record, operation, session).await
+            recipient(role, Provider::Record, operation, session, local_scope).await
         }
         WorkerRole::ScheduledCounterRecipient => {
-            recipient(role, Provider::Scheduled, operation, session).await
+            recipient(role, Provider::Scheduled, operation, session, local_scope).await
         }
         WorkerRole::RecordCounterCaller => caller(role, Provider::Record, operation, session).await,
         WorkerRole::ScheduledCounterCaller => {
@@ -527,6 +564,7 @@ async fn recipient(
     provider: Provider,
     operation: TransportOperation,
     session: Session,
+    local_scope: Scope,
 ) -> TransportResult<TransportReceipts> {
     let request_records = records(provider, "command");
     let reply_records = records(provider, "reply");
@@ -541,6 +579,7 @@ async fn recipient(
             });
         }
     };
+    let assigned_scope = &local_scope;
     let configured_requests = &request_records;
     let configured_replies = &reply_records;
     let receiving = Application::new(
@@ -564,6 +603,7 @@ async fn recipient(
         let mut processed_replies = Vec::new();
         let mut refused = None;
         let mut requests = Vec::new();
+        let mut target_refusals = Vec::new();
         let work: TransportResult<()> = async {
             observe(&TransportObservation::Ready { role })?;
             for request in 1..=2 {
@@ -611,23 +651,22 @@ async fn recipient(
                     protected,
                     proof,
                 });
+                observe(&TransportObservation::CounterReceived { request })?;
                 let original = requests
                     .last()
                     .expect("the parsed command buffers are owned");
-                let command = match provider {
+                let (command, claim) = match provider {
                     Provider::Record => {
                         record_receipts.push(record_provider::request(
                             configured_requests,
                             &original.protected,
                             &original.proof,
                         )?);
-                        valid_request(
-                            record_receipts
-                                .last()
-                                .expect("the record receipt is owned")
-                                .request(),
-                            request,
-                        )?
+                        let claim = record_receipts
+                            .last()
+                            .expect("the record receipt is owned")
+                            .request();
+                        (valid_request(claim, request)?, &claim.scope)
                     }
                     Provider::Scheduled => {
                         scheduled_receipts.push(
@@ -638,19 +677,22 @@ async fn recipient(
                             )
                             .await?,
                         );
-                        valid_request(
-                            scheduled_receipts
-                                .last()
-                                .expect("the scheduled receipt is owned")
-                                .request(),
-                            request,
-                        )?
+                        let claim = scheduled_receipts
+                            .last()
+                            .expect("the scheduled receipt is owned")
+                            .request();
+                        (valid_request(claim, request)?, &claim.scope)
                     }
                 };
                 allocations.push((
                     original.protected.as_ptr() as usize,
                     original.proof.as_ptr() as usize,
                 ));
+                if let Err(refusal) = check_recipient_target(claim, assigned_scope) {
+                    target_refusals.push((request, refusal));
+                    observe(&TransportObservation::CounterTargetRefused { request, refusal })?;
+                    continue;
+                }
                 // Exclusive service ownership: no await from this final fixture check to insertion.
                 let now = 9_u64;
                 let deadline = 10_u64;
@@ -755,6 +797,7 @@ async fn recipient(
             processed_replies,
             refused,
             requests,
+            target_refusals,
         )
     })
     .await;
@@ -807,6 +850,7 @@ async fn recipient(
                     processed_replies,
                     refused,
                     requests,
+                    target_refusals,
                 ),
             cleanup: Ok(()),
         },
@@ -830,16 +874,57 @@ async fn recipient(
     assert_eq!(settlement.sends.inner.replies.len(), 0);
     assert!(matches!(settlement.become_, Step::Stop(_)));
     let worker = work.and_then(|()| {
-        if counter.base().value != 42 || counter.base().processed.len() != 2 {
-            return Err(invalid_control(
-                "actual Counter processing required: balance42 and Increment/Read trace",
-            )
-            .into());
+        match (
+            local_scope.host.as_str(),
+            local_scope.runtime,
+            local_scope.actor_generation,
+        ) {
+            ("delegated-node", 3, 5) => {
+                if counter.base().value != 42 || counter.base().processed.len() != 2 {
+                    return Err(invalid_control(
+                        "actual Counter processing required: balance42 and Increment/Read trace",
+                    )
+                    .into());
+                }
+                assert!(refused.is_none());
+                assert!(requests.is_empty());
+                assert!(target_refusals.is_empty());
+                assert_eq!(queries.len() + samples.len(), 2);
+                assert_eq!(processed_replies.len(), 2);
+            }
+            _ => {
+                if counter.base().value != 41 || !counter.base().processed.is_empty() {
+                    return Err(invalid_control(
+                        "unselected Counter must retain balance41 and empty admission trace",
+                    )
+                    .into());
+                }
+                assert!(refused.is_none());
+                assert!(processed_replies.is_empty());
+                assert_eq!(target_refusals.len(), 2);
+                assert_eq!(requests.len(), 2);
+                assert_eq!(queries.len() + samples.len(), 2);
+                for (index, original) in requests.iter().enumerate() {
+                    assert_eq!(original.request, index as u64 + 1);
+                    assert_eq!(target_refusals[index].0, original.request);
+                    assert_eq!(
+                        original.protected.as_ref(),
+                        request_records[index].protected.as_ref()
+                    );
+                    assert_eq!(
+                        original.proof.as_ref(),
+                        request_records[index].proof.as_ref()
+                    );
+                    assert_eq!(
+                        (
+                            original.protected.as_ptr() as usize,
+                            original.proof.as_ptr() as usize
+                        ),
+                        allocations[index]
+                    );
+                }
+            }
         }
-        assert!(refused.is_none());
-        assert!(requests.is_empty());
-        assert_eq!(queries.len() + samples.len(), 2);
-        assert_eq!(processed_replies.len(), 2);
         for (index, (from, command, original)) in counter.base().processed.iter().enumerate() {
             assert_eq!(processed_replies[index].from, root_address);
             assert_eq!(processed_replies[index].message.request, index as u64 + 1);
@@ -894,7 +979,7 @@ async fn recipient(
         }
         observe(&TransportObservation::CounterNative {
             value: counter.base().value,
-            commands: 2,
+            commands: counter.base().processed.len() as u64,
         })?;
         Ok(())
     });

@@ -1,4 +1,4 @@
-//! Disposable transport observations; no actor admission or identity proof.
+//! Finite native transport/Counter observations; no production identity or replay proof.
 use std::{
     env,
     future::IntoFuture,
@@ -89,6 +89,13 @@ struct FixtureReceipt {
 #[derive(Serialize)]
 #[serde(tag = "event", rename_all = "snake_case")]
 enum TransportObservation {
+    CounterReceived {
+        request: u64,
+    },
+    CounterTargetRefused {
+        request: u64,
+        refusal: counter_application::TargetRefusal,
+    },
     CounterProcessed {
         request: u64,
         value: u64,
@@ -575,13 +582,14 @@ async fn execute(
     role: WorkerRole,
     operation: TransportOperation,
     config: Config,
+    local_assignment: &[String],
 ) -> Result<TransportReceipts> {
     match role {
         WorkerRole::RecordCounterCaller
         | WorkerRole::RecordCounterRecipient
         | WorkerRole::ScheduledCounterCaller
         | WorkerRole::ScheduledCounterRecipient => {
-            return counter_application::execute(role, operation, config).await;
+            return counter_application::execute(role, operation, config, local_assignment).await;
         }
         WorkerRole::Router | WorkerRole::Recipient | WorkerRole::Caller => {}
     }
@@ -623,7 +631,7 @@ fn router_control() -> Result<()> {
 
 fn main() -> Result<TransportReceipts> {
     let arguments: Vec<String> = env::args().skip(1).collect();
-    if arguments.len() != 5 {
+    if !matches!(arguments.len(), 5 | 8) {
         return Err(invalid_control(
             "expected role layout operation tls-address certificate-directory",
         )
@@ -639,6 +647,16 @@ fn main() -> Result<TransportReceipts> {
         "scheduled_counter_recipient" => WorkerRole::ScheduledCounterRecipient,
         _ => return Err(invalid_control("unknown worker role").into()),
     };
+    if arguments.len() == 8
+        && !matches!(
+            role,
+            WorkerRole::RecordCounterRecipient | WorkerRole::ScheduledCounterRecipient
+        )
+    {
+        return Err(
+            invalid_control("local hosting assignment belongs to a counter recipient").into(),
+        );
+    }
     let layout = match arguments[1].as_str() {
         "peer" => ConnectionLayout::Peer,
         "router_client" => ConnectionLayout::RouterClient,
@@ -654,5 +672,5 @@ fn main() -> Result<TransportReceipts> {
         .worker_threads(2)
         .enable_all()
         .build()?
-        .block_on(execute(role, operation, config))
+        .block_on(execute(role, operation, config, &arguments[5..]))
 }
