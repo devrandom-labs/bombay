@@ -80,9 +80,19 @@ consumer witnesses; they are required development dependencies of this batch.
 Private combined debug/optimized failure, cancellation, replay, sibling,
 delivery and provenance tests pass. The actual runtime passes all 297 library
 tests and strict library/test Clippy using temporary command-line patches to
-the paired owners. The registry lockfile remains unchanged; published owner
-delivery, actual optimized verification and full repository gates remain open. No catalogue migration or publication follows
+the paired owners. The original 297-test library also passes optimization.
+The registry lockfile remains unchanged; published owner delivery and full
+repository gates remain open. No catalogue migration or publication follows
 from these focused results.
+
+Generic child-input admission now returns the complete original request when
+the control receiver closes. The selected ingress owns embedding and inverse;
+EventLayer forwards both, retaining foreign events. The generic interpreter
+no longer requires unrelated shutdown ingress. Actual two native/composition
+regressions and the existing Core custody test pass debug and optimized; all
+299 runtime library tests and strict library/test Clippy pass with paired owner
+patches. Runtime production +22/-10/net12, tests +504, zero new types/states;
+owner law, pre-edit compile veto and final gates remain in the owning PRD.
 
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried
