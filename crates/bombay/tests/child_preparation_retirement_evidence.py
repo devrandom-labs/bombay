@@ -25,7 +25,7 @@ if any(output_directory.iterdir()):
     raise SystemExit("Evidence output must be empty; previous receipts are preserved")
 
 with tempfile.TemporaryDirectory(prefix="bombay-child-preparation-") as directory:
-    workspace = Path(directory) / "source"
+    workspace = (Path(directory) / "source").resolve()
     shutil.copytree(repository, workspace, copy_function=shutil.copy,
                     ignore=shutil.ignore_patterns(".git", ".direnv", ".serena", "target",
                                                  "mutants.out", "mutants.out.old"))

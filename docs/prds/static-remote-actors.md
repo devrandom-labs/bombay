@@ -11993,7 +11993,7 @@ InstalledActor/ActorRef, shared Observe reports and parent native projection.
 No runtime, public API, dependency, default limit or production correction is added.
 
 The user delegated recommended selections, including scope checkpoints, until
-revoked. The selected stage allows520 added Rust test lines and150 cumulative
+revoked. The selected stage allows520 added Rust test lines and155 cumulative
 authored controller lines, with zero retained runtime production and public API delta. Current cumulative
 ceilings are core6000, controlled functional900, tests22500, documentation12000,
 paths340 and public types5; earlier ceilings above are historical checkpoints.
@@ -12074,3 +12074,11 @@ Final scoped source: four paths, runtime production0, Rust tests+501/-5,
 portable evidence+118, functional Nix integration+3, public types0 and no
 manifest/lock changes. This gate proves genuine exported-supervisor child-owned
 preparation only; Counter's protected remote witness and full R11 stay open.
+
+Draft PR351 exposes commit42f6508 to required CI. The first local portable run
+failed before Cargo because macOS canonicalizes /var to /private/var while the
+snapshot directory remained unresolved. Select Path.resolve on that directory
+before copying and checking resolved leaves. One replacement statement expands
+the authored-controller ceiling150→155 (actual151); retained118 lines and all
+Rust/runtime/lock bytes remain unchanged. Preserve that setup-only log, rerun
+the same portable campaign and require CI on the corrected submitted head.
