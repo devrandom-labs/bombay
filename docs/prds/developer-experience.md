@@ -57,37 +57,48 @@ Entity shutdown. ActorCustody groups identical coexisting fields in20 retirement
 alternatives while retaining all24 outcomes. Borrowed behavior, completion and
 work/cleanup inspection preserve original values for consuming decisions.
 
-Source verification: all301 owner library tests pass debug and optimization.
-The current all-feature workspace nextest run has571 passed, one failed and one
+Before registry adoption, paired-source verification: all301 owner library tests
+pass debug and optimization.
+That all-feature workspace nextest run has571 passed, one failed and one
 skipped. The failure comprises four deliberately unfinished generated-custody
 pass fixtures; existing static denials remain active. Workspace/all-target/
 all-feature compilation, strict Clippy, formatting, two doctests, HTTP package
 tests and six terminating examples pass. These checks use the exact unpublished
 owner contracts, rather than the locked registry API.
 
-Fresh authoritative registry Nix exits1: formatting, panic-abort rejection,
+The pre-adoption registry Nix exits1: formatting, panic-abort rejection,
 Observe Loom and Driver-law evidence pass; the other17 gates fail on missing
 published Behavior APIs. Neither disk exhaustion nor Darwin signing failure
 occurred; no waiver applies. The registry lock is byte-restored. Exact results:
 /private/tmp/bombay-application-owner-i27iyp5f/REGISTRY-NIX-RESULTS.json.
 
-Dependency delivery is prepared in owner
-[PR89](https://github.com/devrandom-labs/bombay-behavior/pull/89),
-[PR90](https://github.com/devrandom-labs/bombay-behavior/pull/90),
-[PR91](https://github.com/devrandom-labs/bombay-behavior/pull/91) and Communication
-[PR11](https://github.com/devrandom-labs/bombay-communication/pull/11).
-Native owner/package/CI evidence and the release workflow belong in the owning
-PRD. Publication and Bombay's registry adoption remain open; no unpublished
-version or source patch is committed as a released dependency.
+Dependency delivery is verified: Behavior/Actors0.24.0 and macros0.14.1 were
+published from049c88c through Release38159701650, following reviewed PR89/90/92.
+Communication PR11/12 merged02ee4c5/24ad2b9 with explicit user authorization;
+normal Release38161501036 published0.1.5. Its exact release head passes seven
+native gates,88 tests/zero skips,21-file package verification and all CI.
+Registry versions are present/not yanked and annotated tags resolve their exact
+release commits. Bombay now selects these registry versions in its workspace
+and Driver-fuzz manifests/locks, with no source patch. Before editing, the
+owning PRD recorded the missing published-contract witness and unchanged
+runtime/custody law. Only owner packages update; the fuzz lock also reconciles
+its existing local Engine0.2.2 version. Rust production/tests/API delta0.
+Pinned workspace/all-target/all-feature check passes against those releases;
+Engine tests pass74 cases plus one doctest in each profile. Full native/runtime,
+static-fixture and example gates are pending. Empty-birth alias PR91 remains
+separate unmerged work; publication is not inferred from local source.
 
-The private declared graph executes genuine recursion, same-type sibling roles,
-decorated creators, full refusal/retirement and startup cancellation in both
-profiles. It still handwrites native edges, protocol sharing and terminal
-schemas. The latest finite communication supertrait fails the real foreign
-caller in both profiles and is removed. These are private evidence, not retained
-topology generation or a DSL. Canonical runner inference, generated hosting and
-recursive custody, acquired family-prefix cancellation, complete HTTP recovery remain open. This bounded owner gain
-does not close DX01–03.
+The private single declared topology now derives native edges, spaces and
+recursive custody; counter, heterogeneous recursion in both wrapper orders,
+supervisor replacement, FIFO and born/cold roles run in both profiles.
+Exact root/member selection rejects swapped and duplicate cold roles. Explicit
+logical root hosting shares the registered namespace. Public/sibling scope
+access runs complete counter journeys; private generated aliases/registration
+remain inaccessible. These are bounded private proofs, not retained production
+or completed acceptance. Remaining work includes interface minimization,
+canonical runner coverage, acquired-family-prefix cancellation, child logical
+hosting, complete HTTP recovery and final compiler/runtime costs. Detailed
+proofs and requirement dispositions live only in the owning PRD.
 
 Scope coverage of270 backlog rows,100 failure records, seven examples,45
 catalogue entries and19 capabilities remains in the owning evidence appendix.
@@ -103,9 +114,10 @@ construction/mutation denials, all four complete Application/Entity journeys,
 workspace compilation and strict Clippy pass. Six real directory Loom tests pass
 with the repository's unbounded settings. Production+89/-80/net+9; one narrow
 configuration error is added and impossible downstream error branches removed.
-This is added validated construction capability. Full registry Nix still passes
-four gates and fails17 on unpublished owner APIs, with no disk/signing failure.
-The registry lock is byte-restored. Evidence:
+This is added validated construction capability. The configuration-stage registry
+Nix passed four gates and failed17 on then-unpublished owner APIs, with no
+disk/signing failure. Those historical results do not certify the newly adopted
+releases. Evidence:
 /var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/
 bombay-directory-configuration-rki61ud7.
 
