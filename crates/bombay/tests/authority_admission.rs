@@ -7,6 +7,7 @@ use std::collections::VecDeque;
 use std::future::Future;
 use std::mem::{replace, size_of};
 use std::num::NonZeroUsize;
+use std::pin::pin;
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
 use tokio::{runtime::Builder, sync::oneshot};
@@ -34,6 +35,23 @@ enum AdmissionCase {
     Unavailable,
     Scope,
     MissingFreshness,
+}
+#[derive(Clone, Copy)]
+enum VerificationTiming {
+    Immediate,
+    Stalled,
+}
+enum AuthorityUpdate {
+    Permission(Permission),
+    Time(Instant),
+}
+struct AuthorityProgress {
+    verification: Poll<()>,
+    acknowledgement: Poll<Result<(), oneshot::error::RecvError>>,
+    permission: Permission,
+    now: Instant,
+    deadline: Instant,
+    released: Result<(), ()>,
 }
 #[derive(Debug)]
 enum VerificationError {
@@ -68,7 +86,7 @@ fn protected_command() -> ProtectedCommand {
     }
 }
 mod record_provider {
-    use super::{AdmissionCase, Instant, ProtectedCommand, Scope, VerificationError};
+    use super::{AdmissionCase, Instant, ProtectedCommand, Scope, VerificationError, oneshot};
     pub(super) struct Receipt {
         amount: u64,
         scope: Scope,
@@ -81,7 +99,13 @@ mod record_provider {
         original: &ProtectedCommand,
         case: AdmissionCase,
         deadline: Instant,
+        release: Option<&mut oneshot::Receiver<()>>,
     ) -> Result<Receipt, VerificationError> {
+        if let Some(release) = release {
+            release
+                .await
+                .map_err(|cause| VerificationError::Unavailable(Some(cause)))?;
+        }
         match case {
             AdmissionCase::Invalid => return Err(VerificationError::Invalid),
             AdmissionCase::Stale => return Err(VerificationError::Stale),
@@ -118,7 +142,13 @@ mod scheduled_provider {
         original: &ProtectedCommand,
         case: AdmissionCase,
         deadline: Instant,
+        release: Option<&mut oneshot::Receiver<()>>,
     ) -> Result<Receipt, VerificationError> {
+        if let Some(release) = release {
+            release
+                .await
+                .map_err(|cause| VerificationError::Unavailable(Some(cause)))?;
+        }
         let (publication, mut receiving) = oneshot::channel();
         if case == AdmissionCase::Unavailable {
             drop(publication);
@@ -444,6 +474,7 @@ fn limits<R>() -> (NonZeroUsize, NonZeroUsize, NonZeroUsize) {
 )]
 async fn exercise<R, P, V>(
     case: AdmissionCase,
+    timing: VerificationTiming,
     expected_target: Scope,
     service: &mut ExternalActor<Replies>,
     target: &EstablishedRecipient<P>,
@@ -454,16 +485,24 @@ async fn exercise<R, P, V>(
     recover: fn(P::Msg) -> (ProtectedCommand, R),
     snapshot: fn(EstablishedRecipient<Replies>) -> P::Msg,
 ) -> (
-    Admission<R>,
-    Snapshot,
-    (*const u8, *const u8),
-    Option<Refusal>,
-    Option<Refusal>,
+    (
+        Admission<R>,
+        Snapshot,
+        (*const u8, *const u8),
+        Option<Refusal>,
+        Option<Refusal>,
+    ),
+    Option<AuthorityProgress>,
 )
 where
     P: Protocol<Addr = MailAddr>,
     P::Msg: Send + 'static,
-    V: AsyncFn(&ProtectedCommand, AdmissionCase, Instant) -> Result<R, VerificationError>,
+    V: AsyncFn(
+        &ProtectedCommand,
+        AdmissionCase,
+        Instant,
+        Option<&mut oneshot::Receiver<()>>,
+    ) -> Result<R, VerificationError>,
 {
     let now = Instant::now();
     let deadline = now
@@ -475,16 +514,77 @@ where
     let allocation = (request.payload.as_ptr(), request.proof.as_ptr());
     let retained = owner.retain(request);
     assert!(retained.is_ok());
-    let evidence = {
-        let Admission::AwaitingVerification(original) = &owner
-            .pending
+    let (evidence, progress) = {
+        let (permission, now, pending) = (&mut owner.permission, &mut owner.now, &owner.pending);
+        let Admission::AwaitingVerification(original) = &pending
             .front()
             .expect("reserved before verification")
             .admission
         else {
             panic!("unverified original")
         };
-        verify(original, case, deadline).await
+        match timing {
+            VerificationTiming::Immediate => (verify(original, case, deadline, None).await, None),
+            VerificationTiming::Stalled => {
+                let (release, mut held) = oneshot::channel();
+                let (publication, mut updates) = oneshot::channel();
+                let update = match case {
+                    AdmissionCase::Revoked => AuthorityUpdate::Permission(Permission::Revoked),
+                    AdmissionCase::Expired => AuthorityUpdate::Time(deadline),
+                    _ => AuthorityUpdate::Permission(Permission::Granted),
+                };
+                let (acknowledgement, mut acknowledged) = oneshot::channel();
+                let mut acknowledgement = Some(acknowledgement);
+                let mut verifier = pin!(verify(original, case, deadline, Some(&mut held)));
+                let mut context = Context::from_waker(Waker::noop());
+                let (verification, mut acquired) = match verifier.as_mut().poll(&mut context) {
+                    Poll::Pending => (Poll::Pending, None),
+                    Poll::Ready(evidence) => (Poll::Ready(()), Some(evidence)),
+                };
+                let queued = publication.send(update);
+                assert!(queued.is_ok());
+                if acquired.is_none() {
+                    let mut progress = pin!(async {
+                        tokio::select! {
+                            evidence = &mut verifier => Some(evidence),
+                            update = &mut updates => {
+                                match update.expect("independently queued authority update") {
+                                    AuthorityUpdate::Permission(value) => *permission = value,
+                                    AuthorityUpdate::Time(value) => *now = value,
+                                }
+                                let sent = acknowledgement.take()
+                                    .expect("one authority acknowledgement").send(());
+                                assert!(sent.is_ok());
+                                None
+                            }
+                        }
+                    });
+                    if let Poll::Ready(evidence) = progress.as_mut().poll(&mut context) {
+                        acquired = evidence;
+                    }
+                }
+                drop(acknowledgement);
+                let acknowledged = pin!(&mut acknowledged).as_mut().poll(&mut context);
+                let observed_permission = *permission;
+                let observed_time = *now;
+                let released = release.send(());
+                let evidence = match acquired {
+                    Some(evidence) => evidence,
+                    None => verifier.await,
+                };
+                (
+                    evidence,
+                    Some(AuthorityProgress {
+                        verification,
+                        acknowledgement: acknowledged,
+                        permission: observed_permission,
+                        now: observed_time,
+                        deadline,
+                        released,
+                    }),
+                )
+            }
+        }
     };
     let pending = owner.pending.front_mut().expect("same reservation");
     let Admission::AwaitingVerification(original) =
@@ -519,10 +619,13 @@ where
     }
     let first_attempt = attempt(&mut owner, service, target, projection, construct, recover);
     let charge = owner.charged;
-    if matches!(
-        case,
-        AdmissionCase::Granted | AdmissionCase::Revoked | AdmissionCase::Expired
-    ) {
+    if matches!(timing, VerificationTiming::Immediate)
+        && matches!(
+            case,
+            AdmissionCase::Granted | AdmissionCase::Revoked | AdmissionCase::Expired
+        )
+        || matches!(case, AdmissionCase::Granted)
+    {
         let Admission::VerifiedCommand(original, _) = &owner
             .pending
             .front()
@@ -544,10 +647,12 @@ where
         let observation = notification.as_mut().poll(&mut context);
         assert!(matches!(observation, Poll::Pending));
         drop(notification);
-        match case {
-            AdmissionCase::Revoked => owner.permission = Permission::Revoked,
-            AdmissionCase::Expired => owner.now = deadline,
-            _ => {}
+        if matches!(timing, VerificationTiming::Immediate) {
+            match case {
+                AdmissionCase::Revoked => owner.permission = Permission::Revoked,
+                AdmissionCase::Expired => owner.now = deadline,
+                _ => {}
+            }
         }
     }
     let snapshot_sent = service.send(target, snapshot(service.recipient())).await;
@@ -587,11 +692,14 @@ where
         owner.pending.capacity() * size_of::<PendingAdmission<R>>()
     );
     (
-        disposition,
-        after.message,
-        allocation,
-        first_attempt,
-        final_attempt,
+        (
+            disposition,
+            after.message,
+            allocation,
+            first_attempt,
+            final_attempt,
+        ),
+        progress,
     )
 }
 fn refusal(case: AdmissionCase) -> Option<Refusal> {
@@ -651,9 +759,58 @@ const CASES: [AdmissionCase; 8] = [
     AdmissionCase::Scope,
     AdmissionCase::MissingFreshness,
 ];
+fn admission_cases() -> impl Iterator<Item = (AdmissionCase, VerificationTiming)> {
+    CASES
+        .into_iter()
+        .map(|case| (case, VerificationTiming::Immediate))
+        .chain(
+            [
+                AdmissionCase::Granted,
+                AdmissionCase::Revoked,
+                AdmissionCase::Expired,
+            ]
+            .map(|case| (case, VerificationTiming::Stalled)),
+        )
+}
+fn assert_authority_progress(
+    case: AdmissionCase,
+    timing: VerificationTiming,
+    progress: Option<AuthorityProgress>,
+) {
+    match (timing, progress) {
+        (VerificationTiming::Immediate, None) => {}
+        (VerificationTiming::Stalled, Some(progress)) => {
+            assert!(
+                matches!(progress.verification, Poll::Pending),
+                "provider actually stalled"
+            );
+            assert!(
+                matches!(progress.acknowledgement, Poll::Ready(Ok(()))),
+                "authority progresses before provider release"
+            );
+            assert_eq!(progress.released, Ok(()));
+            assert_eq!(
+                progress.permission,
+                match case {
+                    AdmissionCase::Revoked => Permission::Revoked,
+                    _ => Permission::Granted,
+                }
+            );
+            match case {
+                AdmissionCase::Expired => assert_eq!(progress.now, progress.deadline),
+                _ => assert!(progress.now < progress.deadline),
+            }
+        }
+        _ => panic!("exact authority-progress observation"),
+    }
+}
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "the concrete Application retains Work, native state and both notification receipts"
+)]
 fn record_provider_consumer_uses_exclusive_admission() {
-    for case in CASES {
+    for (case, timing) in admission_cases() {
         let host = Builder::new_current_thread()
             .enable_all()
             .build()
@@ -671,6 +828,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
                         let target = application.root().established_recipient();
                         let result = exercise(
                             case,
+                            timing,
                             Scope::Counter,
                             &mut service,
                             &target,
@@ -698,7 +856,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
         drop(host);
         let (
             ApplicationOutcome::Completed {
-                output: ((disposition, snapshot, allocation, first_attempt, final_attempt), sender),
+                output: (observations, sender),
                 cleanup: Ok(()),
             },
             Ok((origin, terminal)),
@@ -710,6 +868,8 @@ fn record_provider_consumer_uses_exclusive_admission() {
         else {
             panic!("all actual native and notification receipts")
         };
+        let ((disposition, snapshot, allocation, first_attempt, final_attempt), progress) =
+            observations;
         let ActorRetirement::Completed { behavior, .. } = &terminal else {
             panic!("native completed Counter")
         };
@@ -740,12 +900,19 @@ fn record_provider_consumer_uses_exclusive_admission() {
             assert_eq!(original.proof.as_ref(), [41]);
             assert_eq!(record_provider::projection(receipt).0, 2);
         }
+        assert_authority_progress(case, timing, progress);
         assert_eq!(final_attempt, refusal(case));
         if matches!(
             case,
             AdmissionCase::Granted | AdmissionCase::Revoked | AdmissionCase::Expired
         ) {
-            assert_eq!(first_attempt, Some(Refusal::Full));
+            assert_eq!(
+                first_attempt,
+                match timing {
+                    VerificationTiming::Immediate => Some(Refusal::Full),
+                    VerificationTiming::Stalled => refusal(case).or(Some(Refusal::Full)),
+                }
+            );
         }
         assert_disposition(case, disposition, allocation);
         assert_completed(RootTerminal::Root { origin, terminal }, None);
@@ -757,7 +924,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
     reason = "the concrete Application retains Work, native state and both notification receipts"
 )]
 fn scheduled_provider_consumer_uses_exclusive_admission() {
-    for case in CASES {
+    for (case, timing) in admission_cases() {
         let host = Builder::new_current_thread()
             .enable_all()
             .build()
@@ -781,6 +948,7 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
                         let target = application.root().established_recipient();
                         let result = exercise(
                             case,
+                            timing,
                             Scope::Arithmetic,
                             &mut service,
                             &target,
@@ -808,7 +976,7 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
         drop(host);
         let (
             ApplicationOutcome::Completed {
-                output: ((disposition, snapshot, allocation, first_attempt, final_attempt), sender),
+                output: (observations, sender),
                 cleanup: Ok(()),
             },
             Ok((origin, terminal)),
@@ -820,6 +988,8 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
         else {
             panic!("all actual native and notification receipts")
         };
+        let ((disposition, snapshot, allocation, first_attempt, final_attempt), progress) =
+            observations;
         let ActorRetirement::Completed { behavior, .. } = &terminal else {
             panic!("native completed Arithmetic")
         };
@@ -853,12 +1023,19 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
             assert_eq!(original.proof.as_ref(), [41]);
             assert_eq!(scheduled_provider::projection(receipt).0, 2);
         }
+        assert_authority_progress(case, timing, progress);
         assert_eq!(final_attempt, refusal(case));
         if matches!(
             case,
             AdmissionCase::Granted | AdmissionCase::Revoked | AdmissionCase::Expired
         ) {
-            assert_eq!(first_attempt, Some(Refusal::Full));
+            assert_eq!(
+                first_attempt,
+                match timing {
+                    VerificationTiming::Immediate => Some(Refusal::Full),
+                    VerificationTiming::Stalled => refusal(case).or(Some(Refusal::Full)),
+                }
+            );
         }
         assert_disposition(case, disposition, allocation);
         assert_completed(RootTerminal::Root { origin, terminal }, None);

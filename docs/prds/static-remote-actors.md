@@ -12,7 +12,7 @@ and oracle design can continue. AUTH1 remains
 `candidate`; NET1 remains `blocked`. This document is a specification, not a
 claim that its proposed API compiles or that its acceptance witnesses pass.
 
-Current readiness (2026-10-10): reviewed local joined-retirement, exact native
+Current readiness (2026-10-11 UTC): reviewed local joined-retirement, exact native
 nonwaiting admission, child shutdown and held root-work prerequisites have
 merged through PRs330–334. PR335 delivered ordinary Application verification
 composition and exact native payload/proof research; its full feature witnesses
@@ -21,9 +21,14 @@ remain open. The nine controlled dependency copies are published; top-level
 is published and verified through a registry-only consumer. Wake custody PR336
 merged after independent review and all six CI checks, including native TLS in
 both profiles and the full Nix gate.
-Actual two-Application counter integration and interest retirement correction
-are independent isolated workstreams. Historical observations below describe
-their recorded source stage and must not replace this current readiness.
+Actual two-Application Counter integration PR337 merged after independent review
+and all six checks passed. The private two-provider admission comparison PR338
+has passing local combined checks and independent review; submitted-source CI
+and merge remain pending. Stalled-verifier progress and exact-target overlap
+continue independently. Controlled interest-retirement correction PR6 is reviewed
+with local owning/profile/archive checks passing; required CI, merge and successor
+publication remain pending. Historical observations below describe their recorded
+source stage and must not replace this current readiness.
 
 **Specification audit:** the scope and proof obligations below supersede the
 initial draft's aggregate completion claims. [Acceptance](static-remote-actors/acceptance.md)
@@ -7986,3 +7991,118 @@ Controlled fixtures1676 include the previously omitted80-line Python tests.
 Current cross-owner tests10071+1676+prepared overlap186=11933, before the bounded
 stalled-verifier follow-up; the newly selected12500 cap covers that stage.
 Independent read-only reconciliation confirms those owning classifications.
+
+Admission comparison submitted as PR338
+(https://github.com/devrandom-labs/bombay/pull/338), exact head
+c7ae1952e494778e36c91e988f24dafc4f4d85e7. Independent technical review5481290851
+(PRR_kwDOTCRE7M8AAAABRrXcYw) covers that source. Required CI38097652057
+is running; no merge or full feature completion is recorded. Final submitted
+checkpoint:3 paths, production+0/-0/net0; tests+944/-0/net944; documentation
++384/-4/net380; public types+0/-0; lock/manifests unchanged. Cumulative submitted
+Bombay checkpoint:80 paths, production+1725/-475/net1250, tests
++10732/-661/net10071, documentation+5771/-88/net5683 and5 previously delivered
+public types. Later working-tree records are excluded from that submitted view.
+
+Prepared stalled-verifier source formats to1117 lines: compared with the
+separately submitted944-line source, tests+203/-30/net173. The180 estimate
+covered net growth but its all-authored wording must also count the replaced
+original statements and proposed inverse statements. Before execution/retention,
+automatically select the recommended220-line authored-stage ceiling (203+4
+anticipated inverse statements=207); cumulative12500 remains unchanged. The
+prepared estimate overrun is not hidden as net reduction or counted as verified.
+No production/API/graph source changes. Alternative compressing the custody
+trace or dropping a concrete consumer would weaken the required comparison.
+
+Coordinator reviews the prepared model before compilation: verification is
+actually polled with its release held; independently enqueued update is applied
+through split exclusive permission/time fields. The borrowed select operation
+can be cancelled without dropping the provider future or pending original; any
+early acquired provider result is retained and never polled again. Capture
+acknowledgement and grant/time before evidence release. Both concrete native
+results and notification products precede progress/refusal oracles. Existing
+capacity-wait revocation/expiry scenarios remain intact. This is one ready local
+update competing with one blocked provider, with no general fairness claim.
+Prepared source SHA426f1fd6f4dc5aeeb54da4cd2ee37e97e70674b578d6875f35f234a62f13fd34
+has no identified semantic blocker; compiler output may still veto it.
+
+Prepared426f stalled-verifier source compiles without model changes; healthy
+debug/optimized controls each pass3 tests, including22 actual Application
+cases and the existing two-provider budget test. No inverse or combined-source
+delivery credit follows yet. Owning Clippy exposes one107-line concrete Counter
+receipt oracle above its100-line style threshold. Select the same narrowly
+documented too_many_lines expectation already used on the Arithmetic native
+oracle, preserving the continuous exact custody/retirement trace. Four authored
+attribute lines plus the207 forecast give211/220; no generic runner, lint-wide
+allowance or new architecture. Rerun affected controls before inversions.
+
+The stalled-verifier acknowledgement-without-update mutation stops each native
+consumer at revoked input, so it cannot also certify the later deadline case.
+Select the additional independent Time-only omission, retaining Permission
+application. Its one unique statement uses the already forecast fourth inverse
+statement: formatted retention+207, await-first2, all-update omission1 and
+time omission1 =211/220 authored lines. Both consumers/profiles must fail the
+intended post-cleanup native effect oracle at expiry, then restore exact source.
+No broader policy, production/API change or new budget is introduced.
+
+Independent production-contract review rejects a public check-and-attempt
+facade: it would delete no production caller machinery and would merely rename
+existing native try_send. Keep ordinary application-owned verification/grant
+functions and exclusive reservation state. Profile-owned verified conservative
+maximum accounting before verification is already selected; headers or JSON
+length cannot certify opaque provider/error/message allocations. Freeze a
+concrete supported profile and actual production consumer before retaining a
+private networking admission core or public abstraction. Existing ExternalActor
+continues owning its ordinary local endpoint contract. No production/API design
+is adopted from the current comparison; request identity/replay contracts remain
+an independent prerequisite investigation.
+
+### Stalled-verifier follow-up local proof and early integration
+
+Final private source c3b847e04e1a219ae95b9ae62e3c11aad18a1de0c6fefb09f59d260725ed53be
+formats1121 lines, tests+207/-30/net177 against the separately submitted944-line
+comparison. Four unique inverse lines give211/220 authored lines. Campaign
+SHA3d1e3922d0b238eb6b7bd35ae2698b7ed66280cf9f7fbd344ae6abbad6bd6ecf
+records14 actual commands/logs, independently hash-checked by the coordinator.
+Healthy and restored debug/optimized controls pass3/3, including22 actual
+Application cases/profile. Restored binaries equal their healthy binaries.
+Await-verifier-first produces4 intended post-native progress failures; false
+acknowledgement produces4 native protected-count failures on revocation; Time-only
+omission produces4 independent native protected-count failures at equality expiry.
+No timeout, compilation or unrelated failure receives semantic credit. Final
+strict owning lint/format pass after exact source restoration.
+
+Aggregate-drift disposition: pass for this private follow-up. Existing admission
+control sum and production/public surface remain unchanged. Two verification
+timing alternatives are test schedules, not another owner. AuthorityUpdate's
+two variants carry the independently queued current grant/time values. The
+observation product conserves actual provider-poll, acknowledgement, authority,
+time and release outcomes until native cleanup; it cannot mint authority.
+Split existing fields and borrowed select suffice without a new task, mutex,
+provider trait or public admission facade. No fairness/global generation/replay,
+opaque whole-heap or cryptographic conclusion is inferred.
+
+Early integration worktree /tmp/bombay-authority-progress-integration and branch
+feat/static-remote-authority-progress begin at actual main65bb884, then fast-forward
+to pending prerequisitec7ae195 without changing PR338's submitted source. No
+follow-up commit yet; reconcile actual reviewed prerequisite merge/latest main
+before delivery. Shared normal Cargo is coordinator-owned for combined checks;
+the independent controlled target remains assigned to the overlap campaign.
+
+The integrated stalled-verifier source passes all five combined pinned-Nix
+commands: workspace build, workspace/documentation tests, all-target tests,
+formatting and strict workspace/all-target Clippy, all --locked where applicable.
+Source and selected lock stay exact after verification. Scoped final minimization
+review finds no blocker, preserving all custody and post-cleanup oracle claims.
+Submit a dependent focused PR targeting main so its complete-source CI can run
+in parallel with PR338. Merge prerequisite338 first; recheck exact head and
+actual combined required CI/review before the dependent merge. No feature status
+is advanced from these local checks or an open dependent PR.
+
+Final follow-up checkpoint against submitted prerequisitec7ae195: two existing
+paths, production+0/-0/net0, tests+207/-30/net177, documentation
++124/-4/net120 and public types+0/-0. Complete
+tracked/untracked cumulative Bombay retains80 paths, production
++1725/-475/net1250, tests+10909/-661/net10248 and5 delivered public types.
+No manifest, lock, dependency, public method or schema changes. The dependent
+PR temporarily includes pending338 source; merge338 before retaining this
+follow-up delivery and preserve the exact combined head's required CI.
