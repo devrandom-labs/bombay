@@ -30,10 +30,10 @@ PR341 merged after exact-head review, all six successful checks and both Linux
 campaigns. The published1.10.3 dependency is now adopted on main. Replay
 comparison PR342 merged after scoped review, all six successful checks and both
 submitted-head Linux campaigns.
-Configured assignment/deadline PR343 merged after scoped review, all six checks
-and both submitted-head Linux campaigns. Bounded JSON PR344 awaits its final
-Nix check. Conservative storage witnesses pass local controls, inversions and
-independent review; their PR delivery remains pending. These local contributions
+Configured assignment/deadline PR343 and bounded JSON PR344 merged after scoped
+review, all six checks and both submitted-head Linux campaigns. Conservative
+storage witnesses pass local controls, inversions and independent review;
+PR345 is open with required CI running. These local contributions
 do not close production KERI or the full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
@@ -9418,3 +9418,355 @@ remains2051 within2650, with no resource production addition. Three stage paths
 and83 cumulative Bombay paths are measured; controlled/research custody retains
 its separate accounting. Complete checkpoints are
 `/tmp/bombay-resource-delivery-{stage,cumulative}-checkpoint.json`.
+
+Measured application forecast supersedes the earlier520 estimate. The actual
+corrected requester/native mapping/Application proposal is387 unapplied lines;
+the verified owning sections total401, of which its mapping replaces about104.
+That is already684 before two finite providers, assignment/startup and complete
+native observations. Select a conditional production cap1000 for the honest
+800–950 forecast, and raise cumulative core2650→3150 before further proposal
+authoring or retention: existing2051+1000=3051 remains within3150. Tests280,
+cumulative tests15600, public types5 and paths320 remain unchanged. Raise
+documentation7600→8200 for the measured source model and delivery records.
+Compressing lines or omitting custody would not satisfy the requirement; moving
+this first consumer into a new public platform abstraction remains unjustified.
+
+These caps authorize preparation, not retention of an unfinished model. The
+actual consumer must borrow its service owner from outside Application work so
+unwinding cannot erase raw input/receipt custody; typed uncertainty must remain
+distinct from Accepted, Closed and refusal. The changed Counter mapping keeps
+raw/R locally after admission, so its actual header sizes and resource profile
+must be checked on that exact composition. The old wrapped-target profile is
+supporting evidence, not a substitute. Record the precise extraction/deletion
+map and owning test entrypoint before implementation; no new dependency edge
+or public facade is selected by this scope expansion.
+
+Bounded JSON delivery: PR344 merged at2026-10-11T03:24:42Z as
+244efe414da85d51fb616e22379da5a660a63cb1. Exact head db88a475 passed all six
+checks and scoped review PRR_kwDOTCRE7M8AAAABRrsMNA. Nix run38105759969/
+job114370839797 passed; its full log hashes to
+d0896b769ab31bd320079f6c4451e426eef44db4ccc40bfd9df1f5292493f0fe,
+with actual Driver2048 and four Observe1024 campaigns, no executed Miri credit.
+The actual merge tree equals the submitted tree. Both Linux campaigns and234
+evidence files were independently rehashed; native proof
+3f68086922251415552393b0a99f3a5a49fa792a700c467ef2898d03a2b94a25.
+The concrete JSON source ddbab1 remains163 lines; no production wire schema,
+cryptographic proof or decode/process heap bound is inferred.
+
+Resource PR345 is open at exact a1217858fa31d401a3f5e848030861227c6c0b59;
+scoped review5481725177 is recorded and CI run38108095278 is active. Its actual
+JSON prerequisite is now delivered. Do not mark this resource contribution
+merged before its exact head passes required CI and the reviewed PR actually
+merges. The submitted three-file contribution is+1230/-77 by Git, entirely
+tests/documentation; immutable stage/cumulative receipts retain complete source
+and scope custody. The later application scope records remain coordinator-only
+preparation, not part of that submitted resource source.
+
+Select the application owning-test dependency edge: `dhat = "0.3.3"` under
+Counter's dev-dependencies, using the already selected locked0.3.3 package.
+DHAT's standard allocation statistics support the existing requested-byte
+observations; [its owning documentation](https://docs.rs/dhat/0.3.3/dhat/)
+requires preventing both concurrent profilers and test-runner interference.
+Reuse actual isolated named-test execution, not a body mutex. Alternative
+[stats_alloc0.1.10](https://docs.rs/stats_alloc/0.1.10/stats_alloc/) supplies
+allocator-operation regions but adds a new package and measurement path without
+a demonstrated gap. Source-only size accounting cannot replace the concrete
+allocation witness, and a handwritten allocator is unnecessary. DHAT remains an
+experimental diagnostic; source ownership and observable controls supply the
+law, never an assumed general memory-safety or process-heap proof.
+
+This selects one dev-only graph edge, not a runtime dependency or new crate
+version. Coordinator edits only Counter's manifest and that lock node's
+dependency list after the complete source/model review; preserve all other
+locked records. The main executable's allocator remains unchanged. Stage paths
+must include manifest/lock and actual owning source/test files; no edits have
+yet been retained under this selection.
+
+Resource PR345 native jobs114377771456/114377771646 pass. Both profiles contain
+30 expected outcomes and117 hashed files, independently reviewed and rehashed
+by the coordinator. Native proof9012a9811364e3910647c0fe3f0cd16dc779301fcfd1c39e80c827e162e70c80
+matches submitted head a121 and tested merge dca4ad5c; their source trees match.
+Both raw ZIPs/full logs and exact source are preserved. These native jobs do
+not execute the resource test; its separate Nix job114377771623 remains active.
+Five submitted-head checks currently pass; no merge or Linux resource-result
+credit follows until the remaining exact-head gate is complete.
+
+Coordinator main alignment now uses actual244efe4, including delivered assignment
+and JSON source. Both pending documents were preserved byte-for-byte through
+the fast-forward; custody is retained in
+`/tmp/bombay-coordinator-before-json-main-alignment/custody.json`. No retained
+application source, manifest or lock edit has occurred under its conditional
+scope or dev-only dependency selection.
+
+Select the actual application completion cut after source review: the requester
+receives a derived correlated admission status, while the outside-Work service
+owner retains the complete raw request, opaque provider receipt and native
+error. Moving that full product into an awaited send would temporarily put its
+custody in Work and allow cancellation before insertion to erase it. Alternative
+generic full-receipt delivery requires a separately proved lossless transfer
+mechanism; no such additional mechanism is justified when the requester decides
+only from operation, correlation and admission/uncertainty status. Remove its
+unused receipt generic rather than invent a marker or cloneable receipt.
+
+An actor's matching status-consumption Actions acknowledge that small report;
+they do not consume the still-owned full product or free its reservation. The
+actual outside-Work caller separately consumes the full typed result, after
+native/notification acquisition, and only that consumption releases its incoming
+reservation; replay comparison remains independent. Small reports preserve
+Accepted, uncertainty, Closed and refusal distinctions without cloning errors.
+Both provider receipts and their projections remain concrete and statically
+checked in the actual service. Their native admission authority is unchanged.
+
+Apply the same custody law to initial triggering: reserve and own the raw request
+outside Work before Begin; send only its correlated typed trigger through the
+requester Actions. Awaiting insertion of that trigger then cannot own or erase
+the raw request. Existing bounded entries supply correlation lookup; add no
+registry, shared receipt or second mailbox. The actual consumer and cancellation
+regressions must prove this cut before retention is credited.
+
+Clarify the native-acquisition order for this actual consumer: acquire the
+requester's joined native result and both notification receipts before the
+outside-Work caller consumes the complete service result. Retain each consumed
+raw request, provider receipt and original error in caller-owned storage outside
+Counter work. Counter itself remains live while the same binding's duplicate is
+retried; this must prove replay refusal against an available target. Joining
+Counter before that retry would establish only closure, not replay protection.
+Finally acquire Counter's native result and both notification receipts before
+the final observable assertions. This corrects sequencing without adding an API,
+primitive or early release of replay evidence.
+
+Select the first concrete Counter wire metadata layout: one flat JSON object
+with Bombay-owned scalar metadata and a closed operation. This reuses the
+verified original-byte object guard and direct Serde derivation. Nested metadata
+is viable but requires an additional object-only boundary for every nested
+struct, because the selected serde_json struct decoder also accepts sequences.
+Value buffering erases duplicates and supplies no needed capability. Native
+Counter Read recipients remain local; no generic payload facade is introduced.
+Original JSON and its separate provider proof remain unchanged and jointly
+owned. Field spellings, complete request/reply DTOs, limits and identity issuance
+remain separate, unselected contracts.
+
+Prepare the explicit-incompatibility parser comparison before retaining a
+mechanism: monolithic strict decoding can reject a future field or operation
+before discovering an unsupported version. Compare ordinary derived declaration
+preflight on the original bytes followed by strict supported-version decoding.
+Preflight alone must never establish schema acceptance or authenticated
+authority. Reject missing/duplicate declarations, positional arrays, trailing
+input and unsupported declaration representations; test future fields appearing
+both before and after the version. Preserve original parser errors, avoid Value,
+custom codecs and dispatch on error text. Version1/no-fallback was already
+selected and is not reopened by this comparison.
+
+The bounded preparation record is at most180 added private test lines in the
+owning protected_json comparison, zero production/public types/dependencies,
+and at most12 temporary inverse lines. First prepare outside the owning tree;
+coordinator reviews the complete ordinary-Rust comparison before retention.
+Cumulative retained tests14972 plus existing temporary inverses56, resource9,
+application280, this comparison180 and its inverses12 gives15509, within15600.
+This parser-only witness cannot claim actor-admission, cryptographic proof or
+complete R02/R05/R07 acceptance. Selected root lock93611085 and manifest5b73f388
+remain unchanged; exact Serde/serde_json sources and Behavior instructions were
+revalidated before preparation.
+
+Resource PR345 exacta121 passed all six checks. Full Nix log
+e2a7f82812443de637c0556c694e1a3db925ae6b89761331356afeb61007a747
+records two actual Linux finite-resource executions, Driver2048 and four
+Observe1024 campaigns; Miri was skipped. Normal exact-head merge nevertheless
+failed because GitHub reports an unmergeable branch against its cached base01683.
+The fetched actual main244efe merges cleanly locally and produces the identical
+reviewed treeec320be4c65341c89990d1e73f264cccc0ed4f02. Preserve the original
+head's complete proof; merge actual main into the delivery branch without source
+changes, then require exact-new-head review and CI. This is a necessary delivery
+graph correction, not a restart because an observation timed out. No merge or
+new-head CI credit is asserted before those actual events.
+
+The delivery graph correction is pushed as c25b48a55ff21f8a54493aa7a0a3104ec4cd5735;
+its tree remains exactlyec320, with zero source/document/manifest/lock delta.
+Fresh API metadata confirms actual base244efe and clean mergeability; CI
+run38109806902 and its companion checks are live for the new head. Preserve
+original run38108095278 as original-head evidence only. New-head technical
+review separately covers the identical-source merge; actual delivery remains
+pending its required checks and merge.
+
+The declaration comparison's pinned-rustfmt draft measures181 lines, or182
+with its owning-file separator, before retention. Select the ordinary exhaustive
+match on the declared version pair in place of sequential checks: accept(1,1),
+otherwise preserve wire-version refusal before schema-version refusal. It removes
+repeated control flow without removing literal vectors or original errors.
+This is lawful minimization of the private comparison; retain the180-line
+ceiling and require the actual formatted frozen measurement before copying.
+
+The complete declaration comparison is copied into the isolated delivery branch
+after coordinator source/model review: healthy SHA5492035878fbffe68371b8136fad18c4c7e53d1d8380ec0a11436cbd939e8596,
+exactly180 added private test lines, five private comparison types and no
+production/public API/dependency changes. The existing original-object guard,
+selected Serde derives and complete from_slice are the only decoding mechanisms.
+Initial actual pinned-Nix debug control passes all nine owning tests. Eight
+prepared omissions total seven added inverse lines; each names its exact test
+filter and intended first typed oracle. The supported-unknown-field cut must
+run its malformed-body test rather than fail the alternate monolithic-path
+comparison first. Optimized controls, actual intended failures, restoration,
+strict lint, combined verification and delivery remain unproved at this cut.
+
+Declaration healthy549203 passes all nine debug and optimized controls. Strict
+Clippy identifies two missing semicolons after assertion statements in the
+private expected-refusal match; select adding those two characters, zero line
+or contract delta, without a waiver. Preserve initial source/log receipts and
+rebuild the complete healthy/inverse source set with new hashes before executing
+the campaign. Compiler style output supplies no new architecture or policy.
+
+Declaration inversions correct one forecast from actual execution: removing
+the object guard fails first on the five-element positional input, yielding
+native Malformed(Syntax) where the explicit object boundary requires
+Malformed(Data). This is the actual typed shape-classification violation, not
+the later forecast WireVersion(2) result from the three-element input. Accept
+that exact first oracle for the same cut/filter; preserve the forecast and raw
+logac35f3d2 without claiming positional acceptance or version-substitution proof.
+The healthy source is restored unchanged before further commands; optimized
+execution and restored controls remain required.
+
+Application complete-source review now measures1159 formatted lines, private
+sums/products26 plus two provider-private receipts, two aliases and zero public
+types. The previous1000 forecast was insufficient. Select stage1220 and raise
+cumulative core3150→3300 before any further refinement or retention: existing
+2051+1220=3271 fits3300. Preserve the initial uncompiled3eef0164 source and
+old397-line proposal. No deletion credit or source acceptance follows from a
+scope expansion; owning tests and exact new resource measurements remain open.
+
+Select the actual outside-Work service placement with existing execute_with:
+Application work transfers its established ports through a Tokio oneshot and
+waits an independent completion permission; the caller polls execution beside
+the concrete service. The requester uses the same existing handoff pattern.
+This avoids a generic Serve promise and keeps full raw/R and requester native/
+notification products in caller-owned storage before the same-live-target
+duplicate retry. The alternative retains the concrete service inside Work
+through an external mutable borrow, requiring a separately demonstrated
+borrowing/handoff composition for independently acquired requester results.
+No additional actor, runtime task, mailbox or observation framework is selected.
+The exact new headers/handoffs need fresh allocation/cancellation witnesses.
+
+Select established futures-util0.3.34 FutureExt::catch_unwind for execution-poll
+containment, with default features disabled and only std enabled. A Work panic
+otherwise escapes the enclosing joined future and drops the outside owner.
+This selected locked package already owns the exact standard per-poll mechanism;
+it returns the original native panic payload without adding a task. Its std
+feature supplies catch_unwind and does not require async-await-macro. The
+alternative Tokio execution task also contains unwind but adds a caller task
+and separate JoinError ownership; a handwritten poll adapter supplies no gap
+over this established crate. Standard AssertUnwindSafe is justified only for
+the discarded execution future: never poll it after failure, and retain the
+service, original panic and independently owned native receiving outside the
+catch. This is unwind containment, not destructor/abort recovery or permission
+to classify a panic as clean retirement.
+
+This adds one runtime edge to the unpublished Counter example, not Bombay's
+core dependency surface or a new locked package/version. Coordinator owns
+Counter manifest/lock edits, beside the already selected dev-only DHAT edge;
+preserve all other locked records. Exact selected futures-util checksum
+0d50a92467f8ba5dd6e3ee5d4bd04d73ab2e4e1c44474a0674821dfce14b79bc,
+VCS705e6b5c0f06535b1aac1cb1989a172b3d45be8c, catch_unwind implementation and
+std feature gates were read before this selection. Ordinary native panic
+payload erasure originates in the standard library; provider receipt types stay
+concrete and are never downcast or made cloneable.
+
+Declaration comparison completed on exact7df9eaaae8e777a154d7a73cb6bf6a0b68d359c12458329e4063ffb34cc3c01c:
+all nine debug/optimized controls, strict owning Clippy and format pass. Eight
+cuts fail at their recorded typed oracles in both profiles, with all16 full
+nine-test restorations passing. Complete receipt287a08237a4328165d5bd3aee4e6fbdb5aaafdda74303d2af41367a5a51d1300
+retains40 command records, exact selected lock and all copied executables.
+Coordinator independently rehashed every log/receipt/binary, all eight sources/
+patches and observed first-oracle text. Scope stays180 retained test lines and
+seven temporary inverse lines, zero production/public API/dependencies. The
+positional cut retains only its actual Syntax/Data classification claim.
+Combined checks and actual reviewed PR delivery are still open; this remains
+private source evidence, not authenticated wire or full R05 acceptance.
+
+The new PR345 c25 native jobs pass both Linux profiles with30 outcomes and117
+hashed files each. Fresh proof fcf2efbae668b1557cf1eb6b1ffd17b11f75155ab0156bcf9a67c0009a4d87f1
+matches tested merge8e40e379 and exactc25 treeec320. Coordinator separately
+rehashed234 archive files, both raw ZIPs/full logs and all six exact sources.
+These actual new-head jobs provide no resource-test or overall-CI completion
+credit; the new Nix gate114382835344 remains live.
+
+Application source review identifies another actual-consumer blocker: the
+whole-owner async verify borrow prevents observing a permission update while
+its provider remains pending. Older fixture evidence cannot substitute for this
+composition. Select ordinary field-disjoint borrowing: a plain async function
+borrows only the existing PendingAdmission; the caller separately controls that
+same owner's permission and retains the same pinned provider future. After
+receipt/error acquisition is stored, end the entry borrow before existing
+associate/attempt performs its coherent fresh authority check. Delete the
+whole-owner async method, reuse the existing phase/product and native attempt,
+and introduce no wrapper, trait, observation or duplicate admission path.
+The alternative serializes updates behind the awaited provider and cannot prove
+the required known-revocation boundary. Retention requires an actual pending
+provider → observed same-owner revocation → release → zero native increment
+trace, complete raw/R/native custody, borrowed-wait cancellation control and
+debug/optimized intended inversion. Preparation is authorized; no actual proof
+or retained application production follows before those checks.
+
+At that acquisition seam, use standard AsyncFnOnce: each pending entry invokes
+its retained provider once, and a genuine pending fixture may move its existing
+release receiver into that call. Ordinary reusable provider functions still
+satisfy the narrower one-call seam. This bound follows actual ownership rather
+than compiler repair; no Mutex, provider trait or wrapper is introduced.
+
+Remove the copied R: Send + 'static bounds from the actual caller-local profile.
+They belonged to the superseded receipt-bearing actor; neither the non-R actor
+protocol nor selected Application work boundary requires them now. Retain the
+opaque receipt in caller-local ownership without inventing transfer constraints.
+The concrete non-Send receipt compile/pass comparison must preserve this denial
+of unnecessary bounds before retaining a broader requirement.
+
+Adding the approved authorized binary creates more than one executable in the
+Counter package. Select Cargo's standard default-run pointing to the existing
+bombay-example-counter executable, preserving the ordinary teaching command.
+The alternative changes every existing basic invocation to require --bin.
+This is an explicit command-selection compatibility setting, not a new resource
+default, topology or runtime API. Coordinator owns that package manifest edit.
+
+Independent application review blocks retention of frozen1da2d173 (1192 lines).
+Before either Work publishes ports, a panic closes its handoff; the companion
+ports.await.expect then panics outside the execution catch, losing available
+causes and skipping native receiving. After requester publication, Work panic
+can leave the companion requests.receive waiting on the still-live Counter
+port, so join never reaches requester native acquisition. Prepare actual
+same-composition regressions at both publication boundaries. Preserve the
+original execution panic, actual handoff RecvError and native/two-notification
+products; do not substitute a copied Application test or blanket driver catch.
+
+Select narrow exhaustive handling of fallible handoffs and coordinated
+cancellation of only the borrowed service wait when execution has failed.
+Keep the owner, every already acquired fact and independent native receiving
+outside that cancellation. The alternative waits despite a known producer
+failure and cannot meet custody/liveness. Concrete receiving storage, error
+products and orchestration still need ordinary-Rust preparation and review
+before adoption; no public API, timeout or universal panic policy is selected.
+The healthy-only Result<()> driver cannot serve as a failure receiving API:
+constructor failure must retain its original StartupRefusal after cleanup,
+and failure tests inspect actual Interrupted/native causes before healthy
+validation. Numeric requester origins provide local trace evidence only.
+Full-ledger replay, genuine pending-provider outcomes and new-source resource
+witnesses remain separate open controls, not claims from the normal I,I,R loop.
+
+Declaration combined verification passes all five pinned-Nix commands on the
+union with exact pending resourcec25: all-targets584 passed/zero failed/one
+existing ignored, workspace build, workspace tests plus docs, fmt and strict
+workspace/all-target Clippy. Aggregate8da3f26cd3801d23ee968673988759470c11886619014d98ae479106edd99b32
+retains five hashed full logs; coordinator rehashed them. Independent source/
+minimization/evidence review found no blocker and separately rehashed all40
+campaign commands/binaries, eight variants/patches and historical style evidence.
+The selected serde_json ignore_value may grow scratch storage for ignored
+nesting; declaration preflight is not a zero-allocation or default-depth-bound
+proof. Production reuse still requires its actual bounded parsing witness.
+Prepare the focused reviewed comparison PR; resource345 actual delivery, its
+submitted-head CI/native evidence and actual merge remain delivery gates.
+
+Declaration delivery checkpoint against exact prerequisite c25b48a5 includes
+three tracked paths and no untracked files: production +0/-0/net0; tests
++180/-0/net180; public API +0/-0 types; manifests/lock unchanged. The complete
+tracked/untracked stage and cumulative measurement is retained separately in
+/tmp/bombay-wire-delivery-{stage,cumulative}-checkpoint.json. Cumulative
+production remains1250 net, retained Bombay tests13476 and five public types.
+The pending resource contribution is inherited, not counted as new declaration
+implementation. No Application candidate source is included in this delivery.
