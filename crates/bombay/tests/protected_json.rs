@@ -161,3 +161,183 @@ fn bounded_writes_keep_original_and_refuse_partial_output() {
     assert_eq!(&*command.label, "π雪\"\\\n");
     assert_eq!(command.sequence, u64::MAX);
 }
+
+// Private field spellings compare decoding; they are not a production schema.
+mod declaration_comparison {
+    use super::{Category, Deserialize, Error};
+    use serde::de::Error as _;
+
+    #[derive(Debug, Deserialize)]
+    struct Declarations {
+        wire_version: u64,
+        schema_version: u64,
+        kind: Box<str>,
+    }
+    #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+    #[serde(rename_all = "snake_case")]
+    enum CommandKind {
+        Read,
+    }
+    #[derive(Debug, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct DeclaredCommand {
+        wire_version: u64,
+        schema_version: u64,
+        kind: CommandKind,
+        sequence: u64,
+        label: Box<str>,
+    }
+    #[derive(Debug)]
+    enum DeclarationRefusal {
+        WireVersion(u64),
+        SchemaVersion(u64),
+        Kind(Box<str>),
+        Malformed(Error),
+    }
+    #[derive(Debug)]
+    enum ExpectedRefusal {
+        WireVersion(u64),
+        SchemaVersion(u64),
+        Kind(&'static str),
+        Malformed(Category),
+    }
+    fn require_versions(wire_version: u64, schema_version: u64) -> Result<(), DeclarationRefusal> {
+        match (wire_version, schema_version) {
+            (1, 1) => Ok(()),
+            (1, schema) => Err(DeclarationRefusal::SchemaVersion(schema)),
+            (wire, _) => Err(DeclarationRefusal::WireVersion(wire)),
+        }
+    }
+    fn decode_schema_before_declarations(
+        original: &[u8],
+    ) -> Result<DeclaredCommand, DeclarationRefusal> {
+        if !original.trim_ascii_start().starts_with(b"{") {
+            return Err(DeclarationRefusal::Malformed(Error::custom(
+                "object required",
+            )));
+        }
+        let command: DeclaredCommand =
+            serde_json::from_slice(original).map_err(DeclarationRefusal::Malformed)?;
+        require_versions(command.wire_version, command.schema_version)?;
+        Ok(command)
+    }
+    fn decode_declarations_before_schema(
+        original: &[u8],
+    ) -> Result<DeclaredCommand, DeclarationRefusal> {
+        if !original.trim_ascii_start().starts_with(b"{") {
+            return Err(DeclarationRefusal::Malformed(Error::custom(
+                "object required",
+            )));
+        }
+        let declarations: Declarations =
+            serde_json::from_slice(original).map_err(DeclarationRefusal::Malformed)?;
+        require_versions(declarations.wire_version, declarations.schema_version)?;
+        if declarations.kind.as_ref() != "read" {
+            return Err(DeclarationRefusal::Kind(declarations.kind));
+        }
+        // Ignored preflight fields never establish schema acceptance or authority.
+        serde_json::from_slice(original).map_err(DeclarationRefusal::Malformed)
+    }
+    fn assert_refusal(
+        actual: &Result<DeclaredCommand, DeclarationRefusal>,
+        expected: ExpectedRefusal,
+    ) {
+        match (actual, expected) {
+            (
+                Err(DeclarationRefusal::WireVersion(actual)),
+                ExpectedRefusal::WireVersion(expected),
+            )
+            | (
+                Err(DeclarationRefusal::SchemaVersion(actual)),
+                ExpectedRefusal::SchemaVersion(expected),
+            ) => assert_eq!(*actual, expected),
+            (Err(DeclarationRefusal::Kind(actual)), ExpectedRefusal::Kind(expected)) => {
+                assert_eq!(actual.as_ref(), expected);
+            }
+            (Err(DeclarationRefusal::Malformed(cause)), ExpectedRefusal::Malformed(expected)) => {
+                assert_eq!(cause.classify(), expected);
+            }
+            (actual, expected) => {
+                panic!("actual original result {actual:?}; expected {expected:?}")
+            }
+        }
+    }
+    #[test]
+    fn supported_declarations_keep_complete_original_schema() {
+        for (original, sequence, label) in [
+            (br#"{"wire_version":1,"schema_version":1,"kind":"read","sequence":7,"label":"read"}"#.as_slice(), 7, "read"),
+            (b" \t{\"label\":\"\\u03c0\\u96ea\",\"sequence\":18446744073709551615,\"kind\":\"read\",\"schema_version\":1,\"wire_version\":1} \r\n", u64::MAX, "π雪"),
+        ] {
+            for decoded in [decode_schema_before_declarations(original), decode_declarations_before_schema(original)] {
+                let command = decoded.expect("declared supported object");
+                let observed = (
+                    command.wire_version,
+                    command.schema_version,
+                    command.kind,
+                    command.sequence,
+                    command.label.as_ref(),
+                );
+                assert_eq!(observed, (1, 1, CommandKind::Read, sequence, label));
+            }
+        }
+    }
+    #[test]
+    fn unsupported_declarations_precede_future_schema_fields() {
+        let original =
+            br#"{"wire_version":2,"schema_version":1,"kind":"read","sequence":7,"label":"read"}"#;
+        for decoded in [
+            decode_schema_before_declarations(original),
+            decode_declarations_before_schema(original),
+        ] {
+            assert_refusal(&decoded, ExpectedRefusal::WireVersion(2));
+        }
+        for (original, expected) in [
+            (
+                br#"{"future":{},"wire_version":2,"schema_version":1,"kind":"read","sequence":7,"label":"read"}"#.as_slice(),
+                ExpectedRefusal::WireVersion(2),
+            ),
+            (
+                br#"{"wire_version":2,"schema_version":1,"kind":"read","sequence":7,"label":"read","future":{}}"#,
+                ExpectedRefusal::WireVersion(2),
+            ),
+            (
+                br#"{"wire_version":1,"future":0,"schema_version":2,"kind":"read","sequence":7,"label":"read"}"#,
+                ExpectedRefusal::SchemaVersion(2),
+            ),
+            (
+                br#"{"wire_version":1,"schema_version":1,"kind":"write","sequence":7,"label":"read","future":0}"#,
+                ExpectedRefusal::Kind("write"),
+            ),
+        ] {
+            let comparison = decode_schema_before_declarations(original);
+            assert_refusal(&comparison, ExpectedRefusal::Malformed(Category::Data));
+            let diagnostic = decode_declarations_before_schema(original);
+            assert_refusal(&diagnostic, expected);
+        }
+    }
+    #[test]
+    fn malformed_declarations_and_supported_bodies_keep_original_errors() {
+        for (original, category) in [
+            (br#"{"schema_version":1,"kind":"read"}"#.as_slice(), Category::Data),
+            (br#"{"wire_version":1,"kind":"read"}"#, Category::Data),
+            (br#"{"wire_version":1,"schema_version":1}"#, Category::Data),
+            (br#"{"wire_version":2,"wire_version":1,"schema_version":1,"kind":"read","sequence":7,"label":"read"}"#, Category::Data),
+            (br#"{"wire_version":2,"wire_vers\u0069on":1,"schema_version":1,"kind":"read","sequence":7,"label":"read"}"#, Category::Data),
+            (br#"{"wire_version":1,"schema_version":1,"schema_version":2,"kind":"read","sequence":7,"label":"read"}"#, Category::Data),
+            (br#"{"wire_version":1,"schema_version":1,"kind":"read","kind":"write","sequence":7,"label":"read"}"#, Category::Data),
+            (br#"{"wire_version":1,"schema_version":1,"kind":"read","sequence":7,"label":"read","future":0}"#, Category::Data),
+            (br#"{"wire_version":1,"schema_version":1,"kind":"read","sequence":7,"sequence":8,"label":"read"}"#, Category::Data),
+            (br#"{"wire_version":1,"schema_version":1,"kind":"read","sequence":7,"label":["read"]}"#, Category::Data),
+            (br#"{"wire_version":1,"schema_version":1,"kind":"read","sequence":1.0,"label":"read"}"#, Category::Data),
+            (br#"[1,1,"read",7,"read"]"#, Category::Data),
+            (br#"[2,1,"read"]"#, Category::Data),
+            (br#"{"wire_version":1,"schema_version":1,"kind":"read","sequence":7,"label":"read"}{}"#, Category::Syntax),
+            (br#"{"wire_version":2,"schema_version":1,"kind":"read","sequence":7,"label":"read","future":[tru]}"#, Category::Syntax),
+            (br#"{"wire_version":2,"schema_version":1,"kind":"read"}{}"#, Category::Syntax),
+            (br#"{"wire_version":"1","schema_version":1,"kind":"read"}"#, Category::Data),
+        ] {
+            let diagnostic = decode_declarations_before_schema(original);
+            assert_refusal(&diagnostic, ExpectedRefusal::Malformed(category));
+        }
+    }
+}

@@ -67,7 +67,9 @@ after exact-head review and all six checks. Replay PR342 merged
 2c264c705d2fb07eccb1a86f3a5852bc0d598ef5 with the same delivery gates.
 Configured assignment/deadline PR343 merged01683e86bbe0f74536f6f94c49d94211e117f115
 at2026-10-11T03:07:40Z after scoped review and all six checks passed.
-Bounded JSON PR344 and the corrected resource witness remain pending.
+Bounded JSON PR344 merged244efe414da85d51fb616e22379da5a660a63cb1
+at2026-10-11T03:24:42Z after scoped review and all six checks passed.
+The corrected resource witness is submitted as PR345; its CI remains pending.
 These contributions do not close full AUTH1/NET1 acceptance.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
