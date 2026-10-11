@@ -47,10 +47,15 @@ published through exact-main release38089508115; all nine actual registry archiv
 and normal/maintainer registry-only consumer checks pass. Endpoint-waker witness
 [PR336](https://github.com/devrandom-labs/bombay/pull/336) merged
 2104559072b4321ab55beaea50dfa3a805a6723e after independent review and all six
-checks passed. Actual two-Application counter integration passes its restored
-24-case matrix in both profiles, scoped inversions and combined workspace checks;
-reviewed PR delivery remains open. The four-owner resource-interest correction
-is a separate verification workstream, with no full acceptance credit.
+checks passed. Actual two-Application Counter integration
+[PR337](https://github.com/devrandom-labs/bombay/pull/337) merged
+65bb88456aeee13570b706b629b25de0341abb0b after independent review and all six
+checks passed, including its actual Linux debug/optimized TLS artifacts.
+Its restored 24-case matrix and scoped inversions retain their limits. The
+ordinary Rust two-provider admission comparison passes local debug/optimized
+controls and intended revocation/expiry and static inversions; combined-source
+verification and PR delivery remain open. The four-owner resource-interest
+correction has reviewed controlled PR6 open, with no full acceptance credit.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
 

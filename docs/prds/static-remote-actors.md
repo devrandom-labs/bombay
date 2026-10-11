@@ -7611,3 +7611,378 @@ Cumulative Bombay79 paths: production+1725/-475/net1250; tests+9788/-661/net9127
 documentation+5391/-88/net5303; manifest/lock+3174/-3/net3171; public types+5/-0.
 The separately counted controlled correction retains its authorized caps and
 exclusive Cargo lane; counter PR delivery is independent.
+
+### Interest correction successor preparation (no release credit)
+
+Under delegated recommendations, select top-level bombay-zenoh1.10.3 for the
+verified interest correction's next publication. Actual published1.10.2 is
+immutable and contains only its recorded prior repairs; it must not be relabeled
+or overwritten. Alternative source-only delivery leaves ordinary registry
+consumers without the correction; republishing changed1.10.2 is unavailable.
+Keep the other eight published package versions, checksums and source unchanged.
+
+Pre-edit release record: six additional existing metadata paths only—root
+Cargo.toml/Cargo.lock, zenoh/Cargo.toml, configuration-consumer Cargo.toml/
+Cargo.lock and verify_archives.py's exact successor version. Six one-line version
+substitutions, net0 lines, no new public types/API/dependency identities. Combined
+with the six-path correction, twelve unique controlled paths (CI auditor adds
+one changed line to the existing five-line CI delta, within eight). Update only
+the top path-package version in both locks, preserving every unrelated record.
+Coordinator performs these edits after the resource agent restores its exact
+source and explicitly releases controlled Cargo. Then verify actual successor
+archives, exact graph, consumer and required combined owning CI before release.
+No version edit, archive validation, new-version CI, merge or publication has
+occurred from this preparation. The bounded native owner proof remains separate
+from complete TLS reclamation, memory quotas or full remote acceptance.
+
+### Next local admission policy selected before ordinary-Rust comparison
+
+Delegated recommendation selects an application-owned exclusive service loop,
+plain functions and existing typed Actions/ExternalActor composition first.
+No shared mutex, provider trait, universal trusted-receipt constructor, task per
+request, actor contract or runtime attachment is selected. One exact configured
+grant is sufficient for the first comparison; no grant registry is introduced.
+Its current permission, locally established evidence deadline and retained
+original request/result prefix are distinct from actor mailbox ownership.
+
+Each retry obtains one coherent current authority/time snapshot, validates it
+and performs existing try_send without an intervening await. Observed revocation
+wins over otherwise valid cached evidence; now>=deadline refuses as expired.
+Missing usable local freshness refuses as unavailable, preserving any acquired
+cause. Production local time uses std::time::Instant; providers own any conversion
+from their evidence into a local deadline. No remote-clock conversion, skew
+allowance, negative-cache lifetime or instantaneous remote revocation is inferred.
+Controlled test clock functions permit deterministic observations without a new
+clock trait. Alternative mutex ownership adds unneeded shared-caller/unwind
+semantics; precheck-plus-awaited-send violates the already proven law.
+
+Preserve Invalid, Stale, Unavailable, scope refusal, Revoked, Expired, native
+Full/Closed originals, mailbox acceptance and later processing distinctly.
+Provider-owned opaque receipts remain concrete and require their corresponding
+typed consumer; raw DTOs cannot substitute. The application selects its concrete
+verifier/projection as a trusted configuration choice. No arbitrary generic
+projection is claimed to prove universal authentication. A possibly published
+message after insertion/waker unwind retains uncertainty and the actual cause;
+no automatic second attempt is permitted. Borrowed-wait cancellation retains
+originals; deliberate whole-owner surrender follows the already selected law.
+
+Require explicit nonzero pending count, retained-byte and individual-footprint
+configuration; no production default is selected. Count reservations through
+verification/retries and completed-but-unreceived dispositions. Overflow returns
+the exact original with its typed limit classification, including checked
+arithmetic failure. Each selected provider/protocol must demonstrate actual
+owned-allocation accounting or a conservative maximum; size_of_val and JSON
+length alone are insufficient. This contract does not bound upstream queues,
+transport decoding, allocator/socket overhead or arbitrary application state.
+Verification concurrency/wait and automatic retry scheduling remain open where
+needed; the first operation comparison does not add a verifier queue or scheduler.
+
+Next experiment: ordinary private functions/owned fields for two concrete
+provider/consumer bindings, using the actual permission_admission Application
+law and independent complete prefix/processing/native-retirement oracles.
+Compare direct ownership before retaining any public admission abstraction.
+Estimate250–450 additional test lines, bounded at500 including temporary variants,
+up to three owning test/source-record paths, production/public API+0/-0 at this
+comparison. No manifest/lock/dependency change. Any actual production owner
+needs a fresh measured pre-edit record, proven invariant, caller machinery it
+deletes and names/signatures review; the forecast180–320 production lines and
+2–3 public types is not adoption. No full AUTH1/NET1/R01–R25 acceptance follows
+from these selected local policies or the pending comparison.
+
+Scope checkpoint before that comparison: automatically select cumulative authored
+test/fixture cap12000, replacing10500, while retaining production2200,
+public-types5, retained-source-path320 and research-document6300 caps.
+Current complete Bombay counter checkpoint has test net9127; this proposed
+comparison contributes at most500, and controlled owning test/publication
+contributions remain separately accounted across their accepted stages. Raising
+only the test ceiling accommodates those combined source obligations without
+splitting budgets or treating stage commits as a reset. No new production/API
+surface is authorized by this test-cap choice. Record measured combined totals
+before retaining the next comparison or any production owner.
+
+Concrete pre-edit comparison: one new owning test path
+crates/bombay/tests/authority_admission.rs, forecast410–470 retained lines plus
+at most25 unique temporary mutation lines, all-authored hard ceiling500.
+Reuse application_support::RootTerminal, actual native complete retirement,
+Behavior's existing generated typed lanes and two concrete Application run_with
+calls. Counter adds; Arithmetic multiplies. Distinct private provider receipts
+contain no heap and accompany each original protected Box into their genuinely
+matching domain consumer. Plain generic functions/owned queue state may compose
+these inputs; no generic Application runner, hidden protocol trait or public type.
+
+Scope of allocation assertion: actual protected Box storage plus measured fixed
+queue/receipt state in this closed fixture, with conservative explicit charges.
+Do not infer arbitrary opaque-message/provider/whole-heap bounds. Two-slot and
+byte capacity-plus-one tests conserve overflow originals; Full retains its slot;
+completed-unreceived results retain their charge. Cancelling a borrowed existing
+oneshot notification wait (unit notification only) cannot remove original/result
+custody from the service queue. This proves custody, not an automatic readiness
+scheduler. Native1024 capacity is the existing mailbox, not a new default.
+Both concrete providers exercise granted/revoked/deadline retries after a same
+user-lane processing barrier, complete native cleanup and original-allocation
+checks. Cache/precheck or bypass-revalidation inversions must fail the actual
+protected-effect count in both profiles, then exact-source controls restore.
+Record unavailable original causes where exercised; do not fabricate universal
+provider/freshness or complete resource acceptance from the finite comparison.
+
+### Exact-target overlap comparison selected before source edits
+
+Delegate the recommended in-model overlap comparison, using existing protected
+host/runtime/actor-generation fields and two independently configured local
+receiver assignments. Sender targets A; both real queryables receive the same
+provider-verified A-targeted bytes. A alone may admit Increment/Read. B must
+retain its original Query, copied buffers and original private provider receipt
+with a typed local target refusal, emit no successful command reply, and retire
+with balance41, empty command trace and no rejected queued domain command.
+Acquire A balance42/two-command trace, caller two replies and all four actual
+session closes/native products before the independent terminal oracle.
+
+Alternative cloned identical assignments demonstrate an out-of-model fanout
+hazard, not this static single-assignment law. Post-reply deduplication cannot
+repair two admissions. Zenoh BestMatching alone is insufficient: the selected
+owning dispatcher falls back to All without a complete match. Keep current
+All/None query settings while proving exact local target refusal before execution.
+This does not select production routing keys, distributed generation issuers,
+global fencing or new authenticated fields. Provider remains an explicit fixture.
+
+Actual gap: counter_application.rs valid_request compares only with one global
+configured hosting tuple. Parameterize the receiver's own assignment rather
+than deriving it from the incoming claim. Reuse existing concrete Scope, typed
+provider receipts, exact try_send, Counter Behavior/Actions and native retirement.
+Any private product must own the independently configured assignment and delete
+the hardcoded receiver assumption; avoid forwarding wrappers/new public types.
+Three existing fixture paths (counter module, binary, Python controller):
+forecast120–190 Rust plus100–150 controller lines; all-authored stage cap600
+including temporary inversions, production/public API+0/-0, no new crate,
+manifest/lock/schema field/default or shared runtime owner. This is a new
+independently reviewed stage, not a reset of the cumulative12000-test cap.
+
+Focused both-profile controls then bypass B's target check and substitute each
+hosting component independently; require the intended B-native/admission oracle
+rather than timeout or reply-count failure. Hold all actual acquired values
+through close. Existing24 expected controller outcomes remain intact. Matching
+presence only proves at least one receiver, so both actual received observations
+are mandatory for overlap credit. Never relabel missing second delivery as
+single-target safety. Full R22 also requires the promised milestone/consolidation
+campaign; neither that nor global single-writer safety is closed here.
+An obsolete binary-file header excluding all actor-admission observations must
+be clarified with this fixture update. Source authoring may run independently;
+Cargo execution waits for the shared controlled-lane handoff.
+
+### Admission comparison corrected source estimate before broadening
+
+The initial private draft has334 unformatted lines; pinned rustfmt preview
+shows approximately832 actual owning-source lines (unchanged support/banner
+excluded). The earlier410–470 estimate was wrong. No positive/inversion execution
+or production/API change is credited. Under delegated recommendation raise this
+one private comparison's all-authored test ceiling500→950, including at most25
+unique temporary mutation lines. Cumulative authored-test cap12000 and all other
+recorded caps stay unchanged; this is no commit/stage reset.
+
+Retain actual ordinary Rust formatting and both real concrete Application/native
+consumers plus independent pending/budget/cancellation laws. Alternative scope
+reduction to revocation/expiry would leave those selected obligations untested;
+compressed syntax or speculative generic Application abstraction to conceal the
+size is rejected. Review the complete private source/model before executing it,
+then measure actual formatted source and final tracked/untracked cross-owner
+delta. This larger test estimate does not authorize any public admission owner,
+provider trait, runtime attachment, additional semantic policy or production line.
+
+Pre-execution review reopens the first admission draft: final refusal assertions
+inside application work would veto a bypass-recheck mutant before the required
+independent post-cleanup actor-effect oracle. Retain the observed attempt results
+and classify them only after acquiring native/notification outcomes and checking
+actual protected effects. Configure each receiver's expected grant target
+independently: Counter and Arithmetic cannot both inherit a hardcoded Counter
+scope. This is the selected exact-target law, not a new identity scheme.
+
+Remove unnecessary Send/static bounds from the synchronous try_send operation;
+awaited send consumers keep their own justified bounds. Narrow private provider
+and generated-send visibility to their actual parent/private consumers. Name the
+protected payload/proof product and verification/mailbox/uncertainty alternatives
+for the values they own, including an unambiguous retained-byte overflow cause.
+Extend original-recovery assertions to both allocated payload and proof boxes.
+No public API or extra owner is needed for these corrections. First-source
+comparison remains unverified until the corrected ordinary-Rust model, focused
+both-profile controls and intended post-cleanup inversions pass.
+
+The corrected comparison's first debug and optimized controls both pass3 tests,
+including16 real Application/provider cases/profile and the two-provider budget
+law. Initial compilation's generated-trait ambiguity and uninferred generic
+budget construction are setup findings, resolved by qualifying existing owning
+traits and spelling the existing receipt parameter; no architecture was invented.
+Strict owning lint exposes only local style findings. Select ordinary naming/
+exhaustive-match refinements and narrowly documented too_many_lines expectations
+on the continuous work trace and concrete native caller. Alternative splitting
+custody into speculative generic Application machinery is rejected. Preserve the
+actual closure-error value without a meaningless explicit drop of its zero-sized
+type. Recount final formatted source/temporary variants within950 before mutation;
+no inverse, final lint or production acceptance is credited from these controls.
+
+Interest correction local verification now completes:25 owning interest cases
+pass in both profiles, including the9 original resource laws and2 None/replay
+controls. All5 separate cleanup omissions execute exactly1 test and fail at the
+intended Weak-retention assertion in each profile; every restored control passes.
+Final owning TLS,test library/test strict Clippy and formatting pass both profiles.
+Actual34-command receipt SHA cb1676e2c2f05f8d40c3267a5a5dcb720665bdcf62b05ee9185d3b6756b63105
+retains one disk-full LLVM compilation failure and its successful retry; that
+compile failure has zero semantic credit. Generated object intermediates were
+inventoried and removed only after verifying their target idle; source, binaries,
+rlibs, manifests, locks and evidence survived. All healthy source/log hashes
+independently match. Native interest reclamation remains narrower than actual
+TLS reclamation, heap quotas, overwrite policy or unwind rollback.
+
+The successor metadata checkpoint also includes two existing current-profile
+README paths (root and zenoh), forecast≤20 net documentation lines, to distinguish
+actually published1.10.2 from prepared1.10.3. Fourteen unique controlled paths;
+productionRust remains+30/-10/net20, tests+216, public API+0/-0. Six version
+substitutions preserve all other complete lock records. This documentation
+reconciliation does not add a release/publication claim before actual gates.
+
+### Counter integration delivery and next admission checkpoint
+
+Counter research PR337 (https://github.com/devrandom-labs/bombay/pull/337)
+merged through reviewed exact head013b71d3ce0acd4c577837dc2fdd6d1781bac197
+to main65bb88456aeee13570b706b629b25de0341abb0b at2026-10-11T00:07:13Z.
+All six submitted-head checks passed. Independent technical review
+PRR_kwDOTCRE7M8AAAABRrQaDw covers that head. Nix run38094876926
+passed, including actual Driver and Observe fuzz campaigns; constructing the
+optional Miri shell does not establish execution of Miri tests. Linux native
+artifacts11684918856/11685598210 independently confirm the sixteen expected
+transport outcomes and eight healthy Counter cases per profile, with acquired
+native results and actual session closure. Deliberate denial and late death
+remain distinct from healthy completion. Submitted-head source accounting
+excludes the subsequently prepared records below; no full remote requirement
+is marked merged from this finite contribution.
+
+Coordinator creates feat/static-remote-authority-admission from actual latest
+main65bb884 before any next commit, preserving the227 pending PRD lines.
+The completed private authority comparison is retained for integration: one
+944-line owning test, production/public API+0/-0, unchanged lock936110853718f053d4eda91d6b37db0a87e46385e20ef68add895b4491a06152.
+Its source SHA4cda26b49fd458e5a5859f2dec6ad55241b2ba7c2e312f89c57175e6df13f238
+and campaign SHA10b38ff3645063110b8ea025f368c3f8dfafa69d8c4b8863cc187a7654d9bc91
+are independently checked, including every recorded log hash. Three focused
+tests pass in each profile, exercising sixteen actual provider/Application
+cases and the two-provider pending limit law. Revocation and expiry-equality
+bypasses each fail both concrete native protected-count oracles after complete
+retirement in each profile. Wrong constructor and receipt projection each
+produce E0308 in both profiles. Exact-source restored controls and strict
+owning lint/format pass. Four unique mutation statements give948 authored
+lines, within950. One prematurely read orchestration log is explicitly excluded.
+
+This comparison proves finite explicit local Box/header accounting, original
+payload/proof custody, completed-unreceived reservation and cancelled borrowed
+notification custody. It does not prove stalled-verifier authority-update
+liveness, actual waker uncertainty, whole-heap bounds, replay, cryptography,
+remote transport or a public admission API. Aggregate-drift disposition: pass
+for this private comparison. Before/after production states, modules and public
+spellings remain0/0. The private admission sum has five alternatives: original
+awaiting verification, original with its concrete receipt, original/evidence
+with refusal, established mailbox acceptance, and potentially published
+uncertainty. Each retained alternative owns its current required custody or
+known admission status; no arrival-history submachine or second Behavior
+authority is added. Permission and configured target remain independently
+needed inputs. The two concrete consumers preserve the existing pure Actions
+law; residue review finds no semantic boolean, inline import, erased provider,
+new runtime attachment or production abstraction. PossiblyAdmitted names an
+unexecuted uncertainty obligation, not a completed witness.
+
+The controlled1.10.3 combined verification ran all preceding profile tests,
+strict lints, consumers and package creation, then its archive command failed
+because the local CARGO_TARGET_DIR override differed from its fixed PWD/target
+path. This is an orchestration failure, with no correctness credit. An ignored
+local target symlink to the actual controlled target lets the unchanged archive
+auditor execute: all nine actual archives,29 controlled checksum edges and
+restored archive/lock/feature inversions pass. Required PR6 CI, actual merge,
+main verification and publication remain pending. No source patch was introduced
+for this local path correction. The controlled Cargo lane is then explicitly
+handed to the independent exact-target overlap campaign.
+
+### Stalled-verifier authority progress: selected bounded follow-up
+
+Delegated recommendation selects ordinary split-field borrowing and the existing
+Tokio select!/borrowed oneshot primitives for a separate follow-up after delivery
+of the verified comparison. A provider must actually remain Pending while one
+independently queued typed local update changes the exclusive permission/time
+fields. Capture acknowledgement and actual state before releasing verification;
+retain observations until complete native cleanup. Granted, revoked and
+deadline-reached scenarios run through both existing concrete consumers. A valid
+control admits once; revoked/expired inputs admit zero. Behavior stays pure.
+
+Alternative await-verifier-first prevents known revocation from progressing and
+is the intended finite-poll inversion. Cancel only that borrowed operation,
+release the blocked evidence, finish native cleanup, then reject the captured
+missing acknowledgement. An acknowledge-without-update mutation must fail the
+independent state/native oracle. No timeout supplies nonexecution evidence.
+Select! does not promise general fairness for simultaneously ready branches;
+this witness has one ready update and one genuinely blocked verification future.
+
+Existing providers receive an optional borrowed release receiver, preserving
+the actual closure cause as Unavailable. A small private AuthorityUpdate sum
+names revocation/time observation; any observation product only conserves the
+actual pre-release evidence, not authority or another lifecycle owner. No task,
+mutex, Arc, provider queue/trait, runtime attachment, dependency, public type,
+production code or default limit is added. Selected Tokio1.53.1 source documents
+select branches on the same task and borrowed oneshot cancellation safety.
+
+Change record: one existing test path, forecast114–159 added formatted test
+lines plus2–4 unique inverse lines, hard ceiling180 for this follow-up. It
+retains the prior944-line/eight-scenario comparison and950 authored-stage
+record, rather than silently expanding that stage. Cumulative test cap12000
+remains shared across both repositories and overlap work; measure before
+execution and retention. Read-only independent proposal precedes source edits.
+This follow-up does not justify a public admission API: ordinary composition
+must first show a concrete repeated state burden that an owning interface
+deletes. Root controls integration and shared contract selection.
+
+Pre-follow-up cumulative test reconciliation finds an omitted80-line controlled
+release_cohort_tests.py contribution in the CI-script category. Count it
+explicitly: Bombay10071 + controlled1596 + release Python tests80 + prepared
+overlap186 =11933 retained test/fixture lines. The proposed180 authored lines
+for stalled verification would exceed the12000 ceiling. Automatically select
+recommended ceiling12500 before authoring/execution/retention of that follow-up;
+all prior stage ceilings remain distinct and unchanged. This correction also
+counts the existing95-line validation example and194-line registry consumer as
+verification fixtures, while retaining57 publication-authority Rust lines as
+production automation. The conservative raw source classifications are kept;
+this is an honest correction, not a commit/stage budget reset. No new production
+API or additional requirement follows from the test-only expansion.
+
+### Admission comparison combined-source verification checkpoint
+
+Exact944-line source4cda26b49fd458e5a5859f2dec6ad55241b2ba7c2e312f89c57175e6df13f238
+is integrated against actual main65bb884. All five required coordinator commands
+pass through pinned Nix with the unchanged lock: cargo build --workspace
+--locked; cargo test --workspace --locked (including documentation); cargo
+test --workspace --all-targets --locked (569 passed,1 existing ignored); cargo
+fmt --all -- --check; cargo clippy --workspace --all-targets --locked --
+-D warnings. No Rust source changed after these commands. Required submitted
+CI and exact-head independent review are still necessary before a merge.
+
+This stage retains one944-line test and two existing documentation paths, with
+production+0/-0/net0, tests+944/-0/net944, documentation+384/-4/net380
+and public API+0/-0 types. The
+complete tracked/untracked measurement retains cumulative Bombay production
++1725/-475/net1250, tests+10732/-661/net10071 and80 changed paths against
+a9c5b7d4a1cf2b15504acef43c20c0da9b5e320e. Defined public types remain5 from
+the previously delivered retirement prerequisite; this stage adds none.
+Prepared follow-up/overlap source remains in independent worktrees and is not
+silently included in this submitted test. Controlled contributions and their
+raw category reconciliation remain separately measured across the same task.
+Independent final source/evidence review finds no blocker for this comparison;
+all14 logged command hashes match, and the exact selected owner graph is unchanged.
+
+Complete controlled baseline measurement retains86 paths and its raw categories.
+Conservative runtime Rust net837 includes the existing95-line validation example;
+current owning-library Rust net742 is distinct from functional775 (including
+Rustdoc classification), within the approved810 functional ceiling. CI Rust251
+contains194 verification-consumer lines and57 publication-authority lines.
+Cross-owner Rust production1250+742+57+Communication2=2051. Report automation
+separately: executable delivery scripts/workflow+804/-1192/net-388; retained
+licenses/provenance980 and default configuration11 are separate source material.
+The raw CI-script bucket's net683 is neither all production nor all fixtures.
+No automation deletion offsets the recorded core capability growth.
+Controlled fixtures1676 include the previously omitted80-line Python tests.
+Current cross-owner tests10071+1676+prepared overlap186=11933, before the bounded
+stalled-verifier follow-up; the newly selected12500 cap covers that stage.
+Independent read-only reconciliation confirms those owning classifications.
