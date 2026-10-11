@@ -108,8 +108,8 @@ Awesome Rust comparison. No candidate dependency resolves the original recursive
 eligibility equation; none was added. The approved explicit graph has now passed
 owner-internal native execution in debug/optimized builds, including real parent
 reports, initialization refusal and complete actor-indexed retirement. This
-proves a closed-edge applicability cut, not a downstream DSL: public authority,
-whole-row validation, shared protocols and template singleton edges remain open.
+proves a closed-edge applicability cut. Actual decorated-row and singleton
+metadata proofs pass; general hosting and public creation authority remain open.
 
 Pinned release-plz generated isolated preview `3501be1`: Behavior/Actors 0.24.0
 and macros 0.14.1. All ten native checks, 961 tests, 112 doctests, exact-head
@@ -124,13 +124,35 @@ The owning actual regression fails before the fix; owner and real facade
 consumer pass both profiles and timer/shutdown orders. All ten native owner
 gates pass: 961 tests, 114 doctests, 68 checked failure diagnostics. The owning
 PRD records exact deltas, independent inversions and the diagnostic-probe fix;
-release delivery of this additional macro batch remains separate.
+release delivery of this additional macro batch is prepared in stacked draft
+[PR #91](https://github.com/devrandom-labs/bombay-behavior/pull/91). Its exact-head
+native gates, package preflight and all eleven exact-head CI jobs pass. The earlier version
+preview excludes this batch.
 
 Private graph validation now checks each resolved decorated child's complete
 birth row; the original deeper-decorator false acceptance is rejected in both
 profiles. Singleton role proofs cover proxy and both supervisor forms. These
 do not establish public creation authority: actual structural and cold startup
 binding/origin custody must both fit the final port without equality assumptions.
+The removed alias candidate leaks private metadata. Its fixed occurrence/failure
+loan now passes actual external recursion and refusal, nine independent denials,
+startup cancellation and native task loss in both profiles. This remains private
+proof. The private cold-origin journey passes both profiles, preserving distinct
+ordinary and actual managed-root role origins. Public Application still fixes
+the implicit scope; early-stop testing exposes a parent-control closure panic
+requiring complete report rejection custody.
+The actual report repair now preserves complete rejection/source custody in
+both timer/shutdown orders: all301 library tests pass debug/optimized; strict
+workspace/all-target Clippy and formatting pass. Inherited owner-source
+workspace checks have563 passed, one inference failure and one skipped.
+Communication owner draft PR #11 passes native seven gates/88tests, twelve
+Loom models, strict Clippy, archive verification and Linux CI. Release/pin and
+registry full gates remain open. A fresh full Nix check exits1: four gates
+pass and seventeen fail on unavailable owner APIs; no signing/disk waiver.
+The original registry lock is restored byte-for-byte. The private unified Application now runs the
+public scoped cold-child journey and exact missing-host work recovery in both
+profiles; combined families, inferred retirement and final DSL are not retained.
+Detailed laws, falsifiers and checkpoints remain solely in the owning PRD.
 
 Begin with a compiling counter and heterogeneous-child journey deriving
 runner and terminal types from the single declared topology while returning

@@ -3,7 +3,7 @@ use crate::local::effects::ApplicationCapabilities;
 use crate::termination::{TerminalReportDisposition, Termination, TerminationSelection};
 use behavior::{
     ActionItem, Behavior, ChildReport, CreationId, EventIngress, Here, InterpretItem,
-    ItemSettlement, Protocol, ReportToParent,
+    ItemSettlement, ParentReportReason, Protocol, ReportToParent,
 };
 use behavior_actors::{InstallShutdownPlan, ReportShutdownPlan, ReportTerminalOutcome};
 use communication::{ControlClosed, ControlSender};
@@ -48,9 +48,12 @@ where
             let Some(request) = input.take() else {
                 return;
             };
-            let settlement = {
-                self.parent_reports.report(request.into_inner());
-                ItemSettlement::Accepted(())
+            let settlement = match self.parent_reports.report(request.into_inner()) {
+                Ok(()) => ItemSettlement::Accepted(()),
+                Err(report) => ItemSettlement::Rejected {
+                    item: ReportToParent::new(report),
+                    reason: ParentReportReason::ClosedParentControlLane,
+                },
             };
             *received = Some(settlement);
         }
@@ -191,7 +194,7 @@ impl LocalTerminalReports {
 }
 
 pub(crate) trait ParentReporting<Report> {
-    fn report(&self, report: Report);
+    fn report(&self, report: Report) -> Result<(), Report>;
 }
 
 impl<Event, Child, Position> LocalParentReports<Event, Child, Position> {
@@ -203,18 +206,16 @@ impl<Event, Child, Position> LocalParentReports<Event, Child, Position> {
         }
     }
 
-    pub(crate) fn report<Report>(&self, report: Report)
+    pub(crate) fn report<Report>(&self, report: Report) -> Result<(), Report>
     where
         Child: Behavior,
         Event: EventIngress<Position, ChildReport<Report>>,
     {
-        let event = Event::ingress(ChildReport::new(self.child, report));
-        match self.parent.send(event) {
-            Ok(()) => {}
-            Err(ControlClosed(_event)) => {
-                unreachable!("the parent control lane outlives every owned child task")
-            }
-        }
+        self.parent
+            .send_map(report, |report| {
+                Event::ingress(ChildReport::new(self.child, report))
+            })
+            .map_err(|ControlClosed(report)| report)
     }
 }
 
@@ -224,8 +225,8 @@ where
     Child: Behavior,
     Event: EventIngress<Position, ChildReport<Report>>,
 {
-    fn report(&self, report: Report) {
-        LocalParentReports::report(self, report);
+    fn report(&self, report: Report) -> Result<(), Report> {
+        LocalParentReports::report(self, report)
     }
 }
 
@@ -1252,5 +1253,456 @@ mod parent_conversion_custody {
     #[test]
     fn active_conversion_keeps_parent_child_and_capability_owners() {
         assert_parent_conversion_preserves_owned_retirement(None);
+    }
+}
+
+#[cfg(test)]
+mod parent_report_custody {
+    use crate::actor;
+    use crate::actors::ActorExt;
+    use crate::address::{ApplicationAddresses, MailAddr};
+    use crate::local::children::{NoChildBindings, StructuralOrigins};
+    use crate::local::effects::observation::TerminationObservations;
+    use crate::local::effects::reports::{LocalParentReports, LocalTerminalReports};
+    use crate::local::effects::timers::LocalTimers;
+    use crate::local::effects::{
+        ActionInterpreter, ApplicationCapabilities, ApplicationCapabilityInputs, CommitActions,
+        NoParent,
+    };
+    use behavior::{
+        Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Births, ChildReport,
+        ClassifySettlement, CreationSequence, EventIngress, Here, InterpretItem, InterpretSends,
+        Interpretation, InterpretationProgress, InterpreterRequests, ItemSettlement,
+        MessageProtocol, Never, NoSends, ParentReportReason, ReportToParent, SendSettlements,
+        SettledItem, SettlementStatus, SourceCustody, SourceProgress, Step, User, UserEvent,
+    };
+    use behavior_actors::{OneShot, StopOnShutdown, TimerId};
+    use communication::{Config, mailbox_channel};
+    use std::future::Future;
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+    use std::pin::pin;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::task::{Context, Poll, Waker};
+    use std::time::Duration;
+    use tokio::runtime::Builder;
+    use tokio::sync::oneshot;
+
+    static REPORT_MAPPINGS: AtomicUsize = AtomicUsize::new(0);
+
+    struct WorkerReport {
+        revision: u64,
+        bytes: Box<[u8]>,
+        changed: Vec<u64>,
+    }
+    impl WorkerReport {
+        fn new(revision: u64) -> Self {
+            Self {
+                revision,
+                bytes: vec![31, 37, 41].into_boxed_slice(),
+                changed: vec![43, 47],
+            }
+        }
+    }
+    struct ReportingChild {
+        report: Option<Box<WorkerReport>>,
+    }
+    #[actor(message = Never, sends = InterpreterRequests<ReportToParent<Box<WorkerReport>>>)]
+    impl ReportingChild {
+        #[expect(
+            clippy::unnecessary_wraps,
+            reason = "the owning actor initialization contract returns BehaviorActed even with an uninhabited error"
+        )]
+        fn init(&mut self) -> BehaviorActed<Self> {
+            Ok(Actions::stop().with_send(ReportToParent::new(
+                self.report.take().expect("one original child report"),
+            )))
+        }
+    }
+
+    enum ReportEvent {
+        Child(ChildReport<Box<WorkerReport>>),
+    }
+    impl UserEvent for ReportEvent {
+        type Addr = MailAddr;
+        type Message = Never;
+        fn user(_: MailAddr, never: Never) -> Self {
+            match never {}
+        }
+        fn into_user(self) -> Result<User<MailAddr, Never>, Self> {
+            Err(self)
+        }
+    }
+    impl EventIngress<Births<ReportingChild>, ChildReport<Box<WorkerReport>>> for ReportEvent {
+        fn ingress(report: ChildReport<Box<WorkerReport>>) -> Self {
+            // This observes actual native event construction; no Behavior fold performs I/O.
+            REPORT_MAPPINGS.fetch_add(1, Ordering::SeqCst);
+            Self::Child(report)
+        }
+    }
+    struct ReportParent {
+        reports: Vec<ChildReport<Box<WorkerReport>>>,
+    }
+    impl BehaviorBase for ReportParent {
+        type Base = Self;
+        fn base(&self) -> &Self {
+            self
+        }
+    }
+    impl Behavior for ReportParent {
+        type Protocol = MessageProtocol<MailAddr, Never>;
+        type Event = ReportEvent;
+        type Sends = NoSends;
+        type Birth = Births<ReportingChild>;
+        type Ph = Never;
+        type Error = Never;
+        fn transition(&mut self, _: ActiveTurn, event: ReportEvent) -> BehaviorActed<Self> {
+            let ReportEvent::Child(report) = event;
+            self.reports.push(report);
+            Ok(Actions::cont())
+        }
+    }
+    fn parent_deadline(
+        _: &mut ReportParent,
+    ) -> Actions<MailAddr, Never, NoSends, Births<ReportingChild>> {
+        Actions::stop()
+    }
+    fn shutdown_parent_deadline(
+        _: &mut StopOnShutdown<ReportParent>,
+    ) -> Actions<
+        MailAddr,
+        Never,
+        <StopOnShutdown<ReportParent> as Behavior>::Sends,
+        Births<ReportingChild>,
+    > {
+        Actions::stop()
+    }
+
+    type ParentCapabilities<C> = ApplicationCapabilities<
+        C,
+        (),
+        NoParent,
+        NoChildBindings<Never>,
+        StructuralOrigins<ReportParent>,
+    >;
+
+    fn assert_report(report: &WorkerReport, allocation: *const WorkerReport, revision: u64) {
+        assert_eq!(std::ptr::from_ref(report), allocation);
+        assert_eq!(report.revision, revision);
+        assert_eq!(report.bytes.as_ref(), [31, 37, 41]);
+        assert_eq!(report.changed, [43, 47]);
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one actual parent/source controller conserves accepted and refused original reports across complete interpretation, replay and source custody"
+    )]
+    fn report_through_parent<C>(mut parent: C)
+    where
+        C: Behavior<
+                Protocol = MessageProtocol<MailAddr, Never>,
+                Birth = Births<ReportingChild>,
+                Ph = Never,
+                Error = Never,
+            > + BehaviorBase<Base = ReportParent>
+            + Send,
+        C::Event:
+            EventIngress<Births<ReportingChild>, ChildReport<Box<WorkerReport>>> + Send + 'static,
+        C::Sends: InterpretSends<ParentCapabilities<C>, C::Event, Here> + SendSettlements,
+    {
+        let runtime = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("one actual native report interpreter");
+        let mut sequence = CreationSequence::new();
+        let id = sequence.issue().expect("one original child correlation");
+        runtime.block_on(async {
+            let (control, owner, mailbox, mut consumer) =
+                mailbox_channel::<C::Event, User<MailAddr, Never>>(Config::new(1));
+            let (terminal_sender, terminal_receiver) = oneshot::channel();
+            let mut parent_capabilities = ParentCapabilities::<C>::new_with_bindings(
+                ApplicationCapabilityInputs {
+                    address: MailAddr::APPLICATION_ROOT,
+                    actor_spaces: Arc::new(()),
+                    allocations: ApplicationAddresses::new(),
+                    control: control.clone(),
+                    timers: LocalTimers::new(),
+                    observations: TerminationObservations::new(),
+                    terminal_reports: LocalTerminalReports::new(terminal_sender),
+                },
+                NoChildBindings::default(),
+            );
+            let initialization = behavior::initialize(&mut parent).unwrap_or_else(|never| match never {});
+            assert!(initialization.creates.is_empty());
+            assert!(matches!(initialization.become_, Step::Continue));
+            let mut timer_progress = Some(InterpretationProgress::Original(initialization.sends));
+            <C::Sends as InterpretSends<ParentCapabilities<C>, C::Event, Here>>::interpret(
+                &mut timer_progress,
+                &mut parent_capabilities,
+            )
+            .await;
+            C::Sends::finish_interpretation(&mut timer_progress);
+            let Some(InterpretationProgress::Completed(Interpretation::Complete(timer_settlements))) =
+                timer_progress
+            else {
+                panic!("actual wrapper timer request settles completely");
+            };
+            assert_eq!(
+                timer_settlements.settlement_status(),
+                SettlementStatus::Accepted
+            );
+            let deadline = parent_capabilities
+                .timers
+                .next_deadline()
+                .expect("one actual timer initialization request was interpreted");
+
+            let (child_control, child_owner, child_mailbox, child_consumer) = mailbox_channel::<
+                <ReportingChild as Behavior>::Event,
+                User<MailAddr, Never>,
+            >(Config::new(1));
+            let (child_terminal_sender, child_terminal_receiver) = oneshot::channel();
+            let mut child_capabilities = ApplicationCapabilities::<
+                ReportingChild,
+                (),
+                NoParent,
+                NoChildBindings<Never>,
+                StructuralOrigins<ReportingChild>,
+            >::new_with_bindings(
+                ApplicationCapabilityInputs {
+                    address: MailAddr(17),
+                    actor_spaces: Arc::new(()),
+                    allocations: ApplicationAddresses::new(),
+                    control: child_control,
+                    timers: LocalTimers::new(),
+                    observations: TerminationObservations::new(),
+                    terminal_reports: LocalTerminalReports::new(child_terminal_sender),
+                },
+                NoChildBindings::default(),
+            )
+            .with_parent(LocalParentReports::<
+                C::Event,
+                ReportingChild,
+                Births<ReportingChild>,
+            >::new(id, control.clone()));
+
+            let accepted = Box::new(WorkerReport::new(101));
+            let accepted_allocation = std::ptr::from_ref(accepted.as_ref());
+            let before = REPORT_MAPPINGS.load(Ordering::SeqCst);
+            let mut input = Some(ReportToParent::new(accepted));
+            let mut received = None;
+            <_ as InterpretItem<
+                ReportToParent<Box<WorkerReport>>,
+                <ReportingChild as Behavior>::Event,
+                Here,
+            >>::interpret_item(&mut child_capabilities, &mut input, &mut received)
+            .await;
+            assert!(input.is_none());
+            assert!(matches!(received, Some(ItemSettlement::Accepted(()))));
+            assert_eq!(REPORT_MAPPINGS.load(Ordering::SeqCst), before + 1);
+            let event = consumer
+                .recv_control()
+                .await
+                .expect("accepted original report queued once");
+            let actions =
+                behavior::delegate_transition(&mut parent, event).unwrap_or_else(|never| match never {});
+            assert!(actions.creates.is_empty());
+            assert!(matches!(actions.become_, Step::Continue));
+            let [report] = parent.base().reports.as_slice() else {
+                panic!("the actual parent fold owns one original report");
+            };
+            assert_eq!(report.child, id);
+            assert_report(&report.report, accepted_allocation, 101);
+
+            let replay = Box::new(WorkerReport::new(103));
+            let replay_allocation = std::ptr::from_ref(replay.as_ref());
+            let mut replay_input = Some(ReportToParent::new(replay));
+            <_ as InterpretItem<
+                ReportToParent<Box<WorkerReport>>,
+                <ReportingChild as Behavior>::Event,
+                Here,
+            >>::interpret_item(&mut child_capabilities, &mut replay_input, &mut received)
+            .await;
+            assert!(matches!(received, Some(ItemSettlement::Accepted(()))));
+            assert_report(
+                &replay_input
+                    .as_ref()
+                    .expect("already received reply leaves the next original input alone")
+                    .report,
+                replay_allocation,
+                103,
+            );
+            assert_eq!(REPORT_MAPPINGS.load(Ordering::SeqCst), before + 1);
+            drop(replay_input);
+
+            // Real pure child initialization is committed with the original all-three custody equations.
+            let accepted_source = Box::new(WorkerReport::new(107));
+            let accepted_source_allocation = std::ptr::from_ref(accepted_source.as_ref());
+            let mut child = ReportingChild {
+                report: Some(accepted_source),
+            };
+            let actions = behavior::initialize(&mut child).unwrap_or_else(|never| match never {});
+            let mut interpreter = ActionInterpreter::new(child_capabilities);
+            let mut progress = Some(InterpretationProgress::Original(actions));
+            <_ as CommitActions<ReportingChild>>::commit(&mut interpreter, &mut progress).await;
+            let Some(InterpretationProgress::Completed(Interpretation::Complete(settlements))) = progress
+            else {
+                panic!("real accepted Actions finish interpretation");
+            };
+            let mut source = Some(SourceProgress::Original(settlements));
+            <_ as CommitActions<ReportingChild>>::offer_next(&mut interpreter, &mut source).await;
+            let Some(SourceProgress::Completed(SourceCustody::Exhausted(residual))) = source else {
+                panic!("accepted report receipt has no emitter-return input");
+            };
+            assert!(residual.sends.is_empty());
+            let event = consumer
+                .recv_control()
+                .await
+                .expect("real initialization report is delivered");
+            let actions =
+                behavior::delegate_transition(&mut parent, event).unwrap_or_else(|never| match never {});
+            assert!(matches!(actions.become_, Step::Continue));
+            let [first, second] = parent.base().reports.as_slice() else {
+                panic!("two actual reports preserve correlation and independent payloads");
+            };
+            assert_eq!(first.child, id);
+            assert_eq!(second.child, id);
+            assert_report(&second.report, accepted_source_allocation, 107);
+            assert_eq!(REPORT_MAPPINGS.load(Ordering::SeqCst), before + 2);
+
+            let elapsed = parent_capabilities
+                .timers
+                .pop_due(deadline)
+                .expect("the interpreted timer returns its exact typed elapsed event");
+            let actions =
+                behavior::delegate_transition(&mut parent, elapsed).unwrap_or_else(|never| match never {});
+            assert!(actions.creates.is_empty());
+            assert!(
+                matches!(actions.become_, Step::Stop(_)),
+                "each real timer policy stops its owning wrapped parent"
+            );
+            drop(consumer);
+
+            let capabilities = interpreter.capabilities_mut();
+            let refused = Box::new(WorkerReport::new(109));
+            let refused_allocation = std::ptr::from_ref(refused.as_ref());
+            let mut refused_input = Some(ReportToParent::new(refused));
+            let mut refusal = None;
+            let refused_attempt = catch_unwind(AssertUnwindSafe(|| {
+                let mut attempt = pin!(<_ as InterpretItem<
+                    ReportToParent<Box<WorkerReport>>,
+                    <ReportingChild as Behavior>::Event,
+                    Here,
+                >>::interpret_item(
+                    capabilities, &mut refused_input, &mut refusal
+                ));
+                attempt
+                    .as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+            }));
+            assert!(
+                refused_attempt.is_ok(),
+                "closed parent must return the complete typed report rejection without interpreting its event mapping"
+            );
+            assert!(matches!(refused_attempt, Ok(Poll::Ready(()))));
+            assert!(refused_input.is_none());
+            let Some(ItemSettlement::Rejected {
+                item,
+                reason: ParentReportReason::ClosedParentControlLane,
+            }) = refusal
+            else {
+                panic!("closed parent returns original ReportToParent with its existing reason");
+            };
+            assert_report(&item.report, refused_allocation, 109);
+            assert_eq!(REPORT_MAPPINGS.load(Ordering::SeqCst), before + 2);
+            let mut refusal = Some(ItemSettlement::Rejected {
+                item,
+                reason: ParentReportReason::ClosedParentControlLane,
+            });
+            <_ as InterpretItem<
+                ReportToParent<Box<WorkerReport>>,
+                <ReportingChild as Behavior>::Event,
+                Here,
+            >>::interpret_item(capabilities, &mut refused_input, &mut refusal)
+            .await;
+            let Some(ItemSettlement::Rejected {
+                item,
+                reason: ParentReportReason::ClosedParentControlLane,
+            }) = refusal
+            else {
+                panic!("replay preserves the exact original rejection");
+            };
+            assert_report(&item.report, refused_allocation, 109);
+            assert_eq!(REPORT_MAPPINGS.load(Ordering::SeqCst), before + 2);
+
+            let refused_source = Box::new(WorkerReport::new(113));
+            let refused_source_allocation = std::ptr::from_ref(refused_source.as_ref());
+            let mut child = ReportingChild {
+                report: Some(refused_source),
+            };
+            let actions = behavior::initialize(&mut child).unwrap_or_else(|never| match never {});
+            let mut progress = Some(InterpretationProgress::Original(actions));
+            <_ as CommitActions<ReportingChild>>::commit(&mut interpreter, &mut progress).await;
+            let Some(InterpretationProgress::Completed(Interpretation::Complete(settlements))) = progress
+            else {
+                panic!("refused action owns its complete interpreted settlement");
+            };
+            let mut source = Some(SourceProgress::Original(settlements));
+            <_ as CommitActions<ReportingChild>>::offer_next(&mut interpreter, &mut source).await;
+            let Some(SourceProgress::Completed(SourceCustody::Retained(residual))) = source else {
+                panic!("closed report remains in the existing typed source retirement lane");
+            };
+            let [
+                SettledItem::Attempted(ItemSettlement::Rejected {
+                    item,
+                    reason: ParentReportReason::ClosedParentControlLane,
+                }),
+            ] = residual.sends.as_slice()
+            else {
+                panic!("source custody retains the complete original refused report");
+            };
+            assert_report(&item.report, refused_source_allocation, 113);
+            assert_eq!(REPORT_MAPPINGS.load(Ordering::SeqCst), before + 2);
+            drop((
+                owner,
+                mailbox,
+                control,
+                terminal_receiver,
+                child_owner,
+                child_mailbox,
+                child_consumer,
+                child_terminal_receiver,
+                timer_settlements,
+            ));
+        });
+    }
+
+    #[test]
+    fn parent_report_refusal_preserves_boxed_source_in_timer_shutdown_orders() {
+        let parent = ReportParent {
+            reports: Vec::new(),
+        };
+        let shutdown_outer = catch_unwind(AssertUnwindSafe(|| {
+            report_through_parent(
+                OneShot::new(parent, TimerId(7), Duration::ZERO, parent_deadline)
+                    .stop_on_shutdown(),
+            );
+        }));
+        let parent = ReportParent {
+            reports: Vec::new(),
+        }
+        .stop_on_shutdown();
+        let timer_outer = catch_unwind(AssertUnwindSafe(|| {
+            report_through_parent(OneShot::new(
+                parent,
+                TimerId(11),
+                Duration::ZERO,
+                shutdown_parent_deadline,
+            ));
+        }));
+        assert!(shutdown_outer.is_ok());
+        assert!(timer_outer.is_ok());
+        eprintln!(
+            "PASS accepted/correlated/replayed/closed/source-retained report in both timer-shutdown orders"
+        );
     }
 }
