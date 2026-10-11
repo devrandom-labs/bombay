@@ -291,9 +291,12 @@ where
                             || !retirement_failures.is_empty()
                     }
                     CreationBinding::Rejected => false,
-                } && !self.creation_order.contains(&id)
-                {
-                    self.creation_order.push(id);
+                } {
+                    if !self.creation_order.contains(&id) {
+                        self.creation_order.push(id);
+                    }
+                } else {
+                    self.creation_order.retain(|owned| *owned != id);
                 }
                 entry.insert(binding);
             }

@@ -94,6 +94,17 @@ regressions and the existing Core custody test pass debug and optimized; all
 patches. Runtime production +22/-10/net12, tests +504, zero new types/states;
 owner law, pre-edit compile veto and final gates remain in the owning PRD.
 
+The startup correction preserves truthful failure reporting: a joined
+initialization refusal already returns its complete child/error, so a fact-free
+rejection row emits no second startup failure. The existing registry reconciles
+creation order with the current owned row, retaining rejection tombstones and
+order for real tasks/facts. Pre-edit scope was one registry method plus its
+owning test module, under +10 production lines, no new types/states. Actual
+production +6/-3/net3 and tests +150; the original complete caller fails only
+its phantom-failure assertion, then passes debug and optimized. All 300 runtime
+library tests and strict library/test Clippy pass. Law, checkpoint and remaining
+full gates live in the owning PRD.
+
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried
 actor-owned capabilities. Presence in that map does not certify an execution

@@ -2196,3 +2196,153 @@ mod child_projection_panic {
         );
     }
 }
+
+#[cfg(test)]
+mod child_rejection_custody {
+    use crate::actors::ActorExt;
+    use crate::behavior::{
+        Actions, BehaviorActed, BehaviorBase, CreateChild, CreationKind, CreationSequence,
+        Creations, Never,
+    };
+    use crate::lifecycle::StopOnShutdown;
+    use crate::{ActorCustody, ActorRetirement, Application};
+
+    struct RefusedWorker {
+        payload: Box<[u8]>,
+    }
+    #[derive(Debug, PartialEq)]
+    enum WorkerError {
+        InitializationRefused,
+    }
+    #[crate::actor(message = Never, error = WorkerError)]
+    impl RefusedWorker {
+        #[expect(
+            clippy::unused_self,
+            reason = "the actor initialization contract borrows the original definition even when its policy always refuses"
+        )]
+        fn init(&mut self) -> BehaviorActed<Self> {
+            Err(WorkerError::InitializationRefused)
+        }
+    }
+    struct Parent {
+        child: Option<CreateChild<crate::MailAddr, StopOnShutdown<RefusedWorker>>>,
+    }
+    #[derive(Debug)]
+    enum ParentError {
+        ChildAlreadyTransferred,
+    }
+    #[crate::actor(message = Never, error = ParentError, births = { worker: StopOnShutdown<RefusedWorker> }, creation_settlements = retain_for_retirement)]
+    impl Parent {
+        fn init(&mut self) -> BehaviorActed<Self> {
+            let child = self
+                .child
+                .take()
+                .ok_or(ParentError::ChildAlreadyTransferred)?;
+            Ok(Actions::create(Creations::one(child)))
+        }
+    }
+
+    #[expect(
+        dead_code,
+        reason = "the exact complete child report remains a meaningful static projection when this journey rejects before commitment"
+    )]
+    #[derive(crate::TerminalProjection)]
+    enum WorkerRetirement {
+        #[structural_child]
+        Worker {
+            origin: crate::ChildOrigin<Parent, crate::behavior::ChildHead>,
+            terminal: ActorRetirement<StopOnShutdown<RefusedWorker>, Self, ()>,
+        },
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn refused_initialization_preserves_original_child_work_identity_and_provenance() {
+        let payload: Box<[u8]> = Box::from([7, 13]);
+        let allocation = payload.as_ptr();
+        let mut sequence = CreationSequence::new();
+        let previous = sequence
+            .issue()
+            .expect("prior incarnation correlation fits");
+        let id = sequence
+            .issue()
+            .expect("one child fits the creator namespace");
+        let work = Box::new(String::from("caller work survived"));
+        let work_allocation = work.as_ptr();
+        let root = Parent {
+            child: Some(CreateChild::replacement(
+                id,
+                previous,
+                RefusedWorker { payload }.stop_on_shutdown(),
+            )),
+        }
+        .stop_on_shutdown();
+        let outcome = Application::new(root)
+            .run_with::<WorkerRetirement, _, _, _, _, _>(move |application| async move {
+                application
+                    .lifecycle()
+                    .request_shutdown()
+                    .expect("shutdown admitted");
+                work
+            })
+            .await
+            .unwrap_or_else(|original| {
+                drop(original);
+                panic!("entered host");
+            });
+        let (work, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+            drop(original);
+            panic!("work returned independently of cleanup");
+        });
+        assert_eq!(work.as_ptr(), work_allocation);
+        assert_eq!(&*work, "caller work survived");
+        let (_, retirement) = cleanup.expect("parent retirement joined");
+        let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    descendants,
+                    child_failures: (failures, ()),
+                    ..
+                },
+            settlements,
+            ..
+        } = retirement
+        else {
+            panic!("parent completed");
+        };
+        assert!(descendants.is_empty());
+        let mut returned = Vec::new();
+        for action in settlements {
+            let crate::behavior::CreationSettlement::Settled(creations) =
+                action.creations.into_settlement()
+            else {
+                panic!("routed creation batch");
+            };
+            for creation in creations {
+                let crate::behavior::SettledItem::Attempted(
+                    crate::behavior::ItemSettlement::Accepted(
+                        crate::behavior::ChildCreationOutcome::InitializationRejected {
+                            creation,
+                            error,
+                        },
+                    ),
+                ) = creation
+                else {
+                    panic!("exact child initialization refusal");
+                };
+                assert_eq!(error, WorkerError::InitializationRefused);
+                let (creation, route) = creation.into_parts();
+                let (returned_id, child, kind) = creation.into_parts();
+                assert_eq!(returned_id, id);
+                assert_eq!(kind, CreationKind::Replacement { previous });
+                assert_eq!(child.base().payload.as_ptr(), allocation);
+                assert_eq!(&*child.base().payload, &[7, 13]);
+                returned.push((returned_id, kind, route));
+            }
+        }
+        assert_eq!(returned.len(), 1);
+        assert!(
+            failures.is_empty(),
+            "no independent startup failure exists after the complete refusal returned"
+        );
+    }
+}
