@@ -200,9 +200,15 @@ where
 mod tests {
     use std::panic::AssertUnwindSafe;
 
+    use bombay::behavior::{
+        ActionSettlement, ExactDeliveryReason, ItemSettlement, SendLayer, SettledItem,
+    };
+    use bombay::{ActorFailureAssessment, RetirementAssessment};
+
     use super::*;
     use crate::counter::{
-        CounterError, CounterIncremented, CounterProcessed, assert_increment_processing_actions,
+        CounterError, CounterIncremented, CounterProcessed, CounterSettlements,
+        assert_increment_processing_actions,
     };
 
     #[test]
@@ -455,5 +461,208 @@ mod tests {
         assert!(snapshot.is_none());
         assert!(!matches!(processing, Some(Some(_))));
         assert_eq!(*termination, Err(Crash::Failed));
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "retain all request ports, cancelled waits, exact refused deliveries and native receipts before the oracles"
+    )]
+    fn separate_read_ports_preserve_cancelled_waits_and_refuse_late_replies() {
+        let host = Builder::new_current_thread().enable_all().build().unwrap();
+        let (execution, (work, native, notifications)) = host.block_on(async {
+            let prepared = Application::new(Counter::new().stop_on_shutdown())
+                .execute_with::<_, _, ApplicationTerminal<StopOnShutdown<Counter>>, (), _, _>(
+                    |application| async move {
+                        let lifecycle = application.lifecycle();
+                        let target = application.root().established_recipient();
+                        let root_address = application.root().address();
+                        let interface = application.interface(());
+                        let mut first = interface.external::<CounterValue>().unwrap();
+                        let mut second = interface.external::<CounterValue>().unwrap();
+                        let mut continuation = interface.external::<CounterValue>().unwrap();
+                        let first_address = first.address();
+                        let second_address = second.address();
+                        let continuation_address = continuation.address();
+                        let first_recipient = first.recipient();
+                        let first_admission =
+                            first.try_send(&target, CounterMessage::Read(first_recipient.clone()));
+                        let cancelled_wait = first.receive().now_or_never();
+                        let increment = second.send(&target, CounterMessage::Increment).await;
+                        let second_admission = second
+                            .send(&target, CounterMessage::Read(second.recipient()))
+                            .await;
+                        let (second_reply, early_termination) = match &second_admission {
+                            Ok(()) => tokio::select! {
+                                reply = second.receive() => (reply, None),
+                                termination = lifecycle.termination() => (None, Some(termination)),
+                            },
+                            Err(_) => (None, None),
+                        };
+                        let first_reply = first.receive().now_or_never();
+                        first.close_admission();
+                        let first_exhaustion = first.receive().now_or_never();
+                        second.close_admission();
+                        let second_exhaustion = second.receive().now_or_never();
+                        let late_reply = second.send(&first_recipient, u64::MAX).await;
+                        let late_read = second
+                            .send(&target, CounterMessage::Read(first_recipient))
+                            .await;
+                        let later_increment = second.send(&target, CounterMessage::Increment).await;
+                        let final_admission = continuation
+                            .send(&target, CounterMessage::Read(continuation.recipient()))
+                            .await;
+                        let (final_reply, later_termination) = match &final_admission {
+                            Ok(()) if early_termination.is_none() => tokio::select! {
+                                reply = continuation.receive() => (reply, None),
+                                termination = lifecycle.termination() => (None, Some(termination)),
+                            },
+                            Ok(()) | Err(_) => (None, None),
+                        };
+                        let extra_reply = continuation.receive().now_or_never();
+                        let shutdown = lifecycle.request_shutdown();
+                        let termination = match early_termination.or(later_termination) {
+                            Some(termination) => termination,
+                            None => lifecycle.termination().await,
+                        };
+                        let report = lifecycle.retirement().await;
+                        (
+                            root_address,
+                            first_address,
+                            second_address,
+                            continuation_address,
+                            first_admission,
+                            [
+                                increment,
+                                second_admission,
+                                late_read,
+                                later_increment,
+                                final_admission,
+                            ],
+                            cancelled_wait,
+                            first_reply,
+                            second_reply,
+                            first_exhaustion,
+                            second_exhaustion,
+                            late_reply,
+                            final_reply,
+                            extra_reply,
+                            shutdown,
+                            termination,
+                            report,
+                        )
+                    },
+                );
+            let (execution, receiving) = prepared.unwrap_or_else(|original| {
+                panic!("the entered test host is unavailable: {}", original.2);
+            });
+            let execution = AssertUnwindSafe(execution).catch_unwind().await;
+            let received = receiving.await;
+            (execution, received)
+        });
+        drop(host);
+        // All original owners are acquired before any semantic assertion.
+        let Ok((origin, ActorRetirement::Completed { settlements, .. })) = &native else {
+            panic!("the active Counter must retain its joined outcome");
+        };
+        let ApplicationOutcome::Completed {
+            output:
+                (
+                    root_address,
+                    first_address,
+                    second_address,
+                    continuation_address,
+                    first_admission,
+                    admissions,
+                    cancelled_wait,
+                    first_reply,
+                    second_reply,
+                    first_exhaustion,
+                    second_exhaustion,
+                    late_reply,
+                    final_reply,
+                    extra_reply,
+                    shutdown,
+                    termination,
+                    report,
+                ),
+            cleanup: Ok(()),
+        } = work
+        else {
+            panic!("both pending requests and all original observations survive cleanup");
+        };
+        assert!(execution.is_ok());
+        assert!(matches!(
+            notifications,
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            })
+        ));
+        assert_eq!(origin.address(), root_address);
+        assert_ne!(first_address, second_address);
+        assert_ne!(first_address, continuation_address);
+        assert_ne!(second_address, continuation_address);
+        assert!(first_admission.is_ok());
+        assert!(admissions.iter().all(Result::is_ok));
+        assert!(cancelled_wait.is_none());
+        let Some(Some(first_reply)) = first_reply else {
+            panic!("cancelling only the borrowed wait preserves the first request's reply");
+        };
+        let Some(second_reply) = second_reply else {
+            panic!("the separate second request owns its actual reply");
+        };
+        let Some(final_reply) = final_reply else {
+            panic!("the native Counter continues after the closed reply refusal");
+        };
+        assert_eq!(first_reply.from, root_address);
+        assert_eq!(first_reply.message, 0);
+        assert_eq!(second_reply.from, root_address);
+        assert_eq!(second_reply.message, 1);
+        assert_eq!(final_reply.from, root_address);
+        assert_eq!(final_reply.message, 2);
+        assert!(extra_reply.is_none());
+        assert!(matches!(first_exhaustion, Some(None)));
+        assert!(matches!(second_exhaustion, Some(None)));
+        let Err(original_refusal) = late_reply else {
+            panic!("the original late reply must remain refused by the exact closed port");
+        };
+        assert_eq!(shutdown, Ok(()));
+        assert_eq!(termination, Ok(Exit::Normal));
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+        let mut refused_replies = 0;
+        for ActionSettlement {
+            creations,
+            sends:
+                SendLayer {
+                    owned,
+                    inner:
+                        CounterSettlements {
+                            values,
+                            processed_increments,
+                        },
+                },
+            become_,
+        } in settlements
+        {
+            assert!(creations.is_empty());
+            assert_eq!(owned.settlement_status(), SettlementStatus::Accepted);
+            assert!(processed_increments.is_empty());
+            assert!(matches!(become_, Step::Continue | Step::Stop(_)));
+            for original in values {
+                let SettledItem::Attempted(ItemSettlement::Rejected { item, reason }) = original
+                else {
+                    panic!("the original closed reply must be retained");
+                };
+                assert_eq!(*reason, ExactDeliveryReason::ClosedRecipient);
+                assert_eq!(item.message, 1);
+                refused_replies += 1;
+            }
+        }
+        assert_eq!(refused_replies, 1);
+        // Recover the same original direct-send payload after the native oracles.
+        let original_reply = original_refusal.into_message();
+        assert_eq!(original_reply, u64::MAX);
     }
 }

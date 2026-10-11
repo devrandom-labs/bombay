@@ -45,11 +45,22 @@ Linux CI independently executed all16 tests in debug, coverage and release, both
 native TLS campaigns and required Driver/Observe fuzz runs. Miri was skipped.
 The separate native query-ID correction passes original/healthy paired controls
 and merged through controlled PR7 after complete local verification, required
-Linux CI and two actual Miri tests. Its1.10.4 publication awaits passing exact-main
-CI and a verified registry-only consumer. The local Counter processing extension
+Linux CI and two actual Miri tests. Exact-main CI and actual1.10.4 publication
+run38136194227 pass; all-nine registry archives and the clean public consumer
+are verified. A standalone published-source unit compilation exposed an implicit
+unstable-feature dependency in its test. The owning configuration import correction
+passes both profiles with only default TLS enabled, but controlled source/CI and
+successor delivery remain required; Bombay still selects verified1.10.3.
+The local Counter processing extension
 passes both native success/Overflow tests, intended inversions, detection of a
 real alternate producer by its origin oracle and all required workspace Rust commands; review found no
-scoped blocker. Its separate PR delivery remains open. These local contributions
+scoped blocker. Its [PR348](https://github.com/devrandom-labs/bombay/pull/348) merged
+reviewed head2b97d9df6ba258a6eec15b802d8f1d2ed4eef71d with all six checks passing.
+The actual normal guarded merge is101cfb8ff03635d00f991ecaa3224f9971f01eb9
+at2026-10-11T12:19:08Z after final independent CI inspection. Fresh Read ownership and
+runtime-assignment controls pass both profiles and independent scoped review;
+Read combined workspace checks pass; its delivery remains open, and the complete
+authenticated Scope composition is not yet implemented. These local contributions
 do not close production KERI or the full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
@@ -11284,3 +11295,382 @@ records from the preceding delivery and concurrent native research. This is
 not claimed as code reduction. Source scope remains84/90, core3907/3950,
 tests358/450 and cumulative18234/19000. The focused Counter PR and its required
 CI/merge remain pending; all full AUTH1/NET1 requirements retain their status.
+
+Processing [PR348](https://github.com/devrandom-labs/bombay/pull/348) is actually
+open, targeting current main04b89f7a with submitted head
+2b97d9df6ba258a6eec15b802d8f1d2ed4eef71d. The isolated branch is clean;
+its six-path final checkpoint is production+106/-22/net84,
+tests+358/-0/net358, documentation+559/-14/net545, public API+0/-0 and
+manifest/lock0. GitHub CI38135189525 and companion CodeQL/deny checks are
+live; no passing required-CI or merge claim is made. Updated independent
+review849c0782 verifies all four actual workspace logs and unchanged source;
+exact commit verification and posted technical review are the next gates.
+These coordinator records are preserved in the root working tree while the
+submitted candidate remains frozen; they do not claim inclusion in its commit.
+
+Exact-head Counter review2c2c0d09 verifies all six committed blobs against
+head2b97d9df and records the final source/test/documentation counts. Independent
+review bodye7b62b6e is posted as technical evidence at
+https://github.com/devrandom-labs/bombay/pull/348#issuecomment-6108485461.
+The posting account is the author account; this is not formal human approval.
+Required submitted-head CI remains live, so no merge has been requested.
+Parallel next-contract research now covers complete protected binding/Scope,
+ordinary per-request Read ports and registry-only successor verification. These
+are investigations; no new wire schema, foreign operation, public API, default
+resource limit or production identity source is adopted from them.
+
+### Per-request Read ownership: recommended comparison selected before edits
+
+Delegated steering selects an actual ordinary-Rust comparison with one existing
+ExternalActor<CounterValue> receive owner for each pending Read. Alternative:
+add a correlated Read message/reply, changing the owning Counter contract while
+still requiring a pending-result owner. Attempt the existing concrete composition
+first; retain a new protocol only if its actual ownership/resource witness fails.
+Borrow-canceling a receive leaves its owner alive. Settlement closes that exact
+port; late replies must not be retargeted to another pending Read. Each port's
+address lease and mailbox still require full integration resource accounting;
+this comparison selects no quota, default or public pending-request abstraction.
+
+Prepared proposal /tmp/bombay-counter-read-ownership-proposal.md (7cd36a22)
+forecasts180–200 formatted test lines in the existing main test owner, production
++0/-0/net0, public API+0/-0, dependencies/manifest/lock unchanged. Record up to15
+unique temporary inversion lines separately; stage ceiling215 tests. Required
+public Application observations are distinct actual A0/B1, canceled Pending
+borrow with later A0, explicit A closure, original late-send u64::MAX refusal,
+actual native Read(old A) rejection, later B2 and no extra B reply. Preserve all
+original Work/native/two-notification receipts before assertions. Source predicts
+active rejected send permits progress while retaining its exact rejected delivery
+and FailuresFound report; native Completed must not be called failure-free. This
+prediction is not execution evidence. Positive debug/optimized controls precede
+wrong-first-port, missing-close and late-retarget inversions and exact restores.
+
+Source ownership is isolated from frozen PR348. Create the branch from actual
+latest main04b89f7a, then fast-forward the existing reviewed processing commit
+2b97d9df without creating another commit. That supplies the known source contract
+while its own PR remains pending; this comparison cannot merge ahead of it.
+Coordinator retains manifests/locks/documents/integration; assigned source owner
+may edit only the isolated main test and private command/evidence artifacts.
+Existing stage/cumulative test ceilings are not resource defaults: tests18234
+plus maximum215=18449 remains within19000; core3907/3950 and API5 are unchanged.
+Research documentation ceiling9700→10400 is recommended and automatically
+selected before further contract/evidence records, accounting for complete binding
+proposal224, Read proposal78, release verification101 and successor records.
+No new production design, wire operation/schema or identity source is selected.
+
+Release verification preparation is concrete: clean detached snapshot
+/tmp/bombay-zenoh-1104-release-verification is main9cc83867, identical Git
+treefd5a1d14 to reviewed3a67bad1. Frozen source/script/lock hashes are preserved
+in /tmp/bombay-zenoh-1104-release-source-proof.json. The private clean consumer
+copy at /tmp/bombay-zenoh-1104-registry-consumer retains the prior public source
+and historical lock, with only its top manifest declaration changed to=1.10.4;
+it has not resolved or executed. Proposal7855cdd7 requires actual publication,
+all-nine registry archives/29 edges, clean public consumer and unchanged native
+owning exhaustion test from the published archive in both profiles. No public
+private-counter seed API or copied implementation is introduced. Main CI remains
+live; publication and all registry-only successor proofs remain unexecuted.
+
+### Finite assignment runtime lifetime: prerequisite comparison selected
+
+Complete Scope cannot retain a constant runtime generation as proof of a new
+runtime. Delegated recommendation selects an ordinary borrowed actual Tokio
+Runtime in the existing finite assignment authority, with separately configured
+generation evidence. Compare the entered Handle's actual Id with that live
+borrowed host before issuing/coupling an assignment; no Id is serialized or used
+as an authorized generation. Exact Tokio1.53.1 permits Id reuse after runtime
+completion, so the host borrow is necessary to prevent this authority surviving
+that lifetime. Alternative lexical composition alone is smaller but needs an
+actual witness that it cannot be applied in a different entered host; an invented
+persistent/random epoch adds unproved identity/durability machinery. First
+compare the existing concrete host ownership, not a new runtime wrapper/API.
+
+Prepared private research forecast: one Rust test artifact, at most200 retained
+test lines and6 unique inversion lines, production/public API/dependency/manifest/
+lock0. Root coordinates its isolated source placement and pinned Cargo lane.
+Prove two actually joined Applications on the same host preserve runtime evidence
+while actor-assignment issuance advances, wrong live host and missing entered
+host refuse before export, and checked exhaustion refuses without wrapping.
+Keep original native/notification facts before assertions. Runtime Id remains
+local provenance only: no production KERI/noncloning/durable-fencing credit.
+Cumulative tests18234+215 Read+206 runtime=18655/19000; other production/API/path
+ceilings remain. The complete Scope forecast115 production/450 tests remains
+unadopted until this prerequisite and precise change record are verified.
+
+Controlled exact-main CI38133883897 completed success at actual main9cc83867.
+Root inspected metadata and full834866-byte log82f01e32: owning query exhaustion
+executes successfully in both profiles at11:03:29Z/11:19:35Z;29 archived registry
+edges verify at11:33:25Z; actual configuration Miri executes two tests with zero
+skipped/ignored at11:34:53Z. Main remains9cc83867. Logs/metadata are
+/tmp/bombay-native-query-main-ci.log and corresponding .json. Authorised existing
+workflow publication was then dispatched with operation=publish and explicit
+source_commit=9cc83867dce5804a172d7b582fd3b4c2550257fe. Actual run38136194227
+is live at https://github.com/devrandom-labs/bombay-zenoh/actions/runs/38136194227,
+created2026-10-11T11:36:39Z. No publication/registry-consumer success is inferred.
+
+PR348 actual Linux native proofcd96bf68 verifies submitted2b97d9df and tested
+mergeed9fd41d have the same treee8786274. Both actual native jobs pass, raw ZIP
+hashes equal GitHub artifact digests, and all117 files/30 outcome classes per
+profile are independently checked. Existing fixture/workflow/manifest/lock
+bytes equal the previously reviewed transport source and compile registry1.10.3;
+this proof gives no new Counter-processing or1.10.4 support credit. CodeQL and
+deny also pass. Required Nix job114457504796 remains live, so PR348 is unmerged.
+Exact artifact/log custody is /tmp/bombay-pr348-linux-native-proof.json.
+
+Controlled publication38136194227 completed success on exact9cc83867. Raw
+metadata is /tmp/bombay-zenoh-1104-publication-run.json. Independent actual
+registry/archive/ledger collection is executing; workflow success alone is not
+recorded as registry-only consumer proof or Bombay adoption.
+Runtime prerequisite source1534efcc (166 lines) is placed unchanged in isolated
+Counter integration target /tmp/bombay-actor-runtime-assignment. Initial command
+selected nonexistent package bombay (actual package is bombay-rs); correcting
+that reached a library target without the already-required futures-util edge.
+Both invocations are setup/compilation failures and executed no test. No new
+dependency was added: place the identical source under existing Counter tests,
+whose direct futures-util0.3.34 edge is already locked. The corrected actual
+counter target passes exactly one named debug test (two filtered), preserving
+wrong/missing entered-host refusals and two fully joined same-host Applications.
+Optimized control is executing. Original setup logs and source hash remain
+preserved; no semantic inversion or complete Scope eligibility follows yet.
+Runtime provenance proposalc8facc3f additionally requires the existing eventual
+consumer's first-poll host guard before synchronous Handle capture, without an
+intervening await. Issuance-only checking does not permit moving an old binding
+into another host. Complete Scope forecast is revised to145 net production and
+510 tests including that guard; it remains unadopted before prerequisite proof
+and its expanded core/test checkpoint. No new runtime wrapper/public API exists.
+
+Read comparison's first executed candidatea10c0744 passes both profiles and all
+three intended inverse pairs, with exact restores/whole-main suites/strict/fmt.
+Its199/-1 test delta nevertheless reuses B for the later continuation Read after
+B1 is acquired. Retain that explicit limitation (receipt56d090f0); it does not
+prove a fresh owner for every actual Read. Before correcting source, delegated
+recommendation selects a third existing CounterValue port C for the continuation
+request. Settle and close each A/B port independently; retain their actual closed
+observations. Later native Read(old A) must retain its Closed rejection, while
+fresh C receives2 and no extra prefix. Inverse retargets that old-A reply into
+live C: the independent actual C prefix must expose1 instead of2 after native
+acquisition. No opaque recipient inspection, inferred address or new wrapper.
+Forecast10–25 additional test lines,0production/API/dependency changes; expanded
+Read stage maximum235 retained+15 unique inverse=250 selected before edits.
+Cumulative18234+250 Read+206 runtime=18690/19000, other ceilings unchanged.
+Repeat corrected healthy debug/optimized controls, affected three inverse pairs,
+exact restores and owning strict/fmt checks. Earlier successful executions are
+historical controls, not corrected-source or enforced fresh-port-policy proof.
+
+Actual1.10.4 publication/archive proofe893bbe8 passes: release38136194227,
+artifact11700369543 rawZIP digest verified, top registry checksum
+b38ecddfc2d7e306654492b4264a742700c6e94a29deaefb13731382417b6acc equals
+independent workflow candidate/cohort/after receipt; all-nine registry archives,
+source provenance,29 edges and seven corruption/restored controls pass. Owning
+auditor log0fab488a executes through pinned Nix. Clean consumer's narrow update
+retains305 other complete lock records (306 total), preserving historical source.
+Actual metadata has301 reachable packages, each matching its full locked identity;
+only the consumer is local and all dependencies are crates.io. An initial collector
+incorrectly equated metadata count with the306-entry lock inventory; corrected
+identity checks change no graph or source. All seven public-consumer commands
+now pass, including three actual executable assertion markers. Exact receipts:
+/tmp/bombay-zenoh-1104-registry-campaign.json and consumer-lock-proof.json.
+
+Published-source default-profile owning unit compilation73405 fails E0609 before
+executing a test: its crate::Config field access relies on unstable Deref, while
+the source workspace's zenoh-test dev alias enables internal/unstable implicitly.
+Public consumer compatibility remains valid; normal-profile exhaustion execution
+is not established. Do not call the earlier workspace flags proof that unstable
+was absent. Selected next comparison uses the already-owning zenoh_config::Config
+explicitly in the query-test module and the existing From conversion at open.
+Alternatives: enable unstable for this unit (different maintainer-profile proof),
+or access private wrapper .0 (more positional ownership bookkeeping). Prefer the
+owning configuration type, without another API/dependency or JSON setter rules.
+One/two test import lines in a disposable extracted copy; production+0/-0/net0,
+public API+0/-0, dependencies/manifest/lock unchanged. Preserve immutable downloaded
+bytes and exact test-only delta; corrected-copy controls cannot be described as
+unchanged published-source proof. A subsequent controlled source/release correction
+and explicit isolated-profile CI are required before claiming that published gate.
+
+Runtime source1534efcc passes both profiles, original/restored wrong-host pairs
+and staticE0505; the additional post-static restored debug command82918 also
+passes exactly one test. Independent review2505d262 finds no scoped blocker and
+retains all setup/cold-startup-custody/production-identity limits. Read's corrected
+fresh-owner sourcee5b1eb59 now passes all focused/full controls and three inverse
+pairs, exact restores, strict and fmt. Independent review68620209 matches corrected
+receipted51656b, patchaab66f2b,20 command records and complete108 Python automation
+lines. Rust delta+210/-1/net209,0production/API/dependencies. Combined workspace
+verification and separate reviewed PR delivery remain gates; no full row closes.
+
+
+### Selected complete configured scope and portable dependency witness stage — 2026-10-11
+
+The preceding goal turn made concrete progress: current readiness records were
+corrected from actual publication/consumer and CI state; final PR348 evidence
+inspection and the four combined Read workspace commands were launched. No
+external authorization blocker exists. User-delegated recommended choices remain
+in force. Before new production edits, root rechecked the exact lock5336430f,
+Behavior registry VCSd69f992b and complete previously read760-line instructions
+2b7a9195. All22 recorded research source hashes remain unchanged except this
+coordinator-owned PRD. The sole patch remains Timers13e884da. Selected ownership
+is Behavior/Actors0.23.0, Address0.3.0, Communication0.1.4, Observe/Engine0.2.2,
+Bombay-rs0.1.1, Tokio1.53.1 and JSON1.0.151. No new dependency or public API.
+
+Root complete tracked/untracked measurement against the cumulative baseline
+a9c5b7d4 reports86 paths, no untracked files: production+3487/-475/net3012;
+tests+16391/-661/net15730; documentation+9354/-89/net9265; manifests/locks
++3183/-3/net3180. This root view excludes separately receipted worktrees and
+research contributions: the conservative cross-worktree core production ledger
+is3907/3950, controlled functional785/810, five public types, and forecast
+18690/19000 test lines before the following stages. Read's108 authored temporary
+Python lines and runtime controller/unique mutations remain separately counted
+automation; downloaded source snapshots are research evidence, not omitted edits.
+These measurements are intermediate, not final distillation.
+
+**Selected scope implementation.** Expand the existing finite private Binding to
+independent deployment/caller/controller/actor/host/protocol literal names plus
+runtime_generation and actor_generation; Identity retains checked sequence. One
+private Scope replaces duplicated receipt identity/operation fields, adding
+configured grant issuer and authority generation. Its unique fact is the
+coexisting authenticated request identity and permission evidence, not a runtime
+service; it transforms no effect. Existing provider receipts own it once and
+borrow it. The old two-field receipt pair cannot preserve the missing grant
+facts; replacement deletes that repeated pair in both providers. Both real
+public Applications supply its concrete consumers. No forwarding facade, trait,
+macro, registry or public product is introduced.
+
+Use the proposal public-application-slice.md and exact source evidence7219acba,
+with the subsequently verified live-runtime provenance guard. Borrow the actual
+Runtime in the existing assignment authority, preserve configured runtime
+generation for its lifetime, advance actor generation checked, and guard actual
+entered runtime on first poll immediately before synchronous Application Handle
+capture. No await may intervene. The runtime Id is local provenance only and
+never replaces provider freshness. The already verified runtime probe1534efcc
+and independent review2505d262 prove this finite prerequisite, not production
+KERI/global uniqueness, durable restart or whole-system fencing.
+
+Compare every independent configured binding field, actual operation and current
+grant issuer/revision before replay lookup. Grant/key/proof rotation and reconnect
+cannot reset the same Identity namespace. There is one logical binding and one
+sender sequence owner per unchanged caller/target tuple throughout its finite
+lifetime. A second binding for an unchanged tuple requires separately verified
+provider-issued distinguishing evidence; do not invent an epoch. Missing/cold
+authority, wrong actual runtime, exhausted issuance, invalid configured grants
+and fake ProductionRequired must refuse before export. Preserve original inputs
+and native/notification outcomes. Existing explicit test provider remains finite;
+production-positive credentials and durability are deferred and never fabricated.
+
+Alternatives: opaque provider-issued binding identifiers require an unverified
+issuer; dynamic owned names add accounting for a non-dynamic fixture; relying
+only on assignment issuance permits a later wrong-runtime consumer. Recommend
+the complete finite tuple and first-poll guard because they reuse verified owners
+and isolate the exact missing facts without pretending production identity.
+Selected under user delegation before edits. No serializer, foreign operation,
+public identity representation, resource default or new topology is selected.
+
+Smallest failing law: an independently altered host/controller/protocol/grant
+claim currently cannot be distinguished by the incomplete receipt. Assert each
+refuses before any native Counter mutation, then prove a valid explicit control
+through both real Applications/providers. Add actual replacement/old assignment,
+reconnect duplicate, rotation and checked exhaustion controls. Each omitted
+comparison/reset must fail its independent named oracle in debug and optimized
+builds after original native facts are acquired; restore exact healthy source.
+
+Scope implementation cap: one existing authorized.rs code path, at most180 net
+production lines (forecast145) and600 retained test lines plus80 unique inverse
+lines; four current documentation paths (README/PRD/acceptance/status), about120
+lines. Public API+0/-0, dependency/manifest/lock0; reuse actual native admission,
+shared retirement observations, existing provider receipts and finite replay
+vector. Root alone owns shared contracts and integration. Expand the cumulative
+core cap3950→4150, tests19000→20000, documentation10400→11200, retaining320 paths
+and five public types. These ceilings include this work, not just its next commit.
+Stop before exceeding them, measure actual source and record any newly evidenced
+choice before dependent implementation. Full R01–R25 remain open.
+
+**Selected portable controlled dependency correction.** Actual unchanged published
+1.10.4 unit source fails standalone E0609; its actual seven public-consumer checks
+and production atomic correction remain valid. Disposable comparison proof
+30aae335 passes one exact named owning query-exhaustion test in each profile with
+root features exactly default/transport_tls, no internal/unstable/test or self
+alias. Only test import+1/-1, production0; original archive bytes are immutable.
+The selected owning Config import uses the unconditional existing From conversion.
+Enable-unstable and private wrapper-field access alternatives are rejected for
+this normal-profile witness. No new API, runtime mechanism or dependency.
+
+Record and implement this test-only correction in a fresh branch from actual
+controlled main9cc83867. Extend existing verify-release.sh after actual packaging
+and archive verification to safely extract the verified top archive using the
+existing owning auditor, assert the real isolated TLS-only feature graph and run
+exactly one named test in both profiles. Reject zero-test success. Keep normalized
+manifest/lock unchanged; temporary extracted source is outside the workspace.
+Retain actual outputs and profile custody. Existing maintainer tests remain.
+Forecast25–45 CI automation lines plus the import replacement; stage cap60 net
+functional automation lines and30 test lines. Top-only successor1.10.5 is selected
+under the existing version policy because published1.10.4 is immutable; all eight
+support copies remain unchanged. Coordinator owns manifests/locks/auditor-version/
+README and release. Expand controlled cumulative functional cap810→850 before
+those edits. Exact release verification, independent review, required CI, guarded
+merge, actual publication, nine registry archives/29 edges, clean consumer and
+unchanged downloaded successor owning tests are gates. Do not adopt the successor
+in Bombay or mark its published witness passing before those gates.
+
+
+PR348 delivery is actual: normal guarded merge retained frozen2b97d9df and
+produced101cfb8ff03635d00f991ecaa3224f9971f01eb9 at2026-10-11T12:19:08Z.
+All six required/observed checks pass. Independent Nix prooff19d70b5 verifies
+actual syntheticed9fd41 complete tree equals submitted2b97; four actual Counter
+tests pass debug/coverage and optimized builds; ordinary main runs debug. Driver
+2048 and four Observe1024 campaigns complete; Miri is explicitly skipped. No
+formal human approval is claimed from the retained technical review comment;
+normal repository merge requirements were enforced without admin bypass.
+
+Read combined workspace receipt6765fef5 passes all four pinned-Nix commands on
+sourcee5b1eb59 and lock5336430f unchanged:604 passed,0failed,1ignored including
+docs. Full command logs/hashes remain in its workspace-gates receipt;28 additional
+authored controller lines are explicitly automation (136 total Read Python).
+Source controls and independent review remain scoped; reviewed PR/CI/merge for
+this contribution remain required.
+
+Controlled CI implementation refinement is selected before edits: one small
+owning ci/verify_packaged_queries.py entrypoint invoked by existing verify-release.sh
+imports the exact existing archive auditor and owns extraction/profile/result
+verification. Two directly testable gates check actual registry-only metadata
+with default/transport_tls root features and exactly-one named passing native
+test. A shell heredoc is an alternative but makes these observations harder to
+test and maintain. Standard-library Python reuses owning archive checks; no new
+dependency or packaging mechanism. Forecast at most60 functional lines and30
+gate-test lines plus the test import replacement, one additional functional
+path and one small owning test path within the selected cumulative320 paths.
+Preserve actual command outputs and normalized manifest/lock; unknown/zero-test
+results refuse. Root retains version/release coordination.
+
+
+Before additional controlled CI edits, select preservation of actual metadata
+stdout/stderr before checking its exit, and normalized manifest/lock custody
+before/after the paired commands. Captured subprocess output hidden by an
+exception would weaken failure diagnosis; printing it preserves the source
+evidence. A silent check=True exception is rejected. Expected additional3–6
+functional lines: stage cap60→70 and cumulative controlled850→875; test cap30
+and all other bounds unchanged. The current prepared60-line entrypoint/invocation
+and29-line owning gate tests are measured, not yet executed or delivered.
+
+
+Complete Scope input refinement selected before dependent edits: the existing
+authority/service retain independently configured grant_issuer,
+authority_generation and a borrowed static slice of permitted CounterOperation.
+Check receipt operation membership before replay lookup; the old Granted/Revoked
+state alone cannot distinguish an Increment-only grant from a Read-only grant.
+Use a private Grant refusal distinct from Binding and a configured-grant startup
+refusal. An empty issuer or no permitted operation is invalid in this finite
+fixture; this is not a production identifier grammar. Closed-enum slice membership
+is an ordinary predicate and encodes no policy in a bool. A new grant wrapper
+would duplicate these existing owner's inputs; recommend existing fields instead.
+Independent grant mismatch and operation-only controls must exercise native
+nonmutation through both actual provider/Application consumers. API/dependencies
+remain0 and the already selected scope cap180/600+80 remains.
+
+
+Read final local contribution checkpoint before commit: actual branch
+feat/counter-read-reply-ownership fast-forwarded reviewed2b97 to actual merged
+main101cfb8, preserving unchanged sourcee5b1eb59 and lock5336430f. The only Rust
+delta is cfg(test): production+0/-0/net0; tests+210/-1/net209; public API+0/-0.
+Four current documentation paths record partial evidence and coordinator
+decisions without closing remote rows. Whole five-path diff before this entry
+was624 added/8removed, including414 documentation additions/7removals. The
+additional record remains within selected11200 documentation ceiling. Required
+workspace commands passed the identical source tree; documentation-only updates
+require no repeat Rust execution. Source independent review68620209 and all20
+focused commands remain valid; exact submitted-head review/CI/merge are gates.
