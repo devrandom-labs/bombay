@@ -1,7 +1,8 @@
 # Developer experience coordination
 
 Status: active. Lossless result consumption and borrowed terminal inspection
-are implemented; inferred topology and recursive execution remain open. The paired work lives on `codex/developer-experience-docs`
+are implemented; public declared-topology assembly remains open. The paired
+work lives on `codex/developer-experience-docs`
 in Bombay and Behavior, based on Bombay main
 `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior main
 `d69f992b371c12ab34e73b18e45b8112c90a1508`.
@@ -17,8 +18,10 @@ acceptance authority.
 Use the existing actor facade for domain actors, `ActorExt` for genuine
 same-actor decoration, owning constructors for standalone policies, named
 `Actions` lanes for effects, and one `Application` spine for local execution,
-HTTP and Entity. Infer topology and complete terminal custody from domain
-roles. Keep real policy and exact failure handling explicit.
+HTTP and Entity. The user approved one explicit application topology declaration
+on 2026-10-11, with structural spaces and complete recursive custody derived
+behind it. Selection is application-scoped and validates actual decorated birth
+rows. Keep real policy and exact failure handling explicit.
 
 Bombay owns application assembly, hosting, external clients and terminal
 consumption. Behavior owns the static transition and effect algebra; Actors
@@ -91,16 +94,29 @@ Clippy and its doctest pass. Previous-head CI passed the API audit, Linux Nix
 and eight mutation shards; strict aggregation rejected two unclassified,
 uncompilable Default mutations. Both classifications retain the typed vetoes,
 existing mutation floors and exclusions. Exact-head
-[CI rerun](https://github.com/devrandom-labs/bombay-behavior/actions/runs/38116165593),
-registry delivery and inferred assembly remain open. The owning PRD contains
+[CI](https://github.com/devrandom-labs/bombay-behavior/actions/runs/38116165593)
+passes all eleven jobs, including strict aggregation (205 viable/417 total).
+Registry delivery and public declared-topology assembly remain open. The owning
+PRD contains
 the direct input-recovery regressions and independent debug/optimized inversions.
 
 The fresh authoritative `102fc2d` Nix check has four native passes and seventeen
 failures against the published Behavior/Actors 0.23.0 API, before inferred caller
 compilation. Signing and disk exhaustion did not fail; 35 GB remained.
 The owning PRD records exact diagnostics, gates and the requested crates.io /
-Awesome Rust comparison. No candidate dependency resolves the proven recursive
-eligibility equation yet; none was added.
+Awesome Rust comparison. No candidate dependency resolves the original recursive
+eligibility equation; none was added. The approved explicit graph has now passed
+owner-internal native execution in debug/optimized builds, including real parent
+reports, initialization refusal and complete actor-indexed retirement. This
+proves a closed-edge applicability cut, not a downstream DSL: public authority,
+whole-row validation, shared protocols and template singleton edges remain open.
+
+Pinned release-plz generated isolated preview `3501be1`: Behavior/Actors 0.24.0
+and macros 0.14.1. All ten native checks, 961 tests, 112 doctests, exact-head
+package preflight and all eleven
+[CI jobs](https://github.com/devrandom-labs/bombay-behavior/actions/runs/38117186479)
+pass. This is metadata/docs only; no merge or publication is claimed. The
+owning PRD holds exact logs, measurements and release obligations.
 
 Begin with a compiling counter and heterogeneous-child journey that infers
 runner and terminal types while returning complete startup/retirement failures.
