@@ -21,14 +21,16 @@ remain open. The nine controlled dependency copies are published; top-level
 is published and verified through a registry-only consumer. Wake custody PR336
 merged after independent review and all six CI checks, including native TLS in
 both profiles and the full Nix gate.
-Actual two-Application Counter integration PR337 merged after independent review
-and all six checks passed. The private two-provider admission comparison PR338
-has passing local combined checks and independent review; submitted-source CI
-and merge remain pending. Stalled-verifier progress and exact-target overlap
-continue independently. Controlled interest-retirement correction PR6 is reviewed
-with local owning/profile/archive checks passing; required CI, merge and successor
-publication remain pending. Historical observations below describe their recorded
-source stage and must not replace this current readiness.
+Actual two-Application Counter integration PR337 and local admission PR338,
+stalled-verifier progress PR339 and exact-target overlap PR340 merged after
+independent review and all six checks passed. Controlled interest-retirement PR6
+also merged after required CI; successor1.10.3 is actually published with all-nine
+registry archive and clean consumer verification. Its narrow Bombay adoption
+PR341 is reviewed with all six local affected checks passing; submitted-source CI
+and actual merge remain gates. Replay comparison controls and intended inversions
+are executed, with final fixture refinement/review/integration still pending.
+Historical observations below describe their recorded source stage and must not
+replace this current readiness.
 
 **Specification audit:** the scope and proof obligations below supersede the
 initial draft's aggregate completion claims. [Acceptance](static-remote-actors/acceptance.md)
