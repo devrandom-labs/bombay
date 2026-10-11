@@ -337,8 +337,7 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
         Accounts,
         DirectoryConfig::default(),
         capacity,
-    )
-    .unwrap_or_else(|_| panic!("the real directory configuration is valid"));
+    );
     let application_host = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -1468,21 +1467,18 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
         DirectoryConfig::default(),
         capacity,
     )
-    .unwrap_or_else(|_| panic!("the original tail directory is valid"))
     .entity_family(
         AccountsRole(middle),
         RetiringAccounts { panic_payload },
         DirectoryConfig::default(),
         capacity,
     )
-    .unwrap_or_else(|_| panic!("the original middle directory is valid"))
     .entity_family(
         AccountsRole(head),
         Accounts,
         DirectoryConfig::default(),
         capacity,
-    )
-    .unwrap_or_else(|_| panic!("the original head directory is valid"));
+    );
     let mut returned = None;
     let caught = catch_unwind(AssertUnwindSafe(|| {
         let application_host = Builder::new_current_thread()
@@ -2636,8 +2632,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             NonZeroUsize::new(1).expect("one resident"),
             NonZeroUsize::new(1).expect("one hydration"),
         ),
-    )
-    .unwrap_or_else(|_| panic!("the actual one-family directory is valid"));
+    );
     let mut returned = None;
     let caught = catch_unwind(AssertUnwindSafe(|| {
         let application_host = Builder::new_current_thread()
@@ -4427,7 +4422,6 @@ mod family_cleanup {
             DirectoryConfig::default(),
             capacity,
         )
-        .unwrap_or_else(|_| panic!("the concrete tail directory forms before host creation"))
         .entity_family(
             HeadAccounts(head),
             PendingAccounts {
@@ -4437,8 +4431,7 @@ mod family_cleanup {
             },
             DirectoryConfig::default(),
             capacity,
-        )
-        .unwrap_or_else(|_| panic!("the concrete head directory forms before host creation"));
+        );
         let (host_publication, selected_host) = oneshot::channel();
         let (host_shutdown, shutdown_requested) = oneshot::channel();
         let host_thread = thread::spawn(move || {
@@ -4734,7 +4727,6 @@ mod family_cleanup {
             DirectoryConfig::default(),
             capacity,
         )
-        .unwrap_or_else(|_| panic!("the concrete tail directory forms before host creation"))
         .entity_family(
             HeadAccounts(head),
             PendingAccounts {
@@ -4744,8 +4736,7 @@ mod family_cleanup {
             },
             DirectoryConfig::default(),
             capacity,
-        )
-        .unwrap_or_else(|_| panic!("the concrete head directory forms before host creation"));
+        );
         let (host_publication, selected_host) = oneshot::channel();
         let (host_shutdown, shutdown_requested) = oneshot::channel();
         let host_thread = thread::spawn(move || {

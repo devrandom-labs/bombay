@@ -1,0 +1,5 @@
+error[E0616]: field `shards` of struct `DirectoryConfig` is private
+ --> tests/compile/fail/entity_configuration_is_immutable.rs:3:19
+  |
+3 |     configuration.shards = core::num::NonZeroUsize::new(3).unwrap();
+  |                   ^^^^^^ private field

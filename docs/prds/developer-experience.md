@@ -58,7 +58,7 @@ alternatives while retaining all24 outcomes. Borrowed behavior, completion and
 work/cleanup inspection preserve original values for consuming decisions.
 
 Source verification: all301 owner library tests pass debug and optimization.
-The current all-feature workspace nextest run has567 passed, one failed and one
+The current all-feature workspace nextest run has571 passed, one failed and one
 skipped. The failure comprises four deliberately unfinished generated-custody
 pass fixtures; existing static denials remain active. Workspace/all-target/
 all-feature compilation, strict Clippy, formatting, two doctests, HTTP package
@@ -86,14 +86,28 @@ profiles. It still handwrites native edges, protocol sharing and terminal
 schemas. The latest finite communication supertrait fails the real foreign
 caller in both profiles and is removed. These are private evidence, not retained
 topology generation or a DSL. Canonical runner inference, generated hosting and
-recursive custody, acquired family-prefix cancellation, complete HTTP recovery
-and invalid-directory constructor custody remain open. This bounded owner gain
+recursive custody, acquired family-prefix cancellation, complete HTTP recovery remain open. This bounded owner gain
 does not close DX01–03.
 
 Scope coverage of270 backlog rows,100 failure records, seven examples,45
 catalogue entries and19 capabilities remains in the owning evidence appendix.
 Networking, durability, identity and deployment remain separate deferred work.
 Detailed laws, falsifiers and checkpoints live only in the owning PRD.
+
+DirectoryConfig now validates immutable shard/waiter limits before affine
+application or runtime inputs transfer. Invalid construction returns both limits;
+valid family/directory/runtime construction is infallible. The old source drops
+original root, scope, family and cold child on invalid limits in both profiles;
+the retained inverse proves that exact loss. Four configuration tests, two
+construction/mutation denials, all four complete Application/Entity journeys,
+workspace compilation and strict Clippy pass. Six real directory Loom tests pass
+with the repository's unbounded settings. Production+89/-80/net+9; one narrow
+configuration error is added and impossible downstream error branches removed.
+This is added validated construction capability. Full registry Nix still passes
+four gates and fails17 on unpublished owner APIs, with no disk/signing failure.
+The registry lock is byte-restored. Evidence:
+/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/
+bombay-directory-configuration-rki61ud7.
 
 Begin with a compiling counter and heterogeneous-child journey deriving
 runner and terminal types from the single declared topology while returning

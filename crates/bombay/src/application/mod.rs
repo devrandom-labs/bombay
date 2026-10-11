@@ -14,7 +14,7 @@ pub use interface::{
 use crate::address::MailAddr;
 use crate::entity::EntityDefinition;
 use crate::launch::ActorSpace;
-use behavior::{Behavior, BehaviorMessage, Never, Protocol};
+use behavior::{Behavior, Never, Protocol};
 
 impl<Root> Application<Root, ActorSpace<Root::Protocol>>
 where
@@ -77,10 +77,9 @@ impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Familie
 impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families> {
     /// Declare one application-owned native Entity family under a semantic role.
     ///
-    /// # Errors
-    ///
-    /// Returns the existing directory configuration error before application
-    /// startup. This consuming call drops its inputs on rejection.
+    /// Directory configuration is validated before any application input
+    /// transfers. Declaration starts no task and retains all existing inputs.
+    #[must_use]
     #[allow(
         clippy::type_complexity,
         reason = "the inferred role-indexed family product is the public static composition"
@@ -91,33 +90,27 @@ impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Familie
         definition: D,
         directory: crate::entity::DirectoryConfig,
         capacity: crate::entity::EntityCapacity,
-    ) -> Result<
-        Application<
-            Root,
-            Spaces,
-            Members,
-            (
-                Role,
-                D,
-                crate::entity::DirectoryConfig,
-                crate::entity::EntityCapacity,
-                Families,
-            ),
-        >,
-        crate::entity::DirectoryError<BehaviorMessage<D::Behavior>>,
+    ) -> Application<
+        Root,
+        Spaces,
+        Members,
+        (
+            Role,
+            D,
+            crate::entity::DirectoryConfig,
+            crate::entity::EntityCapacity,
+            Families,
+        ),
     >
     where
         D: EntityDefinition<Hosts = Spaces>,
     {
-        if !directory.shards.get().is_power_of_two() {
-            return Err(crate::entity::DirectoryError::InvalidShardCount);
-        }
-        Ok(Application {
+        Application {
             root: self.root,
             spaces: self.spaces,
             members: self.members,
             families: (role, definition, directory, capacity, self.families),
-        })
+        }
     }
 }
 

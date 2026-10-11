@@ -160,14 +160,12 @@ fn main() {
         NonZeroUsize::new(2).expect("two is non-zero"),
         NonZeroUsize::new(32).expect("32 is non-zero"),
     );
-    let application = Application::with_topology(Root.stop_on_shutdown(), spaces)
-        .entity_family(
-            AccountsRole,
-            definition,
-            DirectoryConfig::default(),
-            capacity,
-        )
-        .expect("the default directory configuration is valid");
+    let application = Application::with_topology(Root.stop_on_shutdown(), spaces).entity_family(
+        AccountsRole,
+        definition,
+        DirectoryConfig::default(),
+        capacity,
+    );
 
     let application_host = Builder::new_current_thread()
         .enable_all()

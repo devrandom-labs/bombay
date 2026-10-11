@@ -1,0 +1,9 @@
+error[E0451]: fields `shards` and `activation_waiters` of struct `DirectoryConfig` are private
+ --> tests/compile/fail/entity_configuration_fields_are_private.rs:3:9
+  |
+2 |     let _ = bombay::entity::DirectoryConfig {
+  |             ------------------------------- in this type
+3 |         shards: core::num::NonZeroUsize::new(3).unwrap(),
+  |         ^^^^^^ private field
+4 |         activation_waiters: core::num::NonZeroUsize::new(7).unwrap(),
+  |         ^^^^^^^^^^^^^^^^^^ private field

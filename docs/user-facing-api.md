@@ -511,6 +511,13 @@ Users never manually construct or implement:
 An ordinary application names asynchronous reconstruction and exact lifecycle
 fact consumers once in a nominal definition:
 
+Directory limits are validated before any root, child, family or runtime port
+transfers. Use `DirectoryConfig::default()` or
+`DirectoryConfig::new(shards, activation_waiters)`; rejection returns both
+original limits in `DirectoryConfigError`. The limits are immutable. Declaring
+a family and constructing its directory/runtime then have no configuration
+error branch.
+
 ```text
 struct Accounts;
 
@@ -538,7 +545,7 @@ let application = Application::with_topology(root, spaces).entity_family(
     Accounts,
     DirectoryConfig::default(),
     EntityCapacity::new(concurrent_hydrations, residents),
-)?;
+);
 
 let application_receiving = application.run_with_entities(
     |application| async move {

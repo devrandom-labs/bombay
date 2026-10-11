@@ -676,9 +676,7 @@ where
             Arc::clone(&metrics),
             executor.clone(),
         );
-        let Ok(runtime) = EntityRuntime::new(directory, runtime) else {
-            unreachable!("EntityCapacity retains a validated directory configuration")
-        };
+        let runtime = EntityRuntime::new(directory, runtime);
         let entities = Entities::from_runtime(&runtime, definition);
         let family = InstalledEntityFamily {
             runtime,

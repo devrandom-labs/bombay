@@ -63,7 +63,7 @@ fn active_dispatch_stays_under_allocation_ceiling() {
     const ITERATIONS: usize = 10_000;
 
     let _profiler = dhat::Profiler::builder().testing().build();
-    let directory = Arc::new(Directory::new(DirectoryConfig::default()).unwrap());
+    let directory = Arc::new(Directory::new(DirectoryConfig::default()));
     let entity_id = EntityId::new(1);
     let bootstrap = Bootstrap::default();
     directory.interpret(

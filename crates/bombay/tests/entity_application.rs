@@ -12,7 +12,7 @@ use bombay::behavior::{
     SettlementStatus,
 };
 use bombay::entity::{
-    ActivationId, AdmissionFailure, DirectoryConfig, DirectoryError, DrainFailure, DrainStage,
+    ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, DrainStage,
     EntityActivationError, EntityAdmission, EntityCapacity, EntityDefinition, EntityId, EntityRef,
     EntityShutdown, Passivation, Refusal,
 };
@@ -363,7 +363,7 @@ struct Spaces {
     clippy::too_many_lines,
     reason = "one end-to-end journey asserts the complete native Entity composition law"
 )]
-fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u64>> {
+fn application_runs_two_native_entity_families() {
     let spaces = Spaces {
         root: ActorSpace::new(),
         accounts: ActorSpace::new(),
@@ -393,13 +393,13 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
             accounts,
             DirectoryConfig::default(),
             account_capacity,
-        )?
+        )
         .entity_family(
             ProfilesRole,
             profiles,
             DirectoryConfig::default(),
             profile_capacity,
-        )?;
+        );
     let application_host = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -762,7 +762,6 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
         ]
     );
     assert_completed(terminal, None);
-    Ok(())
 }
 
 #[allow(

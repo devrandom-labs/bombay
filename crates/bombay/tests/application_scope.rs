@@ -267,8 +267,7 @@ fn cold_members_compose_with_live_entity_families() {
         definition,
         DirectoryConfig::default(),
         capacity,
-    )
-    .expect("the default directory configuration is valid");
+    );
 
     let application_host = Builder::new_current_thread()
         .enable_all()
@@ -600,8 +599,7 @@ fn combined_staging_rejection_returns_original_family_and_work() {
             NonZeroUsize::new(2).expect("nonzero"),
             NonZeroUsize::new(32).expect("nonzero"),
         ),
-    )
-    .expect("valid actual family declaration");
+    );
     let host = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -652,8 +650,7 @@ fn combined_staging_rejection_returns_original_family_and_work() {
     drop((id, children, cause));
     let application = Application::with_topology(root, spaces)
         .child(ColdAccount::Declared, actor)
-        .entity_family(role, definition, directory, capacity)
-        .expect("same returned family configuration");
+        .entity_family(role, definition, directory, capacity);
     let (outcome, root, (family, ())) = host
         .block_on(
             application.run_with_entities::<_, _, ApplicationTerminal<ComposedRoot>, _, _, _>(work),
@@ -724,8 +721,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
             NonZeroUsize::new(2).expect("nonzero"),
             NonZeroUsize::new(32).expect("nonzero"),
         ),
-    )
-    .expect("valid actual family declaration");
+    );
     let host = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -813,6 +809,20 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
     let work_retained = Arc::downgrade(&work_token);
     let original_work: Box<[u8]> = Box::from([151, 157]);
     let family = original_family();
+    let configured = DirectoryConfig::new(
+        NonZeroUsize::new(3).expect("positive"),
+        NonZeroUsize::new(17).expect("positive"),
+    );
+    let Err(bombay::entity::DirectoryConfigError::InvalidShardCount {
+        shards,
+        activation_waiters,
+    }) = configured
+    else {
+        panic!("invalid configuration is rejected before any affine application input transfers");
+    };
+    assert_eq!(shards.get(), 3);
+    assert_eq!(activation_waiters.get(), 17);
+    assert_eq!(root_payload.as_ptr(), root_allocation);
     let retirements = Arc::clone(&family.retirements);
     let unexpected = Arc::clone(&family.unexpected_facts);
     let application = Application::with_topology(
@@ -843,8 +853,7 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
             NonZeroUsize::new(2).expect("nonzero"),
             NonZeroUsize::new(32).expect("nonzero"),
         ),
-    )
-    .expect("valid genuine Entity family");
+    );
     let host = Builder::new_current_thread()
         .enable_all()
         .build()

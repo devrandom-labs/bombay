@@ -609,30 +609,18 @@ where
 {
     /// Construct stable local entity routing over an actor-runtime port.
     ///
-    /// # Errors
-    ///
-    /// Returns [`DirectoryError::InvalidShardCount`] for a shard count that is
-    /// not a power of two.
-    pub fn new(config: DirectoryConfig, runtime_port: R) -> Result<Self, DirectoryError<C>> {
-        let directory = LocalDirectory::new(config).map_err(
-            |error: DirectoryError<PendingCommand<R::Origin, C>>| match error {
-                DirectoryError::InvalidShardCount => DirectoryError::InvalidShardCount,
-                DirectoryError::ActivationIdsExhausted(pending) => {
-                    DirectoryError::ActivationIdsExhausted(pending.command)
-                }
-                DirectoryError::DispatchIdsExhausted(pending) => {
-                    DirectoryError::DispatchIdsExhausted(pending.command)
-                }
-            },
-        )?;
-        Ok(Self {
+    /// Directory sizing has already been validated before the port transfers.
+    #[must_use]
+    pub fn new(config: DirectoryConfig, runtime_port: R) -> Self {
+        let directory = LocalDirectory::new(config);
+        Self {
             inner: Arc::new(Runtime {
                 directory,
                 port: runtime_port,
                 admission: Mutex::new(EntityAdmission::Open),
                 tasks: Arc::new(EntityTaskGroup::new()),
             }),
-        })
+        }
     }
 
     pub(crate) fn receptionist(&self) -> RuntimeReceptionist<I, C, R> {
@@ -688,9 +676,6 @@ where
                 .directory
                 .dispatch(entity_id.clone(), pending)
                 .map_err(|error| match error {
-                    DirectoryError::InvalidShardCount => {
-                        unreachable!("configuration was validated")
-                    }
                     DirectoryError::ActivationIdsExhausted(pending) => {
                         AdmissionFailure::ActivationIdsExhausted(pending.command)
                     }

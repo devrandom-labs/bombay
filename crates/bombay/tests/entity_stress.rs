@@ -61,7 +61,7 @@ impl EffectInterpreter<usize, usize, usize, usize> for DeliveryInterpreter {
 fn hot_entity_resolves_every_concurrent_dispatch() {
     const THREADS: usize = 8;
     const PER_THREAD: usize = 2_000;
-    let directory = Arc::new(Directory::new(DirectoryConfig::default()).unwrap());
+    let directory = Arc::new(Directory::new(DirectoryConfig::default()));
     let entity_id = EntityId::new(1);
     let bootstrap = Bootstrap::default();
     directory.interpret(
@@ -122,13 +122,10 @@ impl EffectInterpreter<usize, usize, usize, usize> for ActivationCounter {
 fn many_independent_entities_progress_across_shards() {
     const THREADS: usize = 8;
     const PER_THREAD: usize = 500;
-    let directory = Arc::new(
-        Directory::new(DirectoryConfig {
-            shards: NonZeroUsize::new(64).unwrap(),
-            activation_waiters: NonZeroUsize::MIN,
-        })
-        .unwrap(),
-    );
+    let directory = Arc::new(Directory::new(
+        DirectoryConfig::new(NonZeroUsize::new(64).unwrap(), NonZeroUsize::MIN)
+            .expect("valid directory limits"),
+    ));
     let interpreter = Arc::new(ActivationCounter(AtomicUsize::new(0)));
     let threads: Vec<_> = (0..THREADS)
         .map(|worker| {
