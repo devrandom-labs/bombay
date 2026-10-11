@@ -1,6 +1,6 @@
 use crate::address::MailAddr;
 use crate::entity::{EntityAdmission, EntityDefinition, NativeEntityHost};
-use crate::local::children::{ChildBindingAt, CreationBinding};
+use crate::local::children::{ChildAuthority, ChildBindingAt};
 use crate::local::effects::ApplicationCapabilities;
 use crate::local::endpoint::{ExtractLocalEndpoint, InstalledActor};
 use crate::topology::Hosts;
@@ -488,9 +488,9 @@ where
                     .expect("live child bindings remain installed")
                     .creation(delivery.creation)
                 {
-                    Some(CreationBinding::Established { endpoint, .. }) => endpoint.clone(),
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
-                        let prerequisite = CreationCorrelation::new(delivery.creation);
+                    Some(ChildAuthority::Established { endpoint, .. }) => endpoint.clone(),
+                    Some(ChildAuthority::Unavailable(correlation)) => {
+                        let prerequisite = CreationCorrelation::new(correlation);
                         break 'settlement ItemSettlement::Blocked {
                             item: delivery,
                             prerequisite,
@@ -560,9 +560,9 @@ where
                     .expect("live child bindings remain installed")
                     .creation(input.creation)
                 {
-                    Some(CreationBinding::Established { control, .. }) => control.clone(),
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
-                        let prerequisite = CreationCorrelation::new(input.creation);
+                    Some(ChildAuthority::Established { control, .. }) => control.clone(),
+                    Some(ChildAuthority::Unavailable(correlation)) => {
+                        let prerequisite = CreationCorrelation::new(correlation);
                         break 'settlement ItemSettlement::Blocked {
                             item: input,
                             prerequisite,
@@ -612,7 +612,7 @@ where
         ChildInputReason,
         Never,
     > {
-        let Some(CreationBinding::Established {
+        let Some(ChildAuthority::Established {
             endpoint, control, ..
         }) = self
             .child_bindings

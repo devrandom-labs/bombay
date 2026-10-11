@@ -1167,8 +1167,6 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
         .pop()
         .expect("the native payload has one runtime owner");
     let ChildFailure::InitializationPanicked {
-        id,
-        kind,
         origin: child_origin,
         payload,
         additional_failures: initialization_additional_failures,
@@ -1181,8 +1179,8 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
     assert!(initialization_additional_failures.is_empty());
     assert!(initialization_terminal_report.is_none());
     assert!(initialization_retirement_failures.is_empty());
-    assert_eq!(id, child_id);
-    assert_eq!(kind, CreationKind::Birth);
+    assert_eq!(child_origin.creation_id(), child_id);
+    assert_eq!(child_origin.creation_kind(), CreationKind::Birth);
     let child_origin: ChildOrigin<PanicParent, PanicParentChildrenChild> =
         child_origin.into_declared_child();
     assert_eq!(child_origin.nonce(), route);

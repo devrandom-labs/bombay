@@ -1,6 +1,6 @@
 use crate::address::MailAddr;
 use crate::launch::ActorSpace;
-use crate::local::children::{ChildBindingAt, CreationBinding};
+use crate::local::children::{ChildAuthority, ChildBindingAt};
 use crate::local::effects::ApplicationCapabilities;
 use crate::local::endpoint::{ActorRef, InstalledActor, request_actor_shutdown};
 use crate::observe::{Observation, ObservationFuture};
@@ -68,9 +68,8 @@ where
                     .expect("live child bindings remain installed")
                     .creation(request.creation)
                 {
-                    Some(CreationBinding::Established { endpoint, kind, .. }) => {
+                    Some(ChildAuthority::Established { endpoint, kind, .. }) => {
                         let address = endpoint.address();
-                        let kind = *kind;
                         self.inject_control_event::<_, Path>(CreationResolved::installed(
                             request.creation,
                             kind,
@@ -78,12 +77,10 @@ where
                         ));
                         ItemSettlement::Accepted(())
                     }
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
-                        ItemSettlement::Blocked {
-                            prerequisite: CreationCorrelation::new(request.creation),
-                            item: request,
-                        }
-                    }
+                    Some(ChildAuthority::Unavailable(correlation)) => ItemSettlement::Blocked {
+                        prerequisite: CreationCorrelation::new(correlation),
+                        item: request,
+                    },
                     None => ItemSettlement::Corrupt {
                         item: request,
                         fault: InterpreterFault::MissingCapability,
@@ -134,26 +131,23 @@ where
                     .expect("live child bindings remain installed")
                     .creation(request.creation)
                 {
-                    Some(CreationBinding::Established {
+                    Some(ChildAuthority::Established {
                         endpoint,
                         control,
                         kind,
-                        ..
                     }) => {
                         let actor = EstablishedActor::<Child>::issued(InstalledActor::new(
                             endpoint.clone(),
                             control.clone(),
                         ));
-                        let child = CommittedChild::new(request.creation, *kind, actor);
+                        let child = CommittedChild::new(request.creation, kind, actor);
                         self.inject_control_event::<_, Path>(EstablishedCreation::installed(child));
                         ItemSettlement::Accepted(())
                     }
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
-                        ItemSettlement::Blocked {
-                            prerequisite: CreationCorrelation::new(request.creation),
-                            item: request,
-                        }
-                    }
+                    Some(ChildAuthority::Unavailable(correlation)) => ItemSettlement::Blocked {
+                        prerequisite: CreationCorrelation::new(correlation),
+                        item: request,
+                    },
                     None => ItemSettlement::Corrupt {
                         item: request,
                         fault: InterpreterFault::MissingCapability,
@@ -250,10 +244,10 @@ where
                     .expect("live child bindings remain installed")
                     .creation(request.child)
                 {
-                    Some(CreationBinding::Established { endpoint, .. }) => endpoint.clone(),
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
+                    Some(ChildAuthority::Established { endpoint, .. }) => endpoint.clone(),
+                    Some(ChildAuthority::Unavailable(correlation)) => {
                         break 'settlement ItemSettlement::Blocked {
-                            prerequisite: CreationCorrelation::new(request.child),
+                            prerequisite: CreationCorrelation::new(correlation),
                             item: request,
                         };
                     }
@@ -311,12 +305,12 @@ where
                     .expect("live child bindings remain installed")
                     .creation(request.child)
                 {
-                    Some(CreationBinding::Established {
+                    Some(ChildAuthority::Established {
                         endpoint, control, ..
                     }) => (endpoint.clone(), control.clone()),
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
+                    Some(ChildAuthority::Unavailable(correlation)) => {
                         break 'settlement ItemSettlement::Blocked {
-                            prerequisite: CreationCorrelation::new(request.child),
+                            prerequisite: CreationCorrelation::new(correlation),
                             item: request,
                         };
                     }

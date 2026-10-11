@@ -3,9 +3,9 @@ use crate::local::children::{ChildOriginAt, StructuralOrigins};
 use crate::terminal::ChildOrigin;
 use behavior::{
     Actions, Behavior, BehaviorBase, BirthMode, BirthNodeAppend, Births, ChildCons, ChildHead,
-    ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences, ChildProduct, ChildTail,
-    Children, CreationId, CreationSequence, Creations, Never, NoBirths, NoChildren, Protocol,
-    RetirementBirths,
+    ChildOccurrenceMember, ChildOccurrenceProduct, ChildOccurrenceShape, ChildOccurrences,
+    ChildProduct, ChildTail, Children, CreationId, CreationKind, CreationSequence, Creations,
+    Never, NoBirths, NoChildren, Protocol, RetirementBirths,
 };
 use core::fmt;
 use core::marker::PhantomData;
@@ -259,19 +259,23 @@ where
 
 impl ChildOccurrenceShape for RootTerminalOriginMapper {
     type Empty = NoRootTerminalOrigins;
-    type Member<Position, Child: Behavior, Tail> = RootTerminalOrigin<Child, Tail>;
+}
+impl<Position, Child: Behavior, Tail> ChildOccurrenceMember<Position, Child, Tail>
+    for RootTerminalOriginMapper
+{
+    type Member = RootTerminalOrigin<Child, Tail>;
 }
 
 pub(in crate::application) trait AppendedChildOriginAt<Target, Absolute, Root, Child: Behavior> {
     type Origin: Send + 'static;
 
-    fn origin(address: MailAddr, nonce: u64) -> Self::Origin;
+    fn origin(address: MailAddr, nonce: u64, id: CreationId, kind: CreationKind) -> Self::Origin;
 }
 
 pub(in crate::application) trait DeclaredChildOriginAt<Target, Root, Child: Behavior> {
     type Origin: Send + 'static;
 
-    fn origin(address: MailAddr, nonce: u64) -> Self::Origin;
+    fn origin(address: MailAddr, nonce: u64, id: CreationId, kind: CreationKind) -> Self::Origin;
 }
 
 impl<Members, Target, Absolute, Root, Child: Behavior>
@@ -282,8 +286,8 @@ where
 {
     type Origin = Members::Origin;
 
-    fn origin(address: MailAddr, nonce: u64) -> Self::Origin {
-        Members::origin(address, nonce)
+    fn origin(address: MailAddr, nonce: u64, id: CreationId, kind: CreationKind) -> Self::Origin {
+        Members::origin(address, nonce, id, kind)
     }
 }
 
@@ -296,8 +300,8 @@ where
 {
     type Origin = ChildOrigin<Root::Base, Absolute>;
 
-    fn origin(address: MailAddr, nonce: u64) -> Self::Origin {
-        ChildOrigin::new(address, nonce)
+    fn origin(address: MailAddr, nonce: u64, id: CreationId, kind: CreationKind) -> Self::Origin {
+        ChildOrigin::new(address, nonce, id, kind)
     }
 }
 
@@ -314,9 +318,9 @@ where
         Child,
     >>::Origin;
 
-    fn origin(address: MailAddr, nonce: u64) -> Self::Origin {
+    fn origin(address: MailAddr, nonce: u64, id: CreationId, kind: CreationKind) -> Self::Origin {
         <AppendedOrigins<Rest, Members> as
-            AppendedChildOriginAt<Relative, Absolute, Root, Child>>::origin(address, nonce)
+            AppendedChildOriginAt<Relative, Absolute, Root, Child>>::origin(address, nonce, id, kind)
     }
 }
 
@@ -325,8 +329,8 @@ impl<Role: 'static, Child: Behavior, Tail, Root: 'static>
 {
     type Origin = ChildOrigin<Root, Role>;
 
-    fn origin(address: MailAddr, nonce: u64) -> Self::Origin {
-        ChildOrigin::new(address, nonce)
+    fn origin(address: MailAddr, nonce: u64, id: CreationId, kind: CreationKind) -> Self::Origin {
+        ChildOrigin::new(address, nonce, id, kind)
     }
 }
 
@@ -337,8 +341,8 @@ where
 {
     type Origin = Tail::Origin;
 
-    fn origin(address: MailAddr, nonce: u64) -> Self::Origin {
-        Tail::origin(address, nonce)
+    fn origin(address: MailAddr, nonce: u64, id: CreationId, kind: CreationKind) -> Self::Origin {
+        Tail::origin(address, nonce, id, kind)
     }
 }
 
@@ -357,13 +361,13 @@ where
         Child,
     >>::Origin;
 
-    fn origin(address: MailAddr, nonce: u64) -> Self::Origin {
+    fn origin(address: MailAddr, nonce: u64, id: CreationId, kind: CreationKind) -> Self::Origin {
         <AppendedOrigins<RootOriginProduct<Root>, Members> as AppendedChildOriginAt<
             Position,
             Position,
             Root,
             Child,
-        >>::origin(address, nonce)
+        >>::origin(address, nonce, id, kind)
     }
 }
 

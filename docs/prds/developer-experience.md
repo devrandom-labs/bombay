@@ -64,6 +64,26 @@ ownership. Actual locked registry debug and optimized executions both fail; stri
 Clippy and formatting pass. The paired owning PRD contains its law and aggregate
 checkpoint.
 
+The retained runtime batch repairs that original witness. Its pre-edit
+laws and vetoes live in the owning PRD: parent-owned startup receipt/control/join
+before await; complete native failure without invented authority; read-only
+binding access independent of raw payload storage; and exact creation ID/kind
+in every terminal child origin. Reuse the existing creation/receiving kernels,
+ordered retirement, occurrence walk and origin maps. Expected seven existing
+runtime modules; the pre-edit estimate was production +690/-170/net520 and
+tests +863/-39/net824. The final scoped measurements are production
++655/-175/net480 and tests +922/-44/net878;
+zero new public types or production modules. CreationBinding changes 3→5,
+startup custody Raw | Projection, and ChildFailure changes 4→6. The paired
+Core storage projection and unavailable receipt have independently failing
+consumer witnesses; they are required development dependencies of this batch.
+Private combined debug/optimized failure, cancellation, replay, sibling,
+delivery and provenance tests pass. The actual runtime passes all 297 library
+tests and strict library/test Clippy using temporary command-line patches to
+the paired owners. The registry lockfile remains unchanged; published owner
+delivery, actual optimized verification and full repository gates remain open. No catalogue migration or publication follows
+from these focused results.
+
 The owning PRD maps all 270 backlog requirement rows and all 100 failure
 records, seven executable examples, 45 catalogue entries and 19 inventoried
 actor-owned capabilities. Presence in that map does not certify an execution

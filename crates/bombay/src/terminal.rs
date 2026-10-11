@@ -76,11 +76,13 @@ impl<Owner> PartialEq for RootOrigin<Owner> {
 
 impl<Owner> Eq for RootOrigin<Owner> {}
 
-/// Exact allocated address and creator-local nonce of a child retirement.
+/// Exact allocated address, creator-local route and creation provenance of a child retirement.
 /// The owner and role preserve the statically declared application meaning.
 pub struct ChildOrigin<Owner, Role> {
     address: MailAddr,
     nonce: u64,
+    creation_id: CreationId,
+    creation_kind: CreationKind,
     declaration: PhantomData<fn() -> (Owner, Role)>,
 }
 
@@ -93,10 +95,17 @@ impl<Owner, Role> Clone for ChildOrigin<Owner, Role> {
 }
 
 impl<Owner, Role> ChildOrigin<Owner, Role> {
-    pub(crate) const fn new(address: MailAddr, nonce: u64) -> Self {
+    pub(crate) const fn new(
+        address: MailAddr,
+        nonce: u64,
+        creation_id: CreationId,
+        creation_kind: CreationKind,
+    ) -> Self {
         Self {
             address,
             nonce,
+            creation_id,
+            creation_kind,
             declaration: PhantomData,
         }
     }
@@ -111,6 +120,17 @@ impl<Owner, Role> ChildOrigin<Owner, Role> {
     #[must_use]
     pub const fn nonce(&self) -> u64 {
         self.nonce
+    }
+    /// Return the original creator-local identity of this child creation.
+    #[must_use]
+    pub const fn creation_id(&self) -> CreationId {
+        self.creation_id
+    }
+
+    /// Return the explicit original birth or replacement provenance.
+    #[must_use]
+    pub const fn creation_kind(&self) -> CreationKind {
+        self.creation_kind
     }
 }
 
@@ -128,6 +148,8 @@ where
         ChildOrigin {
             address: self.address,
             nonce: self.nonce,
+            creation_id: self.creation_id,
+            creation_kind: self.creation_kind,
             declaration: PhantomData,
         }
     }
@@ -139,13 +161,18 @@ impl<Owner, Role> core::fmt::Debug for ChildOrigin<Owner, Role> {
             .debug_struct("ChildOrigin")
             .field("address", &self.address)
             .field("nonce", &self.nonce)
+            .field("creation_id", &self.creation_id)
+            .field("creation_kind", &self.creation_kind)
             .finish_non_exhaustive()
     }
 }
 
 impl<Owner, Role> PartialEq for ChildOrigin<Owner, Role> {
     fn eq(&self, other: &Self) -> bool {
-        self.address == other.address && self.nonce == other.nonce
+        self.address == other.address
+            && self.nonce == other.nonce
+            && self.creation_id == other.creation_id
+            && self.creation_kind == other.creation_kind
     }
 }
 
@@ -166,8 +193,6 @@ where
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
     InitializationPanicked {
-        id: CreationId,
-        kind: CreationKind,
         origin: Origin,
         payload: Box<dyn Any + Send>,
         additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
@@ -176,24 +201,26 @@ where
     },
     /// Startup cleanup owns independent available facts after Core received the child input.
     StartupRetirementFailed {
-        id: CreationId,
-        kind: CreationKind,
         origin: Origin,
         primary_failure: Option<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
         additional_failures: Vec<DriverError<Child::Error, LocalActivationRejection<MailAddr>>>,
         terminal_report: Option<Result<(), Termination<MailAddr>>>,
         retirement_failures: Vec<Box<dyn Any + Send>>,
     },
+    StartupActorTaskFailed {
+        origin: Origin,
+        error: JoinError,
+    },
+    StartupProjectionTaskFailed {
+        origin: Origin,
+        error: JoinError,
+    },
     ActorTaskFailed {
-        id: CreationId,
-        kind: CreationKind,
         origin: Origin,
         actor: EstablishedActor<Child>,
         error: JoinError,
     },
     ProjectionTaskFailed {
-        id: CreationId,
-        kind: CreationKind,
         origin: Origin,
         actor: EstablishedActor<Child>,
         error: JoinError,
@@ -207,45 +234,31 @@ where
 {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InitializationPanicked {
-                id, kind, origin, ..
-            } => formatter
+            Self::InitializationPanicked { origin, .. } => formatter
                 .debug_struct("InitializationPanicked")
-                .field("id", id)
-                .field("kind", kind)
                 .field("origin", origin)
                 .finish_non_exhaustive(),
-            Self::StartupRetirementFailed {
-                id, kind, origin, ..
-            } => formatter
+            Self::StartupRetirementFailed { origin, .. } => formatter
                 .debug_struct("StartupRetirementFailed")
-                .field("id", id)
-                .field("kind", kind)
                 .field("origin", origin)
                 .finish_non_exhaustive(),
-            Self::ActorTaskFailed {
-                id,
-                kind,
-                origin,
-                error,
-                ..
-            } => formatter
-                .debug_struct("ActorTaskFailed")
-                .field("id", id)
-                .field("kind", kind)
+            Self::StartupActorTaskFailed { origin, error } => formatter
+                .debug_struct("StartupActorTaskFailed")
                 .field("origin", origin)
                 .field("error", error)
                 .finish_non_exhaustive(),
-            Self::ProjectionTaskFailed {
-                id,
-                kind,
-                origin,
-                error,
-                ..
-            } => formatter
+            Self::StartupProjectionTaskFailed { origin, error } => formatter
+                .debug_struct("StartupProjectionTaskFailed")
+                .field("origin", origin)
+                .field("error", error)
+                .finish_non_exhaustive(),
+            Self::ActorTaskFailed { origin, error, .. } => formatter
+                .debug_struct("ActorTaskFailed")
+                .field("origin", origin)
+                .field("error", error)
+                .finish_non_exhaustive(),
+            Self::ProjectionTaskFailed { origin, error, .. } => formatter
                 .debug_struct("ProjectionTaskFailed")
-                .field("id", id)
-                .field("kind", kind)
                 .field("origin", origin)
                 .field("error", error)
                 .finish_non_exhaustive(),
@@ -1700,13 +1713,111 @@ where
 mod tests {
     use super::*;
 
+    use core::ptr;
+    use std::future;
+    use std::panic::resume_unwind;
+    use tokio::runtime::Builder;
+
+    struct StartupChild;
+    #[crate::actor(message = behavior::Never)]
+    impl StartupChild {}
+
+    #[test]
+    fn startup_actor_task_failure_retains_exact_native_error_without_endpoint_authority() {
+        let runtime = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("one native actor task executor");
+        let error = runtime.block_on(async {
+            let task = tokio::spawn(future::pending::<()>());
+            task.abort();
+            task.await.expect_err("original native task was cancelled")
+        });
+        let original_task = error.id();
+        let mut sequence = behavior::CreationSequence::new();
+        let id = sequence.issue().expect("one fresh creation");
+        let previous = sequence.issue().expect("one explicit predecessor");
+        let origin = ChildOrigin::<Root, behavior::ChildHead>::new(
+            MailAddr(17),
+            23,
+            id,
+            CreationKind::replacement(previous),
+        );
+        let failure = ChildFailure::<_, StartupChild>::StartupActorTaskFailed { origin, error };
+        let ChildFailure::StartupActorTaskFailed {
+            origin: received_origin,
+            error,
+        } = failure
+        else {
+            panic!("original startup task cause survives");
+        };
+        assert_eq!(received_origin.creation_id(), id);
+        assert_eq!(
+            received_origin.creation_kind(),
+            behavior::CreationKind::replacement(previous)
+        );
+        assert_eq!(received_origin, origin);
+        assert_eq!(error.id(), original_task);
+        assert!(error.is_cancelled());
+    }
+
+    #[test]
+    fn startup_projection_task_failure_returns_original_native_payload_without_endpoint_authority()
+    {
+        let runtime = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("one native projection executor");
+        let payload = Box::new(String::from("original startup projection cause"));
+        let original_allocation = ptr::from_ref(payload.as_ref()).addr();
+        let error = runtime.block_on(async move {
+            let task = tokio::spawn(async move {
+                resume_unwind(payload);
+            });
+            task.await.expect_err("original projector failed")
+        });
+        let original_task = error.id();
+        let mut sequence = behavior::CreationSequence::new();
+        let id = sequence.issue().expect("one fresh creation");
+        let origin = ChildOrigin::<Root, behavior::ChildHead>::new(
+            MailAddr(29),
+            31,
+            id,
+            CreationKind::Birth,
+        );
+        let failure =
+            ChildFailure::<_, StartupChild>::StartupProjectionTaskFailed { origin, error };
+        let ChildFailure::StartupProjectionTaskFailed {
+            origin: received_origin,
+            error,
+        } = failure
+        else {
+            panic!("original startup projection cause survives");
+        };
+        assert_eq!(received_origin.creation_id(), id);
+        assert_eq!(
+            received_origin.creation_kind(),
+            behavior::CreationKind::Birth
+        );
+        assert_eq!(received_origin, origin);
+        assert_eq!(error.id(), original_task);
+        let payload = error.into_panic();
+        assert_eq!(
+            ptr::from_ref(payload.as_ref()).cast::<()>().addr(),
+            original_allocation
+        );
+    }
+
     struct Root;
     struct ChildRole;
 
     #[test]
     fn root_and_child_origins_keep_distinct_exact_payloads() {
+        let id = behavior::CreationSequence::new()
+            .issue()
+            .expect("one exact origin identity");
         let root = RootOrigin::<Root>::new(MailAddr(1));
-        let child = ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 13);
+        let child = ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 13, id, CreationKind::Birth);
         assert_eq!(root.address(), MailAddr(1));
         assert_eq!(child.address(), MailAddr(7));
         assert_eq!(child.nonce(), 13);
@@ -1727,14 +1838,34 @@ mod tests {
 
     #[test]
     fn child_origin_identity_and_diagnostic_preserve_address_and_nonce() {
-        let first = ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 13);
-        let same = ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 13);
-        let other_address = ChildOrigin::<Root, ChildRole>::new(MailAddr(8), 13);
-        let other_nonce = ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 14);
+        let id = behavior::CreationSequence::new()
+            .issue()
+            .expect("one exact origin identity");
+        let first = ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 13, id, CreationKind::Birth);
+        let same = ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 13, id, CreationKind::Birth);
+        let other_address =
+            ChildOrigin::<Root, ChildRole>::new(MailAddr(8), 13, id, CreationKind::Birth);
+        let other_nonce =
+            ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 14, id, CreationKind::Birth);
 
         assert_eq!(first, same);
         assert_ne!(first, other_address);
         assert_ne!(first, other_nonce);
+        let mut different_ids = behavior::CreationSequence::new();
+        let _ = different_ids.issue().expect("first correlation");
+        let other_id = different_ids.issue().expect("different correlation");
+        let same_route_other_id =
+            ChildOrigin::<Root, ChildRole>::new(MailAddr(7), 13, other_id, CreationKind::Birth);
+        let same_route_other_kind = ChildOrigin::<Root, ChildRole>::new(
+            MailAddr(7),
+            13,
+            id,
+            CreationKind::replacement(other_id),
+        );
+        assert_ne!(first, same_route_other_id);
+        assert_ne!(first, same_route_other_kind);
+        assert_eq!(first.creation_id(), id);
+        assert_eq!(first.creation_kind(), CreationKind::Birth);
         let diagnostic = format!("{first:?}");
         assert!(diagnostic.contains("ChildOrigin"));
         assert!(diagnostic.contains("MailAddr(7)"));

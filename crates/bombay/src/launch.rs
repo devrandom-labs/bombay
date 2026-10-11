@@ -211,7 +211,7 @@ where
         clippy::too_many_lines,
         reason = "one exhaustive owning phase/failure conversion preserves every original typed field; forwarding functions or aliases would only relocate the same conservation obligation"
     )]
-    fn from_local(outcome: LocalOutcome<B, Descendants>) -> Self {
+    pub(crate) fn from_local(outcome: LocalOutcome<B, Descendants>) -> Self {
         let tasks = match &outcome {
             ActorExecutionOutcome::BehaviorFailed {
                 residual:
@@ -651,6 +651,10 @@ where
     B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
+    pub(crate) fn request_retirement(&mut self) {
+        self.cancellation.request();
+    }
+
     /// Acquire this exact actor result in the caller's destination before
     /// disposing the join operation. Empty or coexisting slots stay unchanged.
     pub(crate) async fn receive_finish(
@@ -846,6 +850,7 @@ pub type ActorSpace<P> = AddressSpace<<P as Protocol>::Addr, ActorRef<P>>;
     clippy::result_large_err,
     reason = "Return the complete original actor rejection by value without adding allocation."
 )]
+#[cfg(test)]
 pub(crate) async fn spawn_owned_with<B, I>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -879,6 +884,59 @@ where
         make_interpreter,
     )
     .await
+}
+
+#[expect(
+    clippy::type_complexity,
+    reason = "startup transfers the original private receipt, actor control and typed native task together"
+)]
+pub(crate) fn spawn_owned_execution<B, I>(
+    addresses: ActorSpace<B::Protocol>,
+    config: Config,
+    address: MailAddr,
+    behavior: B,
+    make_interpreter: impl FnOnce(
+        communication::ControlSender<B::Event>,
+        LocalTerminalReports,
+        LocalTimers<B::Event>,
+        TerminationObservations<MailAddr, B::Event>,
+    ) -> I,
+) -> (
+    oneshot::Receiver<(ActorRef<B::Protocol>, oneshot::Sender<()>)>,
+    communication::ControlSender<B::Event>,
+    OwnedTask<B, I::Retired>,
+)
+where
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    B::Event: Send + 'static,
+    BehaviorMessage<B>: Send + 'static,
+    B::Sends: Send + 'static,
+    B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
+    <B::Birth as BirthMode>::Child: Send + 'static,
+    I: CommitActions<B> + Send + 'static,
+    crate::local::effects::ActionSettlementOf<B>: ClassifySettlement + Send,
+    I::Retired: Send + 'static,
+{
+    let (cancellation, startup, control, task) =
+        spawn_local_execution::<B, I, StandardIngress, _, _, _>(
+            addresses,
+            config,
+            address,
+            behavior,
+            make_interpreter,
+            |environment| {
+                let (commitment, committed) = oneshot::channel();
+                let control = environment.control();
+                (
+                    environment.with_private_commitment(commitment),
+                    committed,
+                    control,
+                )
+            },
+        );
+    (startup, control, OwnedTask { task, cancellation })
 }
 
 #[cfg(test)]
@@ -2044,14 +2102,22 @@ mod tests {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one complete projection trace observes original actor, provenance and descendant custody without splitting their ownership oracle"
+    )]
     async fn projected_child_retirement_preserves_origin_state_and_descendants() {
         let mut descendant_creations = CreationSequence::new();
-        let descendant_nonce = descendant_creations
+        let descendant_id = descendant_creations
             .issue()
-            .expect("the descendant's first creator-local ID exists")
-            .get();
-        let descendant_origin =
-            ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(2), descendant_nonce);
+            .expect("the descendant's first creator-local ID exists");
+        let descendant_nonce = descendant_id.get();
+        let descendant_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(
+            MailAddr(2),
+            descendant_nonce,
+            descendant_id,
+            behavior::CreationKind::Birth,
+        );
         let descendant = ProbeTerminal::Probe {
             origin: descendant_origin,
             terminal: ActorRetirement::Cancelled,
@@ -2071,11 +2137,16 @@ mod tests {
         child.acknowledge_binding();
         assert!(child.binding.is_none());
         let mut child_creations = CreationSequence::new();
-        let child_nonce = child_creations
+        let child_id = child_creations
             .issue()
-            .expect("the child's first creator-local ID exists")
-            .get();
-        let child_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(1), child_nonce);
+            .expect("the child's first creator-local ID exists");
+        let child_nonce = child_id.get();
+        let child_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(
+            MailAddr(1),
+            child_nonce,
+            child_id,
+            behavior::CreationKind::Birth,
+        );
 
         let terminal = ProjectedTask::project(child.task, child_origin)
             .finish()
