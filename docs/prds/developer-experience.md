@@ -83,13 +83,17 @@ and all exact-head CI including strict mutation passing. Publication and Bombay
 adoption remain open; current dependencies are unchanged.
 
 The additional custody contracts are in stacked draft
-[PR #90](https://github.com/devrandom-labs/bombay-behavior/pull/90), head 7a85639:
-all ten native owner gates, 959 tests, 112 doctests and archive preflight pass.
+[PR #90](https://github.com/devrandom-labs/bombay-behavior/pull/90), head 66de825:
+all ten native owner gates, 961 tests, 112 doctests and archive preflight pass.
 Against the production-equivalent packaged crates this worktree has 562 tests
 passing, one failing inferred-assembly test and one skipped test; workspace
-Clippy and its doctest pass. Exact-head CI, registry delivery and inferred
-assembly remain open. The owning PRD contains the direct input-recovery
-regressions and their independent debug/optimized inversions.
+Clippy and its doctest pass. Previous-head CI passed the API audit, Linux Nix
+and eight mutation shards; strict aggregation rejected two unclassified,
+uncompilable Default mutations. Both classifications retain the typed vetoes,
+existing mutation floors and exclusions. Exact-head
+[CI rerun](https://github.com/devrandom-labs/bombay-behavior/actions/runs/38116165593),
+registry delivery and inferred assembly remain open. The owning PRD contains
+the direct input-recovery regressions and independent debug/optimized inversions.
 
 The fresh authoritative `102fc2d` Nix check has four native passes and seventeen
 failures against the published Behavior/Actors 0.23.0 API, before inferred caller
