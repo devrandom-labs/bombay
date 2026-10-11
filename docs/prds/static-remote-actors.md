@@ -12,6 +12,19 @@ and oracle design can continue. AUTH1 remains
 `candidate`; NET1 remains `blocked`. This document is a specification, not a
 claim that its proposed API compiles or that its acceptance witnesses pass.
 
+Current readiness (2026-10-10): reviewed local joined-retirement, exact native
+nonwaiting admission, child shutdown and held root-work prerequisites have
+merged through PRs330–334. PR335 delivered ordinary Application verification
+composition and exact native payload/proof research; its full feature witnesses
+remain open. The nine controlled dependency copies are published; top-level
+1.10.2's Unicode repair is merged in controlled PR5, passed exact-main CI and
+is published and verified through a registry-only consumer. Wake custody PR336
+merged after independent review and all six CI checks, including native TLS in
+both profiles and the full Nix gate.
+Actual two-Application counter integration and interest retirement correction
+are independent isolated workstreams. Historical observations below describe
+their recorded source stage and must not replace this current readiness.
+
 **Specification audit:** the scope and proof obligations below supersede the
 initial draft's aggregate completion claims. [Acceptance](static-remote-actors/acceptance.md)
 maps every selected inventory ID to an observable oracle and falsifier. All
@@ -503,6 +516,19 @@ restarts with newly initialized state and a new exact target, without a durable
 deduplication or recovery claim.
 
 ## Fresh selected-contract verification
+
+Current source stage: main2104559072b4321ab55beaea50dfa3a805a6723e,
+root lock936110853718f053d4eda91d6b37db0a87e46385e20ef68add895b4491a06152.
+Behavior/Actors/Macros d69f992b and Timers13e884da remain the exact selected
+owners; Communication is actual registry0.1.4. Observe and Bombay runtime source
+include reviewed delivered retirement/admission changes, so their initial audit
+byte-equality observations below are historical. Current owner-source proof hashes
+Application interface/execution, installed endpoint, Environment, delivery,
+launch, retirement and Entity family. The final .2 transport research lock and
+actual registry archive are recorded separately; root production still has no
+Zenoh dependency. Initial baseline evidence below does not replace fresh selected
+source or establish execution of current feature witnesses.
+
 
 Original audit baseline: Bombay `de09609e76cdcc6892ccf0e8f7cf3df21834714b`,
 clean worktree before this documentation task. Before the first commit, the
@@ -7183,3 +7209,405 @@ manifests, compiler diagnostics and exact added test against the already fully
 verified combined worktree; base73f8a12 tree equals actual main8cb82e5 tree.
 No repeat or new source claim is inferred from moving the branch. Required
 remote CI/review and actual merge remain outstanding for this three-path patch.
+
+### Counter first compilation privacy checkpoint
+
+First lowered counter draft compiles far enough to report exactly two E0446
+privacy errors: generated pub(crate) Counter/Client send products expose private
+CounterReply/RawRequest types inside the private module. This is an incorrect
+copied root-test visibility spelling, not a new domain/composition gap.
+Automatically select inherited private visibility for both existing generated
+send products, matching the preselected private fixture protocols. Do not widen
+raw DTOs/receipt fields, add wrappers/aliases, change the macro or public API.
+/tmp/bombay-counter-initial-debug-build.log retains actual diagnostics; no
+positive compilation or static denial credit yet. Private NoBirths roots reuse
+existing run_with::<Never> composition instead of an unnecessary child-result
+wrapper. Actual missing-host errors retain original TryCurrentError until
+Session.close; cold inputs discharge explicitly only after that close.
+
+Current first draft1078 Rust lines plus native bin60 and controller70 is1208
+net test lines within1400, before final custody assertions and inversions.
+Verification_service sourceabc2659e remains byte-exact. Counter agent releases
+the controlled Cargo slot for expanded interest original-source baselines;
+independent source edits may continue, compilation resumes only after handoff.
+This later evidence remains outside submitted wake PR336 head6af82e1.
+
+### Counter custody and interest setup corrections before execution
+
+Automatically select retaining actual incoming Queries/Samples and caller reply
+Samples in separate native Work fields through Session.close. Newly owned parse
+buffers are copies; only same-process moves preserve their allocation identity.
+Retain an actual TrySendError<CounterCommand> on refusal rather than dropping its
+rejected command before cleanup. Retain emitted/processed Users and caller
+acknowledgements in Work receiving fields; compare origins, request identifiers
+and observed acknowledgements after native results, both notification products
+and Session.close. Provider verification and routing remain pre-admission.
+These corrections add no type, authority, dependency or production policy.
+
+Select one private request_ingress function in the existing native bin, used by
+both old and counter recipients, replacing the byte-equivalent declaration
+duplicate. Existing FIFO, locality and congestion settings remain exact.
+Rename the ordinary exhaustive native result projection completed_actor to
+expose its domain. It validates every residual field before explicit discharge;
+no wrapper or alternate result contract. Forecast custody/assertion additions
+55–85 lines and duplicate removal about26, from actual1201 net, below warning1300
+and ceiling1400. All old16 controls still require rerunning.
+
+Expanded interest baseline has no new nine-law or optimized credit: original
+three debug finalization controls passed, Client wildcard passed, and Peer
+wildcard failed at setup in Hat::Uninit.region before resource assertions.
+Peer Hat::new creates Uninit; owning Gateway.init_hats requires the ordinary
+HarnessBuilder Runtime initialization. Automatically remove start_runtime(false)
+only from the three expanded remote-matrix controllers and reuse its existing
+default Runtime with empty listen/connect endpoints and disabled multicast,
+adminspace/plugins and asynchronous tree computation. Keep original local replay
+without Runtime. Alternative manual hat initialization would duplicate owning
+setup and is rejected. No production/API/dependency/default changes; test source
+219→216. Excluded receipt remains interest-expanded-baseline-campaign.json.
+Run actual original controls and all nine failures plus two None controls in
+both profiles before selecting production correction. Resource agent owns the
+controlled Cargo lane until explicit handoff; counter source edits may proceed.
+
+### Expanded original interest laws and independent acceptance audit
+
+Initialized original-source campaign now executes both debug and optimized:
+existing finalization3/3 and wildcard None/replay2/2 pass first in each; all
+nine local/shared/disconnect deallocation regressions fail101 at their intended
+original-Weak custody assertion. Both real Client/Peer hats and KEYEXPRS/
+SUBSCRIBERS paths execute. Source216 lines SHA
+215ec62e51a8de078325e609727d2c499665ef310f623acff94cb37c7a7c85a6
+on actual main65e97beaf/package1.10.2; production and graph unchanged.
+initialized-baseline-campaign.json retains six actual commands, names/counts,
+source/artifacts and log hashes. Earlier Uninit setup and zero-match receipts
+are excluded. Resource Cargo lane explicitly released to counter integration.
+
+Independent read-only acceptance audit confirms every full R01–R25 remains
+open. Next replay integration needs separate actual mailbox-admission outcomes,
+receiver command trace and business balance, with a real same-user-lane barrier
+before terminal assertions. Balance alone cannot prove no duplicate admission.
+Required separate adverse cases: duplicate while pending; admitted request with
+lost reply then retry; same identity/different validly authenticated command;
+fresh proof or valid alternative JSON spelling; exact Full payload followed by
+known revoke/expiry; reservation surviving publication/wake uncertainty; valid
+authenticated wrong independently configured scope. Mutated bytes with an old
+proof test byte binding, not permission; duplicate replies test neither unique
+admission nor unique execution. These are planned assertions, not new API,
+replay retention, identity issuance or numeric limit decisions.
+
+Native QueryTarget::All/ConsolidationMode::None comparisons still require a
+future overlapping-responder falsifier before exact-recipient credit. Bounded
+pending originals, verifier work, replay memory, message/proof/name lengths,
+restart/session freshness and capacity-plus-one witnesses remain prerequisites.
+Resource deallocation repairs establish no quota. Preserve executable feature
+inversions and campaign receipts in repository/CI artifacts before full
+acceptance; temporary evidence paths alone do not satisfy durable evidence.
+
+### Exact-main successor publication and counter custody review
+
+Controlled exact-main run38087509710 passed on65e97beaf, including both-profile
+Unicode/declaration campaigns, actual successor archives and two executed Syn
+Miri tests. Full log SHA
+2978a9fb58d3687829636232a5595d054a5b2de63a551f40b6d7b3a5c62dd6f1
+is retained as successor-main-ci.log. Current-main and the owning successful
+GitHub check were rechecked before dispatching authorized publish workflow
+38089508115 on that exact source at2026-10-10T21:56:05Z. Publication remains
+unproved until actual release/registry receipts and registry-only consumer pass.
+
+Independent counter source review found real premature-disposal paths before
+any runtime credit: ingress declaration error skipped Session.close; by-value
+receiving shape denial replaced acquired native/notification/close facts; raw
+requests, Samples, outgoing commands and provider receipts entered retained
+vectors only after later fallible work. Fresh debug build passes with zero
+warnings, but compilation does not excuse these ownership defects.
+
+Automatically select standard control flow: declaration errors retain their
+original error in existing TransportReceipts beside actual Session.close;
+each acquired original enters its existing owning Work collection immediately,
+then later fallible code borrows it. For the fixture's healthy native shape,
+borrow the complete receiving tuple and acquired close result for an explicit
+post-close observational shape assertion before consuming the proved product.
+An unexpected native shape is a terminal fixture assertion failure after actual
+close, not a replacement actor verdict or an orderly-failure campaign credit.
+Its original tuple remains owned through that inspection; no generic error
+wrapper, erased receipt, public product or alternate retirement owner is added.
+Alternative retained error aggregation would invent a new fixture abstraction
+without establishing the later production error contract. Echo mismatch remains
+a concrete existing post-close control error on the normal native shape.
+Forecast30–55 additional lines from formatted1231, at most1286 below warning1300
+and ceiling1400. Repeat positive compilation before actual campaign/inversions.
+
+Concrete lowering refines that forecast before edits: retain recipient decoded
+RawRequests outside the fallible inner Work future until exact pop/try_send;
+retain each provider's pending ReplyReceipt in its own existing Vec until scope
+passes and the required constructor takes it; retain an actual rejected
+SendError<ClientCommand> on delivery failure. These are affine existing receiving
+lanes, not a provider-common envelope, cloned authority or new product/type.
+Borrowed parsed values cannot replace their original custody. Automatically
+select these necessary retained lanes over early disposal or a common wrapper.
+Revised correction70–105 from1231 forecasts1301–1336: explicitly crosses warning
+1300, remains within already selected1400 ceiling. No production/API/dependency
+growth. Final measurement must include all retained variants and static probes;
+do not broaden silently if1400 is exceeded. Echo must bypass admission and
+Counter Actions wait, return a valid known42 reply, and reach the independently
+named receiver native balance/trace mismatch after close, rather than a timeout
+or an earlier processed-reply shape assertion.
+
+### Successor registry publication and first actual counter comparison
+
+Authorized release38089508115 completed successfully on65e97beaf, with original
+primary publish exit0, registry-before404, then actual top1.10.2 upload at
+2026-10-10T21:58:48.874463Z. Registry checksum
+97d520b46cf4706e227f3880fd8c17eccaec5dbef2476124f4daad0915204b92
+matches actual retained artifact11683317086 and freshly downloaded registry
+bytes. Archive VCS is exact merged65e97beaf, with corrected resource source
+0780c09f; all eight unchanged dependency copies independently match their
+registered bytes/checksums and original e8248182 VCS. All nine are unyanked.
+successor-published-registry-proof.json retains complete receipts; publish log
+SHA3a44b24e9956e62d3b8a6c14eb9b72295406b94e38d0af8aec844b6ee9b1f8ad.
+The earlier local e7 candidate checksum is distinct and retains only its local
+packaging credit. Registry-only consumer was prepared as an exact copy without
+target cache or source override; verification and final research graph update
+remain gates.
+
+Corrected counter source is formatted1224 lines, plus bin67/controller61:
+1352 net, exceeding forecast1336 but within1400. First actual peer/query/record
+debug comparison passes: receiver41→42 with Increment/Read trace, original caller
+ReplyReceipts42/42 and complete both Application/native/notification/Session
+close products followed by process exits0. This still selects registered1.10.1
+for attributed finite-vector comparison only. Optimized control, other layouts/
+providers/transport operations, actual echo and static denials remain open.
+Automatically move the independent receiver native balance/trace mismatch before
+healthy-only pending-buffer emptiness assertions so deliberately retained
+unadmitted echo originals reach the named post-close processing oracle.
+Reordering assertions adds no transition/policy or new semantic mechanism.
+
+Registry-consumer selection before edit: use the existing published-copy
+configuration consumer unchanged except exact top version1.10.1→1.10.2;
+retain its prior lock and every other compatible complete package record.
+Cargo must resolve the real registry archive/checksum, with no path/Git/patch
+override. Verify normal and both existing maintainer configurations through
+pinned Nix, then select that same actual registered top archive in the counter
+research graph and rerun its affected composition. Rebuilding a source override
+would not establish normal installation and is rejected. No new crate, transport
+feature, public API or default. Coordinator owns both manifest/lock updates;
+controlled Cargo target remains exclusive with an explicit author-to-root handoff.
+
+### Bounded interest-retirement owner correction selected before production
+
+Automatically select the smallest native owner correction now that all nine
+original failing laws and five controls execute in both profiles. Blocker:
+finalized/disconnected native interest references are removed without invoking
+existing Resource::clean after their last owner retires, retaining resource-tree
+nodes/name bytes. Reuse actual dispatcher/hat ownership and its existing locks;
+no second registry, wrapper, quota, task, lock or unsafe mechanism.
+
+Expected production files: dispatcher/interests.rs holds the removed key-interest
+original, performs existing native unregister/northern routing, independently
+cleans the returned native original, lets that reference retire, then cleans
+the held key original even when unregister returns None; dispatcher/face.rs
+drains/cleans remaining remote key interests after hat retirement before face
+removal; broker/mod.rs and peer/mod.rs clear their existing local declaration
+owners then drain/clean their existing native remote-interest originals.
+Client hat stays untouched because it owns no inserted remote-interest store.
+No Option::or substitution between coexisting originals, broad tree sweep,
+cloned inventory, new public type, dependency or API. Existing callback/routing
+unwind uncertainty is preserved; this repair promises no rollback.
+
+Forecast25–40 net production Rust; hard stage ceiling50, CI additions≤8 and
+conservative authored test variants≤280 in the existing interest test file.
+Six paths including owning verify-release.sh, no new paths except project
+records. Automatically raise old functional controlled-production cap770→810:
+recorded758 less later Unicode3 plus maximum50 is805. Including historical
+documentation deletion, controlled net725−3+50 is772; root1250 plus that maximum
+is2022 within cumulative2200. No new public type/method; retained native owner
+code is changed rather than complemented by another abstraction.
+
+Before broadening, prove controls then all corrected9+None2 tests in both
+profiles, actual test-feature strict lint/fmt, and five separate omission
+inversions: final key cleanup, final native cleanup, disconnect key drain,
+broker native drain, peer native drain. Each must fail its intended independent
+custody law and restored controls. CI must execute top owning region tests with
+transport_tls,test and check that owning test profile; default TLS-only library
+commands cannot imply those tests ran. Coordinator alone integrates CI/manifests.
+Active-ID overwrite, quotas, real TLS reclamation and complete heap bounds remain
+separate prerequisites. Production source edits may proceed independently while
+counter/root own Cargo; verification waits for explicit slot handoff.
+
+### Wake witness reviewed and merged; next actual-main branch
+
+PR336 merged2104559072b4321ab55beaea50dfa3a805a6723e at
+2026-10-10T22:52:11Z after review5480915687 on exacthead6af82e1 and all
+six CI checks. Nix38088677433 passed44m7s with both existing bounded Driver/
+Observe fuzz campaigns; optional Observe Miri remains unexecuted. CodeQL and
+Deny checks passed. Actual Linux native artifacts11683206330/11683707355 each
+contain16 unique cases: twelve ordinary full close outcomes, four late caller
+exit−9 refusals, and exact opaque payload/proof custody. Ordinary completed
+cases independently show eight request and four reply proof observations;
+late-death observations retain separate uncertainty credit. No cryptographic or
+actor/replay proof is inferred. Full CI log SHA
+02ae881c85bdc30e01c6866f943a4078b68cda705d916baf4e20adde95b5c3a7,
+pr336-before-merge-proof.json and pr336-linux-native-proof.json retain evidence.
+Normal exact-head merge used no bypass. This delivers the wake test prerequisite,
+not full R08/R12 or the networking PRD.
+
+Coordinator fetched actual main2104559 and created
+feat/static-remote-counter-integration from it before further authored commits.
+The prior integration branch and pending PRD changes are preserved; binary
+pending-document patch is retained. Counter/resource worktrees stay isolated.
+
+Normal successor consumer lock updates only top1.10.2 to its actual registry
+checksum;305 other complete records (304 external) stay byte-equivalent.
+All nine controlled copies have registry sources; the consumer root itself
+correctly has no external source. Initial receipt assertion inadvertently
+included that root and is excluded; corrected lock proof passes. First Nix
+consumer lint attempt failed resolving cache hostname before Cargo; pinned
+Nix offline retry passed strict normal lint and downloaded the actual published
+archive. Remaining normal/maintainer executions and strict feature checks run
+in the same pinned shell with exclusive Cargo custody. No host Cargo fallback.
+
+### Verified registry consumption and early combined source
+
+Normal and both existing maintainer consumer executions pass their actual
+configuration/identity assertions; all three strict lint profiles and formatting
+pass through pinned Nix. Registry proof now records consumer_verified with six
+campaign commands plus separately completed normal strict lint. No source
+patch overrides the controlled copies. Consumer unchanged-other lock records305
+include304 external; only actual top1.10.2 archive/version changed.
+
+Counter worktree fast-forwarded actual main2104559 before any author commit,
+preserving its draft and exact root93611085 lock. Its narrow actual registry
+update keeps317 other complete records unchanged. New standalone lock SHA
+692c2612237df978fe40c1314746bd09d0c20caa40fc4e0b1a27de1653b08931
+and manifest51ea30eb retain the exact Timers patch and current owning source.
+Coordinator integrated the five fixture/graph paths early on the same actual-main
+branch; early-integration-proof.json hashes every transferred source. Counter
+1352-line source still needs final .2 matrix, echo/static denials and combined
+source checks. No prior .1 comparison is relabeled as .2 proof. Prepared external
+mutant statements forecast≤35 further authored variants, conservative1387 within
+1400; their actual execution remains pending.
+
+Four-owner resource correction actual production+30/-10/net20, test+216/-0,
+CI+5/-0, six existing paths, public types/methods+0/-0. Existing Resource imports
+suffice. Coordinator added the two owning CI commands to each existing profile
+loop; shell syntax and whitespace pass. Positive semantic/lint/inverse execution
+remains gated on the controlled Cargo slot, now handed explicitly back to
+counter. Active-ID overwrite and quota work have no implementation credit.
+
+### Combined counter verification and complete echo cleanup order
+
+Registered1.10.2 counter matrix passes all16 preserved native cases and all8
+provider/layout/query-publication cases in each profile before any mutation.
+Independent stable-source review resolves all three earlier custody blockers;
+its exact sourcecb8b4a65323c1deea046eca2bcd3b0cd462c8c7d7dfc87d41fc7a6ff23f63a4b
+has pure folds, distinct private receipts and a native counter trace preceding
+ancillary assertions. Unexpected native shape remains a post-close panic with
+no orderly-failure credit. Root runs five combined workspace commands through
+pinned Nix on a separate target while the author owns controlled Cargo.
+
+Echo source compiles, but full echo execution is not yet credited. The
+controller currently closes optional router only after a successful recipient
+oracle; an intended echo rejection would abandon/kill it. Automatically select
+closing router after caller cleanup and completed requests/replies, before
+recipient EXIT/native inspection. This reuses the existing close receipt and
+exit assertion, adds no type/state/policy and changes net0–1 lines. All positive
+cases must rerun with this fixture order before inversions. Alternative peer-only
+inversion proves only two Application sessions; killing router gets no retirement
+credit. Old16 native path remains unchanged. Echo must acquire caller/router/
+recipient actual close outcomes before the intended independent mismatch.
+
+### Actual echo inverse and combined workspace results
+
+The approved complete-close controller order passes all eight counter cases in
+both profiles first. All eight echo failures per profile then reach the named
+actual-Counter-processing mismatch: caller and optional router close/exit0;
+recipient acquires its native and both notification products, closes, reports
+the intended failure and exits1. No timeout, unrelated assertion or forced router
+kill receives credit. Echo campaign retains actual mutable source/binary/graph
+hashes and all terminal traces; source restores byte-exact cb8b4a65 and lock
+692c2612. Five authored echo statements count conservatively toward1400.
+Static denials and final restored complete matrices remain pending.
+
+Actual combined source passes all five root commands through pinned Nix:
+workspace build; workspace/docs567 passed plus1 ignored; all-target566 passed
+plus1 ignored; formatting; strict all-target Clippy. Combined-final-proof.json
+records commands, source/selected lock/fixture hashes and every log digest.
+Nested transport verification is separate and does not follow from root tests.
+No full R01–R25 or production identity/replay/resource acceptance is closed.
+
+### Counter research final verification and minimization
+
+The final restored registered1.10.2 source passes all24 controller cases in
+**each** debug and optimized profile:16 preserved native cases plus8 actual
+Counter cases (two layouts × query/publication × two explicit fixture providers).
+Counter's real final balance42 and ordered Increment/Read trace are inspected
+only after acquiring its complete native result, both notification receipts and
+actual session closure. Caller consumes both original provider-specific replies
+through typed Actions and retains its native result; optional router also closes.
+The finite fixture's independent scope/permission/time observations are not
+cryptographic authentication, distributed freshness or replay evidence.
+
+All8 echo mutants/profile fail at the intended actual-Counter-processing oracle,
+with caller/router exit0 and recipient orderly close followed by intended exit1.
+All12 static denials/profile fail with the intended compiler codes: missing
+required receipt E0061; provider/raw-DTO/protocol mismatches E0308; four receipt
+Deserialize attempts E0277; four private-field constructors E0451. The E0061
+case removes the concrete completion function's required ReplyReceipt result;
+it does not independently test a missing generic result-constructor parameter.
+The previously delivered verification-service comparison owns that latter law.
+All restored positives and strict standalone Clippy/formatting pass afterward.
+
+Final source SHA256:
+- counter_application.rs: cb8b4a65323c1deea046eca2bcd3b0cd462c8c7d7dfc87d41fc7a6ff23f63a4b
+- transport_custody.rs: 02f3c23c8c55cc717b13ffc43855013257122fbc0015ddae67ca9bd771504814
+- verify_transport_custody.py: 816245f2050d6ce3530de0004458f46843230df42d2b45b06db69492acd53a00
+- standalone Cargo.lock: 692c2612237df978fe40c1314746bd09d0c20caa40fc4e0b1a27de1653b08931
+
+The root93611085 lock, prior verification fixtureabc2659e and delivered wake
+fixture4f81ce03 remain unchanged. Both actual compiler artifacts select the
+published registry bombay-zenoh1.10.2 with transport_tls alone. Byte-exact
+restoration follows all temporary mutants. Retained authored fixture net1352
+plus actual conservative temporary variants40 is1392≤1400; the earlier forecast35
+was an estimate, not the final measurement. No additional scope is needed.
+
+Reproduction uses the root pinned Nix environment, two Cargo jobs, incremental
+compilation off and profile debug information off. In each profile (add
+--release for optimized), run cargo build --locked --bin transport_custody with
+--manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml, then
+run python3 docs/prds/static-remote-actors/transport-custody/verify_transport_custody.py
+against that Cargo artifact and a distinct evidence directory, inside Nix.
+Standalone strict cargo clippy uses the same manifest/locked/bin with
+-- -D warnings; cargo fmt uses that manifest, --all -- --check. Static comparisons
+use the same owning cargo check --locked --bin transport_custody
+--message-format=json in both profiles, inside Nix. Existing native-TLS CI runs
+the restored24-case controller, owning lint and formatting in both profiles.
+Temporary echo/static mutation campaigns are local research receipts; this
+record does not claim they are durable CI acceptance gates for the full feature.
+
+Actual local receipts: /tmp/bombay-counter-final-campaign.json,
+/tmp/bombay-counter-echo-campaign.json, /tmp/bombay-counter-static-campaign.json,
+/tmp/bombay-counter-independent-negative-proof.json and
+/tmp/bombay-counter-combined-final-proof.json. They retain actual selected Cargo
+artifacts, commands, output/log hashes, expected outcomes and source restoration.
+All five combined root commands pass through pinned Nix: cargo build --workspace
+--locked; cargo test --workspace --locked (567 passed,1 ignored); cargo test
+--workspace --all-targets --locked (566 passed,1 ignored); cargo fmt --all --
+--check; cargo clippy --workspace --all-targets --locked -- -D warnings.
+
+Minimization retains ordinary public Application composition, existing typed
+service lanes, actual native query/sample custody and private provider receipts.
+It deletes duplicate native ingress declaration; no production runtime, public
+product, provider trait, export API, protocol schema, dependency override or
+second registry is added. Original refusals and acquired outcomes remain in the
+owning fixture Work/native products until session closure. Copied parse buffers
+are explicitly copies; allocation identity across processes is not claimed.
+Unexpected native receiving shapes panic after closure and receive no orderly
+failure credit. No full R01–R25, production identity, replay, resource bounds,
+exact global routing or protected remote-stop acceptance is closed.
+
+Final counter submission checkpoint (tracked and untracked, base2104559):
+production:+0/-0/net0; tests:+1374/-22/net1352; public API:+0/-0 types.
+Stage7 paths: documentation+438/-4/net434; manifest/lock+198/-14/net184.
+Cumulative Bombay79 paths: production+1725/-475/net1250; tests+9788/-661/net9127;
+documentation+5391/-88/net5303; manifest/lock+3174/-3/net3171; public types+5/-0.
+The separately counted controlled correction retains its authorized caps and
+exclusive Cargo lane; counter PR delivery is independent.
