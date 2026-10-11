@@ -83,10 +83,18 @@ and Driver-fuzz manifests/locks, with no source patch. Before editing, the
 owning PRD recorded the missing published-contract witness and unchanged
 runtime/custody law. Only owner packages update; the fuzz lock also reconciles
 its existing local Engine0.2.2 version. Rust production/tests/API delta0.
-Pinned workspace/all-target/all-feature check passes against those releases;
-Engine tests pass74 cases plus one doctest in each profile. Full native/runtime,
-static-fixture and example gates are pending. Empty-birth alias PR91 remains
-separate unmerged work; publication is not inferred from local source.
+At dependency-adoption commit e4d2db1, pinned workspace/all-target/all-feature
+compilation, formatting and the locked Driver-fuzz check pass against those
+releases. Engine tests pass74 cases plus one doctest in each profile. Fresh full
+native Nix verification passes17 gates and fails four: child/all-features,
+child/no-default-features, owner coverage and workspace tests. Each failure
+traces to the same four unfinished topology/custody compile-pass fixtures.
+Workspace nextest reports571 passed, one failed and one skipped; its sole
+failure is that fixture suite. The skipped descriptor-limited child test is
+executed successfully by its passing parent regression. No disk-exhaustion or
+Darwin-signing failure occurred. Exact results are in the owning PRD;
+acceptance remains open. Empty-birth alias PR91 remains separate unmerged work;
+publication is not inferred from local source.
 
 The private single declared topology now derives native edges, spaces and
 recursive custody; counter, heterogeneous recursion in both wrapper orders,
