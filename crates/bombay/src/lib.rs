@@ -28,8 +28,8 @@ pub use ::behavior_actors::{
 pub mod actors;
 pub use crate::application::Application;
 pub use crate::application::{
-    App, ApplicationBehavior, ApplicationCleanupError, ApplicationDefinitionError,
-    ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationStagingError, RunError,
+    ApplicationBehavior, ApplicationCleanupError, ApplicationDefinitionError, ApplicationHandle,
+    ApplicationLifecycle, ApplicationOutcome, ApplicationStagingError, RunError,
 };
 pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};

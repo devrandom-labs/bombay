@@ -196,10 +196,10 @@ runner. Pure tests consume a definition through `.initialize()` and fold its
 initialization. Bombay adds no competing test harness. The prelude does not
 import `Behavior`, interpreter traits, logical-host requirements, structural
 effect paths, explicit actor spaces, host proofs, topology representation
-markers, or advanced `App`. Library authors reach the exact Behavior-owned
-items through `bombay::behavior`; advanced runtime composition uses explicit
-`bombay::{App, ActorSpace, ActorSpaces, Hosts}` imports; reusable template
-families are browsable through `bombay::supervision`,
+markers. Explicit hosting is selected through `Application::with_topology`.
+Library authors reach the exact Behavior-owned items through `bombay::behavior`; advanced runtime composition uses explicit
+`bombay::{Application, ActorSpace, ActorSpaces, Hosts}` imports; reusable template
+families are browsable through `bombay::atomic`,
 `bombay::routing`, `bombay::lifecycle`, `bombay::timing`, and the other
 semantic modules.
 Reusable roles are concrete Behavior Actors templates. Ordinary wrappers use
@@ -249,7 +249,7 @@ field explicitly marked `#[actor_space(P)]`; Rust verifies the field is an
 the static protocol-to-space mapping; they are generated at compile time,
 never erased or discovered at runtime. Rust rejects duplicate protocols.
 Bombay's generic
-`App<Root, Actors>` retains the spaces while giving only the root to the
+`Application<Root, Spaces, Members, Families>` retains the spaces while giving only the root to the
 Behavior Driver.
 
 A single-protocol root does not declare that product. Bombay supplies its one
@@ -488,15 +488,17 @@ The intended ordinary public surface is:
 - `bombay::testing::InfallibleResultExt` as an explicit pure-test import for
   exactly uninhabited fold errors.
 
-The advanced composition surface remains available through explicit
-`bombay::{App, ActorSpace, ActorSpaces, Hosts}` imports. It is not in the
-ordinary prelude and is not the target application API.
+Explicit hosting uses `Application::with_topology` with deliberately imported
+`bombay::{ActorSpace, ActorSpaces, Hosts}`. `Application` remains in the ordinary
+prelude. One declared topology deriving hosting and retirement remains the target
+for complex graphs.
 
 Users never manually construct or implement:
 
 - a Bombay System, Guardian, Driver, Environment, or actor execution object;
   selecting a caller Tokio host or configuring its ordinary Builder is explicit;
-- mailboxes, channels, capacities, address spaces, claims, or leases;
+- mailboxes, channels, address claims or leases; explicit topology currently
+  supplies `ActorSpace` values, pending generated hosting;
 - observation publishers, timer queues, executor tasks, or child-task owners;
 - creation, delivery, observation, timer, report, or shutdown interpreters;
 - supervision loops, worker scheduling, restart machinery, or shutdown
@@ -531,7 +533,7 @@ impl EntityDefinition for Accounts {
     # /* ... */
 }
 
-let application = App::new(root, spaces).entity_family(
+let application = Application::with_topology(root, spaces).entity_family(
     AccountsRole,
     Accounts,
     DirectoryConfig::default(),
@@ -557,7 +559,7 @@ the original application, Work callable, and actual entered-host error.
 incarnation. The same value therefore survives passivation and replacement.
 Its definition is nominal: two families remain non-interchangeable even when
 they select identical ID and message types. `Entities<D>` is only the
-cloneable admission/passivation receptionist; `App` retains family shutdown
+cloneable admission/passivation receptionist; `Application` retains family shutdown
 and task-join authority. `ApplicationHandle::passivate_entity` starts graceful
 passivation by role without exposing an incarnation address.
 

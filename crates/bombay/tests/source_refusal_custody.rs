@@ -16,7 +16,9 @@ use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
     TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
+use bombay::{
+    ActorSpace, ActorSpaces, Application, WorkerPreparationSource, WorkerPreparationStart,
+};
 use std::collections::VecDeque;
 use tokio::sync::Semaphore;
 
@@ -212,7 +214,7 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
         DiagnosticDisposition::terminate(),
     )
     .unwrap_or_else(|_| panic!("initial worker definition prepared"));
-    let outcome = App::new(
+    let outcome = Application::with_topology(
         pool,
         RecoverySpaces {
             root: ActorSpace::new(),
@@ -220,7 +222,7 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
             customers: ActorSpace::new(),
         },
     )
-    .run_with::<RecoveryTerminal, _, _, _>(move |application| async move {
+    .run_with::<RecoveryTerminal, _, _, _, _, _>(move |application| async move {
         let interface = application.interface(application.root().established_recipient());
         let mut caller = interface
             .external::<CustomerProtocol>()

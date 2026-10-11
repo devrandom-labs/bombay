@@ -18,7 +18,9 @@ use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
     TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
+use bombay::{
+    ActorSpace, ActorSpaces, Application, WorkerPreparationSource, WorkerPreparationStart,
+};
 use tokio::sync::{Notify, oneshot};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -223,7 +225,7 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
+            Application::with_topology(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -355,7 +357,7 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
+            Application::with_topology(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -460,7 +462,7 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
+            Application::with_topology(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -593,7 +595,7 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
+            Application::with_topology(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
@@ -757,7 +759,7 @@ fn source_task_failure_terminates_the_active_pool() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(pool, spaces).run_with::<RecoveryTerminal, _, _, _>(
+            Application::with_topology(pool, spaces).run_with::<RecoveryTerminal, _, _, _, _, _>(
                 move |application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());

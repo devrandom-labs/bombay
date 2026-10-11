@@ -31,128 +31,69 @@ initialization order and static capability distinctions.
 
 ## Current implementation and open acceptance
 
-The paired owning PRD contains the single DX01–DX28 checklist, per-stage laws,
-exact change measurements and requirement dispositions. The user authorized the
-expanded selected programme surface on 2026-10-09; provenance, composition and
-verification gates still apply. Timers 0.2.0 is published and pinned.
+The owning PRD contains the single DX01–DX28 checklist, pre-edit laws, complete
+measurements and dispositions. The user explicitly authorized the expanded
+programme surface on 2026-10-09. Provenance, composition and verification gates
+still apply. Timers0.2.0 is published and pinned.
 
-Retained startup creation now puts the actual receipt, control and task in
-parent custody before awaiting. Initialization and native failures preserve
-original definitions and explicit birth/replacement provenance; no unavailable
-startup creates fake lifecycle authority. Closed child control returns its
-original typed input. Retirement ignores rows that own neither tasks nor failures.
-These changes are committed at `4fd7ad6`, `29da7a4` and `3c34bee`.
+One actual Application owns root, selected scope, cold actors and Entity
+families; the separate App owner is removed. All seven example packages use
+Application. Real cold Account plus native family reactivation and three
+independent staging/cancellation/startup rejection journeys pass debug and
+optimization, without a private NativeChild implementation. Restoring the prior
+four owners fails solely on five missing-with_topology diagnostics in each
+profile. Production+206/-761/net-555, types+0/-1; the execution/receiving kernel
+and complete control sums are unchanged. Fixed supervisor and FIFO tests proved
+the owner before mechanical caller migration. Evidence:
+/private/tmp/bombay-application-owner-i27iyp5f.
 
-The retained native projection batch separates raw child descendants from the
-projected report. The original real leaf witness fails E0277 because the
-interpreter demands the report type instead of the leaf's `Never` subtree.
-The isolated fix passes all 300 library tests in debug and optimization, native
-projector panic/raw/projection retry, both timer/shutdown orders, supervision,
-FIFO source refusal, pure inclusion and eight terminal denials. Full workspace
-compilation passes. It uses standard owned `(origin, retirement).into()` for
-derived sum presentation; handwritten native policies retain executor/panic
-semantics through the existing typed port. Actual worktree verification passes the same 300 library/eight native journey
-tests in both profiles, all eight terminal denials, full workspace/all-target
-strict Clippy, formatting and the counter executable. Exact commit evidence and
-limits belong in the owning PRD; this is not inferred assembly acceptance.
+Startup custody retains actual receipts, controls and tasks before awaiting.
+Initialization/native failures keep original definitions and explicit birth or
+replacement provenance; unavailable startup manufactures no lifecycle authority.
+Closed child control and parent-report admission return their original typed
+inputs. Raw descendant custody and projected reports remain separate, complete
+facts. These laws preserve independent root/family receiving and root-first
+Entity shutdown. ActorCustody groups identical coexisting fields in20 retirement
+alternatives while retaining all24 outcomes. Borrowed behavior, completion and
+work/cleanup inspection preserve original values for consuming decisions.
 
-Inferred caller fixtures remain deliberately red on retained source. The larger
-private inference prototype now passes the finite counter and heterogeneous
-children with complete terminal custody. Recursive metadata itself now fails
-before launch (E0275), independently of the remaining
-`CommitActions`/`EstablishChild` execution cycle. Legal pure generic/nested birth
-aliases must remain valid while resolving it. The narrower native fix adds no
-inferred metadata, actor-facade runtime construction or Application inference.
-No broad policy/catalogue migration is authorized by these focused passes.
+Source verification: all301 owner library tests pass debug and optimization.
+The current all-feature workspace nextest run has567 passed, one failed and one
+skipped. The failure comprises four deliberately unfinished generated-custody
+pass fixtures; existing static denials remain active. Workspace/all-target/
+all-feature compilation, strict Clippy, formatting, two doctests, HTTP package
+tests and six terminating examples pass. These checks use the exact unpublished
+owner contracts, rather than the locked registry API.
 
-The owning PRD maps all 270 backlog requirement rows and all 100 failure
-records, seven executable examples, 45 catalogue entries and 19 inventoried
-actor-owned capabilities. Presence in that map does not certify an execution
-or commit to implementing all networking and durability work in the DevX effort.
+Fresh authoritative registry Nix exits1: formatting, panic-abort rejection,
+Observe Loom and Driver-law evidence pass; the other17 gates fail on missing
+published Behavior APIs. Neither disk exhaustion nor Darwin signing failure
+occurred; no waiver applies. The registry lock is byte-restored. Exact results:
+/private/tmp/bombay-application-owner-i27iyp5f/REGISTRY-NIX-RESULTS.json.
 
-The retirement consumption substep groups the identical 14 owned fields of
-20 alternatives into `ActorCustody`; all 24 outcomes remain. The real counter
-and startup-refusal journeys pass in debug and optimized builds, and a broken
-borrowed accessor fails both. Borrowed behavior and normal completion retain
-the original retirement for complete owned decisions; completion is not a claim
-that independent cleanup has no failures. Other callers are migrated only to that proven
-field grouping. Complete gates and measurements remain in the owning PRD;
-this does not close inferred application construction.
+Dependency delivery is prepared in owner
+[PR89](https://github.com/devrandom-labs/bombay-behavior/pull/89),
+[PR90](https://github.com/devrandom-labs/bombay-behavior/pull/90),
+[PR91](https://github.com/devrandom-labs/bombay-behavior/pull/91) and Communication
+[PR11](https://github.com/devrandom-labs/bombay-communication/pull/11).
+Native owner/package/CI evidence and the release workflow belong in the owning
+PRD. Publication and Bombay's registry adoption remain open; no unpublished
+version or source patch is committed as a released dependency.
 
-The proven Behavior send-routing and facade rustdoc fixes are in owner
-[PR #89](https://github.com/devrandom-labs/bombay-behavior/pull/89), ready for
-review with native ten-gate/927-test verification, extracted package preflight
-and all exact-head CI including strict mutation passing. Publication and Bombay
-adoption remain open; current dependencies are unchanged.
+The private declared graph executes genuine recursion, same-type sibling roles,
+decorated creators, full refusal/retirement and startup cancellation in both
+profiles. It still handwrites native edges, protocol sharing and terminal
+schemas. The latest finite communication supertrait fails the real foreign
+caller in both profiles and is removed. These are private evidence, not retained
+topology generation or a DSL. Canonical runner inference, generated hosting and
+recursive custody, acquired family-prefix cancellation, complete HTTP recovery
+and invalid-directory constructor custody remain open. This bounded owner gain
+does not close DX01–03.
 
-The additional custody contracts are in stacked draft
-[PR #90](https://github.com/devrandom-labs/bombay-behavior/pull/90), head 66de825:
-all ten native owner gates, 961 tests, 112 doctests and archive preflight pass.
-Against the production-equivalent packaged crates this worktree has 562 tests
-passing, one failing inferred-assembly test and one skipped test; workspace
-Clippy and its doctest pass. Previous-head CI passed the API audit, Linux Nix
-and eight mutation shards; strict aggregation rejected two unclassified,
-uncompilable Default mutations. Both classifications retain the typed vetoes,
-existing mutation floors and exclusions. Exact-head
-[CI](https://github.com/devrandom-labs/bombay-behavior/actions/runs/38116165593)
-passes all eleven jobs, including strict aggregation (205 viable/417 total).
-Registry delivery and public declared-topology assembly remain open. The owning
-PRD contains
-the direct input-recovery regressions and independent debug/optimized inversions.
-
-The fresh authoritative `102fc2d` Nix check has four native passes and seventeen
-failures against the published Behavior/Actors 0.23.0 API, before inferred caller
-compilation. Signing and disk exhaustion did not fail; 35 GB remained.
-The owning PRD records exact diagnostics, gates and the requested crates.io /
-Awesome Rust comparison. No candidate dependency resolves the original recursive
-eligibility equation; none was added. The approved explicit graph has now passed
-owner-internal native execution in debug/optimized builds, including real parent
-reports, initialization refusal and complete actor-indexed retirement. This
-proves a closed-edge applicability cut. Actual decorated-row and singleton
-metadata proofs pass; general hosting and public creation authority remain open.
-
-Pinned release-plz generated isolated preview `3501be1`: Behavior/Actors 0.24.0
-and macros 0.14.1. All ten native checks, 961 tests, 112 doctests, exact-head
-package preflight and all eleven
-[CI jobs](https://github.com/devrandom-labs/bombay-behavior/actions/runs/38117186479)
-pass. This is metadata/docs only; no merge or publication is claimed. The
-owning PRD holds exact logs, measurements and release obligations.
-
-Behavior now derives policy-free empty-birth eligibility from the actual child
-capability, preserving aliases and rejecting a nonempty mode named NoBirths.
-The owning actual regression fails before the fix; owner and real facade
-consumer pass both profiles and timer/shutdown orders. All ten native owner
-gates pass: 961 tests, 114 doctests, 68 checked failure diagnostics. The owning
-PRD records exact deltas, independent inversions and the diagnostic-probe fix;
-release delivery of this additional macro batch is prepared in stacked draft
-[PR #91](https://github.com/devrandom-labs/bombay-behavior/pull/91). Its exact-head
-native gates, package preflight and all eleven exact-head CI jobs pass. The earlier version
-preview excludes this batch.
-
-Private graph validation now checks each resolved decorated child's complete
-birth row; the original deeper-decorator false acceptance is rejected in both
-profiles. Singleton role proofs cover proxy and both supervisor forms. These
-do not establish public creation authority: actual structural and cold startup
-binding/origin custody must both fit the final port without equality assumptions.
-The removed alias candidate leaks private metadata. Its fixed occurrence/failure
-loan now passes actual external recursion and refusal, nine independent denials,
-startup cancellation and native task loss in both profiles. This remains private
-proof. The private cold-origin journey passes both profiles, preserving distinct
-ordinary and actual managed-root role origins. Public Application still fixes
-the implicit scope; early-stop testing exposes a parent-control closure panic
-requiring complete report rejection custody.
-The actual report repair now preserves complete rejection/source custody in
-both timer/shutdown orders: all301 library tests pass debug/optimized; strict
-workspace/all-target Clippy and formatting pass. Inherited owner-source
-workspace checks have563 passed, one inference failure and one skipped.
-Communication owner draft PR #11 passes native seven gates/88tests, twelve
-Loom models, strict Clippy, archive verification and Linux CI. Release/pin and
-registry full gates remain open. A fresh full Nix check exits1: four gates
-pass and seventeen fail on unavailable owner APIs; no signing/disk waiver.
-The original registry lock is restored byte-for-byte. The private unified Application now runs the
-public scoped cold-child journey and exact missing-host work recovery in both
-profiles; combined families, inferred retirement and final DSL are not retained.
-Detailed laws, falsifiers and checkpoints remain solely in the owning PRD.
+Scope coverage of270 backlog rows,100 failure records, seven examples,45
+catalogue entries and19 capabilities remains in the owning evidence appendix.
+Networking, durability, identity and deployment remain separate deferred work.
+Detailed laws, falsifiers and checkpoints live only in the owning PRD.
 
 Begin with a compiling counter and heterogeneous-child journey deriving
 runner and terminal types from the single declared topology while returning

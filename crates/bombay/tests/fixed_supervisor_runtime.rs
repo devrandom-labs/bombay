@@ -16,7 +16,9 @@ use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
     TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
+use bombay::{
+    ActorSpace, ActorSpaces, Application, WorkerPreparationSource, WorkerPreparationStart,
+};
 use tokio::sync::oneshot;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -202,8 +204,8 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(supervisor.stop_on_shutdown(), spaces)
-                .run_with::<SupervisorTerminal, _, _, _>(move |application| async move {
+            Application::with_topology(supervisor.stop_on_shutdown(), spaces)
+                .run_with::<SupervisorTerminal, _, _, _, _, _>(move |application| async move {
                     activation_received
                         .await
                         .expect("the proxy activates its exact worker");

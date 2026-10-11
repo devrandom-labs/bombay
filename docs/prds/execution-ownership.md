@@ -92,10 +92,10 @@ resolved, or as evidence for the current documentation branch.
 ## Developer-experience follow-up
 
 The [DevX coordination record](developer-experience.md) selects a single
-`Application` composition spine and inferred topology/complete terminal custody.
-The current code still has both `Application` and `App`, explicit terminal
-projection and structural hosting machinery. These are concrete simplification
-targets; this document does not pretend the proposed API already exists.
+`Application` composition spine and one explicit topology declaration with derived
+hosting and complete terminal custody. The current code uses one `Application`
+owner for roots, cold actors, explicit hosting and Entity families. Explicit
+terminal projection and structural hosting remain simplification targets.
 
 The backlog's [EXEC requirements](../prd-backlog/local-runtime.md) and
 [failure contracts](../prd-backlog/failure-contracts.md) remain acceptance inputs.

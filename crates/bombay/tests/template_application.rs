@@ -68,10 +68,6 @@ fn stop_at_deadline(_: &mut TimerRoot) -> Become {
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn one_shot_template_runs_as_an_ordinary_application_root() {
     let root = OneShot::new(
         TimerRoot,
@@ -108,10 +104,6 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
     let root = ReceiveTimeout::new(
         TimerRoot,
@@ -148,10 +140,6 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn periodic_template_runs_as_an_ordinary_application_root() {
     let root = Periodic::new(
         TimerRoot,
@@ -188,10 +176,6 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn deadline_template_runs_as_an_ordinary_application_root() {
     let root = Deadline::new(
         TimerRoot,

@@ -61,7 +61,7 @@ Bombay owns:
 - static interpretation of named creation, delivery, observation, timer,
   report, and shutdown effect lanes;
 - recursive child-task retirement;
-- inherent async `Application::run` and advanced `App::run`, supplied Work,
+- inherent async `Application::run`, supplied Work,
   and paired execution/result receiving over one common execution owner;
 - configured `Application::run_blocking`, which drives that same pair;
 - the opt-in Axum boundary that gives a router the typed application handle
@@ -87,15 +87,15 @@ tree:
 
 | Module | Current responsibility | Public disposition |
 |---|---|---|
-| `lib.rs` | minimal façade and semantic-level re-exports | curated application prelude, template-family modules, `Application`, `App`, `RunError`, typed boundaries, transitional hosting evidence, and deliberate `behavior` power surface |
-| `application/mod.rs` | root, role-indexed child and Entity-family declarations; curate the application surface | `Application` owns pure declarations; advanced `App` also owns its supplied spaces. Construction starts no task and adds no birth algebra. |
+| `lib.rs` | minimal façade and semantic-level re-exports | curated application prelude, template-family modules, `Application`, `RunError`, typed boundaries, transitional hosting evidence, and deliberate `behavior` power surface |
+| `application/mod.rs` | root, role-indexed child and Entity-family declarations; curate the application surface | `Application` owns root, selected protocol spaces, role-indexed cold actors and Entity families. Construction starts no task and adds no birth algebra. |
 | `application/composition.rs` | static declaration-to-Behavior composition and exact origin selection | canonical `ApplicationBehavior`, `ApplicationDefinitionError` and `ApplicationStagingError`; implementation traits remain private |
 | `application/execution.rs` | one paired execution/result owner, supplied Work, cleanup custody and configured blocking entry | `ApplicationOutcome`, `ApplicationCleanupError` and `RunError`; async, owned blocking and Entity execution share this owner |
 | `application/interface.rs` | application handle/lifecycle projection and affine external actor interfaces | `ApplicationHandle`, `ApplicationLifecycle`, `ActorInterface`, `ExternalTarget`, `ExternalActor` and `ExternalActorError`; messaging alone grants no shutdown authority |
 | `application/http.rs` | opt-in HTTP preparation, binding and serving over the common execution owner | existing application methods; retains bind, serving and actor failures. The feature-gated outcome mapper remains in `application/execution.rs`. |
 | `local/children.rs` | closed occurrence product, exact creation status, endpoint/control and descendant task retirement | crate-private; creation-order custody stays with the local actor |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |
-| `topology.rs` | static `Hosts<P>` actor-space selection | public for deliberate advanced `App` composition; ordinary `Application` privately materializes its closed actor-space product |
+| `topology.rs` | static `Hosts<P>` actor-space selection | public for explicit protocol hosting on `Application`; a root-only declaration supplies its own ActorSpace |
 | `local/mod.rs` | curate the concrete local composition and its child modules | private module; canonical public capabilities are re-exported at crate root |
 | `local/endpoint.rs` | exact messaging endpoint, installed-actor proof and shutdown authority | root-curated `ActorRef`, `InstalledActor` and exact-payload `SendError`; `InstalledActor` has no public constructor or shutdown method |
 | `local/ingress.rs` | mailbox admission, standard/Entity ingress and exact retirement drain | private; reuses Communication's mailbox |

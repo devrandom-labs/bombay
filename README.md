@@ -102,7 +102,7 @@ type. Bombay privately stages those values through Behavior's existing
 `Children`, `BirthNodeAppend`, `DispatchBirth`, and `InstallBirth` contracts;
 it defines no second creation algebra or positional public lookup. Advanced
 compositions whose intentional logical-address effects require additional
-canonical protocol hosts may use `App::new` with the transitional static
+canonical protocol hosts may use `Application::with_topology` with the transitional static
 actor-space product.
 Ordinary state folds use the thin `#[bombay::actor]` facade. It supplies
 Bombay's fixed address and mechanical sender/lint spelling, then delegates to
@@ -117,10 +117,10 @@ results. Pure folds therefore run after exactly one visible `.initialize()`;
 Bombay does not add a parallel test harness. Foundational
 implementation traits and structural effect types are imported deliberately
 from `bombay::behavior`; explicit actor spaces, host proofs, topology
-representation markers, and advanced `App` are imported from `bombay` only
-when deliberately constructing the advanced boundary.
+representation markers are imported from `bombay` only when deliberately selecting
+explicit hosting with `Application::with_topology`.
 The reusable catalogue is also browsable through its owning semantic modules,
-including `bombay::supervision`, `bombay::routing`, and `bombay::timing`.
+including `bombay::atomic`, `bombay::routing`, and `bombay::timing`.
 Behavior Actors supplies the reusable actor templates and their policy laws;
 Bombay adds no compatibility catalogue or aggregate abstraction.
 The ordinary prelude adds one static composition trait, so wrapper policies are
@@ -135,7 +135,7 @@ pools retain the owning Behavior Actors constructors because their topology and
 capacity inputs are semantic policy rather than an inner behavior to decorate.
 
 Bombay-owned Entity integration installs nominal asynchronous
-`EntityDefinition` values on `App` under semantic roles. Cloneable
+`EntityDefinition` values on `Application` under semantic roles. Cloneable
 `Entities<D>` receptionists produce stable `EntityRef<D>` logical references;
 the application retains family shutdown and task-join authority. External and
 Behavior-originated admission preserve truthful caller provenance and exact
@@ -194,9 +194,9 @@ channel are gone.
 
 The exact selected contracts and any live blockers are recorded in
 [`docs/prd-backlog/status.md`](docs/prd-backlog/status.md). The local
-explicit application path has executable source and controls. Named topology
-and same-path HTTP use private closed actor-space composition. Advanced App
-still supplies canonical hosts for deliberate logical-delivery protocols.
+explicit application path has executable source and controls. Local actors, supervision, pools, HTTP and Entity use the same `Application`
+owner. Explicit topology hosting and terminal projection remain necessary for
+complex graphs while the declared-topology derivation is unfinished.
 Feature acceptance, distillation and merge state remain in the selected PRD
 and backlog; source formation does not establish those states.
 

@@ -91,10 +91,6 @@ fn equal_child_types_project_from_their_distinct_generated_role_positions() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     let application_outcome = Application::new(Root.stop_on_shutdown())
         .run::<_, _, ApplicationTerminal, _>()

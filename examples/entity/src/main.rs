@@ -1,6 +1,6 @@
 //! For learning native Entity installation: `Account` owns domain state,
 //! `StopOnShutdown` owns lifecycle policy, Behavior owns typed actions, and the
-//! advanced Bombay `App` boundary owns hydration, stable identity, passivation,
+//! advanced Bombay `Application` boundary owns hydration, stable identity, passivation,
 //! command-triggered reactivation, and root-first family shutdown. Reactivation
 //! is a fresh incarnation after fenced retirement; it is not Behavior Actors'
 //! explicit `StableProxy` worker-replacement policy.
@@ -22,7 +22,7 @@ use bombay::entity::{
 use bombay::prelude::{
     ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown, TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App, ApplicationOutcome};
+use bombay::{ActorSpace, ActorSpaces, Application, ApplicationOutcome};
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
@@ -160,7 +160,7 @@ fn main() {
         NonZeroUsize::new(2).expect("two is non-zero"),
         NonZeroUsize::new(32).expect("32 is non-zero"),
     );
-    let application = App::new(Root.stop_on_shutdown(), spaces)
+    let application = Application::with_topology(Root.stop_on_shutdown(), spaces)
         .entity_family(
             AccountsRole,
             definition,

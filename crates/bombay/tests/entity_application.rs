@@ -17,7 +17,7 @@ use bombay::entity::{
     EntityShutdown, Passivation, Refusal,
 };
 use bombay::{
-    ActorRetirement, ActorSpace, ActorSpaces, App, ChildFailure, ChildOrigin, MailAddr,
+    ActorRetirement, ActorSpace, ActorSpaces, Application, ChildFailure, ChildOrigin, MailAddr,
     TerminalProjection,
 };
 use bombay_engine::Completion;
@@ -387,7 +387,7 @@ fn application_runs_two_native_entity_families() -> Result<(), DirectoryError<u6
     let retirements = Arc::clone(&accounts.retirements);
     let profiles = Profiles::new();
     let profile_retirement = Arc::clone(&profiles.retirement);
-    let application = App::new(Root.stop_on_shutdown(), spaces)
+    let application = Application::with_topology(Root.stop_on_shutdown(), spaces)
         .entity_family(
             AccountsRole,
             accounts,

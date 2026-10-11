@@ -2,9 +2,9 @@
 
 Every example is a downstream Cargo package that depends on the public
 `bombay-rs` façade. There is one examples tree and each folder is named for the
-API concept it demonstrates. Most use the ordinary `Application` boundary;
-the Entity example deliberately uses advanced `App` composition because its
-nominal definition must statically name the concrete protocols it hosts.
+API concept it demonstrates. Every example uses the same `Application` owner. Supervision, pools and Entity
+still supply explicit static hosting and terminal projections; deriving those
+from one topology declaration remains open.
 
 Examples use `bombay::actors::ActorExt` (imported by the prelude) whenever an
 existing actor is decorated with reusable stash, timer, deadline,

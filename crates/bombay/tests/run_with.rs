@@ -22,7 +22,7 @@ use bombay::behavior::{
     NoBirths, User,
 };
 use bombay::prelude::*;
-use bombay::{ActorSpace, App, ApplicationOutcome};
+use bombay::{ActorSpace, Application, ApplicationOutcome};
 
 mod application_support;
 
@@ -431,10 +431,6 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
 }
 
 #[test]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 fn run_is_the_unit_boundary_specialization() {
     let terminal = {
         let executor = tokio::runtime::Builder::new_current_thread()
@@ -970,7 +966,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
     let ApplicationOutcome::Completed {
         output: explicit,
         cleanup: Ok((root_origin, joined_actor)),
-    } = App::new(Root.stop_on_shutdown(), ActorSpace::new())
+    } = Application::with_topology(Root.stop_on_shutdown(), ActorSpace::new())
         .run_with(|application| async move {
             application
                 .root()
@@ -1018,7 +1014,7 @@ fn run_with_protocol_is_compile_checked() {
     cases.compile_fail("tests/compile/fail/actor_ref_has_no_shutdown.rs");
     cases.compile_fail("tests/compile/fail/application_lifecycle_wrong_event.rs");
     cases.compile_fail("tests/compile/fail/application_handle_has_no_direct_lifecycle.rs");
-    cases.compile_fail("tests/compile/fail/app_local_is_not_an_ordinary_path.rs");
+    cases.compile_fail("tests/compile/fail/removed_parallel_application.rs");
 }
 
 struct BlockingRoot {

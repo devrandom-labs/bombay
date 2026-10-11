@@ -18,7 +18,7 @@ use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, Exit, MailAddr, RootOrigin,
     StopOnShutdown, TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App};
+use bombay::{ActorSpace, ActorSpaces, Application};
 use worker::{SearchJob, SearchResult, SearchWorker};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -106,8 +106,8 @@ fn run_search_pool() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(search_pool(), spaces).run_with::<SearchTerminal, _, _, _>(
-                |application| async move {
+            Application::with_topology(search_pool(), spaces)
+                .run_with::<SearchTerminal, _, _, _, _, _>(|application| async move {
                     let interface =
                         application.interface(application.root().established_recipient());
                     let mut customer = interface
@@ -153,8 +153,7 @@ fn run_search_pool() {
                         .await
                         .expect("the pool accepts orderly shutdown");
                     application.lifecycle().termination().await
-                },
-            ),
+                }),
         )
         .unwrap_or_else(|failed| {
             drop(failed);

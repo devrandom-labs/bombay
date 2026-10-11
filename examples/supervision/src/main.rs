@@ -18,7 +18,9 @@ use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, Exit, MailAddr, RootOrigin,
     StopOnShutdown, TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
+use bombay::{
+    ActorSpace, ActorSpaces, Application, WorkerPreparationSource, WorkerPreparationStart,
+};
 use tokio::sync::mpsc;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -212,8 +214,8 @@ fn run_supervision() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(supervisor.stop_on_shutdown(), spaces)
-                .run_with::<SupervisorTerminal, _, _, _>(move |application| async move {
+            Application::with_topology(supervisor.stop_on_shutdown(), spaces)
+                .run_with::<SupervisorTerminal, _, _, _, _, _>(move |application| async move {
                     let first = tokio::time::timeout(Duration::from_secs(5), activations.recv())
                         .await
                         .expect("the first worker activates")

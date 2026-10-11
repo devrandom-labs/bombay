@@ -15,7 +15,7 @@ use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
     TerminalProjection,
 };
-use bombay::{ActorSpace, ActorSpaces, App};
+use bombay::{ActorSpace, ActorSpaces, Application};
 use tokio::sync::oneshot;
 
 #[path = "../../../examples/worker-pool/src/worker.rs"]
@@ -147,8 +147,9 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
+    let application = Application::with_topology(pool, spaces);
     let application_outcome = application_host
-        .block_on(App::new(pool, spaces).run_with::<PoolTerminal, _, _, _>(
+        .block_on(application.run_with::<PoolTerminal, _, _, _, _, _>(
             move |application| async move {
                 tokio::time::timeout(Duration::from_secs(5), activation_received)
                     .await
@@ -254,8 +255,9 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
+    let application = Application::with_topology(pool, spaces);
     let application_outcome = application_host
-        .block_on(App::new(pool, spaces).run_with::<PoolTerminal, _, _, _>(
+        .block_on(application.run_with::<PoolTerminal, _, _, _, _, _>(
             move |application| async move {
                 tokio::time::timeout(Duration::from_secs(5), activation_received)
                     .await

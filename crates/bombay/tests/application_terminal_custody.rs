@@ -13,7 +13,7 @@ use bombay::behavior::{
     RetirementBirths, SettledItem, SettlementStatus, Step, Stopped, User, UserEvent,
 };
 use bombay::prelude::*;
-use bombay::{ActorSpace, App, ApplicationOutcome};
+use bombay::{ActorSpace, Application, ApplicationOutcome};
 
 struct Worker;
 
@@ -145,7 +145,6 @@ enum DeclaredApplicationTerminal {
 #[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::too_many_lines,
-    clippy::drop_non_drop,
     reason = "keep the full ordered direct-child custody trace and explicit recovered-input discharge before failure"
 )]
 async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
@@ -283,10 +282,6 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
 #[expect(
     clippy::too_many_lines,
     reason = "keep full heterogeneous declared-role retirements and all original typed custody lanes in one test"
-)]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
 )]
 async fn heterogeneous_application_children_are_owned_by_their_declared_roles() {
     let application_outcome = Application::new(ApplicationRoot.stop_on_shutdown())
@@ -628,7 +623,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
     let ApplicationOutcome::Completed {
         output: termination,
         cleanup: Ok((root_origin, joined_actor)),
-    } = App::new(
+    } = Application::with_topology(
         NestedRoot { birth_report: None }.stop_on_shutdown(),
         ActorSpace::new(),
     )
@@ -988,8 +983,8 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
         survivor: survivor_id,
         values: Some(values),
     };
-    let application_outcome = App::new(parent.stop_on_shutdown(), spaces)
-        .run::<PanicTerminal, _>()
+    let application_outcome = Application::with_topology(parent.stop_on_shutdown(), spaces)
+        .run::<_, _, PanicTerminal, _>()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);

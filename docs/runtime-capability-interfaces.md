@@ -189,7 +189,7 @@ Bombay is the ordinary dependency and application surface. It re-exports the
 one Behavior authoring attribute and the selected Behavior Actors vocabulary;
 direct foundational Behavior values remain the power-user escape hatch. Every
 path terminates in the same concrete `Behavior -> Actions` algebra, and
-Bombay's generic `App` owns execution.
+Bombay's generic `Application` owns execution.
 
 The selected Behavior algebra now carries exact live endpoints through
 `EstablishedRecipient<P>`, exact delivery, occurrence-preserving creation
@@ -407,7 +407,7 @@ outcome is the exact live reference or typed activation rejection. The keyed
 Bombay owns local Entity installation and lifecycle composition.
 `EntityDefinition` names one stable ID, the complete authored Behavior stack,
 its concrete application host product, asynchronous hydration, and exact fact
-consumers. `App::entity_family` installs that definition under a semantic role;
+consumers. `Application::entity_family` installs that definition under a semantic role;
 `ApplicationHandle::entities` selects its cloneable receptionist, while the
 application retains shutdown and task-join authority.
 
@@ -701,7 +701,7 @@ and panic custody.
 drives that same pair. Nested blocking rejects before effects; build failure
 returns exact Application, Builder and native io::Error. Current-thread and
 multithread are Builder choices. There is no second public runner framework.
-Advanced `App` supplies intentional logical hosts and native Entity families.
+Explicit hosting on `Application` supplies intentional logical hosts and native Entity families.
 Each acquired root/family head is published before a later cleanup await;
 unfinished receiving errors remain distinct from acquired reports.
 
