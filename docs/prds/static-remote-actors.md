@@ -9081,3 +9081,129 @@ remain separately recorded. Exact stage/cumulative measured receipts are
 /tmp/bombay-assignment-delivery-stage-checkpoint.json and
 /tmp/bombay-assignment-delivery-cumulative-checkpoint.json, including tracked and
 untracked source and per-path hashes. Required exact-head review/CI precede merge.
+
+Assignment PR343 submittedb8a66a251d6b5927f920d8735c0e1b086eb9a49f on
+latest-main branch; scoped review5481600750 covers that exact head. Required
+CI38104968293 and both Linux campaigns remain running, not merged. Submitted
+stage production0, tests671, documentation+373/-3/net370, two paths; its immutable
+stage/cumulative receipts remain separate from these later coordinator records.
+
+Storage source7c6099 measured net649 after approved duplicate removal. Both
+profiles reach intended final gap176 for both providers and insertion orders:
+actual retained requested windows794 versus legacy618. Existing five actual
+Application controls pass both; native duplicate/conflict windows allocate0.
+This is finite requested-storage evidence, not universal peak/process-heap proof.
+Strict lint exposes six style findings only. Automatically select borrowing the
+existing async function, ordinary if-let, three narrow explained expectations
+for actual continuous custody traces/type product, and honest log/comment
+wording. No type alias, public product or generic abstraction is warranted.
+Resource retained cap650→680 before edits covers expected net659 while retaining
+all independent measurement/custody phases. Cumulative tests14800 remains ample
+for13872+680+36 unique inversions=14588. Numeric ceiling and repaired accounting
+assertion remain unselected until independent source/measurement review.
+Document cumulative cap7100→7300 before further decision/evidence records: current
+Bombay6798 plus controlled171=6969 leaves131 lines, insufficient for both pending
+resource and wire decisions/delivery custody. This authorizes records only; core
+2200/public types5/path320/controlled810 caps remain unchanged.
+
+Select bounded-JSON ordinary-Rust comparison, not production metadata layout:
+reuse locked serde_json1.0.151/Serde1.0.229 and standard Cursor<&mut[u8]>;
+serialize by borrowing the nonclone original and transmit only a successful
+written prefix. Preserve the actual I/O-class JSON error and original allocation
+on short destination; partial output is not sendable. This does not bound custom
+Serialize allocation/effects. Alternatives growable Vec output lacks the fixed
+destination limit; a bespoke writer/codec adds no demonstrated capability.
+
+For this top-level concrete comparison select a borrowed starts_with object
+shape predicate on trim_ascii_start, followed by unchanged from_slice on ORIGINAL
+bytes. The crate owns complete JSON parsing, duplicate-field detection and
+trailing-input refusal. Form-feed remains invalid because original bytes enter
+the parser unchanged. Alternative map-only Visitor/MapAccessDeserializer adds
+25–35 lines without a demonstrated nested-object gap; Value loses duplicates,
+and externally tagged enums change layout and still admit some arrays/strings.
+No new crate/visitor/parser/codec is warranted. Nested production metadata shape
+and actual v1 operation layout remain separate undecided contracts.
+
+One new private protected_json.rs test target, forecast150–220 retained lines
+(stage cap230), at most12 unique negative lines, production/public API/dependencies
+zero. Create branch from actual latest main before committing; selected dependency
+inputs unchanged. Probe valid object/array/duplicate/unknown/trailing bytes, JSON
+whitespace versus form-feed, Unicode/u64 bounds, exact-fit/one-byte-short writer,
+nonclone original/error custody and deliberate original-byte preservation.
+Run intended shape, direct-Value duplicate and trailing-end omissions both
+profiles with exact restored controls; no network/authentication proof follows.
+Cumulative retained tests14800 covers13872+resource680+JSON230+48 unique inverse
+lines=14830 only after an expansion, so raise to15100 BEFORE authoring this stage.
+All other caps remain unchanged. Research of production AUTH1 extraction proceeds
+in parallel, with no new runtime abstraction adopted.
+
+Independent storage review confirms exactf82 source/receipt/logs/binaries and
+794/618/176 observations, but rejects proposed2KiB/1818 equation: two live ledger
+entries coexist with two incoming pending/verifying/result owners. Counting only
+two originals/notification cells omits real custody. Separate-owner conservative
+terms produce2080 including cold-host allowance; notification reception also
+neither consumes disposition nor frees caller/actor-transferred originals.
+
+Automatically select separate explicit two-entry live ledger and two incoming
+slots, reserved BEFORE provider invocation and retained through borrowed-wait
+cancellation and unread results. Prefer existing pending custody plus existing
+ledger over a new combined controller/registry. Alternative one shared two-slot
+pool would couple incoming progress to permanent ledger occupancy and is not the
+selected service policy. At most two active verifiers share the incoming slots;
+counting ledger identities alone cannot bound verification. Explicit consumption
+transfers original/result ownership to the caller; accepted originals transfer
+to actors. Those subsequent owners remain explicitly outside this local envelope.
+
+Select explicit4096-byte finite requested-allocation envelope for this two-ledger/
+two-incoming deterministic test profile, not a production default. Conservative
+terms: actual capacity baseline656 once; ledger2*(original3+comparison2+notify128);
+incoming2*(original3+notify128+verifier256+release-control128); separate cold-host128
+=2080. Notification/work/control allowances exceed measured64/136/64 respectively
+and require exact locked-source assessment plus fresh independent both-profile
+checks. Inline receipt/error80, message112 and stack futures96/232 are already
+concrete storage or stack, not repeated heap charges. No arbitrary provider/
+executor/waker, actor result Vec/task, caller-owned output, transport or KERI
+heap guarantee follows. Whole-operation and production B acceptance stay open.
+
+For stable measurements automatically select a dedicated same-test subprocess,
+using standard current_exe/Command and the libtest exact single-test/single-thread
+arguments. Only its isolated role starts DHAT; parent acquires full output/status
+and proves exactly one intended test executed. Use a closed role and reject bad
+role input. The parent remains an ordinary owning integration test under pinned
+Nix. Alternative body mutex cannot silence libtest runner allocations according
+to DHAT's own docs; globally changing every test invocation or a custom allocator/
+runner is unwarranted. Preserve original filtered failing measurements unchanged.
+
+Prepare the smallest actual accounting/reservation patch and formatted scope
+estimate before applying it; current680 cap remains until that review. It must
+cover before-verification count/byte refusal, simultaneous slots, cancellation,
+unread versus actual consumption, fixed bound and omitted-charge/early-release
+inversions in both profiles. No repaired assertion or production eligibility is
+credited from these selected decisions alone.
+
+Protected JSON comparison completed163 retained lines, SHA
+ddbab1d3e5578aba68e31b399d18f9ed0fdfad6110ab90d28a7572069f46bdac;
+zero production/public API/dependency changes, five unique negative lines. Six
+controls pass both profiles; four decoder/writer omission pairs fail at their
+intended runtime oracle both, with exact restored controls. Source/error/original
+custody reviewed independently; all28 command logs and six evidence receipts
+rehash. Complete authored receipt SHA
+30330c4f91fceb4b8694c4a01af9826b80d8de68c9d8ca59558ee8a7f57a1d13
+is /tmp/bombay-protected-json-complete-receipt.json. Original/final binary hashes
+match within each authored profile. Direct derive accepts arrays; Value erases
+duplicates; omitting end accepts suffixes; ignoring WriteZero admits partial54B.
+These observed gaps justify the selected standard-API composition without a
+custom codec/visitor. No production wire schema/authentication witness is claimed.
+
+Delivery branch starts at actual latest main2c264c7 before commits, incorporates
+pending343b8a66a2 and the exact163-line source before combined checks. All five
+pinned-Nix combined checks pass, including all-targets580 with one existing
+ignored, build, docs, formatting and strict Clippy. Receipt
+/tmp/bombay-protected-json-combined-checks.json records argv/log hashes.
+Focused stage adds only one test and current decision/evidence records; manifests
+and locks remain unchanged. Across owners retained tests14035, with resource680
+and48 unique inverse lines projected14763 within15100. Core2051/public types5
+remain unchanged; docs7300/path320/controlled810 limits remain. Exact-head review,
+required CI, actual Linux artifacts and343 prerequisite merge remain delivery
+gates. New same-test storage isolation/reservation work is still prepared, not
+implemented or accepted from these JSON controls.
