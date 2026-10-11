@@ -4,6 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 publish = false
+default-run = "bombay-example-counter"
 
 [lints]
 workspace = true
@@ -11,3 +12,8 @@ workspace = true
 [dependencies]
 bombay-rs = { path = "../../crates/bombay" }
 tokio.workspace = true
+thiserror.workspace = true
+futures-util = { version = "0.3.34", default-features = false, features = ["std"] }
+
+[dev-dependencies]
+dhat = "0.3.3"

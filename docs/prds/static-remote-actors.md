@@ -32,8 +32,15 @@ comparison PR342 merged after scoped review, all six successful checks and both
 submitted-head Linux campaigns.
 Configured assignment/deadline PR343 and bounded JSON PR344 merged after scoped
 review, all six checks and both submitted-head Linux campaigns. Conservative
-storage witnesses pass local controls, inversions and independent review;
-PR345 is open with required CI running. These local contributions
+storage PR345 and explicit JSON declaration PR346 also merged after scoped
+exact-head review and all six CI checks passed. The authorized Counter example
+is submitted as [PR347](https://github.com/devrandom-labs/bombay/pull/347).
+Sixteen focused debug/optimized tests cover typed provider refusals, finite
+component allocations, same-owner proof rotation, actual native Closed custody,
+original allocation-error source and payload-free diagnostics. Intended inversions
+and independent reviews retain their scoped limits. All combined local checks
+pass, including all21 aarch64-darwin Nix checks on the final source. Required
+submitted-head Linux CI, final review and actual merge remain open. These local contributions
 do not close production KERI or the full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
@@ -9762,11 +9769,990 @@ proof. Production reuse still requires its actual bounded parsing witness.
 Prepare the focused reviewed comparison PR; resource345 actual delivery, its
 submitted-head CI/native evidence and actual merge remain delivery gates.
 
-Declaration delivery checkpoint against exact prerequisite c25b48a5 includes
-three tracked paths and no untracked files: production +0/-0/net0; tests
-+180/-0/net180; public API +0/-0 types; manifests/lock unchanged. The complete
-tracked/untracked stage and cumulative measurement is retained separately in
-/tmp/bombay-wire-delivery-{stage,cumulative}-checkpoint.json. Cumulative
-production remains1250 net, retained Bombay tests13476 and five public types.
-The pending resource contribution is inherited, not counted as new declaration
-implementation. No Application candidate source is included in this delivery.
+Declaration comparison is submitted as draft PR346, exact head
+ae3741d09d090a38377a00e13d40bc761f692b20. Stage against c25 has three tracked
+paths/no untracked files: production +0/-0/net0; tests +180/-0/net180; docs
++359/-5/net354; public API +0/-0 types. Cumulative baseline a9 remains
+83 paths, production1250, tests13476, docs7494 net and five public types.
+Actual resource345 merge, fresh submitted-head review, required CI and native
+transport custody remain open; this draft is not merged or full R05 acceptance.
+
+For actual Application failure custody, select the already locked futures-util
+0.3.34 maybe_done around each caught execution, stack-pinned and locally inferred.
+Its exact owning poll stores the original completed value and drops the finished
+execution; take_output moves that value once. Select borrows of this owner and
+only the service-wait future, preserving acquired service/native receiving outside
+cancellation. This deletes the unchecked handoff expects and unconditional join
+that loses pre-publication causes or hangs after known execution failure.
+Alternatives add a handwritten poll adapter, erased boxed future or extra task;
+none supplies a gap over the existing concrete crate composition. No dependency
+version, wrapper, public type or universal destructor-panic recovery is added.
+The full concrete source and same-composition before/after-publication regressions
+remain prerequisites to production retention; healthy validation cannot consume
+failure receipts first or replace the original constructor StartupRefusal.
+
+PR346 exact ae3741d submitted-head technical COMMENT review5481908516
+records no scoped blocker. The comparison author supplied separate committed
+source/custody verification; the other reviewer supplied independent semantic
+and minimization review. All40 campaign artifacts, eight source variants and
+five combined logs rehash. Neither review supplies pending required CI credit.
+
+Application same-composition failure receiving requires90–130 further formatted
+lines beyond the1192 uncompiled candidate, estimated1282–1322. Automatically
+select the recommended stage1350 production cap and cumulative core3500 before
+authoring those branches (existing2051+1350=3401); tests280, docs8200, paths320
+and public types5 stay unchanged. No claim of deletion or source acceptance.
+Use one actual acquisition async block returning the complete inferred tuple
+to outside storage, then a separate healthy validator. Existing MaybeDone owners
+retain exact execution and receiving values; exhaustive handoff matches retain
+actual RecvError. The known-failure select cancels only borrowed service waiting,
+then acquires independently owned native/two-notification products. No named
+opaque-Work wrapper, boxed future, generic observer callback or new task is needed.
+Required smallest failures are actual Work panic before and after publication
+in the SAME composition: preserve the original panic and pre-publication closure
+cause, terminate waiting after the known post-publication failure, acquire native
+and both notifications before oracles, and preserve constructor StartupRefusal
+after cleanup. Any additional source needs its own measured law and checkpoint.
+
+Resource PR345 actually merged1aad2616a1bdf529290d72d98c823172fc322bd2
+at2026-10-11T04:37:23Z after scoped review5481789356 and all six exactc25
+checks passed. Actual merge treeec320 equals the reviewed/tested tree; parents
+are244efe4 andc25b48a5. New Nix job114382835344 completed04:36:21; full
+root log2808019c8c1a6736a82cdd26fcf647c0627eb381a8a6d3263242abec22b49931
+contains actual Linux resource6/6 in debugcoverage and releasealltargets, Driver
+2048 and four Observe1024 campaigns. Observe Miri/upload were SKIPPED.
+Separate independent log13ad963b and proof12c4f718 preserve the same executions;
+originala121 evidence stays distinct. Native proof fcf2efba and coordinator
+234-file custody proof cover both actual Linux transport profiles. Root source
+fast-forwarded actual main while both pending documents were preserved byte-for-
+byte under /tmp/bombay-coordinator-before-resource-main-alignment.
+This delivers the private finite component witness, not full AUTH1/NET1.
+The actual-main/PR346 combination produces the exact already tested346 tree
+639a80fe57896ed56b9e80182424c7ab333797be with zero added source changes.
+
+Complete Application proposal fc2b8f68 (1327 lines) remains unretained:
+its yielded outer Work must stay polled beside the actual borrowed service wait,
+and native cancellation residuals cannot use the healthy empty-lane oracle.
+Select the closed CounterWorkCase fault input and existing std resume_unwind
+for a once-allocated original panic cause, capturing its address before Work
+and comparing the acquired opaque native allocation without downcast/reboxing.
+Standard panic payload erasure is intrinsic to Rust catch/resume, not a provider
+representation or protocol substitute. Ordinary typed Box input can coerce at
+that existing standard function; no Any-based dispatcher is introduced. Existing
+admission_wake_custody uses this same resume/pointer ownership pattern. Rust1.99
+official documentation matches the pinned compiler and explicitly supports
+catch/resume; abort and destructor failure remain outside this scoped witness.
+The same Counter execution is polled beside requester execution/service waiting;
+known failure drops only that borrowed wait, then independently acquires both
+Applications native/notification products before fault validation. Post-publication
+uses existing Tokio yield outside folds to establish actual pending service work.
+Alternatives inspect/downcast a native cause or stop polling outer execution;
+neither is needed for exact custody and the latter misses the liveness failure.
+
+Fresh native-source check rejects the fc2b fault forecast: engine Completion
+has no OwnerCancelled variant; the exact terminal owner returns the distinct
+ActorRetirement::OwnerCancelled product. Keep completed_actor healthy-only;
+fault validation borrows that actual product and preserves every residual field
+through acquisition. Source correction has no compiler, semantic or inversion
+credit. Reuse one ordinary configured_counter_grants(binding) function for the
+already explicit independent I/R grant literals in both provider runs/tests;
+this deletes repeated trusted configuration spelling without deriving grants
+from incoming bytes, changing service ownership or adding a public surface.
+The prepared193-line genuine-pending test plus143 same-driver fault/non-Send
+tests exceed the former280 forecast. Automatically select stage350 test lines
+before retention (336 prepared, not executed); cumulative15600 stays unchanged
+and still fits this contribution plus existing temporary cuts. Real Full/revoke
+and changed-header DHAT remain mandatory separate unexecuted witnesses; their
+actual measured scope will need its next checkpoint before implementation.
+
+Corrected external Application source8de88a27 measures1376 lines, exceeding
+1350 by26 before retention. The complete borrowed native OwnerCancelled oracle
+and continuously polled outer execution account for the actual increase; final
+outer-fault requester-product conservation needs15–25 more. Automatically select
+recommended stage1420 before that edit; existing2051+1420=3471 remains within
+cumulative core3500. No authoritative oracle is removed or source packed to fit.
+Prepared owning tests143+193 fit selected350; their actual new fault/non-Send
+and pending/revocation source is uncompiled, and Full/DHAT remain open.
+
+Independent full runtime-model review permits isolated prototype compilation
+after the requester-result shadow and private sends visibility corrections.
+The four selected Work faults preserve actual raw/partial-state custody; yield
+does not establish that an R was acquired before the fault. Earlier references
+to an exhaustive cancellation oracle mean the original native object is fully
+retained, not all its fields are inspected: the borrowed oracle selects the real
+OwnerCancelled variant and checks only its recorded cleanup-failure containers.
+Requester-startup holds and all R18 boundaries remain unexecuted broader controls.
+
+A source-format measurement exposes another count correction before writing:
+ordinary two-statement async acquisition lets pinned rustfmt fully expand the
+same semantics to1483 lines; compact fallback1375 is not a valid cap reduction.
+Automatically select recommended stage1500/core3600 before writing that form
+(existing2051+1500=3551). Tests313 stay within350. This changes formatting and
+ordinary binding spelling, not types, policies, dependency versions or public API.
+Next authorized action is isolated actual-source prototype with the pre-recorded
+Counter-only futures-util/DHAT manifest edges, default-run and sole Counter lock
+record. Compilation alone will not retain or deliver this source: focused debug/
+optimized laws, intended inversions, genuine Full and actual changed-header bounds
+remain mandatory before this contribution can pass its scoped delivery gates.
+
+Isolated prototype first pinned-Nix no-run compilation exits101 on source
+f5bb66d6, with lock unchanged71d137b1. Its three execute_with calls used the
+advanced App four-parameter spelling with public Application. Fresh actual
+Application::execute_with at execution.rs644 has Actor, StagingFailure, Terminal,
+ChildFailures, Work and WorkFuture; existing normal examples confirm that
+Application and advanced App are distinct owners. This is one static-call mismatch
+with299 cascading diagnostics, not299 independent gaps or a semantic inverse.
+Reuse that exact six-parameter API: infer Actor/StagingFailure, explicitly supply
+the existing terminal product/empty child failures, infer Work/WorkFuture. No new
+trait, wrapper, alias, visibility, protocol or bound is justified by the compiler.
+Original full source/log/receipt are preserved before the narrow caller correction.
+
+Actual debug prototype first run on ffbe0023 reports5 pass/1 fail. Genuine
+pending/revocation, non-Send receipt, constructor refusal and two unchanged
+Counter fold tests pass; the four-fault test encounters Tokio called-after-
+complete. Exact selected oneshot::try_recv sets inner=None on Closed, so later
+awaiting that receiver cannot acquire a RecvError and instead panics. This proves
+a real native handoff-preservation defect, not successful fault-case completion.
+Select existing FutureExt::now_or_never on a temporary borrowed receiver after
+execution completes: its single actual future poll acquires the original
+Result<T,RecvError>, or preserves a genuinely pending receiver. Delete try_recv
+then-await in both handoffs; no synthesized error, extra channel, future wrapper
+or dependency. Preserve original ffbe source/full log0ce9a327 before correction.
+Eight compiler warnings remain open obligations; no strict-check or retention
+claim follows from no-run compilation or five partial controls.
+
+Second actual debug fault run16c1d945 remained live after four prior controls
+passed. Source execution.rs1896–1903 proves normal requester Work completion
+waits actor join before releasing owner cancellation; canceling service_wait
+dropped its sole lifecycle stop path. Root interrupted only its exact owned
+test process with recorded SIGTERM after that diagnosed deadlock, preserving
+source/full logdb4536ce/receipt. This is an interrupted diagnostic, not a passed
+test, inverse or observation-timeout restart.
+Select exact requester lifecycle shutdown after the borrowed wait is dropped
+on a known outer Counter execution failure, retaining the original stop result
+before requester execution/native acquisition. Existing activated lifecycle
+authority stays outside that wait. The root Counter remains OwnerCancelled;
+this requester now has an actual graceful Stopped result, while its Work retains
+the original permission RecvError. Borrow its full native object without assuming
+empty user/source lanes. No new owner, task, channel or error product.
+Automatically allow stage1520 before the necessary stop/native-oracle expansion
+and final standard formatting; existing2051+1520=3571 fits unchanged core3600.
+
+Actual Counter prototype now passes all six focused tests in pinned Nix debug
+(source91438986, log73e60e6a) and optimized (formatted source4080a4db,
+log6d60be8a). The source difference is the single rustfmt let-else line break;
+lock71d137b1 is unchanged across both. Original constructor refusal, genuine
+pending/revocation, caller-local non-Send R and the four real Work faults pass,
+with both unchanged Counter fold tests. Eight warnings remain; no strict gate,
+full mailbox/allocation witness or feature-completion credit. Freeze actual
+source, manifest, lock, both executables and full receipts under
+/tmp/bombay-counter-focused-inversions before mutating a test source.
+Next scoped negative controls reuse the recorded defects: omit the observed
+revocation (actual Counter snapshot must become1 rather than0), and restore
+the first native handoff try_recv-Closed then await (must expose Tokio's actual
+called-after-complete panic). Run each exact owning test in debug and optimized,
+then restore byte-identical healthy source and run all six after each cut.
+A negative run must execute one failing test and the intended diagnostic;
+compilation failure, zero tests or interruption cannot count. No new retained
+production design, dependency, type or public API is selected by this campaign.
+
+Counter focused inversion campaign completes nine actual pinned-Nix commands:
+four intended one-test failures (two cuts in both profiles) and five all-six
+healthy controls, ending at unchanged4080a4db/71d137b1. Revocation omission
+produces native Counter snapshot1 versus required0; restored first handoff
+produces the actual Tokio called-after-complete panic. Source/log/lock hashes,
+exact commands, inverse patches and byte-identical restoration are verified in
+/tmp/bombay-counter-focused-inversions/campaign.json. These prove their scoped
+regressions, not full R08/R18. Next inspect strict Clippy on this same source;
+compiler suggestions cannot erase original errors/receipts or invent design.
+
+Declaration comparison PR346 actually merged15fc7aa6be9348fef4ac2be6ac48be657fd6dc41
+at2026-10-11T05:19:25Z after exact-head technical review5481908516 and
+all six checks succeeded. Actual merge tree639a80fe equals submitted/tested
+source; actual parents1aad2616 andae3741d. New Nix114389217731 finished
+05:17:13; root full log6edae9c3 proves nine JSON tests in debugcoverage and
+release, Driver2048 and four Observe1024 executions. An earlier filtered
+zero-test invocation gets no credit; Miri/upload were SKIPPED. Independent
+proofb56d077a and fresh native234-file proof88af17d3 remain separate.
+Root and isolated Counter branches now align to actual main, preserving all
+pending documents and three original App source/manifest/lock files.
+This private declaration contribution does not close full R05/AUTH1/NET1.
+Current Counter checkpoint includes all three changed/untracked paths:
+production +1494/-0/net1494; tests +312/-0/net312; manifest/lock +7/-0/net7;
+public API +0/-0 types. Its actual strict Clippy baseline fails with24 normal
+errors/31 test-target errors (full log9007b4e6). Original error/receipt fields
+must survive; no diagnostic supplies permission for new architecture.
+
+Counter ordinary-Rust minimization hypothesis: no Counter/requester births
+exist; NoChildBindings<Terminal> has an empty child product and needs no
+ProjectTerminal. Root native/cause/notification custody is already returned
+independently by actual Application. Automatically select testing existing
+Never as child terminal and deleting the ten-line private derived
+ApplicationTerminal; the wrapper owns no additional state or transformation.
+Existing six-generic Application and ActorRetirement<B,Never,()> express the
+same law without another projection. The alternative retains an unused root
+projection despite no child creation; no unique ownership need was found.
+Prepared /tmp/bombay-counter-no-child-proposal retains both complete sources
+and the exact patch. Scoped compiler and all-six debug/optimized controls
+must pass before retention; no native result, error, field or receipt is deleted.
+
+Next actual-owner witness scope, selected automatically under the user's
+delegation: retain genuine Full/revocation/expiry/permitted retries and fresh
+component measurements for this Counter source. Prepared estimates are180–220
+Full test lines and300–380 DHAT test lines, beside current312. Select stage950
+test lines and cumulative16400 before authoring/integrating those tests; core
+3600/stage1520, paths320, docs8200 and public types5 are unchanged. This is an
+explicit expansion, not deletion or acceptance. Existing measured retained
+Bombay tests13476 + controlled1676 + proposed912 plus all known temporary
+inversions fit16400; actual complete deltas must be measured at the checkpoint.
+Reuse existing DHAT0.3.3 in one isolated same-test-binary child with actual
+Application/ports already established. Measure actual pending/ledger headers,
+provider allocation, comparison charges and incoming reservations independently;
+manual allocation interception is unnecessary. Native/notification products
+remain fully acquired before oracles. Do not inherit the old2720/four-owner
+formula: this ledger retains comparisons/summaries, not full pending owners.
+Candidate envelope H_R+2*(1+1+256)+2 must be measured against the already
+explicit4096. No RSS/whole-heap/arbitrary-provider guarantee follows. The current
+borrowed-entry caller is serial: refuse a third reservation before polling
+providers and preserve pending/cancel/unread custody separately; concurrent
+verifier ingress progress remains unproved. A scalar before/after actual actor
+ReportConsumed needs its real pipeline point, not a substituted owner.report.
+
+Never-only ordinary comparison source0786caf4 compiles and passes all six
+focused tests in both profiles (debug log839a0d0c, optimized d21a554b); exact
+71d137b1 lock remains unchanged. Independent source review confirms exactly
+ten removed enum lines and five type substitutions, with all native/notification
+observations unchanged. Seven test warnings remain. This permits the narrower
+prototype model; it is not full contribution distillation or delivery.
+
+The actual Never-source executable also completes --explicit-test through
+both concrete providers in debug (loga41a6d38) and optimized (e8dda0dc),
+source0786caf4/lock71d137b1 unchanged. Both live Counter/requester runs
+validate exact typed trigger/result/snapshot traces, duplicate nonexecution,
+full original handoff and native/two-notification cleanup. This is local healthy
+evidence only; ordinary builds still emit10 warnings and strict checking stays
+unpassed. Other178 locked package records are unchanged; only Counter adds
+the two already selected existing-crate dependency memberships.
+Full/retry authoring now forecasts240–290 lines, including real attempt()
+after observed expiry and a permitted control. With fresh DHAT300–380 and
+existing312, the earlier950 test forecast is insufficient. Automatically select
+stage1050 before integration; cumulative16400 stays unchanged. No test oracle
+or original ownership is removed to fit a count. Complete tracked/untracked
+Counter delta after Never is production +1484/-0/net1484, tests +312/-0/net312,
+manifest/lock +7/-0/net7, public API +0/-0 types. Combined core3535 fits3600;
+full milestone remains active with Full/bounds/strict checks and full R01–R25
+acceptance still open. No Counter source is committed, submitted or merged.
+
+Counter readability batch selects equivalent existing-Rust expressions only:
+name the provider projection verified; use let-else for the already-proven
+new ledger position; use byte-array literals; keep the completed scalar Counter
+state in a named local until scope end rather than explicit non-Drop drop;
+correct the now-compiled prototype header. No signature, layout, policy,
+provider outcome, bound, dependency or error ownership changes. Preserve0786
+source before edits, format through Nix and rerun focused controls. The batch
+cannot cure missing refusal consumers or justify a long-function exemption.
+
+Readability source6cc324fe passes all-six debug/optimized controls; logs
+f58c34a9/51307952 retain actual executions with unchanged71d137b1 lock.
+Integrate reviewed Full proposal29f2cb6c (288 test lines), one closed test policy
+for observed revocation, observed expiry and permitted retry. Native1024 fill
+comes from exact existing ingress default, not a new remote-resource default.
+Both adverse permission changes occur after actual protected-command Full and
+before the real Read waits for capacity. A fresh actual attempt samples time
+after drain; independent native Reads prove1024 effects denied/1025 permitted.
+Full raw/proof/R/rejected command and both notifications precede assertions.
+No implementation, mailbox, provider, dependency or public API is duplicated.
+The real rejected-payload/permission law belongs to the existing owning attempt.
+The separately prepared allocation draft measures572 lines, exceeding380
+forecast. Automatically select recommended stage1250 test lines/cumulative16700
+before integration; current311+Full288+draft572=1171, before final corrections.
+Production1520/core3600, docs8200, paths320 and public types5 stay unchanged.
+This is expanded proof scope, not a numeric resource-bound increase or acceptance.
+
+Actual Full sourcee9f0cc04 passes all seven tests in both profiles, including
+all three finite retry policies; logs a3a758ec/541fd9d3 and unchanged71d137b1
+retain source/command/native execution evidence. Author-side source review is
+explicitly distinct from independent review. Freeze source/both executables
+before eight-command inversion campaign: omit observed revocation or remove
+the guarded expiry arm; exact owning test must fail at actual Counter1025 versus
+required1024, with compiler-only/zero/interrupted failures rejected. Restore
+byte-identical source and rerun all seven in each profile after each cut.
+
+Full campaign completes all eight pinned-Nix commands: four intended
+native1025-versus1024 failures and four all-seven healthy restorations.
+No compiler-only/zero-test/interrupted run receives credit. Exact sourcee9f0cc04
+and71d137b1 lock are restored; full logs/variants/patches/commands rehash in
+/tmp/bombay-counter-full-inversions. Revocation fails its first policy; expiry
+omission preserves that policy and fails the deadline case. Independent review
+remains separate from the prepared Full author's review. This local source
+witness is partial R08, not the two-provider/freshness or network campaign.
+Allocation draft now650 lines plus explicit individual-byte overflow/custody
+corrections and actual ReportConsumed+7 observation lines. Automatically select
+recommended stage1400 test lines/cumulative16900 before integration; production
+1520/core3600, docs8200, paths320 and public types5 stay unchanged. The report
+metric records before actual completion-send and after real actor acknowledgement
+in existing outside observations, retaining a partial before fact if cancelled;
+it changes no protocol, owner, API, resource limit or result-release policy.
+Original causes/bytes/projection identity must remain observable in the fresh
+component proof; draft numeric dimensions are not eligibility or acceptance.
+
+Full source/campaign independent review8f85ee9e verifies all eight actual
+commands; retain its explicit record-provider/local-deadline limits. ACK metric
+sourcec5f5ed33 passes all seven debug/optimized tests (24846d89/63742342),
+with unchanged lock71d137b1. Select the prepared two-site premature-release
+inverse: discharge at the actual ReportConsumed and omit later consume
+discharge, preserving originals and avoiding unrelated underflow. Expected
+post-native charge-conservation failure, followed by exact restoration and all
+seven controls in each profile. Frozen inverse03680096 adds14/removes1;
+six allocation cuts add7, so reconcile total21 against earlier20 forecast.
+Stage1400/cumulative16900 tests still cover this temporary evidence; no quota,
+production contract or public API changes. Allocation proposal55761e0a is736
+lines, six private measurement/policy types, not executed; rename its
+CounterByteBoundary/boundary to CounterByteLimit/limit under selected naming
+rules before copying. Existing concrete owners retain all authority. Complete
+actual source/lock/custody plus native/two notifications precede all oracles.
+
+Actual ACK inverse completed four commands: intended charge-conservation
+failures b0079063/8030fe48 and all-seven restorations d6aa8c2c/2fc7d5ab
+in debug/optimized. Originalc5f5ed33 and lock71d137b1 restored exactly;
+all actual logs rehash. Counter complete tracked/untracked checkpoint:
+production +1497/-0/net1497, tests +596/-0/net596, manifest/lock +7/-0/net7,
+three paths, public API +0/-0 types. Core3548 fits3600; prepared736 test
+lines forecast1332 within1400. Strict checks and full acceptance stay open.
+
+Independent provisional allocation review found no source/custody blocker
+after the naming correction. Integrated/formatted source653b596a passes all
+eight debug controls, including exact named isolated profiler and unknown-role/
+zero-filter controls. Measured record headers464/requested470/reserved982;
+scheduled headers496/requested744/reserved1014, each provider call121 bytes
+(two allocations) versus explicit256; both insertion orders agree. Existing
+4096 ceiling remains unchanged. Incoming4 bytes and comparison2 are measured;
+raw/R/native result/two notifications and actual Counter0 precede resource
+oracles. Only component requested allocation/custody credit; no whole-heap,
+cold-start, arbitrary waker/provider, transport or full acceptance credit.
+Tracked/untracked Counter now production +1497/-0/net1497, tests +1330/-0/
+net1330, manifest/lock +7/-0/net7, three paths and public API +0/-0 types.
+Run optimized positive before the six prepared allocation inverses, each
+rebased narrow replacement on653b596a, with exact named isolated execution
+and native oracle; restore identical source/all-eight controls in both profiles.
+
+Allocation optimized control also passes all eight (2c89f89f), same
+653b596a/71d137b1 and measurements. Independent review precision: summed
+requested bytes cover headers/two primary inputs/two primary provider windows/
+two comparison allocations only; duplicate provider work is not in that sum.
+Do not claim cumulative profiler-lifetime demand or four retained caller owners
+fit one two-slot owner. Duplicate association allocation is independently zero;
+caller-received originals, overflow inputs and deliberate release cells remain
+outside the component bound. Six inverse tests run the exact named isolated
+role directly; zero/unknown-role controls are not semantic inversion credit.
+
+Six allocation inverses complete24 actual pinned-Nix test commands: twelve
+intended failures and twelve all-eight restorations across debug/optimized.
+Count/individual/aggregate overflow reaches the actual provider only when its
+check is defeated; header, verification reservation and comparison omissions
+fail their independent physical/custody equations after native acquisition.
+All logs/variants rehash and653b596a/71d137b1 restore exactly; root custody
+proof retains six narrow source patches and seven unique added inverse lines.
+No compiler/setup/zero-test failure is counted; full acceptance stays open.
+
+Fresh affected-target strict Clippy fails101 (56f684a7, source653b596a):
+18 ordinary/36 test diagnostics. Native fields must stay owned; missing
+stale/unavailable consumers and long inferred-custody functions remain open.
+Select equivalent Rust readability fixes only for the allocation test: explicit
+unit semicolons and byte-string literals; no layout, signature, owner, policy,
+measurement or public API changes. Preserve653b evidence and rerun both
+profiles. Ordinary pure-oracle extraction remains research, not a waiver or
+proof that Rust cannot express the exact captured Work products.
+
+Independent allocation/ACK review e3c2e572 rehashes72 artifact/source/log
+files and confirms scoped controls/inversions/original custody. Current
+readability sourceb8a670ed changes allocation-test spelling only; all-eight
+debug controls pass (cce698d0), same primary measurements and lock71d137b1.
+Strict gate remains open; source653b exact-head failed18/36 diagnostics.
+Provider research confirms stale unreachable in both current providers and
+unavailable unreachable in the scheduled healthy sender path. Refusals do
+finish requester cleanup, then fail its healthy-only validator; this is an
+oracle gap. Current Full path stops the still-verifying requester without a
+completion/retry; no direct deadlock established. Both need actual service
+consumers before broader admission delivery. No new provider input, error
+dependency, failure priority or lint waiver selected by this research.
+
+Readability sourceb8a670ed also passes all-eight optimized controls
+(007f3b1a); original measures/lock stay unchanged. Current combined Bombay
+tracked/untracked union85 paths: production +3222/-475/net2747, tests
++15467/-661/net14806, public API +5/-0 types (Counter +0). With recorded
+owned external production801, core3548 fits3600. Known controlled tests1676
+and all accounted temporary inverse lines100 give16582 within16900.
+Counter1497/1330 fits stage1520/1400; required strict/full combined checks,
+provider outcomes, final ownership audit and actual Counter PR are unpassed.
+This goal turn makes concrete progress through14 intended failure executions,
+exact restorations, component integration/measurement and independent review;
+full goal stays active. No current original is discarded to satisfy a lint.
+
+Provider stage decision selected under delegated recommendations, before
+production edits: keep trusted AuthorityFreshness (Current/Stale) and
+ProviderAvailability (Available/Unavailable) as independent private closed
+inputs to each concrete provider. Unavailable closes its actual Tokio result
+source and returns that original RecvError; otherwise Stale refuses cached
+authority before current exact-byte lookup yields receipt or Invalid. The
+alternative stale-first report obscures the acquired outage cause; a new
+compound provider error is unnecessary because both configured facts remain
+caller-owned. Coexistence never becomes an invalid/accepted claim. These are
+finite test-provider inputs, not caller claims, wire fields, defaults or KERI
+proof. Keep existing AsyncFn service seam and independent receipt constructors.
+Ordinary Rust enums/functions and locked Tokio1.53.1 suffice; no new dependency
+or public type/API. No thiserror/generated-import exception is selected here.
+Smallest pre-edit regression: old two-argument provider functions cannot accept
+the required independent trusted inputs; record the intended static mismatch
+separately from runtime semantic proof. Following implementation, actual public
+Applications must preserve literal accepted/invalid/stale/unavailable statuses,
+original raw/R/error products and native/two-notification receipts. Ignoring
+freshness, substituting lookup for real channel closure or misclassifying its
+error must fail post-native assertions, with healthy restoration both profiles.
+Same-owner proof-record rotation retains exact binding/identity/replay record:
+new proof must be authenticated duplicate and old proof Invalid, Counter1.
+Current healthy-only consumer is an oracle gap, not a passing refusal witness;
+repair it without manufacturing native results or losing original errors.
+Expected stage: existing authorized.rs, existing call sites only; roughly
++140 production/+500 tests, no public types removed/added. Reuse application
+ports, pure requester Actions, Tokio oneshot, pending/replay owners and native
+receiving; no second provider port/runtime/observation product. Automatically
+select production1700/core3800, tests2000/cumulative17600 and docs8350 before
+this expansion; paths320/public types5 unchanged. Bound inputs256/4096 do
+not increase. Measure all new provider paths on actual changed source.
+Fresh selection still Behavior/Actors0.23.0/d69f, Macros0.14.0; same exact
+Timers13e884d patch and lock71d137b1. Preserve b8a670ed before lowering.
+
+Pre-production provider probe1ef3eabd is integrated with test-only selected
+input enums on source4b810a42; actual pinned-Nix no-run build fails exactly
+two E0061 old-two-versus-new-four argument diagnostics, lock unchanged. This
+is static contract evidence only. Proceed with the recorded independent
+provider implementations; move those same closed inputs to normal scope and
+add explicit Current/Available at existing consumers. No new version/port.
+
+Selected provider lowering sourcee41299ae passes all-nine debug controls
+(e3b935bc), including the previously uncompilable literal probe; lock71d137b1
+unchanged. Existing primary allocation values remain470/744 and reservations
+982/1014; new unavailable/stale allocation paths are not measured yet.
+Counter tracked/untracked now production +1550/-0/net1550, tests +1423/-0/
+net1423, manifest/lock +7/-0/net7; three paths, public API +0/-0 types.
+Core3601 fits newly selected3800. Independent source review finds no new
+contract blocker but explicitly retains both-provider/service/native outcomes
+and rotation as open. Complete optimized positive before consumer changes.
+Prepared346-line nested-Work alternative is not eligible for the current
+outside-service custody contract: its service facts move out only at the end.
+Prefer reusing the existing acquisition with literal expected reports and
+independent refusal Reads. No new owning runtime is justified by the oracle gap.
+
+Provider lowering optimized positive also passes all-nine (94f200f5), same
+e41299ae/71d137b1. Independent exact-source reviewa0c21ef4 confirms real
+receiver causes and boundary ownership; only two literal probe combinations
+are covered so far. Next consumer choice selected: explicit caller-owned
+[CounterStatus;3] and native snapshot u64 describe the finite IIR trace.
+Inference from the implementation's own returned status would self-confirm
+a misclassification; a new expectation wrapper adds no required ownership.
+Use two plain private arguments, not a new protocol/port/type. Extend existing
+outside observations with the actual refusal-Read send result before await;
+requester retains Complete(report,None), while the separate native Read proves
+zero Counter mutations. All complete native/notification products precede
+assertions; exact original provider Result remains available to the caller.
+Prepared patch456929bb forecasts +111 production/+18 existing test call
+lines; two107-line provider consumers fit selected1700/2000. Verify the
+smallest prior defect first: both current providers deliver correct Invalid
+refusal, but the old healthy-only native validator insists on Some(1). Run
+that actual post-native failing assertion separately from provider semantic
+inversions; no false provider/admission failure credit. Restore the shared
+source and adapt those same tests to the selected literal-oracle interface.
+
+Prior healthy-only consumer defect is executed for both providers/debug/
+optimized: four intended post-native Some(1) validator failures, sourcee6fbbf50
+and lock71d137b1 unchanged; 239fb1a4/eefe8424/7f42bd91/c6f2a0f5. These
+are refusal-consumer regressions, not provider-error semantic inversion credit.
+Independent consumer review010c4e1a requires two additional assertions: full
+receipt identity/operation against independently configured raw/proof records,
+and complete native requester report against the same actual sent report.
+Select those assertion completions before claiming provenance/correlation.
+Also exercise both Current+Unavailable and Stale+Unavailable consumer cases;
+former can expose forbidden admission, latter preserves priority coexistence.
+Expected extra20 production/test12 lines fit stage1700/2000; if measured
+delta exceeds either, record expansion before further production edits.
+
+Refusal-aware consumer source3ab75a78 passes all-eleven debug tests
+(50e7eb7c), lock71d137b1 unchanged. Both concrete providers exercise accepted,
+invalid, stale, current-unavailable and stale-unavailable results through the
+actual public Application/requester path. Full configured receipt identity and
+operation, complete native report correlation, refusal Counter reads and both
+notification receipts are asserted after native acquisition. These finite
+profiles do not establish same-owner rotation or full remote R01–R25 gates.
+Current Counter production +1687/-0/net1687, tests +1558/-0/net1558;
+manifest/lock +7/-0/net7, three paths, public types +0/-0. Core3738 fits3800;
+stage1700/2000 remains respected. Optimized consumer execution and fresh
+refusal-allocation calibration, semantic inversions, strict checks and final
+Counter ownership review/PR delivery remain open.
+
+The same3ab75a78 consumer source also passes all-eleven optimized tests
+(047afb18), source and lock unchanged. The isolated allocation test's deliberate
+unknown-role failure and zero-test subprocess controls are expected negative
+controls; the parent validates them and its actual measured child succeeds.
+Four dead-code warnings remain; this result does not claim strict Clippy or
+combined workspace completion. Fresh refusal-allocation measurements and
+provider semantic inversions remain unexecuted.
+
+Select the independently reviewed refusal-allocation calibration before adding
+it: reuse the existing isolated DHAT test and warmed Tokio host, with caller
+raw/proof/configuration allocated before profiling. Each concrete provider
+retains four actual Result values (invalid, stale, current-unavailable,
+stale-unavailable) in an inline array; profile only its actual invocation and
+end profiling before assertions. Compare requested bytes against the existing
+256-byte verifier allowance; exceeding it reopens the contract rather than
+raising the bound. Alternative separate tests risk concurrent global profilers;
+new allocation ownership or dependencies are unnecessary. Expected +98 test
+lines, no production/public types/dependencies, same three Counter paths.
+These measurements prove only the finite provider invocation windows, not
+whole-heap, cold-host, arbitrary-provider or remote/native completion bounds.
+
+Calibration source5d76b2ca passes all-eleven debug controls (d8d83c19).
+Record provider invalid/stale request0 bytes, unavailable104 bytes (one block);
+scheduled provider all four refusals120 bytes (one block), each within256.
+All eight original provider Results remain owned through literal classification.
+Formatted addition is99 test lines rather than forecast98; stage1657/2000,
+production1687/1700 and core3738/3800, no changed public types/dependencies.
+Independent preintegration review3a397fdb verifies source3ab75a78's complete
+projection and native correlation assertions and the exact calibration snippets.
+
+Select eight real owning inversions after both healthy profiles pass: separately
+ignore freshness and availability in each provider; classify the acquired
+Unavailable error as Invalid in association; shift authenticated sequence in
+each receipt constructor; corrupt only the requester's retained report
+correlation after ReadObserved. The first five must fail literal refusal status
+after native acquisition, the next two full configured receipt projection, the
+last native-versus-actual-published report. Preserve original Results/native
+receipts and unchanged configured expectations; do not mutate test oracles.
+For each cut run its actual provider-consumer test in debug and optimized,
+then restore exact healthy source and run all-eleven controls. Freeze both
+healthy executables/source/lock before mutations and rehash every actual log.
+Temporary changed lines are counted in the cumulative test evidence; maximum
+simultaneous production addition fits1700. Compiler/setup/zero-test failures
+do not establish these semantic laws. No new production capability is selected.
+
+Fresh calibration optimized controls also pass all-eleven (a2932501), exact
+5d76b2ca/71d137b1 and identical eight measured refusal windows. Frozen healthy
+debug/release executables ee8c89b2/32cbfa53 and preparation manifest identify
+all eight owning cuts; their distinct temporary additions total8 lines. No
+test expectation changes. Maximum simultaneous net production addition1 fits
+1700; all temporary additions count as cumulative test evidence.
+
+Select prepared same-owner rotation test35608c7d (+334 tests, no production,
+public API or dependencies): each concrete provider uses one live outside-Work
+CounterAuthorization. Proof41 admits once; trusted table replacement with42
+keeps exact binding/sequence/operation and authenticates a Duplicate; retired41
+becomes Invalid. Independent actual Counter Reads remain1 after each step.
+Work only publishes existing ports and waits; caller originals/projections,
+native sends and notifications precede every oracle. CounterProof's three
+private variants distinguish original/replacement/retired test inputs; it owns
+no production policy or second admission implementation. Alternative replacing
+the owner would fail to test live replay conservation. Integration forecast
+tests1991/2000; measure before retaining corrections. This finite configuration
+change does not prove cryptographic/KERI rotation, restart or durable replay.
+
+Provider semantic campaigna0e92782 completes32 actual commands: sixteen intended
+post-native failures across eight owning cuts and sixteen exact all-eleven
+healthy restorations, both profiles. Root rehashes every log and the final
+5d76b2ca/71d137b1 restoration; no compiler/setup/zero-test failure credit.
+Rotation integration adds335 formatted test lines including separator (not334
+forecast), stage1992/2000; production1687/1700 and core3738/3800 unchanged.
+
+Rotation source11f15a64 passes all-thirteen debug controls (5a2e7cfa); both
+providers use the same live owner across all three proofs, native Counter1.
+Before claiming the law, select direct owning replay-retention omission for
+each provider test (expected native2 versus1) and each provider's proof-check
+omission (retired proof becomes accepted versus literal Invalid). Run all four
+filtered cases in debug/optimized, with exact all-thirteen healthy restoration
+after each; no oracle modification. Freeze healthy source and binaries after
+optimized positives. Three distinct temporary added lines cover the four cuts
+(same retention cut, two provider consumers); account them cumulatively.
+Critical-path reviewcd22bd50 independently retains seven remote prerequisites:
+complete flat versioned DTO/limits, trusted issuer/time, query correlation
+lifetime, reply authorization, export lifecycle and normal adapter graph.
+Existing nested/unversioned TLS research cannot be relabeled production. Use
+the same owning admission composition after these contracts are verified.
+
+Rotation optimized positives pass all-thirteen (c24ae44f), exact11f15a64 and
+71d137b1. Campaign860dd5bc completes sixteen actual commands: eight intended
+post-native failures (real Counter Read2 versus1 or Accepted versus Invalid)
+and eight exact all-thirteen restorations, both providers/profiles. Root
+rehashes every log/source/lock; three unique temporary additions are accounted.
+Provider campaign independent review24f4fdbd confirms all32 records and exact
+unchanged oracles; later builds overwrite shared target paths, while frozen
+healthy executable archives remain independently verified. No mutable target
+path is presented as a durable earlier artifact.
+
+Independent rotation review25f335f1 verifies all sixteen records and47 hashed
+artifacts, including frozen healthy executables and both initial positives.
+It confirms same-owner custody and actual actor Read snapshots, not direct
+inspection of the retired Counter state or cryptographic rotation. Strict
+affected checking on11f15a64 fails (1ee5a43a): eighteen ordinary-target and
+thirty-three test-target diagnostics, including deliberately opaque original
+fields, long acquisition/oracle functions, explicit non-Drop surrender and
+borrow/signature style. No original is removed, dependency selected, standard
+error source lost or lint waiver adopted in response. Narrow error-source
+alternatives are prepared separately; a real native-Closed custody witness
+remains needed before broader production minimization.
+
+Current complete Bombay tracked/untracked union85 paths: production
++3412/-475/net2937, tests +16129/-661/net15468, public API +5/-0 types
+(Counter +0). Owned external production801 gives core3738/3800. Controlled
+tests1676 plus all111 temporary inverse lines give17255/17600. Counter
+1687/1992 fits1700/2000. Documentation8130 plus controlled171 gives8301
+before this checkpoint entry, below8350. Pinned-Nix formatting and root diff
+whitespace checks pass. Preserve the isolated branch and all existing changes;
+no commit, Counter PR or full-acceptance completion is claimed.
+
+Select the real native-Closed test under delegated recommendations: keep the
+existing Application Work limited to publishing ports and awaiting permission.
+Outside Work, stop the exact root and await its runtime-issued retirement
+report before attempting an authenticated Increment through the existing
+authorization owner and Communication sender. Acquire the full native result
+and both notification receipts before checking Closed, exact recovered command,
+original raw/proof allocations and provider receipt. A synthetic Closed error
+would not prove the owning mailbox transition. This is finite local rejection
+evidence, not a remote-stop or live-export admission claim. Expected +210 test
+lines, no production/public types/dependencies. Select stage tests2250,
+cumulative tests18000 and docs8600 before adding this witness; existing
+production1700/core3800, paths320/public types5 remain. Do not increase any
+runtime resource allowance to accommodate the test.
+
+Closed witness source1c3f3103 passes all-fourteen debug tests (5197aafa),
+source/lock unchanged. Formatted integration +185 test lines including
+separator gives2177/2250; production1687 and public types unchanged.
+Select two exact owning inversions after optimized control: native Closed
+classified as Full must fail correlated Closed versus None after cleanup;
+Increment construction changed to Read must fail the actual native recovered
+command, with Closed still truthful. Test expectations remain unchanged.
+Run each exact owning test in both profiles and restore all-fourteen controls
+after each. Freeze source/healthy executables first; two distinct replacement
+lines count as cumulative temporary test evidence. No synthetic error or
+already-retired actor Read wait supplies the healthy witness.
+
+Select source-backed idiomatic patchff1b4056 after the Closed campaign restores
+healthy source: StartupMode's resource-free policy labels may be Copy; pass
+already-Copy RootOrigin by value while borrowing the complete native retirement;
+compare actual Vec<Never> against an explicit empty Never slice; borrow the
+three test-provider functions rather than consume them. Read the actual native
+Unavailable cause through its existing standard Display after all native
+acquisition, replacing the no-effect binding. Alternative dummy reads or
+dropping original fields weaken the evidence. Expected production +7/-6/net1,
+tests +9/-9/net0, same three paths, no types/dependencies/lint waivers. Reuse
+standard derives, exact selected Never Eq/Debug and native receiving; no new
+capability is Copy and opaque R gains no Send/Clone/Debug bound.
+
+Closed optimized positive also passes all-fourteen (9c9f59b1), same1c3f3103.
+Campaign6867e20f completes8 actual commands:4 intended post-native failures
+and4 all-fourteen restorations, both profiles, all logs rehashed. The Read
+constructor cut fails the Increment predicate; its log does not print Read.
+Reviewf561a40a recomputes the root-authored campaign but its reviewer authored
+the test; separate nonauthor review5448620b confirms the actual retirement,
+custody and original-error oracles. Frozen healthy artifacts remain immutable.
+Idiomatic source dcb9481f passes all-fourteen debug controls (5ba675d0);
+measured production +1688/-0/net1688, tests +2177/-0/net2177, same three
+Counter paths/public types0. Optimized verification remains next.
+
+Select only function-scoped Clippy expectations for run_counter_profile's
+actual length and nine explicit inputs after the idiomatic controls. Independent
+comparison3f7a69da records ordinary generic extraction +142 production lines
+without removing the long acquisition; the smaller lookup extraction is also
+net+1, so neither is retained as reduction. Keep the exact sequential
+outside-Work acquisition and original anonymous Work/native custody. Do not
+introduce a wrapper, alias or callback from a tool metric. Explicit mode,
+assignment, records, provider, projection, verifier bound, work-fault selection,
+expected reports and snapshot remain independent caller choices; bundling them
+would contradict the already selected plain-argument model. Expected five
+attribute lines, no runtime semantics/API/dependency change; all other strict
+diagnostics remain mandatory. This exception covers this prototype's verified
+orchestration, not a production networking adapter or final ownership audit.
+
+Idiomatic optimized controls also pass all-fourteen (6d1a51a6). The two precise
+orchestration expectations produce source6bb5639f, production1693/1700; actual
+strict checking492a6480 now reports eleven ordinary-target and24 test-target
+diagnostics. Neither expectation is unfulfilled; other diagnostics are intact.
+
+Select standard Error/Display for the existing private StartupRefusal, retaining
+its actual TryReserveError and exposing the original borrow through Error::source.
+Source inspectionb79dfca0 demonstrates locked thiserror2.0.20 and candidate
+derive_more2.1.1 source-bearing expansions insert forbidden function-local
+imports. Display-only displaydoc0.2.7 adds a dependency without solving the
+source method gap. Use the existing standard traits directly for this closed
+domain error; this is the bounded crate-first fallback, not a new error
+framework. No dependency, source conversion, new type or wire error changes.
+Leave requester error and main failure sequencing unchanged in this stage.
+Pre-edit static regression: actual standard capacity overflow retained in
+Allocation cannot yet be borrowed through Error::source. Following lowering,
+assert the source points to that exact owned field; source omission must fail
+in debug/optimized with healthy restoration. This law is standard diagnostic
+custody, not Application/native-closure or remote proof. Expected production
++31/tests+25, same three paths/public types0. Select stage production1750
+before this expansion; core3800, tests2250/cumulative18000/docs8600 remain.
+
+Actual pre-edit source8b765904 fails exactly one E0277 for StartupRefusal's
+missing standard Error contract (90ff92c5), pinned Nix no-run, source/lock
+unchanged. No runtime/source-identity credit from this static failure. Lower
+the existing enum through the selected standard traits, then execute the same
+borrowed-field test and all affected controls before its omission inverse.
+
+Standard-source lowering6b238dc1 passes all-fifteen debug tests (fa045ff2),
+source/lock unchanged. Actual delta is +30 production/+22 tests, so Counter
+1723/2199 fits1750/2250; core3774 fits3800, no new dependency/public type.
+The real capacity-overflow cause is borrowed from the same retained enum field;
+no claim of Actor/Application/native failure proof from that standard-law test.
+Following optimized control, replace only Allocation's Some(cause) with None;
+the actual source-borrow test must fail for missing native source in both
+profiles, followed by exact all-fifteen restorations. One temporary replacement
+line is counted; no constructor, formatter or oracle changes in that cut.
+
+Standard-source optimized controls also pass all-fifteen (53983a3d).
+The four-command source-omission campaign completes two intended runtime
+failures and two all-fifteen restorations, in debug and optimized builds.
+Final source6b238dc1 and lock71d137b1 are exactly restored. Independent
+reviewdb658569 verifies all command/log/source records and both frozen healthy
+executables; the source borrows the same stored native allocation cause after
+its move. This remains standard diagnostic custody, without Application,
+networking, actual out-of-memory or global resource-bound claims. The last
+strict run precedes this lowering and is still failing; no strict-pass,
+distillation, Counter PR or merged-feature claim is made.
+
+Fresh affected strict checking on6b238dc1 (c9c14d44) reports ten ordinary-target
+and23 test-target findings. The original executable without explicit-test mode
+actually panics before host creation (0ebd0569, exit101), preserving the safe
+refusal but replacing its typed diagnostic. Select ordinary main returning
+Result<(), StartupRefusal>: return TestProvider before creating the host, use
+? for assignment and the two already-sequential profile results, and stop
+before starting profile two when profile one returns a refusal. Alternative
+running both after failure would need a new aggregate failure policy/product;
+panic conversion erases the typed refusal. Positive execution of both profiles
+remains unchanged. This is the explicit test executable's startup policy,
+not a production identity provider or remote-error contract. Expected net
+production reduction, no dependency/type/path addition; existing caps remain.
+Validate the actual executable's default nonzero typed refusal and explicit
+healthy run through pinned Nix, then both affected test profiles.
+For test-only setup, replace the diagnosed StartupRefusal drop-then-panic
+branches with standard Result::expect, retaining the original error's Debug
+diagnostic. These setup panics are not reusable custody APIs or successful
+cleanup evidence; no new panic payload, Drop implementation or dummy read.
+
+Startup-return sourcea9d9e5af completes six actual pinned-Nix commands
+(campaign38f5bd83): all-fifteen tests, default typed TestProvider refusal
+(exit1, without main panic) and explicit healthy executable (exit0), each in
+debug and optimized builds. Lock71d137b1 and source remain unchanged. Measured
+production1716/tests2154, net -7/-45 from preceding source. Test setup expect
+explicitly discharges its error on terminal failure; it does not retain a typed
+panic payload. Independent review identifies a separate existing gap: actual
+Some(Err(StartupRefusal)) during Healthy skips requesters, then fails the
+requester-count oracle instead of returning the stored refusal. The special
+ConstructorRefusal branch currently covers only its own test selection.
+
+Select one shared post-native startup-result decision for Healthy and
+ConstructorRefusal, deleting the special duplicated native classification.
+After actual Work/native/both notification acquisition and complete native
+validation, move Some(Ok(owner)) forward or return Some(Err(original)) before
+requester oracles. Missing service remains an invariant failure. Alternatives
+adding fault modes, configuration wrappers or a second error framework would
+not own this omission. Existing constructor-refusal test is the smallest
+observable regression; simulate the old common-path omission by bypassing only
+the special ConstructorRefusal arm before implementation, then prove the
+shared return and invert its Accounting refusal to TestProvider in both builds.
+Expected production reduction, no new type/dependency/path, unchanged limits.
+This returns all actual stored constructor refusals; it does not simulate a
+real out-of-memory event or change runtime cleanup ownership.
+
+Select the prepared fixture minimization2a26c0db after the shared startup
+campaign restores healthy source. Three private pure assertion functions
+borrow the existing measured owner: refused-command custody, duplicate receipt
+and byte-overflow refusal. Their original blocks/call order are conserved;
+the independent count/reservation/physical equation remains in its original
+owner. No new state, type, alias or callback. The Closed acquisition uses the
+equivalent Rust let-chain. Six continuous acquisition fixtures receive
+individual line-count expectations, measurement preserves its nine genuine
+independent inputs, and the four original provider outcomes keep their static
+array cardinality with one signature-local complexity expectation. Alternative
+new carrier products/aliases/callback phases relocate ownership rather than
+improve these tests. Expected +87/-42/net45 test lines and zero production,
+API or dependencies. All semantic assertions and existing resource caps remain;
+these metric exceptions are not permission to suppress other strict findings.
+
+Shared startup09fda55f passes all-fifteen initial controls in both profiles
+(bfee7a53/a3d9b72d), deleting21 production lines. Pre-edit bypass simulation
+b49901b5 produces the intended post-native zero-versus-three failure and exact
+a9d9 restorations in both profiles. Separately, final-source cut510dcfc4
+returns TestProvider instead of the actual Accounting; both owning assertions
+fail and both exact09fda all-fifteen restorations pass. Nonauthor review913d925c
+verifies those distinct campaigns and complete custody. No native Allocation
+identity or real allocation-failure injection claim from this Accounting test.
+
+Select the prepared fact-diagnostic patch's four normal-target-only adverse
+variant expectations and one opaque provider evidence-field expectation.
+Owning tests exercise Revoked, ConstructorRefusal, Stale and Unavailable;
+normal main selects healthy static inputs. Opaque evidence stays owned and
+charged without invented byte interpretation/getters. The existing post-native
+fatal validator borrows actual Closed/refused native causes and command kind
+for bounded diagnostics, instead of dropping them before synthetic text.
+Raw proofs, recipients, correlations and snapshots are not diagnostic output.
+Do not retain the proposed manual requester Error yet: source-free thiserror
+does not have the source-bearing import gap, and a static-kind format must be
+compared with the earlier snapshot-revealing Debug candidate before selection.
+Expected +56 production lines for these selected portions, no new type/API or
+dependency. Current1695 becomes1751; select stage1800 and core3900 before
+integration, preserving tests2250/cumulative18000/docs8600/path320/API5 caps.
+
+Select the existing locked thiserror2.0.20 for requester errors using the
+source-free candidate0c5c7d75. Its explicit named match borrows the original
+message and formats only its protocol kind; a small standard Debug delegates
+to that Display. The earlier {0:?} candidate exposes snapshot/correlation
+contents and is rejected; manual Error/Display adds eleven more production
+lines without closing another gap. Owning-source inspection verifies explicit
+named formatting and source-free derivation omit both function-local imports
+and message Debug/Display requirements. The earlier source-bearing limitation
+must not be generalized to this suitable form. Add thiserror.workspace=true
+and only Counter's lock dependency edge; retain every package/version/checksum.
+Expected +11 production/+2 manifest-lock lines beyond selected fact patch,
+no new public type/package/version. Add an owning diagnostic test: all three
+protocol kinds have literal payload-free Display/Debug, no invented Error
+source, and still own their complete original message after formatting.
+Establish missing standard-trait failure before lowering, then both profiles;
+invert to the earlier raw-message Debug candidate to prove diagnostic denial.
+Select tests2300 before this addition; other selected caps remain unchanged.
+
+Integrated7e38a6e2 completes all-six controls (tests16/default typed refusal/
+explicit executable in both builds), campaigna7fa464a. Affected strict
+Clippy477eef65 passes; every scoped
+expectation is fulfilled. Prelower trait test fails exactly three E0277
+(4ca07f51). Offline owning check updates only Counter's dependency list;
+all other178 package records and every version/checksum remain identical,
+lock5336430f. Actual measurement: production+1762/-0/net1762,
+tests+2253/-0/net2253, manifest-lock+9/-0/net9, public types+0/-0.
+Source-free error expansion was inspected through analysis-only pinned Rust
+unpretty: actual Error is source-free, Display borrows the original message
+without local imports or Message formatting bounds. This analysis-only
+bootstrap command is not a supported-toolchain or runtime gate.
+
+Raw-message formatting inversecef886b3 exposes the actual MAX correlation
+and fails the literal diagnostic assertion in both profiles; exact7e38a6e2
+all-sixteen restorations pass (campaign48e3f12e). These are pure diagnostic
+and message-ownership laws, without remote/actor-failure execution credit.
+Parallel source audit e69a5ec8 records native session/router ID replacement,
+timeout-task retention and pre-gateway declaration/queue bounds as remaining
+prerequisites; it performs no new networking test or quota implementation.
+
+Scoped ownership review41db514f finds no Counter semantic/API blocker;
+pure Actions, outside-Work raw/R/native custody and explicit test-only startup
+remain. Select its minimal domain-name/comment correction0fecd284:
+CounterReplayRecord/CounterReplayRetention name the existing replay owner,
+acquired Counter Work and OS profile results gain concrete bindings, and two
+obsolete probe comments describe the current example. Expected production
++15/-15/net0, tests+13/-12/net1, no type/API/dependency addition or layout change.
+This scoped minimization is not full-PRD distillation; run all combined
+required gates on the resulting source before a Counter PR/delivery claim.
+
+Final naming67b5710c passes formatting, workspace build/tests and all-target
+tests. Workspace strict checking catches one missing semicolon introduced by
+the new OS-result binding (98f41354); add that statement terminator without a
+model or policy change. Final24dc2ae0 starts a fresh combined nine-gate campaign,
+including Nextest, optimized owning tests, explicit example and full flake.
+No broad strict/flake/PR completion claim until those actual records pass.
+
+
+Final combined-source verification update (2026-10-11): source24dc2ae0 and
+lock5336430f remain unchanged. Formatting, workspace build/tests, all-target
+checks, strict workspace Clippy, Nextest, optimized owning tests and explicit
+example all pass; actual records are in the final-combined-gates campaign.
+The ninth command, full Nix check, fails while archiving build output with
+No space left on device (d945804b), without a semantic failure claim. Retry the
+same source with --max-jobs1/--cores2; live process30770 owns this gate. Do not
+restart the command from an observation timeout or claim its success before
+terminal evidence. Source/manifests/lock remain frozen through verification.
+Select documentation cap9000 (previous8600) under standing recommended-choice
+authorization, retaining the same correctness obligations and other caps.
+The increase accommodates actual verification, review and delivery records;
+it does not authorize additional production scope. Counter remains staged,
+uncommitted and unmerged; every full R01–R25 witness remains unexecuted.
+Parallel native query work may prepare a test-only actual Session/outface
+collision regression, without production changes or simultaneous Cargo runs.
+The smallest native falsifier is a prerequisite, not proof of resource quotas.
+
+
+Counter final combined review19d5515b rehashes all nine command receipts/logs,
+confirms eight successes and the archive/disk failure, and verifies179 package
+records: only Counter adds already locked dhat/futures-util/thiserror edges.
+No scoped code/API blocker; review authorship remains explicit for diagnostic
+proposal portions. Select the required examples-guide additioneb553761:
+explicit authorized binary command and local/test-only limits, eleven expected
+lines plus spacing in one existing guide. Code/lock remain unchanged; add this
+after current Nix completion, then verify final submitted-head documentation.
+
+Select a test-only actual native Session query-ID custody regression before
+any allocator correction. Controlled main3e45 is preserved; isolated branch
+starts at that exact revision, matching published top-level1.10.3. Hold actual
+query A, seed the existing private counter at u32::MAX, and issue B/C through
+Session::get. Acquire actual Query replies, native Reply values, callback drops
+and queryable/session cleanup before independent recipient assertions. Each
+accepted original request must keep its own complete reply recipient; explicit
+later registration refusal is lawful and cannot displace accepted A. Existing
+unchecked replacement is the intended failing source law, not a model or
+billions-of-requests simulation. Expected one owning session.rs path and at most
+160 test lines, zero production/public types/dependencies; cumulative tests
+17524+160=17684 within18000. Router outface, sleeping timeout retention and
+native quotas remain separate unexecuted obligations. No ID-exhaustion API,
+rollover policy, resource default or production allocation change is selected.
+
+Native Session proposal now exists in isolated controlled source: patchb466d7e5
+adds108 test lines/zero production. Original owner45e3f51e matches the published
+1.10.3 archive; candidatee1c1bbd7 is uncompiled. Source inspection confirms
+actual Session::get/Query::reply/CallbackDrop, None consolidation and retained
+original registration/send/Reply receipts; actual queryable/session closure
+precedes named independent complete recipient trace. The 60second timeout is an explicit local fixture input, without a production
+default. Expected current C/A,B/B,C/C
+contradicts accepted A/A,B/B,C/C. Execute only after live combined gate settles.
+
+Final serialized full Nix gate completes successfully on source24dc2ae0 and
+lock5336430f unchanged: all21 aarch64-darwin checks pass, logec745676. This
+repairs the disk-only infrastructure failure; no other architecture or resource
+policy changed. Linux execution and exact submitted-head required CI remain
+separate delivery gates. Add the already selected examples guide now; retain
+verified source/manifest/lock unchanged. Scoped local Counter ownership/interface
+minimization and all local gates pass; full remote PRD remains incomplete.
+The external wire proposal7b5d2f6d remains preparation, including its unproved
+logical-binding epoch representation and correlated Increment ACK prerequisite.
+Do not adopt its seven fact structs or new epoch field before owning comparison.
+Native Session original-defect debug/release execution now has the released
+Cargo lane; no production correction or quota is selected from source alone.
+
+
+Counter submission checkpoint: six paths, no untracked contribution.
+production: +1762 / -0 / net1762; tests: +2254 / -0 / net2254;
+public API: +0 types / -0 types; manifest/lock: +9 / -0 / net9.
+Stage documentation: +1009 / -11 / net998.
+Cumulative Bombay union: 86 paths; production+3487/-475/net3012;
+tests+16391/-661/net15730; manifest-lock+3183/-3/net3180.
+Cumulative documentation: +8581 / -89 / net8492.
+External owned production801 yields core3813/3900; written native test108
+raises known cumulative tests to17632/18000, including prior temporary cuts.
+Controlled documentation171 remains additional; total8663/9000.
+All current tracked/untracked work is included, with downloaded research
+snapshots separately accounted. New Counter source/manifest/lock are verified;
+final guide and evidence text are documentation-only integration. Required
+submitted-head CI/review and actual merge remain open; no feature merged claim.
+
+Counter PR347 is open at initial16a207eb, with technical source review
+COMMENT5482674503 posted through the author account; this is independently
+prepared review content, not formal human approval. Initial required CI
+38126708217 is running. Correct the stale front current-readiness paragraph
+in the same PR; its historical uncommitted/pending wording must not override
+actual current submission/local verification. The documentation-only successor
+requires fresh exact-head review and naturally triggered required CI.
+Native owning test formats to114 lines (source6687be9c). It compiles and runs
+one debug test, but Zenoh rejects Tokio's current-thread test scheduler before
+query issuance (843c71d0); this is a setup failure, not the intended recipient
+assertion or a semantic kill. Select the owning runtime's documented
+multi_thread/one-worker Tokio test host for this isolated local fixture, without
+a production scheduler/default change. Preserve the current paired execution
+and its actual terminal results before changing test source. Controlled lock
+89809508 selects top1.10.3, supporting1.10.1 and Rustls0.23.45 unchanged.

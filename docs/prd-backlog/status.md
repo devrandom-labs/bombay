@@ -69,8 +69,25 @@ Configured assignment/deadline PR343 merged01683e86bbe0f74536f6f94c49d94211e117f
 at2026-10-11T03:07:40Z after scoped review and all six checks passed.
 Bounded JSON PR344 merged244efe414da85d51fb616e22379da5a660a63cb1
 at2026-10-11T03:24:42Z after scoped review and all six checks passed.
-The corrected resource witness is submitted as PR345; its CI remains pending.
+Corrected resource PR345 merged1aad2616a1bdf529290d72d98c823172fc322bd2
+at2026-10-11T04:37:23Z after scoped exact-head review and all six checks passed.
+Declaration PR346 merged15fc7aa6be9348fef4ac2be6ac48be657fd6dc41
+at2026-10-11T05:19:25Z after scoped exact-head review and all six checks passed.
 These contributions do not close full AUTH1/NET1 acceptance.
+[Counter PR347](https://github.com/devrandom-labs/bombay/pull/347) now has focused Full/retry and
+component-allocation controls plus intended debug/optimized inversions.
+Both concrete providers now preserve accepted/invalid/stale/unavailable results
+through actual public Application consumers, with all sixteen focused tests passing in
+debug and optimized builds. Fresh finite refusal allocations fit the existing
+256-byte allowance. Same-owner finite proof rotation preserves live replay
+eligibility; actual retention/proof-check inversions fail both profiles.
+Actual native-Closed custody and original allocation-error-source controls also
+pass, with intended inversions in both profiles and scoped independent reviews.
+Payload-free requester diagnostics retain the complete original message. Owning
+strict checks and scoped ownership minimization pass. Eight final combined
+checks pass; the serialized full Nix retry passes all21 local checks after the
+disk-only failure. Counter PR delivery remains open. This local evidence does not close
+any full remote acceptance row.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
 

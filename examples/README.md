@@ -52,6 +52,18 @@ src/main.rs       executable Application request/reply and lifecycle shutdown
 src/counter.rs    state, protocol, messages, receive logic, and invariant
 ```
 
+The additional `authorized` binary runs an explicit local test profile using the
+same Counter and typed requester Applications. Its application-owned service
+verifies two finite providers, checks current permission at nonwaiting mailbox
+admission, retains replay protection, and preserves original request/evidence
+and native retirement results. A Read is a snapshot, not an Increment receipt.
+Running this binary without `--explicit-test` refuses startup before any export.
+Production identity and remote-network acceptance remain open.
+
+```text
+nix develop -c cargo run --locked -p bombay-example-counter --bin authorized -- --explicit-test
+```
+
 ## `entity`
 
 Application-owned native Entity installation. A nominal asynchronous
