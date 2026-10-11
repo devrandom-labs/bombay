@@ -53,13 +53,16 @@ checks passed. Actual two-Application Counter integration
 checks passed, including its actual Linux debug/optimized TLS artifacts.
 Its restored 24-case matrix and scoped inversions retain their limits. The
 ordinary Rust two-provider admission comparison passes local debug/optimized
-controls and intended revocation/expiry and static inversions. Reviewed PR338
-and its stalled-verifier follow-up PR339 have passing local combined checks;
-their full Nix CI and actual merges remain pending. The exact-target overlap
-comparison has passing debug/optimized controls and intended hosting-check
-inversions, with combined-source delivery pending. Controlled resource-interest
+controls and intended revocation/expiry and static inversions. PR338 merged7139409ac7d98f222008153e3917689773ae759e on2026-10-11
+after exact-head review and all six CI checks passed. Its stalled-verifier
+follow-up PR339 merged44a4e3961bb444f5c26afc31f42d03248f60248e after review
+and all six checks passed. Exact-target overlap PR340 subsequently merged
+1f8673350dcd30ad45015c62f65524a2e005fadb after review and all six checks.
+Their scoped controls/inversions and actual Linux artifacts retain their limits. Controlled resource-interest
 PR6 merged3e45ba6b1098b3589b242935284610d0113e13a8 after review and required
-CI; main verification and1.10.3 publication remain pending. These contributions
+CI; exact-main verification38098545513 also passes. Publication38099991563
+actually released1.10.3; all nine registry archives and all seven clean consumer
+checks pass. Bombay fixture adoption and affected native checks remain pending. These contributions
 do not close full AUTH1/NET1 acceptance.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
