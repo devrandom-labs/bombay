@@ -11983,3 +11983,94 @@ remain the current approved ceilings. Scope controllers/history,79-line receipt
 collector and16 unique added inverse Rust lines are separate authored evidence;
 source snapshots/logs do not become new capability code. Final staged/committed
 measurement, exact-head review, required CI and actual merge remain gates.
+
+### Genuine child-owned preparation retirement prerequisite
+
+This independent stage tests the actual exported RootSupervisor child. Counter
+has no corresponding owned preparation effect; this does not close protected
+Counter or full remote R11. Use the existing PrepareWorkers source, typed births,
+InstalledActor/ActorRef, shared Observe reports and parent native projection.
+No runtime, public API, dependency, default limit or production correction is added.
+
+The user delegated recommended selections, including scope checkpoints, until
+revoked. The selected stage allows520 added Rust test lines and150 cumulative
+authored controller lines, with zero retained runtime production and public API delta. Current cumulative
+ceilings are core6000, controlled functional900, tests22500, documentation12000,
+paths340 and public types5; earlier ceilings above are historical checkpoints.
+Behavior/Actors0.23.0 at d69f992b371c12ab34e73b18e45b8112c90a1508 and
+their complete760-line instructions were inspected; Communication0.1.4,
+Address0.3.0, private Observe, Tokio1.53.1 and sole Timers13e884da patch remain.
+The root lock is unchanged5336430f4ff39c8476fe4a20c2cfbbb4c19862b0be64b7756c64d95cdf2fbcc2.
+The branch was created from actual latest main20fb999d before any commit.
+
+`joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_progress`
+uses the public App to create two real supervisor children. After A's ordinary
+termination, hold its actual owned preparation and semaphore permit. Both report
+observations remain Pending while the parent exports the same capabilities and
+B returns useful replies. Cancelling only a borrowed observation leaves the
+independent waiter intact. Release the original task; both observations then
+receive the same runtime-issued Established/NoFailuresFound report, the permit
+returns, and B still progresses. Acquire parent Work, native root and both
+notifications before semantic assertions. Keep the actual target ChildOrigin,
+late WorkerPreparationReturned, full descendant products and original source
+allocation until explicit native disposal; no exhaustive every-field claim.
+
+The initial test incorrectly assumed asynchronous worker-notice order. That
+failure is a test-model error, not a runtime defect. Correct membership checks
+use both original notices and the closed two-role sum. Captured Ready reports
+are reused; only Pending futures are awaited, preventing a completed-future
+repoll panic from masking the intended deliberate defect.
+
+Final test SHA256081443c06bd74297a765c7da68ae5ad212bd8b81e2b40f92d43c88414dc9a341.
+Focused healthy controls pass1/1 in debug and optimized profiles, with zero
+owning warnings. The38-line pinned-Nix controller deliberately removes only
+the existing three-line receive_activation_tasks call in launch.rs. Both actual
+tests then fail their post-native Pending oracle; a genuine projection guard
+panic is separately retained and provides no kill credit. Exact restoration
+passes1/1 in both profiles, warning-free, with the original runtime/lock and
+initial healthy executable hashes restored. Negative executable hashes were
+not captured before recompilation; retain source/invocation/log evidence rather
+than inventing them. Receipt /tmp/bombay-child-owned-preparation-inverse-campaign.json
+has SHA256df55012427f4876c96ec1af865118c8515f3857efd0e742a1a842e774b4212f9;
+the receipt preserves the actual raw commands and source/log custody.
+
+Commands use the pinned shell, CARGO_TARGET_DIR=/tmp/bombay-shared-target,
+CARGO_BUILD_JOBS=2, CARGO_INCREMENTAL=0 and debug-information settings0:
+`nix develop -c cargo test -p bombay-rs --test fixed_supervisor_recovery --locked joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_progress -- --exact --nocapture`
+and the same command with `--release`. The inverse controller runs through
+`nix develop -c python3 /tmp/bombay-child-owned-preparation-inverse-campaign.py`.
+Actual invocations use --manifest-path to this isolated worktree and preserve
+the root pinned shell; no host Cargo or direct host test execution occurs.
+
+Current owning source record: runtime production+0/-0/net0; Rust tests
++501/-5/net496; public API+0/-0; manifests/locks unchanged. The source-ready
+portable controller below is now included, rather than omitted as untracked.
+Preparation documentation and controller history are separately accounted.
+Combined checks, final independent scope/minimization review, required CI,
+reviewed PR and actual merge remain delivery gates. All full R01–R25 remain open.
+
+The delegated recommendation selected controller ceiling60→150 before authoring
+the owning child_preparation_retirement_evidence.py. Its118 retained lines plus
+38 historical lines minus11 identical reused AST-statement lines plus five
+superseded draft lines account for150 cumulative authored lines. Rust's501
+retained added lines/513 authored lines fit520. No generic runner, runtime or
+dependency is added. The script copies the selected source to a disposable
+workspace, runs all six healthy/inverse/restored profile combinations, records
+actual executed binary hashes before overwriting them and conserves the caller
+source. Missing historical negative hashes are not retroactively filled.
+The coordinator reviewed its exact source and integrated the prepared three-line
+flake patch: explicit source inclusion, Python3 and one invocation in the existing
+Actor-execution evidence gate. The gate uses its own disposable target; no new
+CI job/check or borrowed caller target is introduced. Its complete portable
+execution remains unverified until the actual required CI runs the final source.
+
+Pinned `cargo fmt --all -- --check` passes on the integrated source. Both earlier
+local full Nix attempts83523 and70614 failed with disk exhaustion, rather than
+establishing a semantic failure or combined gate pass. Their original logs remain.
+Do not retry a broad local build without sufficient temporary space. A draft PR
+will expose the exact final source to required CI; acceptance, independent review
+and normal merge remain required before this prerequisite is recorded as merged.
+Final scoped source: four paths, runtime production0, Rust tests+501/-5,
+portable evidence+118, functional Nix integration+3, public types0 and no
+manifest/lock changes. This gate proves genuine exported-supervisor child-owned
+preparation only; Counter's protected remote witness and full R11 stay open.

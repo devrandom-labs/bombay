@@ -14,19 +14,23 @@ use behavior_actors::atomic::{
     FixedSupervisor, FixedSupervisorEvent, OrderedRoles, Recovery, RestartLimit, RestartRelease,
     StableProxy, Strategy, WorkerPreparationFailureReason, WorkerSource, WorkerSubmission, fixed,
 };
-use behavior_actors::{Exit, StopOnShutdown};
+use behavior_actors::{Exit, ShutdownRequested, StopOnShutdown};
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{
-    Actions, BehaviorActed, BehaviorSettlements, ChildHead, CreationSettlement, EventLayer,
-    ItemSettlement, MessageProtocol, Never, NoSends, Protocol, SettledItem, Step, Stopped,
+    Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, BehaviorSettlements, Births,
+    ChildCreationOutcome, ChildHead, CreateChild, CreationEvent, CreationSequence,
+    CreationSettlement, CreationSettlements, Creations, EstablishedActor, EstablishedDelivery,
+    EstablishedRecipient, EventLayer, Here, Ingress, InitializationTurn, InterpretEstablished,
+    InterpretInstalledActor, ItemSettlement, MessageProtocol, Never, NoSends, Protocol,
+    SettledItem, Step, Stopped,
 };
 use bombay::prelude::{
     ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
     TerminalProjection,
 };
 use bombay::{
-    ActorFailureAssessment, ActorSpace, ActorSpaces, App, ProjectTerminal, RetirementAssessment,
-    WorkerPreparationSource, WorkerPreparationStart,
+    ActorFailureAssessment, ActorRef, ActorSpace, ActorSpaces, App, InstalledActor,
+    ProjectTerminal, RetirementAssessment, WorkerPreparationSource, WorkerPreparationStart,
 };
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
 
@@ -191,6 +195,37 @@ struct SupervisorSpaces {
     reason = "retain complete original role retirements without adding a heap owner or changing terminal custody"
 )]
 enum SupervisorTerminal {
+    PreparationOwner {
+        origin: RootOrigin<StopOnShutdown<PreparationOwner>>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "retain both exact supervisor child failures"
+        )]
+        terminal: ActorRetirement<
+            StopOnShutdown<PreparationOwner>,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<PreparationOwner, ChildHead>, RootSupervisor>>,
+                (),
+            ),
+        >,
+    },
+    #[structural_child]
+    Supervisor {
+        origin: ChildOrigin<PreparationOwner, ChildHead>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "retain the exact supervisor's proxy child failures"
+        )]
+        terminal: ActorRetirement<
+            RootSupervisor,
+            Self,
+            (
+                Vec<ChildFailure<ChildOrigin<Supervisor, ChildHead>, WorkerProxy>>,
+                (),
+            ),
+        >,
+    },
     Root {
         origin: RootOrigin<RootSupervisor>,
         #[expect(
@@ -1000,4 +1035,465 @@ where
     assert!(terminal_report.is_none());
     assert!(retirement_failures.is_empty());
     (descendants, child_failures)
+}
+
+// This target is the actual supervisor, not the Counter or a worker proxy.
+type PreparationExports = MessageProtocol<MailAddr, [EstablishedActor<RootSupervisor>; 2]>;
+type PreparationCreations = <Births<RootSupervisor> as CreationSettlements<MailAddr>>::Settlements;
+
+enum PreparationCommand {
+    Export(EstablishedRecipient<PreparationExports>),
+}
+struct PreparationOwner {
+    supervisors: Vec<RootSupervisor>,
+    creations: Vec<PreparationCreations>,
+    established: Vec<EstablishedActor<RootSupervisor>>,
+}
+impl Protocol for PreparationOwner {
+    type Addr = MailAddr;
+    type Msg = PreparationCommand;
+}
+impl BehaviorBase for PreparationOwner {
+    type Base = Self;
+    fn base(&self) -> &Self {
+        self
+    }
+}
+impl Behavior for PreparationOwner {
+    type Protocol = Self;
+    type Event = CreationEvent<MailAddr, RootSupervisor, PreparationCommand>;
+    type Sends = Vec<EstablishedDelivery<PreparationExports>>;
+    type Birth = Births<RootSupervisor>;
+    type Error = Never;
+    type Ph = Never;
+    fn init(&mut self, _: InitializationTurn) -> BehaviorActed<Self> {
+        let mut sequence = CreationSequence::new();
+        let mut creations = Creations::empty();
+        for supervisor in self.supervisors.drain(..) {
+            let id = sequence.issue().expect("two original child requests fit");
+            creations = creations.and(CreateChild::birth(id, supervisor));
+        }
+        Ok(Actions::create(creations))
+    }
+    fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+        match event {
+            CreationEvent::Settlements(settled) => {
+                let original = settled.into_settlement();
+                let CreationSettlement::Settled(children) = &original else {
+                    panic!("the original child traversal settles")
+                };
+                for child in children {
+                    let SettledItem::Attempted(ItemSettlement::Accepted(
+                        ChildCreationOutcome::Established(committed),
+                    )) = child
+                    else {
+                        panic!("the actual supervisors establish")
+                    };
+                    self.established.push(committed.actor());
+                }
+                self.creations.push(original);
+                Ok(Actions::cont())
+            }
+            CreationEvent::User(user) => {
+                let PreparationCommand::Export(reply) = user.message;
+                let [target, sibling] = self.established.as_slice() else {
+                    panic!("both original supervisor capabilities exist")
+                };
+                Ok(Actions::send(vec![EstablishedDelivery::new(
+                    reply,
+                    [target.clone(), sibling.clone()],
+                )]))
+            }
+        }
+    }
+}
+#[derive(ActorSpaces)]
+struct PreparationSpaces {
+    #[actor_space(PreparationOwner)]
+    owner: ActorSpace<PreparationOwner>,
+    #[actor_space(RootProtocol)]
+    supervisors: ActorSpace<RootProtocol>,
+    #[actor_space(Worker)]
+    workers: ActorSpace<Worker>,
+    #[actor_space(Status)]
+    status: ActorSpace<Status>,
+    #[actor_space(Capability)]
+    capability: ActorSpace<Capability>,
+    #[actor_space(PreparationExports)]
+    exports: ActorSpace<PreparationExports>,
+}
+#[derive(Default)]
+struct SupervisorService {
+    target: Option<InstalledActor<RootSupervisor>>,
+    endpoint: Option<ActorRef<RootProtocol>>,
+}
+impl InterpretInstalledActor<RootSupervisor> for SupervisorService {
+    type Output = Option<InstalledActor<RootSupervisor>>;
+    fn interpret_actor(&mut self, installed: InstalledActor<RootSupervisor>) -> Self::Output {
+        self.target.replace(installed)
+    }
+}
+impl InterpretEstablished<RootProtocol> for SupervisorService {
+    type Output = Option<ActorRef<RootProtocol>>;
+    fn interpret_established(&mut self, endpoint: ActorRef<RootProtocol>) -> Self::Output {
+        self.endpoint.replace(endpoint)
+    }
+}
+
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep held child work, useful parent and sibling, and all original native receiving in one temporal trace"
+)]
+fn joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_progress() {
+    let prepared = Arc::new(Mutex::new(Vec::new()));
+    let original_source = Arc::downgrade(&prepared);
+    let resource = Arc::new(Semaphore::new(1));
+    let resource_observation = resource.clone();
+    let permit = resource
+        .try_acquire_owned()
+        .expect("one actual owned resource");
+    let (reached, preparation_started) = oneshot::channel();
+    let (release, released) = oneshot::channel();
+    let (target_activated, mut target_activations) = mpsc::unbounded_channel();
+    let (sibling_activated, mut sibling_activations) = mpsc::unbounded_channel();
+    let target = prepared_supervisor(
+        prepared,
+        target_activated,
+        PreparationPolicy::SubmitBoth,
+        Some(PreparationRelease {
+            reached,
+            release: released,
+            resource: permit,
+        }),
+    )
+    .stop_on_shutdown();
+    let sibling = prepared_supervisor(
+        Arc::new(Mutex::new(Vec::new())),
+        sibling_activated,
+        PreparationPolicy::SubmitBoth,
+        None,
+    )
+    .stop_on_shutdown();
+    let owner = PreparationOwner {
+        supervisors: vec![target, sibling],
+        creations: Vec::new(),
+        established: Vec::new(),
+    };
+    let spaces = PreparationSpaces {
+        owner: ActorSpace::new(),
+        supervisors: ActorSpace::new(),
+        workers: ActorSpace::new(),
+        status: ActorSpace::new(),
+        capability: ActorSpace::new(),
+        exports: ActorSpace::new(),
+    };
+    let host = Builder::new_current_thread().enable_all().build().unwrap();
+    let originals = host
+        .block_on(
+            App::new(owner.stop_on_shutdown(), spaces).run_with::<SupervisorTerminal, _, _, _>(
+                move |application| async move {
+                    let activations = (
+                        target_activations.recv().await,
+                        target_activations.recv().await,
+                        sibling_activations.recv().await,
+                        sibling_activations.recv().await,
+                    );
+                    let interface = application.interface(());
+                    let mut exports = interface.external::<PreparationExports>().unwrap();
+                    let parent = application.root().established_recipient();
+                    let parent_address = application.root().address();
+                    let first_export = exports
+                        .send(&parent, PreparationCommand::Export(exports.recipient()))
+                        .await;
+                    let issued = exports
+                        .receive()
+                        .await
+                        .expect("actual creator Actions return both proofs");
+                    let issued_from = issued.from;
+                    let [target, sibling] = issued.message;
+                    let mut service = SupervisorService::default();
+                    let previous_endpoint = target.recipient().interpret(&mut service);
+                    let previous_target = target.clone().interpret_actor(&mut service);
+                    let endpoint = service
+                        .endpoint
+                        .as_ref()
+                        .expect("exact ordinary termination endpoint");
+                    let target_address = endpoint.address();
+                    let installed = service
+                        .target
+                        .as_ref()
+                        .expect("exact child stop and report capability");
+                    let mut caller = interface.external::<Capability>().unwrap();
+                    let target_request = caller
+                        .send(
+                            &target.recipient(),
+                            FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
+                        )
+                        .await;
+                    let target_capability = caller
+                        .receive()
+                        .await
+                        .expect("the actual target worker capability");
+                    let CapabilityResult::Ready { proxy, .. } = &target_capability.message else {
+                        panic!("the actual target has a worker")
+                    };
+                    let recovery = caller.send(proxy, WorkerCommand::Stop).await;
+                    let reached = preparation_started.await;
+                    let shutdown =
+                        installed.request_shutdown(Ingress::<ShutdownRequested, Here>::new());
+                    let termination = endpoint.termination().await;
+                    let mut independent = Box::pin(installed.retirement());
+                    let mut observation = Box::pin(installed.retirement());
+                    let initial_report = {
+                        let mut borrowing = Box::pin(async { independent.as_mut().await });
+                        borrowing
+                            .as_mut()
+                            .poll(&mut Context::from_waker(Waker::noop()))
+                    };
+                    let initial_permits = resource_observation.available_permits();
+                    let sibling_request = caller
+                        .send(
+                            &sibling.recipient(),
+                            FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
+                        )
+                        .await;
+                    let sibling_reply = caller
+                        .receive()
+                        .await
+                        .expect("the live sibling performs useful work");
+                    let parent_request = exports
+                        .send(&parent, PreparationCommand::Export(exports.recipient()))
+                        .await;
+                    let parent_reply = exports
+                        .receive()
+                        .await
+                        .expect("the live parent exports its retained children");
+                    let pending_report = observation
+                        .as_mut()
+                        .poll(&mut Context::from_waker(Waker::noop()));
+                    let pending_permits = resource_observation.available_permits();
+                    let released = release.send(());
+                    let report = match pending_report {
+                        Poll::Ready(report) => report,
+                        Poll::Pending => observation.await,
+                    };
+                    let replay = match initial_report {
+                        Poll::Ready(report) => report,
+                        Poll::Pending => independent.await,
+                    };
+                    let settled_permits = resource_observation.available_permits();
+                    let sibling_after_request = caller
+                        .send(
+                            &sibling.recipient(),
+                            FixedCommand::capability(WorkerRole::Secondary, caller.recipient()),
+                        )
+                        .await;
+                    let sibling_after = caller
+                        .receive()
+                        .await
+                        .expect("the same sibling continues after A joins");
+                    let parent_shutdown = application.lifecycle().request_shutdown();
+                    (
+                        activations,
+                        first_export,
+                        issued_from,
+                        previous_endpoint,
+                        previous_target,
+                        target_address,
+                        parent_address,
+                        target_request,
+                        target_capability,
+                        recovery,
+                        reached,
+                        shutdown,
+                        termination,
+                        initial_report,
+                        initial_permits,
+                        sibling_request,
+                        sibling_reply,
+                        parent_request,
+                        parent_reply,
+                        pending_report,
+                        pending_permits,
+                        released,
+                        report,
+                        replay,
+                        settled_permits,
+                        sibling_after_request,
+                        sibling_after,
+                        parent_shutdown,
+                    )
+                },
+            ),
+        )
+        .unwrap_or_else(|_| panic!("the actual public Application starts"));
+    let (
+        ApplicationOutcome::Completed {
+            output,
+            cleanup: Ok(()),
+        },
+        Ok((origin, native)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = originals
+    else {
+        panic!("all original native and notification products remain independently owned")
+    };
+    let (
+        activations,
+        first_export,
+        issued_from,
+        previous_endpoint,
+        previous_target,
+        target_address,
+        parent_address,
+        target_request,
+        target_capability,
+        recovery,
+        reached,
+        shutdown,
+        termination,
+        initial_report,
+        initial_permits,
+        sibling_request,
+        sibling_reply,
+        parent_request,
+        parent_reply,
+        pending_report,
+        pending_permits,
+        released,
+        report,
+        replay,
+        settled_permits,
+        sibling_after_request,
+        sibling_after,
+        parent_shutdown,
+    ) = output;
+    let (target_first, target_second, sibling_first, sibling_second) = activations;
+    assert!(target_first.is_some() && target_second.is_some());
+    assert_ne!(target_first, target_second);
+    assert!(sibling_first.is_some() && sibling_second.is_some());
+    assert_ne!(sibling_first, sibling_second);
+    assert!(first_export.is_ok());
+    assert_eq!(issued_from, parent_address);
+    assert!(previous_endpoint.is_none() && previous_target.is_none());
+    assert!(target_request.is_ok() && recovery.is_ok() && reached.is_ok() && shutdown.is_ok());
+    assert_eq!(target_capability.from, target_address);
+    assert_eq!(termination, Ok(Exit::Normal));
+    assert!(
+        matches!(initial_report, Poll::Pending),
+        "joined child report precedes no unfinished owned preparation"
+    );
+    assert!(
+        matches!(pending_report, Poll::Pending),
+        "joined child report stays absent across parent and sibling progress"
+    );
+    assert_eq!((initial_permits, pending_permits), (0, 0));
+    assert!(sibling_request.is_ok() && parent_request.is_ok());
+    assert_ne!(sibling_reply.from, target_address);
+    assert_eq!(parent_reply.from, parent_address);
+    let [parent_target, parent_sibling] = parent_reply.message;
+    let mut sibling_endpoint = SupervisorService::default();
+    let original_sibling = parent_sibling.recipient().interpret(&mut sibling_endpoint);
+    assert!(original_sibling.is_none());
+    assert_eq!(
+        sibling_reply.from,
+        sibling_endpoint.endpoint.as_ref().unwrap().address()
+    );
+    let mut target_endpoint = SupervisorService::default();
+    let original_target = parent_target.recipient().interpret(&mut target_endpoint);
+    assert!(original_target.is_none());
+    assert_eq!(
+        target_address,
+        target_endpoint.endpoint.as_ref().unwrap().address()
+    );
+    assert!(released.is_ok());
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert_eq!(report, replay);
+    assert_eq!(settled_permits, 1);
+    assert!(sibling_after_request.is_ok() && parent_shutdown.is_ok());
+    assert_eq!(sibling_after.from, sibling_reply.from);
+    for (reply, expected) in [
+        (&target_capability, WorkerRole::Primary),
+        (&sibling_reply, WorkerRole::Primary),
+        (&sibling_after, WorkerRole::Secondary),
+    ] {
+        let CapabilityResult::Ready { role, .. } = &reply.message else {
+            panic!("actual useful reply")
+        };
+        assert_eq!(*role, expected);
+    }
+    let parent = SupervisorTerminal::project(origin, native);
+    let SupervisorTerminal::PreparationOwner { origin, terminal } = &parent else {
+        panic!("original parent")
+    };
+    assert_eq!(origin.address(), parent_address);
+    let (children, (failures, ())) = assert_joined_native(terminal);
+    assert!(failures.is_empty());
+    assert_eq!(children.len(), 2);
+    let ActorRetirement::Completed { behavior, .. } = terminal else {
+        panic!("parent normal stop")
+    };
+    assert_eq!(behavior.base().creations.len(), 1);
+    assert_eq!(behavior.base().established.len(), 2);
+    assert!(behavior.base().supervisors.is_empty());
+    let mut target_retirements = 0;
+    for child in children {
+        let SupervisorTerminal::Supervisor { origin, terminal } = child else {
+            panic!("exact original supervisor child")
+        };
+        if origin.address() == target_address {
+            target_retirements += 1;
+            let ActorRetirement::Completed {
+                control,
+                completion,
+                ..
+            } = terminal
+            else {
+                panic!("A retains its genuine normally completed native product")
+            };
+            assert_eq!(*completion, Completion::Stopped);
+            assert_eq!(control.len(), 1);
+            assert!(
+                matches!(
+                    &control[0],
+                    EventLayer::Inner(FixedSupervisorEvent::WorkerPreparationReturned(_))
+                ),
+                "the held preparation returns its original late control into A's native product"
+            );
+        }
+        let (proxies, (failures, ())) = assert_joined_native(terminal);
+        assert!(failures.is_empty());
+        assert_eq!(proxies.len(), 2);
+        for proxy in proxies {
+            let SupervisorTerminal::Proxy { terminal, .. } = proxy else {
+                panic!("original proxy")
+            };
+            let (workers, (failures, ())) = assert_joined_native(terminal);
+            assert!(failures.is_empty());
+            assert_eq!(workers.len(), 1);
+            for worker in workers {
+                let SupervisorTerminal::Worker { terminal, .. } = worker else {
+                    panic!("original worker")
+                };
+                let (descendants, ()) = assert_joined_native(terminal);
+                assert!(descendants.is_empty());
+            }
+        }
+    }
+    assert_eq!(target_retirements, 1);
+    assert_eq!(original_source.strong_count(), 1);
+    let source = original_source
+        .upgrade()
+        .expect("original prepared source retained natively");
+    let prepared = source.lock().unwrap();
+    assert_eq!(*prepared, [WorkerRole::Primary, WorkerRole::Secondary]);
+    drop(prepared);
+    drop(source);
+    drop(parent);
+    assert_eq!(original_source.strong_count(), 0);
 }
