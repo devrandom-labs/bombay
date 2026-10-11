@@ -74,7 +74,7 @@ at2026-10-11T04:37:23Z after scoped exact-head review and all six checks passed.
 Declaration PR346 merged15fc7aa6be9348fef4ac2be6ac48be657fd6dc41
 at2026-10-11T05:19:25Z after scoped exact-head review and all six checks passed.
 These contributions do not close full AUTH1/NET1 acceptance.
-The uncommitted authorized Counter prototype now has focused Full/retry and
+[Counter PR347](https://github.com/devrandom-labs/bombay/pull/347) now has focused Full/retry and
 component-allocation controls plus intended debug/optimized inversions.
 Both concrete providers now preserve accepted/invalid/stale/unavailable results
 through actual public Application consumers, with all sixteen focused tests passing in

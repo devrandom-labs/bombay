@@ -33,13 +33,14 @@ submitted-head Linux campaigns.
 Configured assignment/deadline PR343 and bounded JSON PR344 merged after scoped
 review, all six checks and both submitted-head Linux campaigns. Conservative
 storage PR345 and explicit JSON declaration PR346 also merged after scoped
-exact-head review and all six CI checks passed. The uncommitted authorized
-Counter example passes sixteen focused debug/optimized tests, including typed provider
-refusals, finite component allocations, same-owner proof rotation, actual native
-Closed custody, original allocation-error source and payload-free diagnostics.
-Intended inversions and independent reviews retain their scoped limits. Owning
-strict checks passed before the final mechanical naming correction; its full
-combined gates and PR delivery remain open. These local contributions
+exact-head review and all six CI checks passed. The authorized Counter example
+is submitted as [PR347](https://github.com/devrandom-labs/bombay/pull/347).
+Sixteen focused debug/optimized tests cover typed provider refusals, finite
+component allocations, same-owner proof rotation, actual native Closed custody,
+original allocation-error source and payload-free diagnostics. Intended inversions
+and independent reviews retain their scoped limits. All combined local checks
+pass, including all21 aarch64-darwin Nix checks on the final source. Required
+submitted-head Linux CI, final review and actual merge remain open. These local contributions
 do not close production KERI or the full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
@@ -10739,3 +10740,19 @@ All current tracked/untracked work is included, with downloaded research
 snapshots separately accounted. New Counter source/manifest/lock are verified;
 final guide and evidence text are documentation-only integration. Required
 submitted-head CI/review and actual merge remain open; no feature merged claim.
+
+Counter PR347 is open at initial16a207eb, with technical source review
+COMMENT5482674503 posted through the author account; this is independently
+prepared review content, not formal human approval. Initial required CI
+38126708217 is running. Correct the stale front current-readiness paragraph
+in the same PR; its historical uncommitted/pending wording must not override
+actual current submission/local verification. The documentation-only successor
+requires fresh exact-head review and naturally triggered required CI.
+Native owning test formats to114 lines (source6687be9c). It compiles and runs
+one debug test, but Zenoh rejects Tokio's current-thread test scheduler before
+query issuance (843c71d0); this is a setup failure, not the intended recipient
+assertion or a semantic kill. Select the owning runtime's documented
+multi_thread/one-worker Tokio test host for this isolated local fixture, without
+a production scheduler/default change. Preserve the current paired execution
+and its actual terminal results before changing test source. Controlled lock
+89809508 selects top1.10.3, supporting1.10.1 and Rustls0.23.45 unchanged.
