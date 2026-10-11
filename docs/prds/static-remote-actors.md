@@ -8106,3 +8106,68 @@ tracked/untracked cumulative Bombay retains80 paths, production
 No manifest, lock, dependency, public method or schema changes. The dependent
 PR temporarily includes pending338 source; merge338 before retaining this
 follow-up delivery and preserve the exact combined head's required CI.
+
+### Exact-target overlap local proof and integration
+
+The three existing fixture paths retain tests+220/-34/net186, with no production,
+public API, dependency, manifest, lock or protected schema change. Counter
+source3490b6d9d1faa0981a0ff35709d65a3fdc8b85428a2df044e88cd3c20633894d,
+binary source69413f3c2acecddcd7b9fdc4b9d5aeec000b4cdae2833454fab918e4761d8ff5
+and controller6003911b9506880b0b99ba19a2bd45232a35d361c4329a57b156305b9e614894
+match the final restored source. Manifest51ea30eb and lock692c2612 stay exact.
+Final campaign SHA f1cbe5ffb68052fc365a8300d8d6c0ed0048fdb968c693866fd8052e3303c10b
+records initial/restored30 expected outcomes per profile: native16 (four deliberate
+forced late deaths remain uncertainty), original Counter8 and overlap6. All
+12 overlap positive rows observe both real deliveries and four orderly closes,
+A balance42/two commands and B balance41/no commands. Three independent host,
+runtime and actor-generation omissions produce12 intended B-native failures
+in debug/optimized profiles, with A/caller/router exit0 and B exit1 after actual
+Session::close. The B close observation is emitted after its worker_failed event;
+source closes the actual session before the native oracle and the controller
+acquires that close and exit before rejecting the failure. No timeout/setup
+failure supplies a safety proof. All exact-source restored controls pass;
+healthy/restored binary hashes match in each profile. Strict owning lint/format
+and diff checking pass. Coordinator independently checks restored source,
+actual cases/exits/oracles and captures22 log hashes; the agent receipt contained
+no original log-hash fields, so this is hash custody, not an invented comparison.
+
+Early coordinator integration starts at actual main65bb884 then fast-forwards
+to pending combined38d61a5 without changing PR338 or PR339. Six affected
+pinned-Nix commands pass: nested fixture debug/release builds and full30-case
+controllers, strict all-target Clippy and formatting. Root workspace inputs
+remain exact to the already verified38d combined source/lock; the complete
+submitted-source CI must still pass before delivery. Merge338, then339, then
+the overlap contribution; their immutable-head CI may run concurrently.
+
+Aggregate-drift disposition: pass for the finite fixture. Independently
+configured receiver assignment replaces the shared hardcoded receiver assumption.
+TargetRefusal's host/runtime/actor alternatives conserve the local refusal and
+provider/native originals until retirement; no new actor transition authority,
+lookup registry or production/public owner is added. Both metadata comparison
+and typed construct/recover paths remain ordinary Rust. Actors retain pure
+Actions; the binary and controller headers now describe the actual finite
+Counter proof. The receivers share the existing test TLS certificate. Local
+assignment separation therefore supplies no distinct production node identity,
+cryptographic application authentication or global fencing evidence. FullR22
+milestone/consolidation/restart obligations and the remaining profile gates stay
+open. No fixture version update or successor publication is inferred.
+
+Controlled native interest-retirement PR6 merged3e45ba6b1098b3589b242935284610d0113e13a8
+at2026-10-11T00:28:29Z after independent review5481241216 and required
+run38096526759 passed, including actual Miri and archive checks. Main
+run38098545513 is in progress;1.10.3 is not yet published or registry-consumed.
+Required CI log SHA092291ae4f917f17368ae4a2bb561a40e56ea491c6e7c4f3cf959eba9ca67056
+retains exact evidence. This prerequisite merge does not close NET1.
+
+Final overlap checkpoint against combined38d61a5: five paths, production
++0/-0/net0, tests+220/-34/net186, documentation
++73/-3/net70, public types+0/-0. Complete
+tracked/untracked Bombay totals:80 paths, production+1725/-475/net1250,
+tests+11095/-661/net10434 and5 previously delivered public types.
+Across repositories current retained tests10434+controlled1676=12110 within
+12500; unique inverse statements remain within their separately recorded stage
+ceilings. Core Rust production2051 remains separately reported from automation.
+Independent scoped source/evidence review passes. Hash inventory now includes
+all22 captured command logs; the first18-path expression omitted the underscore
+in actor_generation names and supplied no hash comparison for those four logs.
+Corrected custody inventory preserves all original evidence and case assertions.
