@@ -95,11 +95,15 @@ The native Session query-ID correction merged through controlled Zenoh PR7
 (9cc83867dce5804a172d7b582fd3b4c2550257fe), after exact-head review and
 passing required CI, including two executed Miri tests. Controlled1.10.4
 publication run38136194227 passes after exact-main CI; actual all-nine registry
-archives and the clean public consumer are verified. Standalone published-source
-unit compilation exposed an implicit unstable-feature dependency in its test;
-the owning configuration import correction passes both profiles with only TLS
-enabled. Controlled source/CI and successor delivery remain pending; Bombay still
-selects verified1.10.3.
+archives and the clean public consumer are verified. Controlled PRs8–9 subsequently delivered the
+owning configuration-import and query-timeout corrections. Exact-main
+CI38153406874 and actual publication38158907672 pass; published1.10.6 has all-nine
+archive, seven clean-consumer and six individual owning-test proofs. A narrow
+fixture-only adoption is active on this branch: all317 other complete lock
+records and the root0.23 Behavior graph remain unchanged. Main retains1.10.3
+until actual unchanged TLS campaigns, review, required CI and PR merge pass.
+Full AUTH1/NET1 witnesses remain open. Further Behavior merges are outside this
+execution boundary; the separately audited upgrade candidate stays049c88c3.
 The next Counter contribution proves actor-processing receipts, native Overflow
 and intended debug/optimized inversions. All four required workspace commands
 pass through pinned Nix; focused PR348 merged reviewed2b97d9df with all six CI
