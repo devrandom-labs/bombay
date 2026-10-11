@@ -34,13 +34,22 @@ Configured assignment/deadline PR343 and bounded JSON PR344 merged after scoped
 review, all six checks and both submitted-head Linux campaigns. Conservative
 storage PR345 and explicit JSON declaration PR346 also merged after scoped
 exact-head review and all six CI checks passed. The authorized Counter example
-is submitted as [PR347](https://github.com/devrandom-labs/bombay/pull/347).
-Sixteen focused debug/optimized tests cover typed provider refusals, finite
-component allocations, same-owner proof rotation, actual native Closed custody,
-original allocation-error source and payload-free diagnostics. Intended inversions
-and independent reviews retain their scoped limits. All combined local checks
-pass, including all21 aarch64-darwin Nix checks on the final source. Required
-submitted-head Linux CI, final review and actual merge remain open. These local contributions
+merged as [PR347](https://github.com/devrandom-labs/bombay/pull/347) at
+2026-10-11T09:44:33Z, commit04b89f7a3a5fe59ce66d0119658b3082413662ed,
+after scoped exact-head technical review and all six CI checks passed.
+Sixteen focused tests cover typed provider refusals, finite component allocations,
+same-owner proof rotation, actual native Closed custody, original allocation-error
+source and payload-free diagnostics. Intended inversions and independent reviews
+retain their scoped limits. All21 local aarch64-darwin Nix checks pass; submitted-head
+Linux CI independently executed all16 tests in debug, coverage and release, both
+native TLS campaigns and required Driver/Observe fuzz runs. Miri was skipped.
+The separate native query-ID correction passes original/healthy paired controls
+and merged through controlled PR7 after complete local verification, required
+Linux CI and two actual Miri tests. Its1.10.4 publication awaits passing exact-main
+CI and a verified registry-only consumer. The local Counter processing extension
+passes both native success/Overflow tests, intended inversions, detection of a
+real alternate producer by its origin oracle and all required workspace Rust commands; review found no
+scoped blocker. Its separate PR delivery remains open. These local contributions
 do not close production KERI or the full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
@@ -10748,7 +10757,7 @@ prepared review content, not formal human approval. Initial required CI
 in the same PR; its historical uncommitted/pending wording must not override
 actual current submission/local verification. The documentation-only successor
 requires fresh exact-head review and naturally triggered required CI.
-Native owning test formats to114 lines (source6687be9c). It compiles and runs
+Native owning test formats to113 lines (source6687be9c). It compiles and runs
 one debug test, but Zenoh rejects Tokio's current-thread test scheduler before
 query issuance (843c71d0); this is a setup failure, not the intended recipient
 assertion or a semantic kill. Select the owning runtime's documented
@@ -10756,3 +10765,522 @@ multi_thread/one-worker Tokio test host for this isolated local fixture, without
 a production scheduler/default change. Preserve the current paired execution
 and its actual terminal results before changing test source. Controlled lock
 89809508 selects top1.10.3, supporting1.10.1 and Rustls0.23.45 unchanged.
+
+Native original-defect campaign completes on corrected test host57ff3222 with
+locked graph89809508 unchanged: one actual test fails at the intended complete
+recipient/payload assertion in debug (a7722d07) and optimized (49ac420a). Actual
+trace C/A,B/B,C/C contradicts A/A,B/B,C/C after native query finals, queryable
+undeclaration and acquired Session.close. The later ABC completion assertion
+is not reached and receives no credit in these negative runs. Nonauthor
+review28b8dbf9 confirms the original owning source prefix45e3f51e, actual failure
+intent and SessionLocal/seed-only limits. Native test exact delta is113 lines;
+correct the earlier off-by-one formatting estimate. Router, timeout-retention,
+TLS, quotas and complete remote actor acceptance remain independent open gates.
+Current Counter PR347 source24dc2ae0/lock5336430f remains unchanged; exact
+successor462b799 technical review5482691585 is posted. Required CI38127075810
+is live; its debug native job passes, while release and required Nix remain
+pending. Historical earlier-head evidence cannot stand in for current-head CI.
+
+Native Session correction decision, selected before production edits under
+standing recommended-choice delegation: retain the existing AtomicU32 owner
+and use standard fetch_update with checked_add at its current SeqCst ordering.
+Refuse through existing ZResult before pending-map insertion, timeout-task
+creation or native dispatch. Never reset/reuse IDs in that live Session. The
+maximum counter value is the exhausted marker; its highest wire ID is unused.
+This intrinsic wire-width boundary is not a new configurable resource default.
+Alternative unused-ID scanning cannot alone fence late replies/old timers;
+widening the atomic adds storage/target assumptions merely to use one extra ID.
+Automatic session rollover would add shared-export/uncertainty policy and is
+not selected. Application bindings/replay remain separate from native IDs.
+Expected one existing owning source path, at most8 net production lines, no
+new public type/dependency; reuse the same counter/state lock/native errors.
+Original-regression tests stay within160 retained lines, adding explicit
+last-usable/exhausted/repeated-refusal checks rather than a copied allocator.
+Core3813+8=3821/3900; controlled775+8=783/810. Known17637 tests leaves363
+through18000, enough for this stage. Actual deltas require final measurement.
+No router allocator, timer-retention or quota correction is authorized by this
+small Session blocker. Those independently required witnesses remain open.
+
+Parallel ordinary-Rust wire preparation checkpoint (no production selection):
+compare the existing Serde internally tagged closed enum with the proposed
+separate fact structs against the already selected flat JSON/strict metadata
+contract. Preserve existing proof attachment and logical-binding decisions;
+no new epoch issuer, proof format, public API, quota or runtime is adopted.
+Allow at most128 temporary probe/test lines and one external decision artifact.
+Known17637 tests plus native maximum47 additional and probe128 is17812/18000.
+Current root documentation net8544 plus controlled171 is8715/9000 before this
+record; compare and measure actual temporary/retained deltas at the next checkpoint.
+Coordinator owns execution scheduling and shared files; preparation may proceed
+independently of the native owner correction and exact-head CI audit.
+
+Native prepared correction98b399e5 changes exactly one owning source: production
++6/-1/net5; tests+131/-0/net131; public API+0/-0, graph unchanged89809508.
+The healthy debug owning test now executes and passes (809bb2ea); optimized,
+original-allocator inversions and healthy restorations are running in the same
+serialized Nix campaign. No completed combined gate or release is inferred.
+Core actual forecast3818/3900, controlled780/810, cumulative tests17655/18000.
+
+Independent processing-receipt preparation is permitted alongside that campaign:
+compare an explicit correlated Increment command and Actions acknowledgement in
+the existing Counter owner with the existing composition alternatives. Current
+Read snapshots cannot prove a particular Increment was processed. Prepare only
+external syntax/law evidence, at most150 temporary probe/test lines; no shared
+Counter edit, new runtime or public API is selected. Combined reserved tests
+17655+128 wire+150 processing=17933/18000. Retain overflow/no-ack, exact
+correlation and pure-Behavior obligations in the candidate comparison.
+
+Native owning release preparation decision (before manifest/CI edits): follow
+the already selected controlled patch-version policy with top-level1.10.4 after
+the focused original/healthy controls finish. Keep all eight supporting package
+versions/checksums and every unrelated locked dependency unchanged. Alternative
+reusing published1.10.3 cannot deliver altered immutable registry bytes; keeping
+a repository-only patch would violate approved ordinary registry installation.
+Add the exact exhaustion owning test to both profiles in the existing required
+CI entrypoint, and update the existing exact archive-version audit. No new
+workflow, release authority, dependency/API or runtime profile is selected.
+Expected nine controlled paths: owning Session, three manifests, two locks,
+README, verification script and archive auditor. Expected production net8
+including the native5, CI3 and auditor net0; core3821/3900, controlled783/810.
+Focused controls precede these edits; final controlled checks, independent
+review, required CI, normal merge, actual publication and registry-only
+consumer proof remain mandatory before Bombay adoption. No source-only
+resource research or direct fake provider closes remote acceptance.
+
+Native focused correction campaign99199 is terminal0: healthy and restored
+debug/optimized controls execute one test each and pass; restoring only original
+fetch_add source779885b5 executes one intended oracle failure in each profile
+(29ad5be7/97157f55). Restored owning source98b399e5 and lock89809508 remain exact.
+The coordinator nonauthor source/execution review confirms pre-dispatch refusal,
+last-usable admission, three exhausted refusals, two retained pending consumers
+and acquired cleanup before the complete consumer/payload oracle. Existing
+ZResult errors stay original; exhausted get does not return its original payload.
+Artifact: /tmp/bombay-native-query-identifier-correction-controls/coordinator-review.json.
+Required combined controlled checks/review/CI/release remain open.
+
+Wire comparison formatting checkpoint: selected stable rustfmt produces134
+private probe/test lines rather than128. Adopt a134-line probe allowance under
+standing delegation; no semantic decoder/type/API choice is adopted by formatting.
+Combined reserved tests17655+134+150=17939/18000. Copy formatted32129ffc only
+after this record; literal serde versions remain1.0.229/json1.0.151.
+PR347 historical native count estimate is corrected publicly by comment
+https://github.com/devrandom-labs/bombay/pull/347#issuecomment-6107632587; no
+Counter head/source/lock changed or CI rerun was requested.
+
+Controlled1.10.4 preparation now touches exactly the forecast nine paths.
+Both pinned Cargo updates are terminal0 and independently compare complete
+parsed lock graphs: only the top-level package version changes in each lock.
+Main controlled lockcd2c989e and consumer lock725a8e81 preserve all supporting
+versions/edges; source98b399e5 remains exact. CI adds three lines to execute the
+actual exhaustion regression in debug and optimized profiles. Required combined
+checks now run on this frozen candidate before commit/review/submission.
+
+Representative wire comparison executes one actual test in both profiles on
+formatted32129ffc with private lock17e6e606. All11 registry nodes match root
+versions, sources and checksums; no root dependency selection changes. Debug
+5832f45a and optimizedc61ff0ac pass for flat read/admission shape, unknown and
+duplicate fields, declared versions and integer fidelity. This does not prove
+protected bytes, allocation bounds, provider scope, operation-kind consistency
+or actual actor zero-effect behavior. Neither shape is adopted.
+
+Counter delivery checkpoint: PR347 actually merged04b89f7a3a5fe59ce66d0119658b3082413662ed
+at2026-10-11T09:44:33Z by normal matched-head merge after exact462b799 review
+COMMENT5482691585 and all six checks succeeded. Review content was independently
+prepared and posted through the author account; no formal human approval claimed.
+Actual merge treeea60f5dc equals tested merge3adca877 and submitted-head tree.
+Independent Nix proof2e387758 rehashes original job metadata/log and confirms
+all16 named tests in ordinary debug, debug coverage and release; actual Driver2048
+and four Observe1024 campaigns completed. Miri steps skipped, no Miri credit.
+Native prooffb406ad2 retains117 files/profile and30 actual TLS classes/profile.
+Coordinator branch fast-forwards to this exact main with all three newer records
+byte-preserved through /tmp/bombay-coordinator-pr347-reconciliation. Current
+source24dc2ae0 and selected lock5336430f now exist together on main. The exact
+Behavior/Actors revisiond69f992b and sole Timers patch13e884da are unchanged.
+Receipt: /tmp/bombay-pr347-delivery-record.json. This scoped contribution is
+merged; AUTH1/NET1/full R01-R25 retain their incomplete disposition.
+
+Controlled combined campaign77281 is terminal1. Both complete owning library
+suites execute33 passing tests and2 explicitly ignored tests; required script
+then fails strict Clippy on fetch_update deprecation (b0df099d). No combined-pass
+claim is retained. Exact pinned Rust sourceb940084d7, archivedcec944d1, confirms
+u32 fetch_update is stable since1.45 and now delegates directly to try_update,
+which requires1.95. Source: https://raw.githubusercontent.com/rust-lang/rust/b940084d7/library/core/src/sync/atomic.rs.
+The controlled package still declares source minimum1.75; its whole dependency
+graph is not certified on that old compiler.
+
+Compatibility decision selected before source edits under standing delegation:
+retain the existing standard-library fetch_update compatibility spelling, adding
+a single statement-scoped deprecated-lint allowance with a source-minimum comment.
+Both spellings execute the same owning standard implementation on pinned Rust.
+Alternative try_update raises the declared compiler minimum to1.95 solely for a
+rename; a handwritten compare-exchange loop duplicates std without a semantic
+gap. Neither alternative is recommended here. Keep every other strict lint and
+all ownership/ordering/exhaustion laws. Expected+2 production lines, no API,
+dependency or algorithm changes; native net7, stage net10 including CI,
+controlled785/810 and core3823/3900. Re-run the owning/required combined checks
+on the exact annotated source. Prior semantic original/healthy controls retain
+their exact older source hashes, not an invented new-source execution claim.
+
+Current cumulative checkpoint after Counter merge/reconciliation: Bombay
+86 paths; production+3487/-475/net3012; tests+16391/-661/net15730;
+manifest-lock+3183/-3/net3180; documentation+8762/-89/net8673.
+Native controlled nine-path stage adds production+12/-2/net10, tests+131/-0,
+README+17/-7/net10; public API+0/-0. Core3823/3900, controlled785/810.
+Known17655 tests before external wire/processing preparation; reserved17939/18000.
+Combined documentation8854/9000 before this checkpoint. Downloaded source and
+external decision artifacts remain separately accounted research. Current native
+annotated sourced3fca9f6 re-executes both owning suites successfully (33pass,
+2ignored each); required combined handle82251 is confirmed live. Review and
+controlled release remain open. Goal turn is progress, including actual PR347
+merge and observable native/source evidence, not a plan-only completion.
+Exact checkpoint: /tmp/bombay-static-remote-current-goal-checkpoint.json.
+
+Processing-receipt stage decision before implementation, selected under the
+standing recommended-choice delegation: extend the existing Counter command
+with IncrementAndReply { request_sequence, reply_to }, retain bare Increment and
+Read, and emit one CounterIncremented { request_sequence } in a named Actions
+lane only after the existing checked mutation succeeds. Use the existing
+MessageProtocol<MailAddr, CounterIncremented> alias for the processing port;
+no new marker/Protocol implementation, runtime, actor, trait or macro. Correlation
+is not identity issuance, authentication, replay or remote-delivery completion.
+Snapshot replies cannot establish a particular Increment processing fact.
+Alternatives: changing CounterValue's snapshot protocol widens all Read callers;
+a generic interceptor cannot prove the domain mutation; a fold callback violates
+Actions; a new marker duplicates MessageProtocol. The proposed private message
+owns the distinct successful-mutation event and names its correlation field.
+Counter retains one value/state authority; command variants2→3, send lanes1→2,
+no subordinate state machine or public type. Shared checked mutation replaces
+the former inline addition, preserving Overflow and unchanged state on failure.
+
+First write the focused public Application and complete pure-Actions assertions
+on the old source. Record its static missing-command/processing-type denial
+before production edits; subsequently prove omitted mutation/ack, wrong
+correlation/port and Overflow inversions against actual executed post-cleanup
+observations. Acquire Work/native/two-notification products before assertions.
+Existing actor-template shutdown, external typed ports, established deliveries
+and native retirement oracle remain owners; no reduced native-result product.
+Expected three existing code paths: Counter owner, main owning consumer tests,
+authorized Counter's exhaustive command descriptions/layout assertions. Expected
+production at most40 net lines (prepared owner32 plus affected descriptions);
+public API+0/-0. Core3823+40=3863/3900, controlled785/810, paths320 and API5
+allowances unchanged. Actual new layout/allocation measurements are mandatory;
+old component numbers cannot be relabeled after the message changes.
+
+Expanded test/document checkpoint selected before authoring: raise cumulative
+test allowance18000→19000 and documentation9000→9400 for the actual Application
+harness, static denials, intended inversions, fresh layout allocation and bounded
+Serde allocation comparison. Proposed processing test ceiling350, wire allocation
+addition100 plus up to8 inverse source lines; prior reserved17939 +458=18397.
+Known documentation before the prior checkpoint8854; expected additional stage
+records under300. These are review caps, not weakened acceptance or runtime
+resource defaults. Keep processing independently reviewable from the native
+release and unselected wire/binding design. All full R01–R25 stay open.
+Fresh locked audit confirms5336430f, Behavior/Actors0.23.0 atd69f992b, selected
+complete760-line AGENTS2b7a9195, sole Timers patch13e884da, and unchanged
+Address/Communication/Observe/Timers neighbors. Current published API and owning
+Counter source plus exact MessageProtocol/Actions/EstablishedDelivery contracts
+were inspected before this selection.
+
+Parallel Serde allocation comparison selected as investigation, not decoder
+adoption: use the already locked DHAT0.3.3 owning profiler, as in the published
+Counter component witnesses. A handwritten allocator would duplicate its
+mechanism and introduce unsafe code without a gap; a new profiler dependency
+is unnecessary. Compare the same original-byte object guard and declaration
+preflight with the internally tagged enum versus direct strict ReadReply struct.
+Ten explicit accepted/rejected fixtures include valid flat/escaped metadata,
+unknown nested values at either end, invalid known-field shape and duplicated
+sequence; 8/64 element sizes are fixture inputs, not production defaults.
+Retain original parser results through profiler retirement before assertions.
+Measure real allocation count/total/peak; no timing, provider, actor or full-heap
+claim. Refusals remain refusals even when the enum buffers their values first.
+An intended inverse substitutes the enum for the direct decoder on identical
+input, without copying an allocation model. Source cap234 external test lines
+and up to8 inverse lines, at most3 dev-manifest lines for existing DHAT;
+no shared production/API/lock or schema choice. Complete both profiles and
+independent review before selecting any retained representation.
+
+Processing test-support placement selected before authoring: one cfg(test)
+pub(super) assertion function in the Counter owner accepts the actual retained
+Application recipients and checks complete pure Actions after native results
+are acquired. This shared Counter file also builds in the authorized binary,
+which does not call this main-only test support. Permit dead_code on that one
+test-only function, with the reason beside it; retain strict checking elsewhere.
+An expect attribute would be unfulfilled in the main consumer, a dummy call
+would add no evidence, and duplicating the Application harness would duplicate
+its owning oracle. No production visibility, wrapper or API is added. Classify
+the entire cfg(test) function as test source in cumulative measurements.
+
+Native combined-check update: both annotated-source owning suites passed with
+33 tests and two ignored in each profile. The required release script reached
+the configuration-consumer checks, then cargo package refused three uncommitted
+source/manifests. This is a real failed combined run, not a packaging success.
+Commit the independently reviewed focused candidate before rerunning its
+unchanged required pipeline; keep release, CI and publication claims pending.
+
+Controlled candidate committed on its isolated branch as
+3a67bad198799da6e64c75c39a01b9e10622dfb1; all nine reviewed file contents are
+unchanged and the working tree is clean. Actual pinned-Nix combined rerun
+handle98643 is live, with preserved new artifacts under
+/tmp/bombay-native-query-identifier-committed-combined-gates. The failed prior
+campaign remains intact. Independent exact-head review preparation proceeds
+in parallel with processing test authorship and bounded wire measurements.
+
+Processing baseline executed through pinned Nix before production edits:
+the actual main test target failed compilation with E0432/E0425/E0422 missing
+processing messages/protocol, E0599 missing IncrementAndReply and E0026 missing
+processed_increments. Original production source is unchanged; added tests253,
+public API0 and lock unchanged. Baseline handle47553 finished successfully as
+an evidence controller for expected Cargo exit101. It proves the static gap
+only; no processing test ran. Exact command, full diagnostic log and frozen
+source receipt are retained in
+/tmp/bombay-counter-processing-before-contract/actual-baseline.json.
+Apply the already selected concrete owner extension next, then run the actual
+Application control in debug and optimized builds before broader semantic edits.
+
+External wire allocation campaign handle31117 is running through pinned Nix.
+The private research lock now uses the verified33-node projection, each registry
+version/source/checksum identical to the authoritative root graph. Shared
+manifests/lock are unchanged. Source221 lines, manifest+3 and zero public API;
+healthy controls, intended buffered-decoder inversions and exact restoration
+remain pending actual execution. No decoder/schema adoption follows from setup.
+
+External allocation campaign31117 finished exit0. Ten actual invocations prove
+original schema controls, all ten heap fixtures in each profile, both intended
+buffered-decoder inversions and exact-restored controls. Root independently
+rehashed every log; all33 graph records and source/lock custody checks passed.
+Flat accepted reply: direct peak60 requested bytes versus tagged1084, with
+8 versus11 total allocations. For64 duplicate sequence fields, direct peak114
+versus tagged8266; for an unknown final64-element array,492 versus4588. Both
+profiles report the same metrics. The inverse reaches the first fixture's
+named allocation assertion; later negative fixtures receive no credit.
+Results cover these finite parser inputs, not transport/authentication or total
+process memory. Independent review remains pending; schema selection stays open.
+Full command/log/source records: /tmp/bombay-counter-wire-composition/allocation-controls/campaign.json.
+
+Controlled Zenoh draft PR7 is actually open against main at head3a67bad1:
+https://github.com/devrandom-labs/bombay-zenoh/pull/7. Its submitted-head CI runs
+in parallel with local release verification and Counter development. Keep it
+draft until full local gates and exact-head review are recorded; merge and
+publication remain pending. This avoids serializing unrelated actor work
+behind the controlled dependency's packaging and CI.
+
+Processing candidate39d12e36 passed the actual focused Application test and
+all Counter target tests in debug and optimized builds, including fresh actual
+component allocation controls. Strict Clippy then rejected the test function
+after the existing test module, its140-line contiguous original-receipt
+acquisition/oracle, and the correlated variant unused in the authorized binary.
+This is not a combined verification pass. Preserve all exact campaign logs under
+/tmp/bombay-counter-processing-controls; lock5336430f remains unchanged.
+
+Selected correction before edits: move the existing cfg(test) support function
+before the terminal test module, retaining its narrow test-only visibility.
+Give the one140-line test a scoped expect(too_many_lines) with its original
+Work/native/notification custody reason; splitting into wrapper products only
+to shorten it would add machinery without semantic state. Update ordinary main
+to actually send the selected correlated command and retain its typed processing
+receipt in the completed Work output for checking after native acquisition.
+Read remains a snapshot. The shared authorized example continues demonstrating
+its bounded admission profile; give the single correlated command variant a
+scoped dead_code allowance explaining the genuine ordinary-main consumer and
+the other binary's deliberately narrower profile. Do not add dummy calls or
+change the AUTH provider/admission envelope to appease the compiler.
+
+Alternatives: a global lint relaxation weakens unrelated checks; wrapping the
+shared source in binary-specific cfg branches duplicates its contract; expanding
+the authorized gateway into processing custody mixes a later remote milestone
+into this local owner correction. The real ordinary-main use also provides
+executable application syntax beyond a test-only witness. Expected same three
+source paths, zero API/dependency additions. Raise this stage's production cap
+40→70 before edits, allowing actual consumer syntax and narrowly scoped comments;
+core3823+70=3893/3900, other cumulative caps unchanged. Measure cfg(test) function
+as tests after relocation rather than treating it as production source. Re-run
+both focused profiles, affected complete Counter suites, actual example and
+strict formatting/Clippy on the corrected combined source.
+
+Committed native combined run98643 ended with exit1 after all owning suites,
+strict feature checks, configuration consumers and successful actual packaging
+of168 files. Its final archive auditor expected repository target/package while
+the coordinator's CARGO_TARGET_DIR placed the archive in the retained external
+cache. No archive-audit/combined success follows from that failed run. Align the
+ignored repository target symlink with the same cache; tracked source/head and
+both locks remain unchanged. Run the exact combined pipeline again with new
+artifacts under /tmp/bombay-native-query-identifier-cache-aligned-combined-gates;
+retain both preceding failures. This is local build-path correction, not a TLS,
+query, dependency, resource-limit or production-code change.
+
+Independent wire allocation review23b85e54 confirms the actual ten-command
+controls/inversions/restoration and every locked node. All40 healthy/restored
+fixture pairs preserve actual typed results; both inverse runs fail the intended
+first-fixture allocation assertion. DHAT max_blocks describes blocks at peak
+bytes, not an independent maximum block-count statistic. Retain that precise
+interpretation with the raw six-field measurements; no broader peak-block or
+whole-process memory claim is established.
+
+Cache-aligned native combined run63707 completed exit0 on the unchanged exact
+committed head3a67bad1. Root independently rehashed all three records: owning
+debug33pass/2ignored, owning release33pass/2ignored and the entire required
+release script passed. Final script log34577c4d verifies all nine actual
+successor archives and restored archive inversion controls; top1.10.4 archive
+db4b1408 contains157 Rust files. Both exact locks and all nine reviewed source
+files remained unchanged. Local release verification now passes; submitted-head
+CI, recorded review, actual merge, publication and registry-only consumer
+verification remain delivery gates. Prior environmental failures remain recorded.
+
+Corrected Counter7918b542/main2fe8ebcc again passes focused and full affected
+tests in both profiles. Strict checking exposed the complementary shared-source
+case: ordinary main now constructs only IncrementAndReply, so bare Increment
+is unused there although the authorized binary uses it. Selected before further
+edits: demonstrate both genuine Counter commands in ordinary main, retaining
+both exact admission results, the correlated processing receipt and final
+snapshot2 through native acquisition. This teaches their distinct outcomes and
+preserves the existing bare command without another production lint suppression.
+Do not add a dummy constructor, global enum allowance or new generic wrapper.
+Keep correlated sequence1 and unchanged pure semantics. Expected same three
+paths/API0/graph0. Raise stage production allowance70→90 and cumulative
+core3900→3950 before edits; worst forecast3823+90=3913/3950. Actual preceding
+stage measured+90/-23/net67 production and+252 tests using the corrected
+cfg(test)-item boundary; source support after that boundary is entirely tests.
+Record full new metrics after this consumer correction and repeat exact checks.
+
+Controlled PR7 is ready for review on unchanged head3a67bad1. Independently
+prepared exact-head technical review was posted through the author account at
+https://github.com/devrandom-labs/bombay-zenoh/pull/7#issuecomment-6108131281;
+it explicitly disclaims formal human approval and identifies the non-authoring
+reviewer. Required Linux CI38131786211 remains running. The current PR body
+records the complete passing local pipeline and pending external gates. No
+merge/publication/adoption is inferred from ready status or a technical comment.
+
+Bare-plus-correlated source98fae809 again passes both focused/full Counter
+profiles. Strict checking now has one remaining107-line ordinary-main warning.
+Select a function-scoped expect(too_many_lines), with the same concrete reason
+as the test: retain original admission, snapshot, processing, shutdown, native
+and notification observations through cleanup before asserting them. No runtime
+body changes or new receipt wrapper are needed. Expected+4 production lines,
+within90 stage/3950 core limits. Update Counter guidance for both named reply
+lanes and the existing MessageProtocol alias, then run exact final checks and
+intended inversions. Previous failures remain available with their exact hashes.
+
+Final processing control64508 completed exit0: both focused profiles, both full
+Counter target suites (16 authorized and3 main tests), strict Clippy, workspace
+format check and actual ordinary executable pass on Counter7918b542/mainf546ce65.
+Exact lock5336430f and all three source files stayed unchanged. Fresh component
+metrics remain finite: record-provider requested486/header480/reservation998;
+scheduled-provider760/header512/reservation1030. These are the new layout's
+executed component measurements, not inherited prior numbers or a whole-heap
+bound. Actual source inversions now run under handle83297; actor-effect claims
+remain pending their named oracles. Wrong result capability is static denial;
+ignored Overflow currently tests the pure fold after native cleanup.
+
+Next selected correctness witness, after the current blocker passes: actual
+native correlated Overflow, not a successful-stop interpretation. Existing
+Counter owner gets one cfg(test) parent-visible at_maximum constructor for its
+private u64 state. The real Application sends correlated29, then selects an
+actual Read reply versus termination, retaining all original admissions,
+processing-port observation, Work/native/two-notification products before its
+oracle. Require original ActorRetirement::BehaviorFailed with exact
+CounterError::Overflow and no processing receipt; do not invent a state getter
+or reconstruct the error. An ignored-Overflow inverse instead produces the
+wrong native outcome and must fail after cleanup. Existing pure MAX proof
+remains distinct. This reuses the same lifecycle, established ports and native
+owners with zero production/API/dependency changes. Expected5 test factory
+lines and100–140 test lines; raise processing test cap350→450 before authoring,
+within cumulative19000. No native witness is credited from this selection.
+
+Processing source inversion campaign83297 completed exit0: twelve expected
+negative executions and both exact-restored positives were independently
+rehashed. Missing mutation, missing processing receipt, wrong sequence and wrong
+port fail the actual post-cleanup Application oracles in both profiles; ignored
+Overflow fails the pure MAX oracle after native acquisition. Wrong CounterValue
+reply capability yields E0308 in both profiles and executes no test.
+
+The added actual native Overflow controls52471 also complete exit0: both focused
+profiles, full affected target suites (16 authorized/4 main), strict Clippy and
+formatting pass on Counter1048ebcd/maine264866e. The original native
+BehaviorFailed error is CounterError::Overflow and no processing success appears.
+Its separate ignored-Overflow native inversion82123 is executing; no native
+negative claim follows from the earlier pure test.
+
+Controlled PR7 submitted-head Linux CI38131786211 succeeds at10:53:02Z.
+Root inspected its actual837109-byte log6d0d516e: both native query regression
+profiles execute successfully, all-nine archive/restored controls pass and the
+configuration owner's Miri target executes two tests with zero skipped/ignored.
+The Linux candidate archivea52dc925 is distinct from the Darwin localdb4b1408;
+neither is a registry publication receipt. Normal guarded merge is now requested
+for exact head3a67bad1; record actual merge before calling the correction merged.
+
+Documentation allowance9400→9700 is selected before further stage records to
+retain full CI/Miri/merge/release identity, native Overflow and independent
+review evidence. Current root documentation net8938 plus controlled181 and
+the181-line external protocol proposal is9300; Counter guidance adds7. Other
+scope ceilings and all required acceptance witnesses are unchanged. The
+external protocol proposal is research only; it selects no wire schema,
+logical-binding issuer, resource default or publication/query mechanism.
+
+Controlled [PR7](https://github.com/devrandom-labs/bombay-zenoh/pull/7) actually
+merged normally at2026-10-11T10:58:46Z, merge9cc83867dce5804a172d7b582fd3b4c2550257fe,
+submitted head3a67bad198799da6e64c75c39a01b9e10622dfb1. Required Linux CI and
+exact-head technical review preceded the guarded merge; no admin bypass or
+formal human-approval claim. Merge/main CI and actual1.10.4 publication plus a
+clean registry-only consumer remain separate prerequisites before Bombay adopts
+it. This closes the scoped native Session correction delivery only, not NET1.
+
+Actual native Overflow inverse82123 completed exit0: ignoring the checked
+error yields the wrong native retirement and fails the named BehaviorFailed
+oracle after cleanup in debug and optimized builds. Exact-restored native
+controls pass both profiles. Root rehashed all four records; source and locked
+graph are restored. Full-scope records are in
+/tmp/bombay-counter-processing-native-overflow-inversion/campaign.json.
+Next temporary wrong-producer inverse retains the genuine first native receipt,
+then injects the same correlation through a real external port after draining
+that receipt. This avoids queue saturation and requires the unchanged origin
+oracle to reject the real alternate producer, with its original send receipt
+also retained. Allow at most25 temporary test lines within450/19000, no production
+or API changes. It remains unexecuted pending the prepared exact source cut.
+
+Wrong-producer controller32748 completed exit0. Both actual negative runs send
+processing37 through the value port after draining/retaining the genuine Counter
+receipt; original send acceptance and genuine root/37 assertions pass after
+native cleanup, then the unchanged root-origin assertion fails at main.rs361.
+No address nonce was predicted and no envelope origin field was mutated.
+Both exact-restored controls pass. Final Counter1048ebcd/maine264866e/auth4bf950ae
+are restored; all four logs and source/lock checks remain in
+/tmp/bombay-counter-processing-wrong-producer-controls/campaign.json.
+Independent final review and all combined workspace checks remain open.
+
+Fresh complete processing checkpoint versus04b89f7a: four paths, no untracked
+files; production+106/-22/net84, tests+358/-0/net358, guidance+11/-4/net7,
+manifest/lock0, public API+0/-0. Explicitly classify the five-line cfg-only MAX
+factory as tests without treating later owning production methods as tests.
+Core3823+84=3907/3950; stage84/90, tests358/450, cumulative tests18234/19000
+including external wire221 and previously known17655. No native or reply-channel
+allocation claim is inferred from the local AUTH component measurements.
+
+Combined workspace build/test/format/strict-Clippy pipeline is now executing
+under the pinned shell with frozen complete Counter source/guidance/lock. Native
+main9cc83867 has exactly the reviewed head's Git treefd5a1d14; its required push
+CI38133883897 is running. Release script requires passing CI on that exact main
+commit, so publication has not been dispatched or inferred from PR CI.
+
+Combined processing workspace controller99401 completed exit0 on frozen
+Counter1048ebcd/maine264866e/authorized4bf950ae/guidancea35e13bd/lock5336430f.
+All required commands ran through pinned Nix: cargo build --workspace --locked;
+cargo test --workspace --locked; cargo fmt --all -- --check; and cargo clippy
+--workspace --all-targets --locked -- -D warnings. Root rehashed their actual
+logs, respectively83af453f,46036011,empty e3b0c442 and7727680c; all source,
+guidance and lock identities remained unchanged. Exact command/log records are
+/tmp/bombay-counter-processing-workspace-gates/campaign.json. This includes
+workspace unit/integration/documentation tests; no new full Nix check campaign
+or required remote CI is inferred from these four local commands.
+
+Scoped independent final review54cd846b found no owning-composition or interface
+minimization blocker, retaining the native Overflow field-assessment limitation
+and genuine producer experiment's distinction: native send accepts the alternate
+producer, while the unchanged consumer-origin oracle detects its false actor
+claim. No cryptographic verification or full remote acceptance row follows.
+Fresh complete candidate versus latest fetched main04b89f7a contains six paths
+and no untracked files: production+106/-22/net84; tests+358/-0/net358;
+public API+0 types/-0 types; manifest/lock unchanged. Final candidate documentation
+is+559/-14/net545, including accumulated coordinator
+records from the preceding delivery and concurrent native research. This is
+not claimed as code reduction. Source scope remains84/90, core3907/3950,
+tests358/450 and cumulative18234/19000. The focused Counter PR and its required
+CI/merge remain pending; all full AUTH1/NET1 requirements retain their status.

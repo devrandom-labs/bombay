@@ -1646,7 +1646,9 @@ async fn run_counter_profile<R>(
                     },
                 ) => {
                     let operation = match command {
-                        CounterMessage::Increment => CounterOperation::Increment,
+                        CounterMessage::Increment | CounterMessage::IncrementAndReply { .. } => {
+                            CounterOperation::Increment
+                        }
                         CounterMessage::Read(_) => CounterOperation::Read,
                     };
                     panic!("Counter {operation:?} admission refused: {refusal:?}");

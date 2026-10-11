@@ -86,8 +86,18 @@ pass, with intended inversions in both profiles and scoped independent reviews.
 Payload-free requester diagnostics retain the complete original message. Owning
 strict checks and scoped ownership minimization pass. Eight final combined
 checks pass; the serialized full Nix retry passes all21 local checks after the
-disk-only failure. Counter PR delivery remains open. This local evidence does not close
-any full remote acceptance row.
+disk-only failure. Counter PR347 merged04b89f7a3a5fe59ce66d0119658b3082413662ed
+at2026-10-11T09:44:33Z after scoped exact-head technical review and all six
+checks passed. Actual Linux CI executes all16 tests in debug, coverage and release;
+both native TLS profiles and required Driver/Observe fuzz campaigns pass. Miri
+was skipped. This contribution does not close any full remote acceptance row.
+The native Session query-ID correction merged through controlled Zenoh PR7
+(9cc83867dce5804a172d7b582fd3b4c2550257fe), after exact-head review and
+passing required CI, including two executed Miri tests. Controlled1.10.4
+publication awaits the exact-main CI result and registry-only consumer proof.
+The next Counter contribution proves actor-processing receipts, native Overflow
+and intended debug/optimized inversions. All four required workspace commands
+pass through pinned Nix; its focused PR, required CI and merge remain pending.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
 
