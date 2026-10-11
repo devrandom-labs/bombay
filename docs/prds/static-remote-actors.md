@@ -26,9 +26,13 @@ stalled-verifier progress PR339 and exact-target overlap PR340 merged after
 independent review and all six checks passed. Controlled interest-retirement PR6
 also merged after required CI; successor1.10.3 is actually published with all-nine
 registry archive and clean consumer verification. Its narrow Bombay adoption
-PR341 is reviewed with all six local affected checks passing; submitted-source CI
-and actual merge remain gates. Replay comparison controls and intended inversions
-are executed, with final fixture refinement/review/integration still pending.
+PR341 merged after exact-head review, all six successful checks and both Linux
+campaigns. The published1.10.3 dependency is now adopted on main. Replay
+comparison PR342 merged after scoped review, all six successful checks and both
+submitted-head Linux campaigns.
+Parallel finite assignment/deadline and conservative storage witnesses are under
+verification. Their declared local scope does not close production KERI or the
+full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
 
@@ -8711,3 +8715,369 @@ documentation+6496/-89/net6407, five previously delivered public types.
 Across-owner retained tests13201 remain below13300;16 unique negative-edit lines
 are separately authored, not repeated copies. Core Rust2051 remains unchanged.
 No production feature is marked merged by these private comparison checks.
+
+
+Replay contribution PR342 submitted71807d2833713e56b1a09939ef97bc576f1bd8e6,
+with scoped independent reviewPRR_kwDOTCRE7M8AAAABRrkrFA and all five combined
+local commands passing. Required submitted-head CI and actual merge remain
+pending; PR341 actual delivery precedes its merge. Submitted immutable source
+and measurements remain preserved while the next independent profile prepares.
+
+Automatically selected resource stage, before dependent edits: use existing
+standard fallibly pre-reserved VecDeque slots and a finite verified maximum
+storage profile, rather than another async reservation queue or a public
+budget wrapper. Existing nonwaiting Tokio owned permits were evaluated: they
+provide cancellation-safe capacity ownership but add shared ownership and u32
+permit limits without establishing a byte ceiling. Keep the existing completion
+oneshot and scheduled-provider result oneshot; channel-free synchronous reading
+would narrow the already proven independently cancellable wait. This changes
+neither native Communication admission nor replay protection lifetime.
+
+Use already selected DHAT0.3.3 for requested allocation bytes/blocks, following
+its exact source and Bombay's existing entity allocation test; no dependency,
+handwritten allocator or unsafe implementation is added. DHAT is experimental;
+its executable profile is evidence for the pinned supported configuration,
+not a universal allocator proof. Serialise this owning target with one standard
+module-level Mutex held by each test, so ordinary default required Cargo commands
+remain valid without global thread flags. The profiler never runs concurrently
+with sibling tests. First independently measure existing finite slot/provider/
+notification/comparison allocations, expose the original omitted-overhead law,
+then freeze a conservative ceiling before asserting the repaired consumer.
+Monotone allocated-byte deltas prevent simultaneous frees hiding allocations.
+Selected Tokio runtime/task waker clones share existing task allocation; arbitrary
+application wakers, allocator usable-size/RSS/profiler overhead and shared runtime
+storage remain separately declared. Never infer a production whole-heap quota.
+
+Stage envelope: one existing test source path, up to300 net retained test lines
+and20 unique inverse lines, production/public types/dependencies zero. Cumulative
+retained-test ceiling13300→13800 and research-document ceiling6800→7100 are
+selected before edits to account for the genuine new witnesses and their records.
+Core Rust2200/public types5/controlled functional810/path320 remain unchanged.
+Expected removal is private caller charge duplication and comparison rollback,
+not a claim of production deletion. Positive witnesses retain stalled verification,
+original payload/proof custody, completed unread results and borrowed cancellation;
+explicit consumption releases operation capacity while replay protection remains.
+Overflow must refuse before verifier invocation, with capacity-minus-one byte
+cases and full native/notification custody acquired before final assertions.
+Reservation-order, early-release and omitted-overhead inversions must fail their
+own independent oracles in debug/optimized profiles. Production binding freshness
+is a separate parallel contract; no facade or new runtime owner is selected.
+
+
+Parallel configured-assignment stage selected before edits: use one explicitly
+selected deterministic profile authority whose checked issuer survives actual
+Application replacement. It validates an independently configured static grant,
+issues a private authorized assignment, and couples that fact to the runtime's
+actual EstablishedRecipient after successful activation. Requests cannot supply
+or replace the configured recipient. Reuse existing runtime capabilities; add
+no registry, public admission facade, clock trait or dependency. The assignment
+is distinct from the existing request-verification receipt, which is not copied.
+The test authority's cold restart is unavailable/refused, rather than silently
+recreating its issuer at zero. This proves the declared finite profile, not
+production KERI provenance, distributed noncloning or durable writer fencing.
+
+Alternatives: random identifiers using an existing random crate would reduce
+accidental collisions but do not themselves prove authorized assignment or
+noncloned replacement; a persisted issuer adds durability beyond this PRD.
+Prefer the finite owning authority plus explicit unavailability contract now.
+Production providers must supply their declared authoritative freshness fact;
+missing evidence cannot create a production-positive fixture. KERI/CESR proof
+and Mnesis durability remain their separate approved workstreams.
+
+Provider owns an immutable locally anchored evidence deadline. Cached proof
+revalidation must preserve it, not extend it with now+lifetime. Each final
+exclusive permission/native nonwaiting operation samples standard Instant::now,
+after verification and afresh after Full. Controlled policy-time tests and an
+already-expired real Instant case need no clock service or sleeps; remote time
+conversion and suspend behavior remain explicit profile limits. New source is
+one separate owning integration-test path, reusing native application_support;
+it does not duplicate either concrete request verifier, Admission states,
+resource owner or replay map. Expected tests300–420, envelope450 retained plus
+16 unique inverse lines; production/API/dependencies zero. Cumulative test ceiling
+13800→14300 is selected before this parallel stage. Existing resource stage
+retains its separate300+20 envelope and exclusive source ownership. Source-bound
+misrouting, old-assignment acceptance, deadline refresh and stale time-sample
+inversions must reach complete native/notification oracles before credit.
+
+
+PR341 corrected-head Linux proof now passes both profiles:30 expected outcomes
+each, actual compiled registry1.10.3. Tested mergee315ffc has exactly the current
+5621637 source tree8954cbf. Native jobs114359572050/114359571992 succeeded;
+artifacts11688580213/11688112825 independently match their ZIP digests.
+Both profiles preserve eight ordinary native outcomes, four deliberately denied
+caller exit1/closes, four forced-late deaths with uncertainty, eight healthy
+Counter integrations and six healthy exact-target overlaps. Controller binary
+hashes are recorded; executable bytes were not uploaded and are not described
+as independently rehashed. Coordinator rehashed all234 actual record files and
+both full job logs. Evidence /tmp/bombay-pr341-linux-native-proof.json SHA
+9e509dfb864cb0892e5515993da6c288f47b75fb860307a0060dd7658d107fff.
+The required current-head Nix check and actual merge remain pending.
+
+
+Local profile dependencies are freshly reconciled in
+/tmp/bombay-next-local-profile-dependencies.json: root lock93611085 and manifest
+5b73f388 unchanged, Behavior/Actors0.23 at exactd69f992, Address0.3,
+Communication0.1.4, local Observe, patched Timers exact13e884d, Tokio1.53.1,
+Serde1.0.229/serde_json1.0.151 and existing DHAT0.3.3. Complete selected Behavior
+instructions retain SHA2b7a9195. The first automatic snapshot mistakenly attached
+same-version registry Timers provenance to the selected Git patch; that initial
+snapshot is explicitly excluded and preserved. The corrected proof resolves the
+actual selected checkout/revision and source, never the unrelated archive.
+
+
+Assignment formatted-draft checkpoint before further edits: initial source617
+lines exceeds forecast/envelope450; it is uncompiled research, not retained
+acceptance. The exact initial source is preserved at
+/tmp/bombay-assignment-initial-uncompiled.rs. Select lawful minimization of
+repeated concrete post-native observation assertions, while preserving two
+actual Applications, every native/notification original, distinct startup/
+cold-authority/MAX controllers and meaningful inverse oracles. Raise this
+stage's retained ceiling450→650 before edits; aim below the measured617 through
+actual deletion, without packing syntax or weakening custody. Existing cumulative
+14300 remains sufficient for replay13201 +resource300 +assignment650 +36 unique
+inverses=14187. Production/public API/dependencies stay zero. Provider deadline
+anchoring belongs in its configured export constructor; cached revalidation
+borrows that owned deadline rather than accepting a freely supplied value.
+No feature evidence is credited until debug/optimized controls and intended
+failures actually execute on the retained source.
+
+
+First W compatibility decision selected before dependent implementation: one
+explicitly declared version1 exact-target request/reply profile, requiring the
+same declared wire version and concrete application schema version. Unknown
+versions/kinds and missing version declarations refuse without fallback or
+implicit downgrade. The alternative is multi-version negotiation/adaptation,
+which adds compatibility transformations and retained proof obligations without
+a current compatible consumer. Future versions require an explicit plan; this
+choice does not freeze field layout or impose one application protocol on all
+actors. The first concrete Counter consumer uses its closed Increment/Read
+commands plus separately authorized Stop, lowering to the existing typed actor
+protocol and lifecycle capability. No additional actor/effect algebra is selected.
+
+Milestone consumers preserve distinct authenticated refusal, exact admission,
+application processing reply and joined-retirement evidence. Request sequence
+identifies a request; it promises no FIFO across requests/links. Each received
+fact remains useful despite reordered replies. A caller needing causal order
+must first consume the earlier processing reply, then submit its dependent
+request; missing/lost replies preserve uncertainty and never reissue mutation.
+Proof stays a separate native attachment over the exact full protected JSON.
+No new public product/API/registry/macro follows from this compatibility choice.
+
+Source preparation identifies a schema distinction still needing a concrete
+witness: direct Serde structs and internally tagged forms can accept positional
+JSON arrays, and parsing first into serde_json::Value can discard duplicate-key
+information. Do not claim object-only/duplicate rejection from either approach
+without exact evidence. Standard outbound candidate is selected for evaluation:
+serde_json::to_writer with Cursor over an explicitly fixed mutable byte slice,
+while borrowing the original typed request. Successful written prefix alone is
+eligible for transmission; partial/error output is never transmitted and the
+actual original remains retained. No bespoke codec, writer or new crate is
+selected. Object shape, precise metadata layout/limits and actual receiver/
+milestone consumers remain subsequent coherent source-verified choices.
+
+
+W refusal-scope decision selected before lowering: native Full remains a
+retained nonterminal local service disposition while that logical request is
+eligible to retry. Do not transmit it as a permanent refusal for the same
+still-live identity. A definitive wire refusal closes its explicitly declared
+attempt/operation scope and preserves proof of nonadmission for that scope;
+late Full/refusal cannot overwrite already acquired admission or processing.
+The alternative introduces independently authenticated attempt identities and
+additional correlation/replay state. Prefer the nonterminal Full disposition
+for the initial profile, preserving the selected logical identity and existing
+Admission state; exact closed-refusal representation/consumer needs its witness.
+
+Initial bounded-writer evaluation also preserves its limit: the fixed Cursor
+bounds destination storage, not arbitrary application Serialize allocations.
+The first supported concrete protocol must have a verified finite serialization
+profile. Direct typed parsing retains duplicate known-field errors and rejects
+trailing input; generic Value parsing is not acceptable evidence for that law.
+Version/key rotation cannot reset replay eligibility, and changing protected
+version/protocol/operation/target content under one identity must conflict.
+A processing reply arriving before its admission receipt settles its domain
+operation once while independently preserving the later admission fact.
+
+
+Storage exploration independently reaches the old accounting defect on exact
+60e9a8e838475a52706d70adcd95e620e0bc386ab784a0c096e046eeefd49077:
+both actual provider products preserve original pointers/bytes and retain2394
+requested bytes against old charge618; gap1776 each. Both debug/optimized runs
+fail at that intended final product assertion. Existing five actual Application
+controls pass in both profiles under the default parallel runner plus exclusive
+user-test Mutex. Seven source/command/log/receipt hashes are coordinator-verified
+in /tmp/bombay-storage-profile-exploration.json SHA
+2bdf6599344a4bc24dd0e22bdc79e7202777ecc0f2896b8be8a11ffa5502b4cf.
+Initial E0282 is a preserved inference/setup failure, not semantic evidence;
+explicit existing Box<[u8]> annotation introduces no model/type. Formatting
+passes; Clippy's sole long-measurement style finding remains unresolved until
+retained-test minimization. Stage tests+286/-4/net282, no other source/graph/API.
+
+Measured retained components per provider: reserved slot buffer304, two unit
+notification cells128, two comparison copies plus actual map allocation1956,
+and original buffers6 requested bytes. The successful scheduled-provider windows
+allocate272 across two sequential calls; the cold record-provider window's64
+includes shared host initialization and is not attributed to its pure verifier.
+Only two success identities in one insertion order and unpolled notifications
+were measured. No fixed ceiling is yet selected; invalid/unavailable/stalled
+provider phases, finite insertion alternatives and actual consumer lifecycle
+still require witnesses. These are requested allocation sizes, not allocator
+usable size/RSS, arbitrary wakers, all targets or a full remote-operation bound.
+Mailbox admission notification never proves domain-processing completion.
+
+
+Assignment controls on corrected646-line b3a3dfda source now execute3/3 in both
+debug and optimized profiles, including four actual Applications and full native/
+notification receiving. First compile's incorrect associated trait/generated
+Actions spelling/setup Debug requirement is excluded as compiler/setup failure;
+corrections reuse the exact selected owners without new bounds or machinery.
+Strict Clippy identifies two coherent temporal-controller length findings and
+two explicit drop calls on the non-Drop finite authority. Select lexical authority
+ownership scopes, two narrow fulfilled length expectations preserving full trace,
+and lawful deletion of repeated observations; no blanket lint allow/custom Drop.
+Stage retained ceiling650→680 before these edits; cumulative14300 still covers
+13201+resource300+assignment680+36 unique inverses=14217.
+
+Strengthen the cold controller before retention: observe missing authority only
+after actual final-MAX export/native retirement, then run that refusal through
+the same conditional startup branch. One concrete ordinary Counter startup
+function may own this real startup/retirement policy; no generic Application
+runner, new public wrapper or erased outcome is selected. Every unexpected export
+still acquires its real native and notification products before the export-count
+oracle. Assignment matching alone remains distinct from request authentication.
+
+Independent storage review confirms component allocation-demand2394 versus618,
+not a general peak-retained/process-heap claim: provider transient allocations
+are separate; the cold record window mixes host initialization; libtest runner
+allocations can occur despite exclusive test-body locking. All initial scope
+limits and the sole style finding remain explicit. No numeric profile ceiling
+or repair is selected by the measured positive deficit alone.
+
+
+Selected storage repair before edits: replace private replay BTreeMap with
+fallibly pre-reserved sorted Vec<(u64, Retained<R>)>, directly retaining the same
+key, comparison bytes and existing PendingAdmission/Admission product. Standard
+binary_search_by_key locates identities; confirmed new entries insert into
+already reserved capacity. No wrapper/trait/controller/public owner is added.
+Capacity times sizeof the actual stored product is charged once; moving it
+between existing owners must not double-charge its inline representation.
+Preserve exact TryReserveError on allocation refusal, original/R movement,
+strongest evidence, closed binding and final native admission operation.
+
+Alternative retaining the measured map needs every finite insertion prefix and
+order, then renewed evidence whenever the supported corpus/count grows;1952 is
+not a public node-allocation contract. Prefer standard contiguous storage to
+avoid that fragile hidden constant. Insertion costs finite O(n) movement rather
+than tree insertion; lookup remains ordered and limit explicit, with no default.
+Comparison buffers, provider work and notification cells remain separately
+accounted at their actual release points. Merely consuming a notification does
+not retire the ledger entry/receiver, and accepted originals remain actor-owned
+until their existing retirement. Local admission custody, finite live replay
+storage and finite actor buffers are separate terms, not a full remote-operation
+quota. No stronger completion or memory claim follows from this repair.
+
+Next finite measurements precede numeric ceiling freeze: both concrete R/Msg/
+future substitutions;0/1/2 slots and both verified insertion orders; warm and
+cold providers, invalid/stale/unavailable/actual closed source, stalled release
+and cancellation; real Tokio-context waker polling; duplicate/conflict lookup
+without reallocation; byte/count refusal before verification; unread disposition
+and explicit operation consumption with persistent replay protection. Keep
+original60e9 failing proof immutable. Independent profile ceilings cannot be
+computed from the same run being asserted, and runner noise remains separately
+classified. First implement structural storage/source custody and collect those
+measurements; only then record concrete maximum before repairing assertions.
+
+Resource-stage retained ceiling300→650, unique inverses20 unchanged, one existing
+source path, production/public types/dependencies zero. Cumulative retained tests
+14300→14800 before edits: replay13201+resource650+assignment680+36 unique
+negative lines=14567. Document7100/core2200/public types5/path320/controlled810
+ceilings remain unchanged. Existing manual charge fields/comparison rollback
+are deleted only when the corrected equation actually covers their custody.
+No passing full B/AUTH1/NET1 status is inferred from a source replacement.
+
+
+Successor adoption PR341 actually merged10f734eeb829f3ad35ec57a2795299c87edb9da1
+at2026-10-11T02:15:28Z, exact head5621637 and scoped review
+PRR_kwDOTCRE7M8AAAABRrjSvw, after all six checks passed. Required Nix38101951214
+job114359572077 succeeded in43m26s; full log SHA
+673a6ff92703d71c6b5f3feced9054f871c67600ae13574d7fbdfcd546407445
+includes actual Driver2048 and four Observe1024 campaigns. No executed Observe
+Miri credit is inferred. Both exact-head Linux campaigns and all234 artifact
+records were independently verified. Premerge proof remains
+/tmp/bombay-pr341-before-merge-proof.json. Actual registry .3 adoption is delivered;
+full AUTH1/NET1 is not. PR342 remains reviewed with five checks passed and its
+required Nix gate running; its prerequisite341 is now actually delivered.
+
+Assignment completed finite source671 lines, SHA
+b5370ad42c500a616480026e0fc6f76deab54ab6c10a88d1697882e013e6e9ef.
+Three controls pass in debug/optimized profiles; strict owning Clippy/rustfmt
+pass. Eleven variants use16 unique formatted added negative lines: eight runtime
+laws fail after complete native/notification acquisition, pure wrong-Grant refusal
+fails before any actor startup, and two actual static denials yield E0451/E0560.
+All22 negatives fail as intended and all22 restored controls pass. Deadline
+refresh yields actual debug2/0 and optimized1/0 admissions, not normalized counts;
+old-recipient substitution0/1, assignment bypass2/1, stale Full retry1/0;
+Checked wrap and missing/cold fallback violate export counts3/1; unavailable
+and production-fake fallbacks violate2/1. Preserve those distinct actual counts.
+Complete authored receipt /tmp/bombay-assignment-complete-receipt.json SHA
+c65722ea7687547d797ce3ea7108d70ba8a6d736ee725c0f61c4d96409b07c72
+rehashes48 campaign and eight final logs, wrappers, exact binaries/source/lock.
+Author evidence is not independent approval. Coordinator integration is on a
+branch created from actual then-latest main1f867 before commits, with pending718
+source incorporated and all five combined checks running. Required independent
+review, combined checks, exact submitted-head CI and actual delivery remain.
+
+Storage preparation checkpoint: draftfe3972b3 measured+726/-57/net669 before
+any calibration build, exceeding the650 stage limit by19. Automatically select
+the recommended minimization before further work: remove the repeated eight-case
+provider classification match from the new allocation measurement. Existing real
+Application controls already assert those exact outcomes in both profiles; retain
+the complete owned outcome arrays, actual error logs, closed-source origin, all
+measurement phases and native-custody checks. Move two qualified domain imports
+to module scope. This removes redundant assertions, not a required law. Reject
+raising the cap simply to retain duplicate classification. Recount before Cargo;
+no numeric ceiling or repaired bound has been selected.
+
+Assignment combined pinned-Nix verification completed: all-targets574 passed,
+zero failed and one existing ignored; build, workspace/doc tests, rustfmt and
+strict workspace/all-target Clippy all exit0. Receipt
+/tmp/bombay-assignment-combined-checks.json preserves exact argv and five log
+hashes. Required independent source review and submitted-head CI remain.
+
+Replay PR342 actually merged2c264c705d2fb07eccb1a86f3a5852bc0d598ef5
+at2026-10-11T02:21:08Z, reviewed head71807d2 and review
+PRR_kwDOTCRE7M8AAAABRrkrFA. All six checks succeeded. Required Nix38102526483
+job114361237396 executed Driver2048 and four Observe1024 campaigns; full log
+SHA2e5675c8c8a8cc942d5350f9df4554395c652e99721aff1ded1ba45917ca04a3.
+No executed Observe Miri credit follows. Both30-case Linux profiles and all234
+artifact records were independently rehashed. Exact premerge proof remains
+/tmp/bombay-pr342-before-merge-proof.json. This delivers the finite private replay
+comparison, not full replay/cache/resource/KERI or AUTH1/NET1 acceptance.
+
+Configured-assignment delivery branch was created directly from actual latest
+main2c264c7 before committing anything, preserving the earlier integration branch
+and coordinator changes. Its complete base source tree equals checked71807d2;
+the frozen671-line assignment source and all selected inputs remain identical.
+Consequently the completed combined checks apply to those same source inputs;
+submitted-head CI is still independently required.
+
+Assignment independent review found no source blocker on exactb5370ad4. Reviewer
+read all671 source lines, independently matched all60 healthy/campaign/final log
+hashes, four unchanged source/lock inputs and both final binary hashes. Eight
+native runtime pairs acquire Work/native/both notifications before their oracle;
+the Grant pair remains pre-Application policy evidence and the two static pairs
+remain E0451/E0560, not runtime proof. Missing/cold fallback3/1 and unavailable/
+production-fake2/1 are independently confirmed. No production authentication,
+durable cold-restart issuer, global uniqueness or full resource bound is claimed.
+
+Final assignment stage contains two paths including the untracked test before
+commit: production+0/-0/net0; tests+671/-0/net671; public API+0/-0 types.
+Coordinator source/doc custody and corrected scope/delivery records accompany
+the tests; no manifest/lock changes. Complete cumulative Bombay source is
+production+1725/-475/net1250, tests+12857/-661/net12196; controlled tests1676
+yield13872 retained tests across owners, within14800. Core across owners2051
+within2200; existing five public types remain unchanged. Documentation is within
+7100, complete paths within320; resource-stage650/20 and assignment680/16 limits
+remain separately recorded. Exact stage/cumulative measured receipts are
+/tmp/bombay-assignment-delivery-stage-checkpoint.json and
+/tmp/bombay-assignment-delivery-cumulative-checkpoint.json, including tracked and
+untracked source and per-path hashes. Required exact-head review/CI precede merge.
