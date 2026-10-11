@@ -47,10 +47,13 @@ The separate native query-ID correction passes original/healthy paired controls
 and merged through controlled PR7 after complete local verification, required
 Linux CI and two actual Miri tests. Exact-main CI and actual1.10.4 publication
 run38136194227 pass; all-nine registry archives and the clean public consumer
-are verified. A standalone published-source unit compilation exposed an implicit
-unstable-feature dependency in its test. The owning configuration import correction
-passes both profiles with only default TLS enabled, but controlled source/CI and
-successor delivery remain required; Bombay still selects verified1.10.3.
+are verified. The owning configuration-import correction and query-timeout retirement fix
+subsequently merged in controlled PRs8–9. Exact-main CI38153406874 and actual
+1.10.6 publication38158907672 pass; all nine registry archives, seven public
+consumer checks and six individually named owning tests are verified. This
+branch selects 1.10.6 only in the independent TLS fixture; its unchanged actual
+TLS campaigns, review, combined CI and Bombay PR delivery remain required.
+Main still selects verified1.10.3 until that adoption is merged.
 The local Counter processing extension
 passes both native success/Overflow tests, intended inversions, detection of a
 real alternate producer by its origin oracle and all required workspace Rust commands; review found no
@@ -62,9 +65,10 @@ runtime-assignment controls pass both profiles and independent scoped review;
 Read [PR349](https://github.com/devrandom-labs/bombay/pull/349) merged at
 2026-10-11T13:15:08Z as12d9c8493261badf0b14b364b2b71d5dcf19f927 after
 exact-head technical review and all six checks passed. Complete
-configured Scope is implemented locally: 21 tests pass in both profiles; final
-inversions and scoped independent review pass; combined workspace checks pass.
-Reviewed PR/CI/merge delivery remains pending. These local contributions
+configured Scope merged through PR350 as20fb999dfe57f72d85afb1a2ccd07d42942cc6c8
+after exact-head review and all six checks passed; 21 focused tests passed in
+debug, coverage and release. Child-owned preparation retirement remains a
+separate open PR351; all full remote witnesses remain open. These local contributions
 do not close production KERI or the full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
@@ -11983,3 +11987,69 @@ remain the current approved ceilings. Scope controllers/history,79-line receipt
 collector and16 unique added inverse Rust lines are separate authored evidence;
 source snapshots/logs do not become new capability code. Final staged/committed
 measurement, exact-head review, required CI and actual merge remain gates.
+
+
+### Published timeout-retirement fix: fixture adoption record before edits
+
+2026-10-11 UTC. Under the user's standing recommendation delegation, select
+published `bombay-zenoh =1.10.6` only for the existing independent transport
+fixture. The alternative retains 1.10.3 and omits the verified query-identifier
+and timeout-owner corrections from this consumer. Do not chase further Behavior
+merges: the separately audited upgrade candidate remains core/Actors 0.24.0 and
+macros 0.14.1 at 049c88c3; this stage retains the current selected contracts.
+
+The exact blocker is consumer adoption of the already reviewed and delivered
+owning fix. Controlled PR9 merged e902c6e3877d6602ba69c79a20bdb795e6a45e4b;
+required PR CI38149485937 and exact-main CI38153406874 passed. Actual publication
+38158907672 succeeded, with registered checksum
+`88fcd0a80dcd9d67527018b88df2f25b4fa8719936e284ee3c9648e3d1175882`.
+All nine actual registry archives, 29 dependency edges, seven clean public
+consumer checks and six individually executed owning tests (three in each
+profile) passed. Registry receipt SHA256
+`cbaca3039750cdf517c968e7ab2bfe99648e24c6d2648ddf865db83bb9ad6b6b`
+records the unchanged immutable packages and original logs. Those owning tests
+prove query-identifier exhaustion and timeout Session-reference retirement;
+they do not prove task/memory quotas, router recovery or production identity.
+
+The smallest consumer regression is the unchanged actual TLS subprocess
+campaign in both direct-peer and router/client layouts, debug and optimized,
+using the newly selected registered archive. It must preserve every existing
+assertion and refusal; zero executed subprocesses or a compilation-only check
+cannot satisfy it. The original owning defects and their intended inversions
+remain in the controlled correction records; this stage creates no new law.
+
+Fresh baseline: main20fb999dfe57f72d85afb1a2ccd07d42942cc6c8 in an isolated
+`feat/static-remote-zenoh-timeout-adoption` branch, initially clean. Root Cargo
+selects Behavior/Actors0.23.0, macros0.14.0 (d69f992b), Address0.3.0,
+Communication0.1.4, private Observe/Entity and the sole Timers patch13e884da.
+The complete selected Behavior AGENTS and current owning sources/tests were
+reverified; no dependency algebra or local ownership changes in this stage.
+The fixture retains Serde1.0.229, serde_json1.0.151, Tokio1.53.1,
+Rustls0.23.45 and `default-features=false, transport_tls`. Zenoh remains the
+network owner; Bombay owns local runtime composition and typed service custody.
+
+Expected four paths: fixture Cargo.toml and Cargo.lock, this PRD, and backlog
+status. Expected runtime production +0/-0/net0; tests +0/-0/net0; public API
++0 types/-0 types. Manifest +1/-1; lock +2/-2. The only lock record permitted to
+change is the top-level bombay-zenoh version/checksum; all other complete package
+records, dependency lists, patch entries, root manifests/lock and Rust sources
+must remain byte-identical. Reuse the existing binary, TLS verifier and CI jobs;
+add no owner, wrapper, resource limit, dependency family or supported profile.
+This is within the existing cumulative authorization, not a new scope reset.
+
+Run locked metadata, build, formatting and strict fixture Clippy through pinned
+Nix, plus actual unchanged TLS subprocesses in both profiles. Independently
+review the complete patch and source/lock conservation. Required combined CI
+and normal reviewed PR merge remain delivery gates. Until those pass, fixture
+adoption is active and all full R01–R25 remain open. Production KERI, durability
+and separately investigated SHM remain deferred under their existing records.
+
+
+Adoption checkpoint: locked metadata resolves registered1.10.6 with exactly
+`transport_tls`; pinned-Nix formatting and strict fixture Clippy pass. Independent
+nonauthor read-only review of patch0dd75df4d7a4c50561c0b749cd39afdc885dc8e57bfd968897810d07e737ffe1
+finds no scoped blocker and independently confirms all317 other complete lock
+records plus root manifests/lock, source, certificates and CI are unchanged.
+The owning archive receipt and six executed-test logs/binaries rehash unchanged.
+Local debug/optimized builds and actual transport campaigns are still pending;
+submitting a draft PR starts independent combined CI without claiming delivery.
