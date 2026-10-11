@@ -82,6 +82,15 @@ review with native ten-gate/927-test verification, extracted package preflight
 and all exact-head CI including strict mutation passing. Publication and Bombay
 adoption remain open; current dependencies are unchanged.
 
+The additional custody contracts are in stacked draft
+[PR #90](https://github.com/devrandom-labs/bombay-behavior/pull/90), head 7a85639:
+all ten native owner gates, 959 tests, 112 doctests and archive preflight pass.
+Against the production-equivalent packaged crates this worktree has 562 tests
+passing, one failing inferred-assembly test and one skipped test; workspace
+Clippy and its doctest pass. Exact-head CI, registry delivery and inferred
+assembly remain open. The owning PRD contains the direct input-recovery
+regressions and their independent debug/optimized inversions.
+
 The fresh authoritative `102fc2d` Nix check has four native passes and seventeen
 failures against the published Behavior/Actors 0.23.0 API, before inferred caller
 compilation. Signing and disk exhaustion did not fail; 35 GB remained.
