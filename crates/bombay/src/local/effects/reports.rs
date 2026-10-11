@@ -3,7 +3,7 @@ use crate::local::effects::ApplicationCapabilities;
 use crate::termination::{TerminalReportDisposition, Termination, TerminationSelection};
 use behavior::{
     ActionItem, Behavior, ChildReport, CreationId, EventIngress, Here, InterpretItem,
-    ItemSettlement, Protocol, ReportToParent,
+    ItemSettlement, ParentReportReason, Protocol, ReportToParent,
 };
 use behavior_actors::{InstallShutdownPlan, ReportShutdownPlan, ReportTerminalOutcome};
 use communication::{ControlClosed, ControlSender};
@@ -48,9 +48,12 @@ where
             let Some(request) = input.take() else {
                 return;
             };
-            let settlement = {
-                self.parent_reports.report(request.into_inner());
-                ItemSettlement::Accepted(())
+            let settlement = match self.parent_reports.report(request.into_inner()) {
+                Ok(()) => ItemSettlement::Accepted(()),
+                Err(ControlClosed(report)) => ItemSettlement::Rejected {
+                    item: ReportToParent::new(report),
+                    reason: ParentReportReason::ClosedParentControlLane,
+                },
             };
             *received = Some(settlement);
         }
@@ -191,7 +194,7 @@ impl LocalTerminalReports {
 }
 
 pub(crate) trait ParentReporting<Report> {
-    fn report(&self, report: Report);
+    fn report(&self, report: Report) -> Result<(), ControlClosed<Report>>;
 }
 
 impl<Event, Child, Position> LocalParentReports<Event, Child, Position> {
@@ -203,18 +206,14 @@ impl<Event, Child, Position> LocalParentReports<Event, Child, Position> {
         }
     }
 
-    pub(crate) fn report<Report>(&self, report: Report)
+    pub(crate) fn report<Report>(&self, report: Report) -> Result<(), ControlClosed<Report>>
     where
         Child: Behavior,
         Event: EventIngress<Position, ChildReport<Report>>,
     {
-        let event = Event::ingress(ChildReport::new(self.child, report));
-        match self.parent.send(event) {
-            Ok(()) => {}
-            Err(ControlClosed(_event)) => {
-                unreachable!("the parent control lane outlives every owned child task")
-            }
-        }
+        self.parent.send_map(report, |report| {
+            Event::ingress(ChildReport::new(self.child, report))
+        })
     }
 }
 
@@ -224,8 +223,8 @@ where
     Child: Behavior,
     Event: EventIngress<Position, ChildReport<Report>>,
 {
-    fn report(&self, report: Report) {
-        LocalParentReports::report(self, report);
+    fn report(&self, report: Report) -> Result<(), ControlClosed<Report>> {
+        LocalParentReports::report(self, report)
     }
 }
 

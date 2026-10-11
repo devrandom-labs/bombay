@@ -47,13 +47,35 @@ The separate native query-ID correction passes original/healthy paired controls
 and merged through controlled PR7 after complete local verification, required
 Linux CI and two actual Miri tests. Exact-main CI and actual1.10.4 publication
 run38136194227 pass; all-nine registry archives and the clean public consumer
-are verified. The owning configuration-import correction and query-timeout retirement fix
-subsequently merged in controlled PRs8–9. Exact-main CI38153406874 and actual
-1.10.6 publication38158907672 pass; all nine registry archives, seven public
-consumer checks and six individually named owning tests are verified. This
-branch selects 1.10.6 only in the independent TLS fixture; its unchanged actual
-TLS campaigns, review, combined CI and Bombay PR delivery remain required.
-Main still selects verified1.10.3 until that adoption is merged.
+are verified. A standalone published-source unit compilation exposed an implicit
+unstable-feature dependency in its test. The owning configuration import correction
+passes both profiles with only default TLS enabled. Controlled packaged-query
+PR8 merged4f5e7be53472592c5430a382627569f29f670b1f at2026-10-11T14:03:46Z,
+after required CI and independent archive/source review, including two executed
+owning Miri tests. Exact-main1.10.5 CI38145659859 and publication38149136515 pass; actual
+release artifact/checksum948780fd and before/after registry receipt are inspected.
+All-nine registry-source, clean-consumer and unchanged published-source paired
+verification pass (proof10b9e1ec); Bombay selected verified1.10.3 at that checkpoint.
+Native timeout-retirement successor1.10.6 merged through controlled
+[PR9](https://github.com/devrandom-labs/bombay-zenoh/pull/9),
+e902c6e3877d6602ba69c79a20bdb795e6a45e4b at2026-10-11T15:56:55Z,
+after complete local verification, independent review and passing required
+Linux CI38149485937. Exact-main CI38153406874 and publication38158907672 passed;
+actual checksum88fcd0a8 is registered. All-nine registry archive/29-edge proofs,
+seven clean public-consumer checks and six individually executed owning tests
+pass (receiptcbaca303). Narrow fixture-only adoption [PR352](https://github.com/devrandom-labs/bombay/pull/352)
+merged abdc779fc84c3c72a4dcbabc5bb8a4d4bd34465c at2026-10-11T19:03:30Z after
+exact-head technical review and all six checks passed. Main now selects1.10.6
+for this independent TLS fixture; all317 other complete lock records and the
+root Behavior0.23 graph remain unchanged. Both actual native campaigns and
+required Nix38162857886 pass; Observe Miri was skipped. Exact-main CI38166406725
+is running, so it has no terminal pass credit yet.
+Child-owned preparation [PR351](https://github.com/devrandom-labs/bombay/pull/351)
+merged c66c42cefa71f311cca679916672bd6e67c0ec5e at2026-10-11T19:07:21Z after
+exact-head technical review and all six checks passed. Linux required Nix38162928077
+executed all six healthy/inverse/restored preparation phases in both profiles,
+with source restoration and caller conservation. Combined exact-main CI38166674058
+is running; full remote acceptance remains open.
 The local Counter processing extension
 passes both native success/Overflow tests, intended inversions, detection of a
 real alternate producer by its origin oracle and all required workspace Rust commands; review found no
@@ -65,11 +87,22 @@ runtime-assignment controls pass both profiles and independent scoped review;
 Read [PR349](https://github.com/devrandom-labs/bombay/pull/349) merged at
 2026-10-11T13:15:08Z as12d9c8493261badf0b14b364b2b71d5dcf19f927 after
 exact-head technical review and all six checks passed. Complete
-configured Scope merged through PR350 as20fb999dfe57f72d85afb1a2ccd07d42942cc6c8
-after exact-head review and all six checks passed; 21 focused tests passed in
-debug, coverage and release. Child-owned preparation retirement remains a
-separate open PR351; all full remote witnesses remain open. These local contributions
-do not close production KERI or the full remote requirements.
+configured Scope [PR350](https://github.com/devrandom-labs/bombay/pull/350) merged
+20fb999dfe57f72d85afb1a2ccd07d42942cc6c8 at2026-10-11T14:23:31Z after
+exact-head review and all six checks passed. Required Nix38143604929 independently
+executes the21-test authorized suite (19 owning tests plus2 imported pure Counter
+laws) and five ordinary Counter tests in coverage/debug/release, Driver2048 and
+four Observe1024 fuzz runs. Observe Miri was skipped. Both Linux native campaigns
+pass but execute the unchanged registry1.10.3 fixture, not the Scope changes.
+
+Current parallel implementation: protected seven-meaning JSON/Application fault
+custody and original child-report refusal custody. The Session timeout correction
+has delivered through actual publication and the narrow fixture adoption above.
+The protected suite has34 actual intended cuts in both profiles with matched
+source-restored controls, but its newly found publication-fault custody remains
+open. Child-owned preparation PR351 is merged; its combined exact-main CI is pending. Complete
+protected integration and resource/transport gates remain open. These
+contributions do not close production KERI or any full R01–R25 witness.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
 
@@ -12164,3 +12197,158 @@ custody without adding a heap owner solely for target-dependent representation.
 No correctness lint, runtime semantics, public API or dependency changes.
 Exact submitted-source CI must rerun; the failed run is retained without gate
 credit. The six-phase portable local proof remains scoped to its recorded source.
+
+### Original parent-report refusal: owning baseline before production edits
+
+2026-10-11 UTC. This isolated main20fb999d stage adds only
+`crates/bombay/tests/parent_report_custody.rs` and this focused record. Expected
+180–280 formatted test lines, ceiling300; production/API/manifest/lock0.
+Root selected Behavior0.23.0/d69f992b AGENTS and original public algebra were
+read completely; Address0.3.0, Communication0.1.4, private Observe/Entity and
+Timers13e884 remain selected. Frozen Behavior0.24/049c is not adopted here.
+
+Deliberate custody law: a known-closed parent must return the child's complete
+original `ReportToParent` request in the existing typed rejection settlement,
+not convert/drop it or panic. Behavior already owns
+`ParentReportReason::ClosedParentControlLane`; no new report publisher, channel,
+public error, terminal wrapper or interpreter algebra is proposed.
+
+The smallest real consumer uses one current-thread public Application. The
+parent's pure initialization creates one report child and stops in the same
+Actions. Private child binding is acknowledged before the parent drains its
+consumer; child activation then commits its original move-only report during
+joined parent retirement. This ordering is a source hypothesis until actual
+old debug/release execution. No sleep, I/O or callback is placed in a fold.
+The outside test acquires the original Application Work, root native result
+and both notifications before inspecting the exact child's complete native
+retirement. The intended unchanged-source failure is HostCommitPanicked and
+lost original report; the corrected oracle is EffectsFailed with the existing
+Rejected reason and identical bytes/allocation. Initialization refusal remains
+a failure rather than becoming successful delivery.
+
+Existing successful nested-report and parent-conversion panic controls stay
+unchanged. Communication0.1.5 send_map is evaluated but not adopted; only after
+the actual both-profile baseline proves this custody loss may the coordinator
+select the smallest private Result-returning reporting correction and record
+manifest/lock adoption. All full remote and deferred identity/durability rows
+remain open. There are no new aggregate phases or production abstractions;
+test role/event types express the actual parent/child protocol and native
+projection. No compiler output may invent missing architecture or bounds.
+
+Prepared checkpoint: test+272/-0/net272; documentation+42/-0/net42;
+production+0/-0/net0; public API+0/-0 types; manifests/locks unchanged.
+Pinned owning-file rustfmt passes. No Cargo or semantic baseline has executed;
+the proposed ordering and every expected native classification remain unproved.
+
+The initial debug compile executed no tests: the caller incorrectly used the
+four-argument App spelling for public Application's six-argument method.
+Original log0d52e982 is retained as setup evidence. The selected correction is
+only `execute_with::<_, _, ParentReportTerminals, _, _, _>`; no model, type,
+bound, visibility, native outcome, dependency or production source changes.
+
+Actual unchanged-production baseline now executes exactly one owning test in
+debug and optimized profiles, both exit101 for the intended law. Original
+reports.rs215 unreachable is logged, then the post-receiving child
+EffectsFailed custody oracle fails at test198. Work, native root, both
+notifications and the single native child product were already acquired;
+the precise old child variant remains source-derived rather than separately
+asserted. Receiptb920866b preserves logs/binaries/source7c0e942c/lock5336430
+and the zero-execution setup history. No healthy fix, strict lint, new dependency
+or full-remote acceptance credit is claimed. Test272 remains frozen; the
+unused native Root projection fields await a separately selected actual
+consumer spelling. Complete delta: test+272/-0; docs+60/-0; production/API0.
+
+
+Before production edit: baselineb920866b proves1 intended failure per profile
+on unchanged runtime/lock. Under delegated recommendations select published
+Communication0.1.5 send_map, private ParentReporting returning existing
+Result<(),ControlClosed<R>>, and existing received-slot Accepted/Rejected with
+ReportToParent::new(original) and ClosedParentControlLane. Return the same
+original allocation/bytes; no additional owner/channel/public type. Known closure
+precedes application conversion; closure during conversion retains upstream
+accepted-tail custody and cannot prove processing. Consumer-lifetime extension
+or extra failure channels would duplicate/change existing ownership.
+Expected seven paths: root manifest/lock, fixture lock, reports.rs, this owning
+test, PRD/status. Runtime forecast+10–20net; tests272 plus at most28 refinements
+(stage300); public0. Coordinator owns manifest/lock/records; isolated writer owns
+reports/test. Use actual existing ProjectTerminal for the root native result
+instead of dead-code waiver. Raise only Communication's minimum/lock to0.1.5;
+retain every other full lock record, Behavior0.23, Timers13e884 and fixture1.10.3.
+Focused controls/inversions both profiles precede combined checks/review/CI/PR.
+All full R01–R25 remain open; no semantic gate is satisfied by compilation alone.
+
+
+The selected style refinements now pass owning strict Clippy and formatting;
+primary original-report custody passes1/1 in both profiles, and existing
+parent-conversion panic controls pass2/2 in both profiles. Actual locked metadata
+passes for root and the nested transport fixture with registered Communication
+0.1.5, Behavior0.23 and unchanged Timers13e884. The successful nested-report
+optimized control and explicit defect/restoration inversions are still pending;
+these focused positives do not establish combined CI, distillation or delivery.
+
+
+**Parent-report correction: scoped minimization and original-defect inversion.**
+Independent nonauthor reviewe911d605 finds no scoped source blocker, rehashes all
+8 healthy command logs/6 retained executables, and confirms178+317 unchanged
+other dependency records. The selected Behavior's actual total_interpretation
+parent-report tests already prove occupied receiving and once-only rejected
+finalization/replay; unchanged guards need no duplicate local test fixture.
+Select one temporary owning-method inversion: convert the original report into
+Event before parent.send and restore the original known-closure unreachable,
+retaining the current private Result signature. This simulates the exact original
+loss while preserving the corrected interpreter/rejection consumer. Require fresh
+Cargo debug and optimized failures at the post-native required EffectsFailed/
+original rejection oracle, not panic output alone. Byte-exactly restore reports.rs,
+then fresh Cargo primary1/1 must pass in both profiles; retain all4 logs/source
+hashes and frozen276-line test/current lock. No new source law/API/dependency.
+Authored inverse controller forecast≤40 lines, separately counted against the
+cumulative test/evidence ceiling; no expansion of the300-line owning test stage.
+
+
+Final original-report cut receipt e3536dee contains both fresh Cargo101 failures
+at the intended post-native original rejection oracle and both byte-exact restored
+fresh Cargo1/1 passes. Coordinator rehashed all4 logs and captured executables.
+Independent reviewe911 confirms no scoped blocker; existing selected Behavior
+parent-report tests already establish rejection finalization/replay. No duplicate
+replay fixture, extra owner, public type or runtime layer is retained.
+
+Integrate this unchanged reports.rs d84ef126/test915de929 correction onto actual
+latestmainc66c42ce before any commit. Preserve all original custody artifacts and
+stash6f3b6871. The merged main now includes reviewed PR352's fixture1.10.6 and
+PR351's genuine child-preparation witness. Root lock remainsf1df9641; nested lock
+combines only the existing Communication0.1.5 change with merged1.10.6. Recompare
+all other full lock records against current main, run focused custody and all
+four required workspace commands through pinned Nix on this combined source,
+then refresh technical review/final measurements before PR and required CI.
+All full remote rows remain open; earlier old-source/lock receipts remain
+historical and are never relabeled as execution on this combined source.
+
+
+Combined-source receipt6a508f74 records all four required pinned-Nix workspace
+commands passing on c66 integration: build, tests, formatting and strict
+all-target Clippy. Tests actually execute611 passed/0failed/1 existing ignored
+across71 summaries; focused original-report custody passes1/1 in both profiles.
+Native source/test/lock remain d84/915/f1/43fa. The retained debug binary is
+honestly the final workspace-test feature-graph product; it is not relabeled
+as the earlier focused binary. Finalizer24 lines and original-cut controller
+39 cumulative authored lines remain separately counted evidence.
+
+Final scoped minimization retains only the existing private parent-report
+owner's fallibility and exact original rejected settlement. No new wrapper,
+public type, channel, dynamic lookup, resource default or report publisher.
+Current parent-control refusal is ordinary typed EffectsFailed; known closure
+rejects before conversion, while closure during conversion retains the owning
+primitive's accepted-tail custody and cannot prove actor processing. Repository
+source/guidance search finds no remaining current outlives-every-child claim.
+Full native products and errors remain with their existing parent/root owners.
+Submitted-commit review, required CI and actual PR merge remain delivery gates.
+
+
+Final scoped checkpoint before delivery: seven complete tracked/untracked paths;
+production+14/-15/net−1; Rust tests+276/-0/net276; public API+0/-0 types.
+Root manifest+1/-1; root/fixture locks together+4/-4; no other full dependency
+record differs from current main. Source/test/root/fixture hashes d84/915/f1/43fa
+match verified combined execution and independent review17b5d13f. Documentation
+and the entire staged delta are captured in the final stage measurement; no
+untracked Rust witness is omitted. Reviewed PR, required CI and actual merge
+remain required before this bounded correction is recorded as delivered.

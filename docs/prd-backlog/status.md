@@ -95,15 +95,17 @@ The native Session query-ID correction merged through controlled Zenoh PR7
 (9cc83867dce5804a172d7b582fd3b4c2550257fe), after exact-head review and
 passing required CI, including two executed Miri tests. Controlled1.10.4
 publication run38136194227 passes after exact-main CI; actual all-nine registry
-archives and the clean public consumer are verified. Controlled PRs8–9 subsequently delivered the
-owning configuration-import and query-timeout corrections. Exact-main
-CI38153406874 and actual publication38158907672 pass; published1.10.6 has all-nine
-archive, seven clean-consumer and six individual owning-test proofs. A narrow
-fixture-only adoption is active on this branch: all317 other complete lock
-records and the root0.23 Behavior graph remain unchanged. Main retains1.10.3
-until actual unchanged TLS campaigns, review, required CI and PR merge pass.
-Full AUTH1/NET1 witnesses remain open. Further Behavior merges are outside this
-execution boundary; the separately audited upgrade candidate stays049c88c3.
+archives and the clean public consumer are verified. Standalone published-source
+unit compilation exposed an implicit unstable-feature dependency in its test;
+the owning configuration import correction passes both profiles with only TLS
+enabled. Controlled PRs8–9, exact-main CI and actual1.10.6 publication now pass;
+all-nine registry archives, seven consumer checks and six individual owning tests
+are verified (receiptcbaca303). Narrow fixture-only PR352 mergedabdc779fc84c3c72a4dcbabc5bb8a4d4bd34465c
+at2026-10-11T19:03:30Z after exact-head technical review and all six CI checks
+passed, including both actual native layouts/profiles and required Nix38162857886.
+Main now selects1.10.6 in the fixture; all317 other lock records and root Behavior
+0.23 remain unchanged. Exact-main CI38166406725 is running. Further Behavior merges
+remain outside this execution boundary; upgrade candidate049c stays frozen.
 The next Counter contribution proves actor-processing receipts, native Overflow
 and intended debug/optimized inversions. All four required workspace commands
 pass through pinned Nix; focused PR348 merged reviewed2b97d9df with all six CI
@@ -114,12 +116,25 @@ scoped review. Read PR349 merged12d9c8493261badf0b14b364b2b71d5dcf19f927
 at2026-10-11T13:15:08Z after exact-head technical review and all six checks passed.
 Linux CI executed its fifth Read test in debug, coverage and optimized builds;
 required Driver/Observe fuzz passed, Miri was skipped. Complete configured Scope
-is implemented locally with21 tests passing in each profile; final inversions,
-scoped review and all four combined workspace checks pass. Reviewed PR/CI/merge
-delivery remains open. Controlled1.10.5 candidate passes its complete
-local release/package gate and scoped adverse controls; PR8 required CI is live.
+merged through PR350 as20fb999dfe57f72d85afb1a2ccd07d42942cc6c8 after exact-head
+review and all six checks; its21 tests passed debug, coverage and optimized.
+Fixture adoption PR352 and child-owned preparation PR351 are merged after scoped
+review and all six checks passed; actual mergesabdc779/c66c42c are recorded above.
+Combined main CI38166674058 is running. Protected publication-fault custody and
+original child-report refusal are active; no full remote acceptance row is closed.
+Protected Counter combined41-test controls pass both profiles; final scoped
+falsifiers, minimization and delivery remain. Later Behavior merges are excluded
+by user steering; current frozen stages retain0.23 until the audited049c candidate
+has its own narrow verified migration.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
+
+Original child-report refusal is locally feature-complete and distilled in its
+bounded owning correction: Communication0.1.5 preserves the original request
+before conversion, and the existing rejected settlement retains it after early
+parent stop. Primary/control/inversion laws pass in both profiles; all four
+combined workspace commands pass611/0/1. Reviewed PR, required CI and actual
+merge remain pending; full remote requirements retain their states above.
 
 Every internal `Blocked by` edge has its reciprocal `Unblocks` edge here.
 The [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records
