@@ -30,9 +30,11 @@ PR341 merged after exact-head review, all six successful checks and both Linux
 campaigns. The published1.10.3 dependency is now adopted on main. Replay
 comparison PR342 merged after scoped review, all six successful checks and both
 submitted-head Linux campaigns.
-Parallel finite assignment/deadline and conservative storage witnesses are under
-verification. Their declared local scope does not close production KERI or the
-full remote requirements.
+Configured assignment/deadline PR343 merged after scoped review, all six checks
+and both submitted-head Linux campaigns. Bounded JSON PR344 awaits its final
+Nix check. Conservative storage witnesses pass local controls, inversions and
+independent review; their PR delivery remains pending. These local contributions
+do not close production KERI or the full remote requirements.
 Historical observations below describe their recorded source stage and must not
 replace this current readiness.
 
@@ -9207,3 +9209,212 @@ remain unchanged; docs7300/path320/controlled810 limits remain. Exact-head revie
 required CI, actual Linux artifacts and343 prerequisite merge remain delivery
 gates. New same-test storage isolation/reservation work is still prepared, not
 implemented or accepted from these JSON controls.
+
+Protected JSON PR344 submitteddb88a47535c6de0c2e1b8d14df092c097fdd71ea,
+review5481630772 exact head. CI38105759969 and native profiles are running;
+no merge recorded. Submitted stage production0, tests163, documentation126,
+public types0, two paths; immutable submitted-stage/cumulative receipts preserve
+those exact inputs. PR343 Linux native proofee80cd26 independently verifies
+30 expected outcomes/profile and234 record files plus rawZIP/full job logs;
+root rehashed all234 in /tmp/bombay-pr343-root-native-custody-proof.json.
+Its required Nix38104968293 remains running, other five checks passed.
+Neither native fixture tests executed assignment343 or JSON344 local targets;
+those receive owning tests and required combined/Nix evidence separately.
+
+Owning-source audit independently confirms Tokio oneshot's one Arc allocation
+and shared clone, selected nontracing/nonLoom fingerprints, and exact pinned
+64-bit cells64/136/64; profile allowances128/256/128 cover those cells. Reverify
+supported Linux builds; these are verified pinned-profile bounds, not stable
+private ABI or arbitrary payload/waker promises. New evidence reopens the cold
+host128 term: source-bound proof is absent although original first-entry64 was
+measured. Select actual host entry/warmup BEFORE component profiling and exclude
+shared runtime startup from this local envelope. Preserve original cold64 as
+diagnostic evidence. No host-readiness wrapper/controller or global heap claim.
+The4096 ceiling remains conservative for source-owned reservations; a retained
+extra128 allowance may be conservative padding, never asserted as cold-host proof.
+Isolated profile child requires role-specific marker, exactly one named test and
+exit0. Unknown-role and misspelled/empty-filter controls must reject rather than
+credit libtest's successful zero-test exit. Include these in the prepared patch
+and inverse footprint before scope review/application.
+
+Prepared storage policy uses no cold-host charge after the selected actual host
+warmup: fixed source-owned baseline656 plus four conservative515 reservations
+and two comparison copies4=2720 within4096. Delete the proposed extra128 term,
+rather than retain an unexplained host allowance. This is a prepared equation;
+actual corrected reservation/consumption and inverse controls remain gates.
+
+Select next local production-composition placement: an additional executable in
+the existing Counter example crate, reusing its actual Counter/Increment/Read
+Behavior through ordinary modules and the existing typed Application/service
+path. It owns explicit application authorization, incoming custody and replay
+facts; it supplies no new platform runtime or public provider facade. Alternative
+new Bombay module currently adds surface without a proven caller-composition gap;
+a new example crate adds manifest/workspace edges unnecessarily. Existing basic
+Counter example remains its teaching entrypoint. Prepare concrete source proposal
+and exact extraction/deletion counts before retaining it; avoid another private
+test-only admission copy. Any shared terminal projection retains its exact owner
+and must delete real duplicated spelling. Actual Counter processing Actions,
+exact native value and full native/notification custody must be observable.
+
+Forecast350–500 application production lines,150–250 owning tests,6–8 private
+domain/custody products, no new public types/dependencies. Conditional stage
+production cap520/test cap280; cumulative core2200→2650 and tests15100→15600
+before any proposal authoring or dependent retention. Documentation7300→7600
+covers that new contract plus resource decisions/evidence; paths320/publictypes5/
+controlled810 remain unchanged. No production edit is eligible until corrected
+B reservation/profile controls pass and the concrete source/model/change record
+is reviewed. This selected placement/scope does not waive dependency eligibility
+or mark AUTH1 active/accepted. First actual contribution must be invoked through
+public Applications and expose granted Increment/Read, Full→revoked original
+recovery and duplicate-after-consumption native traces, with both-profile cuts.
+
+Prepared resource repair b37ec11e is independently reviewed at the owning
+source/patch: stored reservation bytes preserve custody after originals move,
+the shared refusal function supplies actual retain and the third-verifier route,
+and same-owner ledger/incoming lifetime replaces the former unrelated owners.
+Select retention/execution of this bounded patch, after removing the now-unused exercise
+footprint local; retained_storage still uses its measured-size diagnostic. Fixed capacity is charged once; per-input515 remains held
+conservatively through unread/ledger custody, comparisons separately; peak
+reservation2720 is source-owned accounting, not a measured process peak.
+All original native submissions remain; remove only historical unasserted
+allocation windows and obsolete test-body mutex now superseded by child-only
+profiling. Preserve those exact older zero-window receipts historically.
+
+Actual prepared cumulative tests+1002/-75/net927 versus718, two closed private
+role/observation enums, no production/API/dependency change. Raise resource
+stage680→960 BEFORE apply, covering927 plus small source/lint refinements;
+unique-inverse cap20 remains, measure actual formatted cuts before mutation.
+Cumulative tests15600 covers14035+960+280+56=15331; core2650/publictypes5/docs7600/
+paths320/controlled810 remain. Root read all changed custody/classification code;
+exact owning Clippy may veto style, never invent new architecture. Execute six
+full controls both profiles, actual allocation/profile and invalid-role/zero-test
+probes, strict lint/fmt; then independently review exact healthy source before
+omission/early-release/Count/Bytes/marker/filter inversions. No B/AUTH1 eligibility
+is credited before those concrete controls pass.
+
+Actual Counter source changes the local extraction: Increment is unit-valued and
+Read carries only its reply recipient. Select keeping the exact raw original and
+opaque verifier receipt in the reserved service entry while deriving only the
+existing native CounterMessage. Native Full/Closed returns that actual domain
+message; service custody separately preserves original/proof/receipt. Alternative
+wrapping CounterMessage with research payloads changes the Counter protocol and
+is unwarranted. Accepted/possibly admitted original/evidence remains held until
+explicit result consumption; independent replay comparison survives afterward.
+
+Select serializing Reads on one existing reply port for this application policy;
+requester owns explicit correlation and permits only one outstanding Read.
+Alternative two static ports supports more simultaneous Reads but adds leases/
+mailbox/resource and correlation paths without a demonstrated need in this first
+consumer. This is local policy, not a platform default or global ordering promise.
+A pure requester may emit existing Read Actions after known Increment admission;
+the returned u64 is an actual Read observation, never renamed an intrinsic
+Increment acknowledgement. Keep admission and processing observation distinct.
+Reuse Counter unchanged via ordinary module path in the auto-discovered binary;
+no getter or shared terminal extraction is currently justified. Full native and
+notification products remain owned through final trace assertions. Private
+policy/error declarations forecast10–12, not the earlier6–8 custody-only count;
+public types/dependencies remain zero. Prepare actual source before retaining,
+and keep B/control eligibility intact.
+
+Applied storage dc45512f measures+1002/-72/net930 within960. Default-concurrency
+full debug target passes6/6 with actual isolated unknown-role101, two successful
+zero-test filters correctly refused, and one intended child+completion marker.
+Warm host removes cold64 from component windows; scheduled work remains136.
+Same-owner two-ledger/two-incoming reservation2720 remains held until explicit
+consumption, then2205. Optimized/lint/inversions remain uncredited. Select one
+existing diagnostic expansion exposing actual returned incoming requested bytes
+and combined component sum for raw review, within960 and no policy/API change.
+Preserve completed dc455 debug/optimized receipts separately; final source must
+receive both-profile controls before inversions after this diagnostic change.
+
+Configured assignment delivery: PR343 merged at 2026-10-11T03:07:40Z as
+01683e86bbe0f74536f6f94c49d94211e117f115. Exact submitted head b8a66a251 passed
+all six checks, including Nix run38104968293/job114368418296, and received scoped
+review PRR_kwDOTCRE7M8AAAABRrqW7g. The complete Nix log hashes to
+47f3f5457ddfc054d368e69cdcdf281d7231e94095e8fe30ae4231902c74e4c0:
+actual Driver2048 and four Observe1024 campaigns; no executed Observe Miri
+credit. Both Linux native campaigns and their 234 evidence files were reviewed
+and rehashed; proof ee80cd26ccbbc3ba631b42afc4c999e71df48bdd1227314bb7edc7183585b1b6.
+The actual merge tree equals the reviewed submitted tree. Assignment source
+b5370ad4 and its finite local limitations remain unchanged; this delivery does
+not establish production authentication, global issuance or full AUTH1/NET1.
+
+Resource candidate 2b6ccf59 now passes all six controls in both profiles, strict
+Clippy and formatting. Root independently matched those four receipts and their
+complete logs to the source; root proof is
+`/tmp/bombay-storage-repair-root-healthy-proof.json`. Actual component allocation
+requests are 1056 bytes for the record provider and 1192 for the scheduled
+provider, covered by the same-owner conservative reservation2720; explicit
+consumption lowers it to2205. These are requested-byte observations, not a
+process peak. The retained test delta is+1009/-72/net937, within960, with zero
+production/public/dependency changes. Independent source review found no blocker;
+the six prepared fault cuts still require exact review and execution before
+this resource witness is eligible for delivery or application extraction.
+
+Select execution of the independently reviewed six exact resource cuts in
+prepared receipt b35b13b6: omitted reservation, release on notification read,
+Count boundary, total-byte guard, missing child completion marker and accepting
+a zero-test success. They add nine unique temporary lines;937+9=946 remains
+within960 and nine remains within the inverse cap20. Both reviewers matched
+all prepared source and patch hashes. Each resource guard is shared generic
+code with no provider-specific branch; negatives deliberately establish the
+first Counter failure, with both-provider healthy restorations. Additional
+provider-specific cuts would duplicate this shared guard without exercising a
+different law. Preserve that scope explicitly. The omission's first oracle is
+the consumed reservation difference3 versus515, not the later physical-byte
+sum; the original f82 deficit176 remains the independent physical falsifier.
+Count and byte omissions must reach actual unexpected provider invocation;
+marker/filter cuts must retain the original child output and exit status.
+No B acceptance is recorded until the six intended failures and restorations
+are actually observed in both profiles.
+
+Unapplied Counter draft209 is not retained: source review found terminal native
+facts being checked again against later permission, duplicate Closed-error
+ownership, and fixed requester correlation that could consume the wrong input
+or permit overlapping Reads. Select direct correction under the existing laws:
+settled/uncertain facts keep their meaning, one error has one owner, and the
+requester owns the actual outstanding correlation. No new facade/controller or
+public contract follows from these vetoes. Actual application composition and
+custody extraction remain prerequisites before retaining this draft.
+
+Resource verification complete on frozen2b6ccf59: final receipt
+da1c2aff1ec4dffd6165cfca29311dd68b6882d617bf080f1de5ed582aece88d records
+12 intended negatives and12 focused restorations, plus full six-control tests
+in both profiles and strict lint/fmt. Root independently rehashed all30 final
+command records, logs and preserved binaries, verified actual Cargo profiles
+against argv, and matched each first failing oracle. Two nominal-debug
+notification commands had actually run optimized because the research runner
+matched a substring; their original evidence remains separate redundant history.
+The missing actual debug pair was executed and passed its intended failure and
+restoration. No mislabeled command supplies debug credit.
+
+The combined source, including exact pending JSON and delivered assignment,
+passes all five pinned-Nix commands: workspace all-targets581 passed/0 failed/
+1 existing ignored, workspace build, workspace tests including docs, formatting
+and strict all-target Clippy. Complete receipts/logs are retained in
+`/tmp/bombay-resource-combined-checks.json`. The resource integration branch was
+created from actual latest main01683e8 before any commit. Final source/evidence
+minimization, Linux CI and reviewed PR delivery remain gates; this witness
+establishes only the selected finite warm-host component reservation.
+
+Final resource minimization and independent evidence review pass: existing
+affine products, standard pre-reserved VecDeque/Vec and the shared gate retain
+the law; two private role/observation sums distinguish genuine test execution.
+No production type, wrapper, dependency or runtime owner is added. The isolated
+resource branch integrates reviewed pending JSON head db88a475 after starting
+from actual main01683e8; that integration tree equals db88a475 exactly. Restored
+resource2b6 and unchanged JSONddbab1 supply the exact combined Rust source already
+checked, so history/document reconciliation does not require repeating checks.
+The resource PR remains dependent on actual PR344 delivery and exact submitted
+head Linux/Nix CI. Local minimization is not full feature distillation.
+
+Resource stage checkpoint includes all tracked and untracked paths: production
++0/-0/net0; tests+1013/-76/net937; public API+0/-0 types. This independent
+SequenceMatcher count differs from Git's+1009/-72 alignment while preserving
+the same937 net source lines. Cumulative Bombay tests13296 plus controlled1676
+equals14972 retained; adding the existing56 and new9 temporary inverse lines
+and the conditional application280 gives15317 within15600. Core production
+remains2051 within2650, with no resource production addition. Three stage paths
+and83 cumulative Bombay paths are measured; controlled/research custody retains
+its separate accounting. Complete checkpoints are
+`/tmp/bombay-resource-delivery-{stage,cumulative}-checkpoint.json`.

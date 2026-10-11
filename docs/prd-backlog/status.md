@@ -62,8 +62,13 @@ Their scoped controls/inversions and actual Linux artifacts retain their limits.
 PR6 merged3e45ba6b1098b3589b242935284610d0113e13a8 after review and required
 CI; exact-main verification38098545513 also passes. Publication38099991563
 actually released1.10.3; all nine registry archives and all seven clean consumer
-checks pass. Bombay fixture adoption and affected native checks remain pending. These contributions
-do not close full AUTH1/NET1 acceptance.
+checks pass. Fixture adoption PR341 merged10f734eeb829f3ad35ec57a2795299c87edb9da1
+after exact-head review and all six checks. Replay PR342 merged
+2c264c705d2fb07eccb1a86f3a5852bc0d598ef5 with the same delivery gates.
+Configured assignment/deadline PR343 merged01683e86bbe0f74536f6f94c49d94211e117f115
+at2026-10-11T03:07:40Z after scoped review and all six checks passed.
+Bounded JSON PR344 and the corrected resource witness remain pending.
+These contributions do not close full AUTH1/NET1 acceptance.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
 
