@@ -118,8 +118,23 @@ package preflight and all eleven
 pass. This is metadata/docs only; no merge or publication is claimed. The
 owning PRD holds exact logs, measurements and release obligations.
 
-Begin with a compiling counter and heterogeneous-child journey that infers
-runner and terminal types while returning complete startup/retirement failures.
+Behavior now derives policy-free empty-birth eligibility from the actual child
+capability, preserving aliases and rejecting a nonempty mode named NoBirths.
+The owning actual regression fails before the fix; owner and real facade
+consumer pass both profiles and timer/shutdown orders. All ten native owner
+gates pass: 961 tests, 114 doctests, 68 checked failure diagnostics. The owning
+PRD records exact deltas, independent inversions and the diagnostic-probe fix;
+release delivery of this additional macro batch remains separate.
+
+Private graph validation now checks each resolved decorated child's complete
+birth row; the original deeper-decorator false acceptance is rejected in both
+profiles. Singleton role proofs cover proxy and both supervisor forms. These
+do not establish public creation authority: actual structural and cold startup
+binding/origin custody must both fit the final port without equality assumptions.
+
+Begin with a compiling counter and heterogeneous-child journey deriving
+runner and terminal types from the single declared topology while returning
+complete startup/retirement failures.
 Then prove supervisor and pool use before migrating the catalogue. A shorter
 happy path that drops owned failure values fails acceptance. The existing
 [execution contract](execution-ownership.md) remains a preservation obligation.
