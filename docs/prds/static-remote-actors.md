@@ -12082,3 +12082,14 @@ before copying and checking resolved leaves. One replacement statement expands
 the authored-controller ceiling150→155 (actual151); retained118 lines and all
 Rust/runtime/lock bytes remain unchanged. Preserve that setup-only log, rerun
 the same portable campaign and require CI on the corrected submitted head.
+
+
+Submitted de0e821 Linux Nix38159908965 failed at strict Clippy: the native
+SupervisorTerminal's large_enum_variant expectation is unfulfilled on Linux,
+after workspace tests and optimized build passed. Five other checks passed.
+Under delegated recommendations, change only that enum's size-lint annotation
+to a narrowly reasoned allow: complete original role products keep their native
+custody without adding a heap owner solely for target-dependent representation.
+No correctness lint, runtime semantics, public API or dependency changes.
+Exact submitted-source CI must rerun; the failed run is retained without gate
+credit. The six-phase portable local proof remains scoped to its recorded source.

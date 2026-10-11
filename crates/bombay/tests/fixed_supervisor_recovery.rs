@@ -190,9 +190,9 @@ struct SupervisorSpaces {
 }
 
 #[derive(TerminalProjection)]
-#[expect(
+#[allow(
     clippy::large_enum_variant,
-    reason = "retain complete original role retirements without adding a heap owner or changing terminal custody"
+    reason = "retain complete native role retirements without heap custody for a target-dependent size lint"
 )]
 enum SupervisorTerminal {
     PreparationOwner {
