@@ -40,8 +40,9 @@ PR94 is merged as273e030 with a tree identical to reviewed59f2790; main
 CI38313588600 passes and normal release generation creates PR95. Its incorrect
 0.24.1 compatibility proposal is corrected to Core/Actors0.25.0 on04dff9b;
 Macros stays0.14.1. All four locks retain identical external package records,
-and exact-head archive preflight passes. Native Nix/CI, version merge and
-registry verification remain pending under the existing authorization. Registry
+and exact-head archive preflight passes. All ten native Nix gates pass in417.740 seconds and exact-head CI passes.
+Authorized version PR95 merges as2bb4510; main CI and normal registry
+publication remain pending. Registry
 delivery remains open; this Bombay checkout retains compatible0.24 factories.
 
 Counter main is98 lines and FIFO184; terminal inspection and owned result
@@ -51,7 +52,7 @@ supervision example follows the shared-caller path without an intermediate
 interface. All88 original assertions remain unchanged;40 test passes and eight
 complete example runs pass on both compilers/profiles/features. Library production
 is unchanged; example caller code decreases2 lines and test callers17 lines.
-The current full21-gate Nix run remains pending. The template and heterogeneous-topology examples
+The latest full Nix checkpoint passes all21 native gates in2358.992 seconds. The template and heterogeneous-topology examples
 also use direct Application sender/lifecycle ports. Their90 original assertions
 are unchanged, one unused reply protocol is removed, and both binaries pass
 all eight configurations (16 executions); strict lint passes. These two caller
@@ -67,10 +68,12 @@ Full native workspace nextest passes625 tests in default and all-feature
 configurations, with one existing subprocess-only skip. Strict workspace Clippy
 and all60 MSRV declaration/host denials pass. The fresh Nix run exposed vendor
 path normalization and a masked phase denial; focused actual Nix coverage now
-preserves both phase denials and all13 topology denials. The repaired complete
-flake check passed all21 native gates (2272.589 seconds). That captured source
-precedes the three-line heterogeneous alias deletion and new keyed witness,
-which separately passed their focused matrices and strict lint. Registry mapping
+preserves both phase denials and all13 topology denials. The latest complete
+flake check passes all21 native gates (2358.992 seconds), including the keyed
+witness and four direct-client migrations. Only the two later Rust example
+migrations differ from that source capture; their sixteen executions and
+strict lint pass independently. The retained application implementation is
+committed as76b2b0f on the isolated feature branch. Registry mapping
 formatting is committed as2800432; pinned nixfmt and evaluation of all21 native
 check definitions pass. Final-source gates remain required;
 signing/disk failures have not been waived.
@@ -93,6 +96,13 @@ Allocation counts remain74, while peak heap is122916→123644 bytes (+728,
 or throughput claim is made. Broader pool/Entity/recursive memory, resource
 controls, cancellation/late replies, package gates, distillation and delivery
 remain selected acceptance work.
+
+The existing API guide is the package readme and crate rustdoc. Its complete
+leaf Application/shutdown/retirement example executes on all eight configurations
+both in the workspace and the extracted runtime/engine/macros archives. The
+archive guide is byte-identical;59 local source links resolve. Three schematic
+topology fragments remain explicitly ignored. This documentation port changes
+no runtime API or state; guide minimization and rendered links remain open.
 
 The owning specification is Behavior's
 `docs/engineering/developer-experience-prd.md`, with its source coverage appendix.

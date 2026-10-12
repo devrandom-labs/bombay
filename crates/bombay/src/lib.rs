@@ -11,6 +11,8 @@
 //! cooperative host. Other unwinding cannot promise completed cleanup.
 //! The runtime requires `panic = "unwind"`; abort destroys recoverable custody.
 
+#![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/", env!("CARGO_PKG_README")))]
+
 extern crate self as bombay;
 
 #[cfg(panic = "abort")]

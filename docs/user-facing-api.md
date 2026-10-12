@@ -2,7 +2,7 @@
 
 This is the existing API guide, with source and test pointers. Bombay owns the
 application and runtime experience over Behavior and Behavior Actors. The
-[DevX coordination](prds/developer-experience.md) records the implemented
+[developer experience coordination](prds/developer-experience.md) records the implemented
 feature-branch inference and the remaining migration and release gates.
 When prose and source disagree, verify the source and correct the prose.
 
@@ -11,14 +11,14 @@ external interface, timer, Entity, supervisor, and worker-pool paths have
 executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
 or multithread execution. Durability and networking remain planned.
-See the [source-backed inventory](prd-backlog/evidence.md). The short code
-fragments below are schematic, omit surrounding definitions, and are not
-compilation evidence. The executable, compiler-checked spellings are:
+See the [source-backed inventory](prd-backlog/evidence.md). This guide is included in crate rustdoc. The complete entry example below
+is executed as a doctest; fragments labelled text or ignore omit surrounding
+definitions and remain schematic. The executable, compiler-checked spellings are:
 
 | Boundary | Executable or compile-checked owner |
 | --- | --- |
 | Root execution, typed terminal, application children | [application topology example](../examples/application-topology/src/main.rs), [terminal projection tests](../crates/bombay/tests/terminal_projection.rs) |
-| `run_with`, lifecycle, shutdown, exact terminal results | [run_with tests](../crates/bombay/tests/run_with.rs) |
+| `run_with`, lifecycle, shutdown, exact terminal results | [paired execution tests](../crates/bombay/tests/run_with.rs) |
 | Axum adapter | [Axum example](../examples/axum/src/main.rs), [HTTP tests](../examples/axum/src/http.rs) |
 | Advanced actor-space product and protocol hosts | [supervision example](../examples/supervision/src/main.rs), [host compile fixtures](../crates/bombay/tests/actor_spaces.rs) |
 | `Machine`, timers, and `ActorExt` wrappers | [actor-template example](../examples/actor-templates/src/main.rs), [template application tests](../crates/bombay/tests/template_application.rs) |
@@ -36,12 +36,36 @@ actor. Actors execute on that selected host; supplied Work executes where its
 execution future is polled. Work and its output may borrow caller values and
 need not be `Send`. Actor tasks keep their actual `Send + 'static` requirements.
 
-For a root with an empty descendant projection destination:
+A leaf actor uses one Application and returns independent work and cleanup:
 
-```text
-let outcome = Application::new(service.stop_on_shutdown())
-    .run()
-    .await;
+```rust
+# struct Service;
+# #[bombay::actor(message = bombay::behavior::Never)]
+# impl Service {}
+# let host = tokio::runtime::Builder::new_current_thread()
+#     .enable_all().build().expect("caller-owned host");
+# host.block_on(async {
+let service = bombay::actors::ActorExt::stop_on_shutdown(Service);
+let outcome = bombay::Application::new(service)
+    .run_with(|application| async move {
+        let shutdown = application.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        application.termination().await
+    })
+    .await
+    .unwrap_or_else(|original| {
+        drop(original);
+        panic!("the application must start");
+    });
+let (termination, cleanup) = outcome.try_into_completed()
+    .unwrap_or_else(|original| {
+        drop(original);
+        panic!("the work must complete");
+    });
+assert_eq!(termination, Ok(bombay::prelude::Exit::Normal));
+let (_origin, retirement) = cleanup.expect("independent joined cleanup");
+assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
+# });
 ```
 
 A no-birth root infers `Never` descendants and `Vec<Never>` child failures.
@@ -165,7 +189,7 @@ ApplicationCleanupError>`. `PublicationClosed(RecvError)` retains the original
 cleanup-publication receiving error. `TaskFailed(JoinError)` retains the actual
 cleanup task error. The root's `ActorTaskFailed(JoinError)` variant separately
 owns the native actor failure. Preserve these distinct owners; do not infer
-absent actors or manufacture a JoinError from a closed channel. `Terminal` is the descendant destination.
+absent actors or manufacture a `JoinError` from a closed channel. `Terminal` is the descendant destination.
 The root stays raw. A derived application sum receives its exact owned pair
 with `(origin, retirement).into()`. `ProjectTerminal<Origin, Actor>`
 is the native interpreter port: its associated `Descendants` selects the child
@@ -263,7 +287,7 @@ sender.send(AccountCommand::Deposit(40)).await?;
 ```
 
 For genuinely shared reply receiving across targets, `application.external()`
-establishes the existing affine ExternalActor directly; each `caller.send(&target,
+establishes the existing affine `ExternalActor` directly; each `caller.send(&target,
 command)` makes its target choice explicit. `ActorInterface<Api>` remains the
 named product for exported capabilities outside the application callable and
 provides the same `client_to`/`sender_to` constructors. Exporting a target never
@@ -311,7 +335,7 @@ router, address, and native bind error on failure. The router is invoked once
 only after activation. Acquired HTTP Work owns the original Router/Listener pair. Work output is the
 exact bare `Result<(), io::Error>` from serving; raw root and cleanup facts coexist with it. Graceful serving
 completion is not proof that the root result is successful. Axum owns HTTP
-extraction/responses; Bombay adds no projected aggregate AxumRunError.
+extraction/responses; Bombay adds no projected aggregate `AxumRunError`.
 
 ## Application composition
 
@@ -392,7 +416,7 @@ concrete protocol space directly:
 
 ```text
 let outcome = Application::new(OrderBook::default().stop_on_shutdown())
-    .run_axum::<Never, _, _, _, _>(address, |application| {
+    .run_axum(address, |application| {
         let interface = application.interface(order_http::OrderApi {
             orders: application.root().established_recipient(),
         });
@@ -560,7 +584,7 @@ Use the logical `Recipient<P>` / `Delivery<P>` pair when stable-name or
 replacement routing is intended instead.
 
 Use the direct Application clients above inside Work. When a transport must
-retain a named product of exported capabilities, construct an ActorInterface:
+retain a named product of exported capabilities, construct an `ActorInterface`:
 
 ```text
 struct Api {
@@ -687,9 +711,8 @@ let application_receiving = application.run_with_entities(
     |application| async move {
         let accounts = application.entities(AccountsRole);
         let account = accounts.entity(account_id);
-        let interface = application.interface(account);
-        let caller = interface.external::<Replies>()?;
-        caller.send(interface.api(), AccountCommand::Deposit(amount)).await
+        let caller = application.sender_to(account)?;
+        caller.send(AccountCommand::Deposit(amount)).await
     },
 ).await;
 ```
@@ -758,7 +781,7 @@ for explicit multi-protocol composition and is not presented as ordinary
 single-root application assembly. There is no manifest, namespace, runtime
 registry, `TypeId`, `Any`, or endpoint enum.
 
-The ordinary application API contains no manually authored HList or positional
+The ordinary application API contains no manually authored `HList` or positional
 witness. Role-first application assembly is withheld until its exact static
 ownership projection exists; the single-root path and deliberate advanced
 actor-space path remain executable.
