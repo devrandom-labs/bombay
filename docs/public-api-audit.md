@@ -3,7 +3,7 @@
 This retains ARC-020's owner inventory and reconciles the EXEC application
 surface against published Behavior Core/Actors 0.23.0 and Macros 0.14.0 at
 archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508`, Address 0.3.0,
-Communication 0.1.4, private Observe, and patched Timers in `Cargo.lock`. It covers Bombay-owned
+Communication 0.1.5, private Observe, and patched Timers in `Cargo.lock`. It covers Bombay-owned
 items reachable from the `bombay`, `bombay::entity`, `bombay::actors`, and
 `bombay_engine` roots. Re-exported Behavior and Behavior Actors families retain
 their upstream ownership. The [Rust API Guidelines checklist](https://rust-lang.github.io/api-guidelines/checklist.html)
