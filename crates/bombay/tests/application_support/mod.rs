@@ -1,38 +1,9 @@
 use bombay::ActorCustody;
-use core::fmt;
 
 use bombay::behavior::{BehaviorSettlements, Never, Protocol};
-use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, TerminalProjection};
+use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
 
-#[derive(TerminalProjection)]
-pub(crate) enum RootTerminal<R>
-where
-    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    Root {
-        origin: RootOrigin<R>,
-        terminal: ActorRetirement<R, Self, ()>,
-    },
-}
-
-impl<R> fmt::Debug for RootTerminal<R>
-where
-    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("RootTerminal")
-    }
-}
-
-pub(crate) fn into_root<R>(
-    terminal: RootTerminal<R>,
-) -> (RootOrigin<R>, ActorRetirement<R, RootTerminal<R>, ()>)
-where
-    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    let RootTerminal::Root { origin, terminal } = terminal;
-    (origin, terminal)
-}
+pub(crate) type RootTerminal<R> = (RootOrigin<R>, ActorRetirement<R, Never, Vec<Never>>);
 
 #[allow(
     dead_code,
@@ -53,7 +24,7 @@ where
                     control,
                     user,
                     descendants,
-                    child_failures: (),
+                    child_failures,
                     additional_failures: retirement_additional_failures,
                     received_interpretation: retirement_received_interpretation,
                     received_source: retirement_received_source,
@@ -67,10 +38,11 @@ where
             interpretation: retirement_interpretation,
             source: retirement_source,
         },
-    ) = into_root(terminal)
+    ) = terminal
     else {
         panic!("the application root must retain its completed terminal state")
     };
+    assert_eq!(child_failures, []);
     assert!(retirement_interpretation.is_none());
     assert!(retirement_source.is_none());
     assert!(retirement_additional_failures.is_empty());
@@ -96,6 +68,6 @@ where
     assert_eq!(settlements.len(), 1);
     assert!(control.is_empty());
     assert!(user.is_empty());
-    assert!(descendants.is_empty());
+    assert_eq!(descendants, []);
     assert_eq!(completion, Completion::Stopped);
 }

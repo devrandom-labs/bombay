@@ -1,0 +1,5 @@
+error: actor class is unreachable from the root
+ --> tests/compile/fail/topology_inferred_missing_anchor.rs:7:9
+  |
+7 |         worker {}
+  |         ^^^^^^

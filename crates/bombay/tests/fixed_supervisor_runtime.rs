@@ -7,18 +7,13 @@ use tokio::runtime::Builder;
 use behavior_actors::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
     FailureReaction, FixedCommand, FixedSnapshot, FixedSupervisor, OrderedRoles, Recovery,
-    RestartLimit, RestartRelease, StableProxy, Strategy, WorkerSource, WorkerSubmission, fixed,
+    RestartLimit, RestartRelease, Strategy, WorkerSource, WorkerSubmission, fixed,
 };
 use behavior_actors::{Exit, StopOnShutdown};
 use bombay::actors::ActorExt as _;
-use bombay::behavior::{ChildHead, MessageProtocol, Never};
-use bombay::prelude::{
-    ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
-    TerminalProjection,
-};
-use bombay::{
-    ActorSpace, ActorSpaces, Application, WorkerPreparationSource, WorkerPreparationStart,
-};
+use bombay::behavior::{MessageProtocol, Never};
+use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
+use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::oneshot;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -90,70 +85,20 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
     }
 }
 
-type WorkerProxy = StableProxy<ManagedWorker, ActivationNotice>;
-type ProxyWorker = StopOnShutdown<ManagedWorker>;
 type Supervisor =
     FixedSupervisor<WorkerRole, ManagedWorker, ActivationNotice, Workshop, Infallible, Infallible>;
 type RootSupervisor = StopOnShutdown<Supervisor>;
 type WorkerProtocol = Worker;
-type RootProtocol = MessageProtocol<MailAddr, FixedCommand<MailAddr, WorkerRole, WorkerProtocol>>;
 type Status = MessageProtocol<MailAddr, FixedSnapshot<WorkerProtocol>>;
 type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, WorkerProtocol>>;
 
-#[derive(ActorSpaces)]
-struct SupervisorSpaces {
-    #[actor_space(RootProtocol)]
-    root: ActorSpace<RootProtocol>,
-    #[actor_space(WorkerProtocol)]
-    workers: ActorSpace<WorkerProtocol>,
-    #[actor_space(Status)]
-    status: ActorSpace<Status>,
-    #[actor_space(Capability)]
-    capability: ActorSpace<Capability>,
-}
-
-#[expect(
-    clippy::large_enum_variant,
-    reason = "retain original unboxed root, proxy and worker retirements without an extra allocation or disposal owner"
-)]
-#[derive(TerminalProjection)]
-enum SupervisorTerminal {
-    Root {
-        origin: RootOrigin<RootSupervisor>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "the supervisor retirement retains its exact proxy-role child failures and complete terminal"
-        )]
-        terminal: ActorRetirement<
-            RootSupervisor,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<Supervisor, ChildHead>, WorkerProxy>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Proxy {
-        origin: ChildOrigin<Supervisor, ChildHead>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "the proxy retirement retains its exact worker-role child failures and complete terminal"
-        )]
-        terminal: ActorRetirement<
-            WorkerProxy,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<WorkerProxy, ChildHead>, ProxyWorker>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Worker {
-        origin: ChildOrigin<WorkerProxy, ChildHead>,
-        terminal: ActorRetirement<ProxyWorker, Self, ()>,
-    },
+bombay::topology! {
+    supervisor_application {
+        root { Proxy => proxy; }
+        proxy { Worker => worker; }
+        worker {}
+        hosts { status: Status; capability: Capability; }
+    }
 }
 
 fn prepared_supervisor(activation_sender: oneshot::Sender<()>) -> Supervisor {
@@ -192,37 +137,30 @@ fn prepared_supervisor(activation_sender: oneshot::Sender<()>) -> Supervisor {
 fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
     let (activation_sender, activation_received) = oneshot::channel();
     let supervisor = prepared_supervisor(activation_sender);
-    let spaces = SupervisorSpaces {
-        root: ActorSpace::new(),
-        workers: ActorSpace::new(),
-        status: ActorSpace::new(),
-        capability: ActorSpace::new(),
-    };
+    let spaces = supervisor_application::Topology::new();
     let application_host = Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::with_topology(supervisor.stop_on_shutdown(), spaces)
-                .run_with::<SupervisorTerminal, _, _, _, _, _>(move |application| async move {
+            Application::with_topology(supervisor.stop_on_shutdown(), spaces).run_with(
+                move |application| async move {
                     activation_received
                         .await
                         .expect("the proxy activates its exact worker");
-                    let interface =
-                        application.interface(application.root().established_recipient());
-                    let caller = interface
-                        .external::<Status>()
+                    let caller = application
+                        .sender()
                         .expect("the supervisor caller is established");
                     caller
-                        .send(interface.api(), FixedCommand::shutdown())
+                        .send(FixedCommand::shutdown())
                         .await
                         .expect("the supervisor accepts shutdown");
-                    let lifecycle = application.lifecycle();
-                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                    tokio::time::timeout(Duration::from_secs(5), application.termination())
                         .await
                         .expect("the supervisor terminates after shutdown")
-                }),
+                },
+            ),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -236,30 +174,27 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: SupervisorTerminal = (
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    )
-        .into();
+    let origin = root_origin;
+    let terminal = match joined_actor {
+        ActorRetirement::ActorTaskFailed(failure) => {
+            panic!("the actual application actor task failed: {failure}")
+        }
+        retirement => retirement,
+    };
 
     assert_eq!(termination, Ok(Exit::Normal));
-    assert_orderly_supervisor_terminal(terminal);
+    assert_orderly_supervisor_terminal(origin, terminal);
 }
 
-fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
-    let SupervisorTerminal::Root { origin, terminal } = terminal else {
-        panic!("the application returns the supervisor root");
-    };
+fn assert_orderly_supervisor_terminal(
+    origin: RootOrigin<RootSupervisor>,
+    terminal: ActorRetirement<RootSupervisor, supervisor_application::RootRetirements<RootSupervisor>, Vec<<supervisor_application::RootRetirements<RootSupervisor> as bombay::RetirementSchema>::Failure>>,
+) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
-                child_failures: (child_failures, ()),
+                child_failures,
                 capability_failures,
                 unread_owner_cancellation,
                 descendants,
@@ -276,18 +211,18 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     assert!(child_failures.is_empty());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
-    let SupervisorTerminal::Proxy { origin, terminal } = descendants
+    let supervisor_application::RootRetirements {
+        origin,
+        retirement: terminal,
+    } = descendants
         .into_iter()
         .next()
-        .expect("the declared role retains its proxy")
-    else {
-        panic!("the declared child is the stable proxy");
-    };
+        .expect("the declared role retains its proxy");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
-                child_failures: (child_failures, ()),
+                child_failures,
                 capability_failures,
                 unread_owner_cancellation,
                 descendants,
@@ -295,7 +230,7 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
             },
         completion,
         ..
-    } = terminal
+    } = *terminal
     else {
         panic!("the supervisor completes its proxy during shutdown");
     };
@@ -304,18 +239,18 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
     assert!(child_failures.is_empty());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
-    let SupervisorTerminal::Worker { origin, terminal } = descendants
+    let supervisor_application::ProxyRetirements {
+        origin,
+        retirement: terminal,
+    } = descendants
         .into_iter()
         .next()
-        .expect("the activated worker remains in retirement custody")
-    else {
-        panic!("the nested child is the worker");
-    };
+        .expect("the activated worker remains in retirement custody");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
-                child_failures: (),
+                child_failures,
                 capability_failures,
                 unread_owner_cancellation,
                 descendants,
@@ -323,12 +258,13 @@ fn assert_orderly_supervisor_terminal(terminal: SupervisorTerminal) {
             },
         completion,
         ..
-    } = terminal
+    } = *terminal
     else {
         panic!("the proxy completes its worker during shutdown");
     };
+    assert_eq!(child_failures, []);
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
-    assert!(descendants.is_empty());
+    assert_eq!(descendants, []);
 }

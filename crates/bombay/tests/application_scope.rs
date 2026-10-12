@@ -5,7 +5,7 @@
 //! is a fresh incarnation after fenced retirement; it is not Behavior Actors'
 //! explicit `StableProxy` worker-replacement policy.
 
-use bombay::ActorCustody;
+use bombay::{ActorCustody, RetirementSchema};
 use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -20,10 +20,7 @@ use bombay::entity::{
     EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
 };
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown};
-use bombay::{
-    ActorSpace, ActorSpaces, Application, ApplicationBehavior, ApplicationOutcome, ChildFailure,
-    ChildOrigin, ProjectTerminal,
-};
+use bombay::{Application, ApplicationOutcome};
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
@@ -78,7 +75,7 @@ impl Account {
 }
 
 type AccountRetirement =
-    Result<ActorRetirement<StopOnShutdown<Account>, Never, ()>, tokio::task::JoinError>;
+    Result<ActorRetirement<StopOnShutdown<Account>, Never, Vec<Never>>, tokio::task::JoinError>;
 
 struct Accounts {
     retired: Arc<Semaphore>,
@@ -89,10 +86,10 @@ struct Accounts {
 impl EntityDefinition for Accounts {
     type Id = u64;
     type Behavior = StopOnShutdown<Account>;
-    type Hosts = Spaces;
+    type Hosts = topology::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = ();
+    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -140,67 +137,13 @@ impl EntityDefinition for Accounts {
 #[derive(Clone, Copy)]
 struct AccountsRole;
 
-struct Replies;
-
-impl Protocol for Replies {
-    type Addr = MailAddr;
-    type Msg = Never;
-}
-
-#[derive(ActorSpaces)]
-struct Spaces {
-    #[actor_space(Root)]
-    root: ActorSpace<Root>,
-    #[actor_space(Account)]
-    accounts: ActorSpace<Account>,
-}
-
-#[expect(
-    clippy::large_enum_variant,
-    reason = "retain complete typed retirements inline in this ownership comparison"
-)]
-enum ApplicationTerminal<R>
-where
-    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    Root {
-        origin: RootOrigin<StopOnShutdown<Root>>,
-        terminal: ActorRetirement<R, Self, ColdFailures>,
-    },
-    Cold {
-        origin: ChildOrigin<StopOnShutdown<Root>, ColdAccount>,
-        terminal: ActorRetirement<StopOnShutdown<Account>, Never, ()>,
-    },
-}
-
-impl<R>
-    From<(
-        RootOrigin<StopOnShutdown<Root>>,
-        ActorRetirement<R, Self, ColdFailures>,
-    )> for ApplicationTerminal<R>
-where
-    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    fn from(
-        (origin, terminal): (
-            RootOrigin<StopOnShutdown<Root>>,
-            ActorRetirement<R, Self, ColdFailures>,
-        ),
-    ) -> Self {
-        Self::Root { origin, terminal }
-    }
-}
-impl<R> ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ColdAccount>, StopOnShutdown<Account>, ()>
-    for ApplicationTerminal<R>
-where
-    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    type Descendants = Never;
-    fn project(
-        origin: ChildOrigin<StopOnShutdown<Root>, ColdAccount>,
-        terminal: ActorRetirement<StopOnShutdown<Account>, Never, ()>,
-    ) -> Self {
-        Self::Cold { origin, terminal }
+bombay::topology! {
+    topology {
+        root: Root {}
+        hosts { accounts: Account; }
+        families { account: Accounts; }
+        members { Cold(ColdAccount) => account; }
+        account {}
     }
 }
 
@@ -216,15 +159,6 @@ impl Drop for ColdAccount {
         }
     }
 }
-type ColdFailures = (
-    Vec<ChildFailure<ChildOrigin<StopOnShutdown<Root>, ColdAccount>, StopOnShutdown<Account>>>,
-    (),
-);
-type ComposedRoot = ApplicationBehavior<
-    StopOnShutdown<Root>,
-    bombay::behavior::ChildCons<MailAddr, StopOnShutdown<Account>, bombay::behavior::NoChildren>,
->;
-
 #[test]
 #[expect(
     clippy::too_many_lines,
@@ -239,10 +173,7 @@ fn cold_members_compose_with_live_entity_families() {
         retirements: Arc::clone(&retirements),
         unexpected_facts: Arc::clone(&unexpected_facts),
     };
-    let spaces = Spaces {
-        root: ActorSpace::new(),
-        accounts: ActorSpace::new(),
-    };
+    let spaces = topology::Topology::new();
     let capacity = EntityCapacity::new(
         NonZeroUsize::new(2).expect("two is non-zero"),
         NonZeroUsize::new(32).expect("32 is non-zero"),
@@ -278,13 +209,15 @@ fn cold_members_compose_with_live_entity_families() {
             application.run_with_entities(move |application| async move {
                 let accounts = application.entities(AccountsRole);
                 let account = accounts.entity(ACCOUNT_ID);
-                let interface = application.interface(account.clone());
-                let caller = interface
-                    .external::<Replies>()
-                    .expect("the external caller is established");
+                let caller = application
+                    .sender_to(account.clone())
+                    .unwrap_or_else(|original| {
+                        drop(original);
+                        panic!("the external caller is established");
+                    });
 
                 caller
-                    .send(interface.api(), AccountCommand::Deposit(40))
+                    .send(AccountCommand::Deposit(40))
                     .await
                     .expect("the first incarnation accepts its command");
                 let passivation = application.passivate_entity(AccountsRole, &ACCOUNT_ID);
@@ -295,10 +228,10 @@ fn cold_members_compose_with_live_entity_families() {
                     .expect("the first incarnation retires")
                     .forget();
                 caller
-                    .send(&account, AccountCommand::Deposit(2))
+                    .send(AccountCommand::Deposit(2))
                     .await
                     .expect("the same stable reference activates a replacement");
-                let shutdown = application.lifecycle().request_shutdown();
+                let shutdown = application.request_shutdown();
                 assert_eq!(shutdown, Ok(()));
             }),
         )
@@ -316,7 +249,7 @@ fn cold_members_compose_with_live_entity_families() {
     };
     let (root_origin, joined_actor) =
         root_receiving.expect("the independent original root retirement is acquired");
-    let terminal: ApplicationTerminal<_> = (
+    let terminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -324,8 +257,7 @@ fn cold_members_compose_with_live_entity_families() {
             }
             retirement => retirement,
         },
-    )
-        .into();
+    );
     let (head_receiving, ()) = shutdowns;
     let (AccountsRole, (shutdown, metrics, family_disposal_failure)) =
         head_receiving.expect("the complete original account family retirement is acquired");
@@ -347,38 +279,49 @@ fn cold_members_compose_with_live_entity_families() {
     assert_retirements(&retirements);
 }
 
-fn assert_application_stopped<R>(terminal: ApplicationTerminal<R>)
-where
+#[expect(
+    clippy::type_complexity,
+    reason = "observe the complete original root and inferred actor retirement without another structural alias"
+)]
+fn assert_application_stopped<R>(
+    terminal: (
+        RootOrigin<StopOnShutdown<Root>>,
+        ActorRetirement<
+            R,
+            topology::RootRetirements<StopOnShutdown<Root>>,
+            Vec<<topology::RootRetirements<StopOnShutdown<Root>> as RetirementSchema>::Failure>,
+        >,
+    ),
+) where
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     R::Settlements: ClassifySettlement,
 {
-    let ApplicationTerminal::Root {
+    let (
         origin,
-        terminal:
-            ActorRetirement::Completed {
-                custody:
-                    ActorCustody {
-                        child_failures,
-                        capability_failures,
-                        unread_owner_cancellation,
-                        control,
-                        user,
-                        descendants,
-                        behavior,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
-                        terminal_report,
-                    },
-                settlements,
-                completion,
-                interpretation,
-                source,
-            },
-    } = terminal
+        ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    control,
+                    user,
+                    descendants,
+                    behavior,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                },
+            settlements,
+            completion,
+            interpretation,
+            source,
+        },
+    ) = terminal
     else {
         panic!("the application root must stop normally")
     };
@@ -399,18 +342,15 @@ where
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
-    assert!(child_failures.0.is_empty());
+    assert!(child_failures.is_empty());
     assert_eq!(descendants.len(), 1);
-    let ApplicationTerminal::Cold {
+    let topology::RootRetirements {
         origin: child_origin,
-        terminal: child_retirement,
+        retirement: child_retirement,
     } = descendants
         .into_iter()
         .next()
-        .expect("the actual cold account retires")
-    else {
-        panic!("the exact cold role remains distinguishable")
-    };
+        .expect("the actual cold account retires");
     assert_ne!(child_origin.address(), origin.address());
     assert_eq!(
         child_origin.creation_kind(),
@@ -447,6 +387,10 @@ where
     assert_eq!(completion, Completion::Stopped);
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "compare all custody fields across the two permitted fenced actor retirements"
+)]
 fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
     let retirements = retirements.lock().unwrap_or_else(PoisonError::into_inner);
     assert_eq!(retirements.len(), 2);
@@ -457,7 +401,7 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
                 Ok(ActorRetirement::Completed {
                     custody:
                         ActorCustody {
-                            child_failures: (),
+                            child_failures,
                             capability_failures,
                             unread_owner_cancellation: None | Some(()),
                             behavior,
@@ -486,6 +430,7 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
                     assert!(acquired_ingress.is_none());
                     assert!(retirement_failures.is_empty());
                     assert!(terminal_report.is_none());
+                    assert_eq!(child_failures, &[]);
                     assert_eq!(*completion, Completion::Stopped);
                     assert!(control.is_empty());
                     // Natural stopping may precede acquisition of the owner request;
@@ -501,7 +446,7 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
                 Ok(ActorRetirement::OwnerCancelled {
                     custody:
                         ActorCustody {
-                            child_failures: (),
+                            child_failures,
                             capability_failures,
                             unread_owner_cancellation,
                             behavior,
@@ -529,6 +474,7 @@ fn assert_retirements(retirements: &Mutex<Vec<AccountRetirement>>) {
                     assert!(acquired_ingress.is_none());
                     assert!(retirement_failures.is_empty());
                     assert!(terminal_report.is_none());
+                    assert_eq!(child_failures, &[]);
                     assert!(unread_owner_cancellation.is_none());
                     assert!(matches!(control.as_slice(), [EventLayer::Owned(_)]));
                     (
@@ -578,10 +524,7 @@ fn combined_staging_rejection_returns_original_family_and_work() {
             admission: RootAdmission::Ready,
         }
         .stop_on_shutdown(),
-        Spaces {
-            root: ActorSpace::new(),
-            accounts: ActorSpace::new(),
-        },
+        topology::Topology::new(),
     )
     .child(
         ColdAccount::DisposalRefused,
@@ -606,14 +549,12 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .expect("actual caller host");
     let (outcome, root, (family, ())) = host
         .block_on(
-            application.run_with_entities::<_, _, ApplicationTerminal<ComposedRoot>, _, _, _>(
-                move |application| async move {
-                    calls.fetch_add(1, Ordering::SeqCst);
-                    let requested = application.lifecycle().request_shutdown();
-                    assert_eq!(requested, Ok(()));
-                    payload
-                },
-            ),
+            application.run_with_entities(move |application| async move {
+                calls.fetch_add(1, Ordering::SeqCst);
+                let requested = application.request_shutdown();
+                assert_eq!(requested, Ok(()));
+                payload
+            }),
         )
         .unwrap_or_else(|rejected| {
             drop(rejected);
@@ -652,9 +593,7 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .child(ColdAccount::Declared, actor)
         .entity_family(role, definition, directory, capacity);
     let (outcome, root, (family, ())) = host
-        .block_on(
-            application.run_with_entities::<_, _, ApplicationTerminal<ComposedRoot>, _, _, _>(work),
-        )
+        .block_on(application.run_with_entities(work))
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("same original work runs after deliberate role replacement")
@@ -700,10 +639,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
             admission: RootAdmission::Ready,
         }
         .stop_on_shutdown(),
-        Spaces {
-            root: ActorSpace::new(),
-            accounts: ActorSpace::new(),
-        },
+        topology::Topology::new(),
     )
     .child(
         ColdAccount::Declared,
@@ -728,13 +664,11 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
         .expect("actual caller host");
     let entered = host.enter();
     let (execution, receiving) = application
-        .execute_with_entities::<_, _, ApplicationTerminal<ComposedRoot>, _, _, _>(
-            move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
-                assert_eq!(requested, Ok(()));
-                payload
-            },
-        )
+        .execute_with_entities(move |application| async move {
+            let requested = application.request_shutdown();
+            assert_eq!(requested, Ok(()));
+            payload
+        })
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("entered host")
@@ -754,9 +688,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
         panic!("complete original cold declaration survives cancellation")
     };
     let (outcome, root, (family, ())) = host
-        .block_on(
-            application.run_with_entities::<_, _, ApplicationTerminal<ComposedRoot>, _, _, _>(work),
-        )
+        .block_on(application.run_with_entities(work))
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("same complete original application reruns")
@@ -770,7 +702,13 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
     assert!(cleanup.is_ok());
     let (_, retirement) = root.expect("actual root retirement");
     let custody = retirement.custody().expect("actual root custody");
-    let [ApplicationTerminal::Cold { terminal, .. }] = custody.descendants.as_slice() else {
+    let [
+        topology::RootRetirements {
+            retirement: terminal,
+            ..
+        },
+    ] = custody.descendants.as_slice()
+    else {
         panic!("original cold actor retained once")
     };
     assert_eq!(
@@ -832,10 +770,7 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
             },
         }
         .stop_on_shutdown(),
-        Spaces {
-            root: ActorSpace::new(),
-            accounts: ActorSpace::new(),
-        },
+        topology::Topology::new(),
     )
     .child(
         ColdAccount::Declared,
@@ -859,14 +794,10 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
         .build()
         .expect("actual caller-owned host");
     let (outcome, root, (family, ())) = host
-        .block_on(
-            application.run_with_entities::<_, _, ApplicationTerminal<ComposedRoot>, _, _, _>(
-                move |_| async move {
-                    drop((original_work, work_token));
-                    panic!("the original refused root never invokes work")
-                },
-            ),
-        )
+        .block_on(application.run_with_entities(move |_| async move {
+            drop((original_work, work_token));
+            panic!("the original refused root never invokes work")
+        }))
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("entered caller host")
@@ -894,7 +825,7 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
     assert_eq!(payload.as_ptr(), root_allocation);
     assert_eq!(payload.as_ref(), vec![113, 127]);
     assert_eq!(custody.descendants.len(), 0);
-    assert!(custody.child_failures.0.is_empty());
+    assert!(custody.child_failures.is_empty());
     assert!(custody.capability_failures.is_empty());
     assert!(custody.additional_failures.is_empty());
     assert_eq!(custody.control.len(), 0);

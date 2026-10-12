@@ -1,5 +1,7 @@
 //! Mechanical derives for Bombay's concrete local runtime composition.
 
+mod topology;
+
 use proc_macro::TokenStream;
 use proc_macro_crate::{FoundCrate, crate_name};
 use proc_macro2::{Span, TokenStream as TokenStream2};
@@ -253,8 +255,9 @@ pub fn actor_spaces(input: TokenStream) -> TokenStream {
 ///
 /// Each variant must contain exactly the named fields `origin` and `terminal`.
 /// The derive adds no terminal policy; it only maps each declared pair to its
-/// owning variant through standard owned `From` inclusion. Native actor projection
-/// uses the same inclusion inside the existing child projection task.
+/// owning variant through standard owned `From` inclusion. This optional
+/// presentation does not select native descendant custody or creation authority;
+/// the application topology owns those protocols.
 #[proc_macro_derive(
     TerminalProjection,
     attributes(application_actor, structural_child, declared_child)
@@ -314,7 +317,7 @@ fn expand_terminal_projection(input: &DeriveInput) -> syn::Result<TokenStream2> 
                         declared
                     }),
                     quote!({
-                        let exact: #bombay::ActorRetirement<#actor, Self, _> = terminal;
+                        let exact: #bombay::ActorRetirement<#actor, _, _> = terminal;
                         exact
                     }),
                 )
@@ -344,46 +347,7 @@ fn expand_terminal_projection(input: &DeriveInput) -> syn::Result<TokenStream2> 
         });
     }
 
-    projections.push(native_terminal_projection(input, &bombay));
     Ok(quote!(#(#projections)*))
-}
-
-fn native_terminal_projection(input: &DeriveInput, bombay: &TokenStream2) -> TokenStream2 {
-    let name = &input.ident;
-    let mut native = input.generics.clone();
-    let [source, actor, failures] =
-        ["__BombayOrigin", "__BombayActor", "__BombayFailures"].map(|stem| {
-            let mut candidate = stem.to_owned();
-            while native.params.iter().any(|parameter| match parameter {
-                syn::GenericParam::Type(value) => value.ident == candidate,
-                syn::GenericParam::Const(value) => value.ident == candidate,
-                syn::GenericParam::Lifetime(_) => false,
-            }) {
-                candidate.push('_');
-            }
-            let name = Ident::new(&candidate, Span::mixed_site());
-            native.params.push(parse_quote!(#name));
-            name
-        });
-    native.make_where_clause().predicates.push(parse_quote!(
-        #actor: #bombay::behavior::BehaviorSettlements<
-            Protocol: #bombay::behavior::Protocol<Addr = #bombay::MailAddr>,
-            Ph = #bombay::behavior::Never>
-    ));
-    native.make_where_clause().predicates.push(parse_quote!(
-        Self: ::core::convert::From<(#source, #bombay::ActorRetirement<#actor, Self, #failures>)>
-    ));
-    let (native_impl, _, native_where) = native.split_for_impl();
-    let (_, type_generics, _) = input.generics.split_for_impl();
-    quote! {
-        impl #native_impl #bombay::ProjectTerminal<#source, #actor, #failures>
-            for #name #type_generics #native_where {
-            type Descendants = Self;
-            fn project(origin: #source, terminal: #bombay::ActorRetirement<#actor, Self, #failures>) -> Self {
-                ::core::convert::From::from((origin, terminal))
-            }
-        }
-    }
 }
 
 enum OriginProjection<'a> {
@@ -501,10 +465,65 @@ fn expand_actor_spaces(input: &DeriveInput) -> syn::Result<TokenStream2> {
                     space
                 }
             }
+            impl #impl_generics #bombay::RootRegistration<#protocol> for #name #type_generics #where_clause {
+                fn root_space(&self) -> &#bombay::ActorSpace<#protocol> {
+                    &self.#field_name
+                }
+            }
         });
     }
 
     Ok(quote!(#(#implementations)*))
+}
+
+/// Derive exact application hosting and native recursive custody from one closed graph.
+///
+/// The declaration names actor classes, their existing child roles and required
+/// logical protocol hosts. The constructor supplies the actual root type;
+/// incoming birth rows, named roles or supplied cold members determine child types.
+/// `families { profile: Profiles; }` declares an independent hydrated class whose
+/// actual actor comes from `Profiles::Behavior` through `EntityDefinition`.
+/// Declare its logical protocol host in `hosts`; the definition still owns
+/// hydration and retirement callbacks. Its generated `ProfileRetirements` owns
+/// ordinary descendants, using the same custody derivation as other classes.
+/// A definition supplies the actor anchor even for a recursive family class;
+/// its existing child roles determine positions without a repeated `for` type.
+/// It derives concrete registration spaces,
+/// nominal recursive custody and exhaustive child failures; actor construction,
+/// policy and effect interpretation retain their existing owners.
+///
+/// Singleton finite chains can use `root { Worker => worker; } worker {}`.
+/// Cold members or multiple root roles require a nominal root declaration,
+/// `root: Root { ... }`; actual root decorations remain inferred. Cold classes
+/// use the actual actors supplied by `.child(role, actor)` without annotations. A class
+/// can name its nominal role owner with `node for Node { Next(Next) => node; }`,
+/// preserving recursive inference on the supported Rust version without naming
+/// the wrapped child type. Its selected actor must have exactly that Base.
+/// Unanchored recursive graphs and `for` declarations without named roles are
+/// rejected. Explicit actual child annotations remain available to advanced callers.
+///
+/// Declaration visibility controls the generated scope, constructor and owned
+/// custody. An omitted visibility permits access from the invocation's scope.
+/// Registration fields and caller-resolution aliases remain private. Exported
+/// declarations must use actor and protocol types valid at that same visibility.
+///
+/// Actor labels use conventional Rust type casing for custody names, ignoring a
+/// raw identifier prefix. Labels must produce distinct custody names: `root_node`
+/// and `root__node` cannot coexist. Duplicate roles, absent targets, unreachable
+/// classes and such naming collisions are rejected before expansion. Actual
+/// decorated creation rows and required hosting are checked by Rust's type system.
+/// `worker: ManagedWorker in jobs {}` registers that class in the declared
+/// `jobs` protocol host. Omit `in` for exact-only children. This selection shares
+/// registration, never creator-local correlations or lifecycle authority.
+/// An explicit logical `root` host shares the root registration namespace.
+#[proc_macro]
+pub fn topology(input: TokenStream) -> TokenStream {
+    let declaration = parse_macro_input!(input as topology::TopologyDeclaration);
+    bombay_crate()
+        .map_or_else(Error::into_compile_error, |bombay| {
+            declaration.expand(&bombay)
+        })
+        .into()
 }
 
 #[cfg(test)]

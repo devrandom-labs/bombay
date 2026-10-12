@@ -7,10 +7,8 @@ use bombay::behavior::{
     CreationSequence, EventIngress, InterpreterRequests, MessageProtocol, Never, NoBirths, NoSends,
     ReportToParent, Step, User, UserEvent,
 };
-use bombay::lifecycle::StopOnShutdown;
 use bombay::prelude::{Exit, TimerId};
-use bombay::timing::OneShot;
-use bombay::{ActorRetirement, Application, ChildOrigin, MailAddr, ProjectTerminal};
+use bombay::{ActorRetirement, Application, MailAddr};
 use core::time::Duration;
 use std::collections::BTreeSet;
 
@@ -133,38 +131,15 @@ fn replayed_elapsed_report_cannot_discharge_the_other_wrapper_order() {
     assert!(parent.outstanding.is_empty());
 }
 
-type TimerOutsideActor = OneShot<StopOnShutdown<TimedWorker>>;
-type ShutdownOutsideActor = StopOnShutdown<OneShot<TimedWorker>>;
-type TimerOrigin = ChildOrigin<StopOnShutdown<TimedParent>, TimerOutside>;
-type ShutdownOrigin = ChildOrigin<StopOnShutdown<TimedParent>, ShutdownOutside>;
-
-enum TimedChildRetirement {
-    Timer {
-        origin: TimerOrigin,
-        retirement: ActorRetirement<TimerOutsideActor, Never, ()>,
-    },
-    Shutdown {
-        origin: ShutdownOrigin,
-        retirement: ActorRetirement<ShutdownOutsideActor, Never, ()>,
-    },
-}
-
-impl ProjectTerminal<TimerOrigin, TimerOutsideActor, ()> for TimedChildRetirement {
-    type Descendants = Never;
-    fn project(
-        origin: TimerOrigin,
-        retirement: ActorRetirement<TimerOutsideActor, Never, ()>,
-    ) -> Self {
-        Self::Timer { origin, retirement }
-    }
-}
-impl ProjectTerminal<ShutdownOrigin, ShutdownOutsideActor, ()> for TimedChildRetirement {
-    type Descendants = Never;
-    fn project(
-        origin: ShutdownOrigin,
-        retirement: ActorRetirement<ShutdownOutsideActor, Never, ()>,
-    ) -> Self {
-        Self::Shutdown { origin, retirement }
+bombay::topology! {
+    timed_application {
+        root: TimedParent {}
+        members {
+            Timer(TimerOutside) => timer;
+            Shutdown(ShutdownOutside) => shutdown;
+        }
+        timer {}
+        shutdown {}
     }
 }
 
@@ -193,22 +168,22 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();
-    let outcome = Application::new(TimedParent::new().stop_on_shutdown())
-        .child(TimerOutside, timer)
-        .child(ShutdownOutside, shutdown)
-        .run_with::<TimedChildRetirement, _, _, _, _, _>(|application| async move {
-            tokio::time::timeout(
-                Duration::from_secs(5),
-                application.lifecycle().termination(),
-            )
+    let outcome = Application::with_topology(
+        TimedParent::new().stop_on_shutdown(),
+        timed_application::Topology::new(),
+    )
+    .child(TimerOutside, timer)
+    .child(ShutdownOutside, shutdown)
+    .run_with(|application| async move {
+        tokio::time::timeout(Duration::from_secs(5), application.termination())
             .await
             .expect("both actual timer reports must arrive")
-        })
-        .await
-        .unwrap_or_else(|original| {
-            drop(original);
-            panic!("entered the actual application host");
-        });
+    })
+    .await
+    .unwrap_or_else(|original| {
+        drop(original);
+        panic!("entered the actual application host");
+    });
     let (termination, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("work returns only after both real elapsed reports");
@@ -232,7 +207,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
     let mut orders = BTreeSet::new();
     for report in descendants {
         let retirement = match report {
-            TimedChildRetirement::Timer { origin, retirement } => {
+            timed_application::RootRetirements::Timer { origin, retirement } => {
                 assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
                 let ActorRetirement::OwnerCancelled {
                     custody:
@@ -243,18 +218,18 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                             ..
                         },
                     ..
-                } = retirement
+                } = *retirement
                 else {
                     panic!("timer reaction continued, so owner cancellation returns its actor");
                 };
                 assert_eq!(descendants, []);
-                assert_eq!(child_failures, ());
+                assert_eq!(child_failures, []);
                 assert_eq!(behavior.base().payload.as_ptr(), timer_allocation);
                 assert_eq!(&*behavior.base().payload, &[3, 7]);
                 let _new_order = orders.insert(behavior.base().order);
                 continue;
             }
-            TimedChildRetirement::Shutdown { origin, retirement } => {
+            timed_application::RootRetirements::Shutdown { origin, retirement } => {
                 assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
                 retirement
             }
@@ -268,12 +243,12 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                     ..
                 },
             ..
-        } = retirement
+        } = *retirement
         else {
             panic!("shutdown outside preserves the same cancellation custody");
         };
         assert_eq!(descendants, []);
-        assert_eq!(child_failures, ());
+        assert_eq!(child_failures, []);
         assert_eq!(behavior.base().payload.as_ptr(), shutdown_allocation);
         assert_eq!(&*behavior.base().payload, &[11, 13]);
         let _new_order = orders.insert(behavior.base().order);

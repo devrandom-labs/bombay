@@ -14,9 +14,9 @@ use std::sync::{Arc, Mutex, PoisonError, Weak};
 use behavior_actors::{Exit, StopOnShutdown};
 use bombay::behavior::{
     ActionSettlement, Actions, BehaviorActed, BehaviorBase, ChildChoice, ChildCons,
-    ChildCreationOutcome, CreationKind, CreationSettlement, EstablishedDelivery,
-    EstablishedRecipient, EventLayer, ItemSettlement, Never, NoChildren, NoSends, Protocol,
-    SettledItem, Step, User,
+    ChildCreationOutcome, ChildHead, CreationId, CreationKind, CreationRejection,
+    CreationSettlement, EstablishedDelivery, EstablishedRecipient, EventLayer, ItemSettlement,
+    Never, NoChildren, NoSends, Protocol, RoutedCreation, SettledItem, Step, User,
 };
 use bombay_engine::Completion;
 use tokio::runtime::{Builder, Handle, Id};
@@ -31,9 +31,12 @@ use bombay::entity::{
 use bombay::{
     ActorRetirement, ApplicationBehavior, ApplicationCleanupError, ApplicationDefinitionError,
     ApplicationOutcome, ApplicationStagingError, ChildFailure, ChildOrigin, ProjectTerminal,
-    RootOrigin, TerminalProjection,
+    RootOrigin,
 };
-use bombay::{ActorSpace, ActorSpaces, Application, Hosts, MailAddr, actor};
+use bombay::{
+    ActorSpace, Application, ApplicationTopology, EstablishNativeChild, Hosts, MailAddr,
+    NativeChild, PendingChild, RetirementSchema, RootRegistration, actor,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum AccountAdmission {
@@ -61,34 +64,48 @@ impl ReceivingAccount {
     }
 }
 
-#[derive(ActorSpaces)]
-struct AccountSpaces {
-    #[actor_space(ReceivingAccount)]
-    accounts: ActorSpace<ReceivingAccount>,
+bombay::topology! {
+    account_application {
+        root: StopOnShutdown<ReceivingAccount> {}
+        hosts { accounts: ReceivingAccount; }
+        families { account: Accounts; }
+        account {}
+    }
+}
+
+bombay::topology! {
+    declared_application {
+        root: StopOnShutdown<ReceivingAccount> {}
+        members { Account(AccountsRole) => account; }
+        account {}
+    }
+}
+
+bombay::topology! {
+    staged_application {
+        root: StopOnShutdown<ReceivingAccount> {}
+        members {
+            EarlierAccount(AccountsRole) => account;
+            CurrentAccount(DeclaredAccountRole) => account;
+        }
+        account {}
+    }
 }
 
 enum AccountConclusion {
     Root {
         origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Self, ()>,
+        terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, Vec<Never>>,
     },
 }
 
-impl
-    ProjectTerminal<
-        RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        StopOnShutdown<ReceivingAccount>,
-        (),
-    > for AccountConclusion
-{
-    type Descendants = Self;
+impl AccountConclusion {
     fn project(
         origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Self, ()>,
+        terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, Vec<Never>>,
     ) -> Self {
         match terminal {
             completed @ ActorRetirement::Completed { .. } => {
-                // This caller consumes only its own joined actor retirement.
                 drop(completed);
                 panic!("the application terminal conversion failed");
             }
@@ -105,10 +122,10 @@ struct Accounts;
 impl EntityDefinition for Accounts {
     type Id = u64;
     type Behavior = StopOnShutdown<ReceivingAccount>;
-    type Hosts = AccountSpaces;
+    type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = ();
+    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -126,7 +143,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<u64>,
         _: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, ()>,
+        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
     ) {
         drop(failure);
         panic!("no incarnation is requested by this startup controller");
@@ -148,7 +165,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: &EntityId<u64>,
         _: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
     ) {
         drop(retirement);
         panic!("no incarnation is requested by this startup controller");
@@ -164,7 +181,7 @@ fn assert_rejected_root(outcome: &AccountConclusion) {
                 control,
                 user,
                 descendants,
-                child_failures: (),
+                child_failures,
                 capability_failures,
                 unread_owner_cancellation,
                 additional_failures,
@@ -180,6 +197,7 @@ fn assert_rejected_root(outcome: &AccountConclusion) {
     else {
         panic!("the complete actual initialization refusal remains owned");
     };
+    assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
     assert!(matches!(
         (
             received_interpretation,
@@ -203,10 +221,6 @@ fn assert_rejected_root(outcome: &AccountConclusion) {
     assert!(unread_owner_cancellation.is_none());
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "one complete output, original custody, conversion panic and release trace; splitting it would obscure the independent ownership witness"
-)]
 #[tokio::test(flavor = "current_thread")]
 async fn completed_output_survives_actual_root_terminal_conversion_failure() {
     let output = Arc::new(vec![11, 19]);
@@ -219,13 +233,11 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
             original: state,
         }
         .stop_on_shutdown(),
-        AccountSpaces {
-            accounts: ActorSpace::new(),
-        },
+        account_application::Topology::new(),
     );
     let outcome = application
-        .run_with::<AccountConclusion, _, _, _, _, _>(move |application| async move {
-            let requested = application.lifecycle().request_shutdown();
+        .run_with(move |application| async move {
+            let requested = application.request_shutdown();
             requested.expect("the actual live root accepts shutdown");
             output
         })
@@ -246,7 +258,7 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
                 control,
                 user,
                 descendants,
-                child_failures: (),
+                child_failures,
                 capability_failures,
                 unread_owner_cancellation,
                 additional_failures,
@@ -265,6 +277,7 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
     else {
         panic!("same standard root completed normally");
     };
+    assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
     assert!(matches!(
         (
             interpretation,
@@ -328,9 +341,7 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
             original: state,
         }
         .stop_on_shutdown(),
-        AccountSpaces {
-            accounts: ActorSpace::new(),
-        },
+        account_application::Topology::new(),
     )
     .entity_family(
         AccountsRole(role),
@@ -343,11 +354,9 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
         .build()
         .expect("the synchronous refusal controller owns one enabled application host");
     let (outcome, root_receiving, shutdowns) = application_host
-        .block_on(
-            application.run_with_entities::<_, _, AccountConclusion, _, _, _>(|_| async {
-                panic!("startup refusal leaves original work uninvoked");
-            }),
-        )
+        .block_on(application.run_with_entities(|_| async {
+            panic!("startup refusal leaves original work uninvoked");
+        }))
         .unwrap_or_else(|(application, work, error)| {
             drop((application, work));
             panic!("the explicit application host must be entered: {error}");
@@ -425,7 +434,7 @@ async fn application_startup_refusal_returns_whole_unprojected_root() {
         }
         .stop_on_shutdown(),
     )
-    .run_with::<AccountConclusion, _, _, _, _, _>(|_| async {
+    .run_with(|_| async {
         panic!("actual initialization refusal leaves this work uninvoked");
     })
     .await
@@ -452,38 +461,6 @@ async fn application_startup_refusal_returns_whole_unprojected_root() {
     assert_eq!(released, 0);
 }
 
-#[expect(
-    clippy::type_complexity,
-    reason = "show the exact composed actor and child failure product without another wrapper"
-)]
-#[derive(TerminalProjection)]
-enum DeclaredAccountConclusion {
-    Root {
-        origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        terminal: ActorRetirement<
-            ApplicationBehavior<
-                StopOnShutdown<ReceivingAccount>,
-                ChildCons<MailAddr, StopOnShutdown<ReceivingAccount>, NoChildren>,
-            >,
-            Self,
-            (
-                Vec<
-                    ChildFailure<
-                        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-                        StopOnShutdown<ReceivingAccount>,
-                    >,
-                >,
-                (),
-            ),
-        >,
-    },
-    #[application_actor]
-    Account {
-        origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-        terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Self, ()>,
-    },
-}
-
 #[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::too_many_lines,
@@ -494,12 +471,13 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
     let root_retained = Arc::downgrade(&original_root);
     let original_child = Arc::new(vec![53, 59]);
     let child_retained = Arc::downgrade(&original_child);
-    let application = Application::new(
+    let application = Application::with_topology(
         ReceivingAccount {
             admission: AccountAdmission::Reject,
             original: original_root,
         }
         .stop_on_shutdown(),
+        declared_application::Topology::new(),
     )
     .child(
         AccountsRole(Arc::new(vec![61, 67])),
@@ -510,7 +488,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
         .stop_on_shutdown(),
     );
     let outcome = application
-        .run_with::<DeclaredAccountConclusion, _, _, _, _, _>(|_| async {
+        .run_with(|_| async {
             panic!("the refused root never invokes application work");
         })
         .await
@@ -529,14 +507,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
             panic!("declared application initialization refuses before publication");
         }
     };
-    let returned = DeclaredAccountConclusion::from((origin, retirement));
-    let returned = match returned {
-        DeclaredAccountConclusion::Root { origin, terminal } => (origin, terminal),
-        DeclaredAccountConclusion::Account { origin, terminal } => {
-            drop((origin, terminal));
-            panic!("refusal returns the root, not a child terminal");
-        }
-    };
+    let returned = (origin, retirement);
     let (
         origin,
         ActorRetirement::InitializationRejected {
@@ -546,7 +517,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
                     control,
                     user,
                     descendants,
-                    child_failures: (child_failures, ()),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation,
                     additional_failures,
@@ -613,16 +584,14 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
 
 fn paired_account(
     original: Arc<Vec<u8>>,
-) -> Application<StopOnShutdown<ReceivingAccount>, AccountSpaces> {
+) -> Application<StopOnShutdown<ReceivingAccount>, account_application::Topology> {
     Application::with_topology(
         ReceivingAccount {
             admission: AccountAdmission::Ready,
             original,
         }
         .stop_on_shutdown(),
-        AccountSpaces {
-            accounts: ActorSpace::new(),
-        },
+        account_application::Topology::new(),
     )
 }
 
@@ -634,7 +603,7 @@ fn assert_completed_account(
     cleanup: &Result<
         (
             RootOrigin<StopOnShutdown<ReceivingAccount>>,
-            ActorRetirement<StopOnShutdown<ReceivingAccount>, AccountConclusion, ()>,
+            ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, Vec<Never>>,
         ),
         ApplicationCleanupError,
     >,
@@ -648,7 +617,7 @@ fn assert_completed_account(
                     control,
                     user,
                     descendants,
-                    child_failures: (),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation,
                     additional_failures,
@@ -668,6 +637,7 @@ fn assert_completed_account(
     else {
         panic!("the standard account and cleanup join normally");
     };
+    assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
     assert!(matches!(
         (
             interpretation,
@@ -706,7 +676,7 @@ fn assert_cancelled_account(
     cleanup: &Result<
         (
             RootOrigin<StopOnShutdown<ReceivingAccount>>,
-            ActorRetirement<StopOnShutdown<ReceivingAccount>, AccountConclusion, ()>,
+            ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, Vec<Never>>,
         ),
         ApplicationCleanupError,
     >,
@@ -720,7 +690,7 @@ fn assert_cancelled_account(
                     control,
                     user,
                     descendants,
-                    child_failures: (),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation,
                     additional_failures,
@@ -739,6 +709,7 @@ fn assert_cancelled_account(
     else {
         panic!("the original authority cancels the still-live account");
     };
+    assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
     assert!(matches!(
         (
             interpretation,
@@ -776,13 +747,11 @@ fn borrowed_local_work_returns_non_send_output_after_root_join() {
     runtime.block_on(async {
         let borrowed = &borrowed;
         let application = paired_account(Arc::new(vec![31, 37]));
-        let pair = application.execute_with::<_, _, AccountConclusion, (), _, _>(
-            move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
-                requested.expect("the live root accepts shutdown");
-                (output, borrowed)
-            },
-        );
+        let pair = application.execute_with(move |application| async move {
+            let requested = application.request_shutdown();
+            requested.expect("the live root accepts shutdown");
+            (output, borrowed)
+        });
         let (execution, result) =
             pair.unwrap_or_else(|_| panic!("the original entered executor is available"));
         let ((), result) = tokio::join!(execution, result);
@@ -819,8 +788,8 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
     runtime.block_on(async {
         let application = paired_account(state);
         let (execution, result) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
+            .execute_with(move |application| async move {
+                let requested = application.request_shutdown();
                 requested.expect("the retried live root accepts shutdown");
                 original
             })
@@ -831,7 +800,7 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
         };
         let owned_before_retry = retained.strong_count();
         let (execution, result) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(work)
+            .execute_with(work)
             .unwrap_or_else(|_| panic!("the exact original inputs retry in the live executor"));
         let ((), result) = tokio::join!(execution, result);
         let ApplicationOutcome::Completed { output, cleanup } = result else {
@@ -878,8 +847,8 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
     runtime.block_on(async {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, result) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
+            .execute_with(move |application| async move {
+                let requested = application.request_shutdown();
                 requested.expect("the new live root accepts shutdown");
                 callable
             })
@@ -899,7 +868,7 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
         let callable_retained = retained.strong_count();
         drop(cleanup);
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
-            .execute_with::<_, _, AccountConclusion, (), _, _>(work)
+            .execute_with(work)
             .unwrap_or_else(|_| panic!("the original callable runs against a genuine new handle"));
         let ((), result) = tokio::join!(execution, result);
         let ApplicationOutcome::Completed { output, cleanup } = result else {
@@ -933,7 +902,7 @@ fn owning_execution_drop_releases_pending_local_work_before_join() {
         let (ready, ready_result) = oneshot::channel();
         let (continuation, continued) = oneshot::channel();
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |_| async move {
+            .execute_with(move |_| async move {
                 ready.send(()).expect("the caller owns the ready receiver");
                 let completed = continued.await;
                 match completed {
@@ -974,7 +943,7 @@ fn result_surrender_releases_completed_output_without_cancelling_live_execution(
     runtime.block_on(async {
         let (ready, ready_result) = oneshot::channel();
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
+            .execute_with(move |application| async move {
                 ready
                     .send(application.lifecycle())
                     .expect("the caller owns the live-root receiver");
@@ -1014,7 +983,7 @@ fn completed_root_does_not_surrender_pending_application_work() {
         let (ready, ready_result) = oneshot::channel();
         let (continuation, continued) = oneshot::channel();
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
+            .execute_with(move |application| async move {
                 let lifecycle = application.lifecycle();
                 let requested = lifecycle.request_shutdown();
                 ready
@@ -1061,13 +1030,11 @@ fn missing_executor_returns_original_application_and_callable() {
     let original_state = Arc::new(vec![31, 37]);
     let state_retained = Arc::downgrade(&original_state);
     let application = paired_account(original_state);
-    let attempted = application.execute_with::<_, _, AccountConclusion, (), _, _>(
-        move |application| async move {
-            let requested = application.lifecycle().request_shutdown();
-            requested.expect("the actual retried root accepts shutdown");
-            output
-        },
-    );
+    let attempted = application.execute_with(move |application| async move {
+        let requested = application.request_shutdown();
+        requested.expect("the actual retried root accepts shutdown");
+        output
+    });
     let (application, work, context_error) = match attempted {
         Err(original) => original,
         Ok(pair) => {
@@ -1082,11 +1049,9 @@ fn missing_executor_returns_original_application_and_callable() {
         .build()
         .expect("the actual retry runtime builds");
     runtime.block_on(async {
-        let (execution, result) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(work)
-            .unwrap_or_else(|_| {
-                panic!("the exact original input product retries in the entered executor")
-            });
+        let (execution, result) = application.execute_with(work).unwrap_or_else(|_| {
+            panic!("the exact original input product retries in the entered executor")
+        });
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::Completed { output, cleanup } = outcome else {
             panic!("the recovered original callable completes");
@@ -1130,13 +1095,11 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 original: root,
             }
             .stop_on_shutdown(),
-            AccountSpaces {
-                accounts: ActorSpace::new(),
-            },
+            account_application::Topology::new(),
         );
         let (execution, result) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
+            .execute_with(move |application| async move {
+                let requested = application.request_shutdown();
                 requested.expect("the real retry root accepts shutdown");
                 callable
             })
@@ -1159,7 +1122,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                         control,
                         user,
                         descendants,
-                        child_failures: (),
+                        child_failures,
                         capability_failures,
                         unread_owner_cancellation,
                         additional_failures,
@@ -1176,6 +1139,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
         else {
             panic!("the complete original initialization refusal remains available");
         };
+        assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
         assert!(matches!(
             (
                 received_interpretation,
@@ -1204,7 +1168,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
         drop(cleanup);
         let root_released = root_retained.strong_count();
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
-            .execute_with::<_, _, AccountConclusion, (), _, _>(work)
+            .execute_with(work)
             .unwrap_or_else(|_| {
                 panic!("the exact recovered callable retries on an actual new root")
             });
@@ -1240,7 +1204,7 @@ fn cancelled_borrowed_result_wait_preserves_same_receiver_and_completed_output()
     runtime.block_on(async {
         let (ready, ready_result) = oneshot::channel();
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
+            .execute_with(move |application| async move {
                 ready
                     .send(application.lifecycle())
                     .expect("the caller owns the live-root receiver");
@@ -1317,7 +1281,7 @@ fn ready_output_survives_work_destructor_panic_and_actual_root_join() {
     let original_payload = Arc::downgrade(&payload);
     runtime.block_on(async {
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |_| ReadyAccountWork {
+            .execute_with(move |_| ReadyAccountWork {
                 output: Some(output),
                 panic_payload: Some(payload),
             })
@@ -1380,10 +1344,10 @@ impl Drop for RetiringAccounts {
 impl EntityDefinition for RetiringAccounts {
     type Id = u64;
     type Behavior = StopOnShutdown<ReceivingAccount>;
-    type Hosts = AccountSpaces;
+    type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = ();
+    type ChildFailures = Vec<Never>;
 
     fn hydrate(
         &self,
@@ -1396,7 +1360,7 @@ impl EntityDefinition for RetiringAccounts {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, ()>,
+        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
     ) {
         Accounts.activation_failed(id, activation, failure);
     }
@@ -1418,7 +1382,7 @@ impl EntityDefinition for RetiringAccounts {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
     ) {
         Accounts.retired(id, activation, retirement);
     }
@@ -1457,9 +1421,7 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
             original: state,
         }
         .stop_on_shutdown(),
-        AccountSpaces {
-            accounts: ActorSpace::new(),
-        },
+        account_application::Topology::new(),
     )
     .entity_family(
         AccountsRole(tail),
@@ -1487,13 +1449,11 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
             .expect("the synchronous disposal controller owns one enabled application host");
         let products = application_host
             .block_on(
-                application.run_with_entities::<_, _, AccountConclusion, _, _, _>(
-                    move |application| async move {
-                        let requested = application.lifecycle().request_shutdown();
-                        requested.expect("the actual live root accepts shutdown");
-                        output
-                    },
-                ),
+                application.run_with_entities(move |application| async move {
+                    let requested = application.request_shutdown();
+                    requested.expect("the actual live root accepts shutdown");
+                    output
+                }),
             )
             .unwrap_or_else(|(application, work, error)| {
                 drop((application, work));
@@ -1526,7 +1486,7 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                             control,
                             user,
                             descendants,
-                            child_failures: (),
+                            child_failures,
                             capability_failures,
                             unread_owner_cancellation,
                             additional_failures,
@@ -1584,6 +1544,7 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                 ),
             ),
         )) => {
+            assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
                 (
                     interpretation,
@@ -1744,59 +1705,6 @@ impl Drop for DeclaredAccountRole {
 }
 
 #[expect(
-    clippy::type_complexity,
-    reason = "retain the genuine two-role declared actor and closed per-occurrence failure product"
-)]
-#[expect(
-    dead_code,
-    reason = "derive the exact declared-role projection contract; refused or cold-rejected roots never construct projected terminals"
-)]
-#[derive(TerminalProjection)]
-enum StagedAccountConclusion {
-    Root {
-        origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        terminal: ActorRetirement<
-            ApplicationBehavior<
-                StopOnShutdown<ReceivingAccount>,
-                ChildCons<
-                    MailAddr,
-                    StopOnShutdown<ReceivingAccount>,
-                    ChildCons<MailAddr, StopOnShutdown<ReceivingAccount>, NoChildren>,
-                >,
-            >,
-            Self,
-            (
-                Vec<
-                    ChildFailure<
-                        ChildOrigin<StopOnShutdown<ReceivingAccount>, DeclaredAccountRole>,
-                        StopOnShutdown<ReceivingAccount>,
-                    >,
-                >,
-                (
-                    Vec<
-                        ChildFailure<
-                            ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-                            StopOnShutdown<ReceivingAccount>,
-                        >,
-                    >,
-                    (),
-                ),
-            ),
-        >,
-    },
-    #[application_actor]
-    CurrentAccount {
-        origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, DeclaredAccountRole>,
-        terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Self, ()>,
-    },
-    #[application_actor]
-    EarlierAccount {
-        origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-        terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Self, ()>,
-    },
-}
-
-#[expect(
     clippy::too_many_lines,
     reason = "keep the two-role staging fault, actual whole refusal control and original allocation discharge in one independent trace"
 )]
@@ -1818,12 +1726,13 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
     let original_work = Arc::downgrade(&work);
     // Application::child prepends. The earlier declaration is staged first;
     // the current role is disposed while that complete child product is owned.
-    let application = Application::new(
+    let application = Application::with_topology(
         ReceivingAccount {
             admission: AccountAdmission::Reject,
             original: root,
         }
         .stop_on_shutdown(),
+        staged_application::Topology::new(),
     )
     .child(
         AccountsRole(Arc::new(vec![223, 227])),
@@ -1847,12 +1756,10 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
         .expect("the actual caller runtime builds");
     let mut returned = None;
     let caught = catch_unwind(AssertUnwindSafe(|| {
-        returned = Some(caller.block_on(
-            application.run_with::<StagedAccountConclusion, _, _, _, _, _>(move |_| async move {
-                drop(work);
-                panic!("the original refused root must leave work uninvoked");
-            }),
-        ));
+        returned = Some(caller.block_on(application.run_with(move |_| async move {
+            drop(work);
+            panic!("the original refused root must leave work uninvoked");
+        })));
     }));
     // A faulting role returns actual cold partial inputs before actor handoff.
     // The control joins the refused root before the public result is acquired.
@@ -1940,7 +1847,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
                         control,
                         user,
                         descendants,
-                        child_failures: (current_failures, (earlier_failures, ())),
+                        child_failures,
                         capability_failures,
                         unread_owner_cancellation,
                         additional_failures,
@@ -1983,8 +1890,24 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
                     control.len(),
                     user.len(),
                     descendants.len(),
-                    current_failures.len(),
-                    earlier_failures.len(),
+                    child_failures
+                        .iter()
+                        .filter(|failure| {
+                            matches!(
+                                failure,
+                                staged_application::RootChildFailure::CurrentAccount(_)
+                            )
+                        })
+                        .count(),
+                    child_failures
+                        .iter()
+                        .filter(|failure| {
+                            matches!(
+                                failure,
+                                staged_application::RootChildFailure::EarlierAccount(_)
+                            )
+                        })
+                        .count(),
                     capability_failures.len(),
                     unread_owner_cancellation.is_none(),
                 ),
@@ -2096,12 +2019,13 @@ fn unpolled_declared_execution_keeps_inputs_after_result_surrender() {
     let borrowed = vec![79, 83];
     runtime.block_on(async {
         let borrowed = &borrowed;
-        let application = Application::new(
+        let application = Application::with_topology(
             ReceivingAccount {
                 admission: AccountAdmission::Reject,
                 original: root,
             }
             .stop_on_shutdown(),
+            declared_application::Topology::new(),
         )
         .child(
             AccountsRole(role),
@@ -2112,9 +2036,7 @@ fn unpolled_declared_execution_keeps_inputs_after_result_surrender() {
             .stop_on_shutdown(),
         );
         let (execution, result) = application
-            .execute_with::<_, _, DeclaredAccountConclusion, _, _, _>(move |_| async move {
-                (work, borrowed)
-            })
+            .execute_with(move |_| async move { (work, borrowed) })
             .unwrap_or_else(|_| panic!("the original executor is entered"));
         let execution = Box::pin(execution);
         drop(result);
@@ -2158,12 +2080,13 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
     let borrowed = vec![79, 83];
     runtime.block_on(async {
         let borrowed = &borrowed;
-        let application = Application::new(
+        let application = Application::with_topology(
             ReceivingAccount {
                 admission: AccountAdmission::Reject,
                 original: root,
             }
             .stop_on_shutdown(),
+            declared_application::Topology::new(),
         )
         .child(
             AccountsRole(role),
@@ -2174,9 +2097,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
             .stop_on_shutdown(),
         );
         let (execution, result) = application
-            .execute_with::<_, _, DeclaredAccountConclusion, _, _, _>(move |_| async move {
-                (work, borrowed)
-            })
+            .execute_with(move |_| async move { (work, borrowed) })
             .unwrap_or_else(|_| panic!("the original executor is entered"));
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::NotInvoked {
@@ -2196,7 +2117,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
                         control,
                         user,
                         descendants,
-                        child_failures: (child_failures, ()),
+                        child_failures,
                         capability_failures,
                         unread_owner_cancellation,
                         additional_failures,
@@ -2306,12 +2227,13 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
     let borrowed = vec![239, 241];
     runtime.block_on(async {
         let borrowed = &borrowed;
-        let application = Application::new(
+        let application = Application::with_topology(
             ReceivingAccount {
                 admission: AccountAdmission::Reject,
                 original: root,
             }
             .stop_on_shutdown(),
+            staged_application::Topology::new(),
         )
         .child(
             AccountsRole(Arc::new(vec![223, 227])),
@@ -2332,9 +2254,7 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
             .stop_on_shutdown(),
         );
         let (execution, result) = application
-            .execute_with::<_, _, StagedAccountConclusion, _, _, _>(move |_| async move {
-                (work, borrowed)
-            })
+            .execute_with(move |_| async move { (work, borrowed) })
             .unwrap_or_else(|_| panic!("the original executor is entered"));
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::StagingRejected {
@@ -2448,12 +2368,13 @@ impl LiveAccount {
     }
 }
 
-#[derive(ActorSpaces)]
-struct LiveAccountSpaces {
-    #[actor_space(ReceivingAccount)]
-    roots: ActorSpace<ReceivingAccount>,
-    #[actor_space(LiveAccount)]
-    accounts: ActorSpace<LiveAccount>,
+bombay::topology! {
+    live_application {
+        root: StopOnShutdown<ReceivingAccount> {}
+        hosts { roots: ReceivingAccount; accounts: LiveAccount; }
+        families { account: LiveAccounts; }
+        account {}
+    }
 }
 
 struct LiveAccounts {
@@ -2468,7 +2389,7 @@ struct LiveAccounts {
             Vec<(
                 EntityId<u64>,
                 ActivationId,
-                EntityActivationError<Never, StopOnShutdown<LiveAccount>, Never, ()>,
+                EntityActivationError<Never, StopOnShutdown<LiveAccount>, Never, Vec<Never>>,
             )>,
         >,
     >,
@@ -2491,7 +2412,7 @@ struct LiveAccounts {
             Vec<(
                 EntityId<u64>,
                 ActivationId,
-                Result<ActorRetirement<StopOnShutdown<LiveAccount>, Never, ()>, JoinError>,
+                Result<ActorRetirement<StopOnShutdown<LiveAccount>, Never, Vec<Never>>, JoinError>,
             )>,
         >,
     >,
@@ -2509,10 +2430,10 @@ impl Drop for LiveAccounts {
 impl EntityDefinition for LiveAccounts {
     type Id = u64;
     type Behavior = StopOnShutdown<LiveAccount>;
-    type Hosts = LiveAccountSpaces;
+    type Hosts = live_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = ();
+    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -2534,7 +2455,7 @@ impl EntityDefinition for LiveAccounts {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, ()>,
+        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
     ) {
         self.activation_failures
             .lock()
@@ -2565,7 +2486,7 @@ impl EntityDefinition for LiveAccounts {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
     ) {
         self.retired
             .lock()
@@ -2611,10 +2532,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             original: root,
         }
         .stop_on_shutdown(),
-        LiveAccountSpaces {
-            roots: ActorSpace::new(),
-            accounts: ActorSpace::new(),
-        },
+        live_application::Topology::new(),
     )
     .entity_family(
         AccountsRole(role),
@@ -2641,43 +2559,41 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             .expect("the synchronous disposal controller owns one enabled application host");
         let products = application_host
             .block_on(
-                application.run_with_entities::<_, _, AccountConclusion, _, _, _>(
-                    move |application| async move {
-                        let accounts = application.entities(AccountsRole(selection));
-                        let account = accounts.entity(73);
-                        let interface = application.interface(account);
-                        let mut observer = interface
-                            .external::<LiveAccountNotice>()
-                            .expect("the actual external recipient is established");
-                        let admitted = observer
-                            .send(
-                                interface.api(),
-                                LiveAccountCommand {
-                                    observer: observer.recipient(),
-                                    value: 283,
-                                },
-                            )
-                            .await;
-                        let ready = match &admitted {
-                            Ok(()) => observer.receive().await,
-                            Err(_) => None,
-                        };
-                        let shutdown = application.lifecycle().request_shutdown();
-                        let termination = application.lifecycle().termination().await;
-                        let retirements_before_work_completion = work_retirements
-                            .lock()
-                            .unwrap_or_else(PoisonError::into_inner)
-                            .len();
-                        (
-                            output,
-                            admitted,
-                            ready,
-                            shutdown,
-                            termination,
-                            retirements_before_work_completion,
+                application.run_with_entities(move |application| async move {
+                    let accounts = application.entities(AccountsRole(selection));
+                    let account = accounts.entity(73);
+                    let interface = application.interface(account);
+                    let mut observer = interface
+                        .external::<LiveAccountNotice>()
+                        .expect("the actual external recipient is established");
+                    let admitted = observer
+                        .send(
+                            interface.api(),
+                            LiveAccountCommand {
+                                observer: observer.recipient(),
+                                value: 283,
+                            },
                         )
-                    },
-                ),
+                        .await;
+                    let ready = match &admitted {
+                        Ok(()) => observer.receive().await,
+                        Err(_) => None,
+                    };
+                    let shutdown = application.request_shutdown();
+                    let termination = application.lifecycle().termination().await;
+                    let retirements_before_work_completion = work_retirements
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .len();
+                    (
+                        output,
+                        admitted,
+                        ready,
+                        shutdown,
+                        termination,
+                        retirements_before_work_completion,
+                    )
+                }),
             )
             .unwrap_or_else(|(application, work, error)| {
                 drop((application, work));
@@ -2722,7 +2638,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                     control,
                     user,
                     descendants,
-                    child_failures: (),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation: None | Some(()),
                     additional_failures,
@@ -2738,6 +2654,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             interpretation,
             source,
         } => {
+            assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
                 (
                     interpretation,
@@ -2772,7 +2689,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                     control,
                     user,
                     descendants,
-                    child_failures: (),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation,
                     additional_failures,
@@ -2787,6 +2704,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             interpretation,
             source,
         } => {
+            assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
                 (
                     interpretation,
@@ -2844,7 +2762,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                             control,
                             user,
                             descendants,
-                            child_failures: (),
+                            child_failures,
                             capability_failures,
                             unread_owner_cancellation,
                             additional_failures,
@@ -2876,6 +2794,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                 (),
             ),
         )) => {
+            assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
                 (
                     interpretation,
@@ -2992,58 +2911,70 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     assert_eq!(cause_released, original_cause.as_ref().map(|_| 0));
 }
 
-// Host observations belong to terminal projection and caller work, never a Behavior fold.
+// Native child projection and caller work observe their real executor outside Behavior.
+struct HostAccountSpaces {
+    accounts: ActorSpace<ReceivingAccount>,
+}
+
+impl HostAccountSpaces {
+    fn new() -> Self {
+        Self {
+            accounts: ActorSpace::new(),
+        }
+    }
+}
+
+impl RootRegistration<ReceivingAccount> for HostAccountSpaces {
+    fn root_space(&self) -> &ActorSpace<ReceivingAccount> {
+        &self.accounts
+    }
+}
+
+impl ApplicationTopology<StopOnShutdown<ReceivingAccount>, (AccountsRole, ReceivingAccount, ())>
+    for HostAccountSpaces
+{
+    type Descendants = HostAccountConclusion;
+}
+
+#[expect(
+    clippy::type_complexity,
+    reason = "retain complete raw custody beside the actual native executor observation"
+)]
 enum HostAccountConclusion {
     Root {
         origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "retain the exact composed root, declared child origin and full typed child failure product without a forwarding alias"
-        )]
         terminal: ActorRetirement<
             ApplicationBehavior<
                 StopOnShutdown<ReceivingAccount>,
                 ChildCons<MailAddr, ReceivingAccount, NoChildren>,
             >,
             Self,
-            (
-                Vec<
-                    ChildFailure<
-                        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-                        ReceivingAccount,
-                    >,
-                >,
-                (),
-            ),
-        >,
-        executor: Id,
-    },
-    Account {
-        origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-        terminal: ActorRetirement<ReceivingAccount, Self, ()>,
-        executor: Id,
-    },
-}
-
-impl
-    ProjectTerminal<
-        RootOrigin<StopOnShutdown<ReceivingAccount>>,
-        ApplicationBehavior<
-            StopOnShutdown<ReceivingAccount>,
-            ChildCons<MailAddr, ReceivingAccount, NoChildren>,
-        >,
-        (
             Vec<
                 ChildFailure<
                     ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
                     ReceivingAccount,
                 >,
             >,
-            (),
-        ),
-    > for HostAccountConclusion
-{
-    type Descendants = Self;
+        >,
+        executor: Id,
+    },
+    Account {
+        origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
+        terminal: ActorRetirement<ReceivingAccount, Never, Vec<Never>>,
+        executor: Id,
+    },
+}
+
+impl RetirementSchema for HostAccountConclusion {
+    type Failure =
+        ChildFailure<ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>, ReceivingAccount>;
+}
+
+impl HostAccountConclusion {
+    #[expect(
+        clippy::type_complexity,
+        reason = "consume the complete original root custody in the explicit caller presentation"
+    )]
     fn project(
         origin: RootOrigin<StopOnShutdown<ReceivingAccount>>,
         terminal: ActorRetirement<
@@ -3052,15 +2983,7 @@ impl
                 ChildCons<MailAddr, ReceivingAccount, NoChildren>,
             >,
             Self,
-            (
-                Vec<
-                    ChildFailure<
-                        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-                        ReceivingAccount,
-                    >,
-                >,
-                (),
-            ),
+            Vec<<Self as RetirementSchema>::Failure>,
         >,
     ) -> Self {
         Self::Root {
@@ -3071,23 +2994,75 @@ impl
     }
 }
 
-impl
-    ProjectTerminal<
-        ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-        ReceivingAccount,
-        (),
-    > for HostAccountConclusion
+impl ProjectTerminal<ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>, ReceivingAccount>
+    for HostAccountConclusion
 {
-    type Descendants = Self;
+    type Descendants = Never;
     fn project(
         origin: ChildOrigin<StopOnShutdown<ReceivingAccount>, AccountsRole>,
-        terminal: ActorRetirement<ReceivingAccount, Self, ()>,
+        terminal: ActorRetirement<ReceivingAccount, Never, Vec<Never>>,
     ) -> Self {
         Self::Account {
             origin,
             terminal,
             executor: Handle::current().id(),
         }
+    }
+}
+
+impl
+    NativeChild<
+        ApplicationBehavior<
+            StopOnShutdown<ReceivingAccount>,
+            ChildCons<MailAddr, ReceivingAccount, NoChildren>,
+        >,
+        ChildHead,
+        ReceivingAccount,
+        HostAccountConclusion,
+        Never,
+    > for HostAccountSpaces
+{
+    fn registration(&self) -> ActorSpace<ReceivingAccount> {
+        self.accounts.clone()
+    }
+    fn establish<Origin, OriginFn>(
+        pending: PendingChild<
+            '_,
+            ApplicationBehavior<
+                StopOnShutdown<ReceivingAccount>,
+                ChildCons<MailAddr, ReceivingAccount, NoChildren>,
+            >,
+            Self,
+            ChildHead,
+            ReceivingAccount,
+            HostAccountConclusion,
+            Never,
+            OriginFn,
+        >,
+    ) -> impl Future<
+        Output = ItemSettlement<
+            RoutedCreation<MailAddr, ReceivingAccount>,
+            ChildCreationOutcome<ReceivingAccount, ChildHead>,
+            CreationRejection,
+            Never,
+        >,
+    > + Send
+    where
+        HostAccountConclusion:
+            ProjectTerminal<Origin, ReceivingAccount, Descendants = Never> + Send + 'static,
+        Origin: Send + 'static,
+        OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send,
+    {
+        <Self as EstablishNativeChild<
+            ApplicationBehavior<
+                StopOnShutdown<ReceivingAccount>,
+                ChildCons<MailAddr, ReceivingAccount, NoChildren>,
+            >,
+            ReceivingAccount,
+            Never,
+        >>::establish_native_child::<ChildHead, HostAccountConclusion, Origin, OriginFn>(
+            pending
+        )
     }
 }
 
@@ -3120,12 +3095,13 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
     let borrowed_input = &borrowed;
     let entered = actor_host.enter();
     let constructed_id = Handle::current().id();
-    let pair = Application::new(
+    let pair = Application::with_topology(
         ReceivingAccount {
             admission: AccountAdmission::Ready,
             original: root,
         }
         .stop_on_shutdown(),
+        HostAccountSpaces::new(),
     )
     .child(
         AccountsRole(role),
@@ -3134,10 +3110,10 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
             original: child,
         },
     )
-    .execute_with::<_, _, HostAccountConclusion, _, _, _>(move |application| {
+    .execute_with(move |application| {
         let work_id = Handle::current().id();
         async move {
-            let requested = application.lifecycle().request_shutdown();
+            let requested = application.request_shutdown();
             requested.expect("the genuine live root receives its explicit shutdown request");
             (output, borrowed_input, work_id)
         }
@@ -3174,7 +3150,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                         behavior,
                         control,
                         user,
-                        child_failures: (child_failures, ()),
+                        child_failures,
                         capability_failures,
                         additional_failures,
                         received_interpretation,
@@ -3278,7 +3254,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                         control,
                         user,
                         descendants,
-                        child_failures: (),
+                        child_failures,
                         capability_failures,
                         additional_failures,
                         received_interpretation,
@@ -3296,6 +3272,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
             else {
                 panic!("root retirement joins its actually cancelled declared child");
             };
+            assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert_eq!(
                 Arc::as_ptr(&child_behavior.base().original),
                 original_child.as_ptr()
@@ -3316,7 +3293,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
             assert_eq!(settlements, []);
             assert_eq!(control, []);
             assert_eq!(user, []);
-            assert!(descendants.is_empty());
+            assert_eq!(descendants, [] as [Never; 0]);
             assert!(capability_failures.is_empty());
             assert!(additional_failures.is_empty());
             assert!(retirement_failures.is_empty());
@@ -3392,11 +3369,11 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         }
         .stop_on_shutdown(),
     )
-    .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| {
+    .execute_with(move |application| {
         observed_invocations.set(observed_invocations.get() + 1);
         let work_id = Handle::current().id();
         async move {
-            let requested = application.lifecycle().request_shutdown();
+            let requested = application.request_shutdown();
             requested.expect("the retried original callable requests actual new-root shutdown");
             (work, borrowed_input, work_id)
         }
@@ -3414,11 +3391,11 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         }
         .stop_on_shutdown(),
     )
-    .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| {
+    .execute_with(move |application| {
         observed_control_invocations.set(observed_control_invocations.get() + 1);
         let work_id = Handle::current().id();
         async move {
-            let requested = application.lifecycle().request_shutdown();
+            let requested = application.request_shutdown();
             requested.expect("the untouched original application receives its actual shutdown");
             (control_work, borrowed_input, work_id)
         }
@@ -3457,7 +3434,7 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         drop((cleanup_failure, startup_error));
         // Explicit caller retry uses a genuine new application; the destroyed actor has no fabricated residual.
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
-            .execute_with::<_, _, AccountConclusion, (), _, _>(work)
+            .execute_with(work)
             .unwrap_or_else(|_| panic!("the surviving caller host receives original work"));
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::Completed {
@@ -3486,11 +3463,9 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         assert_eq!(application.root().base().original.as_slice(), [31, 37]);
         assert_eq!(application.root().base().admission, AccountAdmission::Ready);
         assert_eq!(original_control_work.strong_count(), 1);
-        let (execution, result) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(work)
-            .unwrap_or_else(|_| {
-                panic!("the exact original application and work select the actual surviving host")
-            });
+        let (execution, result) = application.execute_with(work).unwrap_or_else(|_| {
+            panic!("the exact original application and work select the actual surviving host")
+        });
         let ((), outcome) = tokio::join!(execution, result);
         let ApplicationOutcome::Completed {
             output: (output, borrowed, control_work_id),
@@ -3535,7 +3510,7 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
     let (execution, result) = {
         let entered = runtime.enter();
         let pair = paired_account(root)
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |_| ReadyAccountWork {
+            .execute_with(move |_| ReadyAccountWork {
                 output: Some(output),
                 panic_payload: Some(payload),
             })
@@ -3612,7 +3587,7 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     let (execution, result) = {
         let entered = runtime.enter();
         let pair = paired_account(root)
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |_| {
+            .execute_with(move |_| {
                 let mut payload = Some(payload);
                 poll_fn(move |_| -> Poll<Rc<Vec<u8>>> {
                     assert_eq!(work_value.as_slice(), &[107, 109]);
@@ -3685,6 +3660,16 @@ impl Hosts<ReceivingAccount> for UnwindingAccountSpaces {
     }
 }
 
+impl RootRegistration<ReceivingAccount> for UnwindingAccountSpaces {
+    fn root_space(&self) -> &ActorSpace<ReceivingAccount> {
+        <Self as Hosts<ReceivingAccount>>::space(self)
+    }
+}
+
+impl ApplicationTopology<StopOnShutdown<ReceivingAccount>, ()> for UnwindingAccountSpaces {
+    type Descendants = Never;
+}
+
 #[test]
 fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
     let runtime = Builder::new_current_thread()
@@ -3714,10 +3699,10 @@ fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
             },
         );
         let (execution, receiver) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| {
+            .execute_with(move |application| {
                 work_invocations.set(work_invocations.get() + 1);
                 async move {
-                    let requested = application.lifecycle().request_shutdown();
+                    let requested = application.request_shutdown();
                     requested.expect("only an actually invoked Work requests shutdown");
                     work
                 }
@@ -3814,10 +3799,10 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
             },
         );
         let (execution, receiver) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| {
+            .execute_with(move |application| {
                 work_invocations.set(work_invocations.get() + 1);
                 async move {
-                    let requested = application.lifecycle().request_shutdown();
+                    let requested = application.request_shutdown();
                     requested.expect("the retried original Work requests actual shutdown");
                     (work, borrowed)
                 }
@@ -3857,7 +3842,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         let retry_root = Arc::new(vec![31, 37]);
         let original_retry_root = Arc::downgrade(&retry_root);
         let (execution, receiver) = paired_account(retry_root)
-            .execute_with::<_, _, AccountConclusion, (), _, _>(work)
+            .execute_with(work)
             .unwrap_or_else(|_| panic!("the same original host permits a genuine new Application"));
         let ((), outcome) = tokio::join!(execution, receiver);
         let ApplicationOutcome::Completed { output, cleanup } = outcome else {
@@ -3949,10 +3934,10 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
             },
         );
         let (execution, receiver) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| {
+            .execute_with(move |application| {
                 work_invocations.set(work_invocations.get() + 1);
                 async move {
-                    let requested = application.lifecycle().request_shutdown();
+                    let requested = application.request_shutdown();
                     requested.expect("the retried original Work requests actual shutdown");
                     (work, borrowed)
                 }
@@ -3998,7 +3983,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         // Materialize a new Application value from the same acquired actor and changed Spaces.
         // This does not reconstruct an untouched declaration or consumed role.
         let (execution, receiver) = Application::with_topology(prepared_root, prepared_spaces)
-            .execute_with::<_, _, AccountConclusion, (), _, _>(work)
+            .execute_with(work)
             .unwrap_or_else(|_| panic!("the same original host permits acquired-input retry"));
         let ((), outcome) = tokio::join!(execution, receiver);
         let ApplicationOutcome::Completed { output, cleanup } = outcome else {
@@ -4081,8 +4066,8 @@ mod family_cleanup {
         EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityShutdown,
     };
     use bombay::{
-        ActorRetirement, ActorSpace, ActorSpaces, Application, ApplicationCleanupError,
-        ApplicationOutcome, Completion, MailAddr,
+        ActorRetirement, Application, ApplicationCleanupError, ApplicationOutcome, Completion,
+        MailAddr,
     };
     use tokio::runtime::{Builder, Handle};
     use tokio::sync::{OwnedSemaphorePermit, Semaphore, oneshot};
@@ -4103,10 +4088,13 @@ mod family_cleanup {
         }
     }
 
-    #[derive(ActorSpaces)]
-    struct AccountSpaces {
-        #[actor_space(ReceivingAccount)]
-        accounts: ActorSpace<ReceivingAccount>,
+    bombay::topology! {
+        account_application {
+            root: StopOnShutdown<ReceivingAccount> {}
+            hosts { accounts: ReceivingAccount; }
+            families { account: PendingAccounts; }
+            account {}
+        }
     }
 
     struct AccountReplies;
@@ -4166,10 +4154,10 @@ mod family_cleanup {
     impl EntityDefinition for PendingAccounts {
         type Id = u64;
         type Behavior = StopOnShutdown<ReceivingAccount>;
-        type Hosts = AccountSpaces;
+        type Hosts = account_application::Topology;
         type HydrationError = ();
         type Terminal = Never;
-        type ChildFailures = ();
+        type ChildFailures = Vec<Never>;
 
         async fn hydrate(&self, _: EntityId<u64>) -> Result<Self::Behavior, ()> {
             self.hydration_started.add_permits(1);
@@ -4188,7 +4176,7 @@ mod family_cleanup {
             &self,
             _: EntityId<u64>,
             _: ActivationId,
-            failure: EntityActivationError<(), Self::Behavior, Never, ()>,
+            failure: EntityActivationError<(), Self::Behavior, Never, Vec<Never>>,
         ) {
             // This concrete definition explicitly consumes its callback result.
             // The witness claims no callback completeness or incarnation retirement.
@@ -4209,7 +4197,7 @@ mod family_cleanup {
             &self,
             _: &EntityId<u64>,
             _: ActivationId,
-            retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+            retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
         ) {
             drop(retirement);
         }
@@ -4221,7 +4209,7 @@ mod family_cleanup {
         reason = "qualify the original retirement variant first, then inspect every shared typed field without splitting or weakening the complete root oracle"
     )]
     fn observe_original_root_retirement(
-        retirement: &ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, ()>,
+        retirement: &ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, Vec<Never>>,
         original_root: &Weak<Vec<u8>>,
     ) {
         // These are the selected owner equations for the actual pure root. An
@@ -4363,7 +4351,7 @@ mod family_cleanup {
         assert!(source.is_none());
         assert_eq!(user.as_slice(), []);
         assert_eq!(descendants.as_slice(), []);
-        assert_eq!(*child_failures, ());
+        assert_eq!(*child_failures, [] as [Never; 0]);
         assert!(capability_failures.is_empty());
         assert!(additional_failures.is_empty());
         assert!(received_interpretation.is_none());
@@ -4405,9 +4393,7 @@ mod family_cleanup {
         let capacity = EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN);
         let application = Application::with_topology(
             ReceivingAccount { original: root }.stop_on_shutdown(),
-            AccountSpaces {
-                accounts: ActorSpace::new(),
-            },
+            account_application::Topology::new(),
         )
         .entity_family(
             TailAccounts {
@@ -4464,45 +4450,43 @@ mod family_cleanup {
             .expect("the actual family owns its original role");
         let paired = {
             let entered = selected_host.enter();
-            let paired = application.execute_with_entities::<_, _, Never, (), _, _>(
-                move |application| async move {
-                    let entities = application.entities(TailAccounts {
-                        original: selection_identity,
-                        disposal_cause: None,
-                    });
-                    let interface = application.interface(entities.entity(71));
-                    let caller = interface.external::<AccountReplies>();
-                    let admission = match caller {
-                        Ok(caller) => {
-                            // A Pending command is explicitly cancelled while the genuine
-                            // shared hydration stays directory-owned. No command was accepted.
-                            let admission = {
-                                let mut admission = pin!(caller.send(interface.api(), 73));
-                                poll_fn(|context| {
-                                    let entered = hydration_host.enter();
-                                    let progress = admission.as_mut().poll(context);
-                                    drop(entered);
-                                    Poll::Ready(progress)
-                                })
-                                .await
-                            };
-                            Ok(admission)
-                        }
-                        Err(failure) => Err(failure),
-                    };
-                    let hydrated = match &admission {
-                        Ok(Poll::Pending) => Some(
-                            Arc::clone(&hydration_started)
-                                .acquire_owned()
-                                .await
-                                .map(OwnedSemaphorePermit::forget),
-                        ),
-                        Ok(Poll::Ready(_)) | Err(_) => None,
-                    };
-                    let stopped = application.lifecycle().request_shutdown();
-                    (output, admission, hydrated, stopped)
-                },
-            );
+            let paired = application.execute_with_entities(move |application| async move {
+                let entities = application.entities(TailAccounts {
+                    original: selection_identity,
+                    disposal_cause: None,
+                });
+                let interface = application.interface(entities.entity(71));
+                let caller = interface.external::<AccountReplies>();
+                let admission = match caller {
+                    Ok(caller) => {
+                        // A Pending command is explicitly cancelled while the genuine
+                        // shared hydration stays directory-owned. No command was accepted.
+                        let admission = {
+                            let mut admission = pin!(caller.send(interface.api(), 73));
+                            poll_fn(|context| {
+                                let entered = hydration_host.enter();
+                                let progress = admission.as_mut().poll(context);
+                                drop(entered);
+                                Poll::Ready(progress)
+                            })
+                            .await
+                        };
+                        Ok(admission)
+                    }
+                    Err(failure) => Err(failure),
+                };
+                let hydrated = match &admission {
+                    Ok(Poll::Pending) => Some(
+                        Arc::clone(&hydration_started)
+                            .acquire_owned()
+                            .await
+                            .map(OwnedSemaphorePermit::forget),
+                    ),
+                    Ok(Poll::Ready(_)) | Err(_) => None,
+                };
+                let stopped = application.request_shutdown();
+                (output, admission, hydrated, stopped)
+            });
             drop(entered);
             paired
         };
@@ -4710,9 +4694,7 @@ mod family_cleanup {
         let capacity = EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN);
         let application = Application::with_topology(
             ReceivingAccount { original: root }.stop_on_shutdown(),
-            AccountSpaces {
-                accounts: ActorSpace::new(),
-            },
+            account_application::Topology::new(),
         )
         .entity_family(
             TailAccounts {
@@ -4769,49 +4751,47 @@ mod family_cleanup {
             .expect("the actual family owns its original role");
         let paired = {
             let entered = selected_host.enter();
-            let paired = application.execute_with_entities::<_, _, Never, (), _, _>(
-                move |application| async move {
-                    let entities = application.entities(TailAccounts {
-                        original: selection_identity,
-                        disposal_cause: None,
-                    });
-                    let interface = application.interface(entities.entity(71));
-                    let caller = interface.external::<AccountReplies>();
-                    let admission = match caller {
-                        Ok(caller) => {
-                            // A Pending command is explicitly cancelled while the genuine
-                            // shared hydration stays directory-owned. No command was accepted.
-                            let admission = {
-                                let mut admission = pin!(caller.send(interface.api(), 73));
-                                poll_fn(|context| {
-                                    let entered = hydration_host.enter();
-                                    let progress = admission.as_mut().poll(context);
-                                    drop(entered);
-                                    Poll::Ready(progress)
-                                })
-                                .await
-                            };
-                            Ok(admission)
-                        }
-                        Err(failure) => Err(failure),
-                    };
-                    let hydrated = match &admission {
-                        Ok(Poll::Pending) => Some(
-                            Arc::clone(&hydration_started)
-                                .acquire_owned()
-                                .await
-                                .map(OwnedSemaphorePermit::forget),
-                        ),
-                        Ok(Poll::Ready(_)) | Err(_) => None,
-                    };
-                    let lifecycle = application.lifecycle();
-                    let published = observation_publication
-                        .send((lifecycle.termination(), lifecycle.termination()));
-                    drop(published);
-                    let stopped = lifecycle.request_shutdown();
-                    (output, admission, hydrated, stopped)
-                },
-            );
+            let paired = application.execute_with_entities(move |application| async move {
+                let entities = application.entities(TailAccounts {
+                    original: selection_identity,
+                    disposal_cause: None,
+                });
+                let interface = application.interface(entities.entity(71));
+                let caller = interface.external::<AccountReplies>();
+                let admission = match caller {
+                    Ok(caller) => {
+                        // A Pending command is explicitly cancelled while the genuine
+                        // shared hydration stays directory-owned. No command was accepted.
+                        let admission = {
+                            let mut admission = pin!(caller.send(interface.api(), 73));
+                            poll_fn(|context| {
+                                let entered = hydration_host.enter();
+                                let progress = admission.as_mut().poll(context);
+                                drop(entered);
+                                Poll::Ready(progress)
+                            })
+                            .await
+                        };
+                        Ok(admission)
+                    }
+                    Err(failure) => Err(failure),
+                };
+                let hydrated = match &admission {
+                    Ok(Poll::Pending) => Some(
+                        Arc::clone(&hydration_started)
+                            .acquire_owned()
+                            .await
+                            .map(OwnedSemaphorePermit::forget),
+                    ),
+                    Ok(Poll::Ready(_)) | Err(_) => None,
+                };
+                let lifecycle = application.lifecycle();
+                let published = observation_publication
+                    .send((lifecycle.termination(), lifecycle.termination()));
+                drop(published);
+                let stopped = lifecycle.request_shutdown();
+                (output, admission, hydrated, stopped)
+            });
             drop(entered);
             paired
         };
@@ -4891,8 +4871,8 @@ fn supplied_ready_unit_has_its_bare_original_output() {
     runtime.block_on(async {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
+            .execute_with(move |application| async move {
+                let requested = application.request_shutdown();
                 requested.expect("the live root accepts shutdown");
             })
             .unwrap_or_else(|original| {
@@ -4919,8 +4899,8 @@ fn supplied_ready_work_error_has_its_bare_original_output() {
     runtime.block_on(async {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
+            .execute_with(move |application| async move {
+                let requested = application.request_shutdown();
                 requested.expect("the live root accepts shutdown");
                 Err("original work error")
             })
@@ -4950,8 +4930,8 @@ fn supplied_ready_local_rc_has_its_bare_original_output() {
     runtime.block_on(async {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
+            .execute_with(move |application| async move {
+                let requested = application.request_shutdown();
                 requested.expect("the live root accepts shutdown");
                 Rc::clone(output_owner)
             })
@@ -4983,8 +4963,8 @@ fn supplied_ready_borrowed_has_its_bare_original_output() {
     runtime.block_on(async {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
+            .execute_with(move |application| async move {
+                let requested = application.request_shutdown();
                 requested.expect("the live root accepts shutdown");
                 borrowed
             })
@@ -5012,8 +4992,8 @@ fn supplied_ready_user_none_has_its_bare_original_output() {
     runtime.block_on(async {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
-            .execute_with::<_, _, AccountConclusion, (), _, _>(move |application| async move {
-                let requested = application.lifecycle().request_shutdown();
+            .execute_with(move |application| async move {
+                let requested = application.request_shutdown();
                 requested.expect("the live root accepts shutdown");
                 None
             })

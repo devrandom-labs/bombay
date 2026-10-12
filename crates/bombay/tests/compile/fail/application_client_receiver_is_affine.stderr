@@ -1,0 +1,5 @@
+error[E0599]: no method named `clone` found for struct `ApplicationClient<Target, Replies>` in the current scope
+ --> tests/compile/fail/application_client_receiver_is_affine.rs:7:29
+  |
+7 |     let _duplicate = client.clone();
+  |                             ^^^^^ method not found in `ApplicationClient<EstablishedRecipient<MessageProtocol<bombay::MailAddr, u8>>, MessageProtocol<bombay::MailAddr, u64>>`

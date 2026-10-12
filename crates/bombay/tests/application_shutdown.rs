@@ -57,7 +57,7 @@ async fn increment_counter<Event>(
     lifecycle
 }
 
-fn assert_counter_retirement<Actor>(retirement: ActorRetirement<Actor, Never, ()>)
+fn assert_counter_retirement<Actor>(retirement: ActorRetirement<Actor, Never, Vec<Never>>)
 where
     Actor: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     Actor::Settlements: ClassifySettlement,
@@ -76,7 +76,7 @@ where
     };
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
-    assert_eq!(custody.child_failures, ());
+    assert_eq!(custody.child_failures, []);
     assert!(custody.control.is_empty());
     assert!(custody.user.is_empty());
     assert_eq!(custody.descendants, []);
@@ -100,7 +100,7 @@ async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
         .with_one_shot(TimerId(71), Duration::from_secs(60), |_| Actions::stop())
         .stop_on_shutdown();
     let outcome = Application::with_topology(root, ActorSpace::new())
-        .run_with::<Never, _, _, _, _, _>(|application| async move {
+        .run_with(|application| async move {
             let lifecycle = increment_counter(application).await;
             let shutdown = lifecycle.request_shutdown();
             assert_eq!(shutdown, Ok(()));
@@ -134,7 +134,7 @@ async fn timer_outside_shutdown_infers_the_actual_lifecycle_lane() {
         |_| Actions::stop(),
     );
     let outcome = Application::with_topology(root, ActorSpace::new())
-        .run_with::<Never, _, _, _, _, _>(|application| async move {
+        .run_with(|application| async move {
             let lifecycle = increment_counter(application).await;
             let shutdown = lifecycle.request_shutdown();
             assert_eq!(shutdown, Ok(()));
@@ -164,7 +164,7 @@ async fn timer_outside_shutdown_infers_the_actual_lifecycle_lane() {
 async fn natural_completion_needs_no_unused_shutdown_capability() {
     let root = CounterSession { value: 0 };
     let outcome = Application::with_topology(root, ActorSpace::new())
-        .run_with::<Never, _, _, _, _, _>(|application| async move {
+        .run_with(|application| async move {
             let lifecycle = application.lifecycle();
             let interface = application.interface(application.root().established_recipient());
             let mut customer = interface.external::<CounterValue>().expect("live customer");
@@ -211,7 +211,7 @@ fn shutdown_requires_a_present_unambiguous_lane() {
 async fn http_ends_with_the_domain_session_without_a_shutdown_lane() {
     let (customer_publication, customer_receiving) = tokio::sync::oneshot::channel();
     let outcome = Application::with_topology(CounterSession { value: 0 }, ActorSpace::new())
-        .run_axum::<Never, _, _, (), _>(
+        .run_axum(
             "127.0.0.1:0".parse().expect("local listener address"),
             move |application| {
                 let interface = application.interface(application.root().established_recipient());

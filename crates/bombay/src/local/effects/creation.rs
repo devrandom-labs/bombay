@@ -1,9 +1,11 @@
 use crate::ActorExecutionOutcome;
-use crate::address::MailAddr;
-use crate::launch::{OwnedActor, OwnedTask, ProjectedTask, SpawnError, spawn_owned_execution};
+use crate::address::{ApplicationAddresses, MailAddr};
+use crate::launch::{
+    ActorSpace, OwnedActor, OwnedTask, ProjectedTask, SpawnError, spawn_owned_execution,
+};
 use crate::local::children::{
-    ChildCreationAt, ChildOriginAt, ChildStartupFailures, CreationBinding, DirectChildFailures,
-    NestedBindings, RetireChildTasks, StartupRetirementCustody, StructuralOrigins,
+    ChildBindingsIn, ChildCreationAt, ChildOriginAt, CreationBinding, NestedBindings,
+    RetireChildTasks, StartupRetirementCustody, StructuralOrigins, record_child_creation,
 };
 use crate::local::effects::reports::LocalParentReports;
 use crate::local::effects::{
@@ -13,7 +15,7 @@ use crate::local::effects::{
 use crate::local::endpoint::InstalledActor;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
 use crate::local::ingress::DEFAULT_USER_CAPACITY;
-use crate::terminal::ProjectTerminal;
+use crate::terminal::{ProjectTerminal, RetirementSchema};
 use crate::worker_preparation::{WorkerPreparationSource, settle_worker_preparation};
 use behavior::{
     ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -28,8 +30,11 @@ use behavior_actors::atomic::{
 };
 use bombay_address::ClaimError;
 use bombay_engine::DriverError;
-use communication::ControlClosed;
+use communication::{ControlClosed, ControlSender};
 use core::future::Future;
+use core::marker::PhantomData;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 impl<C, N, P, Bindings, Origins, New, RootEvent, Path>
     InterpretItem<Creations<CreateChild<MailAddr, New>>, RootEvent, Path>
@@ -120,37 +125,218 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Position, Child, Descendants> EstablishChild<Position, Child>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+/// Scope-owned native realization of one declared child occurrence.
+///
+/// `Terminal` selects the parent's complete descendant report family; the
+/// namespace loan already owns that exact family. `Descendants` selects the
+/// child's own custody. Neither selection changes during establishment.
+/// Custom terminal presentations require their corresponding native operation.
+#[allow(private_bounds)]
+pub trait NativeChild<C, Position, Child, Terminal, Descendants>:
+    Sized + Send + Sync + 'static
 where
-    C: Behavior<Protocol: Protocol<Addr = MailAddr>> + BehaviorBase,
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Descendants: RetirementSchema,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+{
+    /// Select the physical registration family for this declared child class.
+    /// Hosted classes share their explicit logical family; exact-only classes
+    /// retain an independent occurrence family.
+    fn registration(&self) -> ActorSpace<Child::Protocol>;
+
+    fn establish<Origin, OriginFn>(
+        pending: PendingChild<'_, C, Self, Position, Child, Terminal, Descendants, OriginFn>,
+    ) -> impl Future<
+        Output = ItemSettlement<
+            RoutedCreation<MailAddr, Child>,
+            ChildCreationOutcome<Child, Position>,
+            CreationRejection,
+            Never,
+        >,
+    > + Send
+    where
+        Terminal: ProjectTerminal<Origin, Child, Descendants = Descendants> + Send + 'static,
+        Origin: Send + 'static,
+        OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send;
+}
+
+impl<C, N, Position, Child, Terminal, Descendants>
+    NativeChild<C, Position, Child, Terminal, Descendants> for Arc<N>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Descendants: RetirementSchema,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    N: NativeChild<C, Position, Child, Terminal, Descendants>,
+{
+    fn registration(&self) -> ActorSpace<Child::Protocol> {
+        <N as NativeChild<C, Position, Child, Terminal, Descendants>>::registration(self.as_ref())
+    }
+
+    fn establish<Origin, OriginFn>(
+        pending: PendingChild<'_, C, Self, Position, Child, Terminal, Descendants, OriginFn>,
+    ) -> impl Future<
+        Output = ItemSettlement<
+            RoutedCreation<MailAddr, Child>,
+            ChildCreationOutcome<Child, Position>,
+            CreationRejection,
+            Never,
+        >,
+    > + Send
+    where
+        Terminal: ProjectTerminal<Origin, Child, Descendants = Descendants> + Send + 'static,
+        Origin: Send + 'static,
+        OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send,
+    {
+        let PendingChild {
+            creations,
+            creation_order,
+            actors,
+            actor_spaces,
+            allocations,
+            control,
+            creation,
+            origin,
+            position,
+        } = pending;
+        N::establish::<Origin, OriginFn>(PendingChild {
+            creations,
+            creation_order,
+            actors,
+            actor_spaces: Arc::clone(actor_spaces.as_ref()),
+            allocations,
+            control,
+            creation,
+            origin,
+            position,
+        })
+    }
+}
+
+/// Affine loan of the selected creator-local namespace and original request.
+#[allow(private_bounds)]
+pub struct PendingChild<'a, C, N, Position, Child, Terminal, Descendants, OriginFn>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Descendants: RetirementSchema,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+{
+    #[expect(
+        clippy::type_complexity,
+        reason = "the consuming operation borrows the original typed registry without another storage owner"
+    )]
+    creations: &'a mut HashMap<
+        CreationId,
+        CreationBinding<
+            Child,
+            Terminal,
+            Descendants,
+            Vec<<Descendants as RetirementSchema>::Failure>,
+        >,
+    >,
+    creation_order: &'a mut Vec<CreationId>,
+    actors: ActorSpace<Child::Protocol>,
+    actor_spaces: Arc<N>,
+    allocations: ApplicationAddresses,
+    control: ControlSender<C::Event>,
+    creation: RoutedCreation<MailAddr, Child>,
+    origin: OriginFn,
+    position: PhantomData<fn() -> Position>,
+}
+
+trait NativeChildStartup<C, Child, Descendants>: Sized + Send + Sync + 'static
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Descendants: RetirementSchema,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+{
+    fn establish_native_child<Position, Terminal, Origin, OriginFn>(
+        pending: PendingChild<'_, C, Self, Position, Child, Terminal, Descendants, OriginFn>,
+    ) -> impl Future<
+        Output = ItemSettlement<
+            RoutedCreation<MailAddr, Child>,
+            ChildCreationOutcome<Child, Position>,
+            CreationRejection,
+            Never,
+        >,
+    > + Send
+    where
+        Position: 'static,
+        Terminal: ProjectTerminal<Origin, Child, Descendants = Descendants> + Send + 'static,
+        Origin: Send + 'static,
+        OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send;
+}
+
+/// Consuming native realization of a selected pending child request.
+///
+/// This interpreter port preserves the complete request on rejection and the
+/// exact child execution/source custody on acceptance. This port is sealed;
+/// only the runtime supplies standard-kernel execution authority.
+///
+/// # Panics
+/// Panics if the creator reuses an already recorded correlation ID or internal
+/// startup-row custody is inconsistent, matching the existing native kernel.
+#[allow(private_bounds)]
+pub trait EstablishNativeChild<C, Child, Descendants>:
+    NativeChildStartup<C, Child, Descendants>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Descendants: RetirementSchema,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+{
+    fn establish_native_child<Position, Terminal, Origin, OriginFn>(
+        pending: PendingChild<'_, C, Self, Position, Child, Terminal, Descendants, OriginFn>,
+    ) -> impl Future<
+        Output = ItemSettlement<
+            RoutedCreation<MailAddr, Child>,
+            ChildCreationOutcome<Child, Position>,
+            CreationRejection,
+            Never,
+        >,
+    > + Send
+    where
+        Position: 'static,
+        Terminal: ProjectTerminal<Origin, Child, Descendants = Descendants> + Send + 'static,
+        Origin: Send + 'static,
+        OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send,
+    {
+        <Self as NativeChildStartup<C, Child, Descendants>>::establish_native_child::<
+            Position,
+            Terminal,
+            Origin,
+            OriginFn,
+        >(pending)
+    }
+}
+
+#[allow(private_bounds)]
+impl<C, N, Child, Descendants> EstablishNativeChild<C, Child, Descendants> for N
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    Descendants: RetirementSchema,
+    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    N: NativeChildStartup<C, Child, Descendants>,
+{
+}
+
+#[allow(private_bounds)]
+impl<C, N, Child, Descendants> NativeChildStartup<C, Child, Descendants> for N
+where
+    C: BehaviorBase + Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: Send + 'static,
     BehaviorMessage<C>: Send,
     N: Send + Sync + 'static,
-    P: Send,
-    Position: 'static,
     <Child::Birth as BirthMode>::Child: behavior::ChildOccurrenceProduct<
             crate::local::children::RuntimeChildBindings<
                 Descendants,
                 StructuralOrigins<Child::Base>,
             >,
         >,
-    Bindings: ChildCreationAt<
-            Position,
-            Child = Child,
-            Root = BindingTerminal<Bindings>,
-            Origins = Origins,
-            Descendants = Descendants,
-        > + RetireChildTasks
-        + Send,
-    <Child::Birth as BirthMode>::Child:
-        behavior::ChildOccurrenceProduct<DirectChildFailures<Child::Base>>,
-    ChildStartupFailures<Child>: Send + 'static,
-    Child: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>
-        + BehaviorBase
+    Descendants::Failure: Send + 'static,
+    Child: BehaviorBase
+        + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>
         + Send
         + 'static,
-    <Child as BehaviorSettlements>::Settlements: ClassifySettlement + Send + 'static,
+    Child::Settlements: ClassifySettlement + Send + 'static,
     Child::Event: Send + 'static,
     BehaviorMessage<Child>: Send + 'static,
     Child::Sends: Send + 'static,
@@ -158,10 +344,11 @@ where
     Child::InterpretationCustody: Send + 'static,
     Child::SourceCustody: Send + 'static,
     <Child::Birth as BirthMode>::Child: Send + 'static,
-    BindingTerminal<Bindings>: Send + 'static,
-    NestedBindings<Child, Descendants>: Default
-        + RetireChildTasks<Root = Descendants, Failures = ChildStartupFailures<Child>>
-        + Send
+    NestedBindings<Child, Descendants>: ChildBindingsIn<Child, N>
+        + RetireChildTasks<
+            Root = Descendants,
+            Failures = Vec<<Descendants as RetirementSchema>::Failure>,
+        > + Send
         + 'static,
     ActionInterpreter<
         ApplicationCapabilities<
@@ -179,61 +366,56 @@ where
             ),
         > + Send
         + 'static,
-    Origins: ChildOriginAt<Position, Child>,
-    BindingTerminal<Bindings>: ProjectTerminal<
-            Origins::Origin,
-            Child,
-            ChildStartupFailures<Child>,
-            Descendants = Descendants,
-        >,
-    Descendants: Send + 'static,
+    Descendants: RetirementSchema + Send + 'static,
     <NestedBindings<Child, Descendants> as RetireChildTasks>::Failures: Send + 'static,
 {
-    #[allow(
-        clippy::too_many_lines,
-        reason = "one exhaustive child-establishment transition owns allocation, launch, binding, and every exact settlement"
-    )]
-    async fn establish_child(
-        &mut self,
-        creation: RoutedCreation<MailAddr, Child>,
+    #[allow(clippy::too_many_lines)]
+    async fn establish_native_child<Position, Terminal, Origin, OriginFn>(
+        pending: PendingChild<'_, C, Self, Position, Child, Terminal, Descendants, OriginFn>,
     ) -> ItemSettlement<
         RoutedCreation<MailAddr, Child>,
         ChildCreationOutcome<Child, Position>,
         CreationRejection,
         Never,
-    > {
+    >
+    where
+        Position: 'static,
+        Terminal: ProjectTerminal<Origin, Child, Descendants = Descendants> + Send + 'static,
+        Origin: Send + 'static,
+        OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send,
+    {
+        let creation = pending.creation;
         let id = creation.id();
         let kind = creation.kind();
         let route = creation.route();
         let (request, _) = creation.into_parts();
         let (_, child, _) = request.into_parts();
-        let address = match self.allocations.allocate() {
+        let address = match pending.allocations.allocate() {
             Ok(address) => address,
             Err(reason) => {
-                self.child_bindings
-                    .as_mut()
-                    .expect("live child bindings remain installed")
-                    .record_creation(id, CreationBinding::Rejected);
+                record_child_creation(
+                    pending.creations,
+                    pending.creation_order,
+                    id,
+                    CreationBinding::Rejected,
+                );
                 return ItemSettlement::Rejected {
                     item: routed_creation(id, kind, route, child),
                     reason: CreationRejection::Allocation(reason),
                 };
             }
         };
-        let actors = self
-            .child_bindings
-            .as_ref()
-            .expect("live child bindings remain installed")
-            .child_actors();
-        let actor_spaces = self.actor_spaces.clone();
-        let allocations = self.allocations.clone();
-        let parent = self.control.clone();
+        let actors = pending.actors;
+        let actor_spaces = pending.actor_spaces.clone();
+        let allocations = pending.allocations.clone();
+        let parent = pending.control.clone();
         let (startup, control, task) = spawn_owned_execution(
             actors,
             communication::Config::new(DEFAULT_USER_CAPACITY),
             address,
             child,
             move |control, terminal_reports, timers, observations| {
+                let bindings = NestedBindings::<Child, Descendants>::new_in(actor_spaces.as_ref());
                 ActionInterpreter::new(
                     ApplicationCapabilities::<
                         Child,
@@ -251,7 +433,7 @@ where
                             observations,
                             terminal_reports,
                         },
-                        NestedBindings::<Child, Descendants>::default(),
+                        bindings,
                     )
                     .with_parent(
                         LocalParentReports::<C::Event, Child, C::Birth>::new(id, parent),
@@ -259,26 +441,23 @@ where
                 )
             },
         );
-        self.child_bindings
-            .as_mut()
-            .expect("live child bindings remain installed")
-            .record_creation(
-                id,
-                CreationBinding::Starting {
-                    kind,
-                    address,
-                    route,
-                    startup,
-                    control,
-                    task: Some(task),
-                },
-            );
+        record_child_creation(
+            pending.creations,
+            pending.creation_order,
+            id,
+            CreationBinding::Starting {
+                kind,
+                address,
+                route,
+                startup,
+                control,
+                task: Some(task),
+            },
+        );
         let started = {
-            let binding = self
-                .child_bindings
-                .as_mut()
-                .expect("live child bindings remain installed")
-                .creation_mut(id)
+            let binding = pending
+                .creations
+                .get_mut(&id)
                 .expect("the creator owns the exact startup row");
             let CreationBinding::Starting { startup, .. } = binding else {
                 unreachable!("the original owned kernel selects its startup row once");
@@ -286,11 +465,10 @@ where
             startup.await
         };
         let installed = if let Ok((actor, binding)) = started {
-            let row = self
-                .child_bindings
-                .as_mut()
-                .expect("live child bindings remain installed")
-                .take_creation(id);
+            let row = pending
+                .creations
+                .remove(&id)
+                .expect("the creator owns this exact startup row");
             let CreationBinding::Starting {
                 control,
                 task: Some(task),
@@ -306,34 +484,30 @@ where
                 binding: Some(binding),
             })
         } else {
-            let row = self
-                .child_bindings
-                .as_mut()
-                .expect("live child bindings remain installed")
-                .take_creation(id);
+            let row = pending
+                .creations
+                .remove(&id)
+                .expect("the creator owns this exact startup row");
             let CreationBinding::Starting { task, .. } = row else {
                 unreachable!("failed startup retains original raw task custody");
             };
-            self.child_bindings
-                .as_mut()
-                .expect("live child bindings remain installed")
-                .record_creation(
-                    id,
-                    CreationBinding::RetiringStartup {
-                        kind,
-                        address,
-                        route,
-                        custody: StartupRetirementCustody::Raw {
-                            task,
-                            received: None,
-                        },
+            record_child_creation(
+                pending.creations,
+                pending.creation_order,
+                id,
+                CreationBinding::RetiringStartup {
+                    kind,
+                    address,
+                    route,
+                    custody: StartupRetirementCustody::Raw {
+                        task,
+                        received: None,
                     },
-                );
-            let row = self
-                .child_bindings
-                .as_mut()
-                .expect("live child bindings remain installed")
-                .creation_mut(id)
+                },
+            );
+            let row = pending
+                .creations
+                .get_mut(&id)
                 .expect("raw startup retirement remains outside its waiter");
             let CreationBinding::RetiringStartup {
                 custody: StartupRetirementCustody::Raw { task, received },
@@ -346,11 +520,10 @@ where
             if matches!(received, Some(Err(_))) {
                 return ItemSettlement::Accepted(ChildCreationOutcome::Unavailable { id, kind });
             }
-            let row = self
-                .child_bindings
-                .as_mut()
-                .expect("live child bindings remain installed")
-                .take_creation(id);
+            let row = pending
+                .creations
+                .remove(&id)
+                .expect("the creator owns this exact startup row");
             let CreationBinding::RetiringStartup {
                 custody:
                     StartupRetirementCustody::Raw {
@@ -374,22 +547,21 @@ where
                     .expect("fresh child installation awaits one binding acknowledgement");
                 let task = ProjectedTask::project(
                     installed.task,
-                    Origins::origin(address, route, id, kind),
+                    (pending.origin)(address, route, id, kind),
                 );
-                self.child_bindings
-                    .as_mut()
-                    .expect("live child bindings remain installed")
-                    .record_creation(
-                        id,
-                        CreationBinding::Established {
-                            kind,
-                            route,
-                            endpoint: endpoint.clone(),
-                            control: installed.control,
-                            task: Some(task),
-                            joined: None,
-                        },
-                    );
+                record_child_creation(
+                    pending.creations,
+                    pending.creation_order,
+                    id,
+                    CreationBinding::Established {
+                        kind,
+                        route,
+                        endpoint: endpoint.clone(),
+                        control: installed.control,
+                        task: Some(task),
+                        joined: None,
+                    },
+                );
                 let acknowledgement = binding.send(());
                 assert!(
                     acknowledgement.is_ok(),
@@ -402,10 +574,12 @@ where
                 )))
             }
             Err(SpawnError::AllocationRejected { behavior, reason }) => {
-                self.child_bindings
-                    .as_mut()
-                    .expect("live child bindings remain installed")
-                    .record_creation(id, CreationBinding::Rejected);
+                record_child_creation(
+                    pending.creations,
+                    pending.creation_order,
+                    id,
+                    CreationBinding::Rejected,
+                );
                 ItemSettlement::Rejected {
                     item: routed_creation(id, kind, route, behavior),
                     reason: CreationRejection::Allocation(reason),
@@ -435,21 +609,20 @@ where
                 // This standard child has not crossed its binding ACK, so its freshly
                 // constructed nested bindings have interpreted no initialization effects.
                 drop(child_failures);
-                self.child_bindings
-                    .as_mut()
-                    .expect("live child bindings remain installed")
-                    .record_creation(
-                        id,
-                        CreationBinding::StartupRejected {
-                            kind,
-                            address,
-                            route,
-                            primary_failure: None,
-                            additional_failures,
-                            terminal_report,
-                            retirement_failures,
-                        },
-                    );
+                record_child_creation(
+                    pending.creations,
+                    pending.creation_order,
+                    id,
+                    CreationBinding::StartupRejected {
+                        kind,
+                        address,
+                        route,
+                        primary_failure: None,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                    },
+                );
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationRejected {
                     creation: routed_creation(id, kind, route, behavior),
                     error,
@@ -479,21 +652,20 @@ where
                 // This standard child has not crossed its binding ACK, so its freshly
                 // constructed nested bindings have interpreted no initialization effects.
                 drop(child_failures);
-                self.child_bindings
-                    .as_mut()
-                    .expect("live child bindings remain installed")
-                    .record_creation(
-                        id,
-                        CreationBinding::StartupRejected {
-                            kind,
-                            address,
-                            route,
-                            primary_failure: Some(DriverError::InitializationPanicked(payload)),
-                            additional_failures,
-                            terminal_report,
-                            retirement_failures,
-                        },
-                    );
+                record_child_creation(
+                    pending.creations,
+                    pending.creation_order,
+                    id,
+                    CreationBinding::StartupRejected {
+                        kind,
+                        address,
+                        route,
+                        primary_failure: Some(DriverError::InitializationPanicked(payload)),
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                    },
+                );
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationPanicked {
                     creation: routed_creation(id, kind, route, behavior),
                 })
@@ -529,23 +701,22 @@ where
                     ),
                     ClaimError::RegistrationIdsExhausted(_) => CreationRejection::EnvironmentFailed,
                 };
-                self.child_bindings
-                    .as_mut()
-                    .expect("live child bindings remain installed")
-                    .record_creation(
-                        id,
-                        CreationBinding::StartupRejected {
-                            kind,
-                            address,
-                            route,
-                            primary_failure: Some(DriverError::Activation(
-                                LocalActivationRejection::Address(error),
-                            )),
-                            additional_failures,
-                            terminal_report,
-                            retirement_failures,
-                        },
-                    );
+                record_child_creation(
+                    pending.creations,
+                    pending.creation_order,
+                    id,
+                    CreationBinding::StartupRejected {
+                        kind,
+                        address,
+                        route,
+                        primary_failure: Some(DriverError::Activation(
+                            LocalActivationRejection::Address(error),
+                        )),
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                    },
+                );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
                     creation: routed_creation(id, kind, route, behavior),
                     initialization,
@@ -576,23 +747,22 @@ where
                 // This standard child has not crossed its binding ACK, so its freshly
                 // constructed nested bindings have interpreted no initialization effects.
                 drop(child_failures);
-                self.child_bindings
-                    .as_mut()
-                    .expect("live child bindings remain installed")
-                    .record_creation(
-                        id,
-                        CreationBinding::StartupRejected {
-                            kind,
-                            address,
-                            route,
-                            primary_failure: Some(DriverError::Activation(
-                                LocalActivationRejection::BindingAbandoned,
-                            )),
-                            additional_failures,
-                            terminal_report,
-                            retirement_failures,
-                        },
-                    );
+                record_child_creation(
+                    pending.creations,
+                    pending.creation_order,
+                    id,
+                    CreationBinding::StartupRejected {
+                        kind,
+                        address,
+                        route,
+                        primary_failure: Some(DriverError::Activation(
+                            LocalActivationRejection::BindingAbandoned,
+                        )),
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                    },
+                );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
                     creation: routed_creation(id, kind, route, behavior),
                     initialization,
@@ -631,21 +801,20 @@ where
                 // The exact freshly defaulted nested product has no creation
                 // occurrence; its failure lanes have no admitted child rows.
                 drop(child_failures);
-                self.child_bindings
-                    .as_mut()
-                    .expect("live child bindings remain installed")
-                    .record_creation(
-                        id,
-                        CreationBinding::StartupRejected {
-                            kind,
-                            address,
-                            route,
-                            primary_failure: Some(DriverError::ActivationPanicked(payload)),
-                            additional_failures,
-                            terminal_report,
-                            retirement_failures,
-                        },
-                    );
+                record_child_creation(
+                    pending.creations,
+                    pending.creation_order,
+                    id,
+                    CreationBinding::StartupRejected {
+                        kind,
+                        address,
+                        route,
+                        primary_failure: Some(DriverError::ActivationPanicked(payload)),
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                    },
+                );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
                     creation: routed_creation(id, kind, route, behavior),
                     initialization,
@@ -663,6 +832,56 @@ where
                 );
             }
         }
+    }
+}
+
+impl<C, N, P, Bindings, Origins, Position, Child, Descendants> EstablishChild<Position, Child>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>> + BehaviorBase,
+    Child:
+        BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase + Send,
+    Descendants: RetirementSchema,
+    Bindings: ChildCreationAt<
+            Position,
+            Child = Child,
+            Root = BindingTerminal<Bindings>,
+            Origins = Origins,
+            Descendants = Descendants,
+        > + RetireChildTasks
+        + Send,
+    Origins: ChildOriginAt<Position, Child>,
+    BindingTerminal<Bindings>:
+        ProjectTerminal<Origins::Origin, Child, Descendants = Descendants> + Send + 'static,
+    N: NativeChild<C, Position, Child, BindingTerminal<Bindings>, Descendants>,
+    Self: Send,
+{
+    async fn establish_child(
+        &mut self,
+        creation: RoutedCreation<MailAddr, Child>,
+    ) -> ItemSettlement<
+        RoutedCreation<MailAddr, Child>,
+        ChildCreationOutcome<Child, Position>,
+        CreationRejection,
+        Never,
+    > {
+        let (creations, creation_order, actors) = self
+            .child_bindings
+            .as_mut()
+            .expect("live child bindings remain installed")
+            .creation_namespace();
+        N::establish(PendingChild {
+            creations,
+            creation_order,
+            actors,
+            actor_spaces: self.actor_spaces.clone(),
+            allocations: self.allocations.clone(),
+            control: self.control.clone(),
+            creation,
+            origin: Origins::origin,
+            position: PhantomData,
+        })
+        .await
     }
 }
 
@@ -810,7 +1029,7 @@ mod child_projection_panic {
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::launch::{OwnedTask, spawn_root_with};
     use crate::local::children::StructuralOrigins;
-    use crate::local::children::{ChildBinding, ChildBindings};
+    use crate::local::children::{ChildBinding, ChildBindings, ChildBindingsIn};
     use crate::local::effects::ActionInterpreter;
     use crate::local::effects::observation::TerminationObservations;
     use crate::local::effects::reports::LocalTerminalReports;
@@ -819,7 +1038,9 @@ mod child_projection_panic {
         ApplicationCapabilities, ApplicationCapabilityInputs, NoParent, RetireCapabilities,
     };
     use crate::local::endpoint::ExtractLocalEndpoint;
-    use crate::terminal::{ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal};
+    use crate::terminal::{
+        ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RetirementSchema,
+    };
     use crate::{ActorSpace, ActorSpaces, LedgerProtocol, ShutdownLedger};
 
     type ProjectionCustody = (oneshot::Sender<(Id, ChildTerminal)>, Box<dyn Any + Send>);
@@ -895,22 +1116,72 @@ mod child_projection_panic {
         parents: ActorSpace<ProjectionParent>,
     }
 
-    struct ChildTerminal {
-        origin: ChildOrigin<ProjectionParent, ChildHead>,
-        retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+    impl RetirementSchema for ChildTerminal {
+        type Failure =
+            ChildFailure<ChildOrigin<ProjectionParent, ChildHead>, StopOnShutdown<ProjectionChild>>;
+    }
+    impl
+        super::NativeChild<
+            StopOnShutdown<ProjectionParent>,
+            ChildHead,
+            StopOnShutdown<ProjectionChild>,
+            ChildTerminal,
+            Never,
+        > for ProjectionSpaces
+    {
+        fn registration(
+            &self,
+        ) -> ActorSpace<<StopOnShutdown<ProjectionChild> as behavior::Behavior>::Protocol> {
+            ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: super::PendingChild<
+                '_,
+                StopOnShutdown<ProjectionParent>,
+                Self,
+                ChildHead,
+                StopOnShutdown<ProjectionChild>,
+                ChildTerminal,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl Future<
+            Output = ItemSettlement<
+                RoutedCreation<MailAddr, StopOnShutdown<ProjectionChild>>,
+                ChildCreationOutcome<StopOnShutdown<ProjectionChild>, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            ChildTerminal: ProjectTerminal<Origin, StopOnShutdown<ProjectionChild>, Descendants = Never>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send,
+        {
+            <Self as super::EstablishNativeChild<
+                StopOnShutdown<ProjectionParent>,
+                StopOnShutdown<ProjectionChild>,
+                Never,
+            >>::establish_native_child::<ChildHead, ChildTerminal, Origin, OriginFn>(
+                pending
+            )
+        }
     }
 
-    impl
-        ProjectTerminal<
-            ChildOrigin<ProjectionParent, ChildHead>,
-            StopOnShutdown<ProjectionChild>,
-            (),
-        > for ChildTerminal
+    struct ChildTerminal {
+        origin: ChildOrigin<ProjectionParent, ChildHead>,
+        retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>,
+    }
+
+    impl ProjectTerminal<ChildOrigin<ProjectionParent, ChildHead>, StopOnShutdown<ProjectionChild>>
+        for ChildTerminal
     {
-        type Descendants = Self;
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<ProjectionParent, ChildHead>,
-            retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+            retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>,
         ) -> Self {
             match retirement {
                 retirement @ ActorRetirement::Completed { .. } => {
@@ -936,22 +1207,72 @@ mod child_projection_panic {
         }
     }
 
-    struct StartupChildRetirement {
-        origin: ChildOrigin<ProjectionParent, ChildHead>,
-        retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+    impl RetirementSchema for StartupChildRetirement {
+        type Failure =
+            ChildFailure<ChildOrigin<ProjectionParent, ChildHead>, StopOnShutdown<ProjectionChild>>;
+    }
+    impl
+        super::NativeChild<
+            StopOnShutdown<ProjectionParent>,
+            ChildHead,
+            StopOnShutdown<ProjectionChild>,
+            StartupChildRetirement,
+            Never,
+        > for ProjectionSpaces
+    {
+        fn registration(
+            &self,
+        ) -> ActorSpace<<StopOnShutdown<ProjectionChild> as behavior::Behavior>::Protocol> {
+            ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: super::PendingChild<
+                '_,
+                StopOnShutdown<ProjectionParent>,
+                Self,
+                ChildHead,
+                StopOnShutdown<ProjectionChild>,
+                StartupChildRetirement,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl Future<
+            Output = ItemSettlement<
+                RoutedCreation<MailAddr, StopOnShutdown<ProjectionChild>>,
+                ChildCreationOutcome<StopOnShutdown<ProjectionChild>, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            StartupChildRetirement: ProjectTerminal<Origin, StopOnShutdown<ProjectionChild>, Descendants = Never>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send,
+        {
+            <Self as super::EstablishNativeChild<
+                StopOnShutdown<ProjectionParent>,
+                StopOnShutdown<ProjectionChild>,
+                Never,
+            >>::establish_native_child::<ChildHead, StartupChildRetirement, Origin, OriginFn>(
+                pending,
+            )
+        }
     }
 
-    impl
-        ProjectTerminal<
-            ChildOrigin<ProjectionParent, ChildHead>,
-            StopOnShutdown<ProjectionChild>,
-            (),
-        > for StartupChildRetirement
+    struct StartupChildRetirement {
+        origin: ChildOrigin<ProjectionParent, ChildHead>,
+        retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>,
+    }
+
+    impl ProjectTerminal<ChildOrigin<ProjectionParent, ChildHead>, StopOnShutdown<ProjectionChild>>
+        for StartupChildRetirement
     {
-        type Descendants = Self;
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<ProjectionParent, ChildHead>,
-            retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+            retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>,
         ) -> Self {
             Self { origin, retirement }
         }
@@ -995,24 +1316,82 @@ mod child_projection_panic {
         creators: ActorSpace<LedgerCreator>,
     }
 
-    struct LedgerChildRetirement {
-        origin: ChildOrigin<LedgerCreator, ChildHead>,
-        retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,
+    impl RetirementSchema for LedgerChildRetirement {
+        type Failure =
+            ChildFailure<ChildOrigin<LedgerCreator, ChildHead>, StopOnShutdown<ShutdownLedger>>;
+    }
+    impl
+        super::NativeChild<
+            LedgerCreator,
+            ChildHead,
+            StopOnShutdown<ShutdownLedger>,
+            LedgerChildRetirement,
+            Never,
+        > for LedgerSpaces
+    {
+        fn registration(
+            &self,
+        ) -> ActorSpace<<StopOnShutdown<ShutdownLedger> as behavior::Behavior>::Protocol> {
+            ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: super::PendingChild<
+                '_,
+                LedgerCreator,
+                Self,
+                ChildHead,
+                StopOnShutdown<ShutdownLedger>,
+                LedgerChildRetirement,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl Future<
+            Output = ItemSettlement<
+                RoutedCreation<MailAddr, StopOnShutdown<ShutdownLedger>>,
+                ChildCreationOutcome<StopOnShutdown<ShutdownLedger>, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            LedgerChildRetirement: ProjectTerminal<Origin, StopOnShutdown<ShutdownLedger>, Descendants = Never>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send,
+        {
+            <Self as super::EstablishNativeChild<
+                LedgerCreator,
+                StopOnShutdown<ShutdownLedger>,
+                Never,
+            >>::establish_native_child::<ChildHead, LedgerChildRetirement, Origin, OriginFn>(
+                pending,
+            )
+        }
     }
 
-    impl ProjectTerminal<ChildOrigin<LedgerCreator, ChildHead>, StopOnShutdown<ShutdownLedger>, ()>
+    struct LedgerChildRetirement {
+        origin: ChildOrigin<LedgerCreator, ChildHead>,
+        retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>,
+    }
+
+    impl ProjectTerminal<ChildOrigin<LedgerCreator, ChildHead>, StopOnShutdown<ShutdownLedger>>
         for LedgerChildRetirement
     {
-        type Descendants = Self;
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<LedgerCreator, ChildHead>,
-            retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,
+            retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>,
         ) -> Self {
             Self { origin, retirement }
         }
     }
 
     #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "keep creation authority and every original accepted/rejected message in one end-to-end trace"
+    )]
     fn dependent_ledger_delivery_preserves_original_messages_across_creation_authority() {
         let runtime = Builder::new_current_thread()
             .enable_all()
@@ -1032,12 +1411,13 @@ mod child_projection_panic {
             let mut batch = Some(actions.creates);
             let (control, source_owner, source_mailbox, source_receiver) = mailbox_channel::<<LedgerCreator as behavior::Behavior>::Event, User<MailAddr, Never>>(Config::new(1));
             let (terminal_sender, terminal_receiver) = oneshot::channel();
+            let spaces = Arc::new(LedgerSpaces { creators: ActorSpace::new() });
             let mut capabilities = ApplicationCapabilities::<LedgerCreator, LedgerSpaces, NoParent, ChildBindings<LedgerCreator, LedgerChildRetirement, StructuralOrigins<LedgerCreator>>, StructuralOrigins<LedgerCreator>>::new_with_bindings(ApplicationCapabilityInputs {
                 address: MailAddr::APPLICATION_ROOT,
-                actor_spaces: Arc::new(LedgerSpaces { creators: ActorSpace::new() }),
+                actor_spaces: spaces.clone(),
                 allocations: ApplicationAddresses::new(), control,
                 timers: LocalTimers::new(), observations: TerminationObservations::new(), terminal_reports: LocalTerminalReports::new(terminal_sender),
-            }, ChildBinding::default());
+            }, ChildBinding::new_in(spaces.as_ref()));
             let mut routed = None;
             <_ as InterpretItem<Creations<CreateChild<MailAddr, StopOnShutdown<ShutdownLedger>>>, (), Here>>::interpret_item(&mut capabilities, &mut batch, &mut routed).await;
             let Some(ItemSettlement::Accepted(routed)) = routed else { panic!("exact ledger requests were routed"); };
@@ -1087,7 +1467,8 @@ mod child_projection_panic {
             let authority = <_ as crate::local::children::ChildBindingAt<ChildHead>>::creation(capabilities.child_bindings.as_ref().expect("same creator row"), committed);
             let Some(crate::local::children::ChildAuthority::Established { control, .. }) = authority else { panic!("only genuine commit grants shutdown capability"); };
             control.send(EventLayer::Owned(ShutdownRequested)).unwrap_or_else(|_| panic!("live ledger admits its explicit shutdown"));
-            assert!(endpoint.termination().await.is_ok());
+            let termination = endpoint.termination().await;
+            assert!(termination.is_ok());
             let closed_message = vec![43, 47, 53];
             let closed_allocation = closed_message.as_ptr();
             let mut closed = Some(ChildDelivery::<LedgerProtocol, ChildHead>::after(committed, closed_message));
@@ -1098,7 +1479,7 @@ mod child_projection_panic {
             assert_eq!(item.message.as_ptr(), closed_allocation);
             assert_eq!(item.message, [43, 47, 53]);
             let retirement = capabilities.retire().await;
-            let (children, (failures, ())) = retirement.descendants;
+            let (children, failures) = retirement.descendants;
             assert!(failures.is_empty());
             let [pending_child, committed_child] = children.as_slice() else { panic!("both original child definitions remain owned"); };
             assert_eq!(pending_child.origin.nonce(), pending_route);
@@ -1119,10 +1500,6 @@ mod child_projection_panic {
     #[expect(
         clippy::too_many_lines,
         reason = "keep the actual pending startup, parent retirement and complete original custody oracle together"
-    )]
-    #[expect(
-        clippy::default_trait_access,
-        reason = "the concrete constructor infers the binding type; the non-injective ChildBindings alias cannot name its Default implementation"
     )]
     fn pending_creation_cancellation_retains_child_custody() {
         let runtime = Builder::new_current_thread()
@@ -1171,14 +1548,14 @@ mod child_projection_panic {
             >::new_with_bindings(
                 ApplicationCapabilityInputs {
                     address: MailAddr::APPLICATION_ROOT,
-                    actor_spaces: spaces,
+                    actor_spaces: spaces.clone(),
                     allocations: ApplicationAddresses::new(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
                     terminal_reports: LocalTerminalReports::new(terminal_sender),
                 },
-                Default::default(),
+                ChildBinding::new_in(spaces.as_ref()),
             );
             let mut routed = None;
             <_ as InterpretItem<
@@ -1213,8 +1590,7 @@ mod child_projection_panic {
             let authority = <_ as crate::local::children::ChildBindingAt<ChildHead>>::creation(
                 capabilities.child_bindings.as_ref().expect("original binding owner remains installed"), creation_id);
             assert!(matches!(authority, Some(crate::local::children::ChildAuthority::Unavailable(id)) if id == creation_id));
-            let binding = <_ as crate::local::children::ChildCreationAt<ChildHead>>::creation_mut(
-                capabilities.child_bindings.as_mut().expect("actual pending binding owner remains"), creation_id)
+            let binding = <_ as crate::local::children::ChildCreationAt<ChildHead>>::creation_namespace(capabilities.child_bindings.as_mut().expect("actual pending binding owner remains")).0.get_mut(&creation_id)
                 .expect("the actual pending child has its reserved row");
             let crate::local::children::CreationBinding::Starting { address, .. } = binding else {
                 panic!("the pending child retains its actual raw startup allocation");
@@ -1249,7 +1625,7 @@ mod child_projection_panic {
             request.is_some(),
             received.is_some(),
             retirement.descendants.0.len(),
-            retirement.descendants.1.0.len(),
+            retirement.descendants.1.len(),
             original_owner.strong_count()
         );
         let returned = match (request, received) {
@@ -1330,10 +1706,6 @@ mod child_projection_panic {
         clippy::too_many_lines,
         reason = "one finite native projector controller joins owners before complete custody oracles"
     )]
-    #[expect(
-        clippy::default_trait_access,
-        reason = "the concrete constructor infers the binding type; the non-injective ChildBindings alias cannot name its Default implementation"
-    )]
     fn actual_projection_panic_keeps_origin_native_cause_and_later_sibling() {
         let runtime = Builder::new_current_thread()
             .enable_all()
@@ -1395,14 +1767,14 @@ mod child_projection_panic {
                         >::new_with_bindings(
                             ApplicationCapabilityInputs {
                                 address: MailAddr::APPLICATION_ROOT,
-                                actor_spaces,
+                                actor_spaces: actor_spaces.clone(),
                                 allocations: ApplicationAddresses::new(),
                                 control,
                                 timers,
                                 observations,
                                 terminal_reports,
                             },
-                            Default::default(),
+                            ChildBinding::new_in(actor_spaces.as_ref()),
                         ))
                     },
                 )
@@ -1450,7 +1822,7 @@ mod child_projection_panic {
                     control,
                     user,
                     descendants,
-                    child_failures: (mut failures, ()),
+                    child_failures: mut failures,
                     capability_failures,
                     additional_failures,
                     received_interpretation,
@@ -1595,7 +1967,7 @@ mod child_projection_panic {
                             control,
                             user,
                             descendants,
-                            child_failures: (),
+                            child_failures,
                             capability_failures,
                             additional_failures,
                             received_interpretation,
@@ -1611,6 +1983,7 @@ mod child_projection_panic {
                     settlements,
                     completion,
                 } => {
+                    assert_eq!(child_failures.as_slice(), []);
                     assert_eq!(*completion, Completion::Stopped);
                     assert_eq!(settlements, &stopped_child_settlements);
                     assert_eq!(terminal.origin, origin);
@@ -1639,7 +2012,7 @@ mod child_projection_panic {
                             control,
                             user,
                             descendants,
-                            child_failures: (),
+                            child_failures,
                             capability_failures,
                             additional_failures,
                             received_interpretation,
@@ -1654,6 +2027,7 @@ mod child_projection_panic {
                     source,
                     settlements,
                 } => {
+                    assert_eq!(child_failures.as_slice(), []);
                     assert_eq!(settlements.len(), 0);
                     assert_ne!(terminal.origin, origin);
                     (
@@ -1686,7 +2060,7 @@ mod child_projection_panic {
             assert!(source.is_none());
             assert_eq!(control.len(), 0);
             assert_eq!(user.len(), 0);
-            assert!(descendants.is_empty());
+            assert_eq!(descendants.as_slice(), []);
             assert!(capability_failures.is_empty());
             assert!(additional_failures.is_empty());
             assert!(received_interpretation.is_none());
@@ -1711,21 +2085,71 @@ mod child_projection_panic {
     );
     static STARTUP_PROJECTION_CUSTODY: Mutex<Option<StartupProjectionCustody>> = Mutex::new(None);
 
-    struct StartupProjectionRetirement {
-        origin: ChildOrigin<ProjectionParent, ChildHead>,
-        retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+    impl RetirementSchema for StartupProjectionRetirement {
+        type Failure =
+            ChildFailure<ChildOrigin<ProjectionParent, ChildHead>, StopOnShutdown<ProjectionChild>>;
     }
     impl
-        ProjectTerminal<
-            ChildOrigin<ProjectionParent, ChildHead>,
+        super::NativeChild<
+            StopOnShutdown<ProjectionParent>,
+            ChildHead,
             StopOnShutdown<ProjectionChild>,
-            (),
-        > for StartupProjectionRetirement
+            StartupProjectionRetirement,
+            Never,
+        > for ProjectionSpaces
     {
-        type Descendants = Self;
+        fn registration(
+            &self,
+        ) -> ActorSpace<<StopOnShutdown<ProjectionChild> as behavior::Behavior>::Protocol> {
+            ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: super::PendingChild<
+                '_,
+                StopOnShutdown<ProjectionParent>,
+                Self,
+                ChildHead,
+                StopOnShutdown<ProjectionChild>,
+                StartupProjectionRetirement,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl Future<
+            Output = ItemSettlement<
+                RoutedCreation<MailAddr, StopOnShutdown<ProjectionChild>>,
+                ChildCreationOutcome<StopOnShutdown<ProjectionChild>, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            StartupProjectionRetirement: ProjectTerminal<Origin, StopOnShutdown<ProjectionChild>, Descendants = Never>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(MailAddr, u64, CreationId, CreationKind) -> Origin + Send,
+        {
+            <Self as super::EstablishNativeChild<
+                StopOnShutdown<ProjectionParent>,
+                StopOnShutdown<ProjectionChild>,
+                Never,
+            >>::establish_native_child::<ChildHead, StartupProjectionRetirement, Origin, OriginFn>(
+                pending,
+            )
+        }
+    }
+
+    struct StartupProjectionRetirement {
+        origin: ChildOrigin<ProjectionParent, ChildHead>,
+        retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>,
+    }
+    impl ProjectTerminal<ChildOrigin<ProjectionParent, ChildHead>, StopOnShutdown<ProjectionChild>>
+        for StartupProjectionRetirement
+    {
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<ProjectionParent, ChildHead>,
-            retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Self, ()>,
+            retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>,
         ) -> Self {
             match retirement.behavior().map(|child| &child.base().disposition) {
                 Some(ChildDisposition::Continue) => {
@@ -1791,14 +2215,14 @@ mod child_projection_panic {
             >::new_with_bindings(
                 ApplicationCapabilityInputs {
                     address: MailAddr::APPLICATION_ROOT,
-                    actor_spaces: spaces,
+                    actor_spaces: spaces.clone(),
                     allocations: ApplicationAddresses::new(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
                     terminal_reports: LocalTerminalReports::new(terminal_sender),
                 },
-                ChildBinding::default(),
+                ChildBinding::new_in(spaces.as_ref()),
             );
             let mut batch = Some(Creations::from_iter([
                 CreateChild::replacement(
@@ -1911,14 +2335,16 @@ mod child_projection_panic {
                 let owner = capabilities
                     .as_mut()
                     .expect("the original parent survives receiving disposal");
-                let row = <_ as crate::local::children::ChildCreationAt<ChildHead>>::creation_mut(
-                    owner
-                        .child_bindings
-                        .as_mut()
-                        .expect("exact bindings remain outside receiving"),
-                    first,
-                )
-                .expect("original pending row remains owned");
+                let row =
+                    <_ as crate::local::children::ChildCreationAt<ChildHead>>::creation_namespace(
+                        owner
+                            .child_bindings
+                            .as_mut()
+                            .expect("exact bindings remain outside receiving"),
+                    )
+                    .0
+                    .get_mut(&first)
+                    .expect("original pending row remains owned");
                 match row {
                     crate::local::children::CreationBinding::RetiringStartup {
                         custody:
@@ -1993,7 +2419,7 @@ mod child_projection_panic {
                 .as_ptr(),
             later_allocation
         );
-        let (mut failures, ()) = retirement.descendants.1;
+        let mut failures = retirement.descendants.1;
         let failure = failures
             .pop()
             .expect("exact startup projector cause survives");
@@ -2047,14 +2473,14 @@ mod child_projection_panic {
         >::new_with_bindings(
             ApplicationCapabilityInputs {
                 address: MailAddr::APPLICATION_ROOT,
-                actor_spaces: spaces,
+                actor_spaces: spaces.clone(),
                 allocations: ApplicationAddresses::new(),
                 control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
                 terminal_reports: LocalTerminalReports::new(terminal_sender),
             },
-            ChildBinding::default(),
+            ChildBinding::new_in(spaces.as_ref()),
         );
         let request = RoutedCreation::new(
             CreateChild::birth(
@@ -2091,13 +2517,14 @@ mod child_projection_panic {
             }))
         };
         assert_eq!(original_owner.strong_count(), 0);
-        let row = <_ as crate::local::children::ChildCreationAt<ChildHead>>::creation_mut(
+        let row = <_ as crate::local::children::ChildCreationAt<ChildHead>>::creation_namespace(
             capabilities
                 .child_bindings
                 .as_mut()
                 .expect("original parent binding scope remains owned"),
-            id,
-        );
+        )
+        .0
+        .get_mut(&id);
         let Some(crate::local::children::CreationBinding::RetiringStartup {
             address,
             custody:
@@ -2142,7 +2569,7 @@ mod child_projection_panic {
         assert!(capabilities.is_none());
         let retirement = retirement.expect("parent acquires complete native startup failure");
         assert!(retirement.descendants.0.is_empty());
-        let (mut failures, ()) = retirement.descendants.1;
+        let mut failures = retirement.descendants.1;
         let ChildFailure::StartupActorTaskFailed { origin, error } =
             failures.pop().expect("exact native child task error")
         else {
@@ -2189,21 +2616,22 @@ mod child_projection_panic {
                 crate::local::children::CreationBinding<
                     StopOnShutdown<ProjectionChild>,
                     StartupChildRetirement,
-                    StartupChildRetirement,
+                    Never,
+                    Vec<Never>,
                 >,
             >(),
             core::mem::align_of::<
                 crate::local::children::CreationBinding<
                     StopOnShutdown<ProjectionChild>,
                     StartupChildRetirement,
-                    StartupChildRetirement,
+                    Never,
+                    Vec<Never>,
                 >,
             >(),
-            core::mem::size_of::<
-                ActorRetirement<StopOnShutdown<ProjectionChild>, StartupChildRetirement, ()>,
-            >(),
+            core::mem::size_of::<ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>>(
+            ),
             core::mem::align_of::<
-                ActorRetirement<StopOnShutdown<ProjectionChild>, StartupChildRetirement, ()>,
+                ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>,
             >()
         );
     }
@@ -2254,18 +2682,10 @@ mod child_rejection_custody {
         }
     }
 
-    #[expect(
-        dead_code,
-        reason = "the exact complete child report remains a meaningful static projection when this journey rejects before commitment"
-    )]
-    #[derive(crate::TerminalProjection)]
-    enum WorkerRetirement {
-        #[structural_child]
-        Worker {
-            origin: crate::ChildOrigin<Parent, crate::behavior::ChildHead>,
-            terminal: ActorRetirement<StopOnShutdown<RefusedWorker>, Self, ()>,
-        },
-    }
+    crate::topology! { worker_application {
+        root: Parent { Worker(ParentChildrenWorker) => worker; }
+        worker: StopOnShutdown<RefusedWorker> {}
+    } }
 
     #[tokio::test(flavor = "current_thread")]
     async fn refused_initialization_preserves_original_child_work_identity_and_provenance() {
@@ -2288,8 +2708,8 @@ mod child_rejection_custody {
             )),
         }
         .stop_on_shutdown();
-        let outcome = Application::new(root)
-            .run_with::<WorkerRetirement, _, _, _, _, _>(move |application| async move {
+        let outcome = Application::with_topology(root, worker_application::Topology::new())
+            .run_with(move |application| async move {
                 application
                     .lifecycle()
                     .request_shutdown()
@@ -2312,7 +2732,7 @@ mod child_rejection_custody {
             custody:
                 ActorCustody {
                     descendants,
-                    child_failures: (failures, ()),
+                    child_failures: failures,
                     ..
                 },
             settlements,

@@ -2,8 +2,8 @@
 
 This is the existing API guide, with source and test pointers. Bombay owns the
 application and runtime experience over Behavior and Behavior Actors. The
-[DevX proposal](prds/developer-experience.md) selects the future simplification
-path; proposed inference and consolidation are not implemented by this guide.
+[DevX coordination](prds/developer-experience.md) records the implemented
+feature-branch inference and the remaining migration and release gates.
 When prose and source disagree, verify the source and correct the prose.
 
 Implementation status is separate from this target contract. Local application,
@@ -40,16 +40,92 @@ For a root with an empty descendant projection destination:
 
 ```text
 let outcome = Application::new(service.stop_on_shutdown())
-    .run::<_, _, Never, _>()
+    .run()
     .await;
 ```
 
-`Never` selects the empty descendant destination. The actual Actor, staging
-failure, and child failures remain inferred. A declared child topology selects
-its actual closed descendant projection instead. Bare inference is preferred
-where its constraints determine that destination; an explicit meaningful
-selection is allowed. No default, dummy value, or wrapper supplies missing
-information.
+A no-birth root infers `Never` descendants and `Vec<Never>` child failures.
+For child graphs, one `topology!` declaration selects the closed actor-indexed
+schemas through `Application::with_topology(root, declaration::Topology::new())`.
+The actual actor, staging failure and descendant custody are inferred by
+`run` and `run_with`. Generated products and exhaustive enums permit borrowed
+inspection and consuming matches; unmatched sums remain complete owned values.
+The [topology tests](../crates/bombay/tests/application_topology.rs) and
+[existing custody journeys](../crates/bombay/tests/application_terminal_custody.rs)
+execute these paths. No default policy or dummy capability fills an unused lane.
+
+Finite singleton chains infer their actors from the constructed root and its
+births. For example, a fixed supervisor declares only its relationships and
+external protocols:
+
+```rust,ignore
+bombay::topology! {
+    supervisor_application {
+        root { Proxy => proxy; }
+        proxy { Worker => worker; }
+        worker {}
+        hosts { status: Status; capability: Capability; }
+    }
+}
+```
+
+The [executed supervisor](../crates/bombay/tests/application_topology/supervision.rs)
+uses the owning constructor directly, without composed return aliases. For
+recursive classes with named child roles, `node for Node { ... }` names the
+nominal actor owning those roles and derives its actual wrapped type. Cold
+members or multiple root roles use `root: Root { ... }`; the constructor still
+supplies root decorations. These anchors contain domain types, with no spaces,
+structural positions or retirement enums. Rust rejects inconsistent incoming
+actors, forged roles and missing report lanes. The
+[recursive tests](../crates/bombay/tests/application_topology/recursive.rs)
+exercise both wrapper orders and complete failure/retirement custody.
+
+Cold classes also infer their actor types from `.child(role, actor)`:
+
+```rust,ignore
+bombay::topology! {
+    timed_application {
+        root: TimedParent {}
+        members {
+            Timer(TimerOutside) => timer;
+            Shutdown(ShutdownOutside) => shutdown;
+        }
+        timer {}
+        shutdown {}
+    }
+}
+```
+
+The [native timer journey](../crates/bombay/tests/native_timer_retirement.rs)
+constructs both actual wrapper orders and consumes every original retirement
+with this declaration. [Cold-member tests](../crates/bombay/tests/cold_member_retirement.rs)
+cover equal actor types with distinct logical hosting, nested descendants,
+recursive creation and original initialization-refusal custody. Recursive cold
+classes use the same nominal role-owner rule; their wrapped types stay inferred.
+
+Entity families are independent hydrated roots in that same declaration:
+
+```rust,ignore
+bombay::topology! {
+    entity_application {
+        root: Root {}
+        hosts { accounts: Account; profiles: Profile; }
+        families { account: Accounts; profile: Profiles; }
+        account {}
+        profile { worker(ProfileChildrenWorker) => worker; }
+        worker {}
+    }
+}
+```
+
+The definitions supply their actual `Behavior`; protocol hosts remain explicit
+logical address-space choices. A definition with children selects the generated
+`ProfileRetirements` as `Terminal` and `Vec<<Self::Terminal as RetirementSchema>::Failure>`
+as `ChildFailures`. Its existing hydration and consuming retirement callbacks
+retain those exact values. The [two-family journey](../crates/bombay/tests/entity_application.rs)
+executes simultaneous hydration, refusals, reactivation and child retirement.
+Declaring a family class starts no task; `.entity_family(role, definition, directory, capacity)`
+supplies its real policy and owned definition.
 
 The successful outer result owns `ApplicationOutcome`. It does not imply a
 completed actor or erase an initialization refusal. Its closed alternatives
@@ -91,11 +167,23 @@ cleanup task error. The root's `ActorTaskFailed(JoinError)` variant separately
 owns the native actor failure. Preserve these distinct owners; do not infer
 absent actors or manufacture a JoinError from a closed channel. `Terminal` is the descendant destination.
 The root stays raw. A derived application sum receives its exact owned pair
-with `(origin, retirement).into()`. `ProjectTerminal<Origin, Actor, ChildFailures>`
+with `(origin, retirement).into()`. `ProjectTerminal<Origin, Actor>`
 is the native interpreter port: its associated `Descendants` selects the child
 retirement tree before launch, independently of the projected report. Explicit
 native policies retain their original task context and failure causes.
 `ApplicationOutcome` is an explicit `bombay` root import, not a prelude export.
+
+Advanced custom hosting supplies `RootRegistration` for its physical root
+namespace and `ApplicationTopology` for complete custody. A custom accessor's
+failure remains an actual setup failure: receiving preserves the original
+callable and prepared actor for retry in that same namespace. Custom native
+child presentation uses the existing `NativeChild` and sealed
+`EstablishNativeChild` interpreter ports; it must retain the complete retirement
+and actual native task context. The [completion and receiving tests](../crates/bombay/tests/completed_application_receiving.rs)
+exercise panicking host access, distinct actor/caller executors, original
+allocation return, and partial family-cleanup cancellation. Ordinary application
+assembly uses the generated topology above.
+
 
 Use `ActorRetirement::completion()` to borrow the normal stop or exhaustion
 reason. Failure and owner cancellation return `None`; inspection leaves the
@@ -129,10 +217,9 @@ Supplied Work receives the activated application's concrete handle:
 
 ```text
 let outcome = Application::new(service.stop_on_shutdown())
-    .run_with::<Never, _, _, _, _, _>(|application| async move {
-        let lifecycle = application.lifecycle();
+    .run_with(|application| async move {
         let reply = boundary(application.root()).await;
-        let shutdown = lifecycle.request_shutdown();
+        let shutdown = application.request_shutdown();
         (reply, shutdown)
     })
     .await;
@@ -140,8 +227,48 @@ let outcome = Application::new(service.stop_on_shutdown())
 
 Returning from Work does not request shutdown. The root's concrete Behavior
 must accept or transform `ShutdownRequested`; topology does not select policy.
-`ApplicationHandle::root()` projects delivery, and `lifecycle()` projects
-shutdown/termination authority. Observation is not the complete joined result.
+`ApplicationHandle::client()` creates a root-bound client with typed reply
+receiving; its protocol can be inferred from the domain reply capability.
+`sender()` creates a one-way root sender without a reply declaration.
+`request_shutdown()` and `termination()` delegate to the existing lifecycle
+owner. Request acknowledgement, observed termination and joined cleanup remain
+distinct. `lifecycle()` remains the explicit projection when another consumer
+needs only lifecycle authority. Clients and senders gain no such authority.
+
+```text
+let mut client = application.client()?;
+client.send(CounterMessage::Increment).await?;
+client.send(CounterMessage::Read(client.recipient())).await?;
+let reply = client.receive().await;
+```
+
+The [counter](../examples/counter/src/main.rs) and
+[FIFO pool](../examples/worker-pool/src/main.rs) execute this root-bound path.
+[Client regressions](../crates/bombay/tests/application_clients.rs) preserve
+real sender identity, move-only rejections, accepted replies and both wrapper
+orders; compile denials prevent cloned receiving, forged construction,
+wrong-root messages and lifecycle authority.
+
+The root is the default target. Select another exact actor recipient or stable
+Entity reference once with `application.client_to(target)` or
+`application.sender_to(target)`. The same client methods apply; a selected
+target keeps its own exact-incarnation or Entity admission contract. If endpoint
+allocation fails, both constructors return `(original_target, error)` for
+recovery or retry. The [Entity example](../examples/entity/src/main.rs) uses:
+
+```text
+let account = application.entities(AccountsRole).entity(account_id);
+let sender = application.sender_to(account)?;
+sender.send(AccountCommand::Deposit(40)).await?;
+```
+
+For genuinely shared reply receiving across targets, `application.external()`
+establishes the existing affine ExternalActor directly; each `caller.send(&target,
+command)` makes its target choice explicit. `ActorInterface<Api>` remains the
+named product for exported capabilities outside the application callable and
+provides the same `client_to`/`sender_to` constructors. Exporting a target never
+exports its lifecycle authority. No universal request/reply convention is inferred
+from arbitrary domain commands.
 
 For cancellation or unwind recovery, use `execute` or `execute_with` to obtain
 separate execution and receiving futures. The paired constructor captures its
@@ -152,6 +279,14 @@ or Work panic payloads unwind to the caller. A Ready output is published before
 Work-future disposal, so retained receiving can still acquire it if disposal
 panics. A recovered Prepared product is actual prepared input, not a fabricated
 cold application.
+
+All entry points select descendant custody from the application's topology.
+Use `execute_with(work)` and `execute()` without retirement type arguments.
+The same selection applies to `execute_axum(address, router)`,
+`run_axum(address, router)`, `execute_with_entities(work)` and
+`run_with_entities(work)`. The [entry-point regressions](../crates/bombay/tests/application_outcome.rs)
+exercise local non-Send work, cold cancellation/retry, initialization refusal
+and original-router recovery on HTTP bind refusal.
 
 The selected host must remain live and polling through the required joins.
 Holding a Handle or observing termination does not guarantee host liveness.
@@ -283,7 +418,7 @@ let root = Machine::new(state, phase, transition)
     .with_one_shot(TimerId(1), Duration::from_secs(1), stop)
     .stop_on_shutdown();
 
-Application::new(root).run::<_, _, Never, _>().await
+Application::new(root).run().await
 ```
 
 `bombay::actors::ActorExt` is imported by the ordinary prelude, so reusable
@@ -424,7 +559,8 @@ This send needs no destination actor-space declaration or address lookup.
 Use the logical `Recipient<P>` / `Delivery<P>` pair when stable-name or
 replacement routing is intended instead.
 
-External transports, CLIs, tests, and embedded clients use one boundary:
+Use the direct Application clients above inside Work. When a transport must
+retain a named product of exported capabilities, construct an ActorInterface:
 
 ```text
 struct Api {
@@ -642,10 +778,11 @@ and resolve local incarnations of `P`.
 Logical destinations use namespace-relative `Recipient<P>` values; exact
 established destinations use `EstablishedRecipient<P>`. Meanwhile,
 creator-local delivery uses `ChildRecipient<P>` and cannot escape as a stable
-identity. Dynamic-supervisor outcomes now return the established managed-child
-recipient, and pool assignments carry their completion recipient. Generic
-delivery already exists, but interpreting AssignWorker and ProxyOperation
-with exact rejection custody is still blocked in the selected contract.
+identity. Dynamic-supervisor outcomes retain the established stable-proxy capability,
+and pool assignments carry their completion recipient. The fixed-supervisor
+and FIFO/keyed-pool runtime tests exercise ordinary delivery, proxy input,
+complete rejection custody and joined retirement. Dynamic application assembly
+remains open because construction needs its durable lifecycle capability first.
 
 ## Acceptance application
 

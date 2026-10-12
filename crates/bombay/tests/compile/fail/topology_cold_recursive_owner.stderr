@@ -1,0 +1,5 @@
+error: recursive actor classes require a concrete actor type anchor
+ --> tests/compile/fail/topology_cold_recursive_owner.rs:5:9
+  |
+5 |         node { Next(Next) => node; }
+  |         ^^^^

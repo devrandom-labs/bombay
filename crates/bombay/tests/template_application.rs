@@ -77,7 +77,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
     );
 
     let application_outcome = Application::new(root.stop_on_shutdown())
-        .run::<_, _, RootTerminal<_>, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -99,7 +99,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = (origin, retirement).into();
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }
 
@@ -113,7 +113,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
     );
 
     let application_outcome = Application::new(root.stop_on_shutdown())
-        .run::<_, _, RootTerminal<_>, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -135,7 +135,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = (origin, retirement).into();
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }
 
@@ -149,7 +149,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
     );
 
     let application_outcome = Application::new(root.stop_on_shutdown())
-        .run::<_, _, RootTerminal<_>, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -171,7 +171,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = (origin, retirement).into();
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }
 
@@ -185,7 +185,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
     );
 
     let application_outcome = Application::new(root.stop_on_shutdown())
-        .run::<_, _, RootTerminal<_>, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -207,7 +207,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = (origin, retirement).into();
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }
 
@@ -285,8 +285,7 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
             }
             retirement => retirement,
         },
-    )
-        .into();
+    );
     assert_completed(terminal, None);
 }
 
@@ -383,13 +382,14 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         .with_stash(deliver_never)
         .with_receive_timeout(TimerId(5), delay, stop_wrapped::<Stash<TimerRoot>>)
         .stop_on_shutdown();
-    let application_outcome = Application::new(runtime)
-        .run::<_, _, RootTerminal<_>, _>()
-        .await
-        .unwrap_or_else(|(application, error)| {
-            drop(application);
-            panic!("the caller owns the application's live entered host: {error}");
-        });
+    let application_outcome =
+        Application::new(runtime)
+            .run()
+            .await
+            .unwrap_or_else(|(application, error)| {
+                drop(application);
+                panic!("the caller owns the application's live entered host: {error}");
+            });
     if let ApplicationOutcome::Completed {
         output: _,
         cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
@@ -406,6 +406,6 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = (origin, retirement).into();
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }

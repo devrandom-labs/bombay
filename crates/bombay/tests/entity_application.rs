@@ -7,26 +7,25 @@ use behavior_actors::StopOnShutdown;
 use bombay::ApplicationOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
-    Actions, BehaviorActed, BehaviorBase, ChildHead, ClassifySettlement, CreateChild,
-    CreationSequence, Creations, EventLayer, InterpreterRequests, Never, Protocol,
-    SettlementStatus,
+    Actions, BehaviorActed, BehaviorBase, ClassifySettlement, CreateChild, CreationSequence,
+    Creations, EventLayer, InterpreterRequests, Never, Protocol, SettlementStatus,
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, DrainStage,
     EntityActivationError, EntityAdmission, EntityCapacity, EntityDefinition, EntityId, EntityRef,
     EntityShutdown, Passivation, Refusal,
 };
-use bombay::{
-    ActorRetirement, ActorSpace, ActorSpaces, Application, ChildFailure, ChildOrigin, MailAddr,
-    TerminalProjection,
-};
+use bombay::{ActorRetirement, Application, MailAddr, RetirementSchema};
 use bombay_engine::Completion;
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
 mod application_support;
 
-use application_support::{RootTerminal, assert_completed};
+#[path = "entity_application/recursive.rs"]
+mod recursive;
+
+use application_support::assert_completed;
 
 const FIRST_ACCOUNT: u64 = 20;
 const SECOND_ACCOUNT: u64 = 21;
@@ -128,24 +127,15 @@ impl Profile {
     }
 }
 
-#[derive(TerminalProjection)]
-enum ProfileTerminal {
-    #[declared_child(Profile, ProfileChildrenWorker, StopOnShutdown<ProfileWorker>)]
-    Worker {
-        origin: ChildOrigin<Profile, ProfileChildrenWorker>,
-        terminal: ActorRetirement<StopOnShutdown<ProfileWorker>, Self, ()>,
-    },
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum HydrationFailure {
     Unavailable,
 }
 
 type AccountActivationFailure =
-    EntityActivationError<HydrationFailure, StopOnShutdown<Account>, Never, ()>;
+    EntityActivationError<HydrationFailure, StopOnShutdown<Account>, Never, Vec<Never>>;
 type AccountRetirement =
-    Result<ActorRetirement<StopOnShutdown<Account>, Never, ()>, tokio::task::JoinError>;
+    Result<ActorRetirement<StopOnShutdown<Account>, Never, Vec<Never>>, tokio::task::JoinError>;
 type AccountActivationFacts =
     Arc<Mutex<Vec<(EntityId<u64>, ActivationId, AccountActivationFailure)>>>;
 type ForcedRetirementFacts = Arc<Mutex<Vec<(EntityId<u64>, ActivationId, DrainFailure)>>>;
@@ -177,10 +167,10 @@ impl Accounts {
 impl EntityDefinition for Accounts {
     type Id = u64;
     type Behavior = StopOnShutdown<Account>;
-    type Hosts = Spaces;
+    type Hosts = topology::Topology;
     type HydrationError = HydrationFailure;
     type Terminal = Never;
-    type ChildFailures = ();
+    type ChildFailures = Vec<Never>;
 
     async fn hydrate(
         &self,
@@ -258,12 +248,9 @@ impl EntityDefinition for Accounts {
 
 type ProfileRetirement = Result<
     ActorRetirement<
-        StopOnShutdown<Profile>,
-        ProfileTerminal,
-        (
-            Vec<ChildFailure<ChildOrigin<Profile, ChildHead>, StopOnShutdown<ProfileWorker>>>,
-            (),
-        ),
+        <Profiles as EntityDefinition>::Behavior,
+        topology::ProfileRetirements,
+        Vec<<topology::ProfileRetirements as RetirementSchema>::Failure>,
     >,
     tokio::task::JoinError,
 >;
@@ -284,13 +271,10 @@ impl Profiles {
 impl EntityDefinition for Profiles {
     type Id = u64;
     type Behavior = StopOnShutdown<Profile>;
-    type Hosts = Spaces;
+    type Hosts = topology::Topology;
     type HydrationError = Never;
-    type Terminal = ProfileTerminal;
-    type ChildFailures = (
-        Vec<ChildFailure<ChildOrigin<Profile, ChildHead>, StopOnShutdown<ProfileWorker>>>,
-        (),
-    );
+    type Terminal = topology::ProfileRetirements;
+    type ChildFailures = Vec<<Self::Terminal as RetirementSchema>::Failure>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -346,16 +330,15 @@ impl Protocol for Replies {
     type Msg = Never;
 }
 
-#[derive(ActorSpaces)]
-struct Spaces {
-    #[actor_space(Root)]
-    root: ActorSpace<Root>,
-    #[actor_space(Account)]
-    accounts: ActorSpace<Account>,
-    #[actor_space(Profile)]
-    profiles: ActorSpace<Profile>,
-    #[actor_space(ProfileWorker)]
-    profile_workers: ActorSpace<ProfileWorker>,
+bombay::topology! {
+    topology {
+        root: Root {}
+        hosts { accounts: Account; profiles: Profile; }
+        families { account: Accounts; profile: Profiles; }
+        account {}
+        profile { worker(ProfileChildrenWorker) => worker; }
+        worker {}
+    }
 }
 
 #[test]
@@ -364,12 +347,6 @@ struct Spaces {
     reason = "one end-to-end journey asserts the complete native Entity composition law"
 )]
 fn application_runs_two_native_entity_families() {
-    let spaces = Spaces {
-        root: ActorSpace::new(),
-        accounts: ActorSpace::new(),
-        profiles: ActorSpace::new(),
-        profile_workers: ActorSpace::new(),
-    };
     let account_capacity = EntityCapacity::new(
         NonZeroUsize::new(1).expect("one is non-zero"),
         NonZeroUsize::new(2).expect("two is non-zero"),
@@ -387,19 +364,20 @@ fn application_runs_two_native_entity_families() {
     let retirements = Arc::clone(&accounts.retirements);
     let profiles = Profiles::new();
     let profile_retirement = Arc::clone(&profiles.retirement);
-    let application = Application::with_topology(Root.stop_on_shutdown(), spaces)
-        .entity_family(
-            AccountsRole,
-            accounts,
-            DirectoryConfig::default(),
-            account_capacity,
-        )
-        .entity_family(
-            ProfilesRole,
-            profiles,
-            DirectoryConfig::default(),
-            profile_capacity,
-        );
+    let application =
+        Application::with_topology(Root.stop_on_shutdown(), topology::Topology::new())
+            .entity_family(
+                AccountsRole,
+                accounts,
+                DirectoryConfig::default(),
+                account_capacity,
+            )
+            .entity_family(
+                ProfilesRole,
+                profiles,
+                DirectoryConfig::default(),
+                profile_capacity,
+            );
     let application_host = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -413,9 +391,7 @@ fn application_runs_two_native_entity_families() {
                 let second = accounts.entity(SECOND_ACCOUNT);
                 let profile = profiles.entity(9);
                 let root = application.root().established_recipient();
-                let interface =
-                    application.interface((root, first.clone(), second.clone(), profile.clone()));
-                let caller = interface
+                let caller = application
                     .external::<Replies>()
                     .expect("the application establishes one external actor");
 
@@ -432,13 +408,13 @@ fn application_runs_two_native_entity_families() {
                     hydration_releases.add_permits(1);
                 };
                 let (first_admission, second_admission, ()) = tokio::join!(
-                    caller.send(&interface.api().1, 41),
-                    caller.send(&interface.api().2, 43),
+                    caller.send(&first, 41),
+                    caller.send(&second, 43),
                     release_hydrations,
                 );
                 require_admitted(first_admission, "first account");
                 require_admitted(second_admission, "second account");
-                let profile_admission = caller.send(&interface.api().3, 73).await;
+                let profile_admission = caller.send(&profile, 73).await;
                 require_admitted(profile_admission, "profile");
 
                 let capacity_refusal = caller.send(&accounts.entity(CAPACITY_REFUSAL), 47).await;
@@ -471,7 +447,7 @@ fn application_runs_two_native_entity_families() {
                     .expect("the forced account retirement completes")
                     .forget();
                 caller
-                    .send(&interface.api().0, RootCommand::Admit(profile, 97))
+                    .send(&root, RootCommand::Admit(profile, 97))
                     .await
                     .expect("the actor-originated command enters the root mailbox");
             }),
@@ -490,7 +466,7 @@ fn application_runs_two_native_entity_families() {
     };
     let (root_origin, joined_actor) =
         root_receiving.expect("the independent original root retirement is acquired");
-    let terminal: RootTerminal<_> = (
+    let terminal = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -498,8 +474,7 @@ fn application_runs_two_native_entity_families() {
             }
             retirement => retirement,
         },
-    )
-        .into();
+    );
 
     let (profile_receiving, tail) = shutdowns;
     let (ProfilesRole, (profile_shutdown, profile_metrics, profile_family_disposal_failure)) =
@@ -637,28 +612,28 @@ fn application_runs_two_native_entity_families() {
     assert_eq!(profile_settlement_status, SettlementStatus::Accepted);
     assert_eq!(user.len(), 0);
     assert!(capability_failures.is_empty());
-    assert!(child_failures.0.is_empty());
-    assert_eq!(child_failures.1, ());
+    assert!(child_failures.is_empty());
     assert_eq!(behavior.base().admissions, 2);
     assert_eq!(descendants.len(), 1);
-    let ProfileTerminal::Worker {
+    let topology::ProfileRetirements {
         origin,
-        terminal: child_retirement,
+        retirement: child_retirement,
     } = descendants
         .pop()
         .expect("the profile retains its child terminal");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    match child_retirement {
+    match *child_retirement {
         ActorRetirement::OwnerCancelled {
             custody:
                 ActorCustody {
-                    child_failures: (),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation,
                     ..
                 },
             ..
         } => {
+            assert_eq!(child_failures, []);
             assert!(capability_failures.is_empty());
             assert!(unread_owner_cancellation.is_none());
         }
@@ -705,7 +680,7 @@ fn application_runs_two_native_entity_families() {
             Ok(ActorRetirement::Completed {
                 custody:
                     ActorCustody {
-                        child_failures: (),
+                        child_failures,
                         capability_failures,
                         unread_owner_cancellation: None | Some(()),
                         control,
@@ -717,6 +692,7 @@ fn application_runs_two_native_entity_families() {
                 completion,
                 ..
             }) => {
+                assert_eq!(child_failures, &[]);
                 assert_eq!(*completion, Completion::Stopped);
                 assert_eq!(control.len(), 0);
                 (settlements, user, descendants, capability_failures)
@@ -724,7 +700,7 @@ fn application_runs_two_native_entity_families() {
             Ok(ActorRetirement::OwnerCancelled {
                 custody:
                     ActorCustody {
-                        child_failures: (),
+                        child_failures,
                         capability_failures,
                         unread_owner_cancellation,
                         control,
@@ -735,6 +711,7 @@ fn application_runs_two_native_entity_families() {
                 settlements,
                 ..
             }) => {
+                assert_eq!(child_failures, &[]);
                 assert!(unread_owner_cancellation.is_none());
                 assert!(matches!(control.as_slice(), [EventLayer::Owned(_)]));
                 (settlements, user, descendants, capability_failures)

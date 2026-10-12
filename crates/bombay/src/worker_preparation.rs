@@ -2268,7 +2268,6 @@ mod tests {
     }
 
     enum IndexDepotEvent {
-        User(User<MailAddr, Never>),
         Started(
             ActionItemResult<
                 PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
@@ -2280,14 +2279,11 @@ mod tests {
     impl UserEvent for IndexDepotEvent {
         type Addr = MailAddr;
         type Message = Never;
-        fn user(from: MailAddr, message: Never) -> Self {
-            Self::User(User::new(from, message))
+        fn user(_: MailAddr, message: Never) -> Self {
+            match message {}
         }
         fn into_user(self) -> Result<User<MailAddr, Never>, Self> {
-            match self {
-                Self::User(user) => Ok(user),
-                event => Err(event),
-            }
+            Err(self)
         }
     }
 
@@ -2341,7 +2337,6 @@ mod tests {
         fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
             let mut actions = ActionsOf::<Self>::cont();
             match event {
-                IndexDepotEvent::User(user) => match user.message {},
                 IndexDepotEvent::Requested(request) => actions.sends.send(request),
                 IndexDepotEvent::Started(SettledItem::Attempted(ItemSettlement::Accepted(
                     receipt,
@@ -2399,7 +2394,6 @@ mod tests {
                 match self.control.send(IndexDepotEvent::Started(original)) {
                     Ok(()) => Ok(()),
                     Err(ControlClosed(IndexDepotEvent::Started(original))) => Err(original),
-                    Err(ControlClosed(IndexDepotEvent::User(user))) => match user.message {},
                     Err(ControlClosed(IndexDepotEvent::Requested(request))) => {
                         drop(request);
                         unreachable!("this exact source adapter sends only the Started variant");

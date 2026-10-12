@@ -8,21 +8,16 @@ use tokio::runtime::Builder;
 use behavior_actors::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticAccepted,
     DiagnosticDisposition, FailureReaction, FixedCommand, FixedDiagnostic, FixedSnapshot,
-    FixedSupervisor, OrderedRoles, Recovery, RestartLimit, RestartRelease, StableProxy, Strategy,
+    FixedSupervisor, OrderedRoles, Recovery, RestartLimit, RestartRelease, Strategy,
     WorkerPreparationFailureReason, WorkerSource, WorkerSubmission, fixed,
 };
 use behavior_actors::{Exit, StopOnShutdown};
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{
-    Actions, BehaviorActed, ChildHead, ItemSettlement, MessageProtocol, Never, SettledItem,
+    Actions, BehaviorActed, ItemSettlement, MessageProtocol, Never, SettledItem,
 };
-use bombay::prelude::{
-    ActorRetirement, ChildFailure, ChildOrigin, Completion, MailAddr, RootOrigin,
-    TerminalProjection,
-};
-use bombay::{
-    ActorSpace, ActorSpaces, Application, WorkerPreparationSource, WorkerPreparationStart,
-};
+use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
+use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::mpsc;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -144,69 +139,19 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
     }
 }
 
-type WorkerProxy = StableProxy<ManagedWorker, ActivationNotice>;
-type ProxyWorker = StopOnShutdown<ManagedWorker>;
 type Supervisor =
     FixedSupervisor<WorkerRole, ManagedWorker, ActivationNotice, Workshop, Infallible, Infallible>;
 type RootSupervisor = StopOnShutdown<Supervisor>;
-type RootProtocol = MessageProtocol<MailAddr, FixedCommand<MailAddr, WorkerRole, Worker>>;
 type Status = MessageProtocol<MailAddr, FixedSnapshot<Worker>>;
 type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, Worker>>;
 
-#[derive(ActorSpaces)]
-struct SupervisorSpaces {
-    #[actor_space(RootProtocol)]
-    root: ActorSpace<RootProtocol>,
-    #[actor_space(Worker)]
-    workers: ActorSpace<Worker>,
-    #[actor_space(Status)]
-    status: ActorSpace<Status>,
-    #[actor_space(Capability)]
-    capability: ActorSpace<Capability>,
-}
-
-#[derive(TerminalProjection)]
-#[expect(
-    clippy::large_enum_variant,
-    reason = "retain complete original role retirements without adding a heap owner or changing terminal custody"
-)]
-enum SupervisorTerminal {
-    Root {
-        origin: RootOrigin<RootSupervisor>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "the supervisor retirement retains its exact proxy-role child failures and complete terminal"
-        )]
-        terminal: ActorRetirement<
-            RootSupervisor,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<Supervisor, ChildHead>, WorkerProxy>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Proxy {
-        origin: ChildOrigin<Supervisor, ChildHead>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "the proxy retirement retains its exact worker-role child failures and complete terminal"
-        )]
-        terminal: ActorRetirement<
-            WorkerProxy,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<WorkerProxy, ChildHead>, ProxyWorker>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Worker {
-        origin: ChildOrigin<WorkerProxy, ChildHead>,
-        terminal: ActorRetirement<ProxyWorker, Self, ()>,
-    },
+bombay::topology! {
+    supervisor_application {
+        root { Proxy => proxy; }
+        proxy { Worker => worker; }
+        worker {}
+        hosts { status: Status; capability: Capability; }
+    }
 }
 
 fn prepared_supervisor(
@@ -256,20 +201,15 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
         activated,
         PreparationPolicy::SubmitBoth,
     );
-    let spaces = SupervisorSpaces {
-        root: ActorSpace::new(),
-        workers: ActorSpace::new(),
-        status: ActorSpace::new(),
-        capability: ActorSpace::new(),
-    };
+    let spaces = supervisor_application::Topology::new();
     let application_host = Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::with_topology(supervisor.stop_on_shutdown(), spaces)
-                .run_with::<SupervisorTerminal, _, _, _, _, _>(move |application| async move {
+            Application::with_topology(supervisor.stop_on_shutdown(), spaces).run_with(
+                move |application| async move {
                     let first = activations
                         .recv()
                         .await
@@ -280,14 +220,13 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
                         .expect("the second worker activates");
                     assert_ne!(first, second);
 
-                    let interface =
-                        application.interface(application.root().established_recipient());
-                    let mut caller = interface
+                    let supervisor = application.root().established_recipient();
+                    let mut caller = application
                         .external::<Capability>()
                         .expect("the capability caller is established");
                     caller
                         .send(
-                            interface.api(),
+                            &supervisor,
                             FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
                         )
                         .await
@@ -315,14 +254,14 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
                         .expect("the second replacement activates");
                     assert_ne!(first, second);
                     caller
-                        .send(interface.api(), FixedCommand::shutdown())
+                        .send(&supervisor, FixedCommand::shutdown())
                         .await
                         .expect("the supervisor accepts shutdown");
-                    let lifecycle = application.lifecycle();
-                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                    tokio::time::timeout(Duration::from_secs(5), application.termination())
                         .await
                         .expect("the supervisor terminates after recovery and shutdown")
-                }),
+                },
+            ),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -342,25 +281,25 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
         }
         retirement => retirement,
     };
-    let terminal = SupervisorTerminal::from((origin, retirement));
+    let terminal = retirement;
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(
         *prepared.lock().unwrap_or_else(PoisonError::into_inner),
         [WorkerRole::Primary, WorkerRole::Secondary]
     );
-    assert_restarted_workers_retired(terminal);
+    assert_restarted_workers_retired(origin, terminal);
 }
 
-fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
-    let SupervisorTerminal::Root { origin, terminal } = terminal else {
-        panic!("the application returns its supervisor root")
-    };
+fn assert_restarted_workers_retired(
+    origin: RootOrigin<RootSupervisor>,
+    terminal: ActorRetirement<RootSupervisor, supervisor_application::RootRetirements<RootSupervisor>, Vec<<supervisor_application::RootRetirements<RootSupervisor> as bombay::RetirementSchema>::Failure>>,
+) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
-                child_failures: (child_failures, ()),
+                child_failures,
                 capability_failures,
                 unread_owner_cancellation,
                 descendants,
@@ -378,14 +317,15 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
     for descendant in descendants {
-        let SupervisorTerminal::Proxy { origin, terminal } = descendant else {
-            panic!("the supervisor retains each stable proxy")
-        };
+        let supervisor_application::RootRetirements {
+            origin,
+            retirement: terminal,
+        } = descendant;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
             custody:
                 ActorCustody {
-                    child_failures: (child_failures, ()),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation,
                     descendants,
@@ -393,7 +333,7 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
                 },
             completion,
             ..
-        } = terminal
+        } = *terminal
         else {
             panic!("each proxy completes after its workers")
         };
@@ -403,14 +343,15 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
         assert_eq!(completion, Completion::Stopped);
         assert_eq!(descendants.len(), 2);
         for descendant in descendants {
-            let SupervisorTerminal::Worker { origin, terminal } = descendant else {
-                panic!("the proxy retains both worker incarnations")
-            };
+            let supervisor_application::ProxyRetirements {
+                origin,
+                retirement: terminal,
+            } = descendant;
             assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
             let ActorRetirement::Completed {
                 custody:
                     ActorCustody {
-                        child_failures: (),
+                        child_failures,
                         capability_failures,
                         unread_owner_cancellation,
                         descendants,
@@ -418,14 +359,15 @@ fn assert_restarted_workers_retired(terminal: SupervisorTerminal) {
                     },
                 completion,
                 ..
-            } = terminal
+            } = *terminal
             else {
                 panic!("each worker completes its retirement")
             };
+            assert_eq!(child_failures, []);
             assert!(capability_failures.is_empty());
             assert!(unread_owner_cancellation.is_none());
             assert_eq!(completion, Completion::Stopped);
-            assert!(descendants.is_empty());
+            assert_eq!(descendants, []);
         }
     }
 }
@@ -439,12 +381,7 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         activated,
         PreparationPolicy::RejectSecondary,
     );
-    let spaces = SupervisorSpaces {
-        root: ActorSpace::new(),
-        workers: ActorSpace::new(),
-        status: ActorSpace::new(),
-        capability: ActorSpace::new(),
-    };
+    let spaces = supervisor_application::Topology::new();
     let application_host = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -453,7 +390,7 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         supervisor.stop_on_shutdown(),
         spaces,
     )
-    .run_with::<SupervisorTerminal, _, _, _, _, _>(move |application| async move {
+    .run_with(move |application| async move {
         let first = activations
             .recv()
             .await
@@ -464,13 +401,12 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
             .expect("the second worker activates");
         assert_ne!(first, second);
 
-        let interface = application.interface(application.root().established_recipient());
-        let mut caller = interface
-            .external::<Capability>()
+        let supervisor = application.root().established_recipient();
+        let mut caller = application.external::<Capability>()
             .expect("the capability caller is established");
         caller
             .send(
-                interface.api(),
+                &supervisor,
                 FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
             )
             .await
@@ -488,13 +424,12 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
             .await
             .expect("the primary worker accepts its stop command");
 
-        let lifecycle = application.lifecycle();
-        let rejection_retirement = async {
+                let rejection_retirement = async {
             tokio::select! {
                 replacement = activations.recv() => {
                     panic!("a rejected second role cannot activate a replacement: {replacement:?}")
                 }
-                termination = lifecycle.termination() => termination,
+                termination = application.termination() => termination,
             }
         };
         tokio::time::timeout(Duration::from_secs(5), rejection_retirement)
@@ -519,29 +454,29 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         }
         retirement => retirement,
     };
-    let terminal = SupervisorTerminal::from((origin, retirement));
+    let terminal = retirement;
 
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(
         *prepared.lock().unwrap_or_else(PoisonError::into_inner),
         [WorkerRole::Primary, WorkerRole::Secondary]
     );
-    assert_rejected_preparation_retirement(terminal);
+    assert_rejected_preparation_retirement(origin, terminal);
 }
 
 #[allow(
     clippy::too_many_lines,
     reason = "one complete ordered supervisor tree trace checks exact terminal diagnostics and every retained child cause"
 )]
-fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
-    let SupervisorTerminal::Root { origin, terminal } = terminal else {
-        panic!("the application returns its supervisor root")
-    };
+fn assert_rejected_preparation_retirement(
+    origin: RootOrigin<RootSupervisor>,
+    terminal: ActorRetirement<RootSupervisor, supervisor_application::RootRetirements<RootSupervisor>, Vec<<supervisor_application::RootRetirements<RootSupervisor> as bombay::RetirementSchema>::Failure>>,
+) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
-                child_failures: (child_failures, ()),
+                child_failures,
                 capability_failures,
                 unread_owner_cancellation,
                 descendants,
@@ -585,21 +520,22 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
     assert_eq!(failure.remaining_roles().count(), 0);
     let mut worker_retirements = Vec::new();
     for descendant in descendants {
-        let SupervisorTerminal::Proxy { origin, terminal } = descendant else {
-            panic!("the supervisor retains each stable proxy")
-        };
+        let supervisor_application::RootRetirements {
+            origin,
+            retirement: terminal,
+        } = descendant;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::OwnerCancelled {
             custody:
                 ActorCustody {
-                    child_failures: (child_failures, ()),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation,
                     descendants,
                     ..
                 },
             ..
-        } = terminal
+        } = *terminal
         else {
             panic!("the terminal diagnostic cancels each proxy's owner task")
         };
@@ -607,19 +543,19 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
         assert!(unread_owner_cancellation.is_none());
         assert!(child_failures.is_empty());
         assert_eq!(descendants.len(), 1);
-        let SupervisorTerminal::Worker { origin, terminal } = descendants
+        let supervisor_application::ProxyRetirements {
+            origin,
+            retirement: terminal,
+        } = descendants
             .into_iter()
             .next()
-            .expect("only the original worker belongs to this proxy")
-        else {
-            panic!("the proxy retains its original worker")
-        };
+            .expect("only the original worker belongs to this proxy");
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let retirement = match terminal {
+        let retirement = match *terminal {
             ActorRetirement::Completed {
                 custody:
                     ActorCustody {
-                        child_failures: (),
+                        child_failures,
                         capability_failures,
                         unread_owner_cancellation,
                         descendants,
@@ -628,16 +564,17 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
                 completion,
                 ..
             } => {
+                assert_eq!(child_failures, []);
                 assert!(capability_failures.is_empty());
                 assert!(unread_owner_cancellation.is_none());
                 assert_eq!(completion, Completion::Stopped);
-                assert!(descendants.is_empty());
+                assert_eq!(descendants, []);
                 WorkerRetirement::Completed
             }
             ActorRetirement::OwnerCancelled {
                 custody:
                     ActorCustody {
-                        child_failures: (),
+                        child_failures,
                         capability_failures,
                         unread_owner_cancellation,
                         descendants,
@@ -645,9 +582,10 @@ fn assert_rejected_preparation_retirement(terminal: SupervisorTerminal) {
                     },
                 ..
             } => {
+                assert_eq!(child_failures, []);
                 assert!(capability_failures.is_empty());
                 assert!(unread_owner_cancellation.is_none());
-                assert!(descendants.is_empty());
+                assert_eq!(descendants, []);
                 WorkerRetirement::OwnerCancelled
             }
             _ => panic!("the original worker retains an exact terminal outcome"),

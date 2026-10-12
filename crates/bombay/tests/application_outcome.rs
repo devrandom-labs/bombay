@@ -10,6 +10,11 @@ use std::cell::Cell;
 use std::rc::Rc;
 use tokio::sync::oneshot;
 
+#[cfg(feature = "axum")]
+use axum::Router;
+#[cfg(feature = "axum")]
+use std::net::TcpListener;
+
 #[path = "../../../examples/counter/src/counter.rs"]
 mod counter;
 
@@ -209,7 +214,7 @@ fn selecting_completed_work_returns_every_other_phase_untouched() {
 #[tokio::test]
 async fn counter_work_and_joined_retirement_remain_independently_owned() {
     let outcome = Application::new(Counter::new().stop_on_shutdown())
-        .run_with::<Never, _, _, _, _, _>(|application| async move {
+        .run_with(|application| async move {
             let lifecycle = application.lifecycle();
             let interface = application.interface(application.root().established_recipient());
             let mut customer = interface
@@ -291,7 +296,7 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
     };
     let original_audit = original.audit.as_ptr();
     let outcome = Application::new(RejectedCounter { original }.stop_on_shutdown())
-        .run_with::<Never, _, _, _, _, _>(|_| async move {
+        .run_with(|_| async move {
             work_invoked.set(work_invoked.get() + 1);
             1_u64
         })
@@ -418,4 +423,206 @@ async fn unavailable_actor_state_preserves_each_executor_cause() {
     assert!(cancelled.completion().is_none());
     assert!(cancelled.behavior().is_none());
     assert!(matches!(cancelled, ActorRetirement::Cancelled));
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn independent_counter_execution_infers_custody_and_keeps_local_work() {
+    let original = Rc::new(CounterSnapshot {
+        value: 43,
+        audit: Box::from([47, 53]),
+    });
+    let allocation = original.audit.as_ptr();
+    let work = Rc::clone(&original);
+    let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+        .execute_with(|application| async move {
+            let shutdown = application.lifecycle().request_shutdown();
+            assert_eq!(shutdown, Ok(()));
+            work
+        })
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    execution.await;
+    let outcome = receiving.await;
+    let (returned, cleanup) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the real local work completed"));
+    assert!(Rc::ptr_eq(&original, &returned));
+    assert_eq!(returned.audit.as_ptr(), allocation);
+    let (_, retirement) = cleanup.expect("the independent retirement is acquired");
+    assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
+    let custody = retirement.custody().expect("complete actor custody");
+    assert_eq!(custody.descendants, []);
+    assert_eq!(custody.child_failures, []);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn independent_absent_work_infers_original_initialization_rejection() {
+    let original = CounterSnapshot {
+        value: 59,
+        audit: Box::from([61, 67]),
+    };
+    let allocation = original.audit.as_ptr();
+    let (execution, receiving) = Application::new(RejectedCounter { original }.stop_on_shutdown())
+        .execute()
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    execution.await;
+    let ApplicationOutcome::NotInvoked {
+        work: None,
+        startup_error: Some(_),
+        cleanup:
+            Ok((
+                _,
+                ActorRetirement::InitializationRejected {
+                    custody,
+                    error: CounterRefusal::Initialization,
+                    ..
+                },
+            )),
+    } = receiving.await
+    else {
+        panic!("absence and the original actor rejection remain independent");
+    };
+    assert_eq!(custody.behavior.base().original.audit.as_ptr(), allocation);
+    assert_eq!(custody.behavior.base().original.value, 59);
+    assert_eq!(custody.descendants, []);
+    assert_eq!(custody.child_failures, []);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn independent_execution_cancellation_returns_original_cold_callable() {
+    let original = Rc::new(Cell::new(0));
+    let invoked = Rc::clone(&original);
+    let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+        .execute_with(|application| async move {
+            invoked.set(invoked.get() + 1);
+            let shutdown = application.lifecycle().request_shutdown();
+            assert_eq!(shutdown, Ok(()));
+            invoked
+        })
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    drop(execution);
+    let ApplicationOutcome::Unstarted { application, work } = receiving.await else {
+        panic!("the original callable remains cold after execution surrender");
+    };
+    assert_eq!(original.get(), 0);
+    let outcome = application
+        .run_with(work)
+        .await
+        .unwrap_or_else(|_| panic!("the same callable can be retried on this host"));
+    let (returned, cleanup) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("retried work completed"));
+    assert!(Rc::ptr_eq(&original, &returned));
+    assert_eq!(returned.get(), 1);
+    let (_, retirement) = cleanup.expect("retry retains its original retirement");
+    assert!(retirement.behavior().is_some());
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn independent_entity_execution_infers_root_custody_without_families() {
+    let original = Rc::new(Cell::new(71));
+    let work = Rc::clone(&original);
+    let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+        .execute_with_entities(|application| async move {
+            let shutdown = application.lifecycle().request_shutdown();
+            assert_eq!(shutdown, Ok(()));
+            work
+        })
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    execution.await;
+    let (outcome, root, ()) = receiving.await;
+    let (returned, cleanup) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("local work completed independently of receiving"));
+    cleanup.expect("producer cleanup completes independently");
+    assert!(Rc::ptr_eq(&original, &returned));
+    let (_, retirement) = root.expect("the actual root retirement is acquired");
+    assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
+    assert_eq!(retirement.custody().expect("root custody").descendants, []);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn entity_runner_infers_rejected_root_and_preserves_uninvoked_work() {
+    let original = CounterSnapshot {
+        value: 73,
+        audit: Box::from([79, 83]),
+    };
+    let allocation = original.audit.as_ptr();
+    let invoked = Rc::new(Cell::new(0));
+    let calls = Rc::clone(&invoked);
+    let (outcome, root, ()) = Application::new(RejectedCounter { original }.stop_on_shutdown())
+        .run_with_entities(|_| async move {
+            calls.set(calls.get() + 1);
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    let ApplicationOutcome::NotInvoked {
+        work,
+        startup_error: Some(_),
+        cleanup: Ok(()),
+    } = outcome
+    else {
+        panic!("initialization refusal returns the original uninvoked work");
+    };
+    assert_eq!(invoked.get(), 0);
+    let (
+        _,
+        ActorRetirement::InitializationRejected {
+            custody,
+            error: CounterRefusal::Initialization,
+            ..
+        },
+    ) = root.expect("the actual root refusal remains independently acquired")
+    else {
+        panic!("root receiving preserves the original failure phase");
+    };
+    assert_eq!(custody.behavior.base().original.audit.as_ptr(), allocation);
+    assert_eq!(custody.behavior.base().original.value, 73);
+    drop(work);
+}
+
+#[cfg(feature = "axum")]
+#[tokio::test(flavor = "current_thread")]
+async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
+    let occupied = TcpListener::bind("127.0.0.1:0").expect("the witness owns the occupied port");
+    let address = occupied.local_addr().expect("the actual occupied address");
+    let original = Rc::new(CounterSnapshot {
+        value: 89,
+        audit: Box::from([97, 101]),
+    });
+    let allocation = original.audit.as_ptr();
+    let router_payload = Rc::clone(&original);
+    let called = Rc::new(Cell::new(0));
+    let router_called = Rc::clone(&called);
+    let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+        .execute_axum(address, |application| {
+            assert_eq!(router_payload.audit.as_ptr(), allocation);
+            router_called.set(router_called.get() + 1);
+            let shutdown = application.lifecycle().request_shutdown();
+            assert_eq!(shutdown, Ok(()));
+            Router::new()
+        })
+        .unwrap_or_else(|_| panic!("the caller owns the entered HTTP host"));
+    execution.await;
+    let ApplicationOutcome::StagingRejected {
+        inputs: Ok((application, router, returned_address, cause)),
+    } = receiving.await
+    else {
+        panic!("prebinding returns the original cold application and router");
+    };
+    assert_eq!(called.get(), 0);
+    assert_eq!(returned_address, address);
+    assert_eq!(cause.kind(), std::io::ErrorKind::AddrInUse);
+    drop(occupied);
+    let outcome = application
+        .run_axum(returned_address, router)
+        .await
+        .unwrap_or_else(|_| panic!("the same returned router is retryable"));
+    let (serving, cleanup) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the actual router ran and HTTP serving completed"));
+    serving.expect("root termination gracefully stops serving");
+    assert_eq!(called.get(), 1);
+    assert_eq!(original.audit.as_ptr(), allocation);
+    let (_, retirement) = cleanup.expect("the real root retirement is independently acquired");
+    assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
 }

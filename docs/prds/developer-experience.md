@@ -1,11 +1,98 @@
 # Developer experience coordination
 
-Status: active. Lossless result consumption and borrowed terminal inspection
-are implemented; public declared-topology assembly remains open. The paired
-work lives on `codex/developer-experience-docs`
-in Bombay and Behavior, based on Bombay main
-`c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior main
-`d69f992b371c12ab34e73b18e45b8112c90a1508`.
+Status: active. Work is isolated on `codex/developer-experience-docs`;
+the other Bombay checkout is untouched. Initial inspected baselines were
+Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
+`d69f992b371c12ab34e73b18e45b8112c90a1508`; current Bombay uses published
+Behavior/Actors0.24.0, macros0.14.1, Communication0.1.5 and Timers0.2.0
+without repository patches.
+
+One Application candidate owns ordinary roots, cold actors, declared topology,
+HTTP and Entity families. Clients/senders select the root, another exact recipient
+or a stable Entity reference; lifecycle delegates to its existing owner. Topology
+derives finite, heterogeneous and recursive custody. The complete38 receiving
+journeys and five HTTP runtime journeys preserve all504/103 original assertions
+and pass both compilers/profiles/features. Real native timer/shutdown wrapper
+orders and all cold/family receiving/refusal journeys also pass. There is no
+second Environment or actor engine.
+
+The keyed-pool consumer now proves same-generation affinity across two jobs,
+exact original key/document rejection for an unknown role, generation-exact
+unbind and complete joined pool/worker retirement. Its56 assertions pass
+current/MSRV, debug/release and default/all-feature configurations; strict lint
+passes. Dynamic supervision and the remaining preparation/failure cases remain
+open. Actual fixed/FIFO/keyed consumers independently expose the direct initial
+factory gap: returning WorkerSubmission without a Result annotation is denied.
+
+The owner fix is committed as fb2c772 and submitted as
+[PR94](https://github.com/devrandom-labs/bombay-behavior/pull/94). The same
+fixed/FIFO/keyed constructors accept direct or fallible factories and preserve
+complete refusal custody. Owner963 tests/ten native Nix gates and five downstream
+journeys across eight configurations pass;765 fixed assertions are unchanged.
+Five paired keyed journeys measure identical heap totals/peaks and allocation
+counts for the factory change. This is an incremental comparison. Cached archive
+preflight passes across all four owner Cargo workspaces after the normal attempt
+failed on crates.io DNS. CI exposed two old fuzz constructor spellings;
+follow-up59f2790 changes only those calls and preserves every other token.
+All21 fuzz bins pass locked checks and the actual pinned-nightly build in the
+Nix fuzz shell. Exact-head CI38312116429 and fresh normal package preflight pass. Authorized
+PR94 is merged as273e030 with a tree identical to reviewed59f2790; main
+CI38313588600 passes and normal release generation creates PR95. Its incorrect
+0.24.1 compatibility proposal is corrected to Core/Actors0.25.0 on04dff9b;
+Macros stays0.14.1. All four locks retain identical external package records,
+and exact-head archive preflight passes. Native Nix/CI, version merge and
+registry verification remain pending under the existing authorization. Registry
+delivery remains open; this Bombay checkout retains compatible0.24 factories.
+
+Counter main is98 lines and FIFO184; terminal inspection and owned result
+consumption remain independent of cleanup. Focused counter/FIFO/supervision
+fixtures now use the proven direct client/external and lifecycle ports; the
+supervision example follows the shared-caller path without an intermediate
+interface. All88 original assertions remain unchanged;40 test passes and eight
+complete example runs pass on both compilers/profiles/features. Library production
+is unchanged; example caller code decreases2 lines and test callers17 lines.
+The current full21-gate Nix run remains pending. The template and heterogeneous-topology examples
+also use direct Application sender/lifecycle ports. Their90 original assertions
+are unchanged, one unused reply protocol is removed, and both binaries pass
+all eight configurations (16 executions); strict lint passes. These two caller
+migrations postdate the current full Nix source capture. HTTP admission removes its unused
+reply protocol, target wrapper and admission-only clone; all five example tests
+pass current/MSRV debug/release, including exact original allocation on closure.
+The heterogeneous example removes two managed aliases without changing its
+birth types, effects or retirement assertions; debug/release execution and
+strict lint pass. Full tracked/untracked Rust production remains net-positive;
+the owning PRD records complete deltas and per-stage provenance.
+
+Full native workspace nextest passes625 tests in default and all-feature
+configurations, with one existing subprocess-only skip. Strict workspace Clippy
+and all60 MSRV declaration/host denials pass. The fresh Nix run exposed vendor
+path normalization and a masked phase denial; focused actual Nix coverage now
+preserves both phase denials and all13 topology denials. The repaired complete
+flake check passed all21 native gates (2272.589 seconds). That captured source
+precedes the three-line heterogeneous alias deletion and new keyed witness,
+which separately passed their focused matrices and strict lint. Registry mapping
+formatting is committed as2800432; pinned nixfmt and evaluation of all21 native
+check definitions pass. Final-source gates remain required;
+signing/disk failures have not been waived.
+
+A real duplicate-creation correlation panicked and lost lawful retirement.
+Behavior commit821380e adds its missing typed reason, passing962 pinned tests,
+strict Clippy and all ten owner Nix gates. A private native guard returns the
+original birth/replacement/replay request before allocation and preserves the
+accepted prefix/later sibling and joined children on both compilers/profiles.
+Both defect inverses reproduce the panic. The owner is draft
+[PR93](https://github.com/devrandom-labs/bombay-behavior/pull/93), with exact-head
+CI and four-workspace packaged-consumer preflight pass; merge/publication is
+pending authorization. The generated version PR still needs review and its own
+gates. The guard is not registry-delivered;
+owner release and the remaining identity/rejection corpus stay open.
+
+Five paired complete counter journeys use identical77 registry dependencies.
+Allocation counts remain74, while peak heap is122916→123644 bytes (+728,
+0.592%). Profiles attribute the increase to task storage; no memory reduction
+or throughput claim is made. Broader pool/Entity/recursive memory, resource
+controls, cancellation/late replies, package gates, distillation and delivery
+remain selected acceptance work.
 
 The owning specification is Behavior's
 `docs/engineering/developer-experience-prd.md`, with its source coverage appendix.
@@ -29,159 +116,27 @@ owns reusable compositions. Simplify at the owner that can derive the repeated
 information. Preserve affine custody, creation provenance, service lanes,
 initialization order and static capability distinctions.
 
-## Current implementation and open acceptance
+## Ownership and delivery
 
-The owning PRD contains the single DX01–DX28 checklist, pre-edit laws, complete
-measurements and dispositions. The user explicitly authorized the expanded
-programme surface on 2026-10-09. Provenance, composition and verification gates
-still apply. Timers0.2.0 is published and pinned.
-
-One actual Application owns root, selected scope, cold actors and Entity
-families; the separate App owner is removed. All seven example packages use
-Application. Real cold Account plus native family reactivation and three
-independent staging/cancellation/startup rejection journeys pass debug and
-optimization, without a private NativeChild implementation. Restoring the prior
-four owners fails solely on five missing-with_topology diagnostics in each
-profile. Production+206/-761/net-555, types+0/-1; the execution/receiving kernel
-and complete control sums are unchanged. Fixed supervisor and FIFO tests proved
-the owner before mechanical caller migration. Evidence:
-/private/tmp/bombay-application-owner-i27iyp5f.
-
-Startup custody retains actual receipts, controls and tasks before awaiting.
-Initialization/native failures keep original definitions and explicit birth or
-replacement provenance; unavailable startup manufactures no lifecycle authority.
+Startup custody retains receipts, controls and tasks before awaiting; native
+failure retains original definitions and explicit birth/replacement provenance.
 Closed child control and parent-report admission return their original typed
-inputs. Raw descendant custody and projected reports remain separate, complete
-facts. These laws preserve independent root/family receiving and root-first
-Entity shutdown. ActorCustody groups identical coexisting fields in20 retirement
-alternatives while retaining all24 outcomes. Borrowed behavior, completion and
-work/cleanup inspection preserve original values for consuming decisions.
+inputs. Root/family receiving and root-first Entity shutdown remain independent.
+DirectoryConfig validates immutable limits before affine application inputs
+transfer. Complete terminal control sums and ActorCustody remain authoritative.
 
-Before registry adoption, paired-source verification: all301 owner library tests
-pass debug and optimization.
-That all-feature workspace nextest run has571 passed, one failed and one
-skipped. The failure comprises four deliberately unfinished generated-custody
-pass fixtures; existing static denials remain active. Workspace/all-target/
-all-feature compilation, strict Clippy, formatting, two doctests, HTTP package
-tests and six terminating examples pass. These checks use the exact unpublished
-owner contracts, rather than the locked registry API.
+Published Behavior/Actors0.24.0 and macros0.14.1 came from049c88c through
+Release38159701650 after PR89/90/92. Communication0.1.5 came through the
+normal Release38161501036 after authorized PR11/12. Registry adoption is
+e4d2db1; publication of PR91 or correlation821380e is not inferred from local
+source. Exact source, release and gate evidence belongs in the owning PRD.
 
-The pre-adoption registry Nix exits1: formatting, panic-abort rejection,
-Observe Loom and Driver-law evidence pass; the other17 gates fail on missing
-published Behavior APIs. Neither disk exhaustion nor Darwin signing failure
-occurred; no waiver applies. The registry lock is byte-restored. Exact results:
-/private/tmp/bombay-application-owner-i27iyp5f/REGISTRY-NIX-RESULTS.json.
+Networking, durability, identity and deployment remain separately deferred.
+The evidence appendix owns coverage of270 backlog rows,100 failure records,
+seven examples,45 catalogue entries and19 capabilities. This coordination file
+adds no requirement checklist or second acceptance authority.
 
-Dependency delivery is verified: Behavior/Actors0.24.0 and macros0.14.1 were
-published from049c88c through Release38159701650, following reviewed PR89/90/92.
-Communication PR11/12 merged02ee4c5/24ad2b9 with explicit user authorization;
-normal Release38161501036 published0.1.5. Its exact release head passes seven
-native gates,88 tests/zero skips,21-file package verification and all CI.
-Registry versions are present/not yanked and annotated tags resolve their exact
-release commits. Bombay now selects these registry versions in its workspace
-and Driver-fuzz manifests/locks, with no source patch. Before editing, the
-owning PRD recorded the missing published-contract witness and unchanged
-runtime/custody law. Only owner packages update; the fuzz lock also reconciles
-its existing local Engine0.2.2 version. Rust production/tests/API delta0.
-At dependency-adoption commit e4d2db1, pinned workspace/all-target/all-feature
-compilation, formatting and the locked Driver-fuzz check pass against those
-releases. Engine tests pass74 cases plus one doctest in each profile. Fresh full
-native Nix verification passes17 gates and fails four: child/all-features,
-child/no-default-features, owner coverage and workspace tests. Each failure
-traces to the same four unfinished topology/custody compile-pass fixtures.
-Workspace nextest reports571 passed, one failed and one skipped; its sole
-failure is that fixture suite. The skipped descriptor-limited child test is
-executed successfully by its passing parent regression. No disk-exhaustion or
-Darwin-signing failure occurred. Exact results are in the owning PRD;
-acceptance remains open. Empty-birth alias PR91 remains separate unmerged work;
-publication is not inferred from local source.
-
-The private single declared topology now derives native edges, spaces and
-recursive custody; counter, heterogeneous recursion in both wrapper orders,
-supervisor replacement, FIFO and born/cold roles run in both profiles.
-Exact root/member selection rejects swapped and duplicate cold roles. Explicit
-logical root hosting shares the registered namespace. Public/sibling scope
-access runs complete counter journeys; private generated aliases/registration
-remain inaccessible. All source patches are now removed from that prototype:32 journey runs and12
-compile denials pass both profiles against registry Core/Actors0.24.0,
-macros0.14.1 and Communication0.1.5. Explicit child-family selection resolves
-actual worker addresses, keeps same-type roles distinct across replacement and
-removes their leases on retirement. These are bounded private proofs, not
-retained production or completed acceptance. Selecting the existing parent terminal family at the native port resolves
-root/descendant coherence without a marker. A root-only complete-interpreter
-proof then executes16 recursive/refusal/counter journeys across both profiles.
-A sealed public operational constructor now executes12 foreign recursive/refusal
-journeys across both profiles and keeps independent report ingress denials. The
-focused macro lowering executes counter, recursive root in both wrapper orders,
-natural completion, supervisor replacement and FIFO in both builds. This remains
-unretained prototype evidence, with cold/generic-root and complete final custody
-acceptance open.
-Remaining work includes root/interface minimization, canonical runner coverage,
-acquired-family-prefix and hosted cancellation/refusal, complete HTTP recovery
-and final compiler/runtime costs. Detailed
-proofs and requirement dispositions live only in the owning PRD.
-
-Shutdown capability now belongs only to the requesting operation. The unique
-lifecycle ingress is inferred through both root wrapper orders; execution and
-HTTP accept naturally completing domain actors without a shutdown lane. Pinned
-Axum graceful serving has no error transition, so its unreachable shutdown
-branch is deleted. Seven focused tests per profile preserve complete retirement,
-request replay and missing/ambiguous-lane denial; the original-source inverse
-rejects only E0277 and restores bytes exactly. Four real HTTP bind-refusal/retry
-runs,301 all-feature library tests, full workspace compilation, strict Clippy
-and formatting pass. Production+26/-30/net-4, tests+334/-0, types/modules0;
-fresh full native Nix passes17 gates and fails four on the same unfinished
-topology/custody pass fixtures. Nextest runs579 tests:578 pass, one topology
-suite fails and one child is skipped. No disk/signing failure or waiver applies. Evidence:
-/private/tmp/bombay-application-shutdown-pv2wsny6.
-
-Scope coverage of270 backlog rows,100 failure records, seven examples,45
-catalogue entries and19 capabilities remains in the owning evidence appendix.
-Networking, durability, identity and deployment remain separate deferred work.
-Detailed laws, falsifiers and checkpoints live only in the owning PRD.
-
-DirectoryConfig now validates immutable shard/waiter limits before affine
-application or runtime inputs transfer. Invalid construction returns both limits;
-valid family/directory/runtime construction is infallible. The old source drops
-original root, scope, family and cold child on invalid limits in both profiles;
-the retained inverse proves that exact loss. Four configuration tests, two
-construction/mutation denials, all four complete Application/Entity journeys,
-workspace compilation and strict Clippy pass. Six real directory Loom tests pass
-with the repository's unbounded settings. Production+89/-80/net+9; one narrow
-configuration error is added and impossible downstream error branches removed.
-This is added validated construction capability. The configuration-stage registry
-Nix passed four gates and failed17 on then-unpublished owner APIs, with no
-disk/signing failure. Those historical results do not certify the newly adopted
-releases. Evidence:
-/var/folders/3t/tds_sn397djg1g8d8c471g780000gn/T/
-bombay-directory-configuration-rki61ud7.
-
-Begin with a compiling counter and heterogeneous-child journey deriving
-runner and terminal types from the single declared topology while returning
-complete startup/retirement failures.
-Then prove supervisor and pool use before migrating the catalogue. A shorter
-happy path that drops owned failure values fails acceptance. The existing
-[execution contract](execution-ownership.md) remains a preservation obligation.
-
-The detailed owner assignments, stage dependencies, Rust crate choices,
-compiler-denial cases, resource limits, migration gates and stop conditions
-live only in the owning PRD. Each production stage requires its own measured
-law and failing regression under AGENTS; this candidate is not a blanket
-production change-budget approval.
-
-## Documentation change record
-
-Replaced the 13,280-line execution campaign with the compact preservation
-contract; deleted nine chronological companion files. Historical links point
-to immutable Git source. Retained every backlog requirement and failure record,
-corrected the requirement count from 260 to 270, and added this coordination
-entry. Status tables identify historical evidence instead of implying current
-source certification. Runtime code, dependencies, public API and tests are
-unchanged. Local Markdown targets, changed-document headings and whitespace checks pass;
-all 270 requirement rows and 100 failure records are byte-identical to main.
-`nix flake check` passed formatting but could not complete the dependency build:
-`No space left on device`. No workspace runtime-test pass is claimed.
-The complete documentation diff is 17 paths, including nine deleted documents,
-with 214 added and 22647 removed lines (net -22433).
-Production, tests, dependencies and public API deltas are zero. Cross-repository
-checks and scope are recorded once in the paired Behavior evidence appendix.
+The initial documentation cleanup replaced the large execution campaign with
+its compact [preservation contract](execution-ownership.md) and deleted nine
+chronological companions. Git preserves their history. The owning evidence
+appendix records that disposition; do not restore retired ledgers.

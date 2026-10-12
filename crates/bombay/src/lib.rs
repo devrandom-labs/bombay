@@ -28,11 +28,12 @@ pub use ::behavior_actors::{
 pub mod actors;
 pub use crate::application::Application;
 pub use crate::application::{
-    ApplicationBehavior, ApplicationCleanupError, ApplicationDefinitionError, ApplicationHandle,
-    ApplicationLifecycle, ApplicationOutcome, ApplicationStagingError, RunError,
+    ApplicationBehavior, ApplicationCleanupError, ApplicationClient, ApplicationDefinitionError,
+    ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationSender,
+    ApplicationStagingError, RunError,
 };
 pub use bombay_engine::{Completion, SettlementFailure};
-pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};
+pub use bombay_macros::{ActorSpaces, TerminalProjection, actor, topology};
 mod actor_execution;
 mod actor_outcome;
 mod address;
@@ -59,9 +60,10 @@ pub use crate::local::endpoint::{ActorRef, InstalledActor, SendError};
 pub use crate::local::environment::LocalActivationRejection;
 pub(crate) use crate::retirement::Retirement;
 pub use crate::terminal::{
-    ActorCustody, ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RootOrigin,
+    ActorCustody, ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RetirementSchema,
+    RootOrigin,
 };
-pub use crate::topology::Hosts;
+pub use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
 pub use crate::worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
 
 /// Conventional imports for Bombay applications.
@@ -78,9 +80,10 @@ pub mod prelude {
     };
     pub use crate::{
         ActorInterface, ActorRef, ActorRetirement, Application, ApplicationBehavior,
-        ApplicationHandle, ApplicationLifecycle, ApplicationStagingError, ChildFailure,
-        ChildOrigin, Completion, ExternalActor, ExternalActorError, ExternalTarget, MailAddr,
-        RootOrigin, RunError, SettlementFailure, TerminalProjection,
+        ApplicationClient, ApplicationHandle, ApplicationLifecycle, ApplicationSender,
+        ApplicationStagingError, ChildFailure, ChildOrigin, Completion, ExternalActor,
+        ExternalActorError, ExternalTarget, MailAddr, RootOrigin, RunError, SettlementFailure,
+        TerminalProjection,
     };
     pub use behavior_actors::{
         Activate, Crash, Exit, Machine, MachineError, Move, ShutdownRejection, StopOnShutdown,
@@ -106,3 +109,5 @@ impl ShutdownLedger {
 }
 #[cfg(test)]
 type LedgerProtocol = ShutdownLedger;
+
+pub use crate::local::effects::{EstablishNativeChild, NativeChild, PendingChild};

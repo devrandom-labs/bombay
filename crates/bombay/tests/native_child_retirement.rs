@@ -1,12 +1,11 @@
 use bombay::actors::ActorExt;
 use bombay::behavior::{
-    Actions, BehaviorActed, ChildHead, ClassifySettlement, CreateChild, CreationKind,
-    CreationSequence, Creations, Never, NoSends, SettlementStatus, Step, Stopped,
+    Actions, BehaviorActed, ClassifySettlement, CreateChild, CreationKind, CreationSequence,
+    Creations, Never, NoSends, SettlementStatus, Step, Stopped,
 };
 use bombay::lifecycle::StopOnShutdown;
 use bombay::{
-    ActorCustody, ActorRetirement, Application, ApplicationOutcome, ChildOrigin, Completion,
-    MailAddr, ProjectTerminal,
+    ActorCustody, ActorRetirement, Application, ApplicationOutcome, Completion, MailAddr,
 };
 
 struct Worker {
@@ -43,21 +42,12 @@ impl Creator {
     }
 }
 
-struct WorkerRetirement {
-    origin: ChildOrigin<Creator, ChildHead>,
-    retirement: ActorRetirement<ManagedWorker, Never, ()>,
-}
-
-impl ProjectTerminal<ChildOrigin<Creator, ChildHead>, ManagedWorker, ()> for WorkerRetirement {
-    type Descendants = Never;
-    fn project(
-        origin: ChildOrigin<Creator, ChildHead>,
-        retirement: ActorRetirement<ManagedWorker, Never, ()>,
-    ) -> Self {
-        Self { origin, retirement }
+bombay::topology! {
+    native_application {
+        root { Worker => worker; }
+        worker {}
     }
 }
-
 #[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::too_many_lines,
@@ -79,13 +69,14 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
         second_id,
         Worker { payload: second }.stop_on_shutdown(),
     ));
-    let outcome = Application::new(
+    let outcome = Application::with_topology(
         Creator {
             children: Some(children),
         }
         .stop_on_shutdown(),
+        native_application::Topology::new(),
     )
-    .run::<_, _, WorkerRetirement, _>()
+    .run()
     .await
     .unwrap_or_else(|original| {
         drop(original);
@@ -119,7 +110,7 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
         control,
         user,
         descendants,
-        child_failures: (failures, ()),
+        child_failures: failures,
         additional_failures,
         received_interpretation,
         received_source,
@@ -148,13 +139,13 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
     assert_eq!(status, SettlementStatus::Accepted);
     assert_eq!(descendants.len(), 2);
     let mut actual = Vec::new();
-    for WorkerRetirement { origin, retirement } in descendants {
+    for native_application::RootRetirements { origin, retirement } in descendants {
         let ActorRetirement::OwnerCancelled {
             custody,
             settlements,
             interpretation,
             source,
-        } = retirement
+        } = *retirement
         else {
             panic!("the parent joins each original cancelled child");
         };
@@ -165,7 +156,7 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
             control,
             user,
             descendants,
-            child_failures: (),
+            child_failures,
             additional_failures,
             received_interpretation,
             received_source,
@@ -179,6 +170,7 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
         assert_eq!(control, []);
         assert_eq!(user, []);
         assert_eq!(descendants, []);
+        assert_eq!(child_failures, []);
         assert!(additional_failures.is_empty());
         assert!(received_interpretation.is_none());
         assert!(received_source.is_none());

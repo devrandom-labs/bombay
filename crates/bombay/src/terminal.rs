@@ -178,19 +178,36 @@ impl<Owner, Role> PartialEq for ChildOrigin<Owner, Role> {
 
 impl<Owner, Role> Eq for ChildOrigin<Owner, Role> {}
 
+/// Select the complete direct-child failure family carried with descendants.
+///
+/// Implementations own static native custody metadata. Every occurrence's From
+/// inclusion must preserve its complete original failure without unwinding or
+/// performing effects. Generated application schemas use only enum constructors.
+pub trait RetirementSchema {
+    type Failure;
+}
+
+impl RetirementSchema for Never {
+    type Failure = Never;
+}
+
 /// Native actor projection; child raw descendants are selected before launch.
 /// Pure owned presentation uses `From<(Origin, Retirement)>`.
-pub trait ProjectTerminal<Origin, Actor, ChildFailures>
+pub trait ProjectTerminal<Origin, Actor>
 where
     Actor: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     /// The descendant report family owned by the child before projection.
-    type Descendants;
+    type Descendants: RetirementSchema;
 
     /// Consume the exact origin and complete retirement in the native policy context.
     fn project(
         origin: Origin,
-        terminal: ActorRetirement<Actor, Self::Descendants, ChildFailures>,
+        terminal: ActorRetirement<
+            Actor,
+            Self::Descendants,
+            Vec<<Self::Descendants as RetirementSchema>::Failure>,
+        >,
     ) -> Self;
 }
 

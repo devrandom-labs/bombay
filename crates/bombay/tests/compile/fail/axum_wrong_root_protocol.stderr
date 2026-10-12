@@ -15,7 +15,7 @@ error[E0631]: type mismatch in function arguments
 note: required by a bound in `bombay::application::http::<impl bombay::Application<Root, Spaces, Members>>::run_axum`
   --> src/application/http.rs
    |
-   |     pub async fn run_axum<Terminal, Actor, StagingFailure, ChildFailures, Router>(
+   |     pub async fn run_axum<Actor, StagingFailure, ChildFailures, Router>(
    |                  -------- required by a bound in this associated function
 ...
    |         Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,

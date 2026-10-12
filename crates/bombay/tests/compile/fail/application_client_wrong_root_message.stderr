@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/compile/fail/application_client_wrong_root_message.rs:7:34
+  |
+7 |     let _admission = client.send(String::from("another protocol")).await;
+  |                             ---- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `u8`, found `String`
+  |                             |
+  |                             arguments to this method are incorrect
+  |
+note: method defined here
+ --> src/application/interface.rs
+  |
+  |     pub fn send(
+  |            ^^^^

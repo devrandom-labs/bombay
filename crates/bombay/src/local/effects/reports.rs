@@ -266,8 +266,8 @@ mod parent_conversion_custody {
 
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::launch::spawn_local_execution;
-    use crate::local::children::ChildBindings;
     use crate::local::children::StructuralOrigins;
+    use crate::local::children::{ChildBindings, ChildBindingsIn};
     use crate::local::effects::ActionInterpreter;
     use crate::local::effects::{ApplicationCapabilities, ApplicationCapabilityInputs, NoParent};
     use crate::local::endpoint::ActorRef;
@@ -461,16 +461,59 @@ mod parent_conversion_custody {
         }
     }
 
+    impl crate::RetirementSchema for ChildTerminal {
+        type Failure = crate::ChildFailure<ChildOrigin<Parent, ChildHead>, Child>;
+    }
+    impl crate::NativeChild<Parent, ChildHead, Child, ChildTerminal, Never>
+        for ActorSpace<ParentProtocol>
+    {
+        fn registration(&self) -> crate::ActorSpace<<Child as behavior::Behavior>::Protocol> {
+            crate::ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: crate::PendingChild<
+                '_,
+                Parent,
+                Self,
+                ChildHead,
+                Child,
+                ChildTerminal,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl core::future::Future<
+            Output = behavior::ItemSettlement<
+                behavior::RoutedCreation<crate::MailAddr, Child>,
+                behavior::ChildCreationOutcome<Child, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            ChildTerminal:
+                crate::ProjectTerminal<Origin, Child, Descendants = Never> + Send + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(crate::MailAddr, u64, behavior::CreationId, behavior::CreationKind) -> Origin
+                + Send,
+        {
+            <Self as crate::EstablishNativeChild<Parent, Child, Never>>::establish_native_child::<
+                ChildHead,
+                ChildTerminal,
+                Origin,
+                OriginFn,
+            >(pending)
+        }
+    }
     struct ChildTerminal {
         origin: ChildOrigin<Parent, ChildHead>,
-        retirement: ActorRetirement<Child, Self, ()>,
+        retirement: ActorRetirement<Child, Never, Vec<Never>>,
     }
 
-    impl ProjectTerminal<ChildOrigin<Parent, ChildHead>, Child, ()> for ChildTerminal {
-        type Descendants = Self;
+    impl ProjectTerminal<ChildOrigin<Parent, ChildHead>, Child> for ChildTerminal {
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<Parent, ChildHead>,
-            retirement: ActorRetirement<Child, Self, ()>,
+            retirement: ActorRetirement<Child, Never, Vec<Never>>,
         ) -> Self {
             let observation = CHILD_RETIREMENT
                 .lock()
@@ -489,7 +532,7 @@ mod parent_conversion_custody {
                         terminal_report: retirement_terminal_report,
                         retirement_failures: retirement_native_failures,
                         additional_failures: retirement_additional_failures,
-                        child_failures: (),
+                        child_failures: native_failures,
                         behavior,
                         control,
                         user,
@@ -505,6 +548,7 @@ mod parent_conversion_custody {
             else {
                 panic!("the pure child stops in its ordinary initialization");
             };
+            assert_eq!(native_failures.as_slice(), []);
             assert!(retirement_interpretation.is_none());
             assert!(retirement_source.is_none());
             assert!(retirement_received_interpretation.is_none());
@@ -521,7 +565,7 @@ mod parent_conversion_custody {
             assert_eq!(settlements.len(), 1);
             assert_eq!(control.as_slice(), []);
             assert_eq!(user.as_slice(), []);
-            assert!(descendants.is_empty());
+            assert_eq!(descendants.as_slice(), []);
             assert!(capability_failures.is_empty());
             assert!(unread_owner_cancellation.is_none());
             let settlement = &settlements[0];
@@ -636,14 +680,15 @@ mod parent_conversion_custody {
                     >::new_with_bindings(
                         ApplicationCapabilityInputs {
                             address: MailAddr::APPLICATION_ROOT,
-                            actor_spaces,
+                            actor_spaces: actor_spaces.clone(),
                             allocations: addresses,
                             control,
                             timers,
                             observations,
                             terminal_reports,
                         },
-                        ChildBindings::<Parent, ChildTerminal, StructuralOrigins<Parent>>::default(
+                        ChildBindings::<Parent, ChildTerminal, StructuralOrigins<Parent>>::new_in(
+                            actor_spaces.as_ref(),
                         ),
                     );
                         // Advanced runtime/test-host admission only. The exact
@@ -949,7 +994,7 @@ mod parent_conversion_custody {
         };
         assert_eq!(returned.as_slice(), [59, 61, 67]);
         assert_eq!(returned.as_ptr() as usize, capability_allocation);
-        let (descendants, (occurrence_failures, ())) = descendants;
+        let (descendants, occurrence_failures) = descendants;
         assert_eq!(occurrence_failures.len(), 0);
         assert_eq!(descendants.len(), 1);
         let terminal = &descendants[0];
@@ -969,7 +1014,7 @@ mod parent_conversion_custody {
                     control: child_control,
                     user: child_user,
                     descendants: child_descendants,
-                    child_failures: (),
+                    child_failures: native_failures,
                     capability_failures: child_failures,
                     unread_owner_cancellation: child_unread,
                 },
@@ -981,6 +1026,7 @@ mod parent_conversion_custody {
         else {
             panic!("the original full child terminal remains available");
         };
+        assert_eq!(native_failures.as_slice(), []);
         assert!(child_retirement_interpretation.is_none());
         assert!(child_retirement_source.is_none());
         assert!(child_retirement_received_interpretation.is_none());

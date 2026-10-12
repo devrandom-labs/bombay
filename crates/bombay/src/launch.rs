@@ -16,7 +16,8 @@ use crate::local::effects::observation::TerminationObservations;
 use crate::local::effects::timers::LocalTimers;
 use crate::observe;
 use crate::terminal::{
-    ActorCustody, ActorRetirement, LocalOutcome, ProjectTerminal, retirement_ingress,
+    ActorCustody, ActorRetirement, LocalOutcome, ProjectTerminal, RetirementSchema,
+    retirement_ingress,
 };
 use crate::{ActorExecutionOutcome, Retirement};
 #[cfg(test)]
@@ -767,15 +768,21 @@ where
     ActionSettlementOf<B>: Send + 'static,
     Root: Send + 'static,
 {
-    pub(crate) fn project<Origin, Descendants, ChildFailures>(
-        task: OwnedTask<B, (Vec<Descendants>, ChildFailures)>,
+    pub(crate) fn project<Origin, Descendants>(
+        task: OwnedTask<
+            B,
+            (
+                Vec<Descendants>,
+                Vec<<Descendants as RetirementSchema>::Failure>,
+            ),
+        >,
         origin: Origin,
     ) -> Self
     where
         Origin: Send + 'static,
-        Descendants: Send + 'static,
-        ChildFailures: Send + 'static,
-        Root: ProjectTerminal<Origin, B, ChildFailures, Descendants = Descendants>,
+        Descendants: RetirementSchema + Send + 'static,
+        Descendants::Failure: Send + 'static,
+        Root: ProjectTerminal<Origin, B, Descendants = Descendants>,
     {
         let OwnedTask {
             task: actor_task,
@@ -1535,12 +1542,33 @@ mod tests {
     struct ProbeChildRole;
 
     #[derive(crate::TerminalProjection)]
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain the complete actual native child custody without a forwarding type alias"
+    )]
     enum ProbeTerminal {
         #[application_actor]
         Probe {
             origin: ChildOrigin<RootProbe, ProbeChildRole>,
-            terminal: ActorRetirement<RootProbe, Self, ()>,
+            terminal: ActorRetirement<
+                RootProbe,
+                Self,
+                Vec<crate::ChildFailure<ChildOrigin<RootProbe, ProbeChildRole>, RootProbe>>,
+            >,
         },
+    }
+
+    impl RetirementSchema for ProbeTerminal {
+        type Failure = crate::ChildFailure<ChildOrigin<RootProbe, ProbeChildRole>, RootProbe>;
+    }
+    impl ProjectTerminal<ChildOrigin<RootProbe, ProbeChildRole>, RootProbe> for ProbeTerminal {
+        type Descendants = Self;
+        fn project(
+            origin: ChildOrigin<RootProbe, ProbeChildRole>,
+            terminal: ActorRetirement<RootProbe, Self, Vec<<Self as RetirementSchema>::Failure>>,
+        ) -> Self {
+            Self::from((origin, terminal))
+        }
     }
 
     fn ignore_root_actions(_: &ActionsOf<RootProbe>) {}
@@ -2123,18 +2151,28 @@ mod tests {
             origin: descendant_origin,
             terminal: ActorRetirement::Cancelled,
         };
-        let mut child = spawn_owned_with(
-            ActorSpace::new(),
-            Config::new(2),
-            MailAddr(1),
-            RootProbe { terminal_marker: 0 },
-            |_, _, _, _| ObserveActionsWithRetirement {
-                observe: ignore_root_actions,
-                retirement: (vec![descendant], ()),
-            },
-        )
-        .await
-        .expect("the child must transfer private commitment before publication");
+        let mut child =
+            spawn_owned_with(
+                ActorSpace::new(),
+                Config::new(2),
+                MailAddr(1),
+                RootProbe { terminal_marker: 0 },
+                |_, _, _, _| ObserveActionsWithRetirement {
+                    observe: ignore_root_actions,
+                    retirement:
+                        (
+                            vec![descendant],
+                            Vec::<
+                                crate::ChildFailure<
+                                    ChildOrigin<RootProbe, ProbeChildRole>,
+                                    RootProbe,
+                                >,
+                            >::new(),
+                        ),
+                },
+            )
+            .await
+            .expect("the child must transfer private commitment before publication");
         child.acknowledge_binding();
         assert!(child.binding.is_none());
         let mut child_creations = CreationSequence::new();
@@ -2173,7 +2211,7 @@ mod tests {
                     control,
                     user,
                     descendants,
-                    child_failures: (),
+                    child_failures,
                 },
             interpretation,
             source,
@@ -2183,6 +2221,7 @@ mod tests {
         else {
             panic!("the projected child must preserve its completed disposition")
         };
+        assert!(child_failures.is_empty());
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(received_interpretation.is_none());
@@ -2486,7 +2525,7 @@ mod transitive_source_cancellation {
         release_progress: Option<oneshot::Receiver<()>>,
     }
     impl CommitActions<SourceCycleActor> for YieldingSourceInterpreter {
-        type Retired = (Vec<Never>, ());
+        type Retired = (Vec<Never>, Vec<Never>);
         async fn commit(
             &mut self,
             progress: &mut Option<
@@ -2703,7 +2742,7 @@ mod transitive_source_cancellation {
         drop(control);
     }
     fn verify_source_retirement_custody(
-        retirement: LocalOutcome<SourceCycleActor, (Vec<Never>, ())>,
+        retirement: LocalOutcome<SourceCycleActor, (Vec<Never>, Vec<Never>)>,
         observer: &ActorSpace<<SourceCycleActor as Behavior>::Protocol>,
         address: MailAddr,
     ) {
@@ -2733,7 +2772,7 @@ mod transitive_source_cancellation {
                     terminal_report,
                     retirement_failures,
                     additional_failures,
-                    child_failures: (),
+                    child_failures,
                     capability_failures,
                     unread_owner_cancellation,
                     behavior,
@@ -2744,7 +2783,7 @@ mod transitive_source_cancellation {
             interpretation,
             source,
             settlements,
-        } = ActorRetirement::<SourceCycleActor, Never, ()>::from_local(retirement)
+        } = ActorRetirement::<SourceCycleActor, Never, Vec<Never>>::from_local(retirement)
         else {
             panic!("the public exact projection preserves the same selected owner fact");
         };
@@ -2759,6 +2798,7 @@ mod transitive_source_cancellation {
         assert!(additional_failures.is_empty());
         assert!(capability_failures.is_empty());
         assert!(unread_owner_cancellation.is_none());
+        assert_eq!(child_failures.as_slice(), []);
         assert_eq!(
             behavior.scheduling_receipts, 0,
             "an admitted receipt remains exact custody when owner retirement wins before its fold"
@@ -4136,9 +4176,15 @@ mod independent_actor_execution {
         }
     }
 
+    impl crate::RetirementSchema for CompletedExecutionChild {
+        type Failure = crate::ChildFailure<
+            ChildOrigin<ExecutionParent, ChildHead>,
+            StopOnShutdown<ExecutionChild>,
+        >;
+    }
     struct CompletedExecutionChild {
         origin: ChildOrigin<ExecutionParent, ChildHead>,
-        terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
+        terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Never, Vec<Never>>,
     }
 
     #[expect(
@@ -4149,14 +4195,13 @@ mod independent_actor_execution {
         Option<oneshot::Sender<(Id, ChildOrigin<ExecutionParent, ChildHead>)>>,
     > = Mutex::new(None);
 
-    impl
-        ProjectTerminal<ChildOrigin<ExecutionParent, ChildHead>, StopOnShutdown<ExecutionChild>, ()>
+    impl ProjectTerminal<ChildOrigin<ExecutionParent, ChildHead>, StopOnShutdown<ExecutionChild>>
         for CompletedExecutionChild
     {
-        type Descendants = Self;
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<ExecutionParent, ChildHead>,
-            terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
+            terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Never, Vec<Never>>,
         ) -> Self {
             let publication = CHILD_EXECUTION_COMPLETION
                 .lock()
@@ -4166,6 +4211,58 @@ mod independent_actor_execution {
             let sent = publication.send((id(), origin));
             sent.expect("the caller retains its actual child completion receiver");
             Self { origin, terminal }
+        }
+    }
+
+    impl
+        crate::NativeChild<
+            StopOnShutdown<ExecutionParent>,
+            ChildHead,
+            StopOnShutdown<ExecutionChild>,
+            CompletedExecutionChild,
+            Never,
+        > for crate::ActorSpace<ExecutionParent>
+    {
+        fn registration(
+            &self,
+        ) -> crate::ActorSpace<<StopOnShutdown<ExecutionChild> as behavior::Behavior>::Protocol>
+        {
+            crate::ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: crate::PendingChild<
+                '_,
+                StopOnShutdown<ExecutionParent>,
+                Self,
+                ChildHead,
+                StopOnShutdown<ExecutionChild>,
+                CompletedExecutionChild,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl core::future::Future<
+            Output = behavior::ItemSettlement<
+                behavior::RoutedCreation<crate::MailAddr, StopOnShutdown<ExecutionChild>>,
+                behavior::ChildCreationOutcome<StopOnShutdown<ExecutionChild>, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            CompletedExecutionChild: crate::ProjectTerminal<Origin, StopOnShutdown<ExecutionChild>, Descendants = Never>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(crate::MailAddr, u64, behavior::CreationId, behavior::CreationKind) -> Origin
+                + Send,
+        {
+            <Self as crate::EstablishNativeChild<
+                StopOnShutdown<ExecutionParent>,
+                StopOnShutdown<ExecutionChild>,
+                Never,
+            >>::establish_native_child::<ChildHead, CompletedExecutionChild, Origin, OriginFn>(
+                pending,
+            )
         }
     }
 

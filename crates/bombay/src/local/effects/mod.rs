@@ -1,3 +1,4 @@
+pub use creation::{EstablishNativeChild, NativeChild, PendingChild};
 mod creation;
 mod delivery;
 pub(crate) mod observation;
@@ -966,7 +967,8 @@ mod atomic_interpretation_contract {
         assert!(Arc::ptr_eq(&registered, original_relationship.identity()));
         assert!(returned.is_empty());
         assert!(failures.is_empty());
-        let (descendants, ()) = retirement.descendants;
+        let (descendants, native_failures) = retirement.descendants;
+        assert_eq!(native_failures.as_slice(), []);
         assert_eq!(descendants, []);
         assert!(retirement.terminal_report.is_none());
         assert!(retirement.retirement_failures.is_empty());
@@ -1074,7 +1076,8 @@ mod atomic_interpretation_contract {
         assert_eq!(failures.len(), 0);
         assert!(retirement.terminal_report.is_none());
         assert!(retirement.retirement_failures.is_empty());
-        let (descendants, ()) = &retirement.descendants;
+        let (descendants, native_failures) = &retirement.descendants;
+        assert_eq!(native_failures.as_slice(), []);
         assert_eq!(descendants.len(), 0);
         assert!(Arc::ptr_eq(&registered, original_relationship.identity()));
         let Some(Received::Control(SourceControlEvent::Observation(
@@ -1214,7 +1217,8 @@ mod atomic_interpretation_contract {
         assert_eq!(late_failures.len(), 0);
         assert!(retirement.terminal_report.is_none());
         assert!(retirement.retirement_failures.is_empty());
-        let (descendants, ()) = &retirement.descendants;
+        let (descendants, native_failures) = &retirement.descendants;
+        assert_eq!(native_failures.as_slice(), []);
         assert_eq!(descendants.len(), 0);
         assert_eq!(first_relationship.id(), ObservationId(51));
         assert_eq!(second_relationship.id(), ObservationId(52));
@@ -1353,7 +1357,8 @@ mod atomic_interpretation_contract {
         assert_eq!(failures.len(), 0);
         assert!(retirement.terminal_report.is_none());
         assert!(retirement.retirement_failures.is_empty());
-        let (descendants, ()) = &retirement.descendants;
+        let (descendants, native_failures) = &retirement.descendants;
+        assert_eq!(native_failures.as_slice(), []);
         assert_eq!(descendants.len(), 0);
         assert!(replay.is_pending());
         drop((
@@ -1479,7 +1484,8 @@ mod atomic_interpretation_contract {
             assert_eq!(failures.len(), 0);
             assert!(retirement.terminal_report.is_none());
             assert!(retirement.retirement_failures.is_empty());
-            let (descendants, ()) = &retirement.descendants;
+            let (descendants, native_failures) = &retirement.descendants;
+            assert_eq!(native_failures.as_slice(), []);
             assert_eq!(descendants.len(), 0);
             assert!(replay.is_pending());
             match admission {
@@ -1603,7 +1609,8 @@ mod atomic_interpretation_contract {
         assert_eq!(retirement_failures.len(), 0);
         assert!(retirement.terminal_report.is_none());
         assert!(retirement.retirement_failures.is_empty());
-        let (descendants, ()) = &retirement.descendants;
+        let (descendants, native_failures) = &retirement.descendants;
+        assert_eq!(native_failures.as_slice(), []);
         assert_eq!(descendants.len(), 0);
         assert_eq!(returned.len(), 1);
         let mut returned = returned.into_iter();
@@ -1693,7 +1700,7 @@ mod atomic_interpretation_contract {
                 panic!("original actor must complete its Driver retirement");
             }
         };
-        let outcome: LocalOutcome<Root, (Vec<Never>, ())> = driver_retirement.into();
+        let outcome: LocalOutcome<Root, (Vec<Never>, Vec<Never>)> = driver_retirement.into();
         let ActorExecutionOutcome::Completed {
             behavior,
             residual,
@@ -1704,13 +1711,14 @@ mod atomic_interpretation_contract {
             panic!("real standard shutdown returns its completed outcome");
         };
         let residual = residual.settle_activation_tasks().await;
-        let retirement =
-            ActorRetirement::<Root, Never, ()>::from_local(ActorExecutionOutcome::Completed {
+        let retirement = ActorRetirement::<Root, Never, Vec<Never>>::from_local(
+            ActorExecutionOutcome::Completed {
                 behavior,
                 residual,
                 additional_failures,
                 completion,
-            });
+            },
+        );
         // Every gate, task and source owner settled before custody assertions.
         assert!(admitted.is_ok());
         assert!(released.is_ok());
@@ -1724,7 +1732,7 @@ mod atomic_interpretation_contract {
                     terminal_report: retirement_terminal_report,
                     retirement_failures: retirement_native_failures,
                     additional_failures: retirement_additional_failures,
-                    child_failures: (),
+                    child_failures,
                     behavior,
                     control,
                     user,
@@ -1740,6 +1748,7 @@ mod atomic_interpretation_contract {
         else {
             panic!("real completed actor retirement owns returned notification");
         };
+        assert_eq!(child_failures.as_slice(), []);
         assert!(retirement_interpretation.is_none());
         assert!(retirement_source.is_none());
         assert!(retirement_received_interpretation.is_none());
@@ -2123,11 +2132,13 @@ mod atomic_interpretation_contract {
         assert_eq!(late_second_failures.len(), 0);
         assert!(first_retirement.terminal_report.is_none());
         assert!(first_retirement.retirement_failures.is_empty());
-        let (first_descendants, ()) = &first_retirement.descendants;
+        let (first_descendants, native_failures) = &first_retirement.descendants;
+        assert_eq!(native_failures.as_slice(), []);
         assert_eq!(first_descendants.len(), 0);
         assert!(second_retirement.terminal_report.is_none());
         assert!(second_retirement.retirement_failures.is_empty());
-        let (second_descendants, ()) = &second_retirement.descendants;
+        let (second_descendants, native_failures) = &second_retirement.descendants;
+        assert_eq!(native_failures.as_slice(), []);
         assert_eq!(second_descendants.len(), 0);
         assert!(first_replay.is_pending());
         assert!(second_replay.is_pending());
@@ -2347,7 +2358,8 @@ mod atomic_interpretation_contract {
             assert_eq!(source_failures.len(), 0);
             assert!(source_retirement.terminal_report.is_none());
             assert!(source_retirement.retirement_failures.is_empty());
-            let (source_descendants, ()) = &source_retirement.descendants;
+            let (source_descendants, native_failures) = &source_retirement.descendants;
+            assert_eq!(native_failures.as_slice(), []);
             assert_eq!(source_descendants.len(), 0);
             drop((owner, mailbox, receiver, report_received));
             let (root_publication, termination) = observe::pair();
@@ -2490,7 +2502,8 @@ mod atomic_interpretation_contract {
             assert_eq!(ingress.user.len(), 0);
             assert_eq!(remaining_controls.len(), 0);
             assert_eq!(remaining_failures.len(), 0);
-            let (descendants, ()) = descendants;
+            let (descendants, native_failures) = descendants;
+            assert_eq!(native_failures.as_slice(), []);
             assert_eq!(descendants.len(), 0);
             assert_eq!(capability_failures.len(), 0);
             assert!(unread_owner_cancellation.is_none());
@@ -2666,7 +2679,8 @@ mod atomic_interpretation_contract {
             assert_eq!(source_failures.len(), 0);
             assert!(source_retirement.terminal_report.is_none());
             assert!(source_retirement.retirement_failures.is_empty());
-            let (source_descendants, ()) = &source_retirement.descendants;
+            let (source_descendants, native_failures) = &source_retirement.descendants;
+            assert_eq!(native_failures.as_slice(), []);
             assert_eq!(source_descendants.len(), 0);
             drop((owner, mailbox, receiver, report_received));
             let (root_publication, termination) = observe::pair();
@@ -2810,7 +2824,8 @@ mod atomic_interpretation_contract {
             assert_eq!(ingress.user.len(), 0);
             assert_eq!(remaining_controls.len(), 0);
             assert_eq!(remaining_failures.len(), 0);
-            let (descendants, ()) = descendants;
+            let (descendants, native_failures) = descendants;
+            assert_eq!(native_failures.as_slice(), []);
             assert_eq!(descendants.len(), 0);
             assert_eq!(capability_failures.len(), 0);
             assert!(unread_owner_cancellation.is_none());
@@ -3035,7 +3050,8 @@ mod live_capability_retirement {
         assert!(ingress.control.is_empty());
         assert_eq!(ingress.user.len(), 0);
         assert!(activation_tasks.is_empty());
-        let (descendants, ()) = descendants;
+        let (descendants, native_failures) = descendants;
+        assert_eq!(native_failures.as_slice(), []);
         assert_eq!(descendants.len(), 0);
         assert!(capability_failures.is_empty());
         assert!(unread_owner_cancellation.is_none());
@@ -3057,8 +3073,8 @@ mod capability_task_retirement {
 
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::launch::{ActorSpace, spawn_local_execution};
-    use crate::local::children::ChildBindings;
     use crate::local::children::StructuralOrigins;
+    use crate::local::children::{ChildBindings, ChildBindingsIn};
     use crate::local::effects::CapabilityRetirement;
     use crate::local::effects::reports::TerminalReportTransaction;
     use crate::local::effects::{ActionInterpreter, RetireCapabilities};
@@ -4640,7 +4656,6 @@ mod capability_task_retirement {
     }
 
     enum CapabilityEvent {
-        User(User<MailAddr, Never>),
         Activation(WorkerActivation<ActivationWorker, ActivationWork>),
         Preparation(
             WorkerPreparation<
@@ -4666,20 +4681,17 @@ mod capability_task_retirement {
     impl UserEvent for CapabilityEvent {
         type Addr = MailAddr;
         type Message = Never;
-        fn user(from: MailAddr, message: Never) -> Self {
-            Self::User(User::new(from, message))
+        fn user(_: MailAddr, message: Never) -> Self {
+            match message {}
         }
         fn into_user(self) -> Result<User<MailAddr, Never>, Self> {
-            match self {
-                Self::User(user) => Ok(user),
-                other => Err(other),
-            }
+            Err(self)
         }
     }
     impl ComposedEvent for CapabilityEvent {
         type Inner = User<MailAddr, Never>;
         fn from_inner(event: Self::Inner) -> Self {
-            Self::User(event)
+            match event.message {}
         }
     }
     impl InjectEvent<WorkerActivation<ActivationWorker, ActivationWork>, Here> for CapabilityEvent {
@@ -4818,17 +4830,65 @@ mod capability_task_retirement {
         }
     }
 
+    impl crate::RetirementSchema for CapabilityChildTerminal {
+        type Failure =
+            crate::ChildFailure<ChildOrigin<CapabilityParent, ChildHead>, CapabilityChild>;
+    }
+    impl
+        crate::NativeChild<
+            CapabilityParent,
+            ChildHead,
+            CapabilityChild,
+            CapabilityChildTerminal,
+            Never,
+        > for ActorSpace<MessageProtocol<MailAddr, Never>>
+    {
+        fn registration(
+            &self,
+        ) -> crate::ActorSpace<<CapabilityChild as behavior::Behavior>::Protocol> {
+            crate::ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: crate::PendingChild<
+                '_,
+                CapabilityParent,
+                Self,
+                ChildHead,
+                CapabilityChild,
+                CapabilityChildTerminal,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl core::future::Future<
+            Output = behavior::ItemSettlement<
+                behavior::RoutedCreation<crate::MailAddr, CapabilityChild>,
+                behavior::ChildCreationOutcome<CapabilityChild, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            CapabilityChildTerminal: crate::ProjectTerminal<Origin, CapabilityChild, Descendants = Never>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(crate::MailAddr, u64, behavior::CreationId, behavior::CreationKind) -> Origin
+                + Send,
+        {
+            <Self as crate::EstablishNativeChild<CapabilityParent, CapabilityChild, Never>>::establish_native_child::<ChildHead, CapabilityChildTerminal, Origin, OriginFn>(pending)
+        }
+    }
     struct CapabilityChildTerminal {
         origin: ChildOrigin<CapabilityParent, ChildHead>,
-        retirement: ActorRetirement<CapabilityChild, Self, ()>,
+        retirement: ActorRetirement<CapabilityChild, Never, Vec<Never>>,
     }
-    impl ProjectTerminal<ChildOrigin<CapabilityParent, ChildHead>, CapabilityChild, ()>
+    impl ProjectTerminal<ChildOrigin<CapabilityParent, ChildHead>, CapabilityChild>
         for CapabilityChildTerminal
     {
-        type Descendants = Self;
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<CapabilityParent, ChildHead>,
-            retirement: ActorRetirement<CapabilityChild, Self, ()>,
+            retirement: ActorRetirement<CapabilityChild, Never, Vec<Never>>,
         ) -> Self {
             // This total conversion moves the exact input; it performs no
             // assertion, callback, lookup or independent task spawning.
@@ -4923,7 +4983,7 @@ mod capability_task_retirement {
                     >::new_with_bindings(
                         ApplicationCapabilityInputs {
                             address: MailAddr::APPLICATION_ROOT,
-                            actor_spaces,
+                            actor_spaces: actor_spaces.clone(),
                             allocations,
                             control,
                             timers,
@@ -4934,7 +4994,7 @@ mod capability_task_retirement {
                             CapabilityParent,
                             CapabilityChildTerminal,
                             StructuralOrigins<CapabilityParent>,
-                        >::default(),
+                        >::new_in(actor_spaces.as_ref()),
                     );
                     ActionInterpreter::new((
                         Some(capabilities),
@@ -5133,7 +5193,6 @@ mod capability_task_retirement {
                 });
                 activation_declaration::assert_proxy_actions(&started, 0, &[], 0, 0, 0);
             }
-            CapabilityEvent::User(user) => match user.message {},
             CapabilityEvent::Preparation(report) => {
                 drop(report);
                 panic!("unexpected completed preparation before the original Started")
@@ -5153,7 +5212,6 @@ mod capability_task_retirement {
             CapabilityEvent::PreparationSource(SettledItem::Attempted(
                 ItemSettlement::Accepted(started),
             )) => started,
-            CapabilityEvent::User(user) => match user.message {},
             CapabilityEvent::Preparation(report) => {
                 drop(report);
                 panic!("unexpected completed preparation instead of its original start receipt")
@@ -5172,7 +5230,7 @@ mod capability_task_retirement {
         };
         let extra_input = observed_inputs.next();
         assert!(extra_input.is_none());
-        let (failures, ()) = child_failures;
+        let failures = child_failures;
         assert_eq!(failures.len(), 0);
         assert_eq!(descendants.len(), 1);
         let child = descendants
@@ -5192,7 +5250,7 @@ mod capability_task_retirement {
                     control: child_control,
                     user: child_user,
                     descendants: child_descendants,
-                    child_failures: (),
+                    child_failures: native_failures,
                     capability_failures: child_capabilities,
                     unread_owner_cancellation: child_unread,
                 },
@@ -5204,6 +5262,7 @@ mod capability_task_retirement {
         else {
             panic!("pure stop leaf has its original completed result")
         };
+        assert_eq!(native_failures.as_slice(), []);
         assert!(child_retirement_interpretation.is_none());
         assert!(child_retirement_source.is_none());
         assert!(child_retirement_received_interpretation.is_none());

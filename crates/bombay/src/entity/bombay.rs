@@ -1,5 +1,6 @@
 //! Native binding from Entity lifecycle effects to Bombay incarnations.
 
+use crate::terminal::RetirementSchema;
 use core::future::Future;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
@@ -17,7 +18,9 @@ use crate::ActorRetirement;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
 use crate::local::children::StructuralOrigins;
-use crate::local::children::{ChildBindings, RetireChildTasks, RuntimeChildBindings};
+use crate::local::children::{
+    ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
+};
 use crate::local::effects::CommitActions;
 use crate::local::effects::{ActionInterpreter, ActionSettlementOf};
 use crate::local::effects::{ApplicationCapabilities, NoParent};
@@ -81,12 +84,14 @@ where
         > + Send
         + 'static,
     N: Hosts<B::Protocol> + Send + Sync + 'static,
-    ChildBindings<B, Terminal, StructuralOrigins<<B as BehaviorBase>::Base>>:
-        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
+    ChildBindings<B, Terminal, StructuralOrigins<<B as BehaviorBase>::Base>>: ChildBindingsIn<B, Arc<N>>
+        + RetireChildTasks<Root = Terminal, Failures = ChildFailures>
+        + Send
+        + 'static,
     NativeEntityInterpreter<B, N, Terminal>:
         CommitActions<B, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
     ActionSettlementOf<B>: ClassifySettlement + Send + 'static,
-    Terminal: Send + 'static,
+    Terminal: RetirementSchema + Send + 'static,
     ChildFailures: Send + 'static,
 {
     async fn launch_entity(
@@ -105,6 +110,11 @@ where
             address,
             behavior,
             move |control, terminal_reports, timers, observations| {
+                let bindings = ChildBindings::<
+                    B,
+                    Terminal,
+                    StructuralOrigins<<B as BehaviorBase>::Base>,
+                >::new_in(&self);
                 ActionInterpreter::new(ApplicationCapabilities::new_with_bindings(
                     crate::local::effects::ApplicationCapabilityInputs {
                         address,
@@ -115,7 +125,7 @@ where
                         observations,
                         terminal_reports,
                     },
-                    ChildBindings::<B, Terminal, StructuralOrigins<<B as BehaviorBase>::Base>>::default(),
+                    bindings,
                 ))
             },
         )
@@ -421,7 +431,10 @@ mod tests {
         retired: Mutex<
             Option<
                 oneshot::Sender<
-                    Result<ActorRetirement<StopOnShutdown<DeliveryLedger>, Never, ()>, JoinError>,
+                    Result<
+                        ActorRetirement<StopOnShutdown<DeliveryLedger>, Never, Vec<Never>>,
+                        JoinError,
+                    >,
                 >,
             >,
         >,
@@ -433,7 +446,7 @@ mod tests {
         type Hosts = ActorSpace<DeliveryLedger>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = ();
+        type ChildFailures = Vec<Never>;
 
         #[expect(
             clippy::unused_async_trait_impl,
@@ -448,7 +461,7 @@ mod tests {
             &self,
             _: EntityId<u64>,
             _: ActivationId,
-            _: EntityActivationError<Never, Self::Behavior, Never, ()>,
+            _: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
         ) {
             panic!("the native ledger activation must succeed")
         }
@@ -465,7 +478,7 @@ mod tests {
             &self,
             id: &EntityId<u64>,
             activation: ActivationId,
-            retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, JoinError>,
+            retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
         ) {
             assert_eq!((*id).into_inner(), 73);
             assert_eq!(activation.get().get(), 83);
@@ -587,7 +600,7 @@ mod tests {
         assert!(terminal_report.is_none());
         assert!(retirement_failures.is_empty());
         assert!(additional_failures.is_empty());
-        assert_eq!(child_failures, ());
+        assert_eq!(child_failures.as_slice(), []);
         assert!(capability_failures.is_empty());
         assert!(unread_owner_cancellation.is_none());
         assert_eq!(completion, Completion::Stopped);
@@ -696,7 +709,10 @@ mod tests {
             Option<(
                 EntityId<u64>,
                 ActivationId,
-                Result<ActorRetirement<ShutdownConversionActor, Never, ()>, tokio::task::JoinError>,
+                Result<
+                    ActorRetirement<ShutdownConversionActor, Never, Vec<Never>>,
+                    tokio::task::JoinError,
+                >,
             )>,
         >,
     }
@@ -707,7 +723,7 @@ mod tests {
         type Hosts = ActorSpace<ShutdownConversionActor>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = ();
+        type ChildFailures = Vec<Never>;
         fn hydrate(
             &self,
             _: EntityId<u64>,
@@ -719,7 +735,7 @@ mod tests {
             &self,
             _: EntityId<u64>,
             _: ActivationId,
-            _: EntityActivationError<Never, Self::Behavior, Never, ()>,
+            _: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
         ) {
             panic!("the real native activation must succeed");
         }
@@ -752,7 +768,10 @@ mod tests {
             &self,
             id: &EntityId<u64>,
             activation: ActivationId,
-            retirement: Result<ActorRetirement<Self::Behavior, Never, ()>, tokio::task::JoinError>,
+            retirement: Result<
+                ActorRetirement<Self::Behavior, Never, Vec<Never>>,
+                tokio::task::JoinError,
+            >,
         ) {
             let prior = self
                 .retirement
@@ -797,7 +816,7 @@ mod tests {
             .task
             .retire()
             .await
-            .map(ActorRetirement::<ShutdownConversionActor, Never, ()>::from_local);
+            .map(ActorRetirement::<ShutdownConversionActor, Never, Vec<Never>>::from_local);
         let Ok(ActorRetirement::OwnerCancelled {
             custody:
                 ActorCustody {
@@ -841,7 +860,7 @@ mod tests {
                 && user.is_empty()
                 && descendants.is_empty()
         );
-        assert_eq!(child_failures, ());
+        assert_eq!(child_failures.as_slice(), []);
         assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
 
         let definition = Arc::new(ShutdownConversionDefinition {
@@ -938,7 +957,7 @@ mod tests {
                 && user.is_empty()
                 && descendants.is_empty()
         );
-        assert_eq!(child_failures, ());
+        assert_eq!(child_failures.as_slice(), []);
         assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
         assert_eq!(runtime.residents.available_permits(), 1);
         assert_eq!(runtime.hydrations.available_permits(), 1);
@@ -978,7 +997,7 @@ mod tests {
         type Hosts = ActorSpace<JoinedActor>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = ();
+        type ChildFailures = Vec<Never>;
 
         #[expect(
             clippy::unused_async_trait_impl,

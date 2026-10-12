@@ -22,7 +22,7 @@ impl Root {
 }
 
 type RootLocation = RootOrigin<StopOnShutdown<Root>>;
-type RootDeparture = ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal, ()>;
+type RootDeparture = ActorRetirement<StopOnShutdown<Root>, Never, Vec<Never>>;
 
 #[derive(TerminalProjection)]
 enum ApplicationTerminal {
@@ -93,7 +93,7 @@ fn equal_child_types_project_from_their_distinct_generated_role_positions() {
 #[tokio::test(flavor = "current_thread")]
 async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     let application_outcome = Application::new(Root.stop_on_shutdown())
-        .run::<_, _, ApplicationTerminal, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -129,7 +129,7 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
                         control,
                         user,
                         descendants,
-                        child_failures: (),
+                        child_failures,
                         ..
                     },
                 completion,
@@ -145,7 +145,8 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(control.len(), 0);
     assert_eq!(user.len(), 0);
-    assert!(descendants.is_empty());
+    assert_eq!(descendants.len(), 0);
+    assert_eq!(child_failures.len(), 0);
     assert_eq!(completion, Completion::Stopped);
 }
 

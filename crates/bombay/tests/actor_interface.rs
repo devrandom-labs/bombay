@@ -84,44 +84,41 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(Service.stop_on_shutdown())
-                .run_with::<RootTerminal<StopOnShutdown<Service>>, _, _, _, _, _>(
-                    |application| async move {
-                        let interface = application.interface(Api {
-                            service: application.root().established_recipient(),
-                        });
-                        let interface_description = format!("{interface:?}");
-                        assert!(interface_description.contains("ActorInterface"));
-                        assert!(interface_description.contains("api_type"));
-                        assert!(interface_description.contains(type_name::<Api>()));
-                        assert!(!interface_description.contains("EstablishedRecipient"));
-                        let lifecycle = application.lifecycle();
-                        let mut caller = interface
-                            .external::<Replies>()
-                            .expect("the external actor is established");
-                        let caller_address = caller.address();
+            Application::new(Service.stop_on_shutdown()).run_with(|application| async move {
+                let interface = application.interface(Api {
+                    service: application.root().established_recipient(),
+                });
+                let interface_description = format!("{interface:?}");
+                assert!(interface_description.contains("ActorInterface"));
+                assert!(interface_description.contains("api_type"));
+                assert!(interface_description.contains(type_name::<Api>()));
+                assert!(!interface_description.contains("EstablishedRecipient"));
+                let lifecycle = application.lifecycle();
+                let mut caller = interface
+                    .external::<Replies>()
+                    .expect("the external actor is established");
+                let caller_address = caller.address();
 
-                        caller
-                            .send(
-                                &interface.api().service,
-                                Command::Get {
-                                    value: 41,
-                                    reply_to: caller.recipient(),
-                                },
-                            )
-                            .await
-                            .expect("the exact receptionist admits the command");
+                caller
+                    .send(
+                        &interface.api().service,
+                        Command::Get {
+                            value: 41,
+                            reply_to: caller.recipient(),
+                        },
+                    )
+                    .await
+                    .expect("the exact receptionist admits the command");
 
-                        let reply = caller
-                            .receive()
-                            .await
-                            .expect("the external actor receives the exact reply");
-                        assert_eq!(reply.from, MailAddr(0));
-                        assert_eq!(reply.message, (caller_address, 42));
-                        let termination = lifecycle.termination().await;
-                        assert_eq!(termination, Ok(Exit::Normal));
-                    },
-                ),
+                let reply = caller
+                    .receive()
+                    .await
+                    .expect("the external actor receives the exact reply");
+                assert_eq!(reply.from, MailAddr(0));
+                assert_eq!(reply.message, (caller_address, 42));
+                let termination = lifecycle.termination().await;
+                assert_eq!(termination, Ok(Exit::Normal));
+            }),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -143,8 +140,7 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
             }
             retirement => retirement,
         },
-    )
-        .into();
+    );
     assert_completed(terminal, None);
 }
 
@@ -156,9 +152,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(WaitsForShutdown.stop_on_shutdown()).run_with::<RootTerminal<
-                StopOnShutdown<WaitsForShutdown>,
-            >, _, _, _, _, _>(
+            Application::new(WaitsForShutdown.stop_on_shutdown()).run_with(
                 |application| async move {
                     let interface = application.interface(());
                     let lifecycle = application.lifecycle();
@@ -227,8 +221,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
             }
             retirement => retirement,
         },
-    )
-        .into();
+    );
     assert_completed(terminal, None);
 }
 

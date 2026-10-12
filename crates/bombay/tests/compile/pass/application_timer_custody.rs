@@ -1,6 +1,5 @@
 //! Real elapsed reports establish readiness in both timer/shutdown orders.
 
-
 use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
@@ -9,7 +8,7 @@ use bombay::behavior::{
     ReportToParent, Step, User, UserEvent,
 };
 use bombay::prelude::{Exit, TimerId};
-use bombay::{ActorRetirement, Application, ChildRetirementSelection, MailAddr};
+use bombay::{ActorRetirement, Application, MailAddr};
 use core::time::Duration;
 use std::collections::BTreeSet;
 
@@ -132,6 +131,18 @@ fn replayed_elapsed_report_cannot_discharge_the_other_wrapper_order() {
     assert!(parent.outstanding.is_empty());
 }
 
+bombay::topology! {
+    timed_application {
+        root: TimedParent {}
+        members {
+            TimerOutside(TimerOutside) => timer;
+            ShutdownOutside(ShutdownOutside) => shutdown;
+        }
+        timer: bombay::timing::OneShot<bombay::lifecycle::StopOnShutdown<TimedWorker>> {}
+        shutdown: bombay::lifecycle::StopOnShutdown<bombay::timing::OneShot<TimedWorker>> {}
+    }
+}
+
 async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_custody() {
     let timer_payload: Box<[u8]> = Box::from([3, 7]);
     let timer_allocation = timer_payload.as_ptr();
@@ -153,22 +164,25 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();
-    let outcome = Application::new(TimedParent::new().stop_on_shutdown())
-        .child(TimerOutside, timer)
-        .child(ShutdownOutside, shutdown)
-        .run_with(|application| async move {
-            tokio::time::timeout(
-                Duration::from_secs(5),
-                application.lifecycle().termination(),
-            )
-            .await
-            .expect("both actual timer reports must arrive")
-        })
+    let outcome = Application::with_topology(
+        TimedParent::new().stop_on_shutdown(),
+        timed_application::Topology::new(),
+    )
+    .child(TimerOutside, timer)
+    .child(ShutdownOutside, shutdown)
+    .run_with(|application| async move {
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            application.lifecycle().termination(),
+        )
         .await
-        .unwrap_or_else(|original| {
-            drop(original);
-            panic!("entered the actual application host");
-        });
+        .expect("both actual timer reports must arrive")
+    })
+    .await
+    .unwrap_or_else(|original| {
+        drop(original);
+        panic!("entered the actual application host");
+    });
     let (termination, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("work returns only after both real elapsed reports");
@@ -176,13 +190,14 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
     assert_eq!(termination, Ok(Exit::Normal));
     let (_, retirement) = cleanup.expect("joined root and exact child custody");
     let ActorRetirement::Completed {
-custody: ActorCustody {
-behavior,
-descendants,
-..
-},
-..
-} = retirement
+        custody:
+            ActorCustody {
+                behavior,
+                descendants,
+                ..
+            },
+        ..
+    } = retirement
     else {
         panic!("the reunion completed the root");
     };
@@ -190,49 +205,57 @@ descendants,
     assert_eq!(descendants.len(), 2);
     let mut orders = BTreeSet::new();
     for report in descendants {
-        let report = match report.try_into_child_retirement(&TimerOutside) {
-            Ok(child) => {
+        let report = match report {
+            timed_application::RootRetirements::TimerOutside {
+                origin: _,
+                retirement,
+            } => {
                 let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-behavior,
-descendants,
-child_failures,
-..
-},
-..
-} = *child.retirement
+                    custody:
+                        ActorCustody {
+                            behavior,
+                            descendants,
+                            child_failures,
+                            ..
+                        },
+                    ..
+                } = *retirement
                 else {
                     panic!("timer reaction continued, so owner cancellation returns its actor");
                 };
                 assert!(descendants.is_empty());
-                assert_eq!(child_failures, ());
+                assert!(child_failures.is_empty());
                 assert_eq!(behavior.base().payload.as_ptr(), timer_allocation);
                 assert_eq!(&*behavior.base().payload, &[3, 7]);
                 let _new_order = orders.insert(behavior.base().order);
                 continue;
             }
-            Err(original) => original,
+            original => original,
         };
-        let child = report
-            .try_into_child_retirement(&ShutdownOutside)
-            .unwrap_or_else(|original| {
+        let (_, retirement) = match report {
+            timed_application::RootRetirements::ShutdownOutside { origin, retirement } => {
+                (origin, retirement)
+            }
+            original => {
                 drop(original);
                 panic!("the unmatched role retains the second child");
-            });
+            }
+        };
         let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-behavior,
-descendants,
-child_failures,
-..
-},
-..
-} = *child.retirement
+            custody:
+                ActorCustody {
+                    behavior,
+                    descendants,
+                    child_failures,
+                    ..
+                },
+            ..
+        } = *retirement
         else {
             panic!("shutdown outside preserves the same cancellation custody");
         };
         assert!(descendants.is_empty());
-        assert_eq!(child_failures, ());
+        assert!(child_failures.is_empty());
         assert_eq!(behavior.base().payload.as_ptr(), shutdown_allocation);
         assert_eq!(&*behavior.base().payload, &[11, 13]);
         let _new_order = orders.insert(behavior.base().order);

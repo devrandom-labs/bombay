@@ -832,6 +832,7 @@ where
 
 #[cfg(test)]
 mod child_input_custody {
+    use behavior::Never;
     use core::convert::Infallible;
     use core::pin::pin;
     use core::task::{Context, Poll, Waker};
@@ -853,7 +854,7 @@ mod child_input_custody {
     use crate::ShutdownLedger;
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::local::children::{
-        ChildAuthority, ChildBindingAt, ChildBindingAtCursor, ChildBindings, ChildStartupFailures,
+        ChildAuthority, ChildBindingAt, ChildBindingAtCursor, ChildBindings, ChildBindingsIn,
         StructuralOrigins,
     };
     use crate::local::effects::observation::TerminationObservations;
@@ -882,43 +883,162 @@ mod child_input_custody {
     >;
 
     #[expect(
-        clippy::large_enum_variant,
-        reason = "the test retains complete retirements of two real actor roles; no ownership law requires additional indirection"
+        clippy::type_complexity,
+        reason = "retain the exact proxy and worker custody product in the native delivery witness"
     )]
-    enum LedgerServiceRetirement {
-        Proxy {
-            origin: ChildOrigin<LedgerSupervisor, ChildHead>,
-            retirement: ActorRetirement<LedgerProxy, Self, ChildStartupFailures<LedgerProxy>>,
-        },
-        Worker {
-            origin: ChildOrigin<LedgerProxy, ChildHead>,
-            retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,
-        },
-    }
-    impl
-        ProjectTerminal<
-            ChildOrigin<LedgerSupervisor, ChildHead>,
+    struct LedgerServiceRetirement {
+        origin: ChildOrigin<LedgerSupervisor, ChildHead>,
+        retirement: ActorRetirement<
             LedgerProxy,
-            ChildStartupFailures<LedgerProxy>,
-        > for LedgerServiceRetirement
-    {
-        type Descendants = Self;
-        fn project(
-            origin: ChildOrigin<LedgerSupervisor, ChildHead>,
-            retirement: ActorRetirement<LedgerProxy, Self, ChildStartupFailures<LedgerProxy>>,
-        ) -> Self {
-            Self::Proxy { origin, retirement }
-        }
+            LedgerWorkerRetirement,
+            Vec<
+                crate::ChildFailure<
+                    ChildOrigin<LedgerProxy, ChildHead>,
+                    StopOnShutdown<ShutdownLedger>,
+                >,
+            >,
+        >,
     }
-    impl ProjectTerminal<ChildOrigin<LedgerProxy, ChildHead>, StopOnShutdown<ShutdownLedger>, ()>
+    #[expect(
+        dead_code,
+        reason = "the proxy owns complete worker custody when commands are admitted; this trace proves those commands were rejected intact"
+    )]
+    struct LedgerWorkerRetirement {
+        origin: ChildOrigin<LedgerProxy, ChildHead>,
+        retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>,
+    }
+    impl crate::RetirementSchema for LedgerServiceRetirement {
+        type Failure = crate::ChildFailure<ChildOrigin<LedgerSupervisor, ChildHead>, LedgerProxy>;
+    }
+    impl crate::RetirementSchema for LedgerWorkerRetirement {
+        type Failure = crate::ChildFailure<
+            ChildOrigin<LedgerProxy, ChildHead>,
+            StopOnShutdown<ShutdownLedger>,
+        >;
+    }
+    impl ProjectTerminal<ChildOrigin<LedgerSupervisor, ChildHead>, LedgerProxy>
         for LedgerServiceRetirement
     {
-        type Descendants = Self;
+        type Descendants = LedgerWorkerRetirement;
+        fn project(
+            origin: ChildOrigin<LedgerSupervisor, ChildHead>,
+            retirement: ActorRetirement<
+                LedgerProxy,
+                LedgerWorkerRetirement,
+                Vec<<LedgerWorkerRetirement as crate::RetirementSchema>::Failure>,
+            >,
+        ) -> Self {
+            Self { origin, retirement }
+        }
+    }
+    impl ProjectTerminal<ChildOrigin<LedgerProxy, ChildHead>, StopOnShutdown<ShutdownLedger>>
+        for LedgerWorkerRetirement
+    {
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<LedgerProxy, ChildHead>,
-            retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Self, ()>,
+            retirement: ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>,
         ) -> Self {
-            Self::Worker { origin, retirement }
+            Self { origin, retirement }
+        }
+    }
+    impl
+        crate::NativeChild<
+            LedgerSupervisor,
+            ChildHead,
+            LedgerProxy,
+            LedgerServiceRetirement,
+            LedgerWorkerRetirement,
+        > for ()
+    {
+        fn registration(&self) -> crate::ActorSpace<<LedgerProxy as behavior::Behavior>::Protocol> {
+            crate::ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: crate::PendingChild<
+                '_,
+                LedgerSupervisor,
+                Self,
+                ChildHead,
+                LedgerProxy,
+                LedgerServiceRetirement,
+                LedgerWorkerRetirement,
+                OriginFn,
+            >,
+        ) -> impl core::future::Future<
+            Output = behavior::ItemSettlement<
+                behavior::RoutedCreation<crate::MailAddr, LedgerProxy>,
+                behavior::ChildCreationOutcome<LedgerProxy, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            LedgerServiceRetirement: crate::ProjectTerminal<Origin, LedgerProxy, Descendants = LedgerWorkerRetirement>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(crate::MailAddr, u64, behavior::CreationId, behavior::CreationKind) -> Origin
+                + Send,
+        {
+            <Self as crate::EstablishNativeChild<
+                LedgerSupervisor,
+                LedgerProxy,
+                LedgerWorkerRetirement,
+            >>::establish_native_child::<ChildHead, LedgerServiceRetirement, Origin, OriginFn>(
+                pending,
+            )
+        }
+    }
+    impl
+        crate::NativeChild<
+            LedgerProxy,
+            ChildHead,
+            StopOnShutdown<ShutdownLedger>,
+            LedgerWorkerRetirement,
+            Never,
+        > for ()
+    {
+        fn registration(
+            &self,
+        ) -> crate::ActorSpace<<StopOnShutdown<ShutdownLedger> as behavior::Behavior>::Protocol>
+        {
+            crate::ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: crate::PendingChild<
+                '_,
+                LedgerProxy,
+                Self,
+                ChildHead,
+                StopOnShutdown<ShutdownLedger>,
+                LedgerWorkerRetirement,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl core::future::Future<
+            Output = behavior::ItemSettlement<
+                behavior::RoutedCreation<crate::MailAddr, StopOnShutdown<ShutdownLedger>>,
+                behavior::ChildCreationOutcome<StopOnShutdown<ShutdownLedger>, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            LedgerWorkerRetirement: crate::ProjectTerminal<Origin, StopOnShutdown<ShutdownLedger>, Descendants = Never>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(crate::MailAddr, u64, behavior::CreationId, behavior::CreationKind) -> Origin
+                + Send,
+        {
+            <Self as crate::EstablishNativeChild<
+                LedgerProxy,
+                StopOnShutdown<ShutdownLedger>,
+                Never,
+            >>::establish_native_child::<ChildHead, LedgerWorkerRetirement, Origin, OriginFn>(
+                pending,
+            )
         }
     }
 
@@ -964,7 +1084,7 @@ mod child_input_custody {
                 observations: TerminationObservations::new(),
                 terminal_reports: LocalTerminalReports::new(terminal_sender),
             },
-            LedgerBindings::default(),
+            LedgerBindings::new_in(&()),
         );
         let mut batch = Some(
             Creations::one(CreateChild::birth(pending, LedgerProxy::immediate()))
@@ -1207,20 +1327,12 @@ mod child_input_custody {
         assert_eq!(worker.entries, [59, 61, 67]);
         drop(reader);
         let retirement = creator.retire().await;
-        let (children, (failures, ())) = retirement.descendants;
+        let (children, failures) = retirement.descendants;
         assert!(failures.is_empty());
         assert_eq!(children.len(), 2);
-        for terminal in children {
-            match terminal {
-                LedgerServiceRetirement::Proxy { origin, retirement } => {
-                    assert!(origin.creation_id() == pending || origin.creation_id() == established);
-                    assert!(retirement.behavior().is_some());
-                }
-                LedgerServiceRetirement::Worker { origin, retirement } => {
-                    drop((origin, retirement));
-                    panic!("returned start commands were never admitted to the stopped proxy");
-                }
-            }
+        for LedgerServiceRetirement { origin, retirement } in children {
+            assert!(origin.creation_id() == pending || origin.creation_id() == established);
+            assert!(retirement.behavior().is_some());
         }
         drop((
             source_owner,

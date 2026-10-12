@@ -5,25 +5,10 @@
 use tokio::runtime::Builder;
 mod counter;
 
-use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
+use bombay::behavior::{ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 
-use crate::counter::{Counter, CounterMessage, CounterValue};
-
-struct Api {
-    counter: EstablishedRecipient<Counter>,
-}
-
-#[derive(TerminalProjection)]
-enum ApplicationTerminal<R>
-where
-    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-{
-    Root {
-        origin: RootOrigin<R>,
-        terminal: ActorRetirement<R, Self, ()>,
-    },
-}
+use crate::counter::{Counter, CounterMessage};
 
 fn main() {
     let application_host = Builder::new_current_thread()
@@ -32,26 +17,17 @@ fn main() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(Counter::new().stop_on_shutdown()).run_with::<ApplicationTerminal<
-                StopOnShutdown<Counter>,
-            >, _, _, _, _, _>(
+            Application::new(Counter::new().stop_on_shutdown()).run_with(
                 |application| async move {
-                    let lifecycle = application.lifecycle();
-                    let interface = application.interface(Api {
-                        counter: application.root().established_recipient(),
-                    });
-                    let mut caller = interface
-                        .external::<CounterValue>()
+                    let mut caller = application
+                        .client()
                         .expect("the counter customer is established");
                     caller
-                        .send(&interface.api().counter, CounterMessage::Increment)
+                        .send(CounterMessage::Increment)
                         .await
                         .expect("the counter accepts increment");
                     caller
-                        .send(
-                            &interface.api().counter,
-                            CounterMessage::Read(caller.recipient()),
-                        )
+                        .send(CounterMessage::Read(caller.recipient()))
                         .await
                         .expect("the counter accepts the exact reply capability");
                     let value = caller
@@ -59,9 +35,9 @@ fn main() {
                         .await
                         .expect("the counter replies to the exact customer");
                     assert_eq!(value.message, 1);
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = application.request_shutdown();
                     assert_eq!(shutdown, Ok(()));
-                    let termination = lifecycle.termination().await;
+                    let termination = application.termination().await;
                     assert_eq!(termination, Ok(Exit::Normal));
                 },
             ),
@@ -89,47 +65,34 @@ fn main() {
         "the counter retains its actor for inspection before owned consumption"
     );
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let terminal: ApplicationTerminal<_> = (origin, retirement).into();
-    assert_application_stopped(terminal);
-}
-
-fn assert_application_stopped<R>(terminal: ApplicationTerminal<R>)
-where
-    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    R::Settlements: ClassifySettlement,
-{
-    let ApplicationTerminal::Root {
-        origin,
-        terminal:
-            ActorRetirement::Completed {
-                custody,
-                settlements,
-                completion,
-                interpretation,
-                source,
-            },
+    let terminal = retirement;
+    let ActorRetirement::Completed {
+        custody,
+        settlements,
+        completion,
+        interpretation,
+        source,
     } = terminal
     else {
         panic!("the application must preserve the root's completed terminal state")
     };
-    let () = custody.child_failures;
+    assert_eq!(custody.child_failures.len(), 0);
     assert!(interpretation.is_none());
     assert!(source.is_none());
-    assert!(custody.additional_failures.is_empty());
+    assert_eq!(custody.additional_failures.len(), 0);
     assert!(custody.received_interpretation.is_none());
     assert!(custody.received_source.is_none());
     assert!(custody.source_index.is_none());
     assert!(custody.acquired_ingress.is_none());
-    assert!(custody.retirement_failures.is_empty());
+    assert_eq!(custody.retirement_failures.len(), 0);
     assert!(custody.terminal_report.is_none());
-    assert!(custody.capability_failures.is_empty());
+    assert_eq!(custody.capability_failures.len(), 0);
     assert!(custody.unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    drop(custody.behavior);
     let settlement_status = settlements.settlement_status();
     assert_eq!(settlement_status, SettlementStatus::Accepted);
-    assert!(custody.control.is_empty());
-    assert!(custody.user.is_empty());
-    assert!(custody.descendants.is_empty());
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
     assert_eq!(completion, Completion::Stopped);
 }

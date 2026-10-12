@@ -9,27 +9,10 @@ mod domain;
 mod http;
 mod order_book;
 
-use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use bombay::behavior::{ClassifySettlement, SettlementStatus};
+use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
-
-type OrderBookRoot = StopOnShutdown<order_book::OrderBook>;
-
-#[derive(TerminalProjection)]
-pub(crate) enum OrderBookTerminal {
-    Root {
-        origin: RootOrigin<OrderBookRoot>,
-        terminal: ActorRetirement<OrderBookRoot, Self, ()>,
-    },
-}
-
-impl fmt::Debug for OrderBookTerminal {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("OrderBookTerminal")
-    }
-}
 
 fn main() {
     let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3000);
@@ -39,13 +22,14 @@ fn main() {
         .expect("the synchronous HTTP caller owns its enabled current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(order_book::OrderBook::default().stop_on_shutdown())
-                .run_axum::<OrderBookTerminal, _, _, _, _>(address, |application| {
-                    let interface = application.interface(http::OrderApi {
-                        orders: application.root().established_recipient(),
-                    });
+            Application::new(order_book::OrderBook::default().stop_on_shutdown()).run_axum(
+                address,
+                |application| {
+                    let interface =
+                        application.interface(application.root().established_recipient());
                     http::router(interface, application.lifecycle())
-                }),
+                },
+            ),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -66,41 +50,46 @@ fn main() {
     else {
         panic!("the exact serving result and independently joined root remain complete");
     };
-    let terminal = OrderBookTerminal::from((origin, retirement));
+    let terminal = (origin, retirement);
     assert_application_stopped(terminal);
 }
 
-pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
-    let OrderBookTerminal::Root {
+pub(crate) fn assert_application_stopped<R>(
+    terminal: (RootOrigin<R>, ActorRetirement<R, Never, Vec<Never>>),
+) where
+    R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    R::Settlements: ClassifySettlement,
+{
+    let (
         origin,
-        terminal:
-            ActorRetirement::Completed {
-                custody:
-                    ActorCustody {
-                        child_failures: (),
-                        capability_failures,
-                        unread_owner_cancellation,
-                        behavior,
-                        control,
-                        user,
-                        descendants,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
-                        terminal_report,
-                    },
-                settlements,
-                completion,
-                interpretation,
-                source,
-            },
-    } = terminal
+        ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                },
+            settlements,
+            completion,
+            interpretation,
+            source,
+        },
+    ) = terminal
     else {
         panic!("the application must preserve the root's completed terminal state")
     };
+    assert_eq!(child_failures, []);
     assert!(interpretation.is_none());
     assert!(source.is_none());
     assert!(additional_failures.is_empty());
@@ -118,6 +107,6 @@ pub(crate) fn assert_application_stopped(terminal: OrderBookTerminal) {
     assert_eq!(settlement_status, SettlementStatus::Accepted);
     assert!(control.is_empty());
     assert!(user.is_empty());
-    assert!(descendants.is_empty());
+    assert_eq!(descendants, []);
     assert_eq!(completion, Completion::Stopped);
 }

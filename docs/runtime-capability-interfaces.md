@@ -15,9 +15,9 @@ Selo builds on Bombay, Mnesis and `mnesis-bombay`; Bombay does not depend on
 Selo or Mnesis. The new document's proposed distributed contracts are not
 implemented capabilities or additions to the current Engine port.
 
-The selected dependency graph uses published Behavior Core/Actors 0.23.0 and
-Behavior Macros 0.14.0. Their registry archives identify owning revision
-`d69f992b371c12ab34e73b18e45b8112c90a1508`.
+The selected dependency graph uses published Behavior Core/Actors 0.24.0 and
+Behavior Macros 0.14.1. Their registry archives identify owning revision
+`049c88c3a070d4ec145760d1af4ffb263eb54daa`.
 Behavior owns the direct
 `Behavior -> Actions` fold, closed typed action products, total interpretation,
 source-settlement custody, explicit generated creation-settlement disposition,
@@ -30,9 +30,22 @@ Bombay's terminal projection uses separate `RootOrigin<Owner>` and
 retains its exact address and required creator-local nonce. The existing
 `ChildRole` proof maps a structural child position to its declared role, and
 total owned `From` inclusion preserves the exact retirement payload. Native
-`ProjectTerminal<Origin, Actor, ChildFailures>` selects the raw descendant family
+`ProjectTerminal<Origin, Actor>` selects the raw descendant family
 before launch and executes once in the existing projection task. Root/child
 provenance cannot be changed through an optional nonce or a projection cast.
+Its selected RetirementSchema owns the exhaustive failure type; child failures
+travel in one ordered vector. ApplicationTopology selects the root's schema,
+and `topology!` derives its complete closed native proof. TerminalProjection
+derives pure owned presentation only, with no launch or source authority.
+
+ApplicationHandle constructs root-bound clients and one-way senders through
+the existing external-actor allocator/mailbox owner. ApplicationClient owns
+sole typed reply receiving; ApplicationSender has no receive authority. Both
+fix one exact root target at construction and return complete rejected commands.
+Neither gains lifecycle authority. The application's direct shutdown request
+and termination methods delegate to ApplicationLifecycle; they define no
+additional lifecycle state or engine. Named exported interfaces remain separate
+capability products for external consumers and other destinations.
 
 ## One runtime, two halves
 
@@ -110,10 +123,20 @@ Address; roles and routes never become storage identities.
 
 ## External actor interface
 
-`ActorInterface<Api>` is Bombay's transport-neutral application boundary.
+`ApplicationHandle` is the ordinary entry to typed communication and lifecycle.
+Its `client()` and `sender()` select the root; `client_to(target)` and
+`sender_to(target)` select an existing exact recipient or stable Entity reference.
+The client owns sole typed reply receiving; the sender has no reply or lifecycle
+authority. Both constructors preserve the original owned target on allocation
+rejection. For one reply mailbox used across several targets, `external()`
+establishes the existing ExternalActor directly. Direct Application shutdown and
+termination methods delegate to the existing lifecycle owner.
+
+`ActorInterface<Api>` is Bombay's transport-neutral exported capability product.
 `Api` is an application-defined static product of receptionist capabilities;
 the runtime neither discovers exports from topology nor grants lifecycle
-authority through the product. `ApplicationLifecycle<P, E>` is the separate
+authority through the product. Its explicit-target constructors use the same
+client and sender products and allocator as Application. `ApplicationLifecycle<P, E>` is the separate
 projection for root shutdown and termination; `E` is the installed root's
 concrete event sum.
 
@@ -128,8 +151,10 @@ origin. Its receiver returns the complete `User` so reply provenance is not
 discarded. Closure precedes terminal publication, and stale exact recipients
 reject without retargeting.
 
-The interface's direct send accepts only `EstablishedRecipient<Target>`. This
-is not an arbitrary restriction: a logical `Recipient<Target>` resolves in one
+`ExternalTarget` is sealed and selects the admission contract for an
+`EstablishedRecipient<Target>` or native `EntityRef<Definition>`. The former
+returns complete `SendError` custody; the latter preserves `AdmissionFailure`
+and existing Entity fencing/reactivation. A logical `Recipient<Target>` resolves in one
 selected Address namespace, while the transport-neutral interface deliberately
 does not expose Bombay's private topology product or an erased protocol map.
 An application that intends stable logical names must select a typed local
@@ -677,7 +702,7 @@ The functional entry remains value-oriented and async-first:
 
 ```text
 let outcome = Application::new(service.stop_on_shutdown())
-    .run::<_, _, Never, _>()
+    .run()
     .await;
 ```
 

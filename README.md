@@ -28,9 +28,16 @@ The [application topology example](examples/application-topology/src/main.rs)
 executes the ordinary async root boundary and inspects its complete raw root
 retirement through an application-owned terminal projection.
 
-`ApplicationTerminal` is an application-owned `#[derive(TerminalProjection)]`
-sum. It retains the exact final state, runtime origin, descendant terminals,
-and completion or failure for every declared actor.
+The [counter](examples/counter/src/main.rs) uses inferred `.run_with(work)`
+and consumes its complete raw retirement directly. A closed `topology!`
+declaration derives spaces and actor-indexed recursive descendant custody for
+child graphs; see the [executable topology tests](crates/bombay/tests/application_topology.rs).
+Finite supervisor and pool chains infer actor types from their owning
+constructors. A recursive born class can name its nominal role owner with
+`node for Node`, without repeating its wrapped child type. Cold or multi-role
+roots name their domain actor once; constructor decorations remain inferred.
+An application may additionally use `#[derive(TerminalProjection)]` for a total
+owned presentation. That optional inclusion grants no native startup authority.
 
 `run`, `run_with`, and feature-gated `run_axum` are inherent async methods.
 They use an entered, caller-owned Tokio host. `Application::run_blocking`
@@ -47,29 +54,32 @@ output, shutdown, and raw root custody. Work futures and outputs may borrow
 caller values and need not be `Send`; independently spawned actor tasks retain
 their actual `Send + 'static` requirements.
 
-Returning from the boundary does not stop the actor. The handle names shutdown
-authority separately from root delivery: `application.lifecycle()` is the one
-ordinary root-lifecycle spelling, and its `termination()` retains the exact
-incarnation fact. A boundary-owned `Result<T, E>` remains the exact bare supplied Work output.
+Returning from Work does not stop the actor. Use
+`application.request_shutdown()` and `application.termination()` directly.
+Project `application.lifecycle()` when a separate consumer needs only lifecycle
+authority. Termination retains the exact incarnation fact. A boundary-owned `Result<T, E>` remains the exact bare supplied Work output.
 A user-returned `Option<T>` also remains unchanged, including `None`. The output
 coexists with the independent complete cleanup result. When no Work is supplied, both callable and output are `None` in
 `Option<Never>`; no unit callable is fabricated. The raw root result retains `RootOrigin<Owner>` and the actual
 `ActorRetirement<Actor, Terminal, ChildFailures>`. Its `ActorTaskFailed` variant
 owns the original actor `JoinError`. `ApplicationCleanupError::PublicationClosed`
 and `TaskFailed` separately retain cleanup receiving and cleanup-task errors.
-`Terminal` selects descendant projection, not automatic root projection.
+The topology selects actor-indexed descendant custody and its complete child
+failure vector; root presentation is a separate ownership-preserving choice.
 Inspect normal stop or exhaustion with `retirement.completion()`; independent
 child and cleanup failures still require their own decisions.
 Borrow retained state with `retirement.behavior()` and shared runtime custody
 with `retirement.custody()`. Consuming matches move the named `custody` product;
 phase-specific outcomes and unfinished actions remain in the retirement.
 See the [retirement migration guidance](docs/user-facing-api.md) for field changes.
-For an empty descendant destination, `.run::<_, _, Never, _>().await` makes
-that choice explicit while the other axes remain inferred. Project the root
+A no-birth root uses `.run().await` without a topology declaration or type
+arguments. Its empty descendant and failure types are inferred. Project the root
 outside the runtime only when the application selects that policy.
 
-An interface establishes a real typed external actor rather than inventing a
-raw sender address. The [external actor tests](crates/bombay/tests/actor_interface.rs)
+`application.client()` binds the root and owns typed reply receiving;
+`application.sender()` supplies a real one-way sender. Use `client_to` or
+`sender_to` for another exact actor capability or Entity reference. An exported
+`ActorInterface<Api>` provides the same customer constructors. The [external actor tests](crates/bombay/tests/actor_interface.rs)
 execute the exact send, reply, and rejected-payload path.
 
 The external actor owns one fresh allocated `MailAddr`, one cloneable exact reply

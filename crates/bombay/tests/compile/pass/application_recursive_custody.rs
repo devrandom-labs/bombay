@@ -1,14 +1,11 @@
 //! Inferred recursive creation, exact refusal and borrowed/owned nominal role custody.
 
-
 use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::Children;
-use bombay::behavior::{
-    Actions, BehaviorActed, CreateChild, CreationSequence, Creations, Never,
-};
+use bombay::behavior::{Actions, BehaviorActed, CreateChild, CreationSequence, Creations, Never};
 use bombay::lifecycle::StopOnShutdown;
-use bombay::{ActorRetirement, Application, ChildRetirementSelection};
+use bombay::{ActorRetirement, Application};
 
 enum NodeStartup {
     Grow { remaining: u32 },
@@ -53,12 +50,20 @@ impl Node {
     }
 }
 
+bombay::topology! {
+    recursive_application {
+        root: Node { Next(NodeChildrenNext) => node; }
+        node: StopOnShutdown<Node> { Next(NodeChildrenNext) => node; }
+    }
+}
+
 async fn nominal_recursive_creations() {
-    let outcome = Application::new(
+    let outcome = Application::with_topology(
         Node {
             startup: NodeStartup::Grow { remaining: 3 },
         }
         .stop_on_shutdown(),
+        recursive_application::Topology::new(),
     )
     .run_with(|application| async move {
         application
@@ -77,30 +82,35 @@ async fn nominal_recursive_creations() {
     });
     let (_, retirement) = cleanup.expect("actual cleanup acquired");
     let ActorRetirement::Completed {
-custody: ActorCustody {
-descendants,
-..
-},
-..
-} = retirement else {
+        custody: ActorCustody { descendants, .. },
+        ..
+    } = retirement
+    else {
         panic!("root completed");
     };
     let mut depth = 0;
+    let [recursive_application::RootRetirements { origin, retirement }] = descendants
+        .try_into()
+        .unwrap_or_else(|_| panic!("one original direct child"));
+    assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::OwnerCancelled {
+        custody: ActorCustody { descendants, .. },
+        ..
+    } = *retirement
+    else {
+        panic!("original direct child custody");
+    };
+    depth += 1;
     let mut remaining = descendants;
-    while let Some(bombay::behavior::ChildChoice::Head(bombay::ChildRetirement {
-        origin,
-        retirement,
-    })) = remaining.pop()
+    while let Some(recursive_application::NodeRetirements { origin, retirement }) = remaining.pop()
     {
         assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
         depth += 1;
         let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-descendants,
-..
-},
-..
-} = *retirement else {
+            custody: ActorCustody { descendants, .. },
+            ..
+        } = *retirement
+        else {
             panic!("descendant retains parent retirement");
         };
         remaining.extend(descendants);
@@ -130,6 +140,13 @@ impl Parent {
     }
 }
 
+bombay::topology! {
+    parent_application {
+        root: Parent { Branch(ParentChildrenBranch) => node; }
+        node: StopOnShutdown<Node> { Next(NodeChildrenNext) => node; }
+    }
+}
+
 async fn initialization_rejection_returns_the_original_child_and_work() {
     let payload: Box<[u8]> = Box::from([7, 13]);
     let allocation = payload.as_ptr();
@@ -145,7 +162,7 @@ async fn initialization_rejection_returns_the_original_child_and_work() {
     .stop_on_shutdown();
     let work = Box::new(String::from("root work survived"));
     let work_allocation = work.as_ptr();
-    let outcome = Application::new(root)
+    let outcome = Application::with_topology(root, parent_application::Topology::new())
         .run_with(move |application| async move {
             application
                 .lifecycle()
@@ -165,14 +182,15 @@ async fn initialization_rejection_returns_the_original_child_and_work() {
     assert_eq!(work.as_ptr(), work_allocation);
     let (_, retirement) = cleanup.expect("joined root");
     let ActorRetirement::Completed {
-custody: ActorCustody {
-descendants,
-child_failures: (child_failures, ()),
-..
-},
-settlements,
-..
-} = retirement
+        custody:
+            ActorCustody {
+                descendants,
+                child_failures,
+                ..
+            },
+        settlements,
+        ..
+    } = retirement
     else {
         panic!("child rejection does not invent a failed root");
     };
@@ -224,7 +242,7 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
         child: Some(CreateChild::birth(id, child)),
     }
     .stop_on_shutdown();
-    let outcome = Application::new(root)
+    let outcome = Application::with_topology(root, parent_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
@@ -242,46 +260,38 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
     });
     let (_, retirement) = cleanup.expect("joined root");
     let ActorRetirement::Completed {
-custody: ActorCustody {
-mut descendants,
-..
-},
-..
-} = retirement
+        custody: ActorCustody {
+            mut descendants, ..
+        },
+        ..
+    } = retirement
     else {
         panic!("parent completed");
     };
-    let Some(bombay::behavior::ChildChoice::Head(bombay::ChildRetirement { origin, retirement })) =
-        descendants.pop()
-    else {
+    let Some(parent_application::RootRetirements { origin, retirement }) = descendants.pop() else {
         panic!("the direct child's parent role survives");
     };
     assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
     assert!(descendants.is_empty());
     let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-descendants,
-..
-},
-..
-} = *retirement else {
+        custody: ActorCustody { descendants, .. },
+        ..
+    } = *retirement
+    else {
         panic!("the child retains cancellation custody");
     };
     let mut depth = 0;
     let mut descendants = descendants;
-    while let Some(bombay::behavior::ChildChoice::Head(bombay::ChildRetirement {
-        origin,
-        retirement,
-    })) = descendants.pop()
-    {
+    while let Some(parent_application::NodeRetirements { origin, retirement }) = descendants.pop() {
         assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
         let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-descendants: children,
-..
-},
-..
-} = *retirement
+            custody:
+                ActorCustody {
+                    descendants: children,
+                    ..
+                },
+            ..
+        } = *retirement
         else {
             panic!("the descendant retains cancellation custody");
         };
@@ -304,7 +314,7 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
         )),
     }
     .stop_on_shutdown();
-    let outcome = Application::new(root)
+    let outcome = Application::with_topology(root, parent_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
@@ -322,64 +332,46 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
     });
     let (_, retirement) = cleanup.expect("complete parent retirement");
     let ActorRetirement::Completed {
-custody: ActorCustody {
-mut descendants,
-..
-},
-..
-} = retirement
+        custody: ActorCustody {
+            mut descendants, ..
+        },
+        ..
+    } = retirement
     else {
         panic!("parent completed");
     };
     let report = descendants.pop().expect("direct child retired");
     assert!(descendants.is_empty());
-    let before = report
-        .child_retirement(&ParentChild::Branch)
-        .map(|child| (child.origin, core::ptr::from_ref(&*child.retirement)))
-        .expect("declared parent role borrows exact custody");
-    let child = report
-        .try_into_child_retirement(&ParentChild::Branch)
-        .unwrap_or_else(|original| {
-            drop(original);
-            panic!("declared parent role consumes exact custody");
-        });
-    assert_eq!(
-        (child.origin, core::ptr::from_ref(&*child.retirement)),
-        before
+    let before = (
+        report.origin,
+        core::ptr::from_ref(report.retirement.as_ref()),
     );
+    let parent_application::RootRetirements { origin, retirement } = report;
+    assert_eq!((origin, core::ptr::from_ref(retirement.as_ref())), before);
     let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-descendants,
-..
-},
-..
-} = *child.retirement else {
+        custody: ActorCustody { descendants, .. },
+        ..
+    } = *retirement
+    else {
         panic!("the original child was cancelled by its owner");
     };
     let mut descendants = descendants;
     let mut depth = 0;
     while let Some(report) = descendants.pop() {
-        let before = report
-            .child_retirement(&NodeChild::Next)
-            .map(|child| (child.origin, core::ptr::from_ref(&*child.retirement)))
-            .expect("recursive role borrows the original box");
-        let child = report
-            .try_into_child_retirement(&NodeChild::Next)
-            .unwrap_or_else(|original| {
-                drop(original);
-                panic!("recursive role consumes the original box");
-            });
-        assert_eq!(
-            (child.origin, core::ptr::from_ref(&*child.retirement)),
-            before
+        let before = (
+            report.origin,
+            core::ptr::from_ref(report.retirement.as_ref()),
         );
+        let parent_application::NodeRetirements { origin, retirement } = report;
+        assert_eq!((origin, core::ptr::from_ref(retirement.as_ref())), before);
         let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-descendants: children,
-..
-},
-..
-} = *child.retirement
+            custody:
+                ActorCustody {
+                    descendants: children,
+                    ..
+                },
+            ..
+        } = *retirement
         else {
             panic!("recursive cancellation custody stays intact");
         };
@@ -411,6 +403,16 @@ impl Siblings {
     }
 }
 
+bombay::topology! {
+    sibling_application {
+        root: Siblings {
+            Primary(SiblingsChildrenPrimary) => node;
+            Replica(SiblingsChildrenReplica) => node;
+        }
+        node: StopOnShutdown<Node> { Next(NodeChildrenNext) => node; }
+    }
+}
+
 async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
     let mut sequence = CreationSequence::new();
     let primary = sequence.issue().expect("two sibling requests fit");
@@ -434,7 +436,7 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
         ]),
     }
     .stop_on_shutdown();
-    let outcome = Application::new(root)
+    let outcome = Application::with_topology(root, sibling_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
@@ -452,73 +454,78 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
     });
     let (_, retirement) = cleanup.expect("complete sibling retirement");
     let ActorRetirement::Completed {
-custody: ActorCustody {
-descendants,
-..
-},
-..
-} = retirement else {
+        custody: ActorCustody { descendants, .. },
+        ..
+    } = retirement
+    else {
         panic!("parent completed");
     };
     assert_eq!(descendants.len(), 2);
     let mut primary_addresses = Vec::new();
     let mut replica_addresses = Vec::new();
     for report in descendants {
-        let primary_before = report
-            .child_retirement(&SiblingsChild::Primary)
-            .map(|child| (child.origin, core::ptr::from_ref(&*child.retirement)));
-        let replica_before = report
-            .child_retirement(&SiblingsChild::Replica)
-            .map(|child| (child.origin, core::ptr::from_ref(&*child.retirement)));
-        let report = match report.try_into_child_retirement(&SiblingsChild::Primary) {
-            Ok(child) => {
+        let primary_before = match &report {
+            sibling_application::RootRetirements::Primary { origin, retirement } => {
+                Some((*origin, core::ptr::from_ref(retirement.as_ref())))
+            }
+            _ => None,
+        };
+        let replica_before = match &report {
+            sibling_application::RootRetirements::Replica { origin, retirement } => {
+                Some((*origin, core::ptr::from_ref(retirement.as_ref())))
+            }
+            _ => None,
+        };
+        let report = match report {
+            sibling_application::RootRetirements::Primary { origin, retirement } => {
                 assert_eq!(
                     primary_before,
-                    Some((child.origin, core::ptr::from_ref(&*child.retirement)))
+                    Some((origin, core::ptr::from_ref(&*retirement)))
                 );
                 assert!(replica_before.is_none());
-                primary_addresses.push(child.origin.address());
+                primary_addresses.push(origin.address());
                 let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-descendants,
-..
-},
-..
-} = *child.retirement else {
+                    custody: ActorCustody { descendants, .. },
+                    ..
+                } = *retirement
+                else {
                     panic!("the original primary was cancelled");
                 };
                 assert!(descendants.is_empty());
                 continue;
             }
-            Err(original) => {
+            original => {
                 assert!(primary_before.is_none());
                 assert_eq!(
                     replica_before,
-                    original
-                        .child_retirement(&SiblingsChild::Replica)
-                        .map(|child| { (child.origin, core::ptr::from_ref(&*child.retirement)) })
+                    (match &original {
+                        sibling_application::RootRetirements::Replica { origin, retirement } =>
+                            Some((*origin, core::ptr::from_ref(retirement.as_ref()))),
+                        _ => None,
+                    })
                 );
                 original
             }
         };
-        let child = report
-            .try_into_child_retirement(&SiblingsChild::Replica)
-            .unwrap_or_else(|original| {
+        let (origin, retirement) = match report {
+            sibling_application::RootRetirements::Replica { origin, retirement } => {
+                (origin, retirement)
+            }
+            original => {
                 drop(original);
                 panic!("the unmatched sibling retains its actual role");
-            });
+            }
+        };
         assert_eq!(
             replica_before,
-            Some((child.origin, core::ptr::from_ref(&*child.retirement)))
+            Some((origin, core::ptr::from_ref(&*retirement)))
         );
-        replica_addresses.push(child.origin.address());
+        replica_addresses.push(origin.address());
         let ActorRetirement::OwnerCancelled {
-custody: ActorCustody {
-descendants,
-..
-},
-..
-} = *child.retirement else {
+            custody: ActorCustody { descendants, .. },
+            ..
+        } = *retirement
+        else {
             panic!("the original replica was cancelled");
         };
         assert!(descendants.is_empty());

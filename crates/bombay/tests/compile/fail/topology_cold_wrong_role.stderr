@@ -1,0 +1,315 @@
+error[E0277]: the declared topology does not match root `StopOnShutdown<Root>` and cold members `(ForeignRole, StopOnShutdown<Worker>, ())`
+  --> tests/compile/fail/topology_cold_wrong_role.rs:19:10
+   |
+19 |         .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+   |          ^^^^^^^^ unsatisfied trait bound
+   |
+   = note: match each owned .child role and actor with the selected topology declaration
+help: the trait `ApplicationTopology<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>` is not implemented for `Topology`
+      but trait `ApplicationTopology<StopOnShutdown<Root>, (Primary, _, ())>` is implemented for it
+  --> tests/compile/fail/topology_cold_wrong_role.rs:12:1
+   |
+12 | / bombay::topology! {
+13 | |     services { root: Root {} members { Primary(Primary) => worker; } worker {} }
+14 | | }
+   | |_^
+   = help: for that trait implementation, expected `Primary`, found `ForeignRole`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
+...
+   |         Spaces: ApplicationTopology<Root, Members>,
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RootRetirements<_, StopOnShutdown<Worker>>: ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>` is not satisfied
+  --> tests/compile/fail/topology_cold_wrong_role.rs:19:10
+   |
+19 |         .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+   |          ^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>` is not implemented for `RootRetirements<_, StopOnShutdown<Worker>>`
+      but trait `ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, Primary>, StopOnShutdown<Worker>>` is implemented for `RootRetirements<StopOnShutdown<Root>, StopOnShutdown<Worker>>`
+  --> tests/compile/fail/topology_cold_wrong_role.rs:12:1
+   |
+12 | / bombay::topology! {
+13 | |     services { root: Root {} members { Primary(Primary) => worker; } worker {} }
+14 | | }
+   | |_^
+   = help: for that trait implementation, expected `Primary`, found `ForeignRole`
+   = note: required for `bombay::local::children::RuntimeChildBindings<RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>` to implement `ChildOccurrenceMember<ChildHead, StopOnShutdown<Worker>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>>`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `ChildFailure<ChildOrigin<_, Primary>, StopOnShutdown<Worker>>: From<ChildFailure<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>>` is not satisfied
+  --> tests/compile/fail/topology_cold_wrong_role.rs:19:10
+   |
+19 |         .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+   |          ^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `From<ChildFailure<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>>` is not implemented for `ChildFailure<ChildOrigin<_, Primary>, StopOnShutdown<Worker>>`
+help: the trait `bombay::local::effects::RetireCapabilities` is conditionally implemented for `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins>`
+  --> src/local/effects/mod.rs
+   |
+   | / impl<C, N, P, Bindings, Origins> RetireCapabilities
+   | |     for ApplicationCapabilities<C, N, P, Bindings, Origins>
+   | | where
+   | |     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+...  |
+   | |     Bindings: RetireChildTasks + Send,
+   | |               ----------------
+   | |               |
+   | |               unsatisfied requirement introduced here: `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>: bombay::local::children::RetireChildTasks`
+   | |               unsatisfied requirement introduced here: `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>: bombay::local::children::RetireChildTasks`
+   | |     BindingTerminal<Bindings>: Send,
+   | |     Self: Send,
+   | |_______________^
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>` to implement `bombay::local::children::RetireChildTasks`
+   = note: required for `bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>` to implement `bombay::local::effects::RetireCapabilities`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                    -------- required by a bound in this associated function
+...
+   | /                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |_________________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+
+error[E0277]: the trait bound `ChildChoice<StopOnShutdown<Worker>, Never>: behavior::ChildOccurrenceProductAt<ChildHead, bombay::local::children::RuntimeChildBindings<RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>>` is not satisfied
+  --> tests/compile/fail/topology_cold_wrong_role.rs:17:19
+   |
+17 |       let outcome = bombay::Application::with_topology(Root.stop_on_shutdown(), services::Topology::new())
+   |  ___________________^
+18 | |         .child(ForeignRole, Worker.stop_on_shutdown())
+19 | |         .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+   | |__________________________________________________________________________________________________^ unsatisfied trait bound
+   |
+   = help: the trait `behavior::ChildOccurrenceProductAt<ChildHead, bombay::local::children::RuntimeChildBindings<RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>>` is not implemented for `ChildChoice<StopOnShutdown<Worker>, Never>`
+help: the trait `behavior::ChildOccurrenceProductAt<Occurrence, Shape>` is conditionally implemented for `ChildChoice<Head, Tail>`
+  --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+   |
+   | /  impl<Occurrence, Shape, Head, Tail> ChildOccurrenceProductAt<Occurrence, Shape>
+   | |      for ChildChoice<Head, Tail>
+   | |  where
+   | |      Shape: ChildOccurrenceShape
+   | |          + ChildOccurrenceMember<
+   | | ___________-
+   | ||             Occurrence,
+   | ||             Head,
+   | ||             <Tail as ChildOccurrenceProductAt<ChildTail<Occurrence>, Shape>>::Product,
+   | ||         >,
+   | ||_________- unsatisfied requirement introduced here: `bombay::local::children::RuntimeChildBindings<RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>: ChildOccurrenceMember<ChildHead, StopOnShutdown<Worker>, <Never as behavior::ChildOccurrenceProductAt<ChildTail<ChildHead>, bombay::local::children::RuntimeChildBindings<RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>>>::Product>`
+   | |      Head: Behavior,
+   | |      Tail: ChildOccurrenceProductAt<ChildTail<Occurrence>, Shape>,
+   | |__________________________________________________________________^
+   = note: required for `ChildChoice<StopOnShutdown<Worker>, Never>` to implement `ChildOccurrenceProduct<bombay::local::children::RuntimeChildBindings<RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>>`
+
+error[E0277]: the trait bound `RootRetirements<_, StopOnShutdown<Worker>>: ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>` is not satisfied
+  --> tests/compile/fail/topology_cold_wrong_role.rs:17:19
+   |
+17 |       let outcome = bombay::Application::with_topology(Root.stop_on_shutdown(), services::Topology::new())
+   |  ___________________^
+18 | |         .child(ForeignRole, Worker.stop_on_shutdown())
+19 | |         .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+   | |__________________________________________________________________________________________________^ unsatisfied trait bound
+   |
+help: the trait `ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>` is not implemented for `RootRetirements<_, StopOnShutdown<Worker>>`
+      but trait `ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, Primary>, StopOnShutdown<Worker>>` is implemented for `RootRetirements<StopOnShutdown<Root>, StopOnShutdown<Worker>>`
+  --> tests/compile/fail/topology_cold_wrong_role.rs:12:1
+   |
+12 | / bombay::topology! {
+13 | |     services { root: Root {} members { Primary(Primary) => worker; } worker {} }
+14 | | }
+   | |_^
+   = help: for that trait implementation, expected `Primary`, found `ForeignRole`
+   = note: required for `bombay::local::children::RuntimeChildBindings<RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>` to implement `ChildOccurrenceMember<ChildHead, StopOnShutdown<Worker>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>>`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RootRetirements<_, StopOnShutdown<Worker>>: ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>` is not satisfied
+  --> tests/compile/fail/topology_cold_wrong_role.rs:19:10
+   |
+19 |         .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+   |          ^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>` is not implemented for `RootRetirements<_, StopOnShutdown<Worker>>`
+      but trait `ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, Primary>, StopOnShutdown<Worker>>` is implemented for `RootRetirements<StopOnShutdown<Root>, StopOnShutdown<Worker>>`
+  --> tests/compile/fail/topology_cold_wrong_role.rs:12:1
+   |
+12 | / bombay::topology! {
+13 | |     services { root: Root {} members { Primary(Primary) => worker; } worker {} }
+14 | | }
+   | |_^
+   = help: for that trait implementation, expected `Primary`, found `ForeignRole`
+   = note: required for `bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>` to implement `EstablishChild<ChildHead, StopOnShutdown<Worker>>`
+   = note: required for `ChildChoice<StopOnShutdown<Worker>, Never>` to implement `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>>`
+   = note: required for `ChildChoice<StopOnShutdown<Worker>, Never>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>>`
+   = note: required for `Births<ChildChoice<StopOnShutdown<Worker>, Never>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+   = note: 1 redundant requirement hidden
+   = note: required for `RetirementBirths<ChildChoice<StopOnShutdown<Worker>, Never>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>>` to implement `bombay::local::effects::CommitActions<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                    -------- required by a bound in this associated function
+...
+   | /                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |_________________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the declared topology does not match root `StopOnShutdown<Root>` and cold members `(ForeignRole, StopOnShutdown<Worker>, ())`
+  --> tests/compile/fail/topology_cold_wrong_role.rs:17:19
+   |
+17 |       let outcome = bombay::Application::with_topology(Root.stop_on_shutdown(), services::Topology::new())
+   |  ___________________^
+18 | |         .child(ForeignRole, Worker.stop_on_shutdown())
+19 | |         .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+   | |__________________________________________________________________________________________________^ unsatisfied trait bound
+   |
+   = note: match each owned .child role and actor with the selected topology declaration
+help: the trait `ApplicationTopology<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>` is not implemented for `Topology`
+      but trait `ApplicationTopology<StopOnShutdown<Root>, (Primary, _, ())>` is implemented for it
+  --> tests/compile/fail/topology_cold_wrong_role.rs:12:1
+   |
+12 | / bombay::topology! {
+13 | |     services { root: Root {} members { Primary(Primary) => worker; } worker {} }
+14 | | }
+   | |_^
+   = help: for that trait implementation, expected `Primary`, found `ForeignRole`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
+...
+   |         Spaces: ApplicationTopology<Root, Members>,
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `ChildFailure<ChildOrigin<_, Primary>, StopOnShutdown<Worker>>: From<ChildFailure<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>>` is not satisfied
+  --> tests/compile/fail/topology_cold_wrong_role.rs:17:19
+   |
+17 |       let outcome = bombay::Application::with_topology(Root.stop_on_shutdown(), services::Topology::new())
+   |  ___________________^
+18 | |         .child(ForeignRole, Worker.stop_on_shutdown())
+19 | |         .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+   | |__________________________________________________________________________________________________^ unsatisfied trait bound
+   |
+   = help: the trait `From<ChildFailure<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>>` is not implemented for `ChildFailure<ChildOrigin<_, Primary>, StopOnShutdown<Worker>>`
+help: the trait `bombay::local::effects::RetireCapabilities` is conditionally implemented for `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins>`
+  --> src/local/effects/mod.rs
+   |
+   | / impl<C, N, P, Bindings, Origins> RetireCapabilities
+   | |     for ApplicationCapabilities<C, N, P, Bindings, Origins>
+   | | where
+   | |     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+...  |
+   | |     Bindings: RetireChildTasks + Send,
+   | |               ----------------
+   | |               |
+   | |               unsatisfied requirement introduced here: `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>: bombay::local::children::RetireChildTasks`
+   | |               unsatisfied requirement introduced here: `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>: bombay::local::children::RetireChildTasks`
+   | |     BindingTerminal<Bindings>: Send,
+   | |     Self: Send,
+   | |_______________^
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>` to implement `bombay::local::children::RetireChildTasks`
+   = note: required for `bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>` to implement `bombay::local::effects::RetireCapabilities`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                    -------- required by a bound in this associated function
+...
+   | /                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |_________________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+
+error[E0277]: the declared topology does not match root `StopOnShutdown<Root>` and cold members `(ForeignRole, StopOnShutdown<Worker>, ())`
+  --> tests/compile/fail/topology_cold_wrong_role.rs:20:10
+   |
+20 |         .await;
+   |          ^^^^^ unsatisfied trait bound
+   |
+   = note: match each owned .child role and actor with the selected topology declaration
+help: the trait `ApplicationTopology<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>` is not implemented for `Topology`
+      but trait `ApplicationTopology<StopOnShutdown<Root>, (Primary, _, ())>` is implemented for it
+  --> tests/compile/fail/topology_cold_wrong_role.rs:12:1
+   |
+12 | / bombay::topology! {
+13 | |     services { root: Root {} members { Primary(Primary) => worker; } worker {} }
+14 | | }
+   | |_^
+   = help: for that trait implementation, expected `Primary`, found `ForeignRole`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
+...
+   |         Spaces: ApplicationTopology<Root, Members>,
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `RootRetirements<_, StopOnShutdown<Worker>>: ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>` is not satisfied
+  --> tests/compile/fail/topology_cold_wrong_role.rs:20:10
+   |
+20 |         .await;
+   |          ^^^^^ unsatisfied trait bound
+   |
+help: the trait `ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>` is not implemented for `RootRetirements<_, StopOnShutdown<Worker>>`
+      but trait `ProjectTerminal<ChildOrigin<StopOnShutdown<Root>, Primary>, StopOnShutdown<Worker>>` is implemented for `RootRetirements<StopOnShutdown<Root>, StopOnShutdown<Worker>>`
+  --> tests/compile/fail/topology_cold_wrong_role.rs:12:1
+   |
+12 | / bombay::topology! {
+13 | |     services { root: Root {} members { Primary(Primary) => worker; } worker {} }
+14 | | }
+   | |_^
+   = help: for that trait implementation, expected `Primary`, found `ForeignRole`
+   = note: required for `bombay::local::children::RuntimeChildBindings<RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>` to implement `ChildOccurrenceMember<ChildHead, StopOnShutdown<Worker>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>>`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `ChildFailure<ChildOrigin<_, Primary>, StopOnShutdown<Worker>>: From<ChildFailure<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>>` is not satisfied
+  --> tests/compile/fail/topology_cold_wrong_role.rs:20:10
+   |
+20 |         .await;
+   |          ^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `From<ChildFailure<ChildOrigin<StopOnShutdown<Root>, ForeignRole>, StopOnShutdown<Worker>>>` is not implemented for `ChildFailure<ChildOrigin<_, Primary>, StopOnShutdown<Worker>>`
+help: the trait `bombay::local::effects::RetireCapabilities` is conditionally implemented for `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins>`
+  --> src/local/effects/mod.rs
+   |
+   | / impl<C, N, P, Bindings, Origins> RetireCapabilities
+   | |     for ApplicationCapabilities<C, N, P, Bindings, Origins>
+   | | where
+   | |     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+...  |
+   | |     Bindings: RetireChildTasks + Send,
+   | |               ----------------
+   | |               |
+   | |               unsatisfied requirement introduced here: `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>: bombay::local::children::RetireChildTasks`
+   | |               unsatisfied requirement introduced here: `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>: bombay::local::children::RetireChildTasks`
+   | |     BindingTerminal<Bindings>: Send,
+   | |     Self: Send,
+   | |_______________^
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>` to implement `bombay::local::children::RetireChildTasks`
+   = note: required for `bombay::local::effects::ApplicationCapabilities<ApplicationBehavior<StopOnShutdown<Root>, ChildCons<bombay::MailAddr, StopOnShutdown<Worker>, NoChildren>>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, StopOnShutdown<Worker>, RootRetirements<_, StopOnShutdown<Worker>>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>, bombay::local::children::NoChildBindings<RootRetirements<_, StopOnShutdown<Worker>>>, Never>, bombay::application::composition::ApplicationOrigins<StopOnShutdown<Root>, (ForeignRole, StopOnShutdown<Worker>, ())>>` to implement `bombay::local::effects::RetireCapabilities`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                    -------- required by a bound in this associated function
+...
+   | /                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |_________________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`

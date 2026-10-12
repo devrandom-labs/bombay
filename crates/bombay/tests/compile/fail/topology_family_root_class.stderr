@@ -1,0 +1,5 @@
+error: Entity actor type comes from its definition, independently of the application root
+  --> tests/compile/fail/topology_family_root_class.rs:10:20
+   |
+10 |         families { root: Profiles; }
+   |                    ^^^^

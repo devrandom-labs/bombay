@@ -282,6 +282,7 @@ name = "bombay-renamed-downstream"
 version = "0.0.0"
 dependencies = [
  "bombay-rs",
+ "tokio",
 ]
 
 [[package]]

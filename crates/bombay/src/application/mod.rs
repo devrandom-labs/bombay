@@ -7,8 +7,8 @@ mod interface;
 pub use composition::{ApplicationBehavior, ApplicationDefinitionError, ApplicationStagingError};
 pub use execution::{ApplicationCleanupError, ApplicationOutcome, RunError};
 pub use interface::{
-    ActorInterface, ApplicationHandle, ApplicationLifecycle, ExternalActor, ExternalActorError,
-    ExternalTarget,
+    ActorInterface, ApplicationClient, ApplicationHandle, ApplicationLifecycle, ApplicationSender,
+    ExternalActor, ExternalActorError, ExternalTarget,
 };
 
 use crate::address::MailAddr;

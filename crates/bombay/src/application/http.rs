@@ -5,10 +5,12 @@ use crate::application::execution::{
     execute_application_with,
 };
 use crate::application::{Application, ApplicationHandle, ApplicationOutcome};
-use crate::local::children::{ChildBindings, RetireChildTasks, RuntimeChildBindings};
+use crate::local::children::{
+    ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
+};
 use crate::local::effects::CommitActions;
-use crate::terminal::{ActorRetirement, RootOrigin};
-use crate::topology::Hosts;
+use crate::terminal::{ActorRetirement, RetirementSchema, RootOrigin};
+use crate::topology::{ApplicationTopology, RootRegistration};
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
     ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
@@ -27,10 +29,12 @@ impl<Root, Spaces, Members> Application<Root, Spaces, Members>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     Members: ComposeApplication<Root>,
-    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
+    Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
     #[cfg(feature = "axum")]
     /// Pair prebinding and caller-local HTTP serving with the same application owner.
+    /// The application's topology selects the complete descendant schema;
+    /// callers need no retirement type argument.
     /// Bind refusal retains the untouched declaration/router/address/error before
     /// composition. Staging refusal retains actual remaining root/declarations,
     /// router and acquired listener. Each phase is explicit in the existing result.
@@ -51,7 +55,7 @@ where
         clippy::too_many_lines,
         reason = "retain original prebind and partial composition inputs beside exact HTTP/root results"
     )]
-    pub fn execute_axum<Terminal, Actor, StagingFailure, ChildFailures, Router>(
+    pub fn execute_axum<Actor, StagingFailure, ChildFailures, Router>(
         self,
         address: SocketAddr,
         router: Router,
@@ -65,7 +69,11 @@ where
                     Result<(), io::Error>,
                     (
                         RootOrigin<Root>,
-                        ActorRetirement<Actor, Terminal, ChildFailures>,
+                        ActorRetirement<
+                            Actor,
+                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                            ChildFailures,
+                        >,
                     ),
                     Result<
                         (Self, Router, SocketAddr, io::Error),
@@ -79,6 +87,7 @@ where
         ((Self, Router, SocketAddr), TryCurrentError),
     >
     where
+        Spaces: ApplicationTopology<Root, Members>,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -90,16 +99,40 @@ where
         Actor::Error: Send + 'static,
         Actor::InterpretationCustody: Send + 'static,
         Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
-            + Send
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
             + 'static,
-        ChildBindings<Actor, Terminal, Members::Origins>:
-            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-        RootInterpreter<Actor, Spaces, Terminal, Members::Origins>:
-            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
         Actor::Settlements: ClassifySettlement + Send,
         RootOrigin<Root>: Send + 'static,
-        Terminal: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
         Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
     {
@@ -113,7 +146,7 @@ where
             Actor,
             Spaces,
             Members::Origins,
-            Terminal,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             (),
             Result<
                 (Self, Router, SocketAddr, io::Error),
@@ -220,6 +253,7 @@ where
 
     #[cfg(feature = "axum")]
     /// Await the same prebind/serving/root pair. Use `execute_axum` to retain receiving separately.
+    /// Descendant custody is selected by the same application topology as ordinary execution.
     ///
     /// # Errors
     /// Missing host returns cold originals; all actual bind/staging/serving/root
@@ -228,7 +262,7 @@ where
     /// # Panics
     /// Native composition/serving causes propagate; dropping this combined future
     /// surrenders both owning execution and receiving, unlike a separately retained pair.
-    pub async fn run_axum<Terminal, Actor, StagingFailure, ChildFailures, Router>(
+    pub async fn run_axum<Actor, StagingFailure, ChildFailures, Router>(
         self,
         address: SocketAddr,
         router: Router,
@@ -239,7 +273,11 @@ where
             Result<(), io::Error>,
             (
                 RootOrigin<Root>,
-                ActorRetirement<Actor, Terminal, ChildFailures>,
+                ActorRetirement<
+                    Actor,
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    ChildFailures,
+                >,
             ),
             Result<
                 (Self, Router, SocketAddr, io::Error),
@@ -251,6 +289,7 @@ where
         ((Self, Router, SocketAddr), TryCurrentError),
     >
     where
+        Spaces: ApplicationTopology<Root, Members>,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -262,23 +301,44 @@ where
         Actor::Error: Send + 'static,
         Actor::InterpretationCustody: Send + 'static,
         Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
-            + Send
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
             + 'static,
-        ChildBindings<Actor, Terminal, Members::Origins>:
-            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-        RootInterpreter<Actor, Spaces, Terminal, Members::Origins>:
-            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
         Actor::Settlements: ClassifySettlement + Send,
         RootOrigin<Root>: Send + 'static,
-        Terminal: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
         Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
     {
-        let (execution, receiving) = self
-            .execute_axum::<Terminal, Actor, StagingFailure, ChildFailures, Router>(
-                address, router,
-            )?;
+        let (execution, receiving) = self.execute_axum(address, router)?;
         execution.await;
         Ok(receiving.await)
     }

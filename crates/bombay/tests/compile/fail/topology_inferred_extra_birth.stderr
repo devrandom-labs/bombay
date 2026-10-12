@@ -1,0 +1,266 @@
+error[E0271]: type mismatch resolving `<RetirementBirths<ExtraWorker> as BirthMode>::Child == Never`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:90:19
+    |
+ 90 |       let outcome = bombay::Application::with_topology(
+    |  ___________________^
+ 91 | |         Root {
+ 92 | |             visits: 0,
+ 93 | |             originals: Vec::new(),
+...   |
+102 | |             .expect("real shutdown operation");
+103 | |     })
+    | |______^ expected `Never`, found `ExtraWorker`
+    |
+note: required for `Topology<StopOnShutdown<Root>>` to implement `ApplicationTopology<StopOnShutdown<Root>, ()>`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: type mismatch resolving `<RetirementBirths<ExtraWorker> as BirthMode>::Child == Never`
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:98:6
+   |
+98 |     .run_with(|application| async move {
+   |      ^^^^^^^^ expected `Never`, found `ExtraWorker`
+   |
+note: required for `Topology<StopOnShutdown<Root>>` to implement `ApplicationTopology<StopOnShutdown<Root>, ()>`
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+   |
+87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
+...
+   |         Spaces: ApplicationTopology<Root, Members>,
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Never: ProjectTerminal<ChildOrigin<Reporter, ChildHead>, ExtraWorker>` is not satisfied
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:98:6
+   |
+98 |     .run_with(|application| async move {
+   |      ^^^^^^^^ the trait `ProjectTerminal<ChildOrigin<Reporter, ChildHead>, ExtraWorker>` is not implemented for `Never`
+   |
+help: the trait `ProjectTerminal<ChildOrigin<<ExecutedRoot as BehaviorBase>::Base, ChildHead>, <<<ExecutedRoot as behavior::Behavior>::Birth as BirthMode>::Child as behavior::BirthNodeAt<ChildHead>>::Child>` is implemented for `RootRetirements<ExecutedRoot>`
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+   |
+87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `bombay::local::children::RuntimeChildBindings<Never, bombay::local::children::StructuralOrigins<Reporter>>` to implement `ChildOccurrenceMember<ChildHead, ExtraWorker, bombay::local::children::NoChildBindings>`
+   = note: required for `Topology<StopOnShutdown<Root>>` to implement `bombay::local::effects::creation::NativeChildStartup<StopOnShutdown<Root>, Reporter, Never>`
+   = note: required for `Topology<StopOnShutdown<Root>>` to implement `EstablishNativeChild<StopOnShutdown<Root>, Reporter, Never>`
+note: required for `Topology<StopOnShutdown<Root>>` to implement `NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+   |
+87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements<StopOnShutdown<Root>>>, Never>` to implement `bombay::local::children::ChildBindingsIn<StopOnShutdown<Root>, Topology<StopOnShutdown<Root>>>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
+...
+   |         >: ChildBindingsIn<Actor, Spaces>
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Never: From<ChildFailure<ChildOrigin<Reporter, ChildHead>, ExtraWorker>>` is not satisfied
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:98:6
+   |
+98 |     .run_with(|application| async move {
+   |      ^^^^^^^^ the trait `From<ChildFailure<ChildOrigin<Reporter, ChildHead>, ExtraWorker>>` is not implemented for `Never`
+   |
+help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is conditionally implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
+  --> src/local/children.rs
+   |
+   | / impl<Creator, Scope, Position, Child, Root, Origins, Tail, Descendants>
+   | |     ChildBindingsIn<Creator, Scope>
+   | |     for ChildBinding<Position, Child, Root, Origins, Tail, Descendants>
+   | | where
+...  |
+   | |     Scope: NativeChild<Creator, Position, Child, Root, Descendants>,
+   | |            --------------------------------------------------------
+   | |            |
+   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+   | |     Tail: ChildBindingsIn<Creator, Scope>,
+   | |__________________________________________^
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, ExtraWorker, Never, bombay::local::children::StructuralOrigins<Reporter>, bombay::local::children::NoChildBindings, _>` to implement `bombay::local::children::RetireChildTasks`
+   = note: required for `Topology<StopOnShutdown<Root>>` to implement `bombay::local::effects::creation::NativeChildStartup<StopOnShutdown<Root>, Reporter, Never>`
+   = note: required for `Topology<StopOnShutdown<Root>>` to implement `EstablishNativeChild<StopOnShutdown<Root>, Reporter, Never>`
+note: required for `Topology<StopOnShutdown<Root>>` to implement `NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+   |
+87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements<StopOnShutdown<Root>>>, Never>` to implement `bombay::local::children::ChildBindingsIn<StopOnShutdown<Root>, Topology<StopOnShutdown<Root>>>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
+...
+   |         >: ChildBindingsIn<Actor, Spaces>
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Topology<StopOnShutdown<Root>>: NativeChild<Reporter, ChildHead, ExtraWorker, Never, _>` is not satisfied
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:98:6
+   |
+98 |     .run_with(|application| async move {
+   |      ^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `NativeChild<Reporter, ChildHead, ExtraWorker, Never, _>` is not implemented for `Topology<StopOnShutdown<Root>>`
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+   |
+87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: the trait `NativeChild<ExecutedRoot, ChildHead, <<<ExecutedRoot as behavior::Behavior>::Birth as BirthMode>::Child as behavior::BirthNodeAt<ChildHead>>::Child, RootRetirements<ExecutedRoot>, Never>` is implemented for `Topology<ExecutedRoot>`
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+   |
+87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, ExtraWorker, Never, bombay::local::children::StructuralOrigins<Reporter>, bombay::local::children::NoChildBindings, _>` to implement `bombay::local::children::ChildBindingsIn<Reporter, Topology<StopOnShutdown<Root>>>`
+   = note: required for `Topology<StopOnShutdown<Root>>` to implement `bombay::local::effects::creation::NativeChildStartup<StopOnShutdown<Root>, Reporter, Never>`
+   = note: required for `Topology<StopOnShutdown<Root>>` to implement `EstablishNativeChild<StopOnShutdown<Root>, Reporter, Never>`
+note: required for `Topology<StopOnShutdown<Root>>` to implement `NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+  --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+   |
+87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: 1 redundant requirement hidden
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements<StopOnShutdown<Root>>>, Never>` to implement `bombay::local::children::ChildBindingsIn<StopOnShutdown<Root>, Topology<StopOnShutdown<Root>>>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
+...
+   |         >: ChildBindingsIn<Actor, Spaces>
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Topology<StopOnShutdown<Root>>: NativeChild<Reporter, ChildHead, ExtraWorker, Never, _>` is not satisfied
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:90:19
+    |
+ 90 |       let outcome = bombay::Application::with_topology(
+    |  ___________________^
+ 91 | |         Root {
+ 92 | |             visits: 0,
+ 93 | |             originals: Vec::new(),
+...   |
+102 | |             .expect("real shutdown operation");
+103 | |     })
+    | |______^ unsatisfied trait bound
+    |
+help: the trait `NativeChild<Reporter, ChildHead, ExtraWorker, Never, _>` is not implemented for `Topology<StopOnShutdown<Root>>`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: the trait `NativeChild<ExecutedRoot, ChildHead, <<<ExecutedRoot as behavior::Behavior>::Birth as BirthMode>::Child as behavior::BirthNodeAt<ChildHead>>::Child, RootRetirements<ExecutedRoot>, Never>` is implemented for `Topology<ExecutedRoot>`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: required for `bombay::local::children::ChildBinding<ChildHead, ExtraWorker, Never, bombay::local::children::StructuralOrigins<Reporter>, bombay::local::children::NoChildBindings, _>` to implement `bombay::local::children::ChildBindingsIn<Reporter, Topology<StopOnShutdown<Root>>>`
+    = note: required for `Topology<StopOnShutdown<Root>>` to implement `bombay::local::effects::creation::NativeChildStartup<StopOnShutdown<Root>, Reporter, Never>`
+    = note: required for `Topology<StopOnShutdown<Root>>` to implement `EstablishNativeChild<StopOnShutdown<Root>, Reporter, Never>`
+note: required for `Topology<StopOnShutdown<Root>>` to implement `NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: 1 redundant requirement hidden
+    = note: required for `bombay::local::children::ChildBinding<ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements<StopOnShutdown<Root>>>, Never>` to implement `bombay::local::children::ChildBindingsIn<StopOnShutdown<Root>, Topology<StopOnShutdown<Root>>>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   --> src/application/execution.rs
+    |
+    |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+    |                  -------- required by a bound in this associated function
+...
+    |         >: ChildBindingsIn<Actor, Spaces>
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `Topology<StopOnShutdown<Root>>: NativeChild<Reporter, ChildHead, ExtraWorker, Never, _>` is not satisfied
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:104:6
+    |
+104 |     .await;
+    |      ^^^^^ unsatisfied trait bound
+    |
+help: the trait `NativeChild<Reporter, ChildHead, ExtraWorker, Never, _>` is not implemented for `Topology<StopOnShutdown<Root>>`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: the trait `NativeChild<ExecutedRoot, ChildHead, <<<ExecutedRoot as behavior::Behavior>::Birth as BirthMode>::Child as behavior::BirthNodeAt<ChildHead>>::Child, RootRetirements<ExecutedRoot>, Never>` is implemented for `Topology<ExecutedRoot>`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: required for `bombay::local::children::ChildBinding<ChildHead, ExtraWorker, Never, bombay::local::children::StructuralOrigins<Reporter>, bombay::local::children::NoChildBindings, _>` to implement `bombay::local::children::ChildBindingsIn<Reporter, Topology<StopOnShutdown<Root>>>`
+    = note: required for `Topology<StopOnShutdown<Root>>` to implement `bombay::local::effects::creation::NativeChildStartup<StopOnShutdown<Root>, Reporter, Never>`
+    = note: required for `Topology<StopOnShutdown<Root>>` to implement `EstablishNativeChild<StopOnShutdown<Root>, Reporter, Never>`
+note: required for `Topology<StopOnShutdown<Root>>` to implement `NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = note: 1 redundant requirement hidden
+    = note: required for `bombay::local::children::ChildBinding<ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements<StopOnShutdown<Root>>>, Never>` to implement `bombay::local::children::ChildBindingsIn<StopOnShutdown<Root>, Topology<StopOnShutdown<Root>>>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   --> src/application/execution.rs
+    |
+    |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+    |                  -------- required by a bound in this associated function
+...
+    |         >: ChildBindingsIn<Actor, Spaces>
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: type mismatch resolving `<RetirementBirths<ExtraWorker> as BirthMode>::Child == Never`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:104:6
+    |
+104 |     .await;
+    |      ^^^^^ expected `Never`, found `ExtraWorker`
+    |
+note: required by a bound in `RootRetirements`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `RootRetirements`
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0271]: type mismatch resolving `<RetirementBirths<ExtraWorker> as BirthMode>::Child == Never`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:105:5
+    |
+105 |     drop(outcome);
+    |     ^^^^ expected `Never`, found `ExtraWorker`
+    |
+note: required by a bound in `RootRetirements`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+    |
+ 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `RootRetirements`
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
