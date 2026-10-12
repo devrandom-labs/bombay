@@ -288,9 +288,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh"
-version = "1.10.6"
+version = "1.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88fcd0a80dcd9d67527018b88df2f25b4fa8719936e284ee3c9648e3d1175882"
+checksum = "30d30143f0df84954bdd7eaea70546e080701f7a96ef3e4565824b8fe030538b"
 dependencies = [
  "ahash",
  "arc-swap",
