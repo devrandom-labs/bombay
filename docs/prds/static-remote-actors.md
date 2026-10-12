@@ -105,8 +105,12 @@ real native consumer oracle in both profiles. The bounded owning corrections
 below are selected under the standing recommendation delegation. Corrected
 router forwarding passes28 tests in both profiles; corrected protected Counter
 passes51 in both profiles, all four combined workspace commands and intended
-custody inversions. Router package verification remains incomplete after exposing
-a test-only feature dependency; neither correction is delivered yet.
+custody inversions. Router package verification passes locally on a0762901 after
+correcting its test-only feature dependency through the existing cleanup builder.
+Both final protected source reviews pass; [PR354](https://github.com/devrandom-labs/bombay/pull/354)
+is open on fb42ecb2 with submitted-head CI running. Controlled router
+[PR10](https://github.com/devrandom-labs/bombay-zenoh/pull/10) also has CI running.
+Neither correction is delivered or published yet.
 Original child-report refusal [PR353](https://github.com/devrandom-labs/bombay/pull/353)
 merged9932792924c0bb05c0ab7b644a0886dae98c96d0 at2026-10-12T00:01:26Z after
 scoped nonauthor review and all six passing checks, including required Nix.

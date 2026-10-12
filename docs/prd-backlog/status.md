@@ -1,10 +1,18 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-11. This is the implementation index for the
+Updated: 2026-10-12. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
+
+Protected-Application prerequisite [PR354](https://github.com/devrandom-labs/bombay/pull/354)
+is open with independent source reviews and all four local workspace commands
+passing (641/0/1), plus51 optimized authorized tests. Submitted-head CI and actual
+reviewed merge remain required. Controlled router correction
+[PR10](https://github.com/devrandom-labs/bombay-zenoh/pull/10) has passed local
+release/package verification; submitted-head CI, review, merge and publication
+remain required. Full AUTH1/NET1 acceptance is still incomplete.
 
 The previous local-runtime audit is closed: 25 TEST items were verified,
 ARC-009 was retained, and the other 19 ARC items were distilled. Its chronological
