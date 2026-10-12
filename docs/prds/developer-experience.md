@@ -4,7 +4,7 @@ Status: active. Work is isolated on `codex/developer-experience-docs`;
 the other Bombay checkout is untouched. Initial inspected baselines were
 Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 `d69f992b371c12ab34e73b18e45b8112c90a1508`; current Bombay uses published
-Behavior/Actors0.24.0, macros0.14.1, Communication0.1.5 and Timers0.2.0
+Behavior/Actors0.25.0, macros0.14.1, Communication0.1.5 and Timers0.2.0
 without repository patches.
 
 One Application candidate owns ordinary roots, cold actors, declared topology,
@@ -24,26 +24,27 @@ passes. Dynamic supervision and the remaining preparation/failure cases remain
 open. Actual fixed/FIFO/keyed consumers independently expose the direct initial
 factory gap: returning WorkerSubmission without a Result annotation is denied.
 
-The owner fix is committed as fb2c772 and submitted as
-[PR94](https://github.com/devrandom-labs/bombay-behavior/pull/94). The same
-fixed/FIFO/keyed constructors accept direct or fallible factories and preserve
-complete refusal custody. Owner963 tests/ten native Nix gates and five downstream
-journeys across eight configurations pass;765 fixed assertions are unchanged.
-Five paired keyed journeys measure identical heap totals/peaks and allocation
-counts for the factory change. This is an incremental comparison. Cached archive
-preflight passes across all four owner Cargo workspaces after the normal attempt
-failed on crates.io DNS. CI exposed two old fuzz constructor spellings;
-follow-up59f2790 changes only those calls and preserves every other token.
-All21 fuzz bins pass locked checks and the actual pinned-nightly build in the
-Nix fuzz shell. Exact-head CI38312116429 and fresh normal package preflight pass. Authorized
-PR94 is merged as273e030 with a tree identical to reviewed59f2790; main
-CI38313588600 passes and normal release generation creates PR95. Its incorrect
-0.24.1 compatibility proposal is corrected to Core/Actors0.25.0 on04dff9b;
-Macros stays0.14.1. All four locks retain identical external package records,
-and exact-head archive preflight passes. All ten native Nix gates pass in417.740 seconds and exact-head CI passes.
-Authorized version PR95 merges as2bb4510; main CI and normal registry
-publication remain pending. Registry
-delivery remains open; this Bombay checkout retains compatible0.24 factories.
+The initial-factory change is delivered through authorized PR94/95. Core and
+Actors0.25.0 are published from2bb4510 through normal Release38319955004 after
+successful main CI38318921164. Both registry versions and annotated tags are
+verified; all136 downloaded Rust sources match the reviewed release. Macros
+remains0.14.1. Owner963 tests, ten native Nix gates, exact-head CI and normal
+archive preflight pass. The same fixed/FIFO/keyed constructors accept direct
+or genuinely fallible factories and retain complete refusal custody. Five
+paired keyed journeys show identical incremental factory heap measurements.
+
+Bombay selects registry0.25.0 without repository patches. Both workspace and
+independent engine-fuzz locks change only the upgraded owner records. Twelve
+caller/test files remove pure-factory Result/error annotations and infer the
+constructor; genuine asynchronous preparation/refusal contracts remain.
+The72-command matrix passes all eight configurations:560 test executions
+and16 complete example runs, with zero warnings. Strict workspace/all-target/
+all-feature Clippy passes. The pinned nightly causal fuzz campaign completes
+2048 runs (seed20260928, address sanitizer). All1284 existing assertion bodies
+in the touched files remain unchanged; library production/API0, example
+production+4/-10/net-6 and tests+28/-31/net-3. Aggregate states, subordinate
+alternatives, branches, modules and ownership are unchanged. The fresh full
+Nix run remains pending for this registry source.
 
 Counter main is98 lines and FIFO184; terminal inspection and owned result
 consumption remain independent of cleanup. Focused counter/FIFO/supervision

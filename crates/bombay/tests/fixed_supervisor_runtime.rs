@@ -112,10 +112,7 @@ fn prepared_supervisor(activation_sender: oneshot::Sender<()>) -> Supervisor {
             let sender = initial_activation
                 .take()
                 .expect("the sole initial role owns one activation notice");
-            Ok::<_, Infallible>(WorkerSubmission::activated(
-                Worker.stop_on_shutdown(),
-                ActivationNotice(Some(sender)),
-            ))
+            WorkerSubmission::activated(Worker.stop_on_shutdown(), ActivationNotice(Some(sender)))
         },
         roles,
         ActivationPolicy::new(1).expect("one activation is positive capacity"),

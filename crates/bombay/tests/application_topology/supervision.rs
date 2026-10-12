@@ -3,7 +3,6 @@
 
 use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
-use core::convert::Infallible;
 use core::time::Duration;
 use tokio::runtime::Builder;
 
@@ -130,9 +129,7 @@ fn run_supervision() {
             OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role roster is distinct");
         let initial_activated = activated.clone();
         fixed(
-            move |role: &WorkerRole| {
-                Ok::<_, Infallible>(worker_submission(*role, &initial_activated))
-            },
+            move |role: &WorkerRole| worker_submission(*role, &initial_activated),
             roles,
             ActivationPolicy::new(1).expect("one worker fits the activation policy"),
             Recovery::permanent(
@@ -307,7 +304,6 @@ mod tests {
     };
     use bombay::behavior::{CreationKind, Step};
     use bombay::prelude::Activate as _;
-    use core::convert::Infallible;
     use core::time::Duration;
     use tokio::sync::mpsc;
 
@@ -319,9 +315,7 @@ mod tests {
                 .expect("the one-role roster is distinct");
             let initial_activated = activated.clone();
             fixed(
-                move |role: &WorkerRole| {
-                    Ok::<_, Infallible>(worker_submission(*role, &initial_activated))
-                },
+                move |role: &WorkerRole| worker_submission(*role, &initial_activated),
                 roles,
                 ActivationPolicy::new(1).expect("one worker fits the activation policy"),
                 Recovery::permanent(

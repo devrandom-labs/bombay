@@ -136,9 +136,9 @@ fn recovery_pool(
         OrderedRoles::new(WorkerRole::Primary, []).expect("one role is a valid worker roster");
     fifo(
         move |_: &WorkerRole| {
-            Ok::<_, Never>(WorkerSubmission::immediate(RecoverableWorker {
+            WorkerSubmission::immediate(RecoverableWorker {
                 availability: initial_availability,
-            }))
+            })
         },
         roles,
         ActivationPolicy::new(1).expect("one activation is valid capacity"),

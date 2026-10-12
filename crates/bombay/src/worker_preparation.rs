@@ -369,7 +369,7 @@ mod tests {
         let roles =
             OrderedRoles::new(SearchRole::Primary, []).expect("one role is a valid worker roster");
         let pool = fifo(
-            |_: &SearchRole| Ok::<_, Never>(WorkerSubmission::immediate(SearchWorker)),
+            |_: &SearchRole| WorkerSubmission::immediate(SearchWorker),
             roles,
             ActivationPolicy::new(1).expect("one activation is valid capacity"),
             PoolRecovery::permanent(

@@ -4330,17 +4330,25 @@ mod capability_task_retirement {
         {
             let activation = ActivationPolicy::new(3).expect("three positive activation slots");
             let built = fixed(
-                |role: &WorkerRole| -> Result<WorkerSubmission<ReplacementWorker, ImmediateActivation>, Never> {
-                    Ok(WorkerSubmission::immediate(ReplacementWorker(Arc::new(role.0.as_ref().clone()))))
+                |role: &WorkerRole| {
+                    WorkerSubmission::immediate(ReplacementWorker(Arc::new(
+                        role.0.as_ref().clone(),
+                    )))
                 },
                 roles,
                 activation,
-                Recovery::permanent(source, Strategy::OneForAll, RestartLimit::new(3, Duration::from_secs(60)), RestartRelease::immediate()),
+                Recovery::permanent(
+                    source,
+                    Strategy::OneForAll,
+                    RestartLimit::new(3, Duration::from_secs(60)),
+                    RestartRelease::immediate(),
+                ),
                 FailureReaction::StopSupervisor,
                 ActorDrainPolicy::WaitForActorGraph,
                 DiagnosticDisposition::<Infallible>::terminate(),
-            ).build::<ReplacementWorker, ImmediateActivation, Never>()
-                .unwrap_or_else(|_| panic!("all original declarations prepare"));
+            )
+            .build()
+            .unwrap_or_else(|_| panic!("all original declarations prepare"));
             let initialized = built
                 .initialize()
                 .unwrap_or_else(|_| panic!("pure fixed initialization"));

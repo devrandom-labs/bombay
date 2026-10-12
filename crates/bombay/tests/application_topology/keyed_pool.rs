@@ -7,7 +7,7 @@ use bombay::atomic::{
     KeyedCommand, KeyedOutcome, OrderedRoles, PoolFailureReaction, PoolRecovery, SubmissionId,
     WorkerSubmission, keyed,
 };
-use bombay::behavior::{ClassifySettlement, MessageProtocol, Never, SettlementStatus};
+use bombay::behavior::{ClassifySettlement, MessageProtocol, SettlementStatus};
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr};
 use tokio::runtime::Builder;
 
@@ -39,7 +39,7 @@ bombay::topology! {
 fn keyed_search_preserves_affinity_rejected_payload_and_joined_worker() {
     let roles = OrderedRoles::new(WorkerRole::Primary, []).expect("the roster is distinct");
     let pool = keyed(
-        |_: &WorkerRole| Ok::<_, Never>(WorkerSubmission::immediate(SearchWorker)),
+        |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
         roles,
         |key: &String| match key.as_str() {
             "account" => WorkerRole::Primary,

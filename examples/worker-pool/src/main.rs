@@ -12,7 +12,7 @@ use bombay::atomic::{
     FifoOutcome, Interruption, OrderedRoles, PoolFailureReaction, PoolRecovery, SubmissionId,
     WorkerSubmission, fifo,
 };
-use bombay::behavior::{MessageProtocol, Never};
+use bombay::behavior::MessageProtocol;
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr};
 use worker::{SearchJob, SearchResult, SearchWorker};
 
@@ -40,7 +40,7 @@ fn run_search_pool() {
         let roles =
             OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
         fifo(
-            |_: &WorkerRole| Ok::<_, Never>(WorkerSubmission::immediate(SearchWorker)),
+            |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
             roles,
             ActivationPolicy::new(1).expect("one activation is positive capacity"),
             PoolRecovery::temporary(PoolFailureReaction::RetireRole),

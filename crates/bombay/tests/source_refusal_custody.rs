@@ -9,7 +9,7 @@ use bombay::atomic::{
     PoolFailureReaction, PoolRecovery, RestartLimit, RestartRelease, SubmissionId, WorkerSource,
     WorkerSubmission, fifo, pool_worker,
 };
-use bombay::behavior::{Actions, BehaviorBase, CreationKind, MessageProtocol, Never};
+use bombay::behavior::{Actions, BehaviorBase, CreationKind, MessageProtocol};
 use bombay::prelude::Exit;
 use bombay::prelude::{ActorRetirement, Completion, MailAddr};
 use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
@@ -152,9 +152,7 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
     });
     let pool: Pool = fifo(
         move |_: &WorkerRole| {
-            Ok::<_, Never>(WorkerSubmission::immediate(
-                initial.take().expect("one original worker"),
-            ))
+            WorkerSubmission::immediate(initial.take().expect("one original worker"))
         },
         OrderedRoles::new(WorkerRole::Primary, []).expect("one real role"),
         ActivationPolicy::new(1).expect("one active worker"),

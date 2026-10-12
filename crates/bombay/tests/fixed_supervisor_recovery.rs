@@ -164,13 +164,13 @@ fn prepared_supervisor(
     let initial_activated = activated.clone();
     fixed(
         move |role: &WorkerRole| {
-            Ok::<_, Infallible>(WorkerSubmission::activated(
+            WorkerSubmission::activated(
                 Worker.stop_on_shutdown(),
                 ActivationNotice {
                     role: *role,
                     activated: initial_activated.clone(),
                 },
-            ))
+            )
         },
         roles,
         ActivationPolicy::new(2).expect("two workers fit the activation policy"),

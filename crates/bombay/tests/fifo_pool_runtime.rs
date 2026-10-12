@@ -80,7 +80,7 @@ fn prepared_pool(
             let activation = initial_activation
                 .take()
                 .expect("the initial role owns one activation notice");
-            Ok::<_, Never>(WorkerSubmission::activated(SearchWorker, activation))
+            WorkerSubmission::activated(SearchWorker, activation)
         },
         roles,
         ActivationPolicy::new(1).expect("one activation is positive capacity"),
