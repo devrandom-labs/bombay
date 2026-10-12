@@ -85,7 +85,9 @@
         );
         registryDiagnosticMappings = pkgs.lib.concatMapStringsSep " " (
           source:
-          "--remap-path-prefix=$cargoVendorDir/${builtins.hashString "sha256" source}=/registry/src/index.crates.io-${builtins.substring 0 16 (builtins.hashString "sha256" source)}"
+          "--remap-path-prefix=$cargoVendorDir/${builtins.hashString "sha256" source}=/registry/src/index.crates.io-${
+            builtins.substring 0 16 (builtins.hashString "sha256" source)
+          }"
         ) registrySources;
         commonArgs = {
           inherit src;
