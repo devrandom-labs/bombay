@@ -10,7 +10,25 @@ serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.151"
 thiserror = "=2.0.20"
 tokio = { version = "=1.53.1", features = ["rt-multi-thread", "time"] }
-zenoh = { package = "bombay-zenoh", version = "=1.10.7", default-features = false, features = ["transport_tls"] }
+zenoh = { package = "bombay-zenoh", version = "=1.10.8", default-features = false, features = [
+  "transport_tls",
+] }
+
+futures-util = { version = "=0.3.34", default-features = false, features = [
+  "std",
+] }
+json-event-parser = { version = "=0.2.3", default-features = false }
+
+[dev-dependencies]
+dhat = "=0.3.3"
+
+[features]
+protected-transport = ["zenoh/transport_tls"]
+
+[[bin]]
+name = "protected_counter"
+path = "../../../../examples/counter/src/bin/authorized.rs"
+required-features = ["protected-transport"]
 
 [workspace]
 
