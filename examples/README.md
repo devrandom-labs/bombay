@@ -77,6 +77,12 @@ Assignments remain tied to the borrowed live Tokio runtime. These checks prove
 the explicit finite test profile; they do not establish production identity.
 Running this binary without `--explicit-test` refuses startup before any export.
 Production identity and remote-network acceptance remain open.
+The local service round-trips seven bounded JSON meanings: request, refusal,
+mailbox admission, increment processing, Read reply, stop acceptance and joined
+retirement. Actor messages remain typed Rust values after decoding. Cancelling
+a requester's borrowed exchange preserves its acquired Begin result, original
+reply/proof, provider receipt and completion result beside native retirement.
+Cancellation of the Counter's outer service remains unverified.
 
 ```text
 nix develop -c cargo run --locked -p bombay-example-counter --bin authorized -- --explicit-test

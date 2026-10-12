@@ -176,5 +176,54 @@ The PRD records21 tests per profile and19 paired deliberate defects, separating
 setup failures from intended oracles and retained-binary restorations from fresh
 Cargo checks. These are prerequisites for R03/R08/R12, with no production KERI,
 global freshness, durable fencing, actual reconnect or full protected remote
-acceptance credit. Combined-source checks, reviewed PR/CI and merge are separate
-delivery gates; full rows remain open.
+acceptance credit. Combined-source checks and independently reviewed submitted-head
+CI passed; [PR350](https://github.com/devrandom-labs/bombay/pull/350) merged
+20fb999dfe57f72d85afb1a2ccd07d42942cc6c8 at2026-10-11T14:23:31Z. Actual Nix
+executes the21-test suite (19 owning tests plus2 imported Counter laws) in
+coverage/debug/release; both native fixture campaigns remain separate evidence.
+Observe Miri was skipped. This records only prerequisite delivery; full rows
+remain open.
+
+### Native routed-query and requester-wait correction prerequisites
+
+Original native router exhaustion loses an old query's reply consumer in actual
+Face routing in debug and optimized, after four task-controller joins and Runtime
+close (receipts723d4596/c5edb97f, sourceff032dfa). Private checked issuance
+df63e5a6/production+14/-17/net−3 passes that same unchanged regression in both
+profiles. Boundaryfb8b0863 adds204 tests within220 selected lines; native complete
+queryables ranked by distance exercise all three target modes, MAX once, repeated
+exhaustion, another live branch and BestMatching no failover. Exact caller/tag
+multiset and pre-duplicate-FINAL Weak/token/map observations follow independent
+review72b4b07e. Full forwarding28/28 debug passes; optimized/strict/inversions
+and actual reviewed merge/publication remain open. Native FINAL is query stream
+completion, not protected actor refusal; no actual timeout-expiry proof is claimed.
+
+Requester Work Err after actual retained Begin and normal local Work Ok both
+leave the original exchange Pending: actual post-native negatives execute in
+both profiles (2e530d78/f5d071e6). The selected outside-owner borrowed exchange
+retains all acquired originals and ends after actual local execution completion;
+it preserves unfinished Pending and uncertainty rather than inventing Ready,
+remote success or nonexecution. New positive oracles must prove actual normal
+return/cleanup/native custody and retained partial facts. Both originals and
+actual negative executables remain immutable. Requester correction now retains
+the selected originals: combined root40e2/fecac passes all four workspace commands
+(641/0/1), focused optimized51 and14 intended custody failures/14 retained healthy
+controls. Counter-root outer-service cancellation proof and reviewed delivery
+remain open.
+
+These are scoped prerequisites; no full R01–R25 row closes.
+
+
+Exact-main993 CI38186444808 independently passes all three jobs, with610/0/1
+visible release results and26 successful/four deliberate uncertainty native
+records per profile. Miri is skipped. Parent-report witness executes in coverage
+debug and release; plain debug runs zero tests. This also corrects the earlier
+PR353 three-profile claim. Router correction has28 forwarding passes per profile
+and protected Counter has51 per profile plus all four combined workspace checks.
+Four custody cuts have14 actual intended failures and14 retained healthy controls;
+final fresh restoration passes. The feature-dependency compile failure was
+corrected through the existing CloseBuilder factory; exact a0762901 local full
+release/package verification exits0. Independent archive evidence review and
+submitted-head CI remain delivery gates. Final independent protected codec review
+also passes, preserving original typed causes without selecting generic
+Error::source chaining. No full R01–R25 row closes.

@@ -17,7 +17,7 @@ pub(crate) type CounterProcessed = MessageProtocol<MailAddr, CounterIncremented>
 
 pub(crate) enum CounterMessage {
     Increment,
-    // The ordinary main consumes processing; authorized keeps its admission-only profile.
+    // Both examples consume the genuine request-correlated processing receipt.
     #[allow(dead_code)]
     IncrementAndReply {
         request_sequence: u64,

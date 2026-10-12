@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-10. This is the implementation index for the
+Updated: 2026-10-11. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
@@ -104,7 +104,7 @@ are verified (receiptcbaca303). Narrow fixture-only PR352 mergedabdc779fc84c3c72
 at2026-10-11T19:03:30Z after exact-head technical review and all six CI checks
 passed, including both actual native layouts/profiles and required Nix38162857886.
 Main now selects1.10.6 in the fixture; all317 other lock records and root Behavior
-0.23 remain unchanged. Exact-main CI38166406725 is running. Further Behavior merges
+0.23 remain unchanged. Exact-main CI38166406725 was cancelled. Further Behavior merges
 remain outside this execution boundary; upgrade candidate049c stays frozen.
 The next Counter contribution proves actor-processing receipts, native Overflow
 and intended debug/optimized inversions. All four required workspace commands
@@ -120,21 +120,33 @@ merged through PR350 as20fb999dfe57f72d85afb1a2ccd07d42942cc6c8 after exact-head
 review and all six checks; its21 tests passed debug, coverage and optimized.
 Fixture adoption PR352 and child-owned preparation PR351 are merged after scoped
 review and all six checks passed; actual mergesabdc779/c66c42c are recorded above.
-Combined main CI38166674058 is running. Protected publication-fault custody and
-original child-report refusal are active; no full remote acceptance row is closed.
-Protected Counter combined41-test controls pass both profiles; final scoped
-falsifiers, minimization and delivery remain. Later Behavior merges are excluded
+Combined main CI38166674058 passed at c66c42c; Miri was skipped. Protected
+postpublication custody and native router exhaustion remain active; no full
+remote acceptance row is closed.
+Protected Counter combined43-test controls pass both profiles, with scoped
+publication defects/restores and strict/fmt passing; postpublication custody,
+final minimization and delivery remain. Later Behavior merges are excluded
 by user steering; current frozen stages retain0.23 until the audited049c candidate
 has its own narrow verified migration.
 The selected PRD retains identity, replay, bounds and protected actor-network gates.
 AUTH1 and NET1 retain their statuses above.
 
-Original child-report refusal is locally feature-complete and distilled in its
-bounded owning correction: Communication0.1.5 preserves the original request
+Original child-report refusal merged through reviewed
+[PR353](https://github.com/devrandom-labs/bombay/pull/353) as9932792924c0bb05c0ab7b644a0886dae98c96d0
+at2026-10-12T00:01:26Z after all six CI checks passed. Communication0.1.5 preserves the original request
 before conversion, and the existing rejected settlement retains it after early
 parent stop. Primary/control/inversion laws pass in both profiles; all four
-combined workspace commands pass611/0/1. Reviewed PR, required CI and actual
-merge remain pending; full remote requirements retain their states above.
+combined local workspace commands pass611/0/1; Linux executes the new witness
+in coverage debug and optimized builds, with610/0/1 visible release results;
+the separate plain-debug invocation ran zero tests. Miri was skipped.
+New exact-main CI38186444808 passes all three jobs, independently reviewed.
+The selected requester-custody correction passes51 tests in both profiles,
+all four combined workspace commands (641/0/1 tests), and14 intended custody
+failures with14 restored controls. The router checked-ID correction passes28
+forwarding tests in both profiles; actual archive compilation exposed a test-only
+feature dependency now corrected for fresh verification. Reviewed delivery of
+both corrections remains open. Full remote
+requirements retain their states above.
 
 Every internal `Blocked by` edge has its reciprocal `Unblocks` edge here.
 The [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records
@@ -221,3 +233,22 @@ other: +0 / -0 / net 0
 public API: +0 types / -0 types
 working tree: 30 changed paths (1 untracked)
 ```
+
+
+Historical static-remote prerequisite delivery at the PR350 preparation checkpoint: complete configured Scope
+[PR350](https://github.com/devrandom-labs/bombay/pull/350) merged20fb999dfe57f72d85afb1a2ccd07d42942cc6c8
+at2026-10-11T14:23:31Z after independent exact-head review and all six passing
+checks, including required Nix38143604929. Its21-test authorized suites include
+19 owning tests and2 imported Counter laws; native fixture campaigns remain
+separate registry1.10.3 evidence. Controlled [PR8](https://github.com/devrandom-labs/bombay-zenoh/pull/8)
+merged4f5e7be at14:03:46Z; exact-main CI38145659859 and actual1.10.5
+publication38149136515 pass, with registry receipt/checksum948780fd inspected.
+All-nine registry/clean-consumer/source verification passes (proof10b9e1ec);
+Bombay adoption remains pending. Native-retirement successor
+[PR9](https://github.com/devrandom-labs/bombay-zenoh/pull/9) merged
+e902c6e3877d6602ba69c79a20bdb795e6a45e4b at2026-10-11T15:56:55Z
+after independent review and required CI38149485937 passed. Exact-main
+CI38153406874 and publication38158907672 passed; full registry-consumer proof
+and Bombay adoption remain open.
+Protected JSON Application integration and genuine child-owned preparation
+verification run independently under the PRD's selected contracts. All full R01–R25, AUTH1/NET1 states and reciprocal dependencies stay open.
