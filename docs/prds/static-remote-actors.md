@@ -1,5 +1,31 @@
 # Static remote actors and typed admission
 
+### Published routed-query correction adoption: record before edits
+
+2026-10-12 UTC. Under standing recommendation delegation, select the actual
+published bombay-zenoh1.10.7 in the existing TLS fixture, replacing1.10.6 only.
+Controlled PR10 merged4820 after review/required CI; exact-main38196442019
+passes ten packaged owning tests and actual Miri2. Publication38199669832
+passes; independent registry506beff6 proves all nine registered archives,
+29checksum edges and top30d30143 clean VCS4820. Eight supports stay immutable.
+Seven actual registry-only consumer commands pass (receipt8b214d97), with305
+other complete lock records unchanged and two assertion acquisitions corrected.
+This is a dependency prerequisite, not complete protected-transport or quota proof.
+
+Reuse clean merged adoption worktree; fresh branch
+feat/static-remote-zenoh-router-adoption was created from freshly fetched latest
+main993 before any commit. Forecast four paths: native fixture Cargo.toml and
+Cargo.lock, this PRD and backlog status. Production/tests/public types+0/-0;
+no dependency family, feature, topology, transport or numeric default changes.
+Keep every other complete native lock record and root manifest/lock byte-exact.
+Record actual graph counts, source bytes and version relationships before build.
+Root PR354's reviewed corrected source and its active required CI remain separate.
+Rebase this adoption onto PR354's actual merge before combined verification/PR;
+do not race a fixture update onto main while that submission is being verified.
+Then run owning fixture strict/build in both profiles, actual Linux campaigns,
+required combined checks and independent review before actual guarded merge.
+AUTH1/NET1 and every fullR01–R25 retain their existing incomplete states.
+
 Date: 2026-10-08. Owners: Bombay networking and application composition;
 identity verification remains provider-owned. Backlog: NET1 and AUTH1, with
 explicit static-placement and verification requirements below.
@@ -108,9 +134,12 @@ passes51 in both profiles, all four combined workspace commands and intended
 custody inversions. Router package verification passes locally on a0762901 after
 correcting its test-only feature dependency through the existing cleanup builder.
 Both final protected source reviews pass; [PR354](https://github.com/devrandom-labs/bombay/pull/354)
-is open on fb42ecb2 with submitted-head CI running. Controlled router
-[PR10](https://github.com/devrandom-labs/bombay-zenoh/pull/10) also has CI running.
-Neither correction is delivered or published yet.
+merged36c00d53c84482c2b1fdf0587dca788bc6c39250 at2026-10-12T04:16:32Z after
+exact-head review and all six passing CI checks on be995. Controlled router
+[PR10](https://github.com/devrandom-labs/bombay-zenoh/pull/10) merged4820;
+exact-main CI, actual1.10.7 publication and registry-only consumer proof passed.
+Bombay's narrow fixture adoption is rebased on actualmain36c00d5 for verification;
+main retains1.10.6 until that reviewed contribution merges.
 Original child-report refusal [PR353](https://github.com/devrandom-labs/bombay/pull/353)
 merged9932792924c0bb05c0ab7b644a0886dae98c96d0 at2026-10-12T00:01:26Z after
 scoped nonauthor review and all six passing checks, including required Nix.
@@ -128,9 +157,10 @@ replace this current readiness.
 2026-10-11 UTC. Under the user's standing recommendation delegation, select
 published `bombay-zenoh =1.10.6` only for the existing independent transport
 fixture. The alternative retains 1.10.3 and omits the verified query-identifier
-and timeout-owner corrections from this consumer. Do not chase further Behavior
-merges: the separately audited upgrade candidate remains core/Actors 0.24.0 and
-macros 0.14.1 at 049c88c3; this stage retains the current selected contracts.
+and timeout-owner corrections from this consumer. At that historical checkpoint,
+further Behavior merges were excluded. The user's current steering supersedes
+that exclusion with a seven-hour read-only Devx watch and later verified adoption;
+this fixture stage retains the selected core/Actors0.23 contracts.
 
 The exact blocker is consumer adoption of the already reviewed and delivered
 owning fix. Controlled PR9 merged e902c6e3877d6602ba69c79a20bdb795e6a45e4b;
@@ -14879,3 +14909,52 @@ in three profiles, Linux workspace640/0/1 across66 summaries, Driver2048 and
 Observe4×1024 with442 rehashed files; Miri is skipped. These remain old-source
 evidence. Commit the bounded correction and require fresh submitted-head CI;
 the actual merge and all full feature rows remain open.
+
+
+### Protected-Application actual delivery and fixture integration checkpoint
+
+PR354 actual normal head-guarded merge is36c00d53c84482c2b1fdf0587dca788bc6c39250
+at2026-10-12T04:16:32Z. Final exact-head agent COMMENT5486500130 at04:16:30Z
+is automated technical review, not human approval; repository rules require no
+human approving count. All six checks passed on be995; required Nix38199644193
+actually executes Counter51 in coverage/debug/release, including9 codec and19
+protected Application tests. Workspace release640/0/1 across66 summaries,
+child preparation paired phases, Driver2048 and four Observe1024 campaigns pass;
+458 retained fuzz files are rehashed. Observe Miri is skipped. Final independent
+reviewa480f413/evidence552320bf/rawlog3a926cde retain source/tree/count custody.
+Both submitted-head native campaigns have26 successes and4 deliberate-kill
+uncertainty cases each; they use unchanged1.10.6 and do not prove protected TLS.
+No fullR01–R25 row closes. Separate lifetime diagnostic1bb/53-tests is unmerged.
+
+The four-path1.10.7 fixture contribution was preserved as an immutable patch and
+named stash before rebasing onto fresh actualmain36c00d5. Restore produced one
+backlog prose conflict, resolved by retaining actual cancellation, controlled
+publication and current Devx-watch facts. The original stash remains intact.
+Root lock now selects exactfecac from PR354; nested lock5df2604d changes only
+registered top1.10.7/checksum30d30143 and preserves317 other complete records.
+No production source, public type, feature, topology or resource default changes.
+Both real native layouts/profile campaigns and strict/fmt checks remain mandatory,
+as do combined-source CI, independent review and actual PR merge.
+
+
+Fixture1.10.7 local combined-source verification now passes all seven pinned-Nix
+commands: fmt; debug/optimized strict Clippy, build and actual subprocess campaign.
+Receipt78599ad0 preserves exact commands/log hashes and before/after rootfecac,
+native manifestd3d49fe1 and nested lock5df2604d. Each profile executes30 cases:
+26 successful observations plus4 deliberate-kill uncertainty outcomes. Native
+caller refusals retain exit1 and killed workers−9; no shutdown success is invented.
+Both actual new executables are retained and rehashed: debugef2b3232,
+releaseca4424f5, matching their emitted binary receipts. The old executables were
+also retained before idle target reuse. No worktree or source was deleted.
+This contribution selects only the already published routed-ID correction; no
+new operating law or inverse is claimed. Protected Counter source remains9d10,
+codec f8b, root graphfecac. Required submitted-head combined CI and independent
+reviewed PR delivery remain gates before recording this adoption merged.
+
+Independent fixture review93bde590/evidence720a88b2 finds no scoped blocker;
+all234 campaign files and both current actual executable copies are rehashed.
+Final complete four-path checkpoint: production+0/-0/net0, tests+0/-0/net0,
+public API+0/-0 types; manifest/lock+3/-3/net0. No untracked paths. Complete
+document counts and per-path hashes are recorded immediately before commit in
+/tmp/bombay-zenoh-1107-adoption-qualified-change-record.json. Normal PR delivery
+requires fresh combined CI; all full acceptance rows remain open.

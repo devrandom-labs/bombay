@@ -7,12 +7,14 @@ in `docs/prds/`. Recheck the current lock and affected owners when selecting wor
 Historical inventory marks and research snapshots are not current eligibility.
 
 Protected-Application prerequisite [PR354](https://github.com/devrandom-labs/bombay/pull/354)
-is open with independent source reviews and all four local workspace commands
-passing (641/0/1), plus51 optimized authorized tests. Submitted-head CI and actual
-reviewed merge remain required. Controlled router correction
-[PR10](https://github.com/devrandom-labs/bombay-zenoh/pull/10) has passed local
-release/package verification; submitted-head CI, review, merge and publication
-remain required. Full AUTH1/NET1 acceptance is still incomplete.
+merged36c00d53c84482c2b1fdf0587dca788bc6c39250 at2026-10-12T04:16:32Z after
+independent exact-head review and all six passing CI checks on be995. Required
+Nix38199644193 executes protected51 in three profiles, workspace640/0/1,
+Driver2048 and Observe4×1024;458 artifact files were rehashed. Miri was skipped.
+Controlled router correction [PR10](https://github.com/devrandom-labs/bombay-zenoh/pull/10)
+merged4820 with required CI, exact-main verification and actual1.10.7 publication
+and clean-consumer proof passing. Its narrow Bombay fixture adoption remains
+under verification. Full AUTH1/NET1 acceptance is still incomplete.
 
 The previous local-runtime audit is closed: 25 TEST items were verified,
 ARC-009 was retained, and the other 19 ARC items were distilled. Its chronological
@@ -112,8 +114,20 @@ are verified (receiptcbaca303). Narrow fixture-only PR352 mergedabdc779fc84c3c72
 at2026-10-11T19:03:30Z after exact-head technical review and all six CI checks
 passed, including both actual native layouts/profiles and required Nix38162857886.
 Main now selects1.10.6 in the fixture; all317 other lock records and root Behavior
-0.23 remain unchanged. Exact-main CI38166406725 was cancelled. Further Behavior merges
-remain outside this execution boundary; upgrade candidate049c stays frozen.
+0.23 remain unchanged. Exact-main CI38166406725 was cancelled and has no pass
+credit. Further Behavior merges remained outside that historical boundary; the
+user's current steering authorizes a read-only seven-hour watch of the active
+Devx worktree and later verified integration. Selected0.23 stays fixed here.
+
+Controlled PR10 merged4820 after review and required CI. Exact-main38196442019,
+publication38199669832 and all-nine registry checksum/source proof pass;
+top1.10.7 archive30d30143 keeps the eight support packages unchanged. Seven clean
+consumer checks pass, with independent installed-source reviewf82865b5.
+The prepared fixture adoption preserves317 other complete lock records; it is
+now rebased on actualmain36c00d5. Combined verification, reviewed PR and actual
+merge remain open. Main still selects1.10.6 until those gates pass. Native resource
+quotas, protected real-network witnesses and every fullR01–R25 remain incomplete.
+
 The next Counter contribution proves actor-processing receipts, native Overflow
 and intended debug/optimized inversions. All four required workspace commands
 pass through pinned Nix; focused PR348 merged reviewed2b97d9df with all six CI
