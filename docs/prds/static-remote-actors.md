@@ -14837,3 +14837,45 @@ Both independent source reviews and all local combined gates now pass. Prepare
 the scoped protected-Application PR on feat/protected-remote-actors, based on
 latest inspected main993, with complete thirteen-path measurement. Submitted-head
 CI, final PR review and actual merge are still required; fullR01–R25 remain open.
+
+### Final submitted-source assertion ownership correction
+
+PR354 headad167 passes all six CI checks; its actual required Nix run38194200828
+executes protected51 in plain debug, coverage-debug and release. Final independent
+review nevertheless finds two received CounterServiceInput originals consumed
+by expect inside assertions. AGENTS prohibits those ownership transfers.
+Under standing recommendation delegation, select ordinary local acquisition
+before each assertion and a borrowed message match. Reuse the same original
+results and existing correlation/purpose predicates; add no semantic policy,
+type, dependency, public API or runtime owner. Forecast authorized.rs only,
+at most8 net production lines; PRD evidence is the second touched path.
+Known core at most5398 remains within6000 and private protected1800 unchanged.
+This is an assertion-discipline correction, not a newly observed runtime failure
+or an intended semantic inversion. Preserve old exact-source CI/review receipts.
+Run actual owning51 debug/optimized, formatting and strict checking, then fresh
+combined required CI and final source review before a head-guarded merge.
+No fullR01–R25 row closes from either the old or corrected prerequisite.
+
+The complete assertion scan also finds one sibling native User consumed by
+unwrap inside an owning test assertion. Select borrowing its existing Option
+with as_ref before unwrap; this one-line test change transfers no original.
+The first two-acquisition source passes actual51 debug/optimized; its formatter
+check then exits1 on the changed assertions' layout. Preserve those exact logs
+as partial controls, with no complete-gate credit. Apply owning rustfmt and the
+one borrowed sibling assertion, then rerun the complete corrected-source checks.
+
+Corrected source9d10dc01/lockfecac passes all six local commands through pinned
+Nix: owning51 debug and optimized, workspace build/tests641/0/1 across71
+summaries, formatting and strict all-target Clippy. Receiptf1396925 retains
+exact commands/log hashes and unchanged before/after source. Independent source
+reviewb082b52a resolves all three blockers without a semantic/API/dependency
+change. The correction is production+6/-8/net−2, tests+1/-1/net0; complete
+thirteen-path protected stage is production+2232/-984/net1248, tests+4704/-207/net4497,
+public types+0/-0. The final qualified record includes all documentation and
+untracked paths. An intermediate collector misallocated three unchanged cfg-test
+module lines to production; preserve it as unqualified rather than scope evidence.
+Historical ad167 CI reviewe70dee23 proves six successful checks and protected51
+in three profiles, Linux workspace640/0/1 across66 summaries, Driver2048 and
+Observe4×1024 with442 rehashed files; Miri is skipped. These remain old-source
+evidence. Commit the bounded correction and require fresh submitted-head CI;
+the actual merge and all full feature rows remain open.

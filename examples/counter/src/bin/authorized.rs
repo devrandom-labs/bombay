@@ -3854,21 +3854,19 @@ async fn run_protected_counter_profile<R>(
             panic!("full typed consumption outcome");
         };
         assert!(begun.is_ok() && stopped.is_ok() && permitted.is_ok());
-        assert!(
-            matches!(triggered.expect("actual verification trigger").message,
-            CounterServiceInput::Verify(actual) if actual == correlation)
-        );
+        let triggered = triggered.expect("actual verification trigger");
+        assert!(matches!(&triggered.message,
+            CounterServiceInput::Verify(actual) if *actual == correlation));
         assert_eq!(receipts, produced);
         for (purpose, completion, acknowledged) in delivered {
             let (Some(completion), Some(acknowledged)) = (completion, acknowledged) else {
                 panic!("full acquired completion and acknowledgement");
             };
             assert!(completion.is_ok());
-            assert!(
-                matches!(acknowledged.expect("actual typed acknowledgement").message,
+            let acknowledged = acknowledged.expect("actual typed acknowledgement");
+            assert!(matches!(&acknowledged.message,
                 CounterServiceInput::ProtectedConsumed { correlation: actual, purpose: actual_purpose }
-                    if actual == correlation && actual_purpose == purpose)
-            );
+                    if *actual == correlation && *actual_purpose == purpose));
         }
         let admission = admission.expect("original request and native result retained");
         assert_eq!(
@@ -7427,7 +7425,7 @@ mod stop_admission {
         );
         assert!(sibling_increment.is_ok());
         assert!(sibling_read.is_ok());
-        assert_eq!(sibling_reply.unwrap().message, 1);
+        assert_eq!(sibling_reply.as_ref().unwrap().message, 1);
         assert_eq!(sibling_stop, Ok(()));
         assert!(target_release.is_ok());
         assert!(sibling_release.is_ok());
