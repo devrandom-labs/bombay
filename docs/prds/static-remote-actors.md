@@ -142,6 +142,19 @@ three stage records. Cumulative Markdown endpoint against `a9c5b7d` is
 chronological path/authoring union. Historical166-path attribution remains
 unproved. Root/native/flake locks and actual verified Rust hashes are unchanged.
 
+Submitted as [PR358](https://github.com/devrandom-labs/bombay/pull/358), head
+`ace57295`, with exact-head CI38338257512 running. Parallel source review
+qualifies the law: acquisition preserves the Result returned by the supplied
+Future. An async adapter awaiting an inner provider can dispose that inner
+future before the outer Future returns Ready; this correction does not prove
+that earlier boundary. A separate isolated failing-boundary investigation is
+recorded before testing it. Retain this limitation in acceptance and the PR
+description; no new production design follows from source inspection alone.
+CI evidence review reuses the existing readers, allowing at most20 additional
+invocation lines within the recorded200 orchestration allowance. Reviewer
+contribution to the original regression idea remains disclosed; independent
+review credit concerns correction, minimization and evidence, not test invention.
+
 ### Current delivery checkpoint — 2026-10-13 UTC
 
 Bombay main is `671ba86094fe96d6333b1c3645a85b0ac1918f68`

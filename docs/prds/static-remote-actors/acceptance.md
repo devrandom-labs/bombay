@@ -27,6 +27,10 @@ controls pass. Combined Cargo645/0/1, Nextest644 passed/1 skipped and protected
 Independent combined review `96248e45` permits focused PR preparation; its own
 submitted-head CI, review and merge remain pending. This is a custody prerequisite,
 not full whole-service, identity, pressure or R01–R25 acceptance.
+The preserved Result must have been returned by the supplied Future. An inner
+provider awaited by an async adapter can fail during disposal before that outer
+Future returns Ready; this separate boundary is under investigation and has
+no passing conservation claim. PR358's direct regression cannot substitute for it.
 
 ## Requirement traceability
 
