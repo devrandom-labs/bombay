@@ -12,9 +12,21 @@ PRD records those decisions. Delegation does not establish any passing witness.
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in
 debug and optimized. Corrected controls and all five causal cuts pass both
-providers in both profiles; scoped minimization passes and submitted-head CI/PR
-delivery remains pending. It cannot close R14/R19 byte, overflow, congestion or
+providers in both profiles. Scoped minimization, independent exact-head review
+and all six checks pass; [PR357](https://github.com/devrandom-labs/bombay/pull/357)
+merged `671ba860` at2026-10-13T02:41:04Z. It cannot close R14/R19 byte, overflow, congestion or
 whole-service fault obligations; the PRD records its scope and release policy.
+
+The separate provider-result correction preserves the actual `Ready` result
+before completed-future disposal can panic. The exact original request, result
+allocation and later opaque panic remain owned. Original and replayed defects
+fail the intended oracle in debug/optimized; corrected and byte-exact restored
+controls pass. Combined Cargo645/0/1, Nextest644 passed/1 skipped and protected
+59/0/1 per profile retain distinct provenance. Actual TLS controls pass64 cases/
+160 roles and child-stop2/0/0 per profile, with frozen source/copied-binary guards.
+Independent combined review `96248e45` permits focused PR preparation; its own
+submitted-head CI, review and merge remain pending. This is a custody prerequisite,
+not full whole-service, identity, pressure or R01–R25 acceptance.
 
 ## Requirement traceability
 

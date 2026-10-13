@@ -23,13 +23,16 @@ use std::error::Error;
 use std::fmt;
 #[cfg(test)]
 use std::future::pending;
+use std::future::{Future, poll_fn};
 use std::mem::{replace, size_of};
 use std::num::NonZeroUsize;
 use std::panic::AssertUnwindSafe;
 #[cfg(test)]
 use std::panic::resume_unwind;
+use std::pin::pin;
 #[cfg(test)]
 use std::ptr;
+use std::task::Poll;
 use std::time::{Duration, Instant};
 use tokio::{
     runtime::{Builder, Handle, Id, Runtime, TryCurrentError},
@@ -802,8 +805,19 @@ async fn acquire_verification<R>(
     provider: impl AsyncFnOnce(&CounterRequest) -> Result<R, VerificationError>,
 ) {
     if matches!(pending.verification, Verification::Awaiting) {
-        let acquired = provider(&pending.original).await;
-        pending.verification = Verification::Acquired(acquired);
+        let (original, verification) = (&pending.original, &mut pending.verification);
+        let mut provider_verification = pin!(provider(original));
+        // Commit the returned verification before disposing its actual producer.
+        poll_fn(
+            |context| match provider_verification.as_mut().poll(context) {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(acquired) => {
+                    *verification = Verification::Acquired(acquired);
+                    Poll::Ready(())
+                }
+            },
+        )
+        .await;
     }
 }
 
@@ -9584,3 +9598,110 @@ mod protected_application {
 #[cfg(test)]
 #[path = "authorized/held_counter_retirement.rs"]
 mod held_counter_retirement;
+
+#[cfg(test)]
+mod provider_receipt_custody {
+    use super::{
+        CounterRequest, PendingAdmission, Verification, VerificationError, acquire_verification,
+    };
+    use core::future::Future;
+    use core::pin::{Pin, pin};
+    use core::task::{Context, Poll, Waker};
+    use futures_util::FutureExt;
+    use std::panic::{AssertUnwindSafe, resume_unwind};
+    use std::ptr;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    struct ProviderReceipt {
+        protected: Box<[u8]>,
+        drops: Arc<AtomicUsize>,
+    }
+    impl Drop for ProviderReceipt {
+        fn drop(&mut self) {
+            self.drops.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+    struct ProviderVerification {
+        receipt: Option<ProviderReceipt>,
+        disposal: Option<Box<[u8; 2]>>,
+        returned: Arc<AtomicUsize>,
+    }
+    impl Future for ProviderVerification {
+        type Output = Result<ProviderReceipt, VerificationError>;
+
+        fn poll(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Self::Output> {
+            let producer = self.get_mut();
+            let receipt = producer.receipt.take().expect("one original receipt");
+            producer.returned.fetch_add(1, Ordering::SeqCst);
+            Poll::Ready(Ok(receipt))
+        }
+    }
+    impl Drop for ProviderVerification {
+        fn drop(&mut self) {
+            if self.receipt.is_none() {
+                let cause = self.disposal.take().expect("original disposal cause");
+                resume_unwind(cause);
+            }
+        }
+    }
+
+    #[test]
+    fn verification_keeps_returned_receipt_beside_original_disposal_panic() {
+        let drops = Arc::new(AtomicUsize::new(0));
+        let returned = Arc::new(AtomicUsize::new(0));
+        let receipt = ProviderReceipt {
+            protected: Box::from([7, 11]),
+            drops: drops.clone(),
+        };
+        let receipt_allocation = receipt.protected.as_ptr();
+        let cause = Box::new([13_u8, 17]);
+        let cause_allocation = ptr::from_ref(cause.as_ref()).cast::<()>();
+        let mut pending = PendingAdmission {
+            correlation: 0,
+            reservation_bytes: 0,
+            original: CounterRequest {
+                protected: Box::from([7, 11]),
+                proof: Box::from([19]),
+            },
+            verification: Verification::Awaiting,
+        };
+        let raw_allocation = pending.original.protected.as_ptr();
+        let proof_allocation = pending.original.proof.as_ptr();
+        let observed_returned = returned.clone();
+        let provider = move |original: &CounterRequest| {
+            assert_eq!(original.protected.as_ref(), receipt.protected.as_ref());
+            assert_eq!(original.proof.as_ref(), &[19]);
+            ProviderVerification {
+                receipt: Some(receipt),
+                disposal: Some(cause),
+                returned,
+            }
+        };
+        let caught = {
+            let mut operation =
+                pin!(AssertUnwindSafe(acquire_verification(&mut pending, provider)).catch_unwind());
+            let mut context = Context::from_waker(Waker::noop());
+            operation.as_mut().poll(&mut context)
+        };
+        let Poll::Ready(Err(cause)) = caught else {
+            panic!("actual producer disposal must raise its original cause");
+        };
+        assert_eq!(ptr::from_ref(cause.as_ref()).cast::<()>(), cause_allocation);
+        assert_eq!(observed_returned.load(Ordering::SeqCst), 1);
+        assert_eq!(pending.original.protected.as_ptr(), raw_allocation);
+        assert_eq!(pending.original.proof.as_ptr(), proof_allocation);
+        assert_eq!(pending.original.protected.as_ref(), &[7, 11]);
+        assert_eq!(pending.original.proof.as_ref(), &[19]);
+        let Verification::Acquired(Ok(receipt)) = &pending.verification else {
+            panic!("provider Ready receipt was erased by producer disposal");
+        };
+        assert_eq!(receipt.protected.as_ptr(), receipt_allocation);
+        assert_eq!(receipt.protected.as_ref(), &[7, 11]);
+        assert_eq!(drops.load(Ordering::SeqCst), 0);
+        drop((pending, cause));
+        assert_eq!(drops.load(Ordering::SeqCst), 1);
+    }
+}

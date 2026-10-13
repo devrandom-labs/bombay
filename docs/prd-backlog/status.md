@@ -6,14 +6,22 @@ locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
 
-Next selected experiment: count-before-copy ownership across queued, verifying
-and unread native requests, using existing Tokio permits and authorization.
-Both real providers reproduce the original count violation in debug and optimized;
-Corrected controls and all five causal cuts pass both providers in debug and
-optimized; combined workspace and affected TLS checks pass. Scoped minimization
-passes; submitted-head CI/PR delivery remains pending. See the
-[PRD](../prds/static-remote-actors.md#count-before-copy-comparison-selected-next-experiment).
-This test-only selection leaves AUTH1/NET1 and full remote acceptance unchanged.
+Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
+merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at
+2026-10-13T02:41:04Z after independent review and all six passing checks,
+including required Nix38332675990. Original violations and five causal cuts
+retain their local provenance. The two count witnesses execute in each native
+profile; capacity proof remains SessionLocal, with byte/heap/overflow and
+whole-service obligations open.
+
+Next focused correction preserves an acquired provider result before disposing
+its completed future. Original and replayed defects fail the intended custody
+oracle in both profiles; corrected and restored controls, combined workspace,
+protected suites and actual TLS controls pass independent review. Production
+delta is +16/-2/net14, with no new public API or dependency. Its submitted-head
+CI, reviewed PR and actual merge remain pending. See the
+[PRD](../prds/static-remote-actors.md#provider-result-custody--isolated-failing-regression-stage-2026-10-13).
+AUTH1/NET1 and every full remote acceptance row remain open.
 
 Protected-Application prerequisite [PR354](https://github.com/devrandom-labs/bombay/pull/354)
 merged36c00d53c84482c2b1fdf0587dca788bc6c39250 at2026-10-12T04:16:32Z after

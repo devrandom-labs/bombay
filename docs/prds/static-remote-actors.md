@@ -1,17 +1,162 @@
 # Static remote actors and typed admission
 
+### Provider result custody — isolated failing-regression stage, 2026-10-13
+
+Under standing recommendation delegation, investigate the actual Counter
+acquire_verification owner independently of PR357. Branch starts at actual latest
+main2572 before any commit; parent authorized.rs remains98e054b0 and selected
+Behavior/Actors0.23.0 revisiond69f992b. Root/native locks remain47089444/1c077a7b.
+The hypothesized law is conservation of an original provider Ready result when
+disposing its completed future subsequently panics. Existing PendingAdmission and
+Verification own that result; Engine receive_operation supplies a plain-Rust
+commit-before-disposal precedent, not a replacement provider abstraction.
+
+Select one cfg(test) regression in the existing authorized binary, using its real
+owner and a concrete FnOnce future. Keep native panic opaque: compare its original
+outer allocation without downcasting or inspecting its private content. Observe
+actual Ready, original raw/proof and result allocations, then the custody oracle.
+Forecast up to140 introduced test lines and80 orchestration lines, two tracked
+paths (authorized.rs and this PRD); production+0/-0, public API+0/-0, dependencies0.
+Prepared117 lines count toward the140 allowance; mechanical discarded edits count.
+First prove intended original failure in debug and optimized through pinned Nix.
+No correction, new API, resource default, shipping or full-witness closure is
+selected from the hypothesis. Any production correction requires its own measured
+pre-edit record after the failing law is established.
+
+Before applying the probe, select the standard boxed array as the opaque original
+panic value, comparing its outer allocation through std::ptr. This removes the
+prepared panic wrapper and downcast; ProviderVerification is only the concrete
+test future that returns the original R. No replacement runtime/provider port is
+introduced. Forecast nine changed introductions beyond the prepared117, within140.
+
+Both actual original-owner profiles now fail the intended custody oracle after
+observing one genuine Ready result, exact opaque native panic allocation and the
+unchanged original request/proof. No compiler/setup/timeout/abort is credited.
+Frozen sourceb4b7fea0; campaign75ee0605 retains actual Cargo-selected executable
+copies and debug8f066963/optimized7f4b937a logs. Final introduced regression128/140,
+retained tests+107/-0; production/API/dependencies0 so far.
+
+Before production edits, select the existing Engine/standard Rust pattern:
+borrow original request and verification slot separately, pin the real provider
+future, and use poll_fn to preserve Pending or commit Ready directly into the
+existing slot before disposing that future. This conserves the acquired result
+beside the original later panic. Catching only after awaited disposal cannot
+recover an erased result; a new task, cell or provider trait has no proven need.
+Reuse std Future/poll_fn/pin/Poll; no new crate or replacement interpreter.
+Expected authorized.rs production+13/-2/net11 (up to15 introductions allowing a
+law comment), zero public types added/removed, same two tracked stage paths.
+PendingAdmission/Verification phases, result alternatives and transition owner
+remain unchanged; only the acquisition commit precedes disposal. No competing
+state machine or semantic boolean is introduced. Original panic stays opaque.
+
+Run the exact regression in debug and optimized, then restore the original two
+production lines and prove both intended failures again before byte-exact restored
+controls. Verify affected ordinary provider/cancellation tests in both profiles;
+broader combined gates follow integration with PR357. Whole-service faults,
+production identity, native transport and full remote witnesses remain separate.
+
+Formatting exposed an underestimated edit forecast before any corrected Cargo run:
+raw correction824eafa7 adds14/removes2; formattedda90e500 retains16/removes2/net14.
+Formatter introduces12/removes10, so conservative authoring26 exceeds the prior15
+allowance by11. Record the overrun; under recommendation delegation select40
+introduced production lines before further edits/verification, retaining all raw
+and formatted evidence. Test128/140 and other allowances are unchanged. No new
+semantic state, type, API, dependency or catch layer was introduced.
+
+Original/replayed defects fail as intended in both profiles; exact healthy and
+restored controls pass. Existing ordinary authorized/provider/cancellation suites
+pass55/0/0 in both, narrow all-target Clippy passes both and formatting passes.
+Root takes the released target lease. Integrate reviewed PR357 source726 early,
+preserving both stage files and exact da90/0dad hashes; no dependency change.
+Its CI/actual merge remains independently gated. Verify the combined workspace,
+protected suite and affected actual TLS before submitting this separate correction.
+
+Early integration fast-forwards to reviewed726 without a new commit. Preserved
+stage files via named stash and exact binary patch; resolve the sole documentation
+heading conflict by retaining the entire provider stage and current Oct13 checkpoint.
+Source remains exactlyda90/0dad; both locks unchanged. No production resolution.
+Before combined verification/snapshot/CI custody, select orchestration allowance200
+from80 under recommendation delegation; author retained73 known lines, while ad hoc
+observational tool-check history is not exhaustive union certification. Preserve
+the original forecast and that limitation; do not count copied scripts as new laws.
+
+Combined build/workspace645/0/1, strict workspace Clippy and formatting pass.
+Protected suites execute59/0/1 in both profiles; a preliminary debug collector
+summed nested filtered subprocess summaries as61, which earns no extra test credit.
+Use the actual outer59/0/1 with zero filtered tests. Actual copied feature binaries
+2a43302e/c986b822 and391-file snapshotf511d666 (8,045,387 bytes) freeze da90/0dad.
+Before final TLS inspection, select35 native evidence-authoring lines from25 under
+delegation:23 known parameter/writer/progress lines leave12 for role assertions.
+All12 CLI invocations already exit0 with complete before/after custody guards;
+final role/cleanup assertions remain pending. Combined orchestration ceiling200
+is unchanged; no transport scenario, default or implementation is added.
+
+Combined verification is terminal: protected strict Clippy passes both profiles;
+Nextest executes644 passed/1 skipped, distinct from Cargo's645/0/1 including its
+doc test. Frozen actual TLS verification passes64cases/160roles, each exact1/0/0
+and clean exit/cleanup. Child-stop2/0/0 per profile also passes. Complete391-file
+and two-copy guards hold before/after all12 CLI invocations, not each internal role.
+Evidence /tmp/bombay-provider-combined-native command receipts64c280c5/4f5dbd2c,
+runner0026dd5e and child logsf64ae98e; native orchestration35 known introduced lines.
+Independent correction review52600035 rehashes all12 scoped commands/10 executable
+copies, discloses original-test-idea contribution and credits only source/receipt
+minimization. Whole-service, identity, heap/pressure and fullR remain unproved.
+Current stage: two tracked paths/untracked0, production+16/-2/net14,
+tests+107/-0/net107, public API+0/-0. No manifest/lock/public-export changes.
+Reviewed upstream PR357 still awaits required Nix38332675990; no merge is inferred.
+
+PR357 required Nix finishesSUCCESS at2026-10-13T02:29:31Z, raw log62c434c6;
+all six exact-head checks pass. Final CI reader hits an uncredited arrival-order
+assumption: coverage parent-report1 precedes plain0/1filtered and release1 in the
+parallel log. Select only executable-path/profile attribution before existing
+per-profile assertions; never sort counts or relabel plain zero as execution.
+Retain that failed reader attempt. Actual CI commands/source are unchanged;
+artifact/fuzz audit and guarded actual merge remain pending.
+
+Final artifact review passes: independent review `d712aa7b` binds all six
+successful checks to submitted head `726698f7`, its matching tested tree, the
+two count witnesses per native profile, 64 protected cases/160 roles, and
+434 rehashed fuzz files. The reader preserves raw blocks and attributes them
+to their actual executable paths. Miri was skipped; CI executable bytes were
+not retained. Technical COMMENT review is recorded, with no human approval
+claim. [PR357](https://github.com/devrandom-labs/bombay/pull/357) merged at
+2026-10-13T02:41:04Z, commit `671ba86094fe96d6333b1c3645a85b0ac1918f68`.
+Its tree `76ffedf3` exactly matches the submitted and tested source.
+
+The provider branch now fast-forwards to that actual latest main, preserving
+the verified `da90e500` parent source and `0dad3e31` native module. Independent
+combined review `96248e45` verifies all nine workspace/feature logs and the
+actual copied binaries. The already executed gates apply to this identical
+source tree; no Rust edit followed verification. Prepare one focused provider
+correction PR. Add current acceptance and backlog records alongside this PRD;
+final stage scope is four tracked paths, no untracked files, production
++16/-2/net14, tests +107/-0/net107, public API +0/-0. Required submitted-head
+CI, technical review and actual merge remain delivery gates. Full R01–R25,
+AUTH1/NET1, whole-service fault custody and production identity remain open.
+
+Final pre-commit census against actual main `671ba860`: four tracked paths,
+untracked0; production +16/-2/net14, tests +107/-0/net107, public API +0/-0.
+The documentation endpoint before these census lines is +171/-14 across the
+three stage records. Cumulative Markdown endpoint against `a9c5b7d` is
++17,102/-97 across15 files, below the delegated17,500 ceiling; this is not a
+chronological path/authoring union. Historical166-path attribution remains
+unproved. Root/native/flake locks and actual verified Rust hashes are unchanged.
+
 ### Current delivery checkpoint — 2026-10-13 UTC
 
-Bombay main is2572bf3000654011d6bfb1e150898a131d0681b7 ([PR356](https://github.com/devrandom-labs/bombay/pull/356));
+Bombay main is `671ba86094fe96d6333b1c3645a85b0ac1918f68`
+([PR357](https://github.com/devrandom-labs/bombay/pull/357));
 its two owning locks select published Zenoh1.10.8. The native Read/Stop and local
 held-child prerequisites merged after independent exact-head/source/artifact
 review and all six CI checks passed, including required Nix38322598237.
 Controlled PR11 remains merged5bebbcb0; exact-main CI38308414717, publication
 38313859795 and registered consumer/source review pass their scoped gates.
-The separate count-before-copy work now uses a branch from actual latest main.
+The count-before-copy prerequisite merged after scoped minimization, exact-head
+review and all six passing checks, including required Nix run38332675990.
 Both providers reproduce the original count violation in debug/optimized;
-corrected controls and all five causal cuts pass, along with workspace and affected
-TLS checks. Scoped minimization passes; submitted-head CI/PR delivery remains pending.
+corrected controls and all five causal cuts pass. The separate provider-result
+correction passes local and combined gates and scoped minimization; its own
+submitted-head CI, review and actual merge remain pending.
 See [acceptance evidence](static-remote-actors/acceptance.md) and
 [backlog status](../prd-backlog/status.md). FullR01–R25 remain open; AUTH1 is
 candidate and NET1 blocked. Dated preparation and delivery records below retain
