@@ -1,3 +1,4 @@
+use super::ApplicationScope;
 use crate::address::MailAddr;
 use crate::application::composition::ComposeApplication;
 use crate::application::execution::{
@@ -77,9 +78,16 @@ where
                     ),
                     Result<
                         (Self, Router, SocketAddr, io::Error),
-                        (Root, Spaces, Router, StagingFailure, TcpListener),
+                        (
+                            Root,
+                            Spaces,
+                            Router,
+                            StagingFailure,
+                            TcpListener,
+                            ApplicationScope,
+                        ),
                     >,
-                    (Actor, Spaces),
+                    (Actor, Spaces, ApplicationScope),
                     (),
                 >,
             >,
@@ -150,7 +158,14 @@ where
             (),
             Result<
                 (Self, Router, SocketAddr, io::Error),
-                (Root, Spaces, Router, StagingFailure, TcpListener),
+                (
+                    Root,
+                    Spaces,
+                    Router,
+                    StagingFailure,
+                    TcpListener,
+                    ApplicationScope,
+                ),
             >,
             _,
             _,
@@ -167,10 +182,12 @@ where
             executor,
             (self, router, address),
             (),
-            async |(_, _, address): &(Self, Router, SocketAddr)| TcpListener::bind(*address).await,
+            async |(application, _, address): &(Self, Router, SocketAddr)| {
+                (TcpListener::bind(*address).await, application.allocations())
+            },
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
-             _allocations| {
+             allocations| {
                 let (application, cold_work, publication) = original_work.into_unstarted();
                 let () = cold_work;
                 let (application, router, address) = application;
@@ -216,14 +233,18 @@ where
                         publication,
                     )),
                 };
-                let (root, spaces, members, ()) = application.into_parts();
+                let (root, spaces, members, (), scope) = application.into_parts();
+                let scope = match scope {
+                    Some(scope) => scope,
+                    None => ApplicationScope { allocations },
+                };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
                         let ((router, listener), invoke) = work.into_supplied();
                         let _ = invoke;
-                        let inputs = Err((root, spaces, router, failure, listener));
+                        let inputs = Err((root, spaces, router, failure, listener, scope));
                         return Err(ApplicationWorkPublication {
                             publication: Some((
                                 ApplicationWorkCustody::StagingRejected(inputs),
@@ -237,7 +258,7 @@ where
                 Ok((
                     ApplicationWorkPublication {
                         publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
+                            ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
@@ -281,9 +302,16 @@ where
             ),
             Result<
                 (Self, Router, SocketAddr, io::Error),
-                (Root, Spaces, Router, StagingFailure, TcpListener),
+                (
+                    Root,
+                    Spaces,
+                    Router,
+                    StagingFailure,
+                    TcpListener,
+                    ApplicationScope,
+                ),
             >,
-            (Actor, Spaces),
+            (Actor, Spaces, ApplicationScope),
             (),
         >,
         ((Self, Router, SocketAddr), TryCurrentError),

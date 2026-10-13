@@ -1,3 +1,4 @@
+use super::ApplicationScope;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::composition::ComposeApplication;
 use crate::application::{Application, ApplicationHandle};
@@ -80,8 +81,15 @@ where
                         Work,
                         <WorkFuture as Future>::Output,
                         (),
-                        (Root, Spaces, Families, Work, StagingFailure),
-                        (Actor, Arc<Spaces>),
+                        (
+                            Root,
+                            Spaces,
+                            Families,
+                            Work,
+                            StagingFailure,
+                            ApplicationScope,
+                        ),
+                        (Actor, Arc<Spaces>, ApplicationScope),
                     >,
                     Result<
                         (
@@ -170,7 +178,7 @@ where
             Members::Origins,
             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             Families::Installed,
-            (Root, Spaces, Families, Work, StagingFailure),
+            _,
             _,
             _,
             _,
@@ -186,7 +194,7 @@ where
             executor,
             self,
             (work, |work: Work, application| work(application)),
-            async |_| {},
+            async |application: &Self| ((), application.allocations()),
             move |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
                   startup_inputs,
                   allocations| {
@@ -201,7 +209,10 @@ where
                     )),
                 };
                 let () = startup_inputs;
-                let (root, spaces, members, families) = application.into_parts();
+                let (root, spaces, members, families, scope) = application.into_parts();
+                let scope = scope.unwrap_or_else(|| ApplicationScope {
+                    allocations: allocations.clone(),
+                });
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
                     Err((root, failure)) => {
@@ -211,7 +222,7 @@ where
                         return Err(ApplicationWorkPublication {
                             publication: Some((
                                 ApplicationWorkCustody::StagingRejected((
-                                    root, spaces, families, work, failure,
+                                    root, spaces, families, work, failure, scope,
                                 )),
                                 publication,
                             )),
@@ -225,7 +236,7 @@ where
                 Ok((
                     ApplicationWorkPublication {
                         publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
+                            ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
@@ -273,8 +284,15 @@ where
                 Work,
                 <WorkFuture as Future>::Output,
                 (),
-                (Root, Spaces, Families, Work, StagingFailure),
-                (Actor, Arc<Spaces>),
+                (
+                    Root,
+                    Spaces,
+                    Families,
+                    Work,
+                    StagingFailure,
+                    ApplicationScope,
+                ),
+                (Actor, Arc<Spaces>, ApplicationScope),
             >,
             Result<
                 (
@@ -396,8 +414,8 @@ where
                             ChildFailures,
                         >,
                     ),
-                    (Root, Spaces, Work, StagingFailure),
-                    (Actor, Spaces),
+                    (Root, Spaces, Work, StagingFailure, ApplicationScope),
+                    (Actor, Spaces, ApplicationScope),
                 >,
             >,
         ),
@@ -466,7 +484,7 @@ where
             Members::Origins,
             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             (),
-            (Root, Spaces, Work, StagingFailure),
+            (Root, Spaces, Work, StagingFailure, ApplicationScope),
             _,
             _,
             _,
@@ -482,10 +500,10 @@ where
             executor,
             self,
             (work, |work: Work, application| work(application)),
-            async |_| {},
+            async |application: &Self| ((), application.allocations()),
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
-             _allocations| {
+             allocations| {
                 let (application, cold_work, publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
@@ -497,14 +515,18 @@ where
                     )),
                 };
                 let () = startup_inputs;
-                let (root, spaces, members, ()) = application.into_parts();
+                let (root, spaces, members, (), scope) = application.into_parts();
+                let scope = match scope {
+                    Some(scope) => scope,
+                    None => ApplicationScope { allocations },
+                };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
                         let (work, invoke) = work.into_supplied();
                         let _ = invoke;
-                        let inputs = (root, spaces, work, failure);
+                        let inputs = (root, spaces, work, failure, scope);
                         return Err(ApplicationWorkPublication {
                             publication: Some((
                                 ApplicationWorkCustody::StagingRejected(inputs),
@@ -518,7 +540,7 @@ where
                 Ok((
                     ApplicationWorkPublication {
                         publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
+                            ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
@@ -565,8 +587,8 @@ where
                             ChildFailures,
                         >,
                     ),
-                    (Root, Spaces, StagingFailure),
-                    (Actor, Spaces),
+                    (Root, Spaces, StagingFailure, ApplicationScope),
+                    (Actor, Spaces, ApplicationScope),
                 >,
             >,
         ),
@@ -633,7 +655,7 @@ where
             Members::Origins,
             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             (),
-            (Root, Spaces, StagingFailure),
+            (Root, Spaces, StagingFailure, ApplicationScope),
             _,
             _,
             _,
@@ -649,10 +671,10 @@ where
             executor,
             self,
             (),
-            async |_| {},
+            async |application: &Self| ((), application.allocations()),
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
-             _allocations| {
+             allocations| {
                 let (application, cold_work, publication) = original_work.into_unstarted();
                 let () = cold_work;
                 let original_work = ApplicationWorkPublication {
@@ -665,7 +687,11 @@ where
                     )),
                 };
                 let () = startup_inputs;
-                let (root, spaces, members, ()) = application.into_parts();
+                let (root, spaces, members, (), scope) = application.into_parts();
+                let scope = match scope {
+                    Some(scope) => scope,
+                    None => ApplicationScope { allocations },
+                };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
                     Err((root, failure)) => {
@@ -674,7 +700,7 @@ where
                             ApplicationWorkPresence::Absent(()) => {}
                             ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
                         }
-                        let inputs = (root, spaces, failure);
+                        let inputs = (root, spaces, failure, scope);
                         return Err(ApplicationWorkPublication {
                             publication: Some((
                                 ApplicationWorkCustody::StagingRejected(inputs),
@@ -688,7 +714,7 @@ where
                 Ok((
                     ApplicationWorkPublication {
                         publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
+                            ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
@@ -727,8 +753,8 @@ where
                     ChildFailures,
                 >,
             ),
-            (Root, Spaces, StagingFailure),
-            (Actor, Spaces),
+            (Root, Spaces, StagingFailure, ApplicationScope),
+            (Actor, Spaces, ApplicationScope),
         >,
         (Self, TryCurrentError),
     >
@@ -829,8 +855,8 @@ where
                         ChildFailures,
                     >,
                 ),
-                (Root, Spaces, StagingFailure),
-                (Actor, Spaces),
+                (Root, Spaces, StagingFailure, ApplicationScope),
+                (Actor, Spaces, ApplicationScope),
             >,
             (Self, TryCurrentError),
         >,
@@ -923,8 +949,8 @@ where
                     ChildFailures,
                 >,
             ),
-            (Root, Spaces, Work, StagingFailure),
-            (Actor, Spaces),
+            (Root, Spaces, Work, StagingFailure, ApplicationScope),
+            (Actor, Spaces, ApplicationScope),
         >,
         (Self, Work, TryCurrentError),
     >
@@ -1487,7 +1513,7 @@ pub(in crate::application) fn execute_application_with<
             ApplicationWorkPresence<WorkFuture::Output, NoWork>,
             Cleanup,
             StagingInputs,
-            (Actor, Spaces),
+            (Actor, Spaces, ApplicationScope),
             ColdWork,
         >,
     >,
@@ -1520,7 +1546,7 @@ where
     RootOrigin<Owner>: Send + 'static,
     Terminal: RetirementSchema + Send + 'static,
     <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures: Send + 'static,
-    AcquireStartupInputs: AsyncFnOnce(&Inputs) -> StartupInputs,
+    AcquireStartupInputs: AsyncFnOnce(&Inputs) -> (StartupInputs, ApplicationAddresses),
     InstalledFamilies: InstalledEntityFamilies + Send + 'static,
     Prepare: FnOnce(
         ApplicationWorkPublication<
@@ -1529,7 +1555,7 @@ where
             ApplicationWorkPresence<(Work, Invoke), NoWork>,
             ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
             StagingInputs,
-            (Actor, Spaces),
+            (Actor, Spaces, ApplicationScope),
         >,
         StartupInputs,
         ApplicationAddresses,
@@ -1541,7 +1567,7 @@ where
                 ApplicationWorkPresence<(Work, Invoke), NoWork>,
                 ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
                 StagingInputs,
-                (Actor, Spaces),
+                (Actor, Spaces, ApplicationScope),
             >,
             InstalledFamilies,
         ),
@@ -1551,7 +1577,7 @@ where
             ApplicationWorkPresence<(Work, Invoke), NoWork>,
             ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
             StagingInputs,
-            (Actor, Spaces),
+            (Actor, Spaces, ApplicationScope),
         >,
     >,
     Invoke: FnOnce(
@@ -1588,7 +1614,7 @@ where
     let (cleanup_publication, cleanup_result) = oneshot::channel();
     let execution = async move {
         let mut original_work = original_work;
-        let startup_inputs = {
+        let (startup_inputs, allocations) = {
             let Some((ApplicationWorkCustody::Unstarted(application, _), _)) =
                 original_work.publication.as_ref()
             else {
@@ -1603,7 +1629,6 @@ where
             })
             .await
         };
-        let allocations = ApplicationAddresses::new();
         let (prepared_work, installed_families) =
             match prepare(original_work, startup_inputs, allocations.clone()) {
                 Ok(prepared) => prepared,
@@ -1614,7 +1639,7 @@ where
             };
         original_work = prepared_work;
         let setup = catch_unwind(AssertUnwindSafe(|| {
-            let Some((ApplicationWorkCustody::Prepared((_, spaces), _), _)) =
+            let Some((ApplicationWorkCustody::Prepared((_, spaces, _), _), _)) =
                 original_work.publication.as_ref()
             else {
                 unreachable!("setup borrows the single prepared input publication");
@@ -1647,13 +1672,14 @@ where
             let entered_executor = executor.enter();
             let address = MailAddr::APPLICATION_ROOT;
             let config = communication::Config::new(DEFAULT_USER_CAPACITY);
-            let Some((ApplicationWorkCustody::Prepared((root, spaces), work), publication)) =
+            let Some((ApplicationWorkCustody::Prepared((root, spaces, scope), work), publication)) =
                 original_work.publication.take()
             else {
                 unreachable!("handoff consumes the single prepared input publication");
             };
             original_work.publication =
                 Some((ApplicationWorkCustody::NotInvoked(work, None), publication));
+            drop(scope);
             let actor_spaces = Arc::new(spaces);
             let started = spawn_local_execution::<Actor, _, StandardIngress, _, _, _>(
                 roots,

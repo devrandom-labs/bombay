@@ -1780,6 +1780,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
                         children,
                         cause,
                     },
+                    scope,
                 ),
         })) => {
             let mut creations = children.into_creates().into_iter();
@@ -1806,7 +1807,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
             ));
             // The original root/F/current child/earlier child/native cause all
             // remain concrete owners outside the disposed user Role.
-            cold_inputs = Some((root, spaces, work, actor, earlier, cause));
+            cold_inputs = Some((root, spaces, work, actor, earlier, cause, scope));
         }
         Some(Ok(ApplicationOutcome::NotInvoked {
             work,
@@ -1918,7 +1919,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
     let fault_owned = fault.as_ref().map(Weak::strong_count);
     let received_carrier = cold_inputs
         .as_ref()
-        .map(|(_, _, _, _, _, cause)| ptr::from_ref(cause.as_ref()).cast::<()>());
+        .map(|(_, _, _, _, _, cause, _)| ptr::from_ref(cause.as_ref()).cast::<()>());
     drop(cold_inputs);
     drop(joined_refusal);
     drop(returned);
@@ -2269,6 +2270,7 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
                         children,
                         cause,
                     },
+                    scope,
                 ),
         } = outcome
         else {
@@ -2306,7 +2308,7 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
             original_cause.strong_count(),
         );
         let received_carrier = ptr::from_ref(cause.as_ref()).cast::<()>();
-        drop((root, spaces, work, actor, earlier, cause));
+        drop((root, spaces, work, actor, earlier, cause, scope));
         let released = (
             original_root.strong_count(),
             original_current.strong_count(),
@@ -3821,7 +3823,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         };
         let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let ApplicationOutcome::Prepared {
-            inputs: (prepared_root, prepared_spaces),
+            inputs: (prepared_root, prepared_spaces, allocation_scope),
             work,
             cleanup,
         } = receiver.await
@@ -3830,7 +3832,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         };
         // This Work-only controller deliberately surrenders the acquired prepared inputs.
         // The separate prepared-root witness checks their retained lifetime.
-        drop((prepared_root, prepared_spaces));
+        drop((prepared_root, prepared_spaces, allocation_scope));
         let Err(ApplicationCleanupError::PublicationClosed(publication_failure)) = cleanup else {
             panic!("this exact pre-spawn cut returns the actual publication error");
         };
@@ -3956,7 +3958,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         };
         let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let ApplicationOutcome::Prepared {
-            inputs: (prepared_root, prepared_spaces),
+            inputs: (prepared_root, prepared_spaces, allocation_scope),
             work,
             cleanup,
         } = receiver.await
@@ -3982,7 +3984,8 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         let invocations_before_retry = invocations.get();
         // Materialize a new Application value from the same acquired actor and changed Spaces.
         // This does not reconstruct an untouched declaration or consumed role.
-        let (execution, receiver) = Application::with_topology(prepared_root, prepared_spaces)
+        let (execution, receiver) = allocation_scope
+            .with_topology(prepared_root, prepared_spaces)
             .execute_with(work)
             .unwrap_or_else(|_| panic!("the same original host permits acquired-input retry"));
         let ((), outcome) = tokio::join!(execution, receiver);

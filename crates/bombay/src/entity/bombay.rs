@@ -407,6 +407,7 @@ mod tests {
     use tokio::task::spawn_blocking;
 
     use crate::actors::ActorExt;
+    use crate::application::ApplicationScope;
     use crate::entity::{AdmissionFailure, DrainFailure, DrainStage};
     use crate::launch::ActorSpace;
 
@@ -536,6 +537,8 @@ mod tests {
             .expect("direct native endpoint")
             .as_ref()
             .clone();
+        assert_eq!(endpoint, native_endpoint);
+        assert_eq!(endpoint, direct_endpoint);
         let from = MailAddr(97);
         let native_values = vec![101, 103];
         let native_allocation = native_values.as_ptr();
@@ -626,6 +629,8 @@ mod tests {
         let absent_direct = hosts.space().resolve(&address);
         assert!(absent_native.is_none());
         assert!(absent_direct.is_none());
+        assert_eq!(endpoint, native_endpoint);
+        assert_eq!(endpoint, direct_endpoint);
         for captured in [native_endpoint, direct_endpoint, endpoint] {
             let values = vec![113, 127];
             let allocation = values.as_ptr();
@@ -635,6 +640,81 @@ mod tests {
                 .into_message();
             assert_eq!(original, [113, 127]);
             assert_eq!(original.as_ptr(), allocation);
+        }
+    }
+
+    #[tokio::test]
+    async fn fresh_native_endpoints_distinguish_equal_addresses_and_mailbox_kinds() {
+        let scope = ApplicationScope::new();
+        let standard = scope
+            .external::<DeliveryLedger>()
+            .expect("real standard endpoint");
+        let mut previous = None;
+        for (values, expected) in [(vec![131, 137], [131, 137]), (vec![149, 151], [149, 151])] {
+            let allocation = values.as_ptr();
+            let hosts = Arc::new(ActorSpace::<DeliveryLedger>::new());
+            let (retired_sender, retired_receiver) = oneshot::channel();
+            let definition = Arc::new(LedgerDefinition {
+                retired: Mutex::new(Some(retired_sender)),
+            });
+            let runtime = bombay_entity_runtime(
+                definition,
+                Arc::clone(&hosts),
+                ApplicationAddresses::new(),
+                EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN),
+                Arc::new(EntityMetricState::default()),
+                Handle::current(),
+            );
+            let activation = ActivationId::new(NonZeroU64::new(83).expect("activation"));
+            let activated = runtime.activate(EntityId::new(73), activation).await;
+            let Ok(Activated { endpoint, lease }) = activated else {
+                panic!("fresh native endpoint must be established");
+            };
+            assert_eq!(endpoint.address(), standard.address());
+            assert_ne!(endpoint.established_recipient(), standard.recipient());
+            if let Some(old) = &previous {
+                assert_ne!(&endpoint, old);
+            }
+            let admitted = runtime
+                .deliver(endpoint.clone(), standard.address(), values)
+                .await;
+            assert!(admitted.is_ok());
+            let fenced = runtime.fence(endpoint.clone()).await;
+            assert!(fenced.is_ok());
+            let requested = request_actor_shutdown(&endpoint, &lease.actor.control, Ingress::new());
+            assert_eq!(requested, Ok(()));
+            let stopped = endpoint.termination().await;
+            assert_eq!(stopped, Ok(Exit::Normal));
+            let retired = runtime
+                .retire(
+                    &EntityId::new(73),
+                    activation,
+                    lease,
+                    RetirementMode::Graceful,
+                )
+                .await;
+            assert!(retired.is_ok());
+            let retirement = retired_receiver
+                .await
+                .expect("original native retirement")
+                .expect("actual joined actor");
+            assert_eq!(retirement.completion(), Some(&Completion::Stopped));
+            let custody = retirement.custody().expect("whole native custody");
+            let ledger = custody.behavior.base();
+            assert_eq!(ledger.received.len(), 1);
+            assert_eq!(ledger.received[0].from, standard.address());
+            assert_eq!(ledger.received[0].message, expected);
+            assert_eq!(ledger.received[0].message.as_ptr(), allocation);
+            assert_eq!(custody.descendants, []);
+            assert_eq!(custody.child_failures, []);
+            assert_eq!(custody.control.len(), 0);
+            assert_eq!(custody.user.len(), 0);
+            assert_eq!(custody.retirement_failures.len(), 0);
+            assert_eq!(custody.additional_failures.len(), 0);
+            assert_eq!(custody.capability_failures.len(), 0);
+            let absent = hosts.space().resolve(&endpoint.address());
+            assert!(absent.is_none());
+            previous = Some(endpoint);
         }
     }
 

@@ -13,14 +13,14 @@ use std::sync::{Arc, Mutex, PoisonError};
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, BehaviorSettlements, ClassifySettlement, EventLayer,
-    Never, Protocol, SettlementStatus,
+    MessageProtocol, Never, Protocol, SettlementStatus,
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
     EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
 };
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown};
-use bombay::{Application, ApplicationOutcome};
+use bombay::{Application, ApplicationOutcome, ApplicationScope};
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
@@ -519,30 +519,36 @@ fn combined_staging_rejection_returns_original_family_and_work() {
     let calls = Arc::clone(&invoked);
     let payload: Box<[u8]> = Box::from([83, 89, 97]);
     let allocation = payload.as_ptr();
-    let application = Application::with_topology(
-        Root {
-            admission: RootAdmission::Ready,
-        }
-        .stop_on_shutdown(),
-        topology::Topology::new(),
-    )
-    .child(
-        ColdAccount::DisposalRefused,
-        Account {
-            balance: 101,
-            original: Arc::new(vec![101]),
-        }
-        .stop_on_shutdown(),
-    )
-    .entity_family(
-        AccountsRole,
-        definition,
-        DirectoryConfig::default(),
-        EntityCapacity::new(
-            NonZeroUsize::new(2).expect("nonzero"),
-            NonZeroUsize::new(32).expect("nonzero"),
-        ),
-    );
+    let scope = ApplicationScope::new();
+    let mut early = scope
+        .external::<MessageProtocol<MailAddr, Box<[u8]>>>()
+        .expect("early custody endpoint");
+    let early_address = early.address();
+    let application = scope
+        .with_topology(
+            Root {
+                admission: RootAdmission::Ready,
+            }
+            .stop_on_shutdown(),
+            topology::Topology::new(),
+        )
+        .child(
+            ColdAccount::DisposalRefused,
+            Account {
+                balance: 101,
+                original: Arc::new(vec![101]),
+            }
+            .stop_on_shutdown(),
+        )
+        .entity_family(
+            AccountsRole,
+            definition,
+            DirectoryConfig::default(),
+            EntityCapacity::new(
+                NonZeroUsize::new(2).expect("nonzero"),
+                NonZeroUsize::new(32).expect("nonzero"),
+            ),
+        );
     let host = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -553,7 +559,16 @@ fn combined_staging_rejection_returns_original_family_and_work() {
                 calls.fetch_add(1, Ordering::SeqCst);
                 let requested = application.request_shutdown();
                 assert_eq!(requested, Ok(()));
-                payload
+                early
+                    .send(&early.recipient(), payload)
+                    .await
+                    .expect("same early endpoint accepts original work after retry");
+                let retained = early
+                    .receive()
+                    .await
+                    .expect("early receiving survives staging rejection");
+                assert_eq!(retained.from, early_address);
+                retained.message
             }),
         )
         .unwrap_or_else(|rejected| {
@@ -571,7 +586,7 @@ fn combined_staging_rejection_returns_original_family_and_work() {
     assert!(root.is_err());
     assert!(family.is_err());
     let ApplicationOutcome::StagingRejected {
-        inputs: (root, spaces, (role, definition, directory, capacity, ()), work, failure),
+        inputs: (root, spaces, (role, definition, directory, capacity, ()), work, failure, scope),
     } = outcome
     else {
         panic!("exact staging rejection survives")
@@ -589,7 +604,8 @@ fn combined_staging_rejection_returns_original_family_and_work() {
     assert_eq!(actor.base().balance, 101);
     assert_eq!(actor.base().original.as_slice(), [101]);
     drop((id, children, cause));
-    let application = Application::with_topology(root, spaces)
+    let application = scope
+        .with_topology(root, spaces)
         .child(ColdAccount::Declared, actor)
         .entity_family(role, definition, directory, capacity);
     let (outcome, root, (family, ())) = host
@@ -615,6 +631,11 @@ fn combined_staging_rejection_returns_original_family_and_work() {
             .len(),
         1
     );
+    let descendants = &retirement
+        .custody()
+        .expect("retained root graph")
+        .descendants;
+    assert_ne!(descendants[0].origin.address(), early_address);
     let (_, (shutdown, metrics, disposal)) = family.expect("real family retirement after rerun");
     assert!(matches!(
         shutdown,

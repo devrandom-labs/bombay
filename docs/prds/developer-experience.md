@@ -16,6 +16,31 @@ and pass both compilers/profiles/features. Real native timer/shutdown wrapper
 orders and all cold/family receiving/refusal journeys also pass. There is no
 second Environment or actor engine.
 
+Pre-root endpoints now use `ApplicationScope`: establish the exact recipients a
+pure constructor needs, then consume the scope into one Application. Missing
+hosts, prepared setup and ordinary/Entity/HTTP staging rejection retain the
+same namespace with original inputs. The real queue and dynamic-supervisor
+journeys use it without placeholder policies; queue construction infers its
+types through `WorkQueue::new(1).stop_on_shutdown()`. Endpoint equality compares
+the existing weak admission allocation, so clones remain equal after closure
+and equal numeric addresses in distinct applications remain distinct.
+
+The bounded scope/equality checkpoint passes: 418 adjacent recovery test
+executions and40 native-identity/HTTP-staging/guide executions across both
+compilers/profiles/features, plus the earlier68 focused executions and24
+authority denials. All127 family,514 receiving and106 HTTP assertion bodies
+remain unchanged and in order. Eight extracted-package guide configurations
+also pass48 complete queue/dynamic journeys and24 executable doctests; three existing schematic fragments remain
+ignored per configuration. All61 packaged Rust source files and the guide are
+byte-identical to source. The archive consumer uses actual extracted unpublished
+Engine/Bombay macros and101 unchanged resolved registry dependencies; it is not
+a registry-only publication claim. Full native Nix checks for this batch are
+running. The owning PRD records the complete model and measured deltas; library
+production grows184 lines for one public scope capability, with no actor state
+or dependency added. Five paired counter journeys measure an incremental8 bytes
+of peak heap and no additional allocation blocks. Constructor policy lists and
+the remaining programme criteria stay open.
+
 The keyed-pool consumer now proves same-generation affinity across two jobs,
 exact original key/document rejection for an unknown role, generation-exact
 unbind and complete joined pool/worker retirement. Its56 assertions pass
@@ -44,7 +69,9 @@ all-feature Clippy passes. The pinned nightly causal fuzz campaign completes
 in the touched files remain unchanged; library production/API0, example
 production+4/-10/net-6 and tests+28/-31/net-3. Aggregate states, subordinate
 alternatives, branches, modules and ownership are unchanged. The fresh full
-Nix run remains pending for this registry source.
+Nix run passes all21 native gates in2177.895 seconds at e197d4d. Its source
+contains the complete0.25 migration and compiled guide; subsequent unretained
+scope/equality candidates require their own final gates.
 
 Counter main is98 lines and FIFO184; terminal inspection and owned result
 consumption remain independent of cleanup. Focused counter/FIFO/supervision
@@ -53,11 +80,11 @@ supervision example follows the shared-caller path without an intermediate
 interface. All88 original assertions remain unchanged;40 test passes and eight
 complete example runs pass on both compilers/profiles/features. Library production
 is unchanged; example caller code decreases2 lines and test callers17 lines.
-The latest full Nix checkpoint passes all21 native gates in2358.992 seconds. The template and heterogeneous-topology examples
+The full0.25 Nix checkpoint passes all21 native gates in2177.895 seconds. The template and heterogeneous-topology examples
 also use direct Application sender/lifecycle ports. Their90 original assertions
 are unchanged, one unused reply protocol is removed, and both binaries pass
 all eight configurations (16 executions); strict lint passes. These two caller
-migrations postdate the current full Nix source capture. HTTP admission removes its unused
+migrations are included in that0.25 source capture. HTTP admission removes its unused
 reply protocol, target wrapper and admission-only clone; all five example tests
 pass current/MSRV debug/release, including exact original allocation on closure.
 The heterogeneous example removes two managed aliases without changing its
@@ -70,10 +97,9 @@ configurations, with one existing subprocess-only skip. Strict workspace Clippy
 and all60 MSRV declaration/host denials pass. The fresh Nix run exposed vendor
 path normalization and a masked phase denial; focused actual Nix coverage now
 preserves both phase denials and all13 topology denials. The latest complete
-flake check passes all21 native gates (2358.992 seconds), including the keyed
-witness and four direct-client migrations. Only the two later Rust example
-migrations differ from that source capture; their sixteen executions and
-strict lint pass independently. The retained application implementation is
+flake check passes all21 native gates (2177.895 seconds) at e197d4d, including
+the keyed witness, direct-client migrations, all later Rust examples and the
+compiled/package guide. No signing or disk waiver applies. The retained application implementation is
 committed as76b2b0f on the isolated feature branch. Registry mapping
 formatting is committed as2800432; pinned nixfmt and evaluation of all21 native
 check definitions pass. Final-source gates remain required;

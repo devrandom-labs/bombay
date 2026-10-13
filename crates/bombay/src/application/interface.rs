@@ -528,7 +528,9 @@ where
     P: Protocol<Addr = MailAddr>,
     P::Msg: Send,
 {
-    fn establish(allocations: &ApplicationAddresses) -> Result<Self, ExternalActorError> {
+    pub(super) fn establish(
+        allocations: &ApplicationAddresses,
+    ) -> Result<Self, ExternalActorError> {
         let address = allocations
             .allocate()
             .map_err(ExternalActorError::Allocation)?;

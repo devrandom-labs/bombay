@@ -62,9 +62,9 @@ mod tests {
 
         assert_eq!(counter.value, 1);
         assert!(matches!(initialization_actions.become_, Step::Continue));
-        assert!(initialization_actions.sends.values.is_empty());
+        assert_eq!(initialization_actions.sends.values.len(), 0);
         assert!(matches!(increment.become_, Step::Continue));
-        assert!(increment.sends.values.is_empty());
+        assert_eq!(increment.sends.values.len(), 0);
     }
 
     #[test]

@@ -28,7 +28,7 @@ pub use ::behavior_actors::{
     workflow,
 };
 pub mod actors;
-pub use crate::application::Application;
+pub use crate::application::{Application, ApplicationScope};
 pub use crate::application::{
     ApplicationBehavior, ApplicationCleanupError, ApplicationClient, ApplicationDefinitionError,
     ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationSender,

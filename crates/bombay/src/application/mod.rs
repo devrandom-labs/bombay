@@ -3,6 +3,9 @@ mod execution;
 #[cfg(feature = "axum")]
 mod http;
 mod interface;
+mod scope;
+
+pub use scope::ApplicationScope;
 
 pub use composition::{ApplicationBehavior, ApplicationDefinitionError, ApplicationStagingError};
 pub use execution::{ApplicationCleanupError, ApplicationOutcome, RunError};
@@ -11,7 +14,7 @@ pub use interface::{
     ExternalActor, ExternalActorError, ExternalTarget,
 };
 
-use crate::address::MailAddr;
+use crate::address::{ApplicationAddresses, MailAddr};
 use crate::entity::EntityDefinition;
 use crate::launch::ActorSpace;
 use behavior::{Behavior, Never, Protocol};
@@ -36,6 +39,7 @@ impl<Root, Spaces> Application<Root, Spaces> {
             spaces,
             members: (),
             families: (),
+            scope: None,
         }
     }
 }
@@ -57,6 +61,7 @@ impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Familie
     {
         Application {
             root: self.root,
+            scope: self.scope,
             spaces: self.spaces,
             families: self.families,
             members: (role, actor, self.members),
@@ -69,8 +74,21 @@ impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Familie
         &self.root
     }
 
-    pub(crate) fn into_parts(self) -> (Root, Spaces, Members, Families) {
-        (self.root, self.spaces, self.members, self.families)
+    pub(crate) fn into_parts(self) -> (Root, Spaces, Members, Families, Option<ApplicationScope>) {
+        (
+            self.root,
+            self.spaces,
+            self.members,
+            self.families,
+            self.scope,
+        )
+    }
+
+    pub(super) fn allocations(&self) -> ApplicationAddresses {
+        match &self.scope {
+            Some(scope) => scope.allocations.clone(),
+            None => ApplicationAddresses::new(),
+        }
     }
 }
 
@@ -107,6 +125,7 @@ impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Familie
     {
         Application {
             root: self.root,
+            scope: self.scope,
             spaces: self.spaces,
             members: self.members,
             families: (role, definition, directory, capacity, self.families),
@@ -124,4 +143,5 @@ pub struct Application<Root, Spaces, Members = (), Families = ()> {
     spaces: Spaces,
     members: Members,
     families: Families,
+    scope: Option<ApplicationScope>,
 }

@@ -15,6 +15,13 @@ See the [source-backed inventory](prd-backlog/evidence.md). This guide is includ
 is executed as a doctest; fragments labelled text or ignore omit surrounding
 definitions and remain schematic. The executable, compiler-checked spellings are:
 
+Start with an actor, its messages and `Application`. Add a policy to that actor
+through `ActorExt`, or construct a queue, supervisor or pool through its owning
+constructor. Types are inferred from the actual messages, workers and policy
+values. Direct `Behavior` implementations and typed `Actions` remain available
+when you need more control; the same ownership and failure contracts apply at
+each layer.
+
 | Boundary | Executable or compile-checked owner |
 | --- | --- |
 | Root execution, typed terminal, application children | [application topology example](../examples/application-topology/src/main.rs), [terminal projection tests](../crates/bombay/tests/terminal_projection.rs) |
@@ -69,6 +76,50 @@ assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
 ```
 
 A no-birth root infers `Never` descendants and `Vec<Never>` child failures.
+When root construction needs an exact recipient, establish it through an affine
+`ApplicationScope` first. Consuming that scope declares one root and keeps early
+endpoints and later clients on the same allocation source. Missing-host,
+staging and prepared-setup rejection retain that namespace with the original
+inputs. A prepared retry uses the returned scope's `with_topology` method.
+
+```rust
+# type Announcements = bombay::behavior::MessageProtocol<bombay::MailAddr, u64>;
+# struct Service { ready: bombay::behavior::EstablishedRecipient<Announcements> }
+# #[bombay::actor(message = bombay::behavior::Never,
+#     sends = { announcements: Vec<bombay::behavior::EstablishedDelivery<Announcements>> })]
+# impl Service {
+#     fn init(&mut self) -> bombay::behavior::BehaviorActed<Self> {
+#         Ok(bombay::behavior::Actions::cont().send_announcements(
+#             bombay::behavior::EstablishedDelivery::new(self.ready.clone(), 42)))
+#     }
+# }
+# let host = tokio::runtime::Builder::new_current_thread()
+#     .enable_all().build().expect("caller-owned host");
+# host.block_on(async {
+let scope = bombay::ApplicationScope::new();
+let mut announcements = scope.external::<Announcements>().expect("early endpoint");
+let root = bombay::actors::ActorExt::stop_on_shutdown(Service {
+    ready: announcements.recipient(),
+});
+let outcome = scope.with_root(root).run_with(|application| async move {
+    let announcement = announcements.receive().await.expect("root ready");
+    let shutdown = application.request_shutdown();
+    assert_eq!(shutdown, Ok(()));
+    announcement.message
+}).await.unwrap_or_else(|original| {
+    drop(original);
+    panic!("original application must start");
+});
+let (announcement, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+    drop(original);
+    panic!("complete original outcome");
+});
+assert_eq!(announcement, 42);
+let (_, retirement) = cleanup.expect("independent joined cleanup");
+assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
+# });
+```
+
 For child graphs, one `topology!` declaration selects the closed actor-indexed
 schemas through `Application::with_topology(root, declaration::Topology::new())`.
 The actual actor, staging failure and descendant custody are inferred by
