@@ -49,6 +49,8 @@ mod local;
     reason = "Bombay uses pair publication while this same private source retains the separately verified keyed Observe API"
 )]
 mod observe;
+#[cfg(feature = "remote")]
+pub mod remote;
 mod retirement;
 mod terminal;
 mod termination;

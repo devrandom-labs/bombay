@@ -3,10 +3,8 @@
 use super::{Counter, CounterMessage, LedgerCommand, MailLedger, Receipts};
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, EstablishedRecipient};
+use bombay::remote::verify;
 use bombay::{ActorNotificationReceipts, Application, Completion};
-use core::future::{Future, poll_fn};
-use core::pin::pin;
-use core::task::Poll;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::sync::oneshot;
 
@@ -123,27 +121,6 @@ enum RequestCase {
     WrongProfile,
     WrongPurpose,
     Retargeted,
-}
-
-// Direct factory/poll/commit equation from authorized.rs:803; not a new provider trait.
-async fn acquire_verification<'request, Receipt, Verification>(
-    original: &'request OriginalRequest,
-    acquired: &mut Option<Result<Receipt, VerificationError>>,
-    provider: impl FnOnce(&'request OriginalRequest) -> Verification,
-) where
-    Verification: Future<Output = Result<Receipt, VerificationError>>,
-{
-    if acquired.is_none() {
-        let mut verification = pin!(provider(original));
-        poll_fn(|context| match verification.as_mut().poll(context) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(original) => {
-                *acquired = Some(original);
-                Poll::Ready(())
-            }
-        })
-        .await;
-    }
 }
 
 // Shared finite lookup equation, not the entire existing Counter seven-meaning codec.
@@ -707,11 +684,11 @@ async fn counter_and_ledger_request_authority(profile: ProofProfile) {
             ProofProfile::Recorded => {
                 let mut counter = None;
                 let mut ledger = None;
-                acquire_verification(&counter_original, &mut counter, |original| {
+                verify(&counter_original, &mut counter, |original| {
                     recorded::verify(original, &records, CounterOperation::Read, "caller", "host")
                 })
                 .await;
-                acquire_verification(&ledger_original, &mut ledger, |original| {
+                verify(&ledger_original, &mut ledger, |original| {
                     recorded::verify(original, &records, LedgerOperation::Read, "caller", "host")
                 })
                 .await;
@@ -730,11 +707,11 @@ async fn counter_and_ledger_request_authority(profile: ProofProfile) {
             ProofProfile::Scheduled => {
                 let mut counter = None;
                 let mut ledger = None;
-                acquire_verification(&counter_original, &mut counter, |original| {
+                verify(&counter_original, &mut counter, |original| {
                     scheduled::verify(original, &records, CounterOperation::Read, "caller", "host")
                 })
                 .await;
-                acquire_verification(&ledger_original, &mut ledger, |original| {
+                verify(&ledger_original, &mut ledger, |original| {
                     scheduled::verify(original, &records, LedgerOperation::Read, "caller", "host")
                 })
                 .await;

@@ -15,8 +15,11 @@ substrate; deterministic test hosts remain supported. Selo's KERI integration
 is supplied by Selo, which builds on Bombay, Mnesis and `mnesis-bombay`;
 there is no reverse Bombay dependency. These are planned ownership boundaries,
 not additional source modules or currently implemented public APIs.
-Crate-owned remote entry points and ordinary multi-node Application composition
-remain pending; transport fixtures do not establish that public surface.
+With the opt-in `remote` feature, `remote::verify` owns storing the provider's
+returned result before its future is disposed. Its private verification module
+uses an outside standard result slot and owns no authentication policy. Network
+entry points and ordinary multi-node Application composition remain pending;
+transport fixtures do not establish that public surface.
 
 ## Workspace boundary
 

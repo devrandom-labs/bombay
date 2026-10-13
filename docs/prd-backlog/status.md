@@ -15,8 +15,10 @@ Miri does not execute. This also delivers the provider-custody prerequisite
 that formerly awaited replacement CI. Historical failures remain unexplained.
 The selected main now uses Behavior/Actors0.25.0 and registry Timers0.2.0.
 The following older checkpoints retain their original source/CI provenance.
-AUTH1/NET1, every full remote witness, actual `remote` crate entrypoint and
-the separate remote-counter application remain open.
+AUTH1/NET1, every full remote witness, network entry points and the separate
+remote-counter application remain open. The current unmerged acquisition stage
+adds only opt-in `remote::verify`; full multi-node Application integration is
+still outstanding. Its verification and delivery evidence belong in the PRD.
 
 Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
 merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at
