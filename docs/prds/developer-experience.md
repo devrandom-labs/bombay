@@ -230,12 +230,12 @@ inputs. Root/family receiving and root-first Entity shutdown remain independent.
 DirectoryConfig validates immutable limits before affine application inputs
 transfer. Complete terminal control sums and ActorCustody remain authoritative.
 
-Published Behavior/Actors0.24.0 and macros0.14.1 came from049c88c through
-Release38159701650 after PR89/90/92. Communication0.1.5 came through the
-normal Release38161501036 after authorized PR11/12. Registry adoption is
-e4d2db1. PR91 and correlation821380e are now independently confirmed published
-through release97; their new registry versions are not yet selected here.
-Exact source, release and gate evidence belongs in the owning PRD.
+Bombay3a80848 selects published Behavior/Actors0.26.0 and macros0.14.2 from
+98983b4 without patches, plus Address0.3.0, Communication0.1.5 and Timers0.2.0.
+Current native21 gates,646 optimized tests and current/MSRV package journeys pass;
+exact results and their scope limits belong in the owning PRD. Policy delivery
+PR98 changes owning paths/configuration/startup names and remains unpublished.
+Keep that migration separate from the registry-backed decoration work.
 
 Networking, durability, identity and deployment remain separately deferred.
 The evidence appendix owns coverage of270 backlog rows,100 failure records,
@@ -271,3 +271,10 @@ manifest suites pass all ten tests in both profiles. Complete adoption delta:
 production+11/-2/net9; tests+334/-5/net329; public types+0/-0; no new
 production module or retained field. Documentation/manifest/lock changes accompany
 this bounded fix. Other DX requirements and unpublished policy changes remain open.
+
+Final shutdown decoration (DX09/21): implement ActorExt::finalize_on_shutdown
+using the existing registry FinalizeOnShutdown and ShutdownReaction. The owning
+PRD records the pre-edit law, full native missing-method witness and effect/order/
+retirement checks. This coordination note adds no acceptance checklist or
+Behavior/runtime contract. Existing pub versions/interpreters are verified;
+no publication dependency blocks this independent facade work.

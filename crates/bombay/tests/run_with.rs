@@ -1,8 +1,11 @@
+use core::time::Duration;
+
 use bombay::ActorCustody;
 use bombay::behavior::{NoSends, Step, Stopped};
 use std::error::Error;
 use std::future::Future;
 use std::io;
+use std::panic::panic_any;
 use std::pin::pin;
 use std::sync::{
     Arc,
@@ -14,8 +17,7 @@ use std::{env, fs::File, process::Command};
 use tokio::runtime::Builder as TokioBuilder;
 
 use behavior_actors::{
-    FinalizeOnShutdown, ReportTerminalOutcome, RestartDenial, ShutdownRequested,
-    SupervisionFailureReason,
+    ReportTerminalOutcome, RestartDenial, ShutdownRequested, SupervisionFailureReason,
 };
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, EventLayer, InitializationTurn, InterpreterRequests,
@@ -709,10 +711,9 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
     let ApplicationOutcome::Completed {
         output: finalization,
         cleanup: Ok((root_origin, joined_actor)),
-    } = Application::new(FinalizeOnShutdown::new(
-        FinalizationProbe { observer: None },
-        record_finalization,
-    ))
+    } = Application::new(
+        FinalizationProbe { observer: None }.finalize_on_shutdown(record_finalization),
+    )
     .run_with(|application| async move {
         let interface = application.interface(application.root().established_recipient());
         let lifecycle = application.lifecycle();
@@ -756,6 +757,193 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
     );
     assert_eq!(finalization, Some(FinalizationEvent::Finalized));
     assert_completed_root(terminal, None);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn outer_finalization_keeps_its_notice_through_inner_timer() {
+    let ApplicationOutcome::Completed {
+        output: finalization,
+        cleanup: Ok((root_origin, joined_actor)),
+    } = Application::new(
+        FinalizationProbe { observer: None }
+            .with_one_shot(TimerId(7), Duration::from_secs(60), |_| Actions::stop())
+            .finalize_on_shutdown(|root, _request| {
+                let observer = root
+                    .base()
+                    .observer
+                    .as_ref()
+                    .expect("the domain installed its shared notice recipient")
+                    .clone();
+                Actions::cont().with_send(EstablishedDelivery::new(
+                    observer,
+                    FinalizationEvent::Finalized,
+                ))
+            }),
+    )
+    .run_with(|application| async move {
+        let mut observer = application
+            .client()
+            .expect("the finalization observer is established");
+        observer
+            .send(FinalizationCommand::Observe(observer.recipient()))
+            .await
+            .expect("the root accepts its finalization observer");
+        let ready = observer.receive().await.map(|event| event.message);
+        assert!(matches!(ready, Some(FinalizationEvent::Ready)));
+        let shutdown = application.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        let repeated = application.request_shutdown();
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+        let finalization = observer.receive().await.map(|event| event.message);
+        let termination = application.termination().await;
+        assert_eq!(termination, Ok(Exit::Normal));
+        finalization
+    })
+    .await
+    .unwrap_or_else(|failed| {
+        drop(failed);
+        panic!("the explicit finalization policy receives shutdown and terminates normally");
+    })
+    else {
+        panic!("the original completed output and both cleanup join boundaries remain exact");
+    };
+    let terminal: ApplicationTerminal<_> = (
+        root_origin,
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
+    );
+    assert_eq!(finalization, Some(FinalizationEvent::Finalized));
+    assert_completed_root(terminal, None);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn inner_finalization_keeps_its_notice_through_outer_timer() {
+    let ApplicationOutcome::Completed {
+        output: finalization,
+        cleanup: Ok((root_origin, joined_actor)),
+    } = Application::new(
+        FinalizationProbe { observer: None }
+            .finalize_on_shutdown(record_finalization)
+            .with_one_shot(TimerId(7), Duration::from_secs(60), |_| Actions::stop()),
+    )
+    .run_with(|application| async move {
+        let mut observer = application
+            .client()
+            .expect("the finalization observer is established");
+        observer
+            .send(FinalizationCommand::Observe(observer.recipient()))
+            .await
+            .expect("the root accepts its finalization observer");
+        let ready = observer.receive().await.map(|event| event.message);
+        assert!(matches!(ready, Some(FinalizationEvent::Ready)));
+        let shutdown = application.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        let repeated = application.request_shutdown();
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+        let finalization = observer.receive().await.map(|event| event.message);
+        let termination = application.termination().await;
+        assert_eq!(termination, Ok(Exit::Normal));
+        finalization
+    })
+    .await
+    .unwrap_or_else(|failed| {
+        drop(failed);
+        panic!("the explicit finalization policy receives shutdown and terminates normally");
+    })
+    else {
+        panic!("the original completed output and both cleanup join boundaries remain exact");
+    };
+    let terminal: ApplicationTerminal<_> = (
+        root_origin,
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
+    );
+    assert_eq!(finalization, Some(FinalizationEvent::Finalized));
+    assert_completed_root(terminal, None);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn timer_expiry_stops_without_running_shutdown_finalization() {
+    let ApplicationOutcome::Completed {
+        output: termination,
+        cleanup: Ok(terminal),
+    } = Application::new(
+        FinalizationProbe { observer: None }
+            .finalize_on_shutdown(record_finalization)
+            .with_one_shot(TimerId(7), Duration::ZERO, |_| Actions::stop()),
+    )
+    .run_with(|application| async move { application.lifecycle().termination().await })
+    .await
+    .unwrap_or_else(|_| panic!("the real expiry policy stops the actor"))
+    else {
+        panic!("timer expiry retains work and completed cleanup");
+    };
+    assert_eq!(termination, Ok(Exit::Normal));
+    assert_completed_root(terminal, None);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn finalization_panic_keeps_its_payload_actor_and_independent_work_result() {
+    let ApplicationOutcome::Completed {
+        output: termination,
+        cleanup: Ok((origin, retirement)),
+    } = Application::new(
+        FinalizationProbe { observer: None }.finalize_on_shutdown(|_, _| {
+            panic_any(Box::new(vec![251_u8, 241, 239]));
+        }),
+    )
+    .run_with(|application| async move {
+        let shutdown = application.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        application.lifecycle().termination().await
+    })
+    .await
+    .unwrap_or_else(|_| panic!("the native host runs the fallible finalization policy"))
+    else {
+        panic!("the work result and independent cleanup join survive the panic");
+    };
+    assert_eq!(termination, Err(Crash::Panicked));
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::TransitionPanicked {
+        custody,
+        payload,
+        interpretation,
+        source,
+        settlements,
+    } = retirement
+    else {
+        panic!("finalization is one pure event transition, not an activation failure");
+    };
+    let payload = payload
+        .downcast::<Box<Vec<u8>>>()
+        .unwrap_or_else(|_| panic!("retain the native finalization payload"));
+    assert_eq!(**payload, [251_u8, 241, 239]);
+    assert!(custody.behavior.base().observer.is_none());
+    assert!(custody.control.is_empty());
+    assert!(custody.user.is_empty());
+    assert_eq!(custody.descendants, []);
+    assert_eq!(custody.child_failures, []);
+    assert!(custody.additional_failures.is_empty());
+    assert!(custody.capability_failures.is_empty());
+    assert!(custody.unread_owner_cancellation.is_none());
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.retirement_failures.is_empty());
+    assert!(custody.terminal_report.is_none());
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    // A panic emits no successful transition Actions or fictional settlement.
+    assert!(settlements.is_empty());
 }
 
 #[tokio::test(flavor = "current_thread")]

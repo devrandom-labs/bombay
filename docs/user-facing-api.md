@@ -519,6 +519,17 @@ semantic; no wrapper, timer, shutdown rule, or default is selected implicitly.
 Standalone templates such as `Machine` and `Task` keep constructors because
 their inputs are meaningful policy rather than a behavior to decorate.
 
+Use `.finalize_on_shutdown(reaction)` when shutdown must compute one final pure
+transition. The reaction returns complete `Actions`; its sends and creations
+are interpreted, and the existing wrapper then selects normal stop. Construction
+does not invoke it. Native transition panic retains the actor and original
+panic payload independently of the application's work result. Timer expiry is
+a separate event and does not invoke shutdown finalization. Two shutdown layers
+retain distinct lanes, so inferred lifecycle access is intentionally ambiguous;
+choose one meaningful shutdown policy. The complete executable witness is
+[`run_with.rs`](../crates/bombay/tests/run_with.rs), including both timer orders,
+expiry and panic custody.
+
 Choose a template by the application problem it owns:
 
 | Application need | Existing Behavior Actors vocabulary |
@@ -527,7 +538,7 @@ Choose a template by the application problem it owns:
 | Hold and replay selected messages | `.with_stash(...)` |
 | Idle, relative, periodic, or absolute time policy | `.with_receive_timeout(...)`, `.with_one_shot(...)`, `.with_periodic(...)`, `.with_deadline(...)`, `Lease` |
 | One result with cancellation | `Task` |
-| Graceful lifecycle policy | `.stop_on_shutdown()`, `FinalizeOnShutdown`, `Watch`, `TerminationMonitor` |
+| Graceful lifecycle policy | `.stop_on_shutdown()`, `.finalize_on_shutdown(...)`, `Watch`, `TerminationMonitor` |
 | Fixed and dynamic supervision (runtime integration incomplete) | `FixedSupervisor`, `DynamicSupervisor`, `StableProxy` |
 | FIFO and keyed assignment (runtime integration incomplete) | `FifoPool`, `KeyedPool` |
 | Transform or route protocols | `MessageAdapter`, `Router` |

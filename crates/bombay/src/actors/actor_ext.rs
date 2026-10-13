@@ -3,8 +3,8 @@ use std::time::Instant;
 
 use behavior::{Behavior, BehaviorMessage, Never};
 use behavior_actors::{
-    Deadline, DeadlineReaction, OneShot, Periodic, ReceiveTimeout, Stash, StashRoute,
-    StopOnShutdown, TimedReaction, TimerId,
+    Deadline, DeadlineReaction, FinalizeOnShutdown, OneShot, Periodic, ReceiveTimeout,
+    ShutdownReaction, Stash, StashRoute, StopOnShutdown, TimedReaction, TimerId,
 };
 
 /// Discover and compose reusable wrappers from any concrete actor behavior.
@@ -73,6 +73,15 @@ pub trait ActorExt: Behavior + Sized {
     #[must_use]
     fn stop_on_shutdown(self) -> StopOnShutdown<Self> {
         StopOnShutdown::new(self)
+    }
+
+    /// Run a pure final transition on shutdown, then stop normally.
+    ///
+    /// The reaction's sends and fresh creations survive its continuation verdict.
+    /// An outer shutdown wrapper takes precedence over this reaction.
+    #[must_use]
+    fn finalize_on_shutdown(self, reaction: ShutdownReaction<Self>) -> FinalizeOnShutdown<Self> {
+        FinalizeOnShutdown::new(self, reaction)
     }
 }
 
