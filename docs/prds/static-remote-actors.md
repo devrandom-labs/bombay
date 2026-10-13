@@ -211,6 +211,100 @@ Required CI, final delivery review and actual merge are pending. The current
 source tree is clean after the integration commit; this delivery-note commit
 changes documents only and must receive its own submitted-head CI.
 
+### CodeQL child-correlation adjudication — 2026-10-13
+
+Submitted32cec46 passes debug native TLS and analysis execution, but the CodeQL
+result flags nine fixed ChildOrigin::new route arguments in private cfg(test)
+modules as cryptographic nonces. Independent source/type review confirms each
+is a creator-local u64 correlation, retained only in origin storage, equality,
+accessor and diagnostic tests; no cryptographic operation consumes it. CreationId
+is separately issued through its checked sequence. Selected Behavior explicitly
+requires only Copy/Eq for this local nonce and disclaims identity/freshness proof.
+
+Under recommendation delegation select per-alert false-positive adjudication
+for exact alerts12–20, with a source-specific dismissal comment under GitHub's
+normal alert API. Preserve all test values, source, query/workflow and required
+checks; this is no security waiver or broader rule exclusion. GitHub's
+[triage guidance](https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-code-scanning-alerts/triage-alerts-in-pull-requests)
+and the [rule's cryptographic scope](https://codeql.github.com/codeql-query-help/rust/rust-hard-coded-cryptographic-value/)
+support this classification. Record actual API outcomes rather than claiming
+success from the plan. Release TLS has separately failed its protected campaign;
+retain actual artifacts and diagnose before any correction or retry. Full Nix
+continues running; PR359 remains draft and no feature or merge claim is made.
+
+The first alert update returns HTTP422 because GitHub enforces a280-character
+dismissal-comment limit absent from the inspected field description. No alert
+was changed. Shorten the same precise reason within that limit and retry only
+these nine reviewed alerts. Preserve the initial validation failure separately.
+
+All nine subsequent updates return dismissed/false-positive for alerts12–20;
+`bombay-devx-codeql-dismissal-results-valid.json` retains their actual responses.
+The independently reviewed per-location report is d5e28a3b. Required CodeQL
+check115457813251 now completes successfully with no new alerts on submitted
+32cec46. No source, query, workflow or required-check rule changed. The original
+HTTP422 and empty initial result record remain separate evidence.
+
+Required release TLS job115453898869 fails in the first protected campaign's
+child/peer/recorded case. Seven other cases pass. Recipient reaches RECEIVED,
+but caller never reaches PENDING_LOCAL_READ2; the controller guard and cleanup
+waits expire before killing both processes. No native-completion oracle or
+intended assertion executes in this case. All20 role logs match campaign
+receipt7b039159. The controller releases the recipient only after the caller's
+local Read2/cleanup marker; existing logs do not identify which preceding caller
+operation stalled. This is an unresolved causal diagnosis, not evidence for
+a runtime fix, longer guard, relaxed assertion or speculative retry. Full Nix
+remains running; PR359 stays draft and no merge is recorded.
+
+### Release TLS causal markers — pre-edit record, 2026-10-13
+
+Under the standing recommendation delegation, select a bounded diagnostic
+stage for the failed child/peer/recorded campaign. Add at most60 test lines in
+the existing cfg(test) remote_counter fixture, using its existing counter_control
+publisher outside every Behavior fold. Fixed payload-free markers surround
+native get return, independent local requester publication, typed sends,
+service/read acquisition and joined receiving. Preserve every original result,
+assertion, controller guard, custody transfer and lifecycle operation. Expected
+production+0/-0/net0; public API+0/-0; no dependency or policy change. Existing
+Application, Communication, native Querier and receipt owners remain unchanged.
+
+Reuse the protected target and pinned Nix. First compile the exact marked
+fixture, then run the same controller's single failed case using an explicitly
+recorded temporary case selector; this selector is diagnostic orchestration,
+not a replacement acceptance campaign. Record source/binary/selector hashes,
+actual markers, exits and any guard failure. Markers may affect scheduling, so
+a passing diagnostic run cannot explain or erase the original failure. A
+runtime correction requires an identified failing law and its own pre-edit
+regression; no timeout, allocation floor or assertion may be relaxed here.
+
+The marked optimized build exits0 through pinned Nix. Its copied executable
+be225bb1 executes the exact child/peer/recorded case on macOS: one case/two roles,
+both exit0 and execute the intended ignored test once. All14 local-progress
+markers appear and both role logs match receipt49c194b1. This observation does
+not explain the Linux stall or prove a correction. Restore the native source
+byte-exact to3ddd395b; root/native locks remain42eb8120/7ae93c48. Temporary test
+delta was+14/-0/net14; restored production/tests/public API delta is zero.
+All original assertions remain unchanged; no marker is retained in the ordinary
+example. Preparation, copied source and controller evidence remain separate.
+
+Select an isolated Linux diagnostic branch from submitted32cec46, containing
+only those same14 temporary cfg-test markers and their documentation. Reuse the
+existing workflow_dispatch entry and unchanged full controller rather than
+changing workflow, guards, assertions or delivery PR source. Create the branch
+through a separate Git index; add no worktree or duplicate target. The research
+workflow must retain actual source/role evidence; its result cannot substitute
+for required delivery-head CI. If it passes, the original failure still has no
+proven cause. Do not invent a runtime correction from that outcome.
+
+Independent immutable-source review of the proposed cold Counter borrowing
+patch0846a2b9 finds no demonstrated actor-generic API gap. It still uses private
+Counter authorization/operation/receipt types; its static denials already belong
+to the existing capabilities. Its dropped cold execution/receiving proves no
+authentication, execution or cleanup. Leave that patch uncompiled/unapplied.
+A second genuine actor comparison needs truthful protocol-owned commands and
+receipt projection; mapping Counter Increment into Ledger Append would fabricate
+substitution evidence. Actual crate-owned remote API and the separate remote
+example remain delivery requirements, not claims from these research proposals.
+
 The combined workspace check exposes two stale test consumers of the former
 Application receiving shape. Port only those tests to the already-approved
 independent work outcome, native root receipt and two notification receipts.

@@ -459,20 +459,26 @@ async fn counter_native_applications<R>(
                         })
                         .await;
                     invocations.push(issued);
+                    counter_control("CALLER_GET_RETURNED");
                     if ordinal == 0 {
                         pending = Some(replies.recv().now_or_never());
                         let (local_execution, local_receiving, local_ports, local_permitted) =
                             execute_requester();
                         let local_exchange = async {
+                            counter_control("CALLER_LOCAL_PUBLICATION_ENTERED");
                             let (local_lifecycle, local_requester, local_sender) = local_ports
                                 .await
                                 .expect("actual independent local requester");
+                            counter_control("CALLER_LOCAL_PUBLISHED");
                             let first = requests.send(&target, CounterMessage::Increment).await;
                             let second = requests.send(&target, CounterMessage::Increment).await;
+                            counter_control("CALLER_LOCAL_INCREMENTS_RETURNED");
                             let begun = local_sender
                                 .send(&local_requester, CounterRequesterMessage::Begin(9))
                                 .await;
+                            counter_control("CALLER_LOCAL_BEGIN_RETURNED");
                             let trigger = requests.receive().await;
+                            counter_control("CALLER_LOCAL_TRIGGER_RETURNED");
                             let local_status = match (&first, &second) {
                                 (Ok(()), Ok(())) => CounterStatus::IncrementAdmitted,
                                 _ => CounterStatus::PossiblyAdmitted,
@@ -501,11 +507,13 @@ async fn counter_native_applications<R>(
                             } else {
                                 None
                             };
+                            counter_control("CALLER_LOCAL_COMPLETION_RETURNED");
                             let consumed = if completed.as_ref().is_some_and(Result::is_ok) {
                                 requests.receive().await
                             } else {
                                 None
                             };
+                            counter_control("CALLER_LOCAL_CONSUMED_RETURNED");
                             let read = if local_status == CounterStatus::IncrementAdmitted
                                 && completed.as_ref().is_some_and(Result::is_ok)
                             {
@@ -513,6 +521,7 @@ async fn counter_native_applications<R>(
                             } else {
                                 None
                             };
+                            counter_control("CALLER_LOCAL_READ_RETURNED");
                             let observed = match read.as_ref() {
                                 Some(read) => Some(
                                     local_sender
@@ -527,13 +536,16 @@ async fn counter_native_applications<R>(
                                 ),
                                 None => None,
                             };
+                            counter_control("CALLER_LOCAL_OBSERVATION_RETURNED");
                             let acknowledged = if observed.as_ref().is_some_and(Result::is_ok) {
                                 requests.receive().await
                             } else {
                                 None
                             };
+                            counter_control("CALLER_LOCAL_ACK_RETURNED");
                             let stopped = local_lifecycle.request_shutdown();
                             let permitted = local_permitted.send(());
+                            counter_control("CALLER_LOCAL_RELEASE_RETURNED");
                             (
                                 first,
                                 second,
@@ -550,7 +562,9 @@ async fn counter_native_applications<R>(
                         };
                         let (local_execution, local_exchange) =
                             tokio::join!(local_execution, local_exchange);
+                        counter_control("CALLER_LOCAL_EXECUTION_RETURNED");
                         local_requester_native = Some(local_receiving.await);
+                        counter_control("CALLER_LOCAL_NATIVE_RETURNED");
                         local_receipts = Some((local_execution, local_exchange));
 
                         if matches!(&pending, Some(None))
