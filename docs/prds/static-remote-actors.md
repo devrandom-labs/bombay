@@ -183,8 +183,9 @@ and EstablishNativeChild are frozen DevX imports. Count+11 type/trait
 declarations/-1, and one topology macro separately. The five remote report/
 notification products already existed on main and are conserved, not claimed
 as new additions. Generated caller declarations are not fixed new library
-types. The new receiving tuples, Entity callback and child-failure fields are
-explicit source compatibility changes. Final nominal route inventory is a
+types. Receiving tuples, ActorCustody and schema/child fields carry source
+compatibility changes. The Entity report callback is conserved against main
+and restored against frozen DevX; its report argument is not a new main API. Final nominal route inventory is a
 separate source review, not proof of unchanged methods or full DX acceptance.
 
 Final default strict workspace/all-target Clippy and independent native-fixture
