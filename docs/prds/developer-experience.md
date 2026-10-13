@@ -3,8 +3,8 @@
 Status: active. Work is isolated on `codex/developer-experience-docs`;
 the other Bombay checkout is untouched. Initial inspected baselines were
 Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
-`d69f992b371c12ab34e73b18e45b8112c90a1508`; current Bombay uses published
-Behavior/Actors0.25.0, macros0.14.1, Communication0.1.5 and Timers0.2.0
+`d69f992b371c12ab34e73b18e45b8112c90a1508`; current Bombay selects published
+Behavior/Actors0.26.0, macros0.14.2, Communication0.1.5 and Timers0.2.0
 without repository patches.
 
 One Application candidate owns ordinary roots, cold actors, declared topology,
@@ -60,7 +60,7 @@ archive preflight pass. The same fixed/FIFO/keyed constructors accept direct
 or genuinely fallible factories and retain complete refusal custody. Five
 paired keyed journeys show identical incremental factory heap measurements.
 
-Bombay selects registry0.25.0 without repository patches. Both workspace and
+The prior0.25 adoption selected registry crates without repository patches. Both workspace and
 independent engine-fuzz locks change only the upgraded owner records. Twelve
 caller/test files remove pure-factory Result/error annotations and infer the
 constructor; genuine asynchronous preparation/refusal contracts remain.
@@ -107,6 +107,43 @@ formatting is committed as2800432; pinned nixfmt and evaluation of all21 native
 check definitions pass. Final-source gates remain required;
 signing/disk failures have not been waived.
 
+Before registry adoption, the complete public creation-correlation regression
+fails E0599 at the two unavailable typed-reason assertions on Core0.25. Select
+published Core/Actors0.26.0 and macros0.14.2 only; locked Communication0.1.5,
+Timers0.2.0 and the other registry identities stay unchanged. Release98983b4’s
+complete AGENTS blob4996c149 matches the inspected instructions. The existing
+native kernel still allocates before checking its creator-local map; rerun the
+regression before adding its guard. Freshness is the research law; checked local
+correlation and rejection before allocation are derived/Bombay policy. Return
+original request ID, child, route and explicit birth/replacement kind; preserve
+accepted prefix, later sibling, original map/order and joined retirement. Reuse
+the current HashMap and typed ItemSettlement rejection: no new type, bound,
+state, trait, capability or dependency family. Detailed pre-edit law, drift
+measurements and verification are in the owning PRD.
+
+The actual registry regression first fails E0599 on0.25, then reproduces the
+occupied-map panic on0.26 before the guard. The retained six-line check returns
+the original RoutedCreation before allocation. Native birth/replacement/replay
+and joined prefix/suffix retirement pass Rust1.99/1.96, debug/release. Removing
+that guard from an exact source snapshot restores the panic in release. All207
+downloaded owner Rust files match98983b4. Workspace161 and fuzz29 registry
+identities change only the three owner records (two in the engine fuzz graph).
+No new state, public type, trait, bound, module or retained field is added.
+CreationBinding remains Starting | RetiringStartup | Established | Rejected |
+StartupRejected, with the same payloads and single runtime transition authority.
+Lexical matches16/10, arms47/31, enum declarations3/3 and public declarations3/16
+stay unchanged in creation/children; one map-membership conditional is added.
+Production+11/-2/net9 (including contract prose); integration test+288/-0.
+The final adoption passes all21 native Nix gates in2306.566 seconds, including
+646 optimized workspace tests (one existing ignored subprocess-only case). All459
+captured source hashes match. Current/MSRV debug/release package journeys prove
+correlation, fixed/FIFO recovery and all four compiled-guide configurations; the
+final three archives contain61 identical production Rust files and195 current
+other Rust files. Only the three owners change among140 package registry identities.
+The archive tests use the actual extracted unpublished Engine/Bombay macros; this
+is not a registry-only Bombay publication claim. No signing/disk waiver applies;
+Linux and x86_64 Darwin are unexecuted. Prior0.25 gates retain their revision limits.
+
 A real duplicate-creation correlation panicked and lost lawful retirement.
 Behavior commit821380e adds its missing typed reason, passing962 pinned tests,
 strict Clippy and all ten owner Nix gates. A private native guard returns the
@@ -119,8 +156,8 @@ corrected four-workspace/archive preflight, all ten native gates and exact-head
 CI38350983446. It merged as98983b4 under the same authorization. Main
 CI38352087285 and normal Release38353101159 pass; independent registry and
 GitHub release checks confirm Core/Actors0.26.0 and macros0.14.2 are published
-and un-yanked. Bombay still selects0.25/0.14.1 until its separate registry
-adoption and downstream verification.
+and un-yanked. Bombay now selects those registry owners; fresh downstream
+verification is recorded below, separately from the owner release.
 
 WorkerFactory now owns an ordinary callable for replacement preparation, so
 fixed/FIFO callers need neither a custom source struct nor two trait impls.
@@ -209,3 +246,28 @@ The initial documentation cleanup replaced the large execution campaign with
 its compact [preservation contract](execution-ownership.md) and deleted nine
 chronological companions. Git preserves their history. The owning evidence
 appendix records that disposition; do not restore retired ledgers.
+
+Verification binding correction (pre-edit): current Driver/template evidence still
+names0.23/d69f992b while the actual graph selects0.26/98983b4. Existing hard-coded
+manifest tests check mutual agreement but cannot detect that stale selection.
+Add a focused test comparing the existing manifest owner versions with locked,
+offline Cargo metadata; its expected RED is0.23 versus0.26. Then rebind manifest
+versions/revision, existing assertions and current guidance to the verified207
+registry sources. Reuse serde_json and the existing pinned Cargo; add no dependency,
+production type, state, bound or protocol. Check the template inventory against
+actual0.26 owners before retaining its new binding. The interrupted first Nix run
+is not a completed gate; rerun all21 checks after this correction.
+
+Binding RED fails for the intended0.23/0.26 mismatch. After updating the two
+manifest headers/evidence revisions, all ten Engine manifest tests pass; the new
+test also compares the template owner against the locked package graph. Actual
+registry source confirms every45 template and19 capability spelling/source and
+evidence location; this is presence/inventory evidence, not a new exhaustive
+semantic proof. Versions now name98983b4 and0.26/0.14.2. Test-only+46/-5/net41,
+with no production/API change. The first full run was deliberately interrupted
+after426.907 seconds for this correction; no pass is inferred. The final all21 gates
+execute the corrected metadata and all original law mutations. Current/MSRV
+manifest suites pass all ten tests in both profiles. Complete adoption delta:
+production+11/-2/net9; tests+334/-5/net329; public types+0/-0; no new
+production module or retained field. Documentation/manifest/lock changes accompany
+this bounded fix. Other DX requirements and unpublished policy changes remain open.

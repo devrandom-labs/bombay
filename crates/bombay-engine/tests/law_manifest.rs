@@ -1,9 +1,10 @@
 use std::collections::BTreeSet;
+use std::process::Command;
 
 use serde::Deserialize;
 use serde_json::Value;
 
-const BEHAVIOR_REVISION: &str = "d69f992b371c12ab34e73b18e45b8112c90a1508";
+const BEHAVIOR_REVISION: &str = "98983b456c4a8f7cd0911982eaf9488455b6d8bc";
 
 #[derive(Deserialize)]
 struct Manifest {
@@ -350,13 +351,53 @@ fn production_driver_mutation_evidence_has_one_owner() {
 }
 
 #[test]
+fn manifest_matches_selected_owner_packages() {
+    let manifest = manifest();
+    let inventory: Value = serde_json::from_str(
+        &std::fs::read_to_string(root().join("docs/driver-template-manifest.json"))
+            .expect("read template owner inventory"),
+    )
+    .expect("template inventory JSON");
+    let metadata = Command::new(env!("CARGO"))
+        .args(["metadata", "--locked", "--offline", "--format-version", "1"])
+        .current_dir(root())
+        .output()
+        .expect("read the selected package graph through pinned Cargo");
+    assert!(
+        metadata.status.success(),
+        "selected package graph: {}",
+        String::from_utf8_lossy(&metadata.stderr)
+    );
+    let metadata: Value = serde_json::from_slice(&metadata.stdout).expect("package graph JSON");
+    let packages = metadata["packages"].as_array().expect("selected packages");
+    for (name, version) in [
+        ("bombay-behavior", manifest.behavior.core.as_str()),
+        ("bombay-behavior-actors", manifest.behavior.actors.as_str()),
+        ("bombay-behavior-macros", manifest.behavior.macros.as_str()),
+        (
+            "bombay-behavior-actors",
+            inventory["owner"]["version"]
+                .as_str()
+                .expect("template owner version"),
+        ),
+    ] {
+        let selected: Vec<_> = packages
+            .iter()
+            .filter(|package| package["name"] == name)
+            .collect();
+        assert_eq!(selected.len(), 1, "one selected {name} owner");
+        assert_eq!(selected[0]["version"], version, "selected {name} version");
+    }
+}
+
+#[test]
 fn manifest_exactly_matches_canonical_law_index() {
     let manifest = manifest();
     assert_eq!(manifest.schema, 2);
     assert_eq!(manifest.law_source, "docs/driver-law.md");
-    assert_eq!(manifest.behavior.core, "0.23.0");
-    assert_eq!(manifest.behavior.actors, "0.23.0");
-    assert_eq!(manifest.behavior.macros, "0.14.0");
+    assert_eq!(manifest.behavior.core, "0.26.0");
+    assert_eq!(manifest.behavior.actors, "0.26.0");
+    assert_eq!(manifest.behavior.macros, "0.14.2");
     assert_eq!(manifest.behavior.revision, BEHAVIOR_REVISION);
     assert_eq!(
         manifest.gate.command,
@@ -598,7 +639,7 @@ fn engine_does_not_mirror_actor_template_laws() {
     }
     for (field, expected) in [
         ("package", "bombay-behavior-actors"),
-        ("version", "0.23.0"),
+        ("version", "0.26.0"),
         ("revision", BEHAVIOR_REVISION),
     ] {
         if manifest["owner"][field] != expected {

@@ -272,9 +272,12 @@ where
 /// exact child execution/source custody on acceptance. This port is sealed;
 /// only the runtime supplies standard-kernel execution authority.
 ///
+/// A recorded creator-local correlation ID is rejected before allocation with
+/// [`CreationRejection::CorrelationAlreadyRecorded`], returning the original
+/// request without changing the existing child binding.
+///
 /// # Panics
-/// Panics if the creator reuses an already recorded correlation ID or internal
-/// startup-row custody is inconsistent, matching the existing native kernel.
+/// Panics if internal startup-row custody is inconsistent.
 #[allow(private_bounds)]
 pub trait EstablishNativeChild<C, Child, Descendants>:
     NativeChildStartup<C, Child, Descendants>
@@ -386,6 +389,12 @@ where
     {
         let creation = pending.creation;
         let id = creation.id();
+        if pending.creations.contains_key(&id) {
+            return ItemSettlement::Rejected {
+                item: creation,
+                reason: CreationRejection::CorrelationAlreadyRecorded,
+            };
+        }
         let kind = creation.kind();
         let route = creation.route();
         let (request, _) = creation.into_parts();
