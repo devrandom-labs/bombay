@@ -1,7 +1,8 @@
-//! Counter's explicit local test profile; production identity is not established.
-//! The primary service runs beside Work; received facts stay in caller-owned storage.
+//! Counter requires an explicit local test profile; production identity is not established.
+//! The optional protected-transport test fixture crosses configured TLS Sessions.
+//! Services run beside Work; received facts stay in caller-owned storage.
 //! Finite byte conventions/limits are test inputs, not production defaults.
-//! No network, KERI, durability, fresh global issuer or whole-heap bound.
+//! No production KERI identity, durability, fresh global issuer or whole-heap bound.
 
 use bombay::behavior::{
     Behavior, BehaviorSettlements, ClassifySettlement, Here, Ingress, MessageProtocol,
@@ -34,6 +35,10 @@ use tokio::{
     runtime::{Builder, Handle, Id, Runtime, TryCurrentError},
     sync::oneshot,
 };
+
+#[cfg(all(test, feature = "protected-transport"))]
+#[path = "authorized/remote_counter.rs"]
+mod remote_counter;
 
 #[path = "authorized/protected/mod.rs"]
 mod protected;
@@ -86,6 +91,7 @@ enum CounterWorkCase {
     Healthy,
     CounterBeforePublication,
     CounterAfterPublication,
+    CounterWhileProcessingPending,
     RequesterBeforePublication,
     RequesterAfterPublication,
     RequesterCompletedAfterPublication,
@@ -2455,7 +2461,8 @@ async fn run_counter_profile<R>(
             ));
             return Ok(());
         }
-        CounterWorkCase::RequesterCompletedAfterPublication
+        CounterWorkCase::CounterWhileProcessingPending
+        | CounterWorkCase::RequesterCompletedAfterPublication
         | CounterWorkCase::RequesterAfterReplyBytes
         | CounterWorkCase::RequesterAfterReplyVerification
         | CounterWorkCase::RequesterAfterReplySend => {
@@ -2812,6 +2819,43 @@ fn counter_request(record: &ProtectedRecord) -> CounterRequest {
     }
 }
 
+// Current reply authority is independent of native command admission.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "One current reply law receives explicit independently current authority and typed receipt projectors without a second authority wrapper."
+)]
+fn counter_protected_reply<Receipt>(
+    binding: Binding,
+    grant_issuer: &str,
+    authority_generation: u64,
+    configured_profile: CounterProofProfile,
+    receipt: &Receipt,
+    captured: Scope,
+    purpose: CounterProofPurpose,
+    projection: fn(&Receipt) -> (&Scope, CounterProofProfile, CounterProofPurpose),
+    meaning: fn(&Receipt) -> CounterProtectedMeaning,
+    endpoints: fn(&Receipt) -> (&'static str, &'static str),
+    permitted: &[CounterProofPurpose],
+) -> Result<CounterProtectedMeaning, CounterRefusal> {
+    let (scope, profile, verified_purpose) = (projection)(receipt);
+    if scope.identity.binding != binding || *scope != captured {
+        return Err(CounterRefusal::Binding);
+    }
+    if scope.grant_issuer != grant_issuer
+        || scope.authority_generation != authority_generation
+        || !permitted.contains(&purpose)
+    {
+        return Err(CounterRefusal::Grant);
+    }
+    if profile != configured_profile
+        || verified_purpose != purpose
+        || endpoints(receipt) != (binding.host, binding.caller)
+    {
+        return Err(CounterRefusal::Invalid);
+    }
+    Ok(meaning(receipt))
+}
+
 // Current reply authority is independent of permission to execute a command.
 impl<R> CounterAuthorization<R> {
     fn protected_reply(
@@ -2823,23 +2867,19 @@ impl<R> CounterAuthorization<R> {
         endpoints: fn(&R) -> (&'static str, &'static str),
         permitted: &[CounterProofPurpose],
     ) -> Result<CounterProtectedMeaning, CounterRefusal> {
-        let (scope, profile, verified_purpose) = (self.projection)(receipt);
-        if scope.identity.binding != self.binding || *scope != captured {
-            return Err(CounterRefusal::Binding);
-        }
-        if scope.grant_issuer != self.grant_issuer
-            || scope.authority_generation != self.authority_generation
-            || !permitted.contains(&purpose)
-        {
-            return Err(CounterRefusal::Grant);
-        }
-        if profile != self.profile
-            || verified_purpose != purpose
-            || endpoints(receipt) != (self.binding.host, self.binding.caller)
-        {
-            return Err(CounterRefusal::Invalid);
-        }
-        Ok(meaning(receipt))
+        counter_protected_reply(
+            self.binding,
+            self.grant_issuer,
+            self.authority_generation,
+            self.profile,
+            receipt,
+            captured,
+            purpose,
+            self.projection,
+            meaning,
+            endpoints,
+            permitted,
+        )
     }
 }
 
@@ -2896,6 +2936,11 @@ async fn run_protected_counter_profile<R>(
                     tokio::task::yield_now().await;
                     resume_unwind(fault);
                 }
+                #[cfg(test)]
+                if *fault == CounterWorkCase::CounterWhileProcessingPending {
+                    let _permission = permission.await;
+                    resume_unwind(fault);
+                }
                 let permission = permission.await;
                 (publication, permission)
             })
@@ -2918,6 +2963,16 @@ async fn run_protected_counter_profile<R>(
     let mut first_requester_repeated_execution = None;
     #[cfg(test)]
     let mut first_requester_exchange_readiness = None;
+    #[cfg(test)]
+    let mut counter_permit = Some(counter_permit);
+    #[cfg(test)]
+    let mut earlier_counter_release = None;
+    #[cfg(test)]
+    let mut counter_processing_before = None;
+    #[cfg(test)]
+    let mut counter_processing_after = None;
+    #[cfg(test)]
+    let mut counter_retirement_before_rescue = None;
     let service = async {
         let publications = tokio::join!(counter_ports, sibling_ports);
         let (counter_ports, sibling_ports) = match publications {
@@ -2933,7 +2988,13 @@ async fn run_protected_counter_profile<R>(
                     .as_ref()
                     .ok()
                     .map(|(lifecycle, ..)| lifecycle.request_shutdown());
+                #[cfg(not(test))]
                 let counter_release = counter_permit.send(());
+                #[cfg(test)]
+                let counter_release = counter_permit
+                    .take()
+                    .expect("original Counter permission")
+                    .send(());
                 let sibling_release = sibling_permit.send(());
                 return Err((
                     publications,
@@ -3078,6 +3139,25 @@ async fn run_protected_counter_profile<R>(
                             CounterStatus::IncrementAdmitted => {
                                 match &authorization.pending[position].verification {
                                     Verification::Native { delivery: CounterDelivery::IncrementAdmitted, .. } => {
+                                        #[cfg(test)]
+                                        match execution_case {
+                                            CounterWorkCase::CounterWhileProcessingPending => {
+                                            let received = maybe_done(processing.receive());
+                                            tokio::pin!(received);
+                                            counter_processing_before = Some(received.as_mut().now_or_never());
+                                            if counter_processing_before == Some(None) {
+                                                earlier_counter_release = Some(counter_permit.take().expect("original Counter permission").send(()));
+                                                counter_retirement_before_rescue = Some(lifecycle.retirement().await);
+                                                counter_processing_after = Some(received.as_mut().now_or_never());
+                                                first_requester_shutdown = Some(requester_lifecycle.request_shutdown());
+                                                requester_release = Some(permitted.take().expect("original requester permission").send(()));
+                                            }
+                                            received.as_mut().await;
+                                            processing_facts.push(received.as_mut().take_output().expect("actual processing receive output"));
+                                            }
+                                            _ => processing_facts.push(processing.receive().await),
+                                        }
+                                        #[cfg(not(test))]
                                         processing_facts.push(processing.receive().await);
                                     }
                                     Verification::Duplicate { .. } => {}
@@ -3195,7 +3275,7 @@ async fn run_protected_counter_profile<R>(
                 requester_receipts.push((original_execution, handoff, acquired,
                     requester_begun, triggered, produced, delivered, stopped, permitted, native));
                 #[cfg(test)]
-                if matches!(execution_case, CounterWorkCase::RequesterBeforePublication | CounterWorkCase::RequesterAfterPublication
+                if matches!(execution_case, CounterWorkCase::CounterWhileProcessingPending | CounterWorkCase::RequesterBeforePublication | CounterWorkCase::RequesterAfterPublication
                     | CounterWorkCase::RequesterCompletedAfterPublication | CounterWorkCase::RequesterAfterReplyBytes
                     | CounterWorkCase::RequesterAfterReplyVerification | CounterWorkCase::RequesterAfterReplySend) { break; }
             }
@@ -3211,7 +3291,16 @@ async fn run_protected_counter_profile<R>(
         }).catch_unwind().await;
         let original_cleanup = lifecycle.request_shutdown();
         let sibling_cleanup = sibling_lifecycle.request_shutdown();
+        #[cfg(not(test))]
         let counter_release = counter_permit.send(());
+        #[cfg(test)]
+        let counter_release = match earlier_counter_release.take() {
+            Some(original) => original,
+            None => counter_permit
+                .take()
+                .expect("original Counter permission")
+                .send(()),
+        };
         let sibling_release = sibling_permit.send(());
         Ok((
             acquired,
@@ -3234,6 +3323,39 @@ async fn run_protected_counter_profile<R>(
     };
     #[cfg(test)]
     let service = AssertUnwindSafe(service).catch_unwind();
+    #[cfg(test)]
+    let mut service_after_counter = None;
+    #[cfg(test)]
+    let (counter_execution, sibling_execution, service) = {
+        let counter = maybe_done(AssertUnwindSafe(counter_execution).catch_unwind());
+        let sibling = maybe_done(AssertUnwindSafe(sibling_execution).catch_unwind());
+        let service = maybe_done(service);
+        tokio::pin!(counter, sibling, service);
+        if execution_case == CounterWorkCase::CounterWhileProcessingPending {
+            tokio::select! { biased;
+                () = counter.as_mut() => {},
+                () = sibling.as_mut() => { counter.as_mut().await; },
+                () = service.as_mut() => { counter.as_mut().await; },
+            }
+            service_after_counter = Some(service.as_mut().now_or_never());
+        }
+        tokio::join!(counter.as_mut(), sibling.as_mut(), service.as_mut());
+        (
+            counter
+                .as_mut()
+                .take_output()
+                .expect("original Counter execution"),
+            sibling
+                .as_mut()
+                .take_output()
+                .expect("original sibling execution"),
+            service
+                .as_mut()
+                .take_output()
+                .expect("original service result"),
+        )
+    };
+    #[cfg(not(test))]
     let (counter_execution, sibling_execution, service) = tokio::join!(
         AssertUnwindSafe(counter_execution).catch_unwind(),
         AssertUnwindSafe(sibling_execution).catch_unwind(),
@@ -3303,6 +3425,183 @@ async fn run_protected_counter_profile<R>(
     let Ok(service) = service else {
         panic!("healthy actual publication product");
     };
+    #[cfg(test)]
+    if execution_case == CounterWorkCase::CounterWhileProcessingPending {
+        let payload = counter_execution
+            .as_ref()
+            .expect_err("original Counter Work panic");
+        let (
+            ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+            Ok((origin, retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = &counter_native
+        else {
+            panic!("original Counter native and both notifications");
+        };
+        let (
+            acquired,
+            original_stop,
+            sibling_stop,
+            counter_release,
+            sibling_release,
+            admissions,
+            requesters,
+            processing,
+            reads,
+            protected,
+            _,
+            _,
+            _,
+            authorization,
+            encoded,
+            refused,
+        ) = &service;
+        let [
+            (
+                execution,
+                handoff,
+                exchange,
+                begun,
+                triggered,
+                produced,
+                delivered,
+                stopped,
+                permitted,
+                native,
+            ),
+        ] = requesters.as_slice()
+        else {
+            panic!("one original requester receiving owner");
+        };
+        let (
+            ApplicationOutcome::Completed {
+                output: (publication, permission),
+                cleanup: Ok(()),
+            },
+            Ok((requester_origin, requester_retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = native
+        else {
+            panic!("original requester Work/native/two notifications");
+        };
+        let (
+            ApplicationOutcome::Completed {
+                output: (sibling_publication, sibling_permission),
+                cleanup: Ok(()),
+            },
+            Ok((sibling_origin, sibling_retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = sibling_native
+        else {
+            panic!("original sibling Work/native/two notifications");
+        };
+        let _retired_sibling = completed_actor(sibling_origin, sibling_retirement);
+        assert_eq!(
+            ptr::from_ref(payload.as_ref()).cast::<()>(),
+            counter_fault_pointer
+        );
+        assert_cancelled_actor(*origin, retirement);
+        assert!(execution.is_ok() && publication.is_ok() && permission.is_ok());
+        assert!(
+            sibling_execution.is_ok() && sibling_publication.is_ok() && sibling_permission.is_ok()
+        );
+        assert!(matches!(
+            requester_retirement,
+            ActorRetirement::Completed {
+                completion: Completion::Stopped,
+                ..
+            }
+        ));
+        assert_eq!(requester_origin.address(), MailAddr::APPLICATION_ROOT);
+        assert_eq!(counter_processing_before, Some(None));
+
+        let report = counter_retirement_before_rescue.expect("exact Counter joined report");
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        eprintln!(
+            "Counter native OwnerCancelled: retirement={:?}, failures={:?}",
+            report.retirement(),
+            report.failures()
+        );
+        assert_eq!(service_after_counter, Some(None));
+        let Ok((increment, read, value, _, _)) = acquired else {
+            panic!("actual independent sibling progress");
+        };
+        assert!(increment.is_ok() && read.is_ok());
+        assert_eq!(value.as_ref().expect("actual sibling reply").message, 1);
+        assert!(
+            matches!(original_stop, Err(ShutdownRejection::AlreadyStopped)) && sibling_stop.is_ok()
+        );
+        assert!(counter_release.is_ok() && sibling_release.is_ok());
+        assert!(matches!(handoff, Some(Ok(_))) && exchange.is_none());
+        assert!(matches!(begun, Some(Ok(()))) && matches!(triggered, Some(Some(_))));
+
+        assert!(
+            matches!(stopped, Some(Err(ShutdownRejection::AlreadyStopped))) && permitted.is_ok()
+        );
+        assert_eq!(first_requester_shutdown, Some(Ok(())));
+        assert!(reads.is_empty() && refused.is_empty());
+        let Ok(authorization) = authorization else {
+            panic!("original authorization owner");
+        };
+        let (original, correlation, status) = match counter_processing_after {
+            Some(None) => {
+                assert!(admissions.is_empty() && processing.is_empty() && protected.is_empty());
+                assert!(produced.is_none() && delivered.is_empty() && encoded.is_empty());
+                let [entry] = authorization.pending.as_slice() else {
+                    panic!("original admitted request custody");
+                };
+                let report = authorization
+                    .report(entry.correlation)
+                    .expect("current admitted status");
+                (&entry.original, report.correlation, report.status)
+            }
+            Some(Some(())) => {
+                let [Some(processed)] = processing.as_slice() else {
+                    panic!("actual original processing reply");
+                };
+                let [(scope, Some(admission), _, report)] = admissions.as_slice() else {
+                    panic!("original consumed admission");
+                };
+                assert!(authorization.pending.is_empty());
+                assert_eq!(processed.message.request_sequence, scope.identity.sequence);
+                assert_eq!(
+                    produced.as_deref(),
+                    Some(
+                        [
+                            CounterProtectedMeaning::IncrementAdmitted,
+                            CounterProtectedMeaning::IncrementProcessed
+                        ]
+                        .as_slice()
+                    )
+                );
+                assert!(encoded.iter().all(Result::is_ok));
+                (&admission.original, report.correlation, report.status)
+            }
+            None => panic!("actual processing readiness was not acquired"),
+        };
+        assert_eq!(status, CounterStatus::IncrementAdmitted);
+        let Some(Some(trigger)) = triggered else {
+            panic!("actual requester trigger");
+        };
+        assert!(
+            matches!(trigger.message, CounterServiceInput::Verify(expected) if expected == correlation)
+        );
+        let (_, pointers) = first_requester_original_pointers.expect("original request pointers");
+        assert_eq!(
+            (original.protected.as_ptr(), original.proof.as_ptr()),
+            pointers
+        );
+        return Ok(());
+    }
     #[cfg(test)]
     if matches!(
         execution_case,
@@ -7445,21 +7744,21 @@ mod stop_admission {
     use bombay::behavior::{
         ActiveTurn, BehaviorBase, Births, ChildCreationOutcome, ChildHead, ClassifySettlement,
         CreateChild, CreationEvent, CreationSequence, CreationSettlement, CreationSettlements,
-        Creations, EstablishedActor, InitializationTurn, InterpretInstalledActor, ItemSettlement,
-        SettledItem,
+        Creations, EstablishedActor, InitializationTurn, InterpretEstablished,
+        InterpretInstalledActor, ItemSettlement, SettledItem,
     };
     use core::future::Future;
     use core::task::{Context, Poll, Waker};
 
-    struct CounterChildren {
-        target: EstablishedActor<StopOnShutdown<Counter>>,
-        sibling: EstablishedActor<StopOnShutdown<Counter>>,
+    pub(super) struct CounterChildren {
+        pub(super) target: EstablishedActor<StopOnShutdown<Counter>>,
+        pub(super) sibling: EstablishedActor<StopOnShutdown<Counter>>,
     }
-    type CounterExports = MessageProtocol<MailAddr, CounterChildren>;
+    pub(super) type CounterExports = MessageProtocol<MailAddr, CounterChildren>;
     type CounterBirths =
         <Births<StopOnShutdown<Counter>> as CreationSettlements<MailAddr>>::Settlements;
     #[derive(Default)]
-    struct CounterParent {
+    pub(super) struct CounterParent {
         children: Vec<EstablishedActor<StopOnShutdown<Counter>>>,
         births: Vec<CounterBirths>,
     }
@@ -7535,8 +7834,14 @@ mod stop_admission {
         }
     }
     #[derive(Default)]
-    struct CounterStopExport {
-        installed: Option<InstalledActor<StopOnShutdown<Counter>>>,
+    pub(super) struct CounterStopExport {
+        pub(super) installed: Option<InstalledActor<StopOnShutdown<Counter>>>,
+    }
+    impl InterpretEstablished<Counter> for CounterStopExport {
+        type Output = MailAddr;
+        fn interpret_established(&mut self, endpoint: ActorRef<Counter>) -> Self::Output {
+            endpoint.address()
+        }
     }
     impl InterpretInstalledActor<StopOnShutdown<Counter>> for CounterStopExport {
         type Output = ();
@@ -7545,7 +7850,7 @@ mod stop_admission {
         }
     }
     #[derive(TerminalProjection)]
-    enum CounterChildrenTerminal {
+    pub(super) enum CounterChildrenTerminal {
         #[expect(
             clippy::type_complexity,
             reason = "The complete owning native root product stays explicit rather than a new alias or wrapper."
@@ -9067,6 +9372,21 @@ mod protected_application {
         }
     }
     #[test]
+    fn recorded_counter_retirement_preserves_admission_and_available_processing() {
+        protected_application_execution_case(
+            CounterWorkCase::CounterWhileProcessingPending,
+            CounterProofProfile::RecordedTest,
+        );
+    }
+    #[test]
+    fn scheduled_counter_retirement_preserves_admission_and_available_processing() {
+        protected_application_execution_case(
+            CounterWorkCase::CounterWhileProcessingPending,
+            CounterProofProfile::ScheduledTest,
+        );
+    }
+
+    #[test]
     fn recorded_reply_bytes_survive_cancelled_exchange_wait() {
         protected_application_execution_case(
             CounterWorkCase::RequesterAfterReplyBytes,
@@ -9260,3 +9580,7 @@ mod protected_application {
         acquired.expect("actual native zero-effect and full original receipt custody");
     }
 }
+
+#[cfg(test)]
+#[path = "authorized/held_counter_retirement.rs"]
+mod held_counter_retirement;

@@ -13,8 +13,45 @@ Nix38199644193 executes protected51 in three profiles, workspace640/0/1,
 Driver2048 and Observe4×1024;458 artifact files were rehashed. Miri was skipped.
 Controlled router correction [PR10](https://github.com/devrandom-labs/bombay-zenoh/pull/10)
 merged4820 with required CI, exact-main verification and actual1.10.7 publication
-and clean-consumer proof passing. Its narrow Bombay fixture adoption remains
-under verification. Full AUTH1/NET1 acceptance is still incomplete.
+and clean-consumer proof passing. Its narrow Bombay fixture adoption
+[PR355](https://github.com/devrandom-labs/bombay/pull/355) merged
+aa2c696df3f0070b06c3b61a9a0dd84d0a4362b9 at2026-10-12T05:34:23Z after
+independent exact-head review and all six checks passed, including required
+Nix38204875216. The actual1.10.7 native campaigns remain separate from protected
+actor transport. Controlled dependency [PR11](https://github.com/devrandom-labs/bombay-zenoh/pull/11)
+merged5bebbcb07a7650aff33e08736b8434cf2ccf1706 at2026-10-12T21:05:20Z after
+exact-head review and required Linux38301427259 passed all steps. Query capacity,
+owning PEM/YAML corrections, nine archives, genuine
+Rust1.88 and Miri pass scoped local gates and independent review. Its first Linux
+run fails complete source custody because Python creates a cache; Rust and locks
+remain unchanged. The reviewed two-line execution correction retains all checks;
+revised-head CI38301427259 verifies112 named packaged executions, complete
+source custody and both actual Miri tests with independent artifact review.
+Revised54d local VCS archives and112 local packaged passes have independent
+custody review; exact-head technical review is recorded on PR11.
+Exact merged-main CI38308414717 passes source/archive, compiler-floor and Miri
+gates with independent artifact review. Actual publication38313859795 passes;
+all nine fresh registered archives have independent checksum/source review.
+Registry-only executable gates on default Rust and actual1.88 pass independent
+receipt review. The isolated stage selects1.10.8; combined actor/workspace and
+native TLS campaigns pass independent artifact review before PR delivery.
+The main and publication receipts do not close remote actor gates.
+Protected native Increment/Read/Stop comparison now passes64healthy cases/
+160subprocess roles and80deliberate negative cases with independent review;
+Historical defect cuts retain their exact pre-adoption provenance. Current adopted
+ordinary suites pass54/0/0 and protected/nested56/0/1 in both profiles. All five
+healthy controller campaigns are integrated into existing CI jobs; adopted combined
+workspace644/0/1, build, formatting, strict Clippy and both all-features policy
+checks pass locally with independent artifact review52013cb4.
+This comparison remains cfg(test) and unmerged. A separate local held-descendant
+comparison passes real-resource and acceptance-versus-joined controls/cuts in both
+profiles, with final complete-control oracle correction and independent review.
+Remote held-target retirement, combined ingress bounds and the shipping entrypoint
+remain open.
+Bombay1.10.8 local adoption passes combined verification; protected-stage PR delivery remains pending.
+The candidate quota covers ordinary query registrations; liveliness and inherited
+unstable native-cancellation outcomes remain outside that claim. All
+fullR01–R25 and AUTH1/NET1 acceptance remain open.
 
 The previous local-runtime audit is closed: 25 TEST items were verified,
 ARC-009 was retained, and the other 19 ARC items were distilled. Its chronological

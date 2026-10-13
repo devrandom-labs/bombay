@@ -227,3 +227,75 @@ release/package verification exits0. Independent archive evidence review and
 submitted-head CI remain delivery gates. Final independent protected codec review
 also passes, preserving original typed causes without selecting generic
 Error::source chaining. No full R01–R25 row closes.
+
+### Historical protected native Read/Stop comparison before successor adoption
+
+Corrected frozen native source4fc88f71, parentf0695664, controller88a26f6f and
+lock1d2f9634 pass ten real TLS matrices across both build profiles:64cases,
+160 subprocess roles. Both concrete deterministic providers and peer/router
+layouts cover roots and children; origin challenges use actual distinguishable
+child siblings. Grant acceptance follows an acquired authenticated send-only
+refusal; EOF and wrong trusted token keep Stop unauthorized. Read replies retain
+actual request-specific originals, and duplicate Stop reuses the actual joined
+target report. Both child reports precede parent shutdown during fixture cleanup.
+Independent review6223e922 rehashes all160 role logs and original executables.
+
+This is an unmerged cfg(test) comparison. Numeric root addresses in separate
+Applications are not global identity proof. Initial optimized EOF failures remain
+unmet fixture cleanup prerequisites; their actual native variants were not logged.
+Six deliberate source cuts fail their intended post-cleanup oracles in both
+profiles:80negative cases and80matched retained-binary healthy controls. Final
+receipt65c6744f and independent reviewfd57790c bind exact restoration, fresh55
+tests per profile, strict Clippy both and formatting. Combined receipt7801a9b3
+records workspace643passed/0failed/1ignored plus build, formatting and strict
+Clippy; default workspace runs53 Counter tests and excludes the native feature.
+At this historical checkpoint, required CI, dependency adoption and reviewed delivery remain pending. Remote held target-owned work,
+outer-service fault custody, combined ingress bounds, a supported non-test network
+entrypoint and real KERI remain open. No full R01–R25 row closes.
+
+### Local held child retirement comparison
+
+Intermediate frozen sourcee8d49e7a proves a real Counter activation resource is
+held inside its existing proxy/supervisor subtree. Accepted root Stop leaves both
+termination and joined retirement pending; a separate public Application performs
+useful Increment/Read work while the resource remains held. Cancelling a borrowed
+report wait preserves its owner. Releasing the actual activation permits complete
+native acquisition and a stable replay of the established report. Both Applications
+retain their original work/native/two-stage notification outcomes before assertions.
+Creator-local attempt and native child origin are preserved as independent facts.
+
+Final source82183b76 corrects the incomplete recovered-control oracle: the complete
+owned slice must contain exactly one recovered Ready activation and no other
+alternative. Receipt3e6b6441/campaignb3bfbaaa retains both healthy profiles, four
+intended failures, four fresh byte-exact restores, strict Clippy and formatting.
+Independent review414af23c/evidencec43f4c4c rehashes every source/log/executable
+triple and confirms original outcomes remain owned. Earlier e8d intermediate
+receiptbdc62461/campaign370ad57a remains historical. Each intended failure follows
+actual native acquisition. The cuts test held-resource ownership and a consumer
+distinguishing Stop acceptance from joined retirement; they do not prove a runtime
+early-publication defect. This is local unmerged evidence, with no remote held-target
+Stop, global identity or full R11 acceptance credit.
+
+### Adopted dependency and combined verification checkpoint
+
+The isolated stage now selects published Zenoh1.10.8 and its corrected owning
+closure. Independent adoption review84e556cb verifies both complete graphs,
+402/324 nodes and394/316 preserved records, all nine registered pins and unchanged
+TLS-only features. Registered consumer/owning evidence passes on Rust1.99 and1.88;
+independent review93433662 binds112 named query/Config executions. These are scoped
+prerequisites, not complete remote actor acceptance.
+
+Independent native fixture review9c886700/evidence18d0cd8d verifies60 cases/
+168 worker roles,243 frozen inputs and both Cargo-selected copied binaries.
+Late exits preserve uncertainty and failed cleanup; killed roles receive no close
+credit. Invalid fixture RELEASE refusals are not TLS authentication denials.
+This historical transport fixture is separate from the protected Counter campaigns.
+
+Both owning all-features dependency-policy checks pass. Adopted ordinary root
+Counter suites pass54/0/0 in debug and release, including the held witness;
+protected and nested suites pass56/0/1 in both profiles, with ignored subprocess
+roles earning no network credit. Independent review52013cb4/evidence860a17d3
+verifies workspace644/0/1, all64 protected cases/160 roles with exact single
+execution and clean exits, and both child-stop pairs2/0/0. Source minimization
+29edd721 and endpoint accounting73439a5d find no scoped blocker. Required CI
+and actual reviewed merge remain pending. All fullR01–R25 stay open.

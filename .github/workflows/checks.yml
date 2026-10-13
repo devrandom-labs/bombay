@@ -133,6 +133,63 @@ jobs:
             "$CARGO_TARGET_DIR/${{ matrix.profile }}/transport_custody" \
             docs/prds/static-remote-actors/transport-custody/certificates \
             "target/transport-evidence/${{ matrix.profile }}"
+      - name: Build and verify protected Counter Applications
+        shell: bash
+        run: |
+          profile_args=()
+          if [[ '${{ matrix.profile }}' == 'release' ]]; then
+            profile_args+=(--release)
+          fi
+          evidence="target/transport-evidence/${{ matrix.profile }}"
+          mkdir -p "$evidence"
+          nix develop -c cargo test --locked --jobs 2 -p bombay-example-counter \
+            --bin authorized --features protected-transport --no-run --message-format=json \
+            "${profile_args[@]}" > "$evidence/protected-counter-build.jsonl" \
+            2> "$evidence/protected-counter-build.stderr"
+          executable=$(python3 - "$evidence/protected-counter-build.jsonl" '${{ matrix.profile }}' <<'PYTHON'
+          import json, sys
+          from pathlib import Path
+          source = str(Path("examples/counter/src/bin/authorized.rs").resolve())
+          executables = []
+          expected_optimization = "3" if sys.argv[2] == "release" else "0"
+          for line in Path(sys.argv[1]).read_text().splitlines():
+              try:
+                  artifact = json.loads(line)
+              except json.JSONDecodeError:
+                  continue
+              if (artifact.get("reason") == "compiler-artifact"
+                  and artifact["target"]["name"] == "authorized"
+                  and artifact["target"]["src_path"] == source
+                  and artifact["profile"]["test"]
+                  and artifact["profile"]["opt_level"] == expected_optimization
+                  and "protected-transport" in artifact["features"]):
+                  executables.append(artifact["executable"])
+          if len(executables) != 1 or executables[0] is None:
+              raise SystemExit("exact protected Counter test executable was not built")
+          print(executables[0])
+          PYTHON
+          )
+          for campaign in "grant-stop target" "eof target" "release-query target" \
+            "grant-stop sibling-processing" "grant-stop sibling-read"; do
+            read -r grant_release evidence_source <<< "$campaign"
+            nix develop -c python3 docs/prds/static-remote-actors/transport-custody/verify_protected_counter.py \
+              "$executable" "$evidence/protected-counter-$grant_release-$evidence_source" \
+              --source-root "$PWD" \
+              --certificates docs/prds/static-remote-actors/transport-custody/certificates \
+              --grant-release "$grant_release" --evidence-source "$evidence_source"
+          done
+          nix develop -c "$executable" child_stop_keeps_original_target_and_sibling \
+            --nocapture > "$evidence/protected-child-stop.log" 2>&1
+          python3 - "$evidence/protected-child-stop.log" <<'PYTHON'
+          import re, sys
+          from pathlib import Path
+          output = Path(sys.argv[1]).read_text()
+          expected = {"remote_counter::child_stop_keeps_original_target_and_sibling_for_" + provider + "_proof" for provider in ("recorded", "scheduled")}
+          executed = re.findall(r"^test (\S+) \.\.\. ok$", output, re.MULTILINE)
+          summaries = re.findall(r"^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;", output, re.MULTILINE)
+          if len(executed) != 2 or set(executed) != expected or summaries != [("2", "0", "0")]:
+              raise SystemExit("exact child Stop witnesses did not execute successfully")
+          PYTHON
       - name: Retain native transport observations
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
