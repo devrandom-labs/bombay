@@ -44,3 +44,14 @@
          measured.reserved_unread = authorization.reserved_bytes;
          for pending in &authorization.pending {
              let _report = authorization.report(pending.correlation);
+--- a/flake.nix
++++ b/flake.nix
+@@ -250,7 +250,7 @@
+             // {
+               inherit cargoArtifacts;
+               buildPhaseCargoCommand = ''
+-                cargo test --locked -p bombay-example-counter
++                cargo test --locked -p bombay-example-counter -- --nocapture
+                 cargo run --locked -p bombay-example-counter
+               '';
+             }
