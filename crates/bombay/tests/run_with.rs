@@ -5,7 +5,7 @@ use bombay::behavior::{NoSends, Step, Stopped};
 use std::error::Error;
 use std::future::Future;
 use std::io;
-use std::panic::panic_any;
+use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
 use std::pin::pin;
 use std::sync::{
     Arc,
@@ -21,7 +21,7 @@ use behavior_actors::{
 };
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, EventLayer, InitializationTurn, InterpreterRequests,
-    NoBirths, User,
+    NoBirths, SendLayer, User,
 };
 use bombay::prelude::*;
 use bombay::{ActorSpace, Application, ApplicationOutcome};
@@ -757,6 +757,44 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
     );
     assert_eq!(finalization, Some(FinalizationEvent::Finalized));
     assert_completed_root(terminal, None);
+}
+
+#[test]
+fn outer_shutdown_policy_selects_whether_the_final_reaction_runs() {
+    let mut outer_stop = Root
+        .finalize_on_shutdown(|_, _| panic_any(313_u64))
+        .stop_on_shutdown()
+        .initialize()
+        .expect("the two explicit policies initialize without running the final reaction")
+        .behavior;
+    // A pure policy test selects the outer typed event directly. Application
+    // lifecycle inference still rejects two indistinguishable shutdown lanes.
+    let actions = outer_stop
+        .transition(EventLayer::Owned(ShutdownRequested))
+        .expect("the outer stop owns this request before the final reaction");
+    assert_eq!(
+        actions.sends,
+        SendLayer::new(NoSends, SendLayer::new(NoSends, NoSends))
+    );
+    assert!(actions.creates.is_empty());
+    assert_eq!(actions.become_, Step::Stop(Stopped));
+
+    let mut outer_finalization = Root
+        .stop_on_shutdown()
+        .finalize_on_shutdown(|_, _| panic_any(313_u64))
+        .initialize()
+        .expect("initialization never invokes either shutdown policy")
+        .behavior;
+    let reaction = catch_unwind(AssertUnwindSafe(|| {
+        outer_finalization.transition(EventLayer::Owned(ShutdownRequested))
+    }));
+    let Err(payload) = reaction else {
+        panic!("the outer final reaction must run before the inner stop");
+    };
+    let payload = payload
+        .downcast::<u64>()
+        .unwrap_or_else(|_| panic!("the exact native reaction payload survives"));
+    assert_eq!(*payload, 313);
 }
 
 #[tokio::test(flavor = "current_thread")]

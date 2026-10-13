@@ -276,5 +276,12 @@ Final shutdown decoration (DX09/21): implement ActorExt::finalize_on_shutdown
 using the existing registry FinalizeOnShutdown and ShutdownReaction. The owning
 PRD records the pre-edit law, full native missing-method witness and effect/order/
 retirement checks. This coordination note adds no acceptance checklist or
-Behavior/runtime contract. Existing pub versions/interpreters are verified;
+Behavior/runtime contract. Existing published versions/interpreters are verified;
 no publication dependency blocks this independent facade work.
+
+The finalization facade at b2c208b adds one method and no stored state or owner
+contract. Its pure two-order test distinguishes outer stop from outer finalization.
+The final optimized workspace suite passes651 tests with one existing subprocess
+skip; strict lint and both MSRV profiles pass. All106 original assertion statements
+remain. The owning PRD records the order law and exact counts. Final-source full
+Nix gates and extracted-package proof remain pending.
