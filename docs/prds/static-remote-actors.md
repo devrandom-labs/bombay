@@ -196,7 +196,19 @@ edits; submit a draft PR targeting main for complete CI. Commit/open PR is not
 a merge or completion state. Provider PR358 remains separately open with its
 unattributed48-byte Linux failure; integration includes identical provider
 source, so its new required CI must independently pass without relaxing that
-allocation assertion. Five report products and every full R01–R25 stay open.
+allocation assertion. Five report products remain conserved; every full R01–R25
+acceptance row stays open.
+
+Integration is committed48094379252426456141a7a74b29ecbbcc9596da and submitted
+as draft [PR359](https://github.com/devrandom-labs/bombay/pull/359), targeting
+main. Only feat/remote-devx-integration was pushed; main remains671ba860.
+Reachable public inventory443ff583 traces actual exports: main63→current68
+nominal types (+6/-1), traits13→18 (+5/-0), unchanged fixed aliases and one
+new topology macro. Six inferred-only Entity signature types remain unchanged
+and separate. These are source counts, not a zero-method-change assertion.
+Required CI, final delivery review and actual merge are pending. The current
+source tree is clean after the integration commit; this delivery-note commit
+changes documents only and must receive its own submitted-head CI.
 
 The combined workspace check exposes two stale test consumers of the former
 Application receiving shape. Port only those tests to the already-approved

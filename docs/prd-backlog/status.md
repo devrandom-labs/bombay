@@ -51,6 +51,11 @@ scoped Application review finds no new custody blocker. Local full Nix hits
 actual disk exhaustion and is not passing evidence; submitted-head CI and
 actual merge remain required. No full remote witness or DX programme closes.
 
+The integration is submitted as draft
+[PR359](https://github.com/devrandom-labs/bombay/pull/359) from committed4809437,
+with required CI and actual delivery pending. Its scoped review and passing
+local commands do not mark the feature merged. Main is unchanged671ba860.
+
 Protected-Application prerequisite [PR354](https://github.com/devrandom-labs/bombay/pull/354)
 merged36c00d53c84482c2b1fdf0587dca788bc6c39250 at2026-10-12T04:16:32Z after
 independent exact-head review and all six passing CI checks on be995. Required
