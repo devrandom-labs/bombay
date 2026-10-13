@@ -423,7 +423,7 @@ impl Future for GateFuture {
 fn application_admission_is_one_asynchronous_operation() {
     let actor_runtime = TestRuntime::new();
     let observations = actor_runtime.clone();
-    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime);
 
     block_on(entities.admit((), EntityId::new(42), 7)).unwrap();
 
@@ -435,7 +435,7 @@ fn application_admission_is_one_asynchronous_operation() {
 fn failed_delivery_returns_the_original_command() {
     let actor_runtime = TestRuntime::new();
     *actor_runtime.state.delivery_rejection.lock().unwrap() = Some(());
-    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime);
 
     let failure = block_on(entities.admit((), EntityId::new(9), 77)).unwrap_err();
 
@@ -456,8 +456,7 @@ fn failed_delivery_returns_one_exact_move_only_command() {
         drops: Arc::clone(&drops),
     };
     let allocation = command.value.as_ptr();
-    let entities = EntityRuntime::new(DirectoryConfig::default(), RejectingMoveOnlyRuntime)
-        .unwrap_or_else(|_| panic!("valid directory configuration must construct"));
+    let entities = EntityRuntime::new(DirectoryConfig::default(), RejectingMoveOnlyRuntime);
 
     let failure = block_on(entities.admit((), EntityId::new(9), command)).unwrap_err();
     let AdmissionFailure::Refused { command, reason } = failure else {
@@ -477,7 +476,7 @@ fn failed_activation_returns_the_command_and_eventually_allows_retry() {
     let actor_runtime = TestRuntime::new();
     let observations = actor_runtime.clone();
     *actor_runtime.state.activation_failure.lock().unwrap() = Some(());
-    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime);
     let entity_id = EntityId::new(11);
 
     let activation_refusal = block_on(entities.admit((), entity_id, 81));
@@ -514,7 +513,7 @@ fn canceling_admission_does_not_cancel_shared_activation_or_deliver_command() {
     let observations = actor_runtime.clone();
     let gate = ActivationGate::closed();
     *actor_runtime.state.activation_gate.lock().unwrap() = Some(Arc::clone(&gate));
-    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime);
     let mut admission = Box::pin(entities.admit((), EntityId::new(5), 91));
     let waker = Waker::from(Arc::new(ThreadWake(thread::current())));
     let mut context = Context::from_waker(&waker);
@@ -543,7 +542,7 @@ fn canceling_admission_does_not_cancel_shared_activation_or_deliver_command() {
 fn dropping_active_admission_does_not_retract_owned_delivery() {
     let actor_runtime = TestRuntime::new();
     let observations = actor_runtime.clone();
-    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime.clone()).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime.clone());
     let entity_id = EntityId::new(8);
     block_on(entities.admit((), entity_id, 1)).unwrap();
 
@@ -566,7 +565,7 @@ fn dropping_active_admission_does_not_retract_owned_delivery() {
 
 #[test]
 fn passivation_reports_not_active_for_unknown_entity() {
-    let entities = EntityRuntime::new(DirectoryConfig::default(), TestRuntime::new()).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), TestRuntime::new());
 
     let passivation = entities.passivate(&EntityId::new(99));
     assert_eq!(passivation, Passivation::NotActive);
@@ -578,7 +577,7 @@ fn repeated_passivation_reports_already_passivating() {
     let observations = actor_runtime.clone();
     let fence_gate = ActivationGate::closed();
     *actor_runtime.state.fence_gate.lock().unwrap() = Some(Arc::clone(&fence_gate));
-    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime);
     let entity_id = EntityId::new(7);
     block_on(entities.admit((), entity_id, 1)).unwrap();
 
@@ -606,7 +605,7 @@ fn passivation_gate_serializes_competing_calls() {
     let observations = actor_runtime.clone();
     let fence_gate = ActivationGate::closed();
     *actor_runtime.state.fence_gate.lock().unwrap() = Some(Arc::clone(&fence_gate));
-    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime);
     block_on(entities.admit((), entity_id.clone(), 1)).unwrap();
 
     let racing_runtime = entities.clone();
@@ -634,7 +633,7 @@ fn passivation_gate_serializes_competing_calls() {
 fn passivation_fences_and_retires_the_exact_incarnation() {
     let actor_runtime = TestRuntime::new();
     let observations = actor_runtime.clone();
-    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime);
     let entity_id = EntityId::new(6);
     block_on(entities.admit((), entity_id, 1)).unwrap();
 
@@ -660,7 +659,7 @@ fn fence_failures_preserve_the_forced_retirement_stage() {
         let actor_runtime = TestRuntime::new();
         let observations = actor_runtime.clone();
         *actor_runtime.state.fence_failure.lock().unwrap() = Some(failure);
-        let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime).unwrap();
+        let entities = EntityRuntime::new(DirectoryConfig::default(), actor_runtime);
         let entity_id = EntityId::new(10);
         block_on(entities.admit((), entity_id, 1)).unwrap();
 

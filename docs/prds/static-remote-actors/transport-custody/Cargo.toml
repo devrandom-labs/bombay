@@ -31,6 +31,3 @@ path = "../../../../examples/counter/src/bin/authorized.rs"
 required-features = ["protected-transport"]
 
 [workspace]
-
-[patch.crates-io]
-bombay-timers = { git = "https://github.com/devrandom-labs/bombay-timers.git", rev = "13e884da7ab41781f52337b0038060e375b00ee0" }

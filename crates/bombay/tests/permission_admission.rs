@@ -3,12 +3,9 @@ use bombay::behavior::{
     SettlementStatus, Step,
 };
 use bombay::prelude::*;
-use bombay::{ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
 use core::ops::AsyncFn;
 use tokio::{runtime::Builder, sync::oneshot};
-
-mod application_support;
-use application_support::RootTerminal;
 
 #[derive(Clone, Copy)]
 enum ProviderAvailability {
@@ -253,131 +250,129 @@ where
         let provider = &provider;
         let received = host
             .block_on(
-                Application::new(AdmissionLedger::default().stop_on_shutdown())
-                    .run_with::<RootTerminal<StopOnShutdown<AdmissionLedger>>, _, _, _, _, _>(
-                        |application| async move {
-                            let credential = FixtureCredential {
-                                marker: match case {
-                                    AdmissionCase::Invalid => 72,
-                                    _ => 71,
-                                },
-                                revision: match case {
-                                    AdmissionCase::Stale => 2,
-                                    _ => 3,
-                                },
-                                availability: match case {
-                                    AdmissionCase::Unavailable => ProviderAvailability::Unavailable,
-                                    _ => ProviderAvailability::Connected,
-                                },
-                            };
-                            let verification = provider(credential).await;
-                            let mut admission = PermissionAdmission {
-                                permission: Permission::Granted,
-                                now: 9,
-                            };
-                            let interface = application.interface(());
-                            let mut service = interface
-                                .external::<ProcessingReplies>()
-                                .expect("the service endpoint");
-                            let target = application.root().established_recipient();
-                            let actor_address = application.root().address();
-                            let verification_input =
-                                consume_verification(&verification, service.recipient());
-                            let verification_admission =
-                                service.send(&target, verification_input).await;
-                            assert!(verification_admission.is_ok());
-                            let verification_receipt = service
-                                .receive()
-                                .await
-                                .expect("the provider result reached pure Behavior Actions");
-                            assert_eq!(verification_receipt.from, actor_address);
-                            assert_eq!(
-                                verification_receipt.message,
-                                ProcessingReceipt {
-                                    prefix_count: 0,
-                                    protected_count: 0
-                                }
-                            );
-                            // Existing native capacity, not a new protected-admission default.
-                            for sequence in 0..1_024 {
-                                let accepted =
-                                    service.try_send(&target, AdmissionCommand::Prefix(sequence));
-                                match accepted {
-                                    Ok(()) => {}
-                                    Err(TrySendError::Full(_)) => panic!("the native prefix fits"),
-                                    Err(TrySendError::Closed(_)) => {
-                                        panic!("the native prefix remains open")
-                                    }
+                Application::new(AdmissionLedger::default().stop_on_shutdown()).run_with(
+                    |application| async move {
+                        let credential = FixtureCredential {
+                            marker: match case {
+                                AdmissionCase::Invalid => 72,
+                                _ => 71,
+                            },
+                            revision: match case {
+                                AdmissionCase::Stale => 2,
+                                _ => 3,
+                            },
+                            availability: match case {
+                                AdmissionCase::Unavailable => ProviderAvailability::Unavailable,
+                                _ => ProviderAvailability::Connected,
+                            },
+                        };
+                        let verification = provider(credential).await;
+                        let mut admission = PermissionAdmission {
+                            permission: Permission::Granted,
+                            now: 9,
+                        };
+                        let interface = application.interface(());
+                        let mut service = interface
+                            .external::<ProcessingReplies>()
+                            .expect("the service endpoint");
+                        let target = application.root().established_recipient();
+                        let actor_address = application.root().address();
+                        let verification_input =
+                            consume_verification(&verification, service.recipient());
+                        let verification_admission =
+                            service.send(&target, verification_input).await;
+                        assert!(verification_admission.is_ok());
+                        let verification_receipt = service
+                            .receive()
+                            .await
+                            .expect("the provider result reached pure Behavior Actions");
+                        assert_eq!(verification_receipt.from, actor_address);
+                        assert_eq!(
+                            verification_receipt.message,
+                            ProcessingReceipt {
+                                prefix_count: 0,
+                                protected_count: 0
+                            }
+                        );
+                        // Existing native capacity, not a new protected-admission default.
+                        for sequence in 0..1_024 {
+                            let accepted =
+                                service.try_send(&target, AdmissionCommand::Prefix(sequence));
+                            match accepted {
+                                Ok(()) => {}
+                                Err(TrySendError::Full(_)) => panic!("the native prefix fits"),
+                                Err(TrySendError::Closed(_)) => {
+                                    panic!("the native prefix remains open")
                                 }
                             }
-                            let payload = vec![23, 29].into_boxed_slice();
-                            let allocation = payload.as_ptr();
-                            let first = admission.attempt(
-                                &verification,
-                                &service,
-                                &target,
-                                AdmissionCommand::Protected(payload),
-                            );
-                            let (initial_refusal, original) =
-                                first.expect_err("no protected command fits this prefix");
-                            let AdmissionCommand::Protected(payload) = &original else {
-                                panic!("same typed command")
-                            };
-                            assert_eq!(payload.as_ptr(), allocation);
-                            match case {
-                                AdmissionCase::Revoked => {
-                                    admission.permission = Permission::Revoked;
-                                }
-                                AdmissionCase::Expired => admission.now = 10,
-                                _ => {}
+                        }
+                        let payload = vec![23, 29].into_boxed_slice();
+                        let allocation = payload.as_ptr();
+                        let first = admission.attempt(
+                            &verification,
+                            &service,
+                            &target,
+                            AdmissionCommand::Protected(payload),
+                        );
+                        let (initial_refusal, original) =
+                            first.expect_err("no protected command fits this prefix");
+                        let AdmissionCommand::Protected(payload) = &original else {
+                            panic!("same typed command")
+                        };
+                        assert_eq!(payload.as_ptr(), allocation);
+                        match case {
+                            AdmissionCase::Revoked => {
+                                admission.permission = Permission::Revoked;
                             }
-                            // A useful Actions receipt proves all prefix work has run before retry.
-                            let snapshot = service
-                                .send(&target, AdmissionCommand::Snapshot(service.recipient()))
-                                .await;
-                            assert!(snapshot.is_ok());
-                            let before = service
-                                .receive()
-                                .await
-                                .expect("the Actions processing receipt");
-                            assert_eq!(before.from, actor_address);
-                            assert_eq!(
-                                before.message,
-                                ProcessingReceipt {
-                                    prefix_count: 1_024,
-                                    protected_count: 0
-                                }
-                            );
-                            let retried =
-                                admission.attempt(&verification, &service, &target, original);
-                            let snapshot = service
-                                .send(&target, AdmissionCommand::Snapshot(service.recipient()))
-                                .await;
-                            assert!(snapshot.is_ok());
-                            let after = service
-                                .receive()
-                                .await
-                                .expect("the final Actions processing receipt");
-                            assert_eq!(after.from, actor_address);
-                            service.close_admission();
-                            let exhausted = service.receive().await;
-                            assert!(
-                                exhausted.is_none(),
-                                "the complete processing reply trace has no duplicate"
-                            );
-                            let stopped = application.lifecycle().request_shutdown();
-                            assert_eq!(stopped, Ok(()));
-                            (
-                                actor_address,
-                                service.address(),
-                                allocation,
-                                initial_refusal,
-                                retried,
-                                verification,
-                                after.message,
-                            )
-                        },
-                    ),
+                            AdmissionCase::Expired => admission.now = 10,
+                            _ => {}
+                        }
+                        // A useful Actions receipt proves all prefix work has run before retry.
+                        let snapshot = service
+                            .send(&target, AdmissionCommand::Snapshot(service.recipient()))
+                            .await;
+                        assert!(snapshot.is_ok());
+                        let before = service
+                            .receive()
+                            .await
+                            .expect("the Actions processing receipt");
+                        assert_eq!(before.from, actor_address);
+                        assert_eq!(
+                            before.message,
+                            ProcessingReceipt {
+                                prefix_count: 1_024,
+                                protected_count: 0
+                            }
+                        );
+                        let retried = admission.attempt(&verification, &service, &target, original);
+                        let snapshot = service
+                            .send(&target, AdmissionCommand::Snapshot(service.recipient()))
+                            .await;
+                        assert!(snapshot.is_ok());
+                        let after = service
+                            .receive()
+                            .await
+                            .expect("the final Actions processing receipt");
+                        assert_eq!(after.from, actor_address);
+                        service.close_admission();
+                        let exhausted = service.receive().await;
+                        assert!(
+                            exhausted.is_none(),
+                            "the complete processing reply trace has no duplicate"
+                        );
+                        let stopped = application.lifecycle().request_shutdown();
+                        assert_eq!(stopped, Ok(()));
+                        (
+                            actor_address,
+                            service.address(),
+                            allocation,
+                            initial_refusal,
+                            retried,
+                            verification,
+                            after.message,
+                        )
+                    },
+                ),
             )
             .unwrap_or_else(|failure| {
                 drop(failure);
@@ -392,24 +387,27 @@ where
             Ok((
                 origin,
                 ActorRetirement::Completed {
-                    behavior,
+                    custody:
+                        ActorCustody {
+                            behavior,
+                            control,
+                            user,
+                            descendants,
+                            child_failures,
+                            capability_failures,
+                            unread_owner_cancellation,
+                            additional_failures,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            retirement_failures,
+                            terminal_report,
+                        },
                     settlements,
-                    control,
-                    user,
-                    descendants,
-                    child_failures: (),
                     completion,
-                    capability_failures,
-                    unread_owner_cancellation,
                     interpretation,
                     source,
-                    additional_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    retirement_failures,
-                    terminal_report,
                 },
             )),
             Ok(ActorNotificationReceipts {
@@ -507,6 +505,7 @@ where
             unavailable_receipt = original_receipt;
         }
         assert_eq!(completion, Completion::Stopped);
+        assert_eq!(child_failures, []);
         assert!(control.is_empty() && user.is_empty() && descendants.is_empty());
         assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
         assert!(interpretation.is_none() && source.is_none() && additional_failures.is_empty());

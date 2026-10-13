@@ -1,5 +1,8 @@
 //! Static local-actor composition for one actor system.
 
+use crate::address::MailAddr;
+use crate::terminal::RetirementSchema;
+use behavior::{Behavior, BirthMode, Never};
 use core::hash::Hash;
 use std::sync::Arc;
 
@@ -40,6 +43,56 @@ where
     fn space(&self) -> &ActorSpace<P> {
         self.as_ref().space()
     }
+}
+
+/// Borrow the original physical registration namespace for an application root.
+/// This capability does not provide logical delivery to the protocol.
+pub trait RootRegistration<P: Protocol<Addr = MailAddr>> {
+    fn root_space(&self) -> &ActorSpace<P>;
+}
+
+impl<P: Protocol<Addr = MailAddr>> RootRegistration<P> for ActorSpace<P> {
+    fn root_space(&self) -> &ActorSpace<P> {
+        self
+    }
+}
+
+impl<P, N> RootRegistration<P> for Arc<N>
+where
+    P: Protocol<Addr = MailAddr>,
+    N: RootRegistration<P>,
+{
+    fn root_space(&self) -> &ActorSpace<P> {
+        self.as_ref().root_space()
+    }
+}
+
+/// Select complete custody for the exact original root and ordered cold members.
+#[diagnostic::on_unimplemented(
+    message = "the declared topology does not match root `{Root}` and cold members `{Members}`",
+    note = "match each owned .child role and actor with the selected topology declaration"
+)]
+pub trait ApplicationTopology<Root, Members>
+where
+    Root: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+{
+    type Descendants: RetirementSchema;
+}
+
+impl<Root, P> ApplicationTopology<Root, ()> for ActorSpace<P>
+where
+    Root: Behavior<Protocol = P, Birth: BirthMode<Child = Never>>,
+    P: Protocol<Addr = MailAddr>,
+{
+    type Descendants = Never;
+}
+
+impl<Root, Members, N> ApplicationTopology<Root, Members> for Arc<N>
+where
+    Root: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+    N: ApplicationTopology<Root, Members>,
+{
+    type Descendants = N::Descendants;
 }
 
 #[cfg(test)]

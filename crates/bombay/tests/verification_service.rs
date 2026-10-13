@@ -4,7 +4,7 @@ use bombay::behavior::{
     BehaviorSettlements, EstablishedDelivery, MessageProtocol, NoSends, Step, User,
 };
 use bombay::prelude::*;
-use bombay::{ActorNotificationReceipts, ApplicationOutcome, SendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, SendError};
 use core::ops::AsyncFn;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -641,31 +641,34 @@ fn authorize_startup(
 
 fn joined_native<B>(
     origin: RootOrigin<B>,
-    retirement: ActorRetirement<B, Never, ()>,
+    retirement: ActorRetirement<B, Never, Vec<Never>>,
     address: MailAddr,
 ) -> (B, Vec<B::Settlements>)
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+            },
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
         completion,
-        capability_failures,
-        unread_owner_cancellation,
         interpretation,
         source,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
     } = retirement
     else {
         panic!("the original complete native state remains acquired")
@@ -675,6 +678,7 @@ where
     assert!(control.is_empty());
     assert!(user.is_empty());
     assert_eq!(descendants.len(), 0);
+    assert_eq!(child_failures, []);
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     assert!(interpretation.is_none());
@@ -732,7 +736,7 @@ async fn run_counter(
     let configured = &records;
     let scope = &expected;
     let received = application
-        .run_with::<Never, _, _, _, _, _>(|application| async move {
+        .run_with(|application| async move {
             let interface = application.interface(());
             let mut verifier = interface.external::<VerificationRequests>().unwrap();
             let mut processor = interface.external::<ProcessingReplies>().unwrap();
@@ -877,7 +881,7 @@ async fn run_arithmetic(
     let configured = &records;
     let scope = &expected;
     let received = application
-        .run_with::<Never, _, _, _, _, _>(|application| async move {
+        .run_with(|application| async move {
             let interface = application.interface(());
             let mut verifier = interface.external::<VerificationRequests>().unwrap();
             let mut processor = interface.external::<ProcessingReplies>().unwrap();

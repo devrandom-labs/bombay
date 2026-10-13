@@ -3,7 +3,7 @@ use bombay::behavior::{
     SettlementStatus, Step,
 };
 use bombay::prelude::*;
-use bombay::{ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
 use core::{
     future::Future,
     pin::pin,
@@ -14,9 +14,6 @@ use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::sync::{Arc, Mutex};
 use std::task::{Wake, Waker};
 use tokio::runtime::Builder;
-
-mod application_support;
-use application_support::RootTerminal;
 
 struct AdmissionWakeCause {
     retained: Arc<()>,
@@ -85,9 +82,7 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
     let message_allocation = original_message.as_ptr();
     let receiving = host
         .block_on(
-            Application::new(Counter::default().stop_on_shutdown()).run_with::<RootTerminal<
-                StopOnShutdown<Counter>,
-            >, _, _, _, _, _>(
+            Application::new(Counter::default().stop_on_shutdown()).run_with(
                 |application| async move {
                     let interface = application.interface(());
                     let source = interface
@@ -189,24 +184,27 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
     );
     assert_eq!(cause_custody.strong_count(), 1);
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+            },
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
         completion,
-        capability_failures,
-        unread_owner_cancellation,
         interpretation,
         source,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
     } = native
     else {
         panic!("the independent actor's full original native result remains acquired")
@@ -215,7 +213,8 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
     assert_eq!(behavior.base().reads, [source_address]);
     assert_eq!(completion, Completion::Stopped);
     assert!(control.is_empty() && user.is_empty());
-    assert!(descendants.is_empty());
+    assert_eq!(descendants, []);
+    assert_eq!(child_failures, []);
     assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
     assert!(interpretation.is_none() && source.is_none() && additional_failures.is_empty());
     assert!(received_interpretation.is_none() && received_source.is_none());

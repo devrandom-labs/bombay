@@ -10,7 +10,7 @@ use bombay::behavior::{
     NoSends, SettlementStatus, Step,
 };
 use bombay::prelude::*;
-use bombay::{ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::VecDeque,
@@ -471,36 +471,40 @@ fn valid_reply(claim: &ProtectedReply, request: u64) -> std::result::Result<(), 
 }
 fn completed_actor<B>(
     origin: RootOrigin<B>,
-    retirement: ActorRetirement<B, Never, ()>,
+    retirement: ActorRetirement<B, Never, Vec<Never>>,
     address: MailAddr,
 ) -> (B, Vec<B::Settlements>)
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+            },
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
         completion,
-        capability_failures,
-        unread_owner_cancellation,
         interpretation,
         source,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
     } = retirement
     else {
         panic!("the complete original native actor product remains acquired")
     };
     assert_eq!(origin.address(), address);
+    assert!(child_failures.is_empty());
     assert_eq!(completion, Completion::Stopped);
     assert!(control.is_empty() && user.is_empty() && descendants.is_empty());
     assert!(capability_failures.is_empty() && unread_owner_cancellation.is_none());
@@ -589,7 +593,7 @@ async fn recipient(
         }
         .stop_on_shutdown(),
     )
-    .run_with::<Never, _, _, _, _, _>(|application| async move {
+    .run_with(|application| async move {
         let interface = application.interface(());
         let mut service = interface.external::<CounterReplies>().unwrap();
         let root_address = application.root().address();
@@ -1002,7 +1006,7 @@ async fn caller(
     let configured_replies = &reply_records;
     let connection = &session;
     let receiving = Application::new(Client::default().stop_on_shutdown())
-        .run_with::<Never, _, _, _, _, _>(|application| async move {
+        .run_with(|application| async move {
             let interface = application.interface(());
             let mut service = interface.external::<RemoteRequests>().unwrap();
             let mut acknowledgements = interface.external::<Acknowledgements>().unwrap();

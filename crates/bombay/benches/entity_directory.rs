@@ -18,10 +18,11 @@ const CONTENDED_ITERATIONS: u64 = 100_000;
 type Directory = LocalDirectory<u64, u64, u64, u64>;
 
 fn config(waiters: usize) -> DirectoryConfig {
-    DirectoryConfig {
-        shards: NonZeroUsize::new(64).unwrap(),
-        activation_waiters: NonZeroUsize::new(waiters).unwrap(),
-    }
+    DirectoryConfig::new(
+        NonZeroUsize::new(64).unwrap(),
+        NonZeroUsize::new(waiters).unwrap(),
+    )
+    .expect("valid directory limits")
 }
 
 struct Discard {
@@ -72,7 +73,7 @@ impl EffectInterpreter<u64, u64, u64, u64> for Resolve {
 }
 
 fn activating_hot_key() -> Duration {
-    let directory = Directory::new(config(64)).unwrap();
+    let directory = Directory::new(config(64));
     let discard = Discard::new();
     let started = Instant::now();
     for command in 0..ITERATIONS {
@@ -86,7 +87,7 @@ fn activating_hot_key() -> Duration {
 }
 
 fn active_hot_key() -> Duration {
-    let directory = Arc::new(Directory::new(config(64)).unwrap());
+    let directory = Arc::new(Directory::new(config(64)));
     let discard = Discard::new();
     let entity_id = EntityId::new(1);
     directory.interpret(directory.dispatch(entity_id, 0).unwrap().decision, &discard);
@@ -108,7 +109,7 @@ fn active_hot_key() -> Duration {
 }
 
 fn independent_keys() -> Duration {
-    let directory = Directory::new(config(1)).unwrap();
+    let directory = Directory::new(config(1));
     let discard = Discard::new();
     let started = Instant::now();
     for command in 0..INDEPENDENT_ITERATIONS {
@@ -124,7 +125,7 @@ fn independent_keys() -> Duration {
 /// Stale lifecycle callbacks addressed to an entity with no directory entry,
 /// the steady state after passivation churn.
 fn stale_absent_callbacks() -> Duration {
-    let directory = Directory::new(config(64)).unwrap();
+    let directory = Directory::new(config(64));
     let discard = Discard::new();
     let entity_id = EntityId::new(1);
     let started = Instant::now();
@@ -137,7 +138,7 @@ fn stale_absent_callbacks() -> Duration {
 }
 
 fn contended_active_key() -> Duration {
-    let directory = Arc::new(Directory::new(config(THREADS)).unwrap());
+    let directory = Arc::new(Directory::new(config(THREADS)));
     let discard = Discard::new();
     let entity_id = EntityId::new(1);
     directory.interpret(directory.dispatch(entity_id, 0).unwrap().decision, &discard);

@@ -13,9 +13,9 @@ error[E0599]: no method named `next` found for struct `Prepared` in the current 
             candidate #2: `Iterator`
 
 error[E0277]: the trait bound `Active: Environment<Definition>` is not satisfied
-   --> tests/compile/fail/environment_phase_authority.rs:155:49
+   --> tests/compile/fail/environment_phase_authority.rs:157:49
     |
-155 |     let _ = Environment::<Definition>::activate(&mut active, &mut actions, &mut received);
+157 |     let _ = Environment::<Definition>::activate(&mut active, &mut actions, &mut received);
     |             ----------------------------------- ^^^^^^^^^^^ unsatisfied trait bound
     |             |
     |             required by a bound introduced by this call
@@ -32,9 +32,9 @@ help: the trait `Environment<Definition>` is implemented for `Prepared`
     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0277]: the trait bound `Active: Environment<Definition>` is not satisfied
-   --> tests/compile/fail/environment_phase_authority.rs:155:76
+   --> tests/compile/fail/environment_phase_authority.rs:157:76
     |
-155 |     let _ = Environment::<Definition>::activate(&mut active, &mut actions, &mut received);
+157 |     let _ = Environment::<Definition>::activate(&mut active, &mut actions, &mut received);
     |                                                                            ^^^^^^^^^^^^^ unsatisfied trait bound
     |
 help: the trait `Environment<Definition>` is not implemented for `Active`

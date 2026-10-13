@@ -16,18 +16,6 @@ use crate::order_book::{OrderBook, OrderMessage};
 
 type OrderBookEvent = <StopOnShutdown<OrderBook> as Behavior>::Event;
 
-struct HttpReplies;
-
-impl Protocol for HttpReplies {
-    type Addr = MailAddr;
-    type Msg = Never;
-}
-
-#[derive(Clone)]
-pub(crate) struct OrderApi {
-    pub(crate) orders: EstablishedRecipient<OrderBook>,
-}
-
 trait OrderCommands: Clone + Send + Sync + 'static {
     fn place(&self, order: PlaceOrder) -> impl Future<Output = Result<(), PlaceOrder>> + Send;
 
@@ -36,18 +24,18 @@ trait OrderCommands: Clone + Send + Sync + 'static {
 
 #[derive(Clone)]
 struct LiveOrderCommands {
-    interface: ActorInterface<OrderApi>,
+    interface: ActorInterface<EstablishedRecipient<OrderBook>>,
     lifecycle: ApplicationLifecycle<OrderBook, OrderBookEvent>,
 }
 
 impl OrderCommands for LiveOrderCommands {
     async fn place(&self, order: PlaceOrder) -> Result<(), PlaceOrder> {
-        let caller = self
-            .interface
-            .external::<HttpReplies>()
-            .map_err(|_| order.clone())?;
+        let caller = match self.interface.sender_to(self.interface.api().clone()) {
+            Ok(caller) => caller,
+            Err((_target, _allocation)) => return Err(order),
+        };
         caller
-            .send(&self.interface.api().orders, OrderMessage::Place(order))
+            .send(OrderMessage::Place(order))
             .await
             .map_err(|rejected| {
                 let OrderMessage::Place(order) = rejected.into_message();
@@ -70,7 +58,7 @@ struct ApiState<C> {
 }
 
 pub(crate) fn router(
-    interface: ActorInterface<OrderApi>,
+    interface: ActorInterface<EstablishedRecipient<OrderBook>>,
     lifecycle: ApplicationLifecycle<OrderBook, OrderBookEvent>,
 ) -> Router {
     router_with(LiveOrderCommands {
@@ -116,8 +104,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::OrderBookTerminal;
-    use bombay::{ApplicationOutcome, ProjectTerminal};
+    use bombay::ApplicationOutcome;
     use std::io::{Read, Write};
     use std::net::{SocketAddr, TcpListener, TcpStream};
     use std::sync::{Arc, Mutex, mpsc};
@@ -246,6 +233,61 @@ mod tests {
     }
 
     #[test]
+    fn closed_actor_admission_returns_the_original_order_allocation() {
+        let rejected = tokio_test(
+            Application::new(OrderBook::default().stop_on_shutdown()).run_with(
+                |application| async move {
+                    let commands = LiveOrderCommands {
+                        interface: application
+                            .interface(application.root().established_recipient()),
+                        lifecycle: application.lifecycle(),
+                    };
+                    let stopped = application.request_shutdown();
+                    assert_eq!(stopped, Ok(()));
+                    let termination = application.termination().await;
+                    assert_eq!(termination, Ok(Exit::Normal));
+                    let order = PlaceOrder {
+                        order_id: 127,
+                        customer_id: 19,
+                        sku: "ORIGINAL-CLOSED-ORDER".into(),
+                        quantity: 3,
+                    };
+                    let allocation = order.sku.as_ptr();
+                    let rejected = commands.place(order).await;
+                    let Err(original) = rejected else {
+                        panic!("a closed actor must return the complete original order");
+                    };
+                    assert_eq!(original.sku.as_ptr(), allocation);
+                    assert_eq!(original.order_id, 127);
+                    assert_eq!(original.customer_id, 19);
+                    assert_eq!(original.sku, "ORIGINAL-CLOSED-ORDER");
+                    assert_eq!(original.quantity, 3);
+                    original
+                },
+            ),
+        )
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("the caller's actual runtime is entered");
+        });
+        let (rejected, native, notifications) = rejected;
+        let (original, cleanup) = rejected.try_into_completed().unwrap_or_else(|original| {
+            drop(original);
+            panic!("the completed rejection preserves independent actor cleanup");
+        });
+        cleanup.expect("the application's cleanup producer completes");
+        let Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }) = notifications
+        else {
+            panic!("both closed-root notification results remain independently acquired");
+        };
+        assert_application_stopped(native.expect("the actual closed root joins"));
+        assert_eq!(original.order_id, 127);
+    }
+
+    #[test]
     #[allow(
         clippy::result_large_err,
         reason = "the exact Axum error retains application terminal custody without boxing"
@@ -262,16 +304,17 @@ mod tests {
                 .build()
                 .expect("the server thread owns its enabled caller host");
             let result = application_host.block_on(
-                Application::new(OrderBook::default().stop_on_shutdown())
-                    .run_axum::<OrderBookTerminal, _, _, _, _>(address, move |application| {
+                Application::new(OrderBook::default().stop_on_shutdown()).run_axum(
+                    address,
+                    move |application| {
                         ready
                             .send(())
                             .expect("the test server receiver remains live");
-                        let interface = application.interface(OrderApi {
-                            orders: application.root().established_recipient(),
-                        });
+                        let interface =
+                            application.interface(application.root().established_recipient());
                         router(interface, application.lifecycle())
-                    }),
+                    },
+                ),
             );
             drop(application_host);
             result
@@ -327,7 +370,7 @@ mod tests {
         else {
             panic!("the original serving result and joined root must both remain acquired");
         };
-        let terminal = OrderBookTerminal::project(origin, retirement);
+        let terminal = (origin, retirement);
         assert_application_stopped(terminal);
     }
 

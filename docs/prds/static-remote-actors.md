@@ -1,5 +1,519 @@
 # Static remote actors and typed admission
 
+### Renamed downstream receiving migration — pre-edit record, 2026-10-13
+
+The next combined compilation exposes the same already-proven receiving
+migration in imported DevX tests. Repository search identifies Application
+scope, clients, outcomes, shutdown, inferred/native child and timer custody,
+cold members, topology consumers and their compile fixtures. Complete this
+mechanical test-consumer migration in parallel with disjoint file ownership.
+Preserve each original assertion and distinguish ordinary three receipts from
+Entity four receipts; do not alter standalone ApplicationOutcome algebra tests.
+Select a revised cumulative test-introduction allowance of3000 (formerly1800)
+under the standing recommendation delegation before these edits. Keep the260
+path limit and production/public API/dependency allowances unchanged. Each
+worker may introduce at most400 test lines in its assigned existing consumers;
+report original assertion conservation and measured deltas. No compatibility
+wrapper, new API, default or production edit is authorized by compiler fallout.
+
+Focused scope compilation also exposes an imported Entity callback that lacks
+the already-approved runtime-issued retirement report. Preserve that report
+beside the native result in the test's existing retirement vector and assert
+both read-only assessments after acquisition. Port the corresponding remaining
+compile-denial callback signature, explicitly discharging its unexecuted report.
+Two existing test paths, at most40 test introductions, no production, public
+API or dependency change. This applies the existing Entity owner contract,
+not a new classifier or notification publisher.
+
+The renamed downstream migration retains test+23/-7/net16 and passes its
+three named tests in debug and optimized builds. Independent source review
+85492048 preserves all21 former assertions. The three parallel consumer
+batches retain tests+269/-63/net206, +144/-36/net108 and +146/-37/net109;
+their chronological introductions are272,147 and167 respectively. Production,
+new public API and dependencies are zero in these batches. Source reviews
+separately preserve original assertions and actual independent receiving facts.
+Root's four compile-denial ports retain+16/-4 test lines before diagnostics;
+their original denial mutations remain. Diagnostic snapshots require actual
+compiler output before replacement.
+
+The first scope compile fails the old Entity callback signature; the next
+fails one missing owning notification import. Neither receives execution
+credit. After those bounded test corrections, the six selected all-features
+scope/cold/native targets pass21/0/0 in debug, including the actual cold
+compile-pass and four compile-denial fixtures. Log
+`bombay-remote-devx-scope-consumers-debug-final.log` retains this result.
+Optimized counterparts and remaining combined gates remain required.
+
+The next consumer run passes clients10, outcomes15 and shutdown7 before the
+topology target reports four diagnostic mismatches. Actual errors retain the
+missing Trace/Readiness ingress, erased cold origin and missing Entity effect
+host denials. Two snapshots differ only in rustc excerpt truncation; two in
+line positions after the recorded test ports. Replace only these four existing
+stderr files from their retained actual output, then rerun without overwrite.
+No source/API/law change is selected by refreshing diagnostic positions.
+
+The refreshed seven-target consumer command passes50/0/0 in debug, including
+all topology denial fixtures. The resumed workspace build next rejects four
+ours-only remote prerequisite consumers that retain old explicit execution
+arguments, flat native fields and unit/positional child failures. Port only
+`admission_wake_custody`, `authorized_assignment`, `verification_service` and
+`parent_report_custody` to the already-proven inferred execution and ActorCustody.
+For the real parent→reporting-child witness, reuse one existing static topology
+declaration and its native child product, deleting the old presentation enum;
+preserve the original refused report and complete child EffectsFailed result.
+All notification, payload, scope, cancellation and causal assertions stay.
+Four existing test paths, at most250 introduced test lines per assigned worker,
+no production/public API/dependency change, within the revised cumulative test
+allowance. No new topology or report law is selected by this migration.
+
+Those four prerequisite targets now pass8/0/0 in all-features debug. One
+initial compilation assumed the singleton generated custody was an enum;
+the owning frozen generator defines a struct for one occurrence. Correcting
+that existing pattern requires no new type, bound or API; the failed compile
+has no runtime credit. The next workspace compile finds one remaining
+receiving consumer inside the inherited Axum example's test module. Port its
+actual cleanup/native/notification results with at most15 test introductions,
+one existing source path and no production/API change. This preserves existing
+evidence while the separately owned later example-quality work remains open;
+it does not certify the inherited assertion-heavy examples as distilled.
+
+The Axum example's five existing tests pass after the last consumer port.
+The complete combined all-features workspace command now exits0:86 Cargo
+test summaries total748 passed,0 failed,5 ignored (including documentation
+and inherited skips). Log39cacd33 binds the actual terminal command; do not
+credit ignored cases as execution. Workspace formatting and independent
+native-fixture formatting checks also exit0. Optimized migrated consumers,
+strict lint, default nextest, authoritative Nix gates, final change/API audit,
+review, PR delivery and required CI remain open. All full remote rows remain
+open; this is verified source integration, not an actual merge.
+
+Optimized migrated consumers pass79/0/0 across17 actual targets (logb25eda57).
+Strict all-target/all-feature Clippy first rejects two missing code spans in
+the compiled guide; those documentation-only corrections are applied. The
+next run rejects seven inherited empty-vector assertion spellings. Preserve
+the same empty-lane laws with borrowed slice equality in two existing cfg-test
+sources (seven replacement lines, no production/API/dependency change).
+Selected Behavior's EstablishedDelivery equality/debug implementations require
+only its concrete address/message traits, already supplied by these fixtures;
+add no bound or derive. This improves failure diagnostics without introducing
+another test law. Rerun the affected Counter test before strict checking.
+
+The affected local Counter target passes5/0/0 after the seven assertion
+spelling changes. The current whole-tree census, including untracked files,
+finds249 changed paths (limit260), with no untracked files. Against main671:
+production+5741/-3563/net2178 and tests+19168/-4875/net14293 before the latest
+seven test-only replacements. These totals include frozen DevX imports and
+earlier remote prerequisites; they are not new reconciliation authoring.
+The separately recorded source/API reviews and chronological stage counts
+remain necessary. No feature, distillation or merge state changes from this
+census.
+
+Strict checking also finds the same empty-vector spelling in the existing
+authorized Counter's native leaf inspector. Its concrete Vec<Never> is already
+the verified owning product. Replace that one assertion with slice equality:
+one existing production line added/removed, net0, no model/API/bound change.
+This stays inside the approved40-introduction native-inspector allowance.
+
+The following strict run finds six equivalent empty-lane spellings in the
+existing authorized and held-retirement fixtures, and an unnecessary borrow of
+the already Copy root origin. Preserve the six actual lane observations with
+borrowed slice equality; pass the origin value by its existing Copy contract
+while continuing to borrow the complete native retirement. Two existing source
+paths, six test replacements and two signature/call replacements, no new public
+type, bound, dependency or policy. The single private inspector signature is a
+production spelling change with +2/-2/net0 inside its existing allowance. Run
+protected controls and strict checking again; earlier passes bind earlier bytes.
+
+The first strict compile after these spellings correctly rejects two slice
+values mistaken for Vec values: joined_counter_descendants already returns
+borrowed slices. Compare those slices directly with [] instead of calling
+Vec::as_slice. Two additional replacement lines, no API/type/semantic change;
+this failed compilation receives no test credit.
+
+Continue the bounded strict-test spelling pass for at most40 further test
+replacement lines and fifteen existing paths: equivalent Result::expect_err,
+borrowed empty-slice assertions and ordinary Copy arguments only. Preserve
+original outcomes and all assertions; add no types, bounds, lint exemptions,
+policies or fixture machinery. Any finding beyond those equivalent expressions
+returns to its owning law before an edit. The first such finding is the existing
+Application outcome test's err().expect() spelling; use expect_err directly.
+
+Two existing topology causal tests now span103 lines because they also acquire
+the independently preserved notification receipts. Keep each original causal
+trace and its diagnostics together; under recommendation delegation select a
+local expected too_many_lines lint for those two named functions only. Splitting
+out forwarding test helpers would add machinery solely to satisfy a line count.
+Eight test attribute lines, no runtime/source model or public API change. This
+is an explicit narrow exception to the preceding spelling-only batch, not a
+blanket lint allowance. All other strict warnings remain denied.
+
+Final strict all-target/all-feature Clippy exits0 (log
+bombay-remote-devx-clippy-all-features-final.log); final workspace formatting
+also exits0. Equivalent lint changes add no model or public API. Current live
+source census249 paths/untracked0 against main671: production+5742/-3564/net2178,
+tests+19189/-4889/net14300. This includes imported source, not chronological
+reconciliation. The scoped independent Application receipt review4216b9c2 finds
+no new production ownership blocker, preserves the actual triple/quartet and
+rehashes all14 startup-control logs and13 copied executables. Its nine-file
+surface census is qualified rather than claimed as a complete method census.
+
+Local Nix no-build evaluation twice fails a missing cached nightly derivation;
+the actual full flake command repairs that derivation, then parallel artifact
+extraction exhausts disk. Root cancels only its own Nix PID92460; log retains the
+actual interruption and no-space errors. Concurrent default nextest cannot
+create its fingerprint and executes no tests. Neither receives passing credit.
+Nix temporary cleanup restores roughly3GiB; retry default nextest separately.
+Use required CI for the full Nix gate rather than multiplying local builds on
+this nearly full volume. No source, evidence or worktree is deleted by this
+interruption; all remote acceptance and merge gates stay open.
+
+The separate nextest retry now exits0:740 tests passed, one existing skip
+(log3471aa32). All-feature strict Clippy4f95905e and formatting82c77dd5 also
+exit0. The one skipped test is not runtime evidence. Additional obsolete
+standalone compiler metadata removald1214eaf deletes146 idle .rmeta files,
+133,020,148 bytes, preserving every other regular file's inode/size/mtime;
+no worktree, source, binary or evidence is removed. Local full Nix remains
+unpassed after its actual disk failure; required submitted-head CI must pass.
+
+Reachable public surface against main671: six nominal additions
+ApplicationScope, ApplicationClient, ApplicationSender, ActorCustody,
+PendingChild and entity::DirectoryConfigError; App removed. Five additional
+traits ApplicationTopology, RootRegistration, RetirementSchema, NativeChild
+and EstablishNativeChild are frozen DevX imports. Count+11 type/trait
+declarations/-1, and one topology macro separately. The five remote report/
+notification products already existed on main and are conserved, not claimed
+as new additions. Generated caller declarations are not fixed new library
+types. The new receiving tuples, Entity callback and child-failure fields are
+explicit source compatibility changes. Final nominal route inventory is a
+separate source review, not proof of unchanged methods or full DX acceptance.
+
+Final default strict workspace/all-target Clippy and independent native-fixture
+strict Clippy also exit0. The primary workspace AGENTS and integration AGENTS
+are byte-identical; the active DevX worktree remains untouched. Remote main
+still resolves671ba860. Prepare the reviewed integration source on the feature
+branch, retaining the real merge parents9a7217b/c3b74ab and all reconciliation
+edits; submit a draft PR targeting main for complete CI. Commit/open PR is not
+a merge or completion state. Provider PR358 remains separately open with its
+unattributed48-byte Linux failure; integration includes identical provider
+source, so its new required CI must independently pass without relaxing that
+allocation assertion. Five report products and every full R01–R25 stay open.
+
+The combined workspace check exposes two stale test consumers of the former
+Application receiving shape. Port only those tests to the already-approved
+independent work outcome, native root receipt and two notification receipts.
+Preserve their original renamed-macro hygiene, child provenance, owned native
+state and real sender/reply assertions. Expected one existing test path,
+at most30 test introductions, production and public API delta zero; no new
+dependency, bound, policy or abstraction. Run the three renamed tests in debug
+and optimized builds before resuming the combined workspace checks.
+
+The protected Counter now passes59/0/1 in both profiles. Actual TLS campaigns
+then execute32 cases/80 roles per profile (64/160 combined); child Stop and
+query-count controls each pass2/0/0 per profile. Independent artifact review
+28236d08 verifies role logs, copied binaries and the19 declared input guards.
+These are scoped fixture proofs, not whole-tree custody, CI or full remote
+acceptance. The initial non-executable copied binary is retained as setup-only
+failure and receives no actor execution credit.
+
+### Separate local and remote examples — user direction, 2026-10-13
+
+Frozen topology provenance is in committed paired Behavior research:
+`docs/engineering/developer-experience-prd.md` at2c0204c6 records the selected
+application declaration; b4b9d65a records ordinary functions/builders/associated
+selection, handwritten finite custody and the recursive-alias E0391 gap.
+Frozen Bombay c3b74ab contains the actual schema generator and renamed/recursive
+custody fixtures; its macro blobs match this integration. The paired research
+document is absent from selected release2bb4510 and is historical design
+evidence, never replacement dependency authority. Its externally referenced
+comparison logs and a complete current macro/manual topology differential are
+not independently verified here. Do not credit actor-facade differential tests
+as topology proof. No later Behavior source or active DevX worktree is imported
+by this read-only audit.
+
+Keep the ordinary local counter in `examples/counter`. Deliver the remote
+counter as its own application in `examples/remote-counter`, using the
+crate-owned `remote` feature. Do not combine both applications in one example
+or put the remote application under the local counter's `src/bin` directory.
+Networking, verification and admission belong in their owning library layers;
+the example teaches composition. Assertions, fault injection and transport
+campaigns belong in test targets or isolated research. Preserve their existing
+evidence during relocation. Perform that relocation with remote crate delivery
+after the current committed DevX integration slice; do not import later DevX
+changes until the user requests them.
+
+### DevX reconciliation — pre-edit integration record, 2026-10-13
+
+User direction selects the committed DevX APIs before crate-owned `remote`
+implementation. Integration branch starts from main671 and fast-forwards the
+verified provider contribution9a7217b; that open PR's merge is not presumed.
+Import exact committed DevX tipc3b74ab, preserving its active dirty worktree.
+The common ancestor is c3afb301; read-only merge preview identifies41 conflicts
+and227 changed paths, including26 runtime/macro paths. Its conflict-marked raw
+Rust delta8684/-1947 includes tests and markers: it is not a production census.
+Keep imported authoring distinct from new reconciliation and cumulative history.
+
+Reuse DevX's ApplicationOutcome, ApplicationScope, clients, typed topology and
+native ActorCustody. Carry the already-approved remote prerequisites into those
+owners: exact capacity-nonwaiting ExternalActor admission, public exact-child
+shutdown, root/child joined-retirement reports and both notification receipts.
+An awaited send cannot replace fresh-check/nonwaiting admission; termination
+cannot replace joined retirement; Work completion cannot gate the service's
+root report. Existing Communication0.1.5 and private Observe remain the owners.
+Selected Behavior/Actors0.25.0 at2bb4510 and Timers0.2.0 at9369d1f are registry
+contracts without patches; their source/test verification precedes new laws.
+
+Under standing recommendation delegation, select a bounded reconciliation
+stage of at most260 changed paths, importing existing committed DevX source
+without treating it as newly invented remote design. Separately allow750 new
+production introductions,1800 test introductions and120 orchestration lines for
+porting the approved laws and their existing regressions. Restore the five
+previously approved report/notification public types where their native owners
+need them; add no new public type, dependency or semantic default beyond the
+explicit imported dependency selection. Record imported and newly authored
+classified deltas and public API before retaining the merged source.
+
+Preserve ours-only remote tests, fixtures, CI and PRD obligations. They are
+absent from the DevX snapshot because the branches diverged, not evidence of
+DevX-authored deletion. Resolve shared owners semantically, then migrate their
+consumers. Run focused debug/optimized original-defect controls before broader
+checks. All combined source and feature gates must pass after reconciliation.
+No new remote-library abstraction or R01–R25 acceptance is selected here.
+Notify the user when the DevX integration into this feature branch is verified.
+Deliver through a reviewed PR targeting main; never push main directly.
+
+Before the four raw-startup defect controls, expand the reconciliation stage's
+orchestration allowance from120 to200 lines under the user's standing selection
+of recommended answers. The bounded addition is at most105 external Python
+controller/configuration lines and14 distinct temporary Rust cut lines. The
+controller preserves the healthy source byte-for-byte, runs each exact owning
+regression with each cut in debug and optimized builds, and restores and reruns
+the healthy regression in both profiles. Preserve source hashes, actual command
+results and intended assertion failures. Compilation errors and hangs receive
+no semantic credit. This is verification machinery; no retained production,
+public API, dependency, resource policy or remote scope is added.
+
+The controller's105-line allowance includes the bounded command-boundary
+handoff to avoid redundant optimized healthy rebuilds. Four defects remain
+isolated; restore the original source between them and finish with fresh
+healthy tests in both profiles. Separately reuse the existing90-line source
+classifier and add28 census lines for retained endpoint deltas against main,
+the provider source and the frozen DevX tip. This census distinguishes test
+items and imported source; it does not establish chronological authoring or
+semantic API minimization by itself.
+
+Integration inspection finds the inherited Driver evidence manifests and native
+transport lock still identify the former0.23/Timers Git contracts. Reconcile
+these consumers with the already-selected0.25/macros0.14.1/Timers0.2 registry
+graph before combined checks; historical receipts keep their original versions.
+Update only evidence identity and owning assertions, not law definitions or
+required killers. Remove the obsolete native Timers patch and update its lock
+narrowly. Expected six manifest/test/document paths, no production/API change,
+at most12 changed Rust test lines. Native public-Application fixture migration,
+if needed, remains a separate measured reconciliation before edits.
+
+The native Counter fixture still spells six `run_with` type arguments and the
+former flat `ActorRetirement` fields. Reuse the imported inferred `run_with`,
+native `ActorCustody` and actual `Vec<Never>` child-failure product. Preserve
+every original completion, residual, error and allocation assertion. Expected
+one additional fixture source path, at most30 fixture introductions, no new
+production capability, API, dependency or semantic choice. Its actual native
+transport and protected subprocess campaigns must rerun on the reconciled
+graph before integration delivery.
+
+For the inherited authorized Counter consumer, first port only no-birth
+`execute_with` calls to the already-proven inferred Application API and its
+two native leaf-inspection functions to `ActorCustody`/`Vec<Never>`. Keep
+all original fields, failures and assertions. Expected one existing source
+path, at most20 production and40 test introductions, no public type or new
+runtime law. Child-topology/presentation and held-subtree migration require
+their own concrete port record; complete consumer gates remain pending.
+
+Measured leaf port is production+21/-18/net3 and tests+19/-16/net3 against the
+provider parent. Production introductions exceed the20-line forecast by one;
+raise this narrow allowance to40 before any further source work. The first
+external script expected13 no-birth calls, found12, and stopped before writing;
+the corrected12-call migration is retained. No failed setup receives test credit.
+
+The intermediate source census has244 changed paths and no untracked files.
+Against actual main671: production+5516/-3344/net2172; tests+17859/-4036/net13823.
+These include the frozen imported DevX implementation, earlier provider work,
+and reconciliation. They are not a new-remote-capability or chronological count.
+The existing classifier treats complete cfg(test) items and test/bench/fuzz/native
+fixture sources as tests; it explicitly reads the sealed healthy children source
+while isolated cuts are running. Final live-source census and review remain
+required. A two-parent line comparison finds612 retained production and921 test
+lines absent from both parent line multisets; this is useful attribution evidence,
+not proof of cumulative authoring limits. Preserve both full endpoint and separate
+attribution records rather than treating imported source as free new authoring.
+
+Before remaining counter-consumer edits, reuse the frozen topology construction
+already proven in the fixed-supervisor recovery consumer. The parent owns two
+actual Counter births of one child class; a single explicit parent→Counter
+declaration replaces its obsolete presentation enum. The held fixture owns
+supervisor→proxy→worker; one declaration replaces its old spaces and presentation.
+Read each generated native origin and boxed retirement without reconstructing
+either; use the actual flat child-failure vector and `RetirementSchema`/`Never`
+leaf products. Preserve every original target, sibling, proof, allocation,
+held-resource, cancellation and native-notification assertion. Expected three
+existing consumer paths: root-owned authorized parent (at most350 introduced
+test lines plus40 production introductions for its existing native inspectors),
+remote and held consumers (together at most350 chronological test introductions).
+Their externally formatted candidates have retained+193/-208/net-15 test lines;
+the earlier unformatted preparation is separately accounted. Both are test-only
+consumers, with no new production/public API/dependency. Preserve150 original
+remote assertions and51 held assertions; the latter adds two explicit checks of
+its real flat Never-failure vectors. Remove the
+two old presentation enums and one spaces declaration. No new crate public API,
+dependency, runtime adapter, default or policy. This imports an existing accepted
+topology spelling; it does not select a new remote macro. Final source census,
+original-cause controls and native campaigns remain required.
+
+Raw-startup controls are qualified: all four distinct defects fail their
+intended assertions in debug and optimized builds. Fresh restored seven-test
+modules pass7/0/0 in both. Final receipt e4962b98 binds14 command records:
+eight intended negatives, five positive commands, and one deliberately stopped
+redundant build with no semantic credit. Source restores byte-exactly to caa310;
+the final independent collector rehashes14 logs/source snapshots and13 actual
+copied executables. The complete owning library then passes321/0/0 in debug
+(`bombay-remote-devx-owning-debug-restored.log`); its complete optimized
+counterpart also passes321/0/0 (`bombay-remote-devx-owning-release-restored.log`).
+This closes the focused raw-startup proof, not the
+remote acceptance matrix or integration delivery.
+
+The five selected template consumer targets pass15/0/0 in default debug
+configuration: external customers3, FIFO recovery5/runtime2, fixed recovery4/
+runtime1. The optimized counterparts also pass15/0/0. Log0dbaa629 and
+owning-library logs9783e5ef/09ac07b5 bind the actual commands. Do not substitute the
+earlier source-review count19 for these15 executed tests or infer other
+feature configurations from this command.
+
+Current Driver evidence validation passes9/0/0 after the fresh owner rebind.
+The protected Counter consumer builds on the reconciled graph, then passes
+59/0/1 in debug. The one ignored case is the actual subprocess transport
+entrypoint; it is not transport credit. Two obsolete imports are removed
+after deleting their former presentation/host declarations. Original scopes,
+replay/cancellation/allocation witnesses and actual native receipt assertions
+remain; optimized protected tests and native campaigns are still required.
+The latest parent source has independent conservation review at5bc2a504 before
+those import removals. These are bounded consumer results, not full remote
+acceptance, final distillation or merge evidence.
+
+The scoped interface review checks the official Rust API Guidelines for
+[naming](https://rust-lang.github.io/api-guidelines/naming.html),
+[interoperability](https://rust-lang.github.io/api-guidelines/interoperability.html)
+and [future proofing](https://rust-lang.github.io/api-guidelines/future-proofing.html).
+Keep the runtime-issued report's construction private, preserve owned error
+products and expose the existing owners rather than adding forwarding wrappers.
+This consultation adds no API, crate name or feature choice.
+
+Before actual native verification, expand this reconciliation stage's total
+orchestration allowance from200 to250 under standing recommendation delegation.
+Reuse the existing38-line native runner and add at most20 parameter/custody
+lines. Freeze the ten controller-declared source inputs, controller, certificates
+and copied actual executable during each campaign. The five existing campaigns
+must execute32 cases/80 subprocess roles per profile (64/160 across both),
+with distinct target and child-origin claims; run the existing two child-stop and
+two query-count controls. Debug verification can run alongside optimized
+compilation because its actual executable is acquired and copied first; no
+source, manifest, lock or target writes by that verifier. No new production,
+API, dependency, policy or acceptance scope is selected by this orchestration.
+
+The separate PR358 Linux diagnostic keeps its original allocation failure
+unresolved. New collector38354582679 runs unchanged baseline and isolated trace
+three times each: all named allocation tests and55-test summaries pass, with
+byte-stable source ledgers. Twelve actual DHAT profiles contain24 comparison
+windows with the expected Box-copy allocations and no additional48 bytes.
+Four command exit failures occur after successful tests during Nix output
+reproducibility comparison. Receipt d2fcaeb7 retains actual profiles and logs;
+none explains or waives the original required-CI failure. Keep that PR open.
+
+The actual auto-merge preserves nonwaiting admission, exact-child shutdown and
+root/child report APIs. Reconcile their rewritten owners rather than rebuilding
+those capabilities. Select the previously approved independent receiving tuple:
+ApplicationOutcome with actual unit cleanup, original native root receipt, and
+both notification receipts; Entity receiving also retains its family receipts.
+DevX's inferred topology/scope inputs and outcome selectors remain. A cleanup
+failure cannot replace a separately acquired native result or either notification
+cause. No new named product is needed. Preserve DevX's Starting/RetiringStartup
+custody and exact CreationId/CreationKind; derive reports before application
+projection in established and raw-startup paths. Reuse ActorCustody and the
+existing RetirementSchema failure routing. Root owns shared public contracts.
+
+Raw startup has no established child capability. Preserve its original
+termination notification beside actual task/projection errors in the existing
+startup failure variants; retain a notification-only failure when projection
+succeeds, while its native result stays retired. Add one existing ChildFailure
+variant for that case, with the actual notification error and no fabricated
+retirement publication. Reuse each rejected row's retained retirement report
+for startup assessment; remove the obsolete duplicate startup_report aggregate
+after proving the new borrowed creation path cannot maintain it. Rejected rows
+with actual notification failure remain in retirement order. No new public type.
+
+The existing private ChildAuthority borrowed view must also borrow its row's
+retirement observation when issuing an InstalledActor; this preserves the
+already-approved exact report capability without exposing the whole binding.
+For the existing measured parent/child fixture, select a4–6-line implementation
+of the existing ApplicationTopology on its already-owned ActorSpace, using its
+actual CompletedExecutionChild schema. Preserve its NativeChild owner and real
+workload; add no namespace, public type, framework or placeholder actor.
+
+User direction further requires simple Application-level multi-node composition
+and deliberate lower-level power-user access. The receiving tuple above is the
+advanced custody seam; ordinary examples must not expose notification/disposal
+bookkeeping. Final application-facing composition and its inferred accessors
+remain a separate plain-Rust comparison before public retention. Examples must
+be production-quality application composition, not assertion or Drop schedules.
+AGENTS.md now enforces that rule; its32-line policy addition is one shared path
+copied into this integration worktree, with the primary workspace change preserved.
+
+The combined ordinary and `axum` libraries pass pinned-Nix `cargo check
+-p bombay-rs --lib --locked` (with `--features axum` for the latter).
+Their logs are `7a766ae2` and `bef8b06a`; selected lock is `42eb8120`.
+The first command used the wrong package name and subsequent checks exposed
+the new raw-startup constructor's omitted actual notification receipt; those
+failed attempts receive no passing credit. The existing OwnedTask now receives
+both the original JoinHandle and actual notification receiver. No new API.
+Runtime regressions, remaining consumer/document conflicts, source census,
+independent review and complete CI remain pending; the branch is not merged.
+
+For the existing held-source test, select the already-approved topology
+generator on its real PreparationOwner → supervisor → proxy → worker graph.
+The nine-line private declaration replaces the old16-line spaces and86-line
+presentation graph. Its existing native-custody assertion borrows each generated
+RetirementSchema and Never leaves; preserve all original traces and receipts.
+No new runtime adapter, public type, authority or lifecycle policy is selected.
+
+Permission/authority admission and exact-child stop tests pass9/0 in both
+debug and optimized builds (logs311a9c05 and22fc0527). Seven further receiving
+targets initially fail on old HTTP/recursive-Entity test shapes and disk-full
+intermediates; no passing credit. The retry preserves the original assertions
+and native/report/notification products, uses no incremental cache or debug
+symbols, and limits compilation to one job. Removed only842 failed-run object
+files (4,637,596,304 bytes) and their seven incremental caches; no worktree,
+source, retained executable or evidence was deleted. The corrected debug retry
+passes75 tests with1 ignored across the seven targets, including their nested
+compile-pass/compile-fail checks (log14e7594b). Optimized counterparts, owning
+raw-startup regressions and full combined checks remain pending.
+
+The same seven receiving targets pass75/0/1 in optimized builds. Before raw
+startup qualification, retain the corrected test-only proposal c1078db5:
+extend three existing traces (+215/-14, zero production/API/dependency changes,
+at most260 chronological test introductions). Use actual private startup receipt,
+standard Wake panic and explicit test-only surrender of the original ACK before
+cleanup. Prove complete native/initialization custody, original notification panic,
+actual projection JoinError and actual disappeared-producer receipt independently.
+An earlier unexecuted proposal inferred retirement from startup failure; reject
+that predicate. These fully joined cases require Established/FailuresFound,
+while their endpoint remains unavailable. Four intended source inversions and
+restored debug/optimized controls are required before retaining the new witnesses.
+
+The existing RetiringLedgerSpace fault fixture must keep its actual space-disposal
+law. Select the existing RootRegistration and ApplicationTopology implementations
+on that same fixture (about11 cfg-test lines, Descendants=Never); do not replace
+it with a different ActorSpace or add a wrapper/schema. Port its obsolete App
+calls and native patterns to the proven Application/ActorCustody syntax. This is
+test-only migration within the current stage, with no production/API change.
+
 ### Crate delivery and DevX integration — user direction, 2026-10-13
 
 The user explicitly requires remote capability in `crates/bombay`, behind the

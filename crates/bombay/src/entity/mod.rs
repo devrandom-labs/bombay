@@ -17,8 +17,8 @@ mod runtime;
 
 pub(crate) use bombay::NativeEntityHost;
 pub use directory::{
-    DirectoryConfig, DirectoryError, EffectInterpreter, InstalledDispatch, InstalledSlotDecision,
-    LocalDirectory,
+    DirectoryConfig, DirectoryConfigError, DirectoryError, EffectInterpreter, InstalledDispatch,
+    InstalledSlotDecision, LocalDirectory,
 };
 pub use family::{
     Entities, EntityActivationError, EntityAdmission, EntityApplicationFamilies, EntityCapacity,

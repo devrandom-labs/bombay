@@ -1,0 +1,5 @@
+error: one Entity definition per actor class
+  --> tests/compile/fail/topology_family_duplicate_class.rs:10:39
+   |
+10 |         families { profile: Profiles; profile: Profiles; }
+   |                                       ^^^^^^^

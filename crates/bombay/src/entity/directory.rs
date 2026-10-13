@@ -19,13 +19,60 @@ use super::{
     RetirementMode, SlotEffect, SlotEvent, TransitionEvidence,
 };
 
-/// Fixed sizing and admission limits for a local directory.
+/// Validated fixed sizing and admission limits for a local directory.
+///
+/// The shard count is a power of two with a mask representable by the
+/// directory's 64-bit hash. Both limits are positive and immutable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DirectoryConfig {
-    /// Number of independently locked map shards; must be a power of two.
-    pub shards: NonZeroUsize,
+    shards: NonZeroUsize,
+    activation_waiters: NonZeroUsize,
+}
+
+impl DirectoryConfig {
+    /// Validate sizing before transferring an application or runtime port.
+    ///
+    /// # Errors
+    /// Returns both original limits when the shard count cannot index the
+    /// directory's hash space with a power-of-two mask.
+    pub fn new(
+        shards: NonZeroUsize,
+        activation_waiters: NonZeroUsize,
+    ) -> Result<Self, DirectoryConfigError> {
+        if !shards.get().is_power_of_two() || u64::try_from(shards.get() - 1).is_err() {
+            return Err(DirectoryConfigError::InvalidShardCount {
+                shards,
+                activation_waiters,
+            });
+        }
+        Ok(Self {
+            shards,
+            activation_waiters,
+        })
+    }
+
+    /// Number of independently locked map shards.
+    #[must_use]
+    pub const fn shards(&self) -> NonZeroUsize {
+        self.shards
+    }
+
     /// Maximum commands retained by one in-flight activation.
-    pub activation_waiters: NonZeroUsize,
+    #[must_use]
+    pub const fn activation_waiters(&self) -> NonZeroUsize {
+        self.activation_waiters
+    }
+}
+
+/// Rejected directory sizing, retaining both original limits.
+#[derive(Debug, thiserror::Error)]
+pub enum DirectoryConfigError {
+    /// The original shard count does not fit a power-of-two directory hash mask.
+    #[error("shard count must be a power of two with a u64-representable mask")]
+    InvalidShardCount {
+        shards: NonZeroUsize,
+        activation_waiters: NonZeroUsize,
+    },
 }
 
 impl Default for DirectoryConfig {
@@ -40,9 +87,6 @@ impl Default for DirectoryConfig {
 /// Failure before a command can be submitted to a lifecycle machine.
 #[derive(Debug, thiserror::Error)]
 pub enum DirectoryError<C> {
-    /// The shard count was not a power of two.
-    #[error("shard count was not a power of two")]
-    InvalidShardCount,
     /// The monotonically increasing activation namespace is exhausted.
     #[error("activation identity namespace is exhausted")]
     ActivationIdsExhausted(C),
@@ -305,11 +349,9 @@ where
 {
     /// Construct a directory using the standard randomized hash builder.
     ///
-    /// # Errors
-    ///
-    /// Returns [`DirectoryError::InvalidShardCount`] unless the configured
-    /// shard count is a power of two.
-    pub fn new(config: DirectoryConfig) -> Result<Self, DirectoryError<C>> {
+    /// Sizing is already validated by [`DirectoryConfig`].
+    #[must_use]
+    pub fn new(config: DirectoryConfig) -> Self {
         Self::with_hasher(config, RandomState::new())
     }
 }
@@ -322,34 +364,25 @@ where
 {
     /// Construct a directory with an explicit hash builder.
     ///
-    /// # Errors
+    /// Sizing is already validated by [`DirectoryConfig`].
     ///
-    /// Returns [`DirectoryError::InvalidShardCount`] unless the configured
-    /// shard count is a power of two.
-    pub fn with_hasher(
-        config: DirectoryConfig,
-        hash_builder: S,
-    ) -> Result<Self, DirectoryError<C>> {
-        if !config.shards.get().is_power_of_two() {
-            return Err(DirectoryError::InvalidShardCount);
-        }
-        let mask = config
-            .shards
-            .get()
-            .checked_sub(1)
-            .and_then(|count| u64::try_from(count).ok())
-            .ok_or(DirectoryError::InvalidShardCount)?;
+    /// # Panics
+    /// Panics only if the owning configuration invariant has been violated.
+    #[must_use]
+    pub fn with_hasher(config: DirectoryConfig, hash_builder: S) -> Self {
+        let mask = u64::try_from(config.shards.get() - 1)
+            .expect("DirectoryConfig validates the complete shard hash mask");
         let shards = (0..config.shards.get())
             .map(|_| Mutex::new(HashMap::new()))
             .collect();
-        Ok(Self {
+        Self {
             shards,
             mask,
             hash_builder,
             waiter_limit: config.activation_waiters,
             next_activation: AtomicU64::new(1),
             next_dispatch: AtomicU64::new(1),
-        })
+        }
     }
 
     /// Dispatch a command through the stable slot for `entity_id`.

@@ -1,0 +1,5 @@
+error: root domain actor uses root: Type
+  --> tests/compile/fail/topology_inferred_root_role_parent.rs:10:24
+   |
+10 |         root: Root for Root { Worker(RootChildrenWorker) => worker; }
+   |                        ^^^^

@@ -30,30 +30,31 @@ is held, without starting a replacement, and preserves exact source custody.
 
 | Owner | Selected contract inspected | Consequence |
 | --- | --- | --- |
-| Behavior | bombay-behavior 0.23.0, registry archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
-| Behavior Actors | bombay-behavior-actors 0.23.0, same registry archive revision | Owns existing supervision, pools and template policies. |
-| Behavior macros | bombay-behavior-macros 0.14.0, same registry archive revision | Owns syntax generation; Bombay must not replace its semantics. |
+| Behavior | bombay-behavior 0.25.0, registry archive revision `2bb4510077bfa5aed82e08d25453c146b3184285` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
+| Behavior Actors | bombay-behavior-actors 0.25.0, same registry archive revision | Owns existing supervision, pools and template policies. |
+| Behavior macros | bombay-behavior-macros 0.14.1, same registry archive revision | Owns syntax generation; Bombay must not replace its semantics. |
 | Address | bombay-address 0.3.0 | Owns local claims/leases and opaque resolution; its process-local representation is not a wire address. |
 | Communication | bombay-communication 0.1.5 | Owns bounded user delivery, separate control delivery, closure, payload recovery and original custody before mapped delivery. |
 | Observe | Private Bombay implementation | Owns completion publication and waiting; is not a missing external dependency. |
-| Timers | 0.1.0 patched to `13e884da7ab41781f52337b0038060e375b00ee0` | Owns volatile actor scheduling/generations, not persistent reminders. |
+| Timers | Registry 0.2.0, archive revision `9369d1f6c7fcda91e7de5bf3c19e6769f92145bd` | Owns volatile actor scheduling/generations and complete typed exhaustion return, not persistent reminders. |
 | Tokio | 1.53.1 in this lockfile | Caller-host async execution and configured Builder-only owned current-thread/multithread execution share one paired owner; final acceptance remains separate. |
 
-Selected-contract table reconciled on 2026-10-12 for the current lockfile,
-including the published Communication diagnostic correction and original mapped
-delivery custody adopted through [PR353](https://github.com/devrandom-labs/bombay/pull/353).
-The execution observations retain their original dated source selections. The earlier dated
+Selected-contract table reconciled on 2026-10-13 for committed DevX integration,
+including Communication's mapped-delivery custody adopted through
+[PR353](https://github.com/devrandom-labs/bombay/pull/353). Fresh combined
+verification is recorded in the remote-actors PRD; older execution observations
+retain their original dated selections. The earlier dated
 0.20.0 execution observations below remain historical evidence. Behavior
 Actors 0.21.2 publication retains its historical distinct live capability-failure
 cause evidence. The final selected source and full acceptance remain in EXEC. See the
-[EXEC release record](../prds/execution-ownership.md#21-live-capability-failure-cause-checkpoint-2026-10-02)
+[EXEC release record (historical)](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#21-live-capability-failure-cause-checkpoint-2026-10-02)
 for publication, source and verification evidence.
 
 Sources: [Cargo.lock](../../Cargo.lock), [workspace manifest](../../Cargo.toml),
 [Bombay manifest](../../crates/bombay/Cargo.toml). Behavior source was read from
 the authenticated registry archives and prior selected snapshots at their
-recorded epochs. The root patch selects only Timers; a nearby checkout at
-another revision is not the build contract.
+recorded epochs. There is no root Cargo patch; a nearby checkout at another
+revision is not the build contract.
 
 Current architectural references remain
 [capability ownership](../runtime-capability-interfaces.md),
@@ -70,7 +71,7 @@ This inventory does not replace those normative contracts.
 | Queued pool shutdown folds while `PrepareWorkers` holds an affine source | the prior 0.19.0 failure recorded in Git history, [selected runtime regression](../../crates/bombay/tests/fifo_pool_recovery.rs) | The 0.19.0 trace failed; the selected runtime rejects a later job as `ShuttingDown` before source release and does not start a replacement. |
 | Assignment/proxy exact returned-request reconstruction remains selected in Actors 0.20.0 | Behavior Actors `src/atomic/pool/assignment.rs`, `src/atomic/stable_proxy/operation.rs` | Bombay's rejected delivery interpreters can return the original typed request; the earlier 0.17.0 owner gap is resolved. |
 | Activation publication regressions | [local activation](../../crates/bombay/src/local/environment.rs), [ARC-006 retained evidence](status.md#retained-local-evidence) | The selected invisible-reservation order passes ordinary gated visibility regressions; the original claim-before-commit order failed them. |
-| Ordinary public execution uses one async paired owner | [Application runtime](../../crates/bombay/src/application/execution.rs), [EXEC API decision](../prds/execution-ownership/application-api.md) | Caller-host async entry and configured Builder-only run_blocking retain raw root plus independent Work/cleanup/family facts. Source formation is separate from final DG-API acceptance and delivery. |
+| Ordinary public execution uses one async paired owner | [Application runtime](../../crates/bombay/src/application/execution.rs), [EXEC API decision (historical)](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership/application-api.md) | Caller-host async entry and configured Builder-only run_blocking retain raw root plus independent Work/cleanup/family facts. Source formation is separate from final DG-API acceptance and delivery. |
 | User mailbox capacity is fixed at DEFAULT_USER_CAPACITY in ordinary construction | [Local ingress](../../crates/bombay/src/local/ingress.rs) | Application-facing capacity configuration remains a specific gap. |
 | The public supervision example executes worker replacement and retirement; the FIFO example executes a job and orderly drain | [supervision](../../examples/supervision/src/main.rs), [worker pool](../../examples/worker-pool/src/main.rs), [supervisor recovery](../../crates/bombay/tests/fixed_supervisor_recovery.rs), [pool recovery](../../crates/bombay/tests/fifo_pool_recovery.rs) | Selected 0.20.0 tests prove coordinated replacement, later-role rejection, exact terminal diagnostic custody, child retirement, both pool interruption choices, and shutdown during held preparation. |
 | Timed/Machine public application witnesses exist | [template application tests](../../crates/bombay/tests/template_application.rs) | These are existing integration evidence, not missing template implementations. |

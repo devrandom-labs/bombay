@@ -95,11 +95,10 @@ impl EffectInterpreter<usize, usize, usize, usize> for Recording {
 }
 
 fn directory() -> Directory {
-    Directory::new(DirectoryConfig {
-        shards: NonZeroUsize::MIN,
-        activation_waiters: NonZeroUsize::new(3).unwrap(),
-    })
-    .unwrap()
+    Directory::new(
+        DirectoryConfig::new(NonZeroUsize::MIN, NonZeroUsize::new(3).unwrap())
+            .expect("valid directory limits"),
+    )
 }
 
 #[test]
@@ -395,13 +394,10 @@ impl EffectInterpreter<usize, CustodyCommand, usize, usize> for CustodyRecording
 #[test]
 fn canceled_waiter_and_activation_completion_preserve_one_command_owner() {
     loom::model(|| {
-        let directory = Arc::new(
-            LocalDirectory::new(DirectoryConfig {
-                shards: NonZeroUsize::MIN,
-                activation_waiters: NonZeroUsize::new(3).unwrap(),
-            })
-            .unwrap(),
-        );
+        let directory = Arc::new(LocalDirectory::new(
+            DirectoryConfig::new(NonZeroUsize::MIN, NonZeroUsize::new(3).unwrap())
+                .expect("valid directory limits"),
+        ));
         let recording = Arc::new(CustodyRecording::default());
         let drops = Arc::new(AtomicUsize::new(0));
         let entity_id = EntityId::new(4);
@@ -471,13 +467,10 @@ fn canceled_waiter_and_activation_completion_preserve_one_command_owner() {
 #[test]
 fn real_slot_dispatch_preserves_linearized_output_order() {
     loom::model(|| {
-        let directory = Arc::new(
-            Directory::new(DirectoryConfig {
-                shards: NonZeroUsize::MIN,
-                activation_waiters: NonZeroUsize::new(3).unwrap(),
-            })
-            .unwrap(),
-        );
+        let directory = Arc::new(Directory::new(
+            DirectoryConfig::new(NonZeroUsize::MIN, NonZeroUsize::new(3).unwrap())
+                .expect("valid directory limits"),
+        ));
         let recording = Arc::new(Recording::default());
         directory.interpret(
             directory.dispatch(EntityId::new(1), 0).unwrap().decision,
@@ -511,13 +504,10 @@ fn real_slot_dispatch_preserves_linearized_output_order() {
 #[test]
 fn real_directory_concurrent_claims_share_one_activation() {
     loom::model(|| {
-        let directory = Arc::new(
-            Directory::new(DirectoryConfig {
-                shards: NonZeroUsize::MIN,
-                activation_waiters: NonZeroUsize::new(3).unwrap(),
-            })
-            .unwrap(),
-        );
+        let directory = Arc::new(Directory::new(
+            DirectoryConfig::new(NonZeroUsize::MIN, NonZeroUsize::new(3).unwrap())
+                .expect("valid directory limits"),
+        ));
         let recording = Arc::new(Recording::default());
 
         let callers: Vec<_> = (0..2)

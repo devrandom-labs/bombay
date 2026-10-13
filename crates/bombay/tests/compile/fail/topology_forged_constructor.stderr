@@ -1,0 +1,26 @@
+warning: unused imports: `BehaviorSettlements` and `ChildHead`
+ --> tests/compile/fail/topology_forged_constructor.rs:3:34
+  |
+3 | use bombay::behavior::{Behavior, BehaviorSettlements, ChildCreationOutcome, CreationRejection, CreationId, CreationKind, ChildHead, I...
+  |                                  ^^^^^^^^^^^^^^^^^^^                                                                     ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0119]: conflicting implementations of trait `EstablishNativeChild<Counter, CounterReport, Never>` for type `CounterScope`
+  --> tests/compile/fail/topology_forged_constructor.rs:17:1
+   |
+17 | impl EstablishNativeChild<counter::Counter, CounterReport, Never> for CounterScope {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: conflicting implementation in crate `bombay`:
+           - impl<C, N, Child, Descendants> EstablishNativeChild<C, Child, Descendants> for N
+             where <<C as behavior::Behavior>::Protocol as behavior::Protocol>::Addr == bombay::MailAddr, <<Child as behavior::Behavior>::Protocol as behavior::Protocol>::Addr == bombay::MailAddr, <Child as behavior::Behavior>::Ph == Never, C: behavior::Behavior, <C as behavior::Behavior>::Protocol: behavior::Protocol, Descendants: RetirementSchema, Child: BehaviorSettlements, <Child as behavior::Behavior>::Protocol: behavior::Protocol, N: bombay::local::effects::creation::NativeChildStartup<C, Child, Descendants>, <C as behavior::Behavior>::Protocol: ?Sized, <Child as behavior::Behavior>::Protocol: ?Sized;
+   = note: upstream crates may add a new impl of trait `behavior::InterpretSends<bombay::local::effects::ApplicationCapabilities<CounterReport, CounterScope, bombay::local::effects::reports::LocalParentReports<behavior::User<bombay::MailAddr, counter::CounterMessage>, CounterReport, behavior::NoBirths>, _>, behavior::User<bombay::MailAddr, behavior::Never>, behavior::Here>` for type `behavior::InterpreterRequests<behavior::ReportToParent<u64>>` in future versions
+   = note: upstream crates may add a new impl of trait `std::marker::Send` for type `std::rc::Rc<u64>` in future versions
+   = note: upstream crates may add a new impl of trait `behavior::InterpretSends<bombay::local::effects::ApplicationCapabilities<CounterReport, CounterScope, bombay::local::effects::reports::LocalParentReports<behavior::User<bombay::MailAddr, counter::CounterMessage>, CounterReport, behavior::NoBirths>, _>, behavior::User<bombay::MailAddr, behavior::Never>, behavior::Here>` for type `behavior::InterpreterRequests<behavior::ReportToParent<u64>>` in future versions
+
+warning: unused import: `Behavior`
+ --> tests/compile/fail/topology_forged_constructor.rs:3:24
+  |
+3 | use bombay::behavior::{Behavior, BehaviorSettlements, ChildCreationOutcome, CreationRejection, CreationId, CreationKind, ChildHead, I...
+  |                        ^^^^^^^^

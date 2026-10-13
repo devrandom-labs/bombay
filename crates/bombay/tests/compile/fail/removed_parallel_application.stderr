@@ -1,0 +1,7 @@
+error[E0432]: unresolved import `bombay::App`
+ --> tests/compile/fail/removed_parallel_application.rs:2:5
+  |
+2 | use bombay::App;
+  |     ^^^^^^^^---
+  |             |
+  |             no `App` in the root

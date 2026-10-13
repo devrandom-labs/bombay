@@ -3044,7 +3044,7 @@ mod tests {
         assert_eq!(ingress.user, []);
         assert!(activation_tasks.is_empty());
         assert_eq!(descendants.len(), 0);
-        assert_eq!(child_failures, ());
+        assert_eq!(child_failures.as_slice(), []);
         assert!(capability_failures.is_empty());
         assert_eq!(unread_owner_cancellation, None);
         assert!(interpretation.is_none());

@@ -37,6 +37,10 @@ replacement exact-head CI and delivery remain pending, separately from full rows
 
 The user requires crate-owned remote capability behind Cargo feature `remote`.
 Examples consume its public API; example-only implementations cannot pass R01.
+Keep the local counter in `examples/counter` and the remote counter in
+`examples/remote-counter`. Each teaches one complete application through public
+composition. Assertions and transport/fault campaigns stay in owning tests or
+isolated research; relocating a fixture does not prove shipping remote support.
 First reconcile the committed DevX Application APIs with the proven admission
 and retirement laws, preserving the active worktree's uncommitted changes.
 

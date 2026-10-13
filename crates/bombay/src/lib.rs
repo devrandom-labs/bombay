@@ -11,6 +11,8 @@
 //! cooperative host. Other unwinding cannot promise completed cleanup.
 //! The runtime requires `panic = "unwind"`; abort destroys recoverable custody.
 
+#![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/", env!("CARGO_PKG_README")))]
+
 extern crate self as bombay;
 
 #[cfg(panic = "abort")]
@@ -26,13 +28,14 @@ pub use ::behavior_actors::{
     workflow,
 };
 pub mod actors;
-pub use crate::application::Application;
+pub use crate::application::{Application, ApplicationScope};
 pub use crate::application::{
-    App, ApplicationBehavior, ApplicationCleanupError, ApplicationDefinitionError,
-    ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationStagingError, RunError,
+    ApplicationBehavior, ApplicationCleanupError, ApplicationClient, ApplicationDefinitionError,
+    ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationSender,
+    ApplicationStagingError, RunError,
 };
 pub use bombay_engine::{Completion, SettlementFailure};
-pub use bombay_macros::{ActorSpaces, TerminalProjection, actor};
+pub use bombay_macros::{ActorSpaces, TerminalProjection, actor, topology};
 pub use communication::TrySendError;
 mod actor_execution;
 mod actor_outcome;
@@ -60,11 +63,11 @@ pub use crate::local::endpoint::{ActorRef, InstalledActor, SendError};
 pub use crate::local::environment::LocalActivationRejection;
 pub(crate) use crate::retirement::Retirement;
 pub use crate::terminal::{
-    ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement, ActorRetirementReport,
-    ChildFailure, ChildOrigin, ProjectTerminal, RetirementAssessment, RetirementNotificationError,
-    RootOrigin,
+    ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement,
+    ActorRetirementReport, ChildFailure, ChildOrigin, ProjectTerminal, RetirementAssessment,
+    RetirementNotificationError, RetirementSchema, RootOrigin,
 };
-pub use crate::topology::Hosts;
+pub use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
 pub use crate::worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
 
 /// Conventional imports for Bombay applications.
@@ -81,9 +84,10 @@ pub mod prelude {
     };
     pub use crate::{
         ActorInterface, ActorRef, ActorRetirement, Application, ApplicationBehavior,
-        ApplicationHandle, ApplicationLifecycle, ApplicationStagingError, ChildFailure,
-        ChildOrigin, Completion, ExternalActor, ExternalActorError, ExternalTarget, MailAddr,
-        RootOrigin, RunError, SettlementFailure, TerminalProjection,
+        ApplicationClient, ApplicationHandle, ApplicationLifecycle, ApplicationSender,
+        ApplicationStagingError, ChildFailure, ChildOrigin, Completion, ExternalActor,
+        ExternalActorError, ExternalTarget, MailAddr, RootOrigin, RunError, SettlementFailure,
+        TerminalProjection,
     };
     pub use behavior_actors::{
         Activate, Crash, Exit, Machine, MachineError, Move, ShutdownRejection, StopOnShutdown,
@@ -109,3 +113,5 @@ impl ShutdownLedger {
 }
 #[cfg(test)]
 type LedgerProtocol = ShutdownLedger;
+
+pub use crate::local::effects::{EstablishNativeChild, NativeChild, PendingChild};

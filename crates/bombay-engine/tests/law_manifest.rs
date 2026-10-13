@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use serde::Deserialize;
 use serde_json::Value;
 
-const BEHAVIOR_REVISION: &str = "d69f992b371c12ab34e73b18e45b8112c90a1508";
+const BEHAVIOR_REVISION: &str = "2bb4510077bfa5aed82e08d25453c146b3184285";
 
 #[derive(Deserialize)]
 struct Manifest {
@@ -354,9 +354,9 @@ fn manifest_exactly_matches_canonical_law_index() {
     let manifest = manifest();
     assert_eq!(manifest.schema, 2);
     assert_eq!(manifest.law_source, "docs/driver-law.md");
-    assert_eq!(manifest.behavior.core, "0.23.0");
-    assert_eq!(manifest.behavior.actors, "0.23.0");
-    assert_eq!(manifest.behavior.macros, "0.14.0");
+    assert_eq!(manifest.behavior.core, "0.25.0");
+    assert_eq!(manifest.behavior.actors, "0.25.0");
+    assert_eq!(manifest.behavior.macros, "0.14.1");
     assert_eq!(manifest.behavior.revision, BEHAVIOR_REVISION);
     assert_eq!(
         manifest.gate.command,
@@ -598,7 +598,7 @@ fn engine_does_not_mirror_actor_template_laws() {
     }
     for (field, expected) in [
         ("package", "bombay-behavior-actors"),
-        ("version", "0.23.0"),
+        ("version", "0.25.0"),
         ("revision", BEHAVIOR_REVISION),
     ] {
         if manifest["owner"][field] != expected {

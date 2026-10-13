@@ -2,16 +2,14 @@ use super::{Counter, CounterMessage, CounterProcessed, CounterValue};
 use bombay::actors::ActorExt as _;
 use bombay::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
-    FailureReaction, FixedCommand, FixedSnapshot, FixedSupervisor, OrderedRoles, Recovery,
-    StableProxy, WorkerActivation, WorkerSubmission, fixed,
+    FailureReaction, FixedSnapshot, FixedSupervisor, OrderedRoles, Recovery, StableProxy,
+    WorkerActivation, WorkerSubmission, fixed,
 };
-use bombay::behavior::{
-    Behavior, BehaviorSettlements, ChildHead, Here, MessageProtocol, Never, RecoverEvent,
-};
+use bombay::behavior::{Behavior, BehaviorSettlements, Here, MessageProtocol, Never, RecoverEvent};
 use bombay::prelude::*;
 use bombay::{
-    ActorFailureAssessment, ActorNotificationReceipts, ActorSpace, ActorSpaces, App,
-    ApplicationOutcome, ProjectTerminal, RetirementAssessment,
+    ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, Application,
+    ApplicationOutcome, RetirementAssessment, RetirementSchema,
 };
 use futures_util::FutureExt;
 use std::convert::Infallible;
@@ -45,68 +43,21 @@ impl ActivationPlan for HeldCounterActivation {
     }
 }
 type CounterProxy = StableProxy<Counter, HeldCounterActivation>;
-type CounterWorker = StopOnShutdown<Counter>;
 type CounterSupervisor =
     FixedSupervisor<CounterRole, Counter, HeldCounterActivation, Never, Infallible, Infallible>;
 type CounterSupervisorRoot = StopOnShutdown<CounterSupervisor>;
-type SupervisorProtocol = MessageProtocol<MailAddr, FixedCommand<MailAddr, CounterRole, Counter>>;
 type CounterCapability = MessageProtocol<MailAddr, CapabilityResult<CounterRole, Counter>>;
 type CounterStatus = MessageProtocol<MailAddr, FixedSnapshot<Counter>>;
 
-#[derive(ActorSpaces)]
-struct CounterSubtreeSpaces {
-    #[actor_space(SupervisorProtocol)]
-    supervisor: ActorSpace<SupervisorProtocol>,
-    #[actor_space(Counter)]
-    counters: ActorSpace<Counter>,
-    #[actor_space(CounterCapability)]
-    capabilities: ActorSpace<CounterCapability>,
-    #[actor_space(CounterStatus)]
-    status: ActorSpace<CounterStatus>,
+bombay::topology! {
+    counter_subtree_application {
+        root: CounterSupervisor { Proxy => proxy; }
+        proxy { Worker => worker; }
+        worker {}
+        hosts { capabilities: CounterCapability; status: CounterStatus; }
+    }
 }
-#[allow(
-    clippy::large_enum_variant,
-    reason = "Target-dependent native retirement sizes retain original unboxed Supervisor, proxy and Counter products without a new allocation owner."
-)]
-#[derive(TerminalProjection)]
-enum CounterSubtreeRetirement {
-    Root {
-        origin: RootOrigin<CounterSupervisorRoot>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "The Supervisor owns its exact proxy-role child failure product and original native terminal."
-        )]
-        terminal: ActorRetirement<
-            CounterSupervisorRoot,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<CounterSupervisor, ChildHead>, CounterProxy>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Proxy {
-        origin: ChildOrigin<CounterSupervisor, ChildHead>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "The proxy owns its exact Counter-role child failure product and original native terminal."
-        )]
-        terminal: ActorRetirement<
-            CounterProxy,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<CounterProxy, ChildHead>, CounterWorker>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Worker {
-        origin: ChildOrigin<CounterProxy, ChildHead>,
-        terminal: ActorRetirement<CounterWorker, Self, ()>,
-    },
-}
+use counter_subtree_application::RootRetirements;
 fn held_counter_supervisor(activation: HeldCounterActivation) -> CounterSupervisor {
     let mut activation = Some(activation);
     fixed(
@@ -128,47 +79,56 @@ fn held_counter_supervisor(activation: HeldCounterActivation) -> CounterSupervis
     .build()
     .unwrap_or_else(|_| panic!("the actual Counter is prepared"))
 }
-fn joined_counter_descendants<B, Failures>(
-    retirement: &ActorRetirement<B, CounterSubtreeRetirement, Failures>,
-) -> (&[CounterSubtreeRetirement], &Failures, &[B::Event])
+fn joined_counter_descendants<B, Descendants>(
+    retirement: &ActorRetirement<B, Descendants, Vec<Descendants::Failure>>,
+) -> (&[Descendants], &[Descendants::Failure], &[B::Event])
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Descendants: RetirementSchema,
 {
     let (ActorRetirement::Completed {
-        control,
+        custody:
+            ActorCustody {
+                control,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                ..
+            },
         interpretation,
         source,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        user,
-        descendants,
-        child_failures,
-        capability_failures,
-        unread_owner_cancellation,
-        additional_failures,
-        terminal_report,
-        retirement_failures,
         completion: Completion::Stopped,
         ..
     }
     | ActorRetirement::OwnerCancelled {
-        control,
+        custody:
+            ActorCustody {
+                control,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                additional_failures,
+                terminal_report,
+                retirement_failures,
+                ..
+            },
         interpretation,
         source,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        user,
-        descendants,
-        child_failures,
-        capability_failures,
-        unread_owner_cancellation,
-        additional_failures,
-        terminal_report,
-        retirement_failures,
         ..
     }) = retirement
     else {
@@ -188,30 +148,34 @@ where
     assert!(retirement_failures.is_empty());
     (descendants, child_failures, control)
 }
-fn inspect_joined_counter_subtree(retirement: &CounterSubtreeRetirement, target_address: MailAddr) {
-    let CounterSubtreeRetirement::Root { origin, terminal } = retirement else {
-        panic!("the native result identifies the original Supervisor root");
-    };
+fn inspect_joined_counter_subtree(
+    origin: RootOrigin<CounterSupervisorRoot>,
+    terminal: &ActorRetirement<
+        CounterSupervisorRoot,
+        RootRetirements,
+        Vec<<RootRetirements as RetirementSchema>::Failure>,
+    >,
+    target_address: MailAddr,
+) {
     assert_eq!(origin.address(), target_address);
-    let (proxies, (proxy_failures, ()), root_control) = joined_counter_descendants(terminal);
+    let (proxies, proxy_failures, root_control) = joined_counter_descendants(terminal);
     eprintln!("NATIVE_ROOT_UNCLAIMED_CONTROLS {}", root_control.len());
     assert!(proxy_failures.is_empty());
     assert_eq!(proxies.len(), 1);
-    let CounterSubtreeRetirement::Proxy { origin, terminal } = &proxies[0] else {
-        panic!("the Supervisor retains its real proxy child");
-    };
+    let RootRetirements { origin, retirement } = &proxies[0];
+    let terminal = retirement.as_ref();
     assert_ne!(origin.address(), target_address);
-    let (workers, (worker_failures, ()), proxy_control) = joined_counter_descendants(terminal);
+    let (workers, worker_failures, proxy_control) = joined_counter_descendants(terminal);
     eprintln!("NATIVE_PROXY_UNCLAIMED_CONTROLS {}", proxy_control.len());
     assert!(worker_failures.is_empty());
     assert_eq!(workers.len(), 1);
-    let CounterSubtreeRetirement::Worker { origin, terminal } = &workers[0] else {
-        panic!("the proxy retains its real Counter worker");
-    };
+    let origin = &workers[0].origin;
+    let terminal = workers[0].retirement.as_ref();
     assert_ne!(origin.address(), target_address);
-    let (descendants, (), worker_control) = joined_counter_descendants(terminal);
+    let (descendants, worker_failures, worker_control) = joined_counter_descendants(terminal);
     eprintln!("NATIVE_COUNTER_UNCLAIMED_CONTROLS {}", worker_control.len());
-    assert!(descendants.is_empty());
+    assert_eq!(descendants, []);
+    assert_eq!(worker_failures, []);
 }
 #[test]
 #[expect(
@@ -233,16 +197,11 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         release: release_receiver,
         preparation_resource,
     });
-    let spaces = CounterSubtreeSpaces {
-        supervisor: ActorSpace::new(),
-        counters: ActorSpace::new(),
-        capabilities: ActorSpace::new(),
-        status: ActorSpace::new(),
-    };
+    let spaces = counter_subtree_application::Topology::new();
     let target_outcome = host
         .block_on(
-            App::new(supervisor.stop_on_shutdown(), spaces)
-                .run_with::<CounterSubtreeRetirement, _, _, _>(move |target| async move {
+            Application::with_topology(supervisor.stop_on_shutdown(), spaces).run_with(
+                move |target| async move {
                     let target_address = target.root().address();
                     let reached_result = reached_receiver.await;
                     let lifecycle = target.lifecycle();
@@ -252,7 +211,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                     let retirement = lifecycle.retirement();
                     let permits_before = resource.available_permits();
                     let sibling_outcome = Application::new(Counter::new().stop_on_shutdown())
-                        .run_with::<Never, _, (), _, _, _>(move |sibling| async move {
+                        .run_with(move |sibling| async move {
                             let mut retirement = pin!(retirement);
                             let borrowed_before = retirement.as_mut().now_or_never();
                             let captured = sibling.root().established_recipient();
@@ -318,7 +277,8 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                         permits_before,
                         sibling_outcome,
                     )
-                }),
+                },
+            ),
         )
         .unwrap_or_else(|_| panic!("the target enters the actual caller-owned host"));
     drop(host);
@@ -378,39 +338,43 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         sibling_termination,
         sibling_report,
     ) = progress;
-    let mut native = CounterSubtreeRetirement::project(origin, native);
-    inspect_joined_counter_subtree(&native, target_address);
-    let CounterSubtreeRetirement::Root { terminal, .. } = &mut native else {
-        unreachable!("the native root was checked");
-    };
-    let (ActorRetirement::Completed { descendants, .. }
-    | ActorRetirement::OwnerCancelled { descendants, .. }) = terminal
-    else {
-        unreachable!("the native root was checked");
-    };
-    let CounterSubtreeRetirement::Proxy { terminal, .. } = &mut descendants[0] else {
-        unreachable!("the native proxy was checked");
-    };
+    let mut native = (origin, native);
+    inspect_joined_counter_subtree(native.0, &native.1, target_address);
+    let terminal = &mut native.1;
     let (ActorRetirement::Completed {
-        control,
-        descendants,
+        custody: ActorCustody { descendants, .. },
         ..
     }
     | ActorRetirement::OwnerCancelled {
-        control,
-        descendants,
+        custody: ActorCustody { descendants, .. },
+        ..
+    }) = terminal
+    else {
+        unreachable!("the native root was checked");
+    };
+    let terminal = descendants[0].retirement.as_mut();
+    let (ActorRetirement::Completed {
+        custody:
+            ActorCustody {
+                control,
+                descendants,
+                ..
+            },
+        ..
+    }
+    | ActorRetirement::OwnerCancelled {
+        custody:
+            ActorCustody {
+                control,
+                descendants,
+                ..
+            },
         ..
     }) = terminal
     else {
         unreachable!("the native proxy was checked");
     };
-    let CounterSubtreeRetirement::Worker {
-        origin: worker_origin,
-        ..
-    } = &descendants[0]
-    else {
-        unreachable!("the native worker was checked");
-    };
+    let worker_origin = &descendants[0].origin;
     eprintln!("NATIVE_COUNTER_ORIGIN {worker_origin:?}");
     let proxy_controls = take(control);
     let activation_results: Vec<_> = proxy_controls
@@ -439,17 +403,22 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
     );
     eprintln!("NATIVE_RECOVERED_ACTIVATIONS {returned_activations}");
     let ActorRetirement::Completed {
+        custody:
+            ActorCustody {
+                child_failures,
+                capability_failures,
+                additional_failures,
+                retirement_failures,
+                descendants,
+                ..
+            },
         completion: Completion::Stopped,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        retirement_failures,
-        descendants,
         ..
     } = &sibling_native
     else {
         panic!("the independent Counter retains its completed original");
     };
+    assert_eq!(child_failures.as_slice(), []);
     assert!(capability_failures.is_empty());
     assert!(additional_failures.is_empty());
     assert!(retirement_failures.is_empty());

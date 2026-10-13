@@ -1,25 +1,20 @@
 //! Run one fixed supervisor through worker failure, replacement, and shutdown.
 //! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
-use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
-use core::convert::Infallible;
+use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::time::Duration;
 use tokio::runtime::Builder;
 
-use bombay::ProjectTerminal;
 use bombay::actors::ActorExt as _;
 use bombay::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
-    FailureReaction, FixedCommand, FixedSnapshot, FixedSupervisor, OrderedRoles, Recovery,
-    RestartLimit, RestartRelease, StableProxy, Strategy, WorkerSource, WorkerSubmission, fixed,
+    FailureReaction, FixedCommand, FixedSnapshot, OrderedRoles, Recovery, RestartLimit,
+    RestartRelease, Strategy, WorkerSource, WorkerSubmission, fixed,
 };
-use bombay::behavior::{Actions, BehaviorActed, ChildHead, MessageProtocol, Never};
-use bombay::prelude::{
-    ActorRetirement, ChildFailure, ChildOrigin, Completion, Exit, MailAddr, RootOrigin,
-    StopOnShutdown, TerminalProjection,
-};
-use bombay::{ActorSpace, ActorSpaces, App, WorkerPreparationSource, WorkerPreparationStart};
+use bombay::behavior::{Actions, BehaviorActed, MessageProtocol, Never};
+use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr, StopOnShutdown};
+use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::mpsc;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -111,124 +106,67 @@ fn worker_submission(
     )
 }
 
-type WorkerProxy = StableProxy<ManagedWorker, ActivationNotice>;
-type ProxyWorker = StopOnShutdown<ManagedWorker>;
-type Supervisor =
-    FixedSupervisor<WorkerRole, ManagedWorker, ActivationNotice, Workshop, Infallible, Infallible>;
-type RootSupervisor = StopOnShutdown<Supervisor>;
-type RootProtocol = MessageProtocol<MailAddr, FixedCommand<MailAddr, WorkerRole, Worker>>;
 type Status = MessageProtocol<MailAddr, FixedSnapshot<Worker>>;
 type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, Worker>>;
 
-#[derive(ActorSpaces)]
-struct SupervisorSpaces {
-    #[actor_space(RootProtocol)]
-    root: ActorSpace<RootProtocol>,
-    #[actor_space(Worker)]
-    workers: ActorSpace<Worker>,
-    #[actor_space(Status)]
-    status: ActorSpace<Status>,
-    #[actor_space(Capability)]
-    capability: ActorSpace<Capability>,
+bombay::topology! {
+    supervisor_application {
+        root { Proxy => proxy; }
+        proxy { Worker => worker; }
+        worker {}
+        hosts { status: Status; capability: Capability; }
+    }
 }
 
-#[derive(TerminalProjection)]
 #[expect(
-    clippy::large_enum_variant,
-    reason = "retain complete original role retirements without adding a heap owner or changing terminal custody"
+    clippy::too_many_lines,
+    reason = "one complete replacement and drain trace preserves original incarnation and terminal custody"
 )]
-enum SupervisorTerminal {
-    Root {
-        origin: RootOrigin<RootSupervisor>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "the supervisor retirement retains its exact proxy-role child failures and complete terminal"
-        )]
-        terminal: ActorRetirement<
-            RootSupervisor,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<Supervisor, ChildHead>, WorkerProxy>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Proxy {
-        origin: ChildOrigin<Supervisor, ChildHead>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "the proxy retirement retains its exact worker-role child failures and complete terminal"
-        )]
-        terminal: ActorRetirement<
-            WorkerProxy,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<WorkerProxy, ChildHead>, ProxyWorker>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Worker {
-        origin: ChildOrigin<WorkerProxy, ChildHead>,
-        terminal: ActorRetirement<ProxyWorker, Self, ()>,
-    },
-}
-
-fn prepared_supervisor(activated: mpsc::UnboundedSender<WorkerRole>) -> Supervisor {
-    let roles =
-        OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role roster is distinct");
-    let initial_activated = activated.clone();
-    fixed(
-        move |role: &WorkerRole| Ok::<_, Infallible>(worker_submission(*role, &initial_activated)),
-        roles,
-        ActivationPolicy::new(1).expect("one worker fits the activation policy"),
-        Recovery::permanent(
-            Workshop { activated },
-            Strategy::OneForOne,
-            RestartLimit::new(1, Duration::from_secs(30)),
-            RestartRelease::immediate(),
-        ),
-        FailureReaction::StopSupervisor,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
-    )
-    .build()
-    .unwrap_or_else(|_| panic!("the declared worker is prepared"))
-}
-
 fn run_supervision() {
     let (activated, mut activations) = mpsc::unbounded_channel();
-    let supervisor = prepared_supervisor(activated);
-    let spaces = SupervisorSpaces {
-        root: ActorSpace::new(),
-        workers: ActorSpace::new(),
-        status: ActorSpace::new(),
-        capability: ActorSpace::new(),
+    let supervisor = {
+        let roles =
+            OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role roster is distinct");
+        let initial_activated = activated.clone();
+        fixed(
+            move |role: &WorkerRole| worker_submission(*role, &initial_activated),
+            roles,
+            ActivationPolicy::new(1).expect("one worker fits the activation policy"),
+            Recovery::permanent(
+                Workshop { activated },
+                Strategy::OneForOne,
+                RestartLimit::new(1, Duration::from_secs(30)),
+                RestartRelease::immediate(),
+            ),
+            FailureReaction::StopSupervisor,
+            ActorDrainPolicy::WaitForActorGraph,
+            DiagnosticDisposition::terminate(),
+        )
+        .build()
+        .unwrap_or_else(|_| panic!("the declared worker is prepared"))
     };
+    let spaces = supervisor_application::Topology::new();
     let application_host = Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            App::new(supervisor.stop_on_shutdown(), spaces)
-                .run_with::<SupervisorTerminal, _, _, _>(move |application| async move {
+            Application::with_topology(supervisor.stop_on_shutdown(), spaces).run_with(
+                move |application| async move {
                     let first = tokio::time::timeout(Duration::from_secs(5), activations.recv())
                         .await
                         .expect("the first worker activates")
                         .expect("the first activation has a role");
                     assert_eq!(first, WorkerRole::Primary);
 
-                    let interface =
-                        application.interface(application.root().established_recipient());
-                    let mut caller = interface
+                    let supervisor = application.root().established_recipient();
+                    let mut caller = application
                         .external::<Capability>()
                         .expect("the capability caller is established");
                     caller
                         .send(
-                            interface.api(),
+                            &supervisor,
                             FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
                         )
                         .await
@@ -253,14 +191,14 @@ fn run_supervision() {
                             .expect("the replacement activation has a role");
                     assert_eq!(replacement, WorkerRole::Primary);
                     caller
-                        .send(interface.api(), FixedCommand::shutdown())
+                        .send(&supervisor, FixedCommand::shutdown())
                         .await
                         .expect("the supervisor accepts shutdown");
-                    let lifecycle = application.lifecycle();
-                    tokio::time::timeout(Duration::from_secs(5), lifecycle.termination())
+                    tokio::time::timeout(Duration::from_secs(5), application.termination())
                         .await
                         .expect("the supervisor retires after replacement and shutdown")
-                }),
+                },
+            ),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -281,80 +219,85 @@ fn run_supervision() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: SupervisorTerminal = ProjectTerminal::project(
-        root_origin,
-        match joined_actor {
-            ActorRetirement::ActorTaskFailed(failure) => {
-                panic!("the actual application actor task failed: {failure}")
-            }
-            retirement => retirement,
-        },
-    );
-
     assert_eq!(termination, Ok(Exit::Normal));
-    assert_restarted_worker_retirement(terminal);
-}
-
-fn assert_restarted_worker_retirement(terminal: SupervisorTerminal) {
-    let SupervisorTerminal::Root { origin, terminal } = terminal else {
-        panic!("the application returns its supervisor root");
+    let origin = root_origin;
+    let terminal = match joined_actor {
+        ActorRetirement::ActorTaskFailed(failure) => {
+            panic!("the actual application actor task failed: {failure}")
+        }
+        retirement => retirement,
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
-        descendants,
         ..
     } = terminal
     else {
         panic!("the supervisor returns completed terminal custody")
     };
-    assert!(capability_failures.is_empty());
+    assert_eq!(capability_failures.len(), 0);
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
-    let SupervisorTerminal::Proxy { origin, terminal } = descendants
+    let supervisor_application::RootRetirements {
+        origin,
+        retirement: terminal,
+    } = descendants
         .into_iter()
         .next()
-        .expect("the primary role retains its proxy")
-    else {
-        panic!("the primary child is a stable proxy")
-    };
+        .expect("the primary role retains its proxy");
+    let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
         completion,
-        descendants,
         ..
     } = terminal
     else {
         panic!("the proxy returns both worker incarnations")
     };
-    assert!(capability_failures.is_empty());
+    assert_eq!(capability_failures.len(), 0);
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
     for descendant in descendants {
-        let SupervisorTerminal::Worker { origin, terminal } = descendant else {
-            panic!("the proxy retains a worker incarnation")
-        };
+        let supervisor_application::ProxyRetirements {
+            origin,
+            retirement: terminal,
+        } = descendant;
+        let terminal = *terminal;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
-            capability_failures,
-            unread_owner_cancellation,
+            custody:
+                ActorCustody {
+                    capability_failures,
+                    unread_owner_cancellation,
+                    descendants,
+                    ..
+                },
             completion,
-            descendants,
             ..
         } = terminal
         else {
             panic!("the worker returns completed terminal custody")
         };
-        assert!(capability_failures.is_empty());
+        assert_eq!(capability_failures.len(), 0);
         assert!(unread_owner_cancellation.is_none());
         assert_eq!(completion, Completion::Stopped);
-        assert!(descendants.is_empty());
+        assert_eq!(descendants.len(), 0);
     }
 }
 
@@ -364,16 +307,41 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::prepared_supervisor;
+    use super::{WorkerRole, Workshop, worker_submission};
     use bombay::atomic::ProxyPhase;
+    use bombay::atomic::{
+        ActivationPolicy, ActorDrainPolicy, DiagnosticDisposition, FailureReaction, OrderedRoles,
+        Recovery, RestartLimit, RestartRelease, Strategy, fixed,
+    };
     use bombay::behavior::{CreationKind, Step};
     use bombay::prelude::Activate as _;
+    use core::time::Duration;
     use tokio::sync::mpsc;
 
     #[test]
     fn fixed_supervisor_initialization_preserves_role_and_correlation() {
         let (activated, _) = mpsc::unbounded_channel();
-        let supervisor = prepared_supervisor(activated);
+        let supervisor = {
+            let roles = OrderedRoles::new(WorkerRole::Primary, [])
+                .expect("the one-role roster is distinct");
+            let initial_activated = activated.clone();
+            fixed(
+                move |role: &WorkerRole| worker_submission(*role, &initial_activated),
+                roles,
+                ActivationPolicy::new(1).expect("one worker fits the activation policy"),
+                Recovery::permanent(
+                    Workshop { activated },
+                    Strategy::OneForOne,
+                    RestartLimit::new(1, Duration::from_secs(30)),
+                    RestartRelease::immediate(),
+                ),
+                FailureReaction::StopSupervisor,
+                ActorDrainPolicy::WaitForActorGraph,
+                DiagnosticDisposition::terminate(),
+            )
+            .build()
+            .unwrap_or_else(|_| panic!("the declared worker is prepared"))
+        };
         let initialized = supervisor
             .initialize()
             .unwrap_or_else(|_| panic!("the fixed supervisor initializes its stable proxy"));

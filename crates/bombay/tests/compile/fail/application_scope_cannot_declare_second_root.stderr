@@ -1,0 +1,15 @@
+error[E0382]: use of moved value: `scope`
+ --> tests/compile/fail/application_scope_cannot_declare_second_root.rs:9:19
+  |
+7 |     let scope = bombay::ApplicationScope::new();
+  |         ----- move occurs because `scope` has type `ApplicationScope`, which does not implement the `Copy` trait
+8 |     let _first = scope.with_root(Service);
+  |                        ------------------ `scope` moved due to this method call
+9 |     let _second = scope.with_root(Service);
+  |                   ^^^^^ value used here after move
+  |
+note: `bombay::ApplicationScope::with_root` takes ownership of the receiver `self`, which moves `scope`
+ --> src/application/scope.rs
+  |
+  |     pub fn with_root<Root>(self, root: Root) -> Application<Root, ActorSpace<Root::Protocol>>
+  |                            ^^^^

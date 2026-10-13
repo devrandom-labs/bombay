@@ -1,0 +1,5 @@
+error[E0599]: no method named `receive` found for struct `ApplicationSender<Target>` in the current scope
+ --> tests/compile/fail/application_sender_has_no_receive.rs:6:25
+  |
+6 |     let _reply = sender.receive().await;
+  |                         ^^^^^^^ method not found in `ApplicationSender<EstablishedRecipient<MessageProtocol<bombay::MailAddr, u8>>>`

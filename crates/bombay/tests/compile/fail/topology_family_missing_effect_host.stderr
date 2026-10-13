@@ -1,0 +1,22 @@
+error[E0599]: the method `run_with_entities` exists for struct `Application<StopOnShutdown<Root>, Topology, (), (AuditorsRole, Auditors, DirectoryConfig, EntityCapacity, ())>`, but its trait bounds were not satisfied
+  --> tests/compile/fail/topology_family_missing_effect_host.rs:76:46
+   |
+62 | / bombay::topology! {
+63 | |     audit_application {
+64 | |         root: Root {}
+65 | |         hosts { auditors: Auditor; }
+...  |
+69 | | }
+   | |_- doesn't satisfy `Topology: Hosts<Ledger>`
+...
+76 |       let _outcome = host.block_on(application.run_with_entities(|application| async move {
+   |                                    ------------^^^^^^^^^^^^^^^^^ method cannot be called due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `Topology: Hosts<Ledger>`
+           which is required by `(AuditorsRole, Auditors, DirectoryConfig, EntityCapacity, ()): entity::family::InstallEntityFamilies<Topology>`
+note: the trait `Hosts` must be implemented
+  --> src/topology.rs
+   |
+   | pub trait Hosts<P>
+   | ^^^^^^^^^^^^^^^^^^
