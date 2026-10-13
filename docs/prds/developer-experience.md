@@ -114,10 +114,13 @@ original birth/replacement/replay request before allocation and preserves the
 accepted prefix/later sibling and joined children on both compilers/profiles.
 Both defect inverses reproduce the panic. PR93 merged externally as6eb4f73;
 its exact main CI and normal Release pass. PR91's pure birth-alias fix merged
-under explicit authorization as79cae26. The bot-generated release is now PR97
-(Core/Actors0.26.0, macros0.14.2); its corrected four-workspace/package preflight
-and all ten native gates pass. Fresh CI and actual publication remain pending;
-Bombay still selects the published0.25/0.14.1 contracts.
+under explicit authorization as79cae26. Release PR97 at8064f22 passes the
+corrected four-workspace/archive preflight, all ten native gates and exact-head
+CI38350983446. It merged as98983b4 under the same authorization. Main
+CI38352087285 and normal Release38353101159 pass; independent registry and
+GitHub release checks confirm Core/Actors0.26.0 and macros0.14.2 are published
+and un-yanked. Bombay still selects0.25/0.14.1 until its separate registry
+adoption and downstream verification.
 
 WorkerFactory now owns an ordinary callable for replacement preparation, so
 fixed/FIFO callers need neither a custom source struct nor two trait impls.
@@ -193,8 +196,9 @@ transfer. Complete terminal control sums and ActorCustody remain authoritative.
 Published Behavior/Actors0.24.0 and macros0.14.1 came from049c88c through
 Release38159701650 after PR89/90/92. Communication0.1.5 came through the
 normal Release38161501036 after authorized PR11/12. Registry adoption is
-e4d2db1; publication of PR91 or correlation821380e is not inferred from local
-source. Exact source, release and gate evidence belongs in the owning PRD.
+e4d2db1. PR91 and correlation821380e are now independently confirmed published
+through release97; their new registry versions are not yet selected here.
+Exact source, release and gate evidence belongs in the owning PRD.
 
 Networking, durability, identity and deployment remain separately deferred.
 The evidence appendix owns coverage of270 backlog rows,100 failure records,
