@@ -489,3 +489,6 @@ async fn closing_root_client_preserves_accepted_reply_and_then_exhausts() {
     let (_, retirement) = native.expect("complete actor retirement remains independently owned");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
 }
+
+#[path = "application_clients/protected_requests.rs"]
+mod protected_requests;

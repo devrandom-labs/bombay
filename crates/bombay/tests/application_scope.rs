@@ -5,10 +5,16 @@
 //! is a fresh incarnation after fenced retirement; it is not Behavior Actors'
 //! explicit `StableProxy` worker-replacement policy.
 
+use bombay::behavior::{Behavior, ChildCons, ChildHead, NoChildren};
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport,
     RetirementAssessment, RetirementSchema,
 };
+use bombay::{
+    ApplicationBehavior, ApplicationTopology, ChildFailure, ChildOrigin, Hosts, NativeChild,
+    ProjectTerminal, RootRegistration,
+};
+use core::marker::PhantomData;
 use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -80,16 +86,20 @@ impl Account {
 type AccountRetirement =
     Result<ActorRetirement<StopOnShutdown<Account>, Never, Vec<Never>>, tokio::task::JoinError>;
 
-struct Accounts {
+struct Accounts<Spaces = topology::Topology> {
+    account_hosts: PhantomData<fn() -> Spaces>,
     retired: Arc<Semaphore>,
     retirements: Arc<Mutex<Vec<(AccountRetirement, ActorRetirementReport)>>>,
     unexpected_facts: Arc<AtomicUsize>,
 }
 
-impl EntityDefinition for Accounts {
+impl<Spaces> EntityDefinition for Accounts<Spaces>
+where
+    Spaces: Hosts<<Account as Behavior>::Protocol> + Send + Sync + 'static,
+{
     type Id = u64;
     type Behavior = StopOnShutdown<Account>;
-    type Hosts = topology::Topology;
+    type Hosts = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
     type ChildFailures = Vec<Never>;
@@ -168,21 +178,44 @@ impl Drop for ColdAccount {
         }
     }
 }
-#[test]
 #[expect(
     clippy::too_many_lines,
     reason = "keep each complete custody journey observable without hiding caller syntax in another abstraction"
 )]
-fn cold_members_compose_with_live_entity_families() {
+fn run_cold_account_family<Spaces, Descendants>(
+    spaces: Spaces,
+    cold_account: impl FnOnce(Descendants) -> (ColdAccountOrigin, Box<AccountTerminal>),
+) where
+    Descendants: RetirementSchema<Failure = ChildFailure<ColdAccountOrigin, ManagedAccount>>
+        + ProjectTerminal<ColdAccountOrigin, ManagedAccount, Descendants = Never>
+        + Send
+        + 'static,
+    Spaces: ApplicationTopology<ManagedRoot, ColdMembers, Descendants = Descendants>
+        + RootRegistration<<Root as Behavior>::Protocol>
+        + Hosts<<Account as Behavior>::Protocol>
+        + NativeChild<ColdApplication, ChildHead, ManagedAccount, Descendants, Never>,
+{
+    let account_registration = <Spaces as NativeChild<
+        ColdApplication,
+        ChildHead,
+        ManagedAccount,
+        Descendants,
+        Never,
+    >>::registration(&spaces);
+    let cold_scope = account_registration.registration_scope_id();
+    let host_scope =
+        Hosts::<<Account as Behavior>::Protocol>::space(&spaces).registration_scope_id();
+    let root_scope = RootRegistration::<<Root as Behavior>::Protocol>::root_space(&spaces)
+        .registration_scope_id();
     let retired = Arc::new(Semaphore::new(0));
     let retirements = Arc::new(Mutex::new(Vec::new()));
     let unexpected_facts = Arc::new(AtomicUsize::new(0));
-    let definition = Accounts {
+    let definition = Accounts::<Spaces> {
+        account_hosts: PhantomData,
         retired: Arc::clone(&retired),
         retirements: Arc::clone(&retirements),
         unexpected_facts: Arc::clone(&unexpected_facts),
     };
-    let spaces = topology::Topology::new();
     let capacity = EntityCapacity::new(
         NonZeroUsize::new(2).expect("two is non-zero"),
         NonZeroUsize::new(32).expect("32 is non-zero"),
@@ -290,24 +323,24 @@ fn cold_members_compose_with_live_entity_families() {
     assert_eq!(metrics.activations, 2);
     assert_eq!(metrics.residents, 0);
     assert_eq!(unexpected_facts.load(Ordering::Relaxed), 0);
-    assert_application_stopped(terminal);
+    assert_application_stopped(terminal, cold_account);
     assert_retirements(&retirements);
+    assert_ne!(cold_scope, host_scope);
+    assert_ne!(cold_scope, root_scope);
 }
 
 #[expect(
     clippy::type_complexity,
     reason = "observe the complete original root and inferred actor retirement without another structural alias"
 )]
-fn assert_application_stopped<R>(
+fn assert_application_stopped<R, Descendants>(
     terminal: (
         RootOrigin<StopOnShutdown<Root>>,
-        ActorRetirement<
-            R,
-            topology::RootRetirements<StopOnShutdown<Root>>,
-            Vec<<topology::RootRetirements<StopOnShutdown<Root>> as RetirementSchema>::Failure>,
-        >,
+        ActorRetirement<R, Descendants, Vec<<Descendants as RetirementSchema>::Failure>>,
     ),
+    cold_account: impl FnOnce(Descendants) -> (ColdAccountOrigin, Box<AccountTerminal>),
 ) where
+    Descendants: RetirementSchema,
     R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     R::Settlements: ClassifySettlement,
 {
@@ -359,13 +392,11 @@ fn assert_application_stopped<R>(
     assert!(user.is_empty());
     assert!(child_failures.is_empty());
     assert_eq!(descendants.len(), 1);
-    let topology::RootRetirements {
-        origin: child_origin,
-        retirement: child_retirement,
-    } = descendants
+    let original_child = descendants
         .into_iter()
         .next()
         .expect("the actual cold account retires");
+    let (child_origin, child_retirement) = cold_account(original_child);
     assert_ne!(child_origin.address(), origin.address());
     assert_eq!(
         child_origin.creation_kind(),
@@ -517,6 +548,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
 
 fn original_family() -> Accounts {
     Accounts {
+        account_hosts: PhantomData,
         retired: Arc::new(Semaphore::new(0)),
         retirements: Arc::new(Mutex::new(Vec::new())),
         unexpected_facts: Arc::new(AtomicUsize::new(0)),
@@ -923,3 +955,22 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
     drop(work);
     assert_eq!(work_retained.strong_count(), 0);
 }
+
+type ManagedRoot = StopOnShutdown<Root>;
+type ManagedAccount = StopOnShutdown<Account>;
+type ColdMembers = (ColdAccount, ManagedAccount, ());
+type ColdAccountOrigin = ChildOrigin<ManagedRoot, ColdAccount>;
+type AccountTerminal = ActorRetirement<ManagedAccount, Never, Vec<Never>>;
+type ColdApplication =
+    ApplicationBehavior<ManagedRoot, ChildCons<MailAddr, ManagedAccount, NoChildren>>;
+
+#[test]
+fn cold_members_compose_with_live_entity_families() {
+    run_cold_account_family(
+        topology::Topology::new(),
+        |topology::RootRetirements { origin, retirement }| (origin, retirement),
+    );
+}
+
+#[path = "application_scope/topology_comparison.rs"]
+mod topology_comparison;

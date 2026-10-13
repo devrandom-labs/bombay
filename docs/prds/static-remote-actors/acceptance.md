@@ -44,6 +44,17 @@ isolated research; relocating a fixture does not prove shipping remote support.
 First reconcile the committed DevX Application APIs with the proven admission
 and retirement laws, preserving the active worktree's uncommitted changes.
 
+The current DevX prerequisite now has six owning macro/manual comparisons in
+debug and optimized builds. Actual generator custody/registration cuts reach
+their intended post-cleanup failures; exact source restoration and final fresh
+builds pass. Independent review verifies all16 campaign records and325 captured
+source inputs. The private two-protocol scope comparison also passes both
+providers and three selected cuts/restorations on styled source. Combined
+workspace Cargo753/0/4, Nextest749 passed/one skipped, build, strict Clippy and
+formatting pass on cleanup-first04d, with scoped source/receipt reviews. These
+are prerequisites; revised-head CI and actual merge remain pending.
+No full R01–R25 row is closed by this evidence.
+
 ## Requirement traceability
 
 The inventory IDs below map exactly to the PRD's selected scope. Several IDs

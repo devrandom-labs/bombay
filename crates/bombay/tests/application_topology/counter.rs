@@ -110,3 +110,6 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
     assert_eq!(custody.descendants.len(), 0);
     assert_eq!(completion, Completion::Stopped);
 }
+
+#[path = "counter/comparison.rs"]
+mod comparison;

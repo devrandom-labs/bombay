@@ -3,6 +3,13 @@
 
 use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
+use bombay::atomic::{FixedSupervisor, StableProxy};
+use bombay::behavior::{Behavior, BirthMode, ChildHead, CreationKind};
+use bombay::{
+    ApplicationTopology, ChildFailure, ChildOrigin, Hosts, NativeChild, ProjectTerminal,
+    RetirementSchema, RootRegistration,
+};
+use core::convert::Infallible;
 use core::time::Duration;
 use tokio::runtime::Builder;
 
@@ -122,7 +129,26 @@ bombay::topology! {
     clippy::too_many_lines,
     reason = "one complete replacement and drain trace preserves original incarnation and terminal custody"
 )]
-fn run_supervision() {
+fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
+    spaces: Spaces,
+    primary_proxy: impl FnOnce(RootDescendants) -> (ProxyOrigin, Box<ProxyTerminal<ProxyDescendants>>),
+    mut worker: impl FnMut(ProxyDescendants) -> (WorkerOrigin, Box<WorkerTerminal>),
+) where
+    RootDescendants: RetirementSchema<Failure = ChildFailure<ProxyOrigin, NativeProxy>>
+        + ProjectTerminal<ProxyOrigin, NativeProxy, Descendants = ProxyDescendants>
+        + Send
+        + 'static,
+    ProxyDescendants: RetirementSchema<Failure = ChildFailure<WorkerOrigin, NativeWorker>>
+        + ProjectTerminal<WorkerOrigin, NativeWorker, Descendants = Never>
+        + Send
+        + 'static,
+    Spaces: ApplicationTopology<ManagedSupervisor, (), Descendants = RootDescendants>
+        + RootRegistration<<ManagedSupervisor as Behavior>::Protocol>
+        + Hosts<Status>
+        + Hosts<Capability>
+        + NativeChild<ManagedSupervisor, ChildHead, NativeProxy, RootDescendants, ProxyDescendants>
+        + NativeChild<NativeProxy, ChildHead, NativeWorker, ProxyDescendants, Never>,
+{
     let (activated, mut activations) = mpsc::unbounded_channel();
     let supervisor = {
         let roles =
@@ -145,7 +171,6 @@ fn run_supervision() {
         .build()
         .unwrap_or_else(|_| panic!("the declared worker is prepared"))
     };
-    let spaces = supervisor_application::Topology::new();
     let application_host = Builder::new_current_thread()
         .enable_all()
         .build()
@@ -243,13 +268,11 @@ fn run_supervision() {
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 1);
-    let supervisor_application::RootRetirements {
-        origin,
-        retirement: terminal,
-    } = descendants
+    let original_proxy = descendants
         .into_iter()
         .next()
         .expect("the primary role retains its proxy");
+    let (origin, terminal) = primary_proxy(original_proxy);
     let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
@@ -270,11 +293,19 @@ fn run_supervision() {
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants.len(), 2);
+    let mut previous_creation = None;
     for descendant in descendants {
-        let supervisor_application::ProxyRetirements {
-            origin,
-            retirement: terminal,
-        } = descendant;
+        let (origin, terminal) = worker(descendant);
+        let kind = origin.creation_kind();
+        match kind {
+            CreationKind::Birth => assert_eq!(previous_creation, None),
+            CreationKind::Replacement { previous } => {
+                assert_eq!(previous_creation, Some(previous));
+            }
+        }
+        let current_creation = origin.creation_id();
+        assert_ne!(Some(current_creation), previous_creation);
+        previous_creation = Some(current_creation);
         let terminal = *terminal;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
@@ -300,7 +331,11 @@ fn run_supervision() {
 
 #[test]
 fn supervisor_replaces_and_retires_native_worker() {
-    run_supervision();
+    run_supervision(
+        supervisor_application::Topology::new(),
+        |supervisor_application::RootRetirements { origin, retirement }| (origin, retirement),
+        |supervisor_application::ProxyRetirements { origin, retirement }| (origin, retirement),
+    );
 }
 
 #[cfg(test)]
@@ -361,3 +396,17 @@ mod tests {
         assert_eq!(initialized.actions.become_, Step::Continue);
     }
 }
+
+type Supervisor =
+    FixedSupervisor<WorkerRole, ManagedWorker, ActivationNotice, Workshop, Infallible, Infallible>;
+type ManagedSupervisor = StopOnShutdown<Supervisor>;
+type NativeProxy = StableProxy<ManagedWorker, ActivationNotice>;
+type NativeWorker = <<NativeProxy as Behavior>::Birth as BirthMode>::Child;
+type ProxyOrigin = ChildOrigin<Supervisor, ChildHead>;
+type WorkerOrigin = ChildOrigin<NativeProxy, ChildHead>;
+type ProxyTerminal<Descendants> =
+    ActorRetirement<NativeProxy, Descendants, Vec<<Descendants as RetirementSchema>::Failure>>;
+type WorkerTerminal = ActorRetirement<NativeWorker, Never, Vec<Never>>;
+
+#[path = "supervision/topology_comparison.rs"]
+mod topology_comparison;

@@ -710,3 +710,6 @@ fn stopped_root_deadline_reached(
 {
     Actions::stop()
 }
+
+#[path = "recursive/comparison.rs"]
+mod comparison;

@@ -38,9 +38,8 @@ protected Counter passes59/0/1 in each. Actual TLS campaigns pass32 cases/
 80 roles per profile; child Stop and query-count controls pass2/0/0 each.
 Independent artifact review preserves their fixture scope and setup-failure
 limitations. Combined compilation identifies imported test consumers of the
-old Application receiving shape; disjoint parallel migration reuses the
-approved independent native and notification receipts. DevX integration is
-not committed, reviewed for delivery, CI-complete or merged yet. Keep the local
+old Application receiving shape; completed disjoint migration reuses the
+approved independent native and notification receipts. Keep the local
 Counter in its own example; the separate `examples/remote-counter` application
 and Bombay's actual `remote` feature remain required crate-delivery work.
 
@@ -55,6 +54,26 @@ The integration is submitted as draft
 [PR359](https://github.com/devrandom-labs/bombay/pull/359) from committed4809437,
 with required CI and actual delivery pending. Its scoped review and passing
 local commands do not mark the feature merged. Main is unchanged671ba860.
+On submitted32cec46, native debug and reviewed CodeQL adjudication pass;
+native release stalls before the child/peer/recorded caller's local-read marker,
+and required Nix remains running. The cause is unproved. Temporary local markers
+pass the single macOS case and are restored byte-exact; separate Linux diagnostic
+run38448095363 preserves the unchanged controller and all assertions. Research
+results cannot substitute for passing delivery-head CI or an actual merge.
+The unchanged delivery source32cec46 now passes all six observed checks.
+Required Nix executes740/0/1, three actual Counter55/0/0 profiles, recorded
+coverage and ASAN campaigns; Miri is skipped. Release attempt2 passes32cases/
+80roles plus child-stop/query-count2/0/0 each. The original attempt's guard
+failure remains unexplained. Independent final source review and actual PR
+merge are still required; no full remote obligation closes from this slice.
+Final source review identified missing current topology macro/manual differential
+verification. Six owning comparisons now pass debug/optimized; three generator
+cuts fail their intended laws in both profiles, with exact restoration and
+independent artifact review. Styled two-protocol scope controls also pass their
+three causal cuts/restorations. Combined workspace Cargo753/0/4, Nextest749 passed/one skipped, build, strict
+Clippy and formatting pass on cleanup-first04d. Scoped source and receipt reviews
+pass. Revised-head CI and actual delivery remain required; passing
+head32 does not certify these added tests or close full remote acceptance.
 
 Protected-Application prerequisite [PR354](https://github.com/devrandom-labs/bombay/pull/354)
 merged36c00d53c84482c2b1fdf0587dca788bc6c39250 at2026-10-12T04:16:32Z after
