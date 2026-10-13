@@ -1,0 +1,46 @@
+--- a/examples/counter/src/bin/authorized.rs
++++ b/examples/counter/src/bin/authorized.rs
+@@ -5449,7 +5449,16 @@
+             counter_requested_fixture(b'Y', configured),
+         ];
+         let (release, released) = oneshot::channel();
+-        let profiler = dhat::Profiler::builder().testing().build();
++        let identity_order = match &order {
++            IdentityOrder::Increasing => "increasing",
++            IdentityOrder::Decreasing => "decreasing",
++        };
++        let mut comparison_live = [(0, 0, 0, 0); 2];
++        let profiler = dhat::Profiler::builder()
++            .file_name("/dev/null")
++            .eprint_json()
++            .trim_backtraces(None)
++            .build();
+         let (authorization, header_requests) = requested_allocations(|| {
+             CounterAuthorization::new(
+                 StartupMode::ExplicitTest,
+@@ -5596,13 +5605,25 @@
+         );
+         authorization.permission = Permission::Revoked;
+         for position in 0..2 {
++            let comparison_before = dhat::HeapStats::get();
+             let ((), requested) = requested_allocations(|| {
+                 authorization.associate(position, requests, replies);
+             });
++            let comparison_after = dhat::HeapStats::get();
++            comparison_live[position] = (
++                comparison_before.curr_blocks,
++                comparison_before.curr_bytes,
++                comparison_after.curr_blocks,
++                comparison_after.curr_bytes,
++            );
+             measured.comparison_requests[position] = requested;
+             let correlation = authorization.pending[position].correlation;
+             authorization.attempt(correlation, requests);
+         }
++        eprintln!(
++            "DHAT comparison {profile:?}/{identity_order}: requests {:?}; live {:?}",
++            measured.comparison_requests, comparison_live
++        );
+         measured.reserved_unread = authorization.reserved_bytes;
+         for pending in &authorization.pending {
+             let _report = authorization.report(pending.correlation);

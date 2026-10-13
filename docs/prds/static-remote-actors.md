@@ -1,5 +1,34 @@
 # Static remote actors and typed admission
 
+### Provider CI allocation discrepancy — diagnostic gate, 2026-10-13
+
+Select the isolated Linux proposal under standing recommendation delegation:
+30 diagnostic test introductions and90 orchestration lines (from30), with
+64 retained runner/workflow lines and22/-1 diagnostic Rust lines. The diagnostic
+branch preserves exact source6d in an archive and patches only a separate
+research copy. Run at most three original and three traced owning Nix checks;
+retain source hashes, logs and real exits. Existing example source, assertions,
+production/API/dependencies and main remain unchanged. Collection success is
+not a passing feature check. Baseline reproduction and later causal attribution
+remain required before selecting any remedy.
+
+Required Linux Nix38345324061/job115125353184 fails the unchanged exact
+comparison-allocation oracle on head6d3130f:829 requested bytes versus781
+protected bytes, after the prior recorded/increasing control passed. Local
+Darwin workspace/protected controls passed; they cannot identify this48-byte
+Linux difference. No expected value, reservation or resource promise is widened.
+
+The subsequent user rule makes examples production-quality application code.
+Keep any diagnostic adaptation in explicitly isolated research or owning crate
+tests; do not add further verification plumbing to the example. The proposed
+owning DHAT profiler emits captured backtraces using its native eprint_json,
+file_name("/dev/null") and trim_backtraces(None); print the existing per-window
+block/byte observations after measurement. Preserve every assertion and input.
+Forecast at most30 test introductions and30 command/evidence adaptations,
+production/API/dependencies0; no diagnostic source has been applied. Diagnose actual Linux allocation sites before
+selecting any correction. Process-global incidental allocation is a hypothesis,
+not evidence of a harmless failure. Replacement exact-head CI remains required.
+
 ### Crate delivery and DevX integration — user direction, 2026-10-13
 
 The user explicitly requires remote capability in `crates/bombay`, behind the

@@ -1,0 +1,35 @@
+name: Isolated PR358 allocation diagnostics
+on:
+  push:
+    branches: [diagnostic/pr358-allocation-custody]
+permissions:
+  contents: read
+jobs:
+  allocation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c
+        with:
+          nix_conf: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+      - name: Collect original and isolated research check results
+        run: bash research/allocation-diagnostic/run.sh
+      - name: Retain diagnostic source custody and actual logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pr358-allocation-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/allocation-diagnostic/source.tar
+            ${{ runner.temp }}/allocation-diagnostic/research-inputs.sha256
+            ${{ runner.temp }}/allocation-diagnostic/trace.patch
+            ${{ runner.temp }}/allocation-diagnostic/baseline.*
+            ${{ runner.temp }}/allocation-diagnostic/trace.*
+          if-no-files-found: error
+          retention-days: 14
