@@ -1,12 +1,43 @@
 # Static remote actors and typed admission
 
+## Reviewed DevX integration delivery — 2026-10-13
+
+[PR359](https://github.com/devrandom-labs/bombay/pull/359) merged at
+2026-10-13T22:17:06Z as `7fccf08b120dc468de6e5aa2ed9719724814c375`.
+Reviewed head `df6144f37c1db5a4c760b544d27f42c2cfff0bc6` and merged main
+have the same tree `1ab9ea6db753d9bd5ab6843e40a558904a37018b`.
+All six observed checks pass. Required
+[Nix job115544829136](https://github.com/devrandom-labs/bombay/actions/runs/38469571372/job/115544829136)
+executes749 optimized workspace tests, zero failures and one ignored; Counter55
+executes in plain debug, coverage and optimized builds. The six topology
+comparisons and three protected-scope/decoder witnesses execute in coverage
+and optimized builds. Plain filtered listings receive no execution credit.
+Driver2048 and four Observe1024 fuzz campaigns and their fresh archives pass
+artifact review; Miri does not execute for this pull-request event. Returned
+step metadata is stale; terminal job status, complete logs and actual artifacts
+are retained separately. Source review0c29aecb, native review55f6f795 and
+required-CI review8029eb80 are recorded on the reviewed PR.
+
+This delivers the frozen DevX integration and provider-custody prerequisites.
+Every full R01–R25 obligation, AUTH1/NET1, the crate-owned remote entrypoint
+and separate `examples/remote-counter` remain open. Older unexplained release
+and allocation failures retain their historical qualifications. The coordinator
+starts `feat/static-remote-library` from actual merged main in the existing
+integration worktree; primary AGENTS edits and the active DevX tree are preserved.
+
+One independently verified clean worktree, the exact merged PR357 head, was
+removed under the user's cleanup instruction: about8.7MiB. Other old trees
+retain local changes or lack merge proof. No shared target or evidence archive
+was deleted.
+
 ## Current integration contract — 2026-10-13
 
-The primary workspace and main671ba860 still select Behavior/Actors0.23.0,
-macros0.14.0 and patched Timers13e884da, with root lock47089444. The submitted
-DevX integration32cec46 selects Behavior/Actors0.25.0 at2bb4510, macros0.14.1,
-registry Timers0.2.0 at9369d1f and no patches, with root lock42eb8120 and native
-lock7ae93c48. Address0.3.0, Communication0.1.5 and Bombay-private Observe retain
+Merged main7fccf08b and the coordinator's new feature branch select
+Behavior/Actors0.25.0 at2bb4510, macros0.14.1, registry Timers0.2.0 at9369d1f
+and no patches, with root lock42eb8120 and native lock7ae93c48. The preserved
+primary workspace remains at671ba860 with its original0.23/Timers patch graph
+and AGENTS edit; it is not the source of the next implementation stage.
+Address0.3.0, Communication0.1.5 and Bombay-private Observe retain
 their owning contracts. Selected native transport remains bombay-zenoh1.10.8;
 lower packages retain their actual independently locked versions, including
 Config1.10.2. Do not relabel every transitive package1.10.8.
@@ -15,7 +46,7 @@ Current integration source/evidence takes precedence over older checkpoint
 snapshots below for that integration only. Historical owner versions and
 passing probes never certify a later graph. The selected Behavior revision's
 complete760-line AGENTS and relevant current owning sources are inspected.
-The two working trees remain distinct until actual reviewed delivery. Preserve
+The two working trees remain distinct after reviewed integration delivery. Preserve
 the primary AGENTS edit and leave the active DevX worktree untouched.
 
 All full R01–R25 obligations remain open. The optional remote feature and its
