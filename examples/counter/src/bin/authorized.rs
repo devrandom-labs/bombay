@@ -13,7 +13,7 @@ use bombay::{
     ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport, ApplicationLifecycle,
     ApplicationOutcome, InstalledActor, RetirementAssessment, TrySendError,
 };
-use core::ops::{AsyncFn, AsyncFnOnce};
+use core::ops::AsyncFn;
 use futures_util::FutureExt;
 use futures_util::future::maybe_done;
 use serde_json::error::Category;
@@ -800,10 +800,12 @@ impl<R> CounterAuthorization<R> {
 
 // Borrow only the entry: the same owner can still observe permission updates.
 // One actual provider call owns its original release future/cause; no mutex.
-async fn acquire_verification<R>(
-    pending: &mut PendingAdmission<R>,
-    provider: impl AsyncFnOnce(&CounterRequest) -> Result<R, VerificationError>,
-) {
+async fn acquire_verification<'request, R, F>(
+    pending: &'request mut PendingAdmission<R>,
+    provider: impl FnOnce(&'request CounterRequest) -> F,
+) where
+    F: Future<Output = Result<R, VerificationError>>,
+{
     if matches!(pending.verification, Verification::Awaiting) {
         let (original, verification) = (&pending.original, &mut pending.verification);
         let mut provider_verification = pin!(provider(original));
@@ -2169,8 +2171,8 @@ async fn run_counter_profile<R>(
                                                     {
                                                         acquire_verification(
                                                             &mut authorization.pending[position],
-                                                            async |original| {
-                                                                provider(original, configured).await
+                                                            |original| {
+                                                                provider(original, configured)
                                                             },
                                                         )
                                                         .await;
@@ -3142,9 +3144,10 @@ async fn run_protected_counter_profile<R>(
                             }
                         }
                         triggered = Some(requests.receive().await);
-                        acquire_verification(&mut authorization.pending[position], async |original| {
+                        let request_limits = counter_test_json_limits();
+                        acquire_verification(&mut authorization.pending[position], |original| {
                             provider(original, configured, AuthorityFreshness::Current, ProviderAvailability::Available,
-                                profile, CounterProofPurpose::Request, binding.caller, binding.host, &counter_test_json_limits()).await
+                                profile, CounterProofPurpose::Request, binding.caller, binding.host, &request_limits)
                         }).await;
                         authorization.associate(position, &requests, &values.recipient());
                         authorization.attempt(correlation, &requests);
@@ -4651,6 +4654,7 @@ mod tests {
 mod pending_verification {
     use super::*;
     use std::pin::pin;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
     #[expect(
@@ -4658,194 +4662,244 @@ mod pending_verification {
         reason = "Preserve the real pending wait, original receipt and sequential native acquisition before revocation oracles."
     )]
     fn canceled_borrowed_verification_observes_known_revocation() {
-        let host = Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("explicit host");
-        host.block_on(async {
-            let mut authority = AssignmentAuthority {
-                host: &host,
-                runtime_generation: 23,
-                grant_issuer: "grant-controller",
-                authority_generation: 7,
-                permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
-                next: Some(29),
-            };
-            let (binding, deadline) = authority
-                .issue()
-                .unwrap_or_else(|_| panic!("finite assignment"));
-            let configured =
-                [
-                    configured_counter_grants(binding, CounterProofProfile::RecordedTest)[0]
-                        .clone(),
-                ];
-            let records = &configured;
-            let mut original = Some(counter_request(&records[0]));
-            let request_allocations = original
-                .as_ref()
-                .map(|original| (original.protected.as_ptr(), original.proof.as_ptr()));
-            let mut counter_authorization = None;
-            let mut reservation = None;
-            let mut verification_observations = None;
-            let original_storage = &mut original;
-            let reservation_storage = &mut reservation;
-            let observations_storage = &mut verification_observations;
-            let authorization_storage = &mut counter_authorization;
-            let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
-                .execute_with::<_, _, Never, (), _, _>(|application| async move {
-                    let target = application.root().established_recipient();
-                    let address = application.root().address();
-                    let interface = application.interface(());
-                    let requests = interface
-                        .external::<CounterRequests>()
-                        .expect("service port");
-                    let mut replies = interface.external::<CounterValue>().expect("snapshot port");
-                    *authorization_storage = Some(CounterAuthorization::new(
-                        StartupMode::ExplicitTest,
-                        Some((binding, deadline, target.clone())),
-                        "grant-controller",
-                        7,
-                        &[CounterOperation::Increment, CounterOperation::Read],
-                        record_provider::projection,
-                        CounterProofProfile::RecordedTest,
-                        CounterLimits {
-                            incoming: NonZeroUsize::new(2).expect("explicit count"),
-                            retained: NonZeroUsize::new(2).expect("explicit count"),
-                            individual: NonZeroUsize::new(131_072).expect("explicit bytes"),
-                            total: NonZeroUsize::new(262_144).expect("explicit bytes"),
-                            verification_maximum: 65_536,
-                        },
-                    ));
-                    let Some(Ok(authorization)) = authorization_storage.as_mut() else {
-                        return application.lifecycle().request_shutdown();
-                    };
-                    *reservation_storage = Some(
-                        authorization
-                            .reserve(original_storage.take().expect("caller-held original")),
-                    );
-                    let Some(Ok(correlation)) = reservation_storage.as_ref() else {
-                        return application.lifecycle().request_shutdown();
-                    };
-                    let correlation = *correlation;
-                    let held_bytes = authorization.reserved_bytes;
-                    let (release, released) = oneshot::channel();
-                    {
-                        let mut verification = pin!(acquire_verification(
-                            &mut authorization.pending[0],
-                            async |original| {
-                                released.await.map_err(VerificationError::Unavailable)?;
-                                record_provider::verify(
-                                    original,
-                                    records,
-                                    AuthorityFreshness::Current,
-                                    ProviderAvailability::Available,
-                                    CounterProofProfile::RecordedTest,
-                                    CounterProofPurpose::Request,
-                                    binding.caller,
-                                    binding.host,
-                                    &counter_test_json_limits(),
-                                )
-                                .await
-                            }
-                        ));
-                        let canceled_wait = verification.as_mut().now_or_never();
-                        authorization.permission = Permission::Revoked;
-                        let after_cancel = verification.as_mut().now_or_never();
-                        let held_after_cancel = authorization.reserved_bytes;
-                        let released = release.send(());
-                        verification.await;
-                        *observations_storage = Some((
-                            canceled_wait,
-                            after_cancel,
-                            held_bytes,
-                            held_after_cancel,
-                            released,
-                            None,
-                            None,
-                        ));
-                    }
-                    authorization.associate(0, &requests, &replies.recipient());
-                    authorization.attempt(correlation, &requests);
-                    let sent = requests
-                        .send(&target, CounterMessage::Read(replies.recipient()))
-                        .await;
-                    let snapshot = replies.receive().await;
-                    if let Some((_, _, _, _, _, native, admission)) = observations_storage {
-                        *native = Some((sent, snapshot, address));
-                        *admission = authorization.consume(correlation);
-                    }
-                    application.lifecycle().request_shutdown()
-                })
-                .unwrap_or_else(|_| panic!("entered host"));
-            let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let native = receiving.await;
-            let (
-                ApplicationOutcome::Completed {
-                    output: stopped,
-                    cleanup: Ok(()),
-                },
-                Ok((origin, retirement)),
-                Ok(ActorNotificationReceipts {
-                    termination: Ok(()),
-                    retirement: Ok(()),
-                }),
-            ) = native
-            else {
-                panic!("actual native and both notification products");
-            };
-            let _retired_counter = completed_actor(origin, retirement);
-            let Some((
-                canceled_wait,
-                after_cancel,
-                held_bytes,
-                held_after_cancel,
-                released,
-                Some((sent, Some(snapshot), address)),
-                admission,
-            )) = verification_observations
-            else {
-                panic!("original setup/reservation/native observations retained outside Work");
-            };
-            assert_eq!(snapshot.message, 0);
-            assert_eq!(snapshot.from, address);
-            assert!(execution.is_ok());
-            assert!(stopped.is_ok());
-            assert!(matches!(reservation, Some(Ok(_))));
-            assert!(canceled_wait.is_none());
-            assert!(after_cancel.is_none());
-            assert_eq!(held_after_cancel, held_bytes);
-            assert!(released.is_ok());
-            assert!(sent.is_ok());
-            let Some(CounterAdmission {
-                original,
-                verification:
-                    Verification::Native {
-                        receipt,
-                        delivery:
-                            CounterDelivery::Refused {
-                                command: CounterCommand::Message(CounterMessage::Increment),
-                                refusal: CounterRefusal::Revoked,
+        for availability in [
+            ProviderAvailability::Available,
+            ProviderAvailability::Unavailable,
+        ] {
+            let host = Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("explicit host");
+            host.block_on(async {
+                let provider_entries = AtomicUsize::new(0);
+                let mut authority = AssignmentAuthority {
+                    host: &host,
+                    runtime_generation: 23,
+                    grant_issuer: "grant-controller",
+                    authority_generation: 7,
+                    permitted_operations: &[CounterOperation::Increment, CounterOperation::Read],
+                    next: Some(29),
+                };
+                let (binding, deadline) = authority
+                    .issue()
+                    .unwrap_or_else(|_| panic!("finite assignment"));
+                let configured =
+                    [
+                        configured_counter_grants(binding, CounterProofProfile::RecordedTest)[0]
+                            .clone(),
+                    ];
+                let records = &configured;
+                let mut original = Some(counter_request(&records[0]));
+                let request_allocations = original
+                    .as_ref()
+                    .map(|original| (original.protected.as_ptr(), original.proof.as_ptr()));
+                let mut counter_authorization = None;
+                let mut reservation = None;
+                let mut verification_observations = None;
+                let original_storage = &mut original;
+                let reservation_storage = &mut reservation;
+                let observations_storage = &mut verification_observations;
+                let verification_entries = &provider_entries;
+                let authorization_storage = &mut counter_authorization;
+                let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+                    .execute_with::<_, _, Never, (), _, _>(|application| async move {
+                        let target = application.root().established_recipient();
+                        let address = application.root().address();
+                        let interface = application.interface(());
+                        let requests = interface
+                            .external::<CounterRequests>()
+                            .expect("service port");
+                        let mut replies =
+                            interface.external::<CounterValue>().expect("snapshot port");
+                        *authorization_storage = Some(CounterAuthorization::new(
+                            StartupMode::ExplicitTest,
+                            Some((binding, deadline, target.clone())),
+                            "grant-controller",
+                            7,
+                            &[CounterOperation::Increment, CounterOperation::Read],
+                            record_provider::projection,
+                            CounterProofProfile::RecordedTest,
+                            CounterLimits {
+                                incoming: NonZeroUsize::new(2).expect("explicit count"),
+                                retained: NonZeroUsize::new(2).expect("explicit count"),
+                                individual: NonZeroUsize::new(131_072).expect("explicit bytes"),
+                                total: NonZeroUsize::new(262_144).expect("explicit bytes"),
+                                verification_maximum: 65_536,
                             },
+                        ));
+                        let Some(Ok(authorization)) = authorization_storage.as_mut() else {
+                            return application.lifecycle().request_shutdown();
+                        };
+                        *reservation_storage = Some(
+                            authorization
+                                .reserve(original_storage.take().expect("caller-held original")),
+                        );
+                        let Some(Ok(correlation)) = reservation_storage.as_ref() else {
+                            return application.lifecycle().request_shutdown();
+                        };
+                        let correlation = *correlation;
+                        let held_bytes = authorization.reserved_bytes;
+                        let (release, released) = oneshot::channel();
+                        {
+                            let pending = &mut authorization.pending[0];
+                            let request_limits = counter_test_json_limits();
+                            let mut verification = pin!(async {
+                                if matches!(pending.verification, Verification::Awaiting) {
+                                    match released.await {
+                                        Ok(()) => {
+                                            acquire_verification(pending, |original| {
+                                                verification_entries.fetch_add(1, Ordering::SeqCst);
+                                                record_provider::verify(
+                                                    original,
+                                                    records,
+                                                    AuthorityFreshness::Current,
+                                                    ProviderAvailability::Available,
+                                                    CounterProofProfile::RecordedTest,
+                                                    CounterProofPurpose::Request,
+                                                    binding.caller,
+                                                    binding.host,
+                                                    &request_limits,
+                                                )
+                                            })
+                                            .await;
+                                        }
+                                        Err(cause) => {
+                                            pending.verification = Verification::Acquired(Err(
+                                                VerificationError::Unavailable(cause),
+                                            ));
+                                        }
+                                    }
+                                }
+                            });
+                            let canceled_wait = verification.as_mut().now_or_never();
+                            authorization.permission = Permission::Revoked;
+                            let after_cancel = verification.as_mut().now_or_never();
+                            let held_after_cancel = authorization.reserved_bytes;
+                            let released = match availability {
+                                ProviderAvailability::Available => Some(release.send(())),
+                                ProviderAvailability::Unavailable => {
+                                    drop(release);
+                                    None
+                                }
+                            };
+                            verification.await;
+                            *observations_storage = Some((
+                                canceled_wait,
+                                after_cancel,
+                                held_bytes,
+                                held_after_cancel,
+                                released,
+                                None,
+                                None,
+                            ));
+                        }
+                        authorization.associate(0, &requests, &replies.recipient());
+                        authorization.attempt(correlation, &requests);
+                        let sent = requests
+                            .send(&target, CounterMessage::Read(replies.recipient()))
+                            .await;
+                        let snapshot = replies.receive().await;
+                        if let Some((_, _, _, _, _, native, admission)) = observations_storage {
+                            *native = Some((sent, snapshot, address));
+                            *admission = authorization.consume(correlation);
+                        }
+                        application.lifecycle().request_shutdown()
+                    })
+                    .unwrap_or_else(|_| panic!("entered host"));
+                let execution = AssertUnwindSafe(execution).catch_unwind().await;
+                let native = receiving.await;
+                let (
+                    ApplicationOutcome::Completed {
+                        output: stopped,
+                        cleanup: Ok(()),
                     },
-            }) = admission
-            else {
-                panic!("full refused raw/R/native command");
-            };
-            assert_eq!(
-                Some((original.protected.as_ptr(), original.proof.as_ptr())),
-                request_allocations
-            );
-            assert_eq!(
-                (original.protected.as_ref(), original.proof.as_ref()),
-                (records[0].protected.as_ref(), records[0].proof.as_ref())
-            );
-            assert_eq!(record_provider::projection(&receipt).0, &records[0].scope);
-            let Some(Ok(authorization)) = counter_authorization else {
-                panic!("original setup cause");
-            };
-            assert!(authorization.pending.is_empty());
-            assert_eq!(authorization.retained.len(), 1);
-        });
+                    Ok((origin, retirement)),
+                    Ok(ActorNotificationReceipts {
+                        termination: Ok(()),
+                        retirement: Ok(()),
+                    }),
+                ) = native
+                else {
+                    panic!("actual native and both notification products");
+                };
+                let _retired_counter = completed_actor(origin, retirement);
+                let Some((
+                    canceled_wait,
+                    after_cancel,
+                    held_bytes,
+                    held_after_cancel,
+                    released,
+                    Some((sent, Some(snapshot), address)),
+                    admission,
+                )) = verification_observations
+                else {
+                    panic!("original setup/reservation/native observations retained outside Work");
+                };
+                assert_eq!(snapshot.message, 0);
+                assert_eq!(snapshot.from, address);
+                assert!(execution.is_ok());
+                assert!(stopped.is_ok());
+                assert!(matches!(reservation, Some(Ok(_))));
+                assert!(canceled_wait.is_none());
+                assert!(after_cancel.is_none());
+                assert_eq!(held_after_cancel, held_bytes);
+                match availability {
+                    ProviderAvailability::Available => {
+                        assert!(matches!(released, Some(Ok(()))));
+                        assert_eq!(provider_entries.load(Ordering::SeqCst), 1);
+                    }
+                    ProviderAvailability::Unavailable => {
+                        assert!(released.is_none());
+                        assert_eq!(provider_entries.load(Ordering::SeqCst), 0);
+                    }
+                }
+                assert!(sent.is_ok());
+                let Some(CounterAdmission {
+                    original,
+                    verification,
+                }) = admission
+                else {
+                    panic!("full refused raw/R/native command");
+                };
+                assert_eq!(
+                    Some((original.protected.as_ptr(), original.proof.as_ptr())),
+                    request_allocations
+                );
+                assert_eq!(
+                    (original.protected.as_ref(), original.proof.as_ref()),
+                    (records[0].protected.as_ref(), records[0].proof.as_ref())
+                );
+                match (availability, &verification) {
+                    (
+                        ProviderAvailability::Available,
+                        Verification::Native {
+                            receipt,
+                            delivery:
+                                CounterDelivery::Refused {
+                                    command: CounterCommand::Message(CounterMessage::Increment),
+                                    refusal: CounterRefusal::Revoked,
+                                },
+                        },
+                    ) => assert_eq!(record_provider::projection(receipt).0, &records[0].scope),
+                    (
+                        ProviderAvailability::Unavailable,
+                        Verification::Refused {
+                            evidence: Err(VerificationError::Unavailable(cause)),
+                            refusal: CounterRefusal::Unavailable,
+                        },
+                    ) => assert_eq!(cause.to_string(), "channel closed"),
+                    _ => panic!("original receipt or unavailable cause must remain classified"),
+                }
+                let Some(Ok(authorization)) = counter_authorization else {
+                    panic!("original setup cause");
+                };
+                assert!(authorization.pending.is_empty());
+                match availability {
+                    ProviderAvailability::Available => assert_eq!(authorization.retained.len(), 1),
+                    ProviderAvailability::Unavailable => assert!(authorization.retained.is_empty()),
+                }
+            });
+        }
     }
 }
 // Real Full/denied/permitted controls for the authorized Counter.
@@ -4946,7 +5000,8 @@ mod full_retry {
                         return application.lifecycle().request_shutdown();
                     };
                     let correlation = *correlation;
-                    acquire_verification(&mut authorization.pending[0], async |original| {
+                    let request_limits = counter_test_json_limits();
+                    acquire_verification(&mut authorization.pending[0], |original| {
                         record_provider::verify(
                             original,
                             records,
@@ -4956,9 +5011,8 @@ mod full_retry {
                             CounterProofPurpose::Request,
                             binding.caller,
                             binding.host,
-                            &counter_test_json_limits(),
+                            &request_limits,
                         )
-                        .await
                     })
                     .await;
                     authorization.associate(0, &requests, &replies.recipient());
@@ -5484,8 +5538,8 @@ mod allocation_profile {
                 .position(|pending| pending.correlation == *correlation)
                 .expect("actual admitted extra original");
             measured.count_provider_entries += 1;
-            acquire_verification(&mut authorization.pending[position], async |original| {
-                provider(original, configured).await
+            acquire_verification(&mut authorization.pending[position], |original| {
+                provider(original, configured)
             })
             .await;
             authorization.associate(position, requests, replies);
@@ -5502,13 +5556,23 @@ mod allocation_profile {
         measured.reserved_before_cancel = authorization.reserved_bytes;
         {
             let before = dhat::HeapStats::get();
-            let mut verification = pin!(acquire_verification(
-                &mut authorization.pending[0],
-                async |original| {
-                    released.await.map_err(VerificationError::Unavailable)?;
-                    provider(original, configured).await
+            let pending = &mut authorization.pending[0];
+            let mut verification = pin!(async {
+                if matches!(pending.verification, Verification::Awaiting) {
+                    match released.await {
+                        Ok(()) => {
+                            acquire_verification(pending, |original| {
+                                provider(original, configured)
+                            })
+                            .await;
+                        }
+                        Err(cause) => {
+                            pending.verification =
+                                Verification::Acquired(Err(VerificationError::Unavailable(cause)));
+                        }
+                    }
                 }
-            ));
+            });
             measured.canceled_wait = verification.as_mut().now_or_never();
             measured.second_pending_poll = verification.as_mut().now_or_never();
             measured.reserved_after_cancel = authorization.reserved_bytes;
@@ -5521,8 +5585,8 @@ mod allocation_profile {
             );
         }
         let before = dhat::HeapStats::get();
-        acquire_verification(&mut authorization.pending[1], async |original| {
-            provider(original, configured).await
+        acquire_verification(&mut authorization.pending[1], |original| {
+            provider(original, configured)
         })
         .await;
         let after = dhat::HeapStats::get();
@@ -5565,8 +5629,8 @@ mod allocation_profile {
                 .iter()
                 .position(|pending| pending.correlation == correlation)
                 .expect("actual duplicate input");
-            acquire_verification(&mut authorization.pending[position], async |original| {
-                provider(original, configured).await
+            acquire_verification(&mut authorization.pending[position], |original| {
+                provider(original, configured)
             })
             .await;
             let ((), storage) = requested_allocations(|| {
@@ -5609,8 +5673,8 @@ mod allocation_profile {
                     .position(|pending| pending.correlation == *correlation)
                     .expect("actual admitted extra input");
                 provider_entries += 1;
-                acquire_verification(&mut authorization.pending[position], async |original| {
-                    provider(original, configured).await
+                acquire_verification(&mut authorization.pending[position], |original| {
+                    provider(original, configured)
                 })
                 .await;
                 authorization.associate(position, requests, replies);
@@ -7004,9 +7068,10 @@ mod proof_rotation {
                                     .iter()
                                     .position(|entry| entry.correlation == correlation)
                                     .expect("new owning reservation");
+                                let request_limits = counter_test_json_limits();
                                 acquire_verification(
                                     &mut authorization.pending[position],
-                                    async |original| {
+                                    |original| {
                                         provider(
                                             original,
                                             &configured,
@@ -7016,9 +7081,8 @@ mod proof_rotation {
                                             CounterProofPurpose::Request,
                                             binding.caller,
                                             binding.host,
-                                            &counter_test_json_limits(),
+                                            &request_limits,
                                         )
-                                        .await
                                     },
                                 )
                                 .await;
@@ -7291,9 +7355,10 @@ mod closed_counter {
                                     .iter()
                                     .position(|pending| pending.correlation == *correlation)
                             {
+                                let request_limits = counter_test_json_limits();
                                 acquire_verification(
                                     &mut authorization.pending[position],
-                                    async |original| {
+                                    |original| {
                                         record_provider::verify(
                                             original,
                                             &configured,
@@ -7303,9 +7368,8 @@ mod closed_counter {
                                             CounterProofPurpose::Request,
                                             binding.caller,
                                             binding.host,
-                                            &counter_test_json_limits(),
+                                            &request_limits,
                                         )
-                                        .await
                                     },
                                 )
                                 .await;
@@ -7603,7 +7667,8 @@ mod stop_admission {
                         .iter()
                         .position(|entry| entry.correlation == correlation)
                         .unwrap();
-                    acquire_verification(&mut authorization.pending[position], async |original| {
+                    let request_limits = counter_test_json_limits();
+                    acquire_verification(&mut authorization.pending[position], |original| {
                         record_provider::verify(
                             original,
                             &configured,
@@ -7613,9 +7678,8 @@ mod stop_admission {
                             CounterProofPurpose::Request,
                             binding.caller,
                             binding.host,
-                            &counter_test_json_limits(),
+                            &request_limits,
                         )
-                        .await
                     })
                     .await;
                     authorization.associate(position, &requests, &values.recipient());
@@ -8020,7 +8084,8 @@ mod stop_admission {
                         .iter()
                         .position(|entry| entry.correlation == correlation)
                         .unwrap();
-                    acquire_verification(&mut authorization.pending[position], async |original| {
+                    let request_limits = counter_test_json_limits();
+                    acquire_verification(&mut authorization.pending[position], |original| {
                         record_provider::verify(
                             original,
                             &configured,
@@ -8030,9 +8095,8 @@ mod stop_admission {
                             CounterProofPurpose::Request,
                             binding.caller,
                             binding.host,
-                            &counter_test_json_limits(),
+                            &request_limits,
                         )
-                        .await
                     })
                     .await;
                     authorization.associate(position, &requests, &values.recipient());
@@ -9701,6 +9765,20 @@ mod provider_receipt_custody {
         assert_eq!(receipt.protected.as_ptr(), receipt_allocation);
         assert_eq!(receipt.protected.as_ref(), &[7, 11]);
         assert_eq!(drops.load(Ordering::SeqCst), 0);
+        let factory_entries = AtomicUsize::new(0);
+        let acquired_again = {
+            let mut verification = pin!(acquire_verification(&mut pending, |_| {
+                factory_entries.fetch_add(1, Ordering::SeqCst);
+                async { Err(VerificationError::Invalid) }
+            }));
+            let mut context = Context::from_waker(Waker::noop());
+            verification.as_mut().poll(&mut context)
+        };
+        assert!(matches!(acquired_again, Poll::Ready(())));
+        assert_eq!(factory_entries.load(Ordering::SeqCst), 0);
+        assert!(
+            matches!(&pending.verification, Verification::Acquired(Ok(retained)) if retained.protected.as_ptr() == receipt_allocation)
+        );
         drop((pending, cause));
         assert_eq!(drops.load(Ordering::SeqCst), 1);
     }

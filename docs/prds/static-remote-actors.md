@@ -1,6 +1,205 @@
 # Static remote actors and typed admission
 
+### Crate delivery and DevX integration — user direction, 2026-10-13
+
+The user explicitly requires remote capability in `crates/bombay`, behind the
+optional Cargo feature `remote`. Example-only support cannot deliver this PRD.
+Local-only builds remain supported; remote dependencies and public networking
+capabilities must be gated by that feature. This selects feature placement,
+not new protocol semantics, default limits or production identity.
+
+Before that implementation, the user requests the Bombay DevX worktree's
+changes. Inspected committed tip is `c3b74ab7a70535eef776351e490ecec8de39d4ca`
+on `codex/developer-experience-docs`, in the active `docs-devx` worktree. Preserve
+its uncommitted worker-factory work. Integrate committed changes in a separate
+worktree, retaining the remote PRD's proven ownership obligations and tests.
+The branch changes Application/client/terminal APIs and selects published
+Behavior/Actors0.25.0, macros0.14.1 and Timers0.2.0 without patches. Behavior's
+archive revision is `2bb4510077bfa5aed82e08d25453c146b3184285`; its complete
+760-line AGENTS.md is identical to the previously inspected selected revision.
+Fresh dependency-source verification and integration checks remain required.
+
+A read-only merge preview finds conflicts in shared runtime owners, tests and
+guidance. No wholesale side selection is accepted: especially preserve final
+permission-check/nonwaiting admission, joined-retirement reports and original
+native/notification custody. Finish the current narrow provider correction on
+its source-bound branch; reconcile DevX before new crate-owned remote work.
+This preparation grants no additional R01–R25 acceptance or merged status.
+
+### Provider lending composition — failing-boundary investigation, 2026-10-13
+
+Under standing recommendation delegation, test the existing caller's async
+adapter before retaining a shipping design. A new isolated branch starts from
+actual latest main `671ba860`; overlay only the verified PR358 parent source
+`da90e500` without committing it. PR358 remains separately gated. Selected
+Behavior/Actors0.23.0 at `d69f992b`, root/native locks `47089444`/`1c077a7b`,
+and published Zenoh1.10.8 remain unchanged; no dependency choice is reopened.
+
+Source inspection finds actual callers await an inner provider within an
+async closure. The outer acquisition can conserve only the Result its supplied
+future actually returns; an inner producer may erase that Result first. This
+is a hypothesis, not a passing witness or a diagnosed shipping defect.
+Reuse the exact allocation/opaque-panic regression and add only the actual
+async adapter shape. Prove intended failure in debug and optimized, then
+restore the verified direct-future control. Expected two tracked paths (this
+PRD and authorized.rs), at most20 introduced test lines, no new public API,
+dependency, runtime owner or production correction. Reused PR358 source is
+recorded separately from new authoring. Compare ordinary direct lending
+calls before selecting any new abstraction. A correction requires a concrete
+failing law and its own pre-edit change record. Full remote witnesses stay open.
+
+The nested diagnostic now fails the intended receipt-erasure oracle in both
+profiles after observing the original opaque panic, Ready event and unchanged
+request/proof. Receipt `dc19edd7` binds negative source `8e3c44db`; restored
+direct controls pass both profiles at exact `da90e500`, receipt `4fbd246d`.
+Four chronological test introductions and eight new orchestration lines are
+recorded separately from reused48/15-line campaign machinery. No production
+correction has been applied. This proves the adapter shape, not a TLS failure.
+
+Before further edits, select an ordinary-Rust binding comparison under standing
+recommendation delegation. First return the actual nine-argument provider's
+Future from a normal closure using the existing acquisition signature. If
+that cannot express the borrow, compare one explicit request-borrow lifetime
+and standard FnOnce/Future bounds, keeping the same PendingAdmission owner
+and construction guard. A separately borrowed verification slot with a
+zero-argument factory is the fallback; it changes more caller syntax. No new
+provider trait, context, task, cell, API or dependency is justified. Compiler
+output only qualifies these concrete borrow equations; it does not select an
+architecture. Preserve unsuccessful probes and byte-exact healthy restoration.
+
+Comparison budget before probes: up to60 introduced test lines (including the
+four already introduced),40 new orchestration lines and40 introduced production
+probe lines, two tracked paths. Any retained correction and all real caller
+changes require the measured proposal and another pre-edit record. Shipping
+extraction remains pending this prerequisite; all full remote witnesses stay open.
+
+The concrete comparison also touches the existing native test module, making
+three tracked paths. Its actual provider requires a borrowed limits value;
+own that existing test input before returning the provider Future, rather than
+borrowing a closure-local temporary. Forecast up to8 introduced test lines
+for this direct call probe and6–9 production probe lines only if the explicit
+borrow-lifetime comparison is needed. Existing60/40 introduction ceilings hold.
+No all-caller migration or resource-default change is authorized by this probe.
+
+The direct native call is rejected by five genuine lifetime-generalization
+diagnostics (`d026565f`); the explicit one-request borrow and FnOnce/Future
+comparison passes the complete protected-feature compile check (`f1b623e9`).
+These are static results, with no runtime/executable credit. Sources are
+restored byte-exact. Measured comparison production +7/-5, formatting0;
+test introductions20/60 include the earlier nested diagnostic. Proposal
+`ac37a0fe` inventories19 sites:14 pure bindings, four delayed test operations
+and the unchanged direct regression. Two pure bindings are non-test callers.
+
+Before retaining production changes, select complete migration of these18
+wrappers, reusing the same pending owner, factory guard and in-poll commit.
+Keep the explicit request-borrow lifetime; pure bindings return the actual
+provider Future with existing limits owned outside. In each delayed test,
+wait inside the same pinned operation before direct committing acquisition;
+preserve the actual receiver error as existing Unavailable without invoking
+the provider. Already acquired/terminal entries skip delay and construction.
+No new helper, phase, trait, context, field, public API, dependency or default.
+Narrow migration would leave15 known wrappers and weaken shipping eligibility.
+
+Expected retained production is central +7/-5 plus4–10 caller lines; allow
+100 chronological production introductions for complete formatting/probes.
+Allow400 introduced test lines including20 already introduced, all caller
+edits, formatting and delay-close/no-construction controls. Orchestration
+ceiling100 includes the known comparison lines; reused readers remain separate.
+Expected five tracked paths: parent/native sources, PRD, acceptance and backlog.
+Record actual deltas and overruns before widening; unproved historical union
+must not become a reconstructed endpoint claim. Public API +0/-0 throughout.
+
+Require both-profile custody controls and intended old-commit/adapter inversions,
+closed-delay original-error conservation, borrowed cancellation/revocation,
+already-acquired factory denial and actual count/ordinary/provider regressions.
+Then verify combined workspace/feature/actual TLS source and minimize. Once
+verified, integrate this directly related correction into the focused provider
+PR rather than deliver an avoidably incomplete caller composition. Only final
+submitted-head review, required CI and actual merge establish delivery.
+
+First complete patch measures production +12/-9/net3 and tests +152/-103/net49
+against the verified PR358 source. All18 wrappers are migrated; no async
+original-argument adapter remains. Chronological production22/100 and tests
+244/400 include prior probes and formatting; orchestration77/100 separately
+attributes reused runners. Frozen parent `f864dbc9` and native `c216a79f`
+have not yet received runtime verification.
+
+Before the closed-delay control, select a600 introduced-test ceiling from400
+under recommendation delegation. Reuse the existing public-Application
+pending-verification test for both existing availability alternatives, counting
+actual factory calls and observing closed-receiver Unavailable versus the
+permitted-release control. Retain raw/proof/reservation originals and native
+cleanup before assertions. Expected reindentation adds190–230 introductions
+and20–35 causal assertions; no new helper, owner, type or production design.
+Raise orchestration ceiling to140 before further pinned command adaptations;
+known77 remains unchanged. Keep forecast and measured introductions distinct.
+
+The first closed-control draft failed compilation with E0382 and receives no
+runtime credit. Borrow the existing counter into Work with two test lines;
+the Atomic remains with the outside observer. Corrected parent `5f929068`
+and native `5cdbce9c` pass the actual full59/0/1 feature suite in both profiles.
+An initial collector called this focused two-test execution; retained argv
+and outer summaries show full-suite execution, so no focused-count claim.
+Correct the cut controller's filter ordering before source mutation.
+
+Before inversions, select four owning cuts: erase the in-poll Ready commit;
+restore the async adapter at the original receipt-custody boundary; omit the
+existing acquired-state factory guard; discard the real closed-delay error
+instead of storing existing Unavailable. Each must fail its named post-native
+custody/construction/refusal oracle in both profiles, with byte-exact healthy
+restored controls. These reuse existing tests, add no model or production
+policy, and remain within100 production/600 test/140 orchestration ceilings.
+Already-acquired factory denial is executed centrally; non-Awaiting outer
+delay skipping remains source-only. Scope covers18 acquisition wrappers,
+not every provider await elsewhere or any full remote acceptance witness.
+
+User steering: existing Counter research/example naming and folder placement
+are hard to follow. The user subsequently directs finishing this PRD and
+defers DevX correction to their separate work. Record that concern without
+starting a naming/layout migration or presenting the current research harness
+as the final application API. Continue accepted correctness and delivery work.
+
+At the temporary pause, source is restored byte-exact `5f929068`/`5cdbce9c`.
+Ready-commit and async-adapter cuts fail the intended oracle in both profiles;
+matched restored controls each execute1/0/0. Guard and Unavailable-store cuts
+and final strict checks remain pending. Current retained-script accounting
+does not prove the140 chronological orchestration ceiling: ad hoc preparation
+and read-only measurement snippets add roughly50–60 lines beyond the roughly120
+reusable-controller account. Preserve that discrepancy; under recommendation
+delegation select a conservative200 ceiling before further evidence work.
+Rust ceilings remain100 production/600 tests, with no proven Rust overrun.
+
 ### Provider result custody — isolated failing-regression stage, 2026-10-13
+
+Lending contribution integrated into this same focused PR358 after all four
+owning cuts failed their intended oracle in debug/optimized and every byte-exact
+restored control passed. Final protected suites pass59/0/1 per profile;
+ordinary/protected all-target strict Clippy pass both profiles, and formatting
+passes. Receipt `b88337fd` binds parent `5f929068`, native `5cdbce9c` and actual
+copied executables `7c3d2503`/`a2ba5d3d`. Recorded chronological introductions
+are25/100 production and555/600 tests. Retained lexical classification against
+the previous PR358 source: production+12/-9/net3, tests+367/-273/net94,
+public API+0/-0. Raw Git counts+377/-280/net97; lexical accounting counts two
+additional additions/deletions across mixed test/production lines, with the same
+net97. Historical original-stage and source-bound49e8 CI records below remain
+preserved; they do not qualify the changed submitted source. Combined checks,
+actual TLS campaign, final review, replacement CI and merge remain required.
+
+Before final collection, select the recommended240-line author orchestration
+allowance from200; transient read-only snippets remain a conservative account,
+not an exhaustively sealed historical union. Coordinator integration separately
+allows80 new command/guard adaptations, reusing the prior native controller and
+391-input snapshot inventory. Preserve old snapshots; freeze the changed source
+and the actual newly selected executable copies before both-profile TLS checks.
+No new Rust, public API or dependency is authorized by this evidence allowance.
+
+Combined final source passes build, Cargo645/0/1, Nextest644 passed/1 skipped,
+workspace strict Clippy and formatting. Frozen391-input snapshot `ea78a698`
+contains8,072,452 bytes. Both actual copied profiles complete all12 guarded
+CLI invocations:64 TLS cases/160 roles and child-stop2/0/0 per profile, with
+command receipts `9b8d1049`/`875a0668`. Guards surround each CLI invocation,
+not each internal role. No native cleanup credit comes from killed controls.
+Final independent review and replacement submitted-head CI remain pending.
 
 Under standing recommendation delegation, investigate the actual Counter
 acquire_verification owner independently of PR357. Branch starts at actual latest

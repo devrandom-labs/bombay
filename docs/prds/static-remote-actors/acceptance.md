@@ -27,10 +27,18 @@ controls pass. Combined Cargo645/0/1, Nextest644 passed/1 skipped and protected
 Independent combined review `96248e45` permits focused PR preparation; its own
 submitted-head CI, review and merge remain pending. This is a custody prerequisite,
 not full whole-service, identity, pressure or R01–R25 acceptance.
-The preserved Result must have been returned by the supplied Future. An inner
-provider awaited by an async adapter can fail during disposal before that outer
-Future returns Ready; this separate boundary is under investigation and has
-no passing conservation claim. PR358's direct regression cannot substitute for it.
+The preserved Result must have been returned by the supplied Future. The actual
+async-adapter defect now fails its intended oracle in both profiles. All18
+acquisition wrappers instead expose their actual Future using one request borrow;
+four held tests retain their preceding delay and exact closed-delay error. Four
+owning cuts fail as intended and their restored controls pass both profiles;
+final protected59/0/1 and strict checks pass on5f929068/5cdbce9c. Integration,
+replacement exact-head CI and delivery remain pending, separately from full rows.
+
+The user requires crate-owned remote capability behind Cargo feature `remote`.
+Examples consume its public API; example-only implementations cannot pass R01.
+First reconcile the committed DevX Application APIs with the proven admission
+and retirement laws, preserving the active worktree's uncommitted changes.
 
 ## Requirement traceability
 

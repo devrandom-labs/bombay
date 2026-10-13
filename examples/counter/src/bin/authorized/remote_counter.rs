@@ -731,23 +731,20 @@ async fn counter_native_applications<R>(
                             .iter()
                             .position(|p| p.correlation == correlation)
                             .expect("actual pending ownership");
-                        acquire_verification(
-                            &mut authorization.pending[position],
-                            async |original| {
-                                provider(
-                                    original,
-                                    &records,
-                                    AuthorityFreshness::Current,
-                                    ProviderAvailability::Available,
-                                    profile,
-                                    CounterProofPurpose::Request,
-                                    binding.caller,
-                                    binding.host,
-                                    &counter_test_json_limits(),
-                                )
-                                .await
-                            },
-                        )
+                        let request_limits = counter_test_json_limits();
+                        acquire_verification(&mut authorization.pending[position], |original| {
+                            provider(
+                                original,
+                                &records,
+                                AuthorityFreshness::Current,
+                                ProviderAvailability::Available,
+                                profile,
+                                CounterProofPurpose::Request,
+                                binding.caller,
+                                binding.host,
+                                &request_limits,
+                            )
+                        })
                         .await;
                         let Verification::Acquired(Ok(receipt)) =
                             &authorization.pending[position].verification
@@ -1859,7 +1856,8 @@ fn counter_child_stop<R>(
                     .iter()
                     .position(|pending| pending.correlation == correlation)
                     .unwrap();
-                acquire_verification(&mut authorization.pending[position], async |original| {
+                let request_limits = counter_test_json_limits();
+                acquire_verification(&mut authorization.pending[position], |original| {
                     provider(
                         original,
                         &configured,
@@ -1869,9 +1867,8 @@ fn counter_child_stop<R>(
                         CounterProofPurpose::Request,
                         binding.caller,
                         binding.host,
-                        &counter_test_json_limits(),
+                        &request_limits,
                     )
-                    .await
                 })
                 .await;
                 authorization.associate(position, &requests, &values.recipient());
@@ -2270,24 +2267,35 @@ fn counter_query_count<R>(
             });
             let (canceled_wait, still_pending, initial_count, released) = {
                 let (release, released) = oneshot::channel();
-                let mut verification = pin!(acquire_verification(
-                    &mut authorization.pending[0],
-                    async |original| {
-                        released.await.map_err(VerificationError::Unavailable)?;
-                        provider(
-                            original,
-                            &configured,
-                            AuthorityFreshness::Current,
-                            ProviderAvailability::Available,
-                            profile,
-                            CounterProofPurpose::Request,
-                            binding.caller,
-                            binding.host,
-                            &counter_test_json_limits(),
-                        )
-                        .await
+                let pending = &mut authorization.pending[0];
+                let request_limits = counter_test_json_limits();
+                let mut verification = pin!(async {
+                    if matches!(pending.verification, Verification::Awaiting) {
+                        match released.await {
+                            Ok(()) => {
+                                acquire_verification(pending, |original| {
+                                    provider(
+                                        original,
+                                        &configured,
+                                        AuthorityFreshness::Current,
+                                        ProviderAvailability::Available,
+                                        profile,
+                                        CounterProofPurpose::Request,
+                                        binding.caller,
+                                        binding.host,
+                                        &request_limits,
+                                    )
+                                })
+                                .await;
+                            }
+                            Err(cause) => {
+                                pending.verification = Verification::Acquired(Err(
+                                    VerificationError::Unavailable(cause),
+                                ));
+                            }
+                        }
                     }
-                ));
+                });
                 let canceled_wait = verification.as_mut().now_or_never();
                 query_receivers.push(query_record(&configured[1]).await);
                 query_receivers.push(query_record(&configured[2]).await);
@@ -2316,24 +2324,35 @@ fn counter_query_count<R>(
             });
             let (second_pending, unread_count, second_released) = {
                 let (release, released) = oneshot::channel();
-                let mut verification = pin!(acquire_verification(
-                    &mut authorization.pending[0],
-                    async |original| {
-                        released.await.map_err(VerificationError::Unavailable)?;
-                        provider(
-                            original,
-                            &configured,
-                            AuthorityFreshness::Current,
-                            ProviderAvailability::Available,
-                            profile,
-                            CounterProofPurpose::Request,
-                            binding.caller,
-                            binding.host,
-                            &counter_test_json_limits(),
-                        )
-                        .await
+                let pending = &mut authorization.pending[0];
+                let request_limits = counter_test_json_limits();
+                let mut verification = pin!(async {
+                    if matches!(pending.verification, Verification::Awaiting) {
+                        match released.await {
+                            Ok(()) => {
+                                acquire_verification(pending, |original| {
+                                    provider(
+                                        original,
+                                        &configured,
+                                        AuthorityFreshness::Current,
+                                        ProviderAvailability::Available,
+                                        profile,
+                                        CounterProofPurpose::Request,
+                                        binding.caller,
+                                        binding.host,
+                                        &request_limits,
+                                    )
+                                })
+                                .await;
+                            }
+                            Err(cause) => {
+                                pending.verification = Verification::Acquired(Err(
+                                    VerificationError::Unavailable(cause),
+                                ));
+                            }
+                        }
                     }
-                ));
+                });
                 let second_pending = verification.as_mut().now_or_never();
                 query_receivers.push(query_record(&configured[2]).await);
                 let unread_count = 2 + received.len();
@@ -2367,7 +2386,8 @@ fn counter_query_count<R>(
                     drop(original);
                     panic!("third accepted pending ownership");
                 });
-                acquire_verification(&mut authorization.pending[0], async |original| {
+                let request_limits = counter_test_json_limits();
+                acquire_verification(&mut authorization.pending[0], |original| {
                     provider(
                         original,
                         &configured,
@@ -2377,9 +2397,8 @@ fn counter_query_count<R>(
                         CounterProofPurpose::Request,
                         binding.caller,
                         binding.host,
-                        &counter_test_json_limits(),
+                        &request_limits,
                     )
-                    .await
                 }).await;
                 authorization.associate(0, &requests, &values.recipient());
                 authorization.attempt(correlation, &requests);

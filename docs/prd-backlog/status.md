@@ -18,10 +18,15 @@ Next focused correction preserves an acquired provider result before disposing
 its completed future. Original and replayed defects fail the intended custody
 oracle in both profiles; corrected and restored controls, combined workspace,
 protected suites and actual TLS controls pass independent review. Production
-delta is +16/-2/net14, with no new public API or dependency. Its submitted-head
-CI, reviewed PR and actual merge remain pending. See the
+delta was +16/-2/net14. The related actual-Future migration adds production
++12/-9/net3 and migrates18 wrappers; four intended cuts/restored controls and
+protected59/0/1 pass both profiles. No new public API or dependency. Replacement
+submitted-head CI, reviewed PR and actual merge remain pending. See the
 [PRD](../prds/static-remote-actors.md#provider-result-custody--isolated-failing-regression-stage-2026-10-13).
 AUTH1/NET1 and every full remote acceptance row remain open.
+The user requires actual Bombay crate support behind feature `remote`, following
+reconciliation with committed DevX Application APIs. Examples are consumers;
+their passing probes do not deliver the crate capability.
 
 Protected-Application prerequisite [PR354](https://github.com/devrandom-labs/bombay/pull/354)
 merged36c00d53c84482c2b1fdf0587dca788bc6c39250 at2026-10-12T04:16:32Z after
