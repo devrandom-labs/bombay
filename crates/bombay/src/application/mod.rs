@@ -3,27 +3,48 @@ mod execution;
 #[cfg(feature = "axum")]
 mod http;
 mod interface;
+mod scope;
+
+pub use scope::ApplicationScope;
 
 pub use composition::{ApplicationBehavior, ApplicationDefinitionError, ApplicationStagingError};
 pub use execution::{ApplicationCleanupError, ApplicationOutcome, RunError};
 pub use interface::{
-    ActorInterface, ApplicationHandle, ApplicationLifecycle, ExternalActor, ExternalActorError,
-    ExternalTarget,
+    ActorInterface, ApplicationClient, ApplicationHandle, ApplicationLifecycle, ApplicationSender,
+    ExternalActor, ExternalActorError, ExternalTarget,
 };
 
-use crate::address::MailAddr;
+use crate::address::{ApplicationAddresses, MailAddr};
 use crate::entity::EntityDefinition;
-use behavior::{Behavior, BehaviorMessage, Never, Protocol};
+use crate::launch::ActorSpace;
+use behavior::{Behavior, Never, Protocol};
 
-impl<Root> Application<Root> {
-    /// Declare one concrete root behavior for local execution.
+impl<Root> Application<Root, ActorSpace<Root::Protocol>>
+where
+    Root: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+{
+    /// Declare one concrete root behavior in its local protocol space.
     #[must_use]
-    pub const fn new(root: Root) -> Self {
-        Self { root, members: () }
+    pub fn new(root: Root) -> Self {
+        Self::with_topology(root, ActorSpace::new())
     }
 }
 
-impl<Root, Members> Application<Root, Members> {
+impl<Root, Spaces> Application<Root, Spaces> {
+    /// Own one root and its selected local topology.
+    #[must_use]
+    pub const fn with_topology(root: Root, spaces: Spaces) -> Self {
+        Self {
+            root,
+            spaces,
+            members: (),
+            families: (),
+            scope: None,
+        }
+    }
+}
+
+impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families> {
     /// Append one application-owned actor under a nominal semantic role.
     ///
     /// The actor expression determines its complete concrete type. The role
@@ -34,12 +55,15 @@ impl<Root, Members> Application<Root, Members> {
         self,
         role: Role,
         actor: Actor,
-    ) -> Application<Root, (Role, Actor, Members)>
+    ) -> Application<Root, Spaces, (Role, Actor, Members), Families>
     where
         Actor: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     {
         Application {
             root: self.root,
+            scope: self.scope,
+            spaces: self.spaces,
+            families: self.families,
             members: (role, actor, self.members),
         }
     }
@@ -50,29 +74,30 @@ impl<Root, Members> Application<Root, Members> {
         &self.root
     }
 
-    pub(crate) fn into_parts(self) -> (Root, Members) {
-        (self.root, self.members)
+    pub(crate) fn into_parts(self) -> (Root, Spaces, Members, Families, Option<ApplicationScope>) {
+        (
+            self.root,
+            self.spaces,
+            self.members,
+            self.families,
+            self.scope,
+        )
     }
-}
 
-impl<Root, Spaces> App<Root, Spaces> {
-    #[must_use]
-    pub const fn new(root: Root, spaces: Spaces) -> Self {
-        Self {
-            root,
-            spaces,
-            families: (),
+    pub(super) fn allocations(&self) -> ApplicationAddresses {
+        match &self.scope {
+            Some(scope) => scope.allocations.clone(),
+            None => ApplicationAddresses::new(),
         }
     }
 }
 
-impl<Root, Spaces, Families> App<Root, Spaces, Families> {
+impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families> {
     /// Declare one application-owned native Entity family under a semantic role.
     ///
-    /// # Errors
-    ///
-    /// Returns the existing directory configuration error before application
-    /// startup. This consuming call drops its inputs on rejection.
+    /// Directory configuration is validated before any application input
+    /// transfers. Declaration starts no task and retains all existing inputs.
+    #[must_use]
     #[allow(
         clippy::type_complexity,
         reason = "the inferred role-indexed family product is the public static composition"
@@ -83,49 +108,40 @@ impl<Root, Spaces, Families> App<Root, Spaces, Families> {
         definition: D,
         directory: crate::entity::DirectoryConfig,
         capacity: crate::entity::EntityCapacity,
-    ) -> Result<
-        App<
-            Root,
-            Spaces,
-            (
-                Role,
-                D,
-                crate::entity::DirectoryConfig,
-                crate::entity::EntityCapacity,
-                Families,
-            ),
-        >,
-        crate::entity::DirectoryError<BehaviorMessage<D::Behavior>>,
+    ) -> Application<
+        Root,
+        Spaces,
+        Members,
+        (
+            Role,
+            D,
+            crate::entity::DirectoryConfig,
+            crate::entity::EntityCapacity,
+            Families,
+        ),
     >
     where
         D: EntityDefinition<Hosts = Spaces>,
     {
-        if !directory.shards.get().is_power_of_two() {
-            return Err(crate::entity::DirectoryError::InvalidShardCount);
-        }
-        Ok(App {
+        Application {
             root: self.root,
+            scope: self.scope,
             spaces: self.spaces,
+            members: self.members,
             families: (role, definition, directory, capacity, self.families),
-        })
+        }
     }
 }
 
 /// One statically typed local application declaration.
 ///
-/// `Root` owns the application behavior. `Members` is inferred from chained
-/// [`Application::child`] calls and remains ordinary tuple composition; users
-/// name semantic roles and actor values, never the resulting product type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Application<Root, Members = ()> {
-    root: Root,
-    members: Members,
-}
-
-/// Explicit advanced composition of one root and its logical protocol spaces.
+/// Owns the root, selected topology, cold actors and cold Entity families.
+/// Chained declarations infer their complete products.
 #[derive(Debug)]
-pub struct App<Root, Spaces, Families = ()> {
+pub struct Application<Root, Spaces, Members = (), Families = ()> {
     root: Root,
     spaces: Spaces,
+    members: Members,
     families: Families,
+    scope: Option<ApplicationScope>,
 }

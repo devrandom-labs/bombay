@@ -121,7 +121,7 @@ impl LocalEntityRuntime<u64, u64> for RecordingRuntime {
 async fn family_shutdown_closes_admission_drains_every_slot_and_joins_tasks() {
     let runtime = RecordingRuntime::default();
     let observations = runtime.clone();
-    let entities = EntityRuntime::new(DirectoryConfig::default(), runtime).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), runtime);
 
     entities.admit((), EntityId::new(41), 7).await.unwrap();
     entities.admit((), EntityId::new(73), 11).await.unwrap();
@@ -162,8 +162,7 @@ async fn family_shutdown_closes_admission_drains_every_slot_and_joins_tasks() {
 
 #[tokio::test]
 async fn family_shutdown_has_one_result_owner() {
-    let entities =
-        EntityRuntime::new(DirectoryConfig::default(), RecordingRuntime::default()).unwrap();
+    let entities = EntityRuntime::new(DirectoryConfig::default(), RecordingRuntime::default());
     let first = entities.shutdown().await;
     let EntityShutdown::Settled {
         represented,
@@ -196,8 +195,7 @@ async fn cancelled_shutdown_returns_task_custody_to_the_family() {
             retirement_disposition: RetirementDisposition::Complete,
             join_gate: JoinGate::Immediate,
         },
-    )
-    .unwrap();
+    );
     let admission = tokio::spawn({
         let entities = entities.clone();
         async move { entities.admit((), EntityId::new(41), 7).await }
@@ -424,8 +422,7 @@ async fn shutdown_settles_an_installed_activation_before_draining_and_joining() 
             retirement_disposition: RetirementDisposition::Complete,
             join_gate: JoinGate::Immediate,
         },
-    )
-    .unwrap();
+    );
 
     let admission = tokio::spawn({
         let entities = entities.clone();
@@ -495,8 +492,7 @@ async fn shutdown_claims_passivation_before_pending_delivery_settles() {
             retirement_disposition: RetirementDisposition::Complete,
             join_gate: JoinGate::Immediate,
         },
-    )
-    .unwrap();
+    );
     let entity_id = EntityId::new(41);
     let admission = tokio::spawn({
         let entities = entities.clone();
@@ -576,8 +572,7 @@ async fn family_shutdown_preserves_retirement_task_failure() {
             },
             join_gate: JoinGate::Immediate,
         },
-    )
-    .unwrap();
+    );
     release_activation.notify_one();
     entities.admit((), EntityId::new(41), 7).await.unwrap();
 
@@ -639,8 +634,7 @@ async fn family_shutdown_preserves_cancelled_retirement_task() {
             },
             join_gate: JoinGate::Immediate,
         },
-    )
-    .unwrap();
+    );
     release_activation.notify_one();
     entities.admit((), EntityId::new(41), 7).await.unwrap();
 
@@ -690,8 +684,7 @@ async fn cancelled_join_preserves_the_original_family_drain_count() {
                 phase: Arc::new(Mutex::new(JoinPhase::Pending)),
             },
         },
-    )
-    .unwrap();
+    );
     release_activation.notify_one();
     entities.admit((), EntityId::new(41), 7).await.unwrap();
 
@@ -821,8 +814,7 @@ async fn runtime_admission_returns_the_exact_move_only_command() {
     };
     let allocation = command.value.as_ptr();
     let entity_id = EntityId::new(9);
-    let entities = EntityRuntime::new(DirectoryConfig::default(), RejectingRuntime)
-        .unwrap_or_else(|_| panic!("valid directory configuration must construct"));
+    let entities = EntityRuntime::new(DirectoryConfig::default(), RejectingRuntime);
 
     let failure = entities.admit((), entity_id, command).await.unwrap_err();
     let AdmissionFailure::Refused { command, reason } = failure else {

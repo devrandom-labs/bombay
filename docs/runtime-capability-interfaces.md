@@ -13,11 +13,13 @@ Selo identity support supplied from Selo. Zenoh is the only planned production
 networking substrate; a deterministic network test host is a verification seam.
 Selo builds on Bombay, Mnesis and `mnesis-bombay`; Bombay does not depend on
 Selo or Mnesis. The new document's proposed distributed contracts are not
-implemented capabilities or additions to the current Engine port.
+implemented capabilities or additions to the current Engine port. The ordinary
+multi-node Application API and crate-owned `remote` feature remain pending;
+current native transport fixtures are scoped verification consumers.
 
-The selected dependency graph uses published Behavior Core/Actors 0.23.0 and
-Behavior Macros 0.14.0. Their registry archives identify owning revision
-`d69f992b371c12ab34e73b18e45b8112c90a1508`.
+The [developer experience coordination](prds/developer-experience.md) records
+the current published dependency selection and its source verification. The
+workspace lockfile selects the executable contract.
 Behavior owns the direct
 `Behavior -> Actions` fold, closed typed action products, total interpretation,
 source-settlement custody, explicit generated creation-settlement disposition,
@@ -27,10 +29,26 @@ behavior/environment custody through the one Driver.
 
 Bombay's terminal projection uses separate `RootOrigin<Owner>` and
 `ChildOrigin<Owner, Role>` products. A root retains its exact address; a child
-retains its exact address and required creator-local nonce. The existing
+retains its exact address, required creator-local nonce and original CreationId
+and CreationKind. The existing
 `ChildRole` proof maps a structural child position to its declared role, and
-`ProjectTerminal` preserves the exact retirement payload. Root/child
+total owned `From` inclusion preserves the exact retirement payload. Native
+`ProjectTerminal<Origin, Actor>` selects the raw descendant family
+before launch and executes once in the existing projection task. Root/child
 provenance cannot be changed through an optional nonce or a projection cast.
+Its selected RetirementSchema owns the exhaustive failure type; child failures
+travel in one ordered vector. ApplicationTopology selects the root's schema,
+and `topology!` derives its complete closed native proof. TerminalProjection
+derives pure owned presentation only, with no launch or source authority.
+
+ApplicationHandle constructs root-bound clients and one-way senders through
+the existing external-actor allocator/mailbox owner. ApplicationClient owns
+sole typed reply receiving; ApplicationSender has no receive authority. Both
+fix one selected target at construction and return complete rejected commands.
+Neither gains lifecycle authority. The application's direct shutdown request
+and termination methods delegate to ApplicationLifecycle; they define no
+additional lifecycle state or engine. Named exported interfaces remain separate
+capability products for external consumers and other destinations.
 
 ## One runtime, two halves
 
@@ -66,22 +84,24 @@ and order activation and retirement across the primitive capabilities.
 
 ## Exact audited dependency set
 
-The source graph is selected by this workspace's current lockfile and patches.
-The EXEC API documentation is reconciled on 2026-10-08; prior verification
-snapshots retain their own exact revisions and do not prove new signatures.
+The source graph is selected by this workspace's current lockfile. Current
+versions and archive verification are recorded in the
+[developer experience coordination](prds/developer-experience.md); earlier
+verification snapshots retain their exact revisions and do not prove new signatures.
 
 | Capability | Exact source used by Bombay | Current owner |
 |---|---|---|
-| Behavior | crates.io `bombay-behavior 0.23.0` and `bombay-behavior-macros 0.14.0`, archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
-| Behavior Actors | crates.io `bombay-behavior-actors 0.23.0`, same archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
+| Behavior | lockfile-selected crates.io `bombay-behavior` and `bombay-behavior-macros` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
+| Behavior Actors | lockfile-selected crates.io `bombay-behavior-actors` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
 | Address | crates.io `bombay-address 0.3.0`, checksum `8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc` | exclusive non-resolvable reservation, exact publication lease and retirement, opaque resolution |
 | Communication | crates.io checksum `aa933d28c4af9a94c18494667eb0385aa88de2927d1ea78904453780afa5965d`, package `bombay-communication 0.1.5`, archive revision `24ad2b9db9f5fefd08d6d2441f84c804b4c84338` | two-lane mailbox, delivery, backpressure, affine user-admission retirement, exact original custody before mapped delivery |
 | Observe | Bombay-private import of semantic commit `b3b5f36a3b514713012086dfc72f5327d15fe2b2` plus exact Loom-bound fix `ef2ea13e65889aa3bf713822041e032020e98d73` from `feat/affine-observation` | keyed exact-generation facts plus shared and affine unkeyed publication pairs; no separately published actor API |
-| Timers | Git `bombay-timers 0.1.0` at exact revision `13e884da7ab41781f52337b0038060e375b00ee0` | single-owner generation-safe timer queue |
+| Timers | crates.io `bombay-timers 0.2.0`, archive revision `9369d1f6c7fcda91e7de5bf3c19e6769f92145bd` | single-owner generation-safe timer queue; checked scheduling retains complete exhaustion inputs |
 
 Observe's complete selected implementation and verification corpus are now
-owned privately by this workspace. Timers remains selected from the locked Git
-revision; that exact source, its tests, and its documentation were inspected.
+owned privately by this workspace. Timers 0.2.0 publishes the same checked
+scheduler previously selected by the Git patch; extracted-package consumers
+now resolve that contract directly from the registry.
 
 ## Ownership table
 
@@ -107,10 +127,20 @@ Address; roles and routes never become storage identities.
 
 ## External actor interface
 
-`ActorInterface<Api>` is Bombay's transport-neutral application boundary.
+`ApplicationHandle` is the ordinary entry to typed communication and lifecycle.
+Its `client()` and `sender()` select the root; `client_to(target)` and
+`sender_to(target)` select an existing exact recipient or stable Entity reference.
+The client owns sole typed reply receiving; the sender has no reply or lifecycle
+authority. Both constructors preserve the original owned target on allocation
+rejection. For one reply mailbox used across several targets, `external()`
+establishes the existing ExternalActor directly. Direct Application shutdown and
+termination methods delegate to the existing lifecycle owner.
+
+`ActorInterface<Api>` is Bombay's transport-neutral exported capability product.
 `Api` is an application-defined static product of receptionist capabilities;
 the runtime neither discovers exports from topology nor grants lifecycle
-authority through the product. `ApplicationLifecycle<P, E>` is the separate
+authority through the product. Its explicit-target constructors use the same
+client and sender products and allocator as ApplicationHandle. `ApplicationLifecycle<P, E>` is the separate
 projection for root shutdown and termination; `E` is the installed root's
 concrete event sum.
 
@@ -135,8 +165,10 @@ permission checks, retained pending messages and fresh checks on retries;
 synchronous mailbox synchronization is not a wait-free execution promise.
 Stable Entity resolution/hydration continues through the awaited send path.
 
-The interface's direct send accepts only `EstablishedRecipient<Target>`. This
-is not an arbitrary restriction: a logical `Recipient<Target>` resolves in one
+Awaited `send` uses sealed `ExternalTarget`, which selects the admission contract for an
+`EstablishedRecipient<Target>` or native `EntityRef<Definition>`. The former
+returns complete `SendError` custody; the latter preserves `AdmissionFailure`
+and existing Entity fencing/reactivation. A logical `Recipient<Target>` resolves in one
 selected Address namespace, while the transport-neutral interface deliberately
 does not expose Bombay's private topology product or an erased protocol map.
 An application that intends stable logical names must select a typed local
@@ -196,7 +228,7 @@ Bombay is the ordinary dependency and application surface. It re-exports the
 one Behavior authoring attribute and the selected Behavior Actors vocabulary;
 direct foundational Behavior values remain the power-user escape hatch. Every
 path terminates in the same concrete `Behavior -> Actions` algebra, and
-Bombay's generic `App` owns execution.
+Bombay's generic `Application` owns execution.
 
 The selected Behavior algebra now carries exact live endpoints through
 `EstablishedRecipient<P>`, exact delivery, occurrence-preserving creation
@@ -298,12 +330,10 @@ for a new post-close send. Version 0.1.3 corrected that defect while retaining
 already accepted messages and returning exact rejected payloads. Both the
 original failure and released correction are verified through actual ActorRef
 in debug and optimized builds; see
-[EXEC's delivery record](prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
-The selected 0.1.4 retains that correction and describes refused user admission
-as lane closure rather than inferring consumer disappearance. The owning
-[release record](prds/static-remote-actors.md#owning-closure-correction-delivery-and-registry-selection)
-preserves its source, CI and registry evidence. That prerequisite correction
-does not accept the remaining EXEC laws.
+[EXEC's delivery record (historical)](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
+The selected Communication0.1.5 retains that correction and the original
+pre-mapping rejected-item custody. Its [release record](prds/static-remote-actors.md#owning-closure-correction-delivery-and-registry-selection)
+preserves source, CI and registry evidence. That prerequisite correction does not accept the remaining EXEC laws.
 
 ### Affine user-admission retirement
 
@@ -418,7 +448,7 @@ outcome is the exact live reference or typed activation rejection. The keyed
 Bombay owns local Entity installation and lifecycle composition.
 `EntityDefinition` names one stable ID, the complete authored Behavior stack,
 its concrete application host product, asynchronous hydration, and exact fact
-consumers. `App::entity_family` installs that definition under a semantic role;
+consumers. `Application::entity_family` installs that definition under a semantic role;
 `ApplicationHandle::entities` selects its cloneable receptionist, while the
 application retains shutdown and task-join authority.
 
@@ -696,7 +726,7 @@ The functional entry remains value-oriented and async-first:
 
 ```text
 let outcome = Application::new(service.stop_on_shutdown())
-    .run::<_, _, Never, _>()
+    .run()
     .await;
 ```
 
@@ -713,14 +743,17 @@ cleanup retains its own unit success or exact cleanup error. The actual raw root
 retains native actor failure in `ActorRetirement::ActorTaskFailed`.
 `ApplicationCleanupError` separately retains cleanup-publication receiving and
 cleanup-task failures. `Terminal` is a descendant projection destination, not
-an implicit root conversion. `ProjectTerminal` is an explicit application
-policy over original typed origin and retirement.
+an implicit root conversion. Derived sums use `(origin, retirement).into()`
+for total presentation. `ProjectTerminal` is the native policy over the original
+origin and complete actor retirement; its associated `Descendants` need not be
+the projected report. Native callbacks preserve their actual executor context
+and panic custody.
 
 `Application::run_blocking` takes the caller's configured Tokio Builder and
 drives that same pair. Nested blocking rejects before effects; build failure
 returns exact Application, Builder and native io::Error. Current-thread and
 multithread are Builder choices. There is no second public runner framework.
-Advanced `App` supplies intentional logical hosts and native Entity families.
+Explicit hosting on `Application` supplies intentional logical hosts and native Entity families.
 Each acquired root/family head is published before a later cleanup await;
 unfinished receiving errors remain distinct from acquired reports.
 

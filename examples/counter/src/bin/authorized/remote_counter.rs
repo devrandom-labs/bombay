@@ -386,7 +386,7 @@ async fn counter_native_applications<R>(
             let checked = authority.check_host();
             checked.expect("actual local Requester capture host");
             let (execution, receiving) = Application::new(requester.stop_on_shutdown())
-                .execute_with::<_, _, Never, (), _, _>(|application| async move {
+                .execute_with(|application| async move {
                     let publication = publication.send((
                         application.lifecycle(),
                         application.root().established_recipient(),
@@ -731,23 +731,20 @@ async fn counter_native_applications<R>(
                             .iter()
                             .position(|p| p.correlation == correlation)
                             .expect("actual pending ownership");
-                        acquire_verification(
-                            &mut authorization.pending[position],
-                            async |original| {
-                                provider(
-                                    original,
-                                    &records,
-                                    AuthorityFreshness::Current,
-                                    ProviderAvailability::Available,
-                                    profile,
-                                    CounterProofPurpose::Request,
-                                    binding.caller,
-                                    binding.host,
-                                    &counter_test_json_limits(),
-                                )
-                                .await
-                            },
-                        )
+                        let request_limits = counter_test_json_limits();
+                        acquire_verification(&mut authorization.pending[position], |original| {
+                            provider(
+                                original,
+                                &records,
+                                AuthorityFreshness::Current,
+                                ProviderAvailability::Available,
+                                profile,
+                                CounterProofPurpose::Request,
+                                binding.caller,
+                                binding.host,
+                                &request_limits,
+                            )
+                        })
                         .await;
                         let Verification::Acquired(Ok(receipt)) =
                             &authorization.pending[position].verification
@@ -1046,26 +1043,26 @@ async fn counter_native_applications<R>(
             let (permit, permission) = oneshot::channel();
             let checked = authority.check_host();
             checked.expect("actual parent capture host");
-            let (execution, receiving) =
-                Application::new(CounterParent::default().stop_on_shutdown())
-                    .execute_with::<_, _, CounterChildrenTerminal, _, _, _>(
-                        |application| async move {
-                            let interface = application.interface(());
-                            let publication = published.send((
-                                application.lifecycle(),
-                                application.root().established_recipient(),
-                                interface.clone(),
-                                interface.external::<CounterExports>().unwrap(),
-                                interface.external::<CounterRequests>().unwrap(),
-                            ));
-                            let permission = permission.await;
-                            (publication, permission)
-                        },
-                    )
-                    .unwrap_or_else(|original| {
-                        drop(original);
-                        panic!("actual parent construction");
-                    });
+            let (execution, receiving) = Application::with_topology(
+                CounterParent::default().stop_on_shutdown(),
+                counter_children_application::Topology::new(),
+            )
+            .execute_with(|application| async move {
+                let interface = application.interface(());
+                let publication = published.send((
+                    application.lifecycle(),
+                    application.root().established_recipient(),
+                    interface.clone(),
+                    interface.external::<CounterExports>().unwrap(),
+                    interface.external::<CounterRequests>().unwrap(),
+                ));
+                let permission = permission.await;
+                (publication, permission)
+            })
+            .unwrap_or_else(|original| {
+                drop(original);
+                panic!("actual parent construction");
+            });
             let work = async {
                 let (lifecycle, parent, interface, mut exports, requests) =
                     ports.await.expect("actual parent publication");
@@ -1148,11 +1145,15 @@ async fn counter_native_applications<R>(
                 panic!("all original parent Work/native/two-notification products");
             };
             let ActorRetirement::Completed {
-                descendants,
-                child_failures,
+                custody:
+                    ActorCustody {
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        retirement_failures,
+                        ..
+                    },
                 completion,
-                capability_failures,
-                retirement_failures,
                 ..
             } = &retirement
             else {
@@ -1169,19 +1170,21 @@ async fn counter_native_applications<R>(
             assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
             assert_eq!(*completion, Completion::Stopped);
             assert!(
-                child_failures.0.is_empty()
+                child_failures.is_empty()
                     && capability_failures.is_empty()
                     && retirement_failures.is_empty()
             );
             assert_eq!(descendants.len(), 2);
             for child in descendants {
-                let CounterChildrenTerminal::Child { terminal, .. } = child else {
-                    panic!("original child terminal");
-                };
+                let terminal = child.retirement.as_ref();
                 let ActorRetirement::Completed {
+                    custody:
+                        ActorCustody {
+                            capability_failures,
+                            retirement_failures,
+                            ..
+                        },
                     completion,
-                    capability_failures,
-                    retirement_failures,
                     ..
                 } = terminal
                 else {
@@ -1208,7 +1211,7 @@ async fn counter_native_applications<R>(
                 let checked = authority.check_host();
                 checked.expect("actual local Counter capture host");
                 let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
-                    .execute_with::<_, _, Never, (), _, _>(|application| async move {
+                    .execute_with(|application| async move {
                         let interface = application.interface(());
                         let publication = published.send((
                             application.lifecycle(),
@@ -1726,7 +1729,7 @@ fn counter_native_records(
 }
 
 use super::stop_admission::{
-    CounterChildren, CounterChildrenTerminal, CounterExports, CounterParent, CounterStopExport,
+    CounterChildren, CounterExports, CounterParent, CounterStopExport, counter_children_application,
 };
 use core::pin::pin;
 
@@ -1779,23 +1782,26 @@ fn counter_child_stop<R>(
         let (permit, permission) = oneshot::channel();
         let checked = authority.check_host();
         checked.expect("actual parent Application capture host");
-        let (execution, receiving) = Application::new(CounterParent::default().stop_on_shutdown())
-            .execute_with::<_, _, CounterChildrenTerminal, _, _, _>(|application| async move {
-                let interface = application.interface(());
-                let publication = published.send((
-                    application.lifecycle(),
-                    application.root().established_recipient(),
-                    interface.external::<CounterExports>().unwrap(),
-                    interface.external::<CounterRequests>().unwrap(),
-                    interface.external::<CounterValue>().unwrap(),
-                ));
-                let continued = permission.await;
-                (publication, continued)
-            })
-            .unwrap_or_else(|original| {
-                drop(original);
-                panic!("actual parent construction");
-            });
+        let (execution, receiving) = Application::with_topology(
+            CounterParent::default().stop_on_shutdown(),
+            counter_children_application::Topology::new(),
+        )
+        .execute_with(|application| async move {
+            let interface = application.interface(());
+            let publication = published.send((
+                application.lifecycle(),
+                application.root().established_recipient(),
+                interface.external::<CounterExports>().unwrap(),
+                interface.external::<CounterRequests>().unwrap(),
+                interface.external::<CounterValue>().unwrap(),
+            ));
+            let continued = permission.await;
+            (publication, continued)
+        })
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("actual parent construction");
+        });
         let service = async {
             let (parent_lifecycle, parent, mut exports, requests, mut values) =
                 ports.await.unwrap();
@@ -1859,7 +1865,8 @@ fn counter_child_stop<R>(
                     .iter()
                     .position(|pending| pending.correlation == correlation)
                     .unwrap();
-                acquire_verification(&mut authorization.pending[position], async |original| {
+                let request_limits = counter_test_json_limits();
+                acquire_verification(&mut authorization.pending[position], |original| {
                     provider(
                         original,
                         &configured,
@@ -1869,9 +1876,8 @@ fn counter_child_stop<R>(
                         CounterProofPurpose::Request,
                         binding.caller,
                         binding.host,
-                        &counter_test_json_limits(),
+                        &request_limits,
                     )
-                    .await
                 })
                 .await;
                 authorization.associate(position, &requests, &values.recipient());
@@ -2014,11 +2020,15 @@ fn counter_child_stop<R>(
     assert_eq!(parent_stop, Ok(()));
     assert!(released.is_ok());
     let ActorRetirement::Completed {
-        descendants,
-        child_failures,
+        custody:
+            ActorCustody {
+                descendants,
+                child_failures,
+                capability_failures,
+                retirement_failures,
+                ..
+            },
         completion,
-        capability_failures,
-        retirement_failures,
         ..
     } = &parent_terminal
     else {
@@ -2026,20 +2036,23 @@ fn counter_child_stop<R>(
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert!(
-        child_failures.0.is_empty()
+        child_failures.is_empty()
             && capability_failures.is_empty()
             && retirement_failures.is_empty()
     );
     assert_eq!(*completion, Completion::Stopped);
     let mut addresses = Vec::new();
     for child in descendants {
-        let CounterChildrenTerminal::Child { origin, terminal } = child else {
-            panic!("original child terminal projection");
-        };
+        let counter_children_application::RootRetirements { origin, retirement } = child;
+        let terminal = retirement.as_ref();
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    capability_failures,
+                    retirement_failures,
+                    ..
+                },
             completion,
-            capability_failures,
-            retirement_failures,
             ..
         } = terminal
         else {
@@ -2183,7 +2196,7 @@ fn counter_query_count<R>(
         let (published, ports) = oneshot::channel();
         let (permitted, permission) = oneshot::channel();
         let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
-            .execute_with::<_, _, Never, (), _, _>(|application| async move {
+            .execute_with(|application| async move {
                 let interface = application.interface(());
                 let publication = published.send((
                     application.lifecycle(),
@@ -2270,24 +2283,35 @@ fn counter_query_count<R>(
             });
             let (canceled_wait, still_pending, initial_count, released) = {
                 let (release, released) = oneshot::channel();
-                let mut verification = pin!(acquire_verification(
-                    &mut authorization.pending[0],
-                    async |original| {
-                        released.await.map_err(VerificationError::Unavailable)?;
-                        provider(
-                            original,
-                            &configured,
-                            AuthorityFreshness::Current,
-                            ProviderAvailability::Available,
-                            profile,
-                            CounterProofPurpose::Request,
-                            binding.caller,
-                            binding.host,
-                            &counter_test_json_limits(),
-                        )
-                        .await
+                let pending = &mut authorization.pending[0];
+                let request_limits = counter_test_json_limits();
+                let mut verification = pin!(async {
+                    if matches!(pending.verification, Verification::Awaiting) {
+                        match released.await {
+                            Ok(()) => {
+                                acquire_verification(pending, |original| {
+                                    provider(
+                                        original,
+                                        &configured,
+                                        AuthorityFreshness::Current,
+                                        ProviderAvailability::Available,
+                                        profile,
+                                        CounterProofPurpose::Request,
+                                        binding.caller,
+                                        binding.host,
+                                        &request_limits,
+                                    )
+                                })
+                                .await;
+                            }
+                            Err(cause) => {
+                                pending.verification = Verification::Acquired(Err(
+                                    VerificationError::Unavailable(cause),
+                                ));
+                            }
+                        }
                     }
-                ));
+                });
                 let canceled_wait = verification.as_mut().now_or_never();
                 query_receivers.push(query_record(&configured[1]).await);
                 query_receivers.push(query_record(&configured[2]).await);
@@ -2316,24 +2340,35 @@ fn counter_query_count<R>(
             });
             let (second_pending, unread_count, second_released) = {
                 let (release, released) = oneshot::channel();
-                let mut verification = pin!(acquire_verification(
-                    &mut authorization.pending[0],
-                    async |original| {
-                        released.await.map_err(VerificationError::Unavailable)?;
-                        provider(
-                            original,
-                            &configured,
-                            AuthorityFreshness::Current,
-                            ProviderAvailability::Available,
-                            profile,
-                            CounterProofPurpose::Request,
-                            binding.caller,
-                            binding.host,
-                            &counter_test_json_limits(),
-                        )
-                        .await
+                let pending = &mut authorization.pending[0];
+                let request_limits = counter_test_json_limits();
+                let mut verification = pin!(async {
+                    if matches!(pending.verification, Verification::Awaiting) {
+                        match released.await {
+                            Ok(()) => {
+                                acquire_verification(pending, |original| {
+                                    provider(
+                                        original,
+                                        &configured,
+                                        AuthorityFreshness::Current,
+                                        ProviderAvailability::Available,
+                                        profile,
+                                        CounterProofPurpose::Request,
+                                        binding.caller,
+                                        binding.host,
+                                        &request_limits,
+                                    )
+                                })
+                                .await;
+                            }
+                            Err(cause) => {
+                                pending.verification = Verification::Acquired(Err(
+                                    VerificationError::Unavailable(cause),
+                                ));
+                            }
+                        }
                     }
-                ));
+                });
                 let second_pending = verification.as_mut().now_or_never();
                 query_receivers.push(query_record(&configured[2]).await);
                 let unread_count = 2 + received.len();
@@ -2367,7 +2402,8 @@ fn counter_query_count<R>(
                     drop(original);
                     panic!("third accepted pending ownership");
                 });
-                acquire_verification(&mut authorization.pending[0], async |original| {
+                let request_limits = counter_test_json_limits();
+                acquire_verification(&mut authorization.pending[0], |original| {
                     provider(
                         original,
                         &configured,
@@ -2377,9 +2413,8 @@ fn counter_query_count<R>(
                         CounterProofPurpose::Request,
                         binding.caller,
                         binding.host,
-                        &counter_test_json_limits(),
+                        &request_limits,
                     )
-                    .await
                 }).await;
                 authorization.associate(0, &requests, &values.recipient());
                 authorization.attempt(correlation, &requests);

@@ -8,7 +8,8 @@ use crate::observe::{Observation, Publisher, pair};
 use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
 use behavior::{
-    AllocationRejection, EstablishedRecipient, Here, Ingress, InjectEvent, Never, Protocol, User,
+    AllocationRejection, EstablishedRecipient, Ingress, InjectEvent, MessageProtocol, Never,
+    Protocol, User,
 };
 use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
 use communication::{Consumer, ControlSender, Received, TrySendError, mailbox_channel};
@@ -70,6 +71,50 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         ActorInterface::new(api, self.allocations.clone())
     }
 
+    /// Establish one affine caller that explicitly selects a target on each send.
+    /// Use this when one typed reply mailbox serves multiple capabilities.
+    ///
+    /// # Errors
+    /// Returns the existing allocation rejection without consuming this handle.
+    pub fn external<Replies>(&self) -> Result<ExternalActor<Replies>, ExternalActorError>
+    where
+        Replies: Protocol<Addr = MailAddr>,
+        Replies::Msg: Send,
+    {
+        ExternalActor::establish(&self.allocations)
+    }
+
+    /// Bind one exact actor recipient or stable Entity reference to a reply client.
+    /// The selected target retains its own admission and rejection contract.
+    ///
+    /// # Errors
+    /// Returns the complete original target with its allocation rejection.
+    pub fn client_to<Target, Replies>(
+        &self,
+        target: Target,
+    ) -> Result<ApplicationClient<Target, Replies>, (Target, ExternalActorError)>
+    where
+        Target: ExternalTarget,
+        Replies: Protocol<Addr = MailAddr>,
+        Replies::Msg: Send,
+    {
+        ApplicationClient::establish(target, &self.allocations)
+    }
+
+    /// Bind one exact actor recipient or stable Entity reference to a one-way sender.
+    ///
+    /// # Errors
+    /// Returns the complete original target with its allocation rejection.
+    pub fn sender_to<Target>(
+        &self,
+        target: Target,
+    ) -> Result<ApplicationSender<Target>, (Target, ExternalActorError)>
+    where
+        Target: ExternalTarget,
+    {
+        ApplicationSender::establish(target, &self.allocations)
+    }
+
     /// Project lifecycle authority without exposing topology ownership.
     #[must_use]
     pub fn lifecycle(&self) -> ApplicationLifecycle<P, Event> {
@@ -78,6 +123,27 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
             control: self.shutdown_control.clone(),
             retirement: self.retirement.clone(),
         }
+    }
+
+    /// Request shutdown through the existing root lifecycle owner.
+    /// Acceptance is a request acknowledgement, not joined retirement.
+    /// Missing or ambiguous shutdown authority remains a compile-time denial.
+    ///
+    /// # Errors
+    /// Returns the exact already-stopping or already-stopped rejection.
+    pub fn request_shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
+    where
+        Event: InjectEvent<ShutdownRequested, ShutdownPath>,
+    {
+        self.lifecycle().request_shutdown()
+    }
+
+    /// Observe termination of the exact root through its lifecycle owner.
+    /// Complete joined actor custody remains in application cleanup.
+    pub fn termination(
+        &self,
+    ) -> impl Future<Output = Termination<P::Addr>> + use<P, Event, Families> {
+        self.lifecycle().termination()
     }
 
     /// Select one statically declared native Entity family by semantic role.
@@ -116,6 +182,143 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     }
 }
 
+impl<P, Event, Families> ApplicationHandle<P, Event, Families>
+where
+    P: Protocol<Addr = MailAddr>,
+{
+    /// Allocate one root-bound client with sole typed reply receiving.
+    /// The reply capability in a domain command can infer `Replies`.
+    /// Each call uses the same application allocator and a fresh external identity.
+    ///
+    /// # Errors
+    /// Returns the existing allocation rejection, leaving this handle untouched.
+    pub fn client<Replies>(
+        &self,
+    ) -> Result<ApplicationClient<EstablishedRecipient<P>, Replies>, ExternalActorError>
+    where
+        Replies: Protocol<Addr = MailAddr>,
+        Replies::Msg: Send,
+    {
+        ApplicationClient::establish(self.root.established_recipient(), &self.allocations)
+            .map_err(|(_, error)| error)
+    }
+
+    /// Allocate one root-bound sender with no reply or lifecycle authority.
+    /// Its real external identity supplies message provenance; no reply protocol
+    /// or raw sender address is required from the caller.
+    ///
+    /// # Errors
+    /// Returns the existing allocation rejection, leaving this handle untouched.
+    pub fn sender(&self) -> Result<ApplicationSender<EstablishedRecipient<P>>, ExternalActorError> {
+        ApplicationSender::establish(self.root.established_recipient(), &self.allocations)
+            .map_err(|(_, error)| error)
+    }
+}
+
+/// One affine reply endpoint bound to an explicitly selected typed target.
+/// Construction selects the target once. This client grants no lifecycle
+/// authority and cannot be cloned to duplicate receiving.
+pub struct ApplicationClient<Target, Replies>
+where
+    Replies: Protocol<Addr = MailAddr>,
+{
+    target: Target,
+    caller: ExternalActor<Replies>,
+}
+
+impl<Target, Replies> ApplicationClient<Target, Replies>
+where
+    Replies: Protocol<Addr = MailAddr>,
+    Replies::Msg: Send,
+{
+    fn establish(
+        target: Target,
+        allocations: &ApplicationAddresses,
+    ) -> Result<Self, (Target, ExternalActorError)> {
+        match ExternalActor::establish(allocations) {
+            Ok(caller) => Ok(Self { target, caller }),
+            Err(error) => Err((target, error)),
+        }
+    }
+
+    /// The real allocated sender identity of this client.
+    #[must_use]
+    pub const fn address(&self) -> MailAddr {
+        self.caller.address()
+    }
+
+    /// Issue the exact reply capability without duplicating receive authority.
+    #[must_use]
+    pub fn recipient(&self) -> EstablishedRecipient<Replies> {
+        self.caller.recipient()
+    }
+
+    /// Admit a command to the selected target using this client's identity.
+    /// Admission is distinct from a later business reply.
+    ///
+    /// # Errors
+    /// Returns the selected target's rejection with the complete original command.
+    pub fn send(
+        &self,
+        command: Target::Message,
+    ) -> impl Future<Output = Result<(), Target::Error>> + Send + use<'_, Target, Replies>
+    where
+        Target: ExternalTarget,
+    {
+        self.caller.send(&self.target, command)
+    }
+
+    /// Receive the next typed reply and its actual emitting actor's identity.
+    /// Closed admission yields its accepted prefix before returning `None`.
+    pub async fn receive(&mut self) -> Option<User<MailAddr, Replies::Msg>> {
+        self.caller.receive().await
+    }
+
+    /// Close new replies while preserving the accepted prefix for receiving.
+    pub fn close_admission(&self) {
+        self.caller.close_admission();
+    }
+}
+
+/// One external identity bound to a selected typed target for one-way commands.
+/// Its uninhabited reply protocol exposes no receiving or lifecycle authority.
+pub struct ApplicationSender<Target> {
+    target: Target,
+    caller: ExternalActor<MessageProtocol<MailAddr, Never>>,
+}
+
+impl<Target> ApplicationSender<Target> {
+    fn establish(
+        target: Target,
+        allocations: &ApplicationAddresses,
+    ) -> Result<Self, (Target, ExternalActorError)> {
+        match ExternalActor::establish(allocations) {
+            Ok(caller) => Ok(Self { target, caller }),
+            Err(error) => Err((target, error)),
+        }
+    }
+
+    /// The real allocated sender identity supplied with each command.
+    #[must_use]
+    pub const fn address(&self) -> MailAddr {
+        self.caller.address()
+    }
+
+    /// Admit a one-way command to the selected typed target.
+    ///
+    /// # Errors
+    /// Returns the selected target's rejection with the complete original command.
+    pub fn send(
+        &self,
+        command: Target::Message,
+    ) -> impl Future<Output = Result<(), Target::Error>> + Send + use<'_, Target>
+    where
+        Target: ExternalTarget,
+    {
+        self.caller.send(&self.target, command)
+    }
+}
+
 impl<P, Event> fmt::Debug for ApplicationLifecycle<P, Event>
 where
     P: Protocol,
@@ -141,14 +344,16 @@ impl<P: Protocol, Event> Clone for ApplicationLifecycle<P, Event> {
 
 impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
     /// Request shutdown through the root lifecycle lane.
+    /// The unique typed ingress path is inferred through actor layers.
+    /// An absent or ambiguous shutdown lane cannot be inferred.
     ///
     /// # Errors
     ///
     /// Returns the exact rejection when the root is already stopping or has
     /// already stopped.
-    pub fn request_shutdown(&self) -> Result<(), ShutdownRejection>
+    pub fn request_shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
     where
-        Event: InjectEvent<ShutdownRequested, Here>,
+        Event: InjectEvent<ShutdownRequested, ShutdownPath>,
     {
         if self.root.termination_observation().try_get().is_some() {
             return Err(ShutdownRejection::AlreadyStopped);
@@ -156,7 +361,11 @@ impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
         let Some(control) = self.control.upgrade() else {
             return Err(self.root.shutdown_rejection());
         };
-        request_actor_shutdown(&self.root, &control, Ingress::new())
+        request_actor_shutdown(
+            &self.root,
+            &control,
+            Ingress::<ShutdownRequested, ShutdownPath>::new(),
+        )
     }
 
     /// Observe the exact root's joined-retirement assessment.
@@ -270,6 +479,37 @@ impl<Api> ActorInterface<Api> {
         &self.api
     }
 
+    /// Bind one explicitly exported target to an affine reply client.
+    /// This grants no application lifecycle authority.
+    ///
+    /// # Errors
+    /// Returns the complete original target with its allocation rejection.
+    pub fn client_to<Target, Replies>(
+        &self,
+        target: Target,
+    ) -> Result<ApplicationClient<Target, Replies>, (Target, ExternalActorError)>
+    where
+        Target: ExternalTarget,
+        Replies: Protocol<Addr = MailAddr>,
+        Replies::Msg: Send,
+    {
+        ApplicationClient::establish(target, &self.allocations)
+    }
+
+    /// Bind one explicitly exported target to a real one-way sender.
+    ///
+    /// # Errors
+    /// Returns the complete original target with its allocation rejection.
+    pub fn sender_to<Target>(
+        &self,
+        target: Target,
+    ) -> Result<ApplicationSender<Target>, (Target, ExternalActorError)>
+    where
+        Target: ExternalTarget,
+    {
+        ApplicationSender::establish(target, &self.allocations)
+    }
+
     /// Establish one real external actor for a concrete reply protocol.
     ///
     /// The returned actor owns one fresh allocated address, one exact cloneable
@@ -305,7 +545,9 @@ where
     P: Protocol<Addr = MailAddr>,
     P::Msg: Send,
 {
-    fn establish(allocations: &ApplicationAddresses) -> Result<Self, ExternalActorError> {
+    pub(super) fn establish(
+        allocations: &ApplicationAddresses,
+    ) -> Result<Self, ExternalActorError> {
         let address = allocations
             .allocate()
             .map_err(ExternalActorError::Allocation)?;
@@ -479,12 +721,309 @@ where
 
 #[cfg(test)]
 mod tests {
-    use behavior::MessageProtocol;
-    use behavior_actors::Exit;
+    use crate::actors::ActorExt;
+    use behavior::{AllocationRejection, BehaviorBase, MessageProtocol, Never, User};
+    use behavior_actors::{Exit, StopOnShutdown};
+    use core::num::NonZeroUsize;
+    use std::sync::{Arc, Mutex};
+    use tokio::task::JoinError;
 
     use crate::address::{ApplicationAddresses, MailAddr};
-    use crate::application::ExternalActor;
+    use crate::application::{Application, ExternalActor, ExternalActorError};
+    use crate::entity::{
+        ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
+        EntityCapacity, EntityDefinition, EntityId, EntityShutdown,
+    };
     use crate::local::endpoint::ExtractLocalEndpoint;
+    use crate::{
+        ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ActorSpace, Completion,
+        RetirementAssessment, ShutdownLedger,
+    };
+
+    type AccountRetirement =
+        Result<ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>, JoinError>;
+
+    enum AccountReport {
+        ActivationFailed(
+            EntityId<Box<[u64]>>,
+            ActivationId,
+            EntityActivationError<Never, StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>,
+        ),
+        AdmissionRefused(EntityId<Box<[u64]>>, AdmissionFailure<Vec<u64>>),
+        ForcedRetirement(EntityId<Box<[u64]>>, ActivationId, DrainFailure),
+        Retired(
+            EntityId<Box<[u64]>>,
+            ActivationId,
+            AccountRetirement,
+            ActorRetirementReport,
+        ),
+    }
+
+    struct Accounts {
+        reports: Arc<Mutex<Vec<AccountReport>>>,
+    }
+
+    #[derive(Clone, Copy)]
+    struct AccountsRole;
+
+    impl EntityDefinition for Accounts {
+        type Id = Box<[u64]>;
+        type Behavior = StopOnShutdown<ShutdownLedger>;
+        type Hosts = ActorSpace<ShutdownLedger>;
+        type HydrationError = Never;
+        type Terminal = Never;
+        type ChildFailures = Vec<Never>;
+
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "hydration transfers domain identity only when its native future is polled"
+        )]
+        async fn hydrate(&self, id: EntityId<Self::Id>) -> Result<Self::Behavior, Never> {
+            Ok(ShutdownLedger {
+                entries: id.into_inner().into_vec(),
+                received: Vec::new(),
+            }
+            .stop_on_shutdown())
+        }
+
+        fn activation_failed(
+            &self,
+            id: EntityId<Self::Id>,
+            activation: ActivationId,
+            failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        ) {
+            self.reports
+                .lock()
+                .expect("account report custody")
+                .push(AccountReport::ActivationFailed(id, activation, failure));
+        }
+
+        fn admission_refused(&self, id: EntityId<Self::Id>, failure: AdmissionFailure<Vec<u64>>) {
+            self.reports
+                .lock()
+                .expect("account report custody")
+                .push(AccountReport::AdmissionRefused(id, failure));
+        }
+
+        fn forced_retirement(
+            &self,
+            id: &EntityId<Self::Id>,
+            activation: ActivationId,
+            failure: DrainFailure,
+        ) {
+            self.reports.lock().expect("account report custody").push(
+                AccountReport::ForcedRetirement(id.clone(), activation, failure),
+            );
+        }
+
+        fn retired(
+            &self,
+            id: &EntityId<Self::Id>,
+            activation: ActivationId,
+            retirement: AccountRetirement,
+            retirement_report: ActorRetirementReport,
+        ) {
+            self.reports
+                .lock()
+                .expect("account report custody")
+                .push(AccountReport::Retired(
+                    id.clone(),
+                    activation,
+                    retirement,
+                    retirement_report,
+                ));
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "retain the original allocation refusal, identity, retry and full retirement in one independent journey"
+    )]
+    async fn rejected_target_construction_returns_the_original_entity_identity_for_retry() {
+        let reports = Arc::new(Mutex::new(Vec::new()));
+        let definition = Accounts {
+            reports: Arc::clone(&reports),
+        };
+        let capacity = EntityCapacity::new(
+            NonZeroUsize::new(1).expect("one resident"),
+            NonZeroUsize::new(4).expect("four pending commands"),
+        );
+        let original = Box::<[u64]>::from([79, 83]);
+        let allocation = original.as_ptr();
+        let (outcome, root, notifications, families) = Application::new(
+            ShutdownLedger {
+                entries: vec![73],
+                received: Vec::new(),
+            }
+            .stop_on_shutdown(),
+        )
+        .entity_family(
+            AccountsRole,
+            definition,
+            DirectoryConfig::default(),
+            capacity,
+        )
+        .run_with_entities(|mut application| async move {
+            let target = application.entities(AccountsRole).entity(original);
+            let allocations = application.allocations.clone();
+            application.allocations = ApplicationAddresses::from_next(u64::MAX);
+            let (target, error) = application
+                .sender_to(target)
+                .err()
+                .expect("exhaustion returns the complete original target");
+            assert_eq!(target.id().as_ptr(), allocation);
+            assert_eq!(&**target.id(), &[79, 83]);
+            assert!(matches!(
+                error,
+                ExternalActorError::Allocation(AllocationRejection::Exhausted)
+            ));
+            let (target, error) = application
+                .client_to::<_, MessageProtocol<MailAddr, u64>>(target)
+                .err()
+                .expect("reply allocation also returns the complete original target");
+            assert_eq!(target.id().as_ptr(), allocation);
+            assert!(matches!(
+                error,
+                ExternalActorError::Allocation(AllocationRejection::Exhausted)
+            ));
+            application.allocations = allocations;
+            let sender = application
+                .sender_to(target)
+                .unwrap_or_else(|_| panic!("the returned original target can be retried"));
+            sender
+                .send(vec![89, 97])
+                .await
+                .expect("native Entity admission activates the original logical identity");
+            let shutdown = application.request_shutdown();
+            assert_eq!(shutdown, Ok(()));
+            sender.address()
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual caller host is entered"));
+        let (sender, cleanup) = outcome
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("the original caller completes"));
+        assert!(matches!(&cleanup, Ok(())));
+        let notifications =
+            notifications.expect("both root notification results remain independent");
+        notifications
+            .termination
+            .expect("actual root termination notification");
+        notifications
+            .retirement
+            .expect("actual joined root report notification");
+        let (_, root) = root.expect("independent original root retirement");
+        assert_eq!(root.completion(), Some(&Completion::Stopped));
+        assert_eq!(root.behavior().expect("root retained").base().entries, [73]);
+        let (family, ()) = families;
+        let (AccountsRole, (shutdown, metrics, disposal)) = family.expect("family received");
+        assert!(disposal.is_none());
+        assert_eq!(metrics.activations, 1);
+        assert_eq!(metrics.residents, 0);
+        let EntityShutdown::Settled {
+            represented,
+            entities,
+        } = shutdown
+        else {
+            panic!("the native account family settles");
+        };
+        assert_eq!(represented, 1);
+        assert_eq!(entities, [EntityId::new(Box::<[u64]>::from([79, 83]))]);
+        let reports = reports.lock().expect("complete original account reports");
+        assert_eq!(reports.len(), 1);
+        for report in &*reports {
+            match report {
+                AccountReport::Retired(id, _activation, retirement, report) => {
+                    assert_eq!(&**id.get(), &[79, 83]);
+                    let retirement = retirement.as_ref().expect("exact account task custody");
+                    let custody = match retirement {
+                        ActorRetirement::Completed {
+                            custody,
+                            completion,
+                            ..
+                        } => {
+                            assert_eq!(*completion, Completion::Stopped);
+                            custody
+                        }
+                        ActorRetirement::OwnerCancelled { custody, .. } => custody,
+                        _ => panic!("fenced retirement returns completion or owner cancellation"),
+                    };
+                    let actor = custody.behavior.base();
+                    assert_eq!(actor.entries, [79, 83]);
+                    assert_eq!(actor.received, [User::new(sender, vec![89, 97])]);
+                    assert_eq!(custody.user, []);
+                    assert_eq!(custody.descendants, []);
+                    assert_eq!(custody.child_failures, []);
+                    assert_eq!(report.retirement(), RetirementAssessment::Established);
+                    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+                }
+                AccountReport::ActivationFailed(id, activation, _failure) => {
+                    panic!("unexpected account activation failure: {id:?} {activation:?}");
+                }
+                AccountReport::AdmissionRefused(id, failure) => {
+                    panic!("unexpected account admission refusal: {id:?} {failure:?}");
+                }
+                AccountReport::ForcedRetirement(id, activation, failure) => {
+                    panic!(
+                        "unexpected forced account retirement: {id:?} {activation:?} {failure:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn failed_root_client_allocation_preserves_live_application_authority() {
+        let (outcome, root, notifications) = Application::new(
+            ShutdownLedger {
+                entries: vec![13, 17],
+                received: Vec::new(),
+            }
+            .stop_on_shutdown(),
+        )
+        .run_with(|mut application| async move {
+            let root = application.root().address();
+            application.allocations = ApplicationAddresses::from_next(u64::MAX);
+            let client = application.client::<MessageProtocol<MailAddr, u64>>();
+            assert!(matches!(
+                client,
+                Err(ExternalActorError::Allocation(
+                    AllocationRejection::Exhausted
+                ))
+            ));
+            let sender = application.sender();
+            assert!(matches!(
+                sender,
+                Err(ExternalActorError::Allocation(
+                    AllocationRejection::Exhausted
+                ))
+            ));
+            assert_eq!(application.root().address(), root);
+            let shutdown = application.request_shutdown();
+            assert_eq!(shutdown, Ok(()));
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual caller host is entered"));
+        let ((), cleanup) = outcome
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("work completed"));
+        cleanup.expect("the actual cleanup producer completed independently");
+        let notifications = notifications.expect("both original root notification results survive");
+        notifications
+            .termination
+            .expect("actual ordinary termination notification");
+        notifications
+            .retirement
+            .expect("actual joined retirement notification");
+        let (_, retirement) = root.expect("the original root retirement remains available");
+        assert_eq!(retirement.completion(), Some(&Completion::Stopped));
+        let custody = retirement
+            .custody()
+            .expect("the root retains its original data");
+        assert_eq!(custody.behavior.base().entries, [13, 17]);
+        assert_eq!(custody.behavior.base().received, []);
+    }
 
     #[test]
     fn external_actor_drop_publishes_normal_termination_to_its_exact_recipient() {
@@ -525,16 +1064,17 @@ mod installed_shutdown_contract {
 
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::application::ApplicationLifecycle;
-    use crate::application::{ActorInterface, App, ApplicationOutcome};
+    use crate::application::{ActorInterface, Application, ApplicationOutcome};
     use crate::launch::launch_inert;
 
     use crate::local::endpoint::ExtractLocalEndpoint;
     use crate::local::environment::LocalResidual;
     use crate::observe;
     use crate::terminal::{
-        ActorFailureAssessment, ActorRetirement, RetirementAssessment, RetirementNotificationError,
+        ActorCustody, ActorFailureAssessment, ActorRetirement, RetirementAssessment,
+        RetirementNotificationError,
     };
-    use crate::topology::Hosts;
+    use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
     use tokio::sync::oneshot;
     use tokio::time::{Duration, timeout};
 
@@ -798,6 +1338,16 @@ mod installed_shutdown_contract {
         }
     }
 
+    impl RootRegistration<LedgerProtocol> for RetiringLedgerSpace {
+        fn root_space(&self) -> &ActorSpace<LedgerProtocol> {
+            &self.actors
+        }
+    }
+
+    impl ApplicationTopology<StopOnShutdown<ShutdownLedger>, ()> for RetiringLedgerSpace {
+        type Descendants = Never;
+    }
+
     impl Drop for RetiringLedgerSpace {
         fn drop(&mut self) {
             self.retired_spaces.fetch_add(1, Ordering::SeqCst);
@@ -835,7 +1385,7 @@ mod installed_shutdown_contract {
             let allocation = payload.as_ptr();
             let (report_publication, report_received) = oneshot::channel();
             let (release_work, work_released) = oneshot::channel();
-            let (execution, receiving) = App::new(
+            let (execution, receiving) = Application::with_topology(
                 StopOnShutdown::new(ShutdownLedger {
                     entries: payload,
                     received: Vec::new(),
@@ -846,7 +1396,7 @@ mod installed_shutdown_contract {
                     retired_spaces: Arc::clone(&retired_spaces),
                 },
             )
-            .execute_with::<Never, (), _, _>(move |application| async move {
+            .execute_with(move |application| async move {
                 let lifecycle = application.lifecycle();
                 {
                     let mut cancelled = pin!(lifecycle.retirement());
@@ -910,24 +1460,27 @@ mod installed_shutdown_contract {
                 native.expect("the native root result remains independently retained");
             assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
             let ActorRetirement::Completed {
-                behavior,
                 completion: Completion::Stopped,
                 interpretation: None,
                 source: None,
                 settlements,
-                control,
-                user,
-                descendants,
-                child_failures: (),
-                capability_failures,
-                additional_failures,
-                received_interpretation: None,
-                received_source: None,
-                source_index: None,
-                acquired_ingress: None,
-                retirement_failures,
-                terminal_report: None,
-                unread_owner_cancellation: None,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        received_interpretation: None,
+                        received_source: None,
+                        source_index: None,
+                        acquired_ingress: None,
+                        retirement_failures,
+                        terminal_report: None,
+                        unread_owner_cancellation: None,
+                    },
             } = native
             else {
                 panic!("the exact stopped native root and all of its lanes survive");
@@ -937,6 +1490,7 @@ mod installed_shutdown_contract {
             assert_eq!(behavior.base().received.len(), 0);
             assert!(control.is_empty() && user.is_empty());
             assert_eq!(descendants.len(), 0);
+            assert_eq!(child_failures, []);
             assert!(capability_failures.is_empty());
             assert!(additional_failures.is_empty());
             match expected_cause {
@@ -995,14 +1549,14 @@ mod installed_shutdown_contract {
         let retained_failure = Arc::downgrade(&failure);
         let values = vec![179, 181];
         let allocation = values.as_ptr();
-        let (execution, receiving) = App::new(
+        let (execution, receiving) = Application::with_topology(
             StopOnShutdown::new(ShutdownLedger {
                 entries: values,
                 received: Vec::new(),
             }),
             actors.clone(),
         )
-        .execute_with::<Never, (), _, _>(move |application| async move {
+        .execute_with(move |application| async move {
             let lifecycle = application.lifecycle();
             let mut observer = pin!(lifecycle.retirement());
             poll_fn(|context| {
@@ -1051,7 +1605,7 @@ mod installed_shutdown_contract {
         assert_eq!(retained_failure.strong_count(), 1);
         let (_, native) = native.expect("the complete native root survives report notification");
         let ActorRetirement::Completed {
-            behavior,
+            custody: ActorCustody { behavior, .. },
             completion: Completion::Stopped,
             ..
         } = native

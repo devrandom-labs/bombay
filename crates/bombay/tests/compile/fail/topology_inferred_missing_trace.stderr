@@ -1,0 +1,38 @@
+error[E0277]: the trait bound `RootEvent: EventIngress<RetirementBirths<Reporter>, ChildReport<Trace>>` is not satisfied
+  --> tests/compile/fail/topology_inferred_missing_trace.rs:90:6
+   |
+90 |     .run_with(|application| async move {
+   |      ^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `EventIngress<RetirementBirths<Reporter>, ChildReport<Trace>>` is not implemented for `RootEvent`
+      but trait `EventIngress<RetirementBirths<Reporter>, ChildReport<Readiness>>` is implemented for it
+  --> tests/compile/fail/topology_inferred_missing_trace.rs:40:1
+   |
+40 | / impl<Source: bombay::behavior::BirthMode> EventIngress<Source, ChildReport<Readiness>>
+41 | |     for RootEvent
+   | |_________________^
+   = help: for that trait implementation, expected `Readiness`, found `Trace`
+   = note: required for `EventLayer<behavior_actors::protocol::ShutdownRequested, RootEvent>` to implement `EventIngress<RetirementBirths<Reporter>, ChildReport<Trace>>`
+   = note: required for `bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, RootEvent>, Reporter, RetirementBirths<Reporter>>` to implement `bombay::local::effects::reports::ParentReporting<Trace>`
+   = note: required for `bombay::local::effects::ApplicationCapabilities<Reporter, Topology<StopOnShutdown<Root>>, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, RootEvent>, Reporter, RetirementBirths<Reporter>>>` to implement `InterpretItem<ReportToParent<Trace>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: required for `InterpreterRequests<ReportToParent<Trace>>` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Reporter, Topology<StopOnShutdown<Root>>, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, RootEvent>, Reporter, RetirementBirths<Reporter>>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: 1 redundant requirement hidden
+   = note: required for `ReporterSends` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Reporter, Topology<StopOnShutdown<Root>>, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, RootEvent>, Reporter, RetirementBirths<Reporter>>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<Reporter, Topology<StopOnShutdown<Root>>, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, RootEvent>, Reporter, RetirementBirths<Reporter>>>>` to implement `bombay::local::effects::CommitActions<Reporter>`
+   = note: required for `Topology<StopOnShutdown<Root>>` to implement `bombay::local::effects::creation::NativeChildStartup<StopOnShutdown<Root>, Reporter, Never>`
+   = note: required for `Topology<StopOnShutdown<Root>>` to implement `EstablishNativeChild<StopOnShutdown<Root>, Reporter, Never>`
+note: required for `Topology<StopOnShutdown<Root>>` to implement `NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+  --> tests/compile/fail/topology_inferred_missing_trace.rs:79:1
+   |
+79 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: required for `bombay::local::children::ChildBinding<ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements<StopOnShutdown<Root>>>, Never>` to implement `bombay::local::children::ChildBindingsIn<StopOnShutdown<Root>, Topology<StopOnShutdown<Root>>>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+  --> src/application/execution.rs
+   |
+   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |                  -------- required by a bound in this associated function
+...
+   |         >: ChildBindingsIn<Actor, Spaces>
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)

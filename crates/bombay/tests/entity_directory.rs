@@ -87,13 +87,10 @@ impl Hasher for ConstantHasher {
 fn custom_hasher_collisions_preserve_distinct_slots_and_exact_removal() {
     let directory =
         LocalDirectory::<u64, u64, u64, u64, BuildHasherDefault<ConstantHasher>>::with_hasher(
-            DirectoryConfig {
-                shards: NonZeroUsize::MIN,
-                activation_waiters: NonZeroUsize::new(2).unwrap(),
-            },
+            DirectoryConfig::new(NonZeroUsize::MIN, NonZeroUsize::new(2).unwrap())
+                .expect("valid directory limits"),
             BuildHasherDefault::default(),
-        )
-        .unwrap();
+        );
     let runtime = Recorder::default();
     let first = EntityId::new(1);
     let second = EntityId::new(2);
@@ -191,8 +188,7 @@ fn active_dispatch_hashes_for_shard_and_table() {
         value: 1,
         hashes: Arc::clone(&hashes),
     });
-    let directory =
-        LocalDirectory::<CountingId, u64, u64, u64>::new(DirectoryConfig::default()).unwrap();
+    let directory = LocalDirectory::<CountingId, u64, u64, u64>::new(DirectoryConfig::default());
     let runtime = CountingRecorder::default();
     directory.interpret(
         directory.dispatch(entity_id.clone(), 1).unwrap().decision,
@@ -214,13 +210,13 @@ fn active_dispatch_hashes_for_shard_and_table() {
 #[test]
 fn concurrent_first_dispatches_share_one_bounded_activation() {
     const CALLERS: usize = 16;
-    let directory = Arc::new(
-        Directory::new(DirectoryConfig {
-            shards: NonZeroUsize::new(8).unwrap(),
-            activation_waiters: NonZeroUsize::new(CALLERS).unwrap(),
-        })
-        .unwrap(),
-    );
+    let directory = Arc::new(Directory::new(
+        DirectoryConfig::new(
+            NonZeroUsize::new(8).unwrap(),
+            NonZeroUsize::new(CALLERS).unwrap(),
+        )
+        .expect("valid directory limits"),
+    ));
     let barrier = Arc::new(Barrier::new(CALLERS));
     let threads: Vec<_> = (0..CALLERS)
         .map(|command| {
@@ -265,7 +261,7 @@ fn concurrent_first_dispatches_share_one_bounded_activation() {
 
 #[test]
 fn draining_closes_admission_before_fence_execution() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(9);
     let claimed = directory.dispatch(entity_id, 1).unwrap().decision;
@@ -292,7 +288,7 @@ fn draining_closes_admission_before_fence_execution() {
 
 #[test]
 fn stale_successful_activation_retires_its_exact_lease() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let output = directory.activation_succeeded(&EntityId::new(1), activation(99), 2, 7);
     directory.interpret(output, &runtime);
@@ -305,7 +301,7 @@ fn stale_successful_activation_retires_its_exact_lease() {
 
 #[test]
 fn exact_termination_removes_the_matching_slot() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(4);
     directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
@@ -369,7 +365,7 @@ impl EffectInterpreter<u64, u64, u64, u64> for ReentrantRuntime {
 
 #[test]
 fn reentrant_delivery_resolution_appends_fence_to_current_interpreter() {
-    let directory = Arc::new(Directory::new(DirectoryConfig::default()).unwrap());
+    let directory = Arc::new(Directory::new(DirectoryConfig::default()));
     let recorder = Recorder::default();
     let entity_id = EntityId::new(8);
     directory.interpret(
@@ -438,7 +434,7 @@ impl EffectInterpreter<u64, u64, u64, u64> for PanickingDelivery {
 
 #[test]
 fn panicking_effect_consumer_drops_only_its_output_and_resumes_order() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let entity_id = EntityId::new(9);
     let bootstrap = Recorder::default();
     directory.interpret(
@@ -472,7 +468,7 @@ fn panicking_effect_consumer_drops_only_its_output_and_resumes_order() {
 
 #[test]
 fn forced_retirement_preserves_the_exact_failure_stage() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(12);
     directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
@@ -506,7 +502,7 @@ fn forced_retirement_preserves_the_exact_failure_stage() {
 
 #[test]
 fn stale_termination_cannot_remove_the_live_incarnation() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(13);
     directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
@@ -536,7 +532,7 @@ fn stale_termination_cannot_remove_the_live_incarnation() {
 
 #[test]
 fn failed_activation_rejects_waiters_and_allows_fresh_activation() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(21);
     directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
@@ -570,11 +566,10 @@ fn failed_activation_rejects_waiters_and_allows_fresh_activation() {
 
 #[test]
 fn bounded_activation_waiters_reject_excess_with_busy() {
-    let directory = Directory::new(DirectoryConfig {
-        shards: NonZeroUsize::new(8).unwrap(),
-        activation_waiters: NonZeroUsize::MIN,
-    })
-    .unwrap();
+    let directory = Directory::new(
+        DirectoryConfig::new(NonZeroUsize::new(8).unwrap(), NonZeroUsize::MIN)
+            .expect("valid directory limits"),
+    );
     let runtime = Recorder::default();
     let entity_id = EntityId::new(24);
     directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
@@ -589,7 +584,7 @@ fn bounded_activation_waiters_reject_excess_with_busy() {
 
 #[test]
 fn graceful_retirement_waits_for_fence_acknowledgement() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(23);
     directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);
@@ -688,7 +683,7 @@ fn activate_and_reserve(
 
 #[test]
 fn late_failed_delivery_into_retiring_returns_the_command() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(25);
     let (activation_id, reserved) = activate_and_reserve(&directory, &runtime, entity_id);
@@ -707,7 +702,7 @@ fn late_failed_delivery_into_retiring_returns_the_command() {
 
 #[test]
 fn late_failed_delivery_after_removal_returns_the_command() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(26);
     let (activation_id, reserved) = activate_and_reserve(&directory, &runtime, entity_id);
@@ -728,7 +723,7 @@ fn late_failed_delivery_after_removal_returns_the_command() {
 
 #[test]
 fn retiring_rejects_dispatch_and_retires_stale_activation() {
-    let directory = Directory::new(DirectoryConfig::default()).unwrap();
+    let directory = Directory::new(DirectoryConfig::default());
     let runtime = Recorder::default();
     let entity_id = EntityId::new(27);
     directory.interpret(directory.dispatch(entity_id, 1).unwrap().decision, &runtime);

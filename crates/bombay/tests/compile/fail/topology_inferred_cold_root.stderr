@@ -1,0 +1,13 @@
+error: cold members or multiple birth roles require the root domain actor type
+  --> tests/compile/fail/topology_inferred_cold_root.rs:11:9
+   |
+11 |         root {}
+   |         ^^^^
+
+warning: unused import: `bombay::actors::ActorExt`
+ --> tests/compile/fail/topology_inferred_cold_root.rs:1:5
+  |
+1 | use bombay::actors::ActorExt;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default

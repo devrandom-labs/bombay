@@ -4,7 +4,7 @@ use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorActed, MessageProtocol, Never, NoBirths, User,
 };
 use bombay::{
-    ActorInterface, ActorRef, App, ApplicationHandle, ApplicationLifecycle, ExternalActor,
+    ActorInterface, ActorRef, Application, ApplicationHandle, ApplicationLifecycle, ExternalActor,
     InstalledActor, MailAddr,
 };
 
@@ -35,5 +35,5 @@ fn ordinary_public_handles_have_debug_without_exposing_private_capabilities() {
     exposes_debug::<ExternalActor<PublicProtocol>>();
     exposes_debug::<ApplicationHandle<PublicProtocol, ()>>();
     exposes_debug::<ApplicationLifecycle<PublicProtocol, ()>>();
-    exposes_debug::<App<(), ()>>();
+    exposes_debug::<Application<(), ()>>();
 }

@@ -77,11 +77,38 @@
             root = ./.;
             fileset = pkgs.lib.fileset.difference (pkgs.lib.fileset.intersection sourceFiles withoutCargoTargets) buildOutputs;
           };
+        registrySources = pkgs.lib.unique (
+          map (package: package.source) (
+            builtins.filter (
+              package: package ? source && pkgs.lib.hasPrefix "registry+" package.source
+            ) (builtins.fromTOML (builtins.readFile ./Cargo.lock)).package
+          )
+        );
+        registryDiagnosticMappings = pkgs.lib.concatMapStringsSep " " (
+          source:
+          "--remap-path-prefix=$cargoVendorDir/${builtins.hashString "sha256" source}=/registry/src/index.crates.io-${
+            builtins.substring 0 16 (builtins.hashString "sha256" source)
+          }"
+        ) registrySources;
         commonArgs = {
           inherit src;
           pname = "bombay-workspace";
           version = "0.1.0";
           strictDeps = true;
+          # Check artifacts retain assertions and failures without debugger data.
+          env.CARGO_PROFILE_DEV_DEBUG = "0";
+          env.CARGO_PROFILE_TEST_DEBUG = "0";
+          env.CARGO_INCREMENTAL = "0";
+          # trybuild replaces RUSTFLAGS; keep registry diagnostics independent
+          # of Nix store hashes without remapping repository coverage paths.
+          preBuild = ''
+            export RUSTC_WRAPPER="$TMPDIR/rustc-registry-diagnostics"
+            cat > "$RUSTC_WRAPPER" <<SCRIPT
+            #!${pkgs.runtimeShell}
+            exec "\$@" ${registryDiagnosticMappings}
+            SCRIPT
+            chmod +x "$RUSTC_WRAPPER"
+          '';
         };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 

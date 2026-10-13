@@ -12,9 +12,48 @@ PRD records those decisions. Delegation does not establish any passing witness.
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in
 debug and optimized. Corrected controls and all five causal cuts pass both
-providers in both profiles; scoped minimization passes and submitted-head CI/PR
-delivery remains pending. It cannot close R14/R19 byte, overflow, congestion or
+providers in both profiles. Scoped minimization, independent exact-head review
+and all six checks pass; [PR357](https://github.com/devrandom-labs/bombay/pull/357)
+merged `671ba860` at2026-10-13T02:41:04Z. It cannot close R14/R19 byte, overflow, congestion or
 whole-service fault obligations; the PRD records its scope and release policy.
+
+The separate provider-result correction preserves the actual `Ready` result
+before completed-future disposal can panic. The exact original request, result
+allocation and later opaque panic remain owned. Original and replayed defects
+fail the intended oracle in debug/optimized; corrected and byte-exact restored
+controls pass. Combined Cargo645/0/1, Nextest644 passed/1 skipped and protected
+59/0/1 per profile retain distinct provenance. Actual TLS controls pass64 cases/
+160 roles and child-stop2/0/0 per profile, with frozen source/copied-binary guards.
+Independent combined review `96248e45` permits focused PR preparation; its own
+submitted-head CI, review and merge remain pending. This is a custody prerequisite,
+not full whole-service, identity, pressure or R01–R25 acceptance.
+The preserved Result must have been returned by the supplied Future. The actual
+async-adapter defect now fails its intended oracle in both profiles. All18
+acquisition wrappers instead expose their actual Future using one request borrow;
+four held tests retain their preceding delay and exact closed-delay error. Four
+owning cuts fail as intended and their restored controls pass both profiles;
+final protected59/0/1 and strict checks pass on5f929068/5cdbce9c. Integration,
+replacement exact-head CI and delivery remain pending, separately from full rows.
+
+The user requires crate-owned remote capability behind Cargo feature `remote`.
+Examples consume its public API; example-only implementations cannot pass R01.
+Keep the local counter in `examples/counter` and the remote counter in
+`examples/remote-counter`. Each teaches one complete application through public
+composition. Assertions and transport/fault campaigns stay in owning tests or
+isolated research; relocating a fixture does not prove shipping remote support.
+First reconcile the committed DevX Application APIs with the proven admission
+and retirement laws, preserving the active worktree's uncommitted changes.
+
+The current DevX prerequisite now has six owning macro/manual comparisons in
+debug and optimized builds. Actual generator custody/registration cuts reach
+their intended post-cleanup failures; exact source restoration and final fresh
+builds pass. Independent review verifies all16 campaign records and325 captured
+source inputs. The private two-protocol scope comparison also passes both
+providers and three selected cuts/restorations on styled source. Combined
+workspace Cargo753/0/4, Nextest749 passed/one skipped, build, strict Clippy and
+formatting pass on cleanup-first04d, with scoped source/receipt reviews. These
+are prerequisites; revised-head CI and actual merge remain pending.
+No full R01–R25 row is closed by this evidence.
 
 ## Requirement traceability
 

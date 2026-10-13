@@ -1,5 +1,6 @@
 //! Nominal native Entity definitions, stable references, and family products.
 
+use crate::terminal::RetirementSchema;
 use core::fmt;
 use core::future::{Future, ready};
 use core::hash::Hash;
@@ -14,8 +15,8 @@ use tokio::task::JoinError;
 use behavior::{
     ActionItem, AllocationRejection, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements,
     BirthMode, ClassifySettlement, Here, InjectEvent, Inside, InterpretationProgress,
-    InterpreterRequest, ItemSettlement, LogicalHostRequirements, Never, NoBirthProtocols,
-    NoReturnToEmitter, Protocol, finish_item, prepare_item,
+    InterpreterRequest, ItemSettlement, Never, NoBirthProtocols, NoReturnToEmitter, Protocol,
+    finish_item, prepare_item,
 };
 use behavior_actors::ShutdownRequested;
 use tokio::runtime::Handle;
@@ -52,15 +53,16 @@ pub trait EntityDefinition: Send + Sync + 'static {
             SourceCustody: Send + 'static,
             Ph = Never,
         > + BehaviorBase
-        + LogicalHostRequirements
         + Send
         + 'static;
     /// Concrete application host product used by this native definition.
+    /// Launch separately proves every typed effect and descendant interpreter;
+    /// authoring does not require a recursively enumerated host inventory.
     type Hosts: LocalHosts<<Self::Behavior as Behavior>::Protocol> + Send + Sync + 'static;
     /// Exact failure returned while reconstructing domain state.
     type HydrationError: Send + 'static;
     /// Application terminal sum used by children of the incarnation.
-    type Terminal: Send + 'static;
+    type Terminal: RetirementSchema + Send + 'static;
     /// Exact associated failure product from this behavior's child binding owner.
     type ChildFailures: Send + 'static;
 
@@ -723,9 +725,7 @@ where
             Arc::clone(&metrics),
             executor.clone(),
         );
-        let Ok(runtime) = EntityRuntime::new(directory, runtime) else {
-            unreachable!("EntityCapacity retains a validated directory configuration")
-        };
+        let runtime = EntityRuntime::new(directory, runtime);
         let entities = Entities::from_runtime(&runtime, definition);
         let family = InstalledEntityFamily {
             runtime,

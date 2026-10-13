@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `bombay::MailAddr: ExternalTarget` is not satisfied
+ --> tests/compile/fail/application_sender_requires_target_capability.rs:7:41
+  |
+7 |     let _sender = application.sender_to(bombay::MailAddr::APPLICATION_ROOT);
+  |                               --------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `ExternalTarget` is not implemented for `bombay::MailAddr`
+  |                               |
+  |                               required by a bound introduced by this call
+  |
+help: the following other types implement trait `ExternalTarget`
+ --> src/application/interface.rs
+  |
+  | / impl<Target> ExternalTarget for EstablishedRecipient<Target>
+  | | where
+  | |     Target: Protocol<Addr = MailAddr>,
+  | |     Target::Msg: Send + 'static,
+  | |________________________________^ `EstablishedRecipient<Target>`
+...
+  | / impl<D> ExternalTarget for EntityRef<D>
+  | | where
+  | |     D: EntityDefinition,
+  | |     D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+  | |___________________________________________________________________________^ `EntityRef<D>`
+note: required by a bound in `ApplicationHandle::<P, Event, Families>::sender_to`
+ --> src/application/interface.rs
+  |
+  |     pub fn sender_to<Target>(
+  |            --------- required by a bound in this associated function
+...
+  |         Target: ExternalTarget,
+  |                 ^^^^^^^^^^^^^^ required by this bound in `ApplicationHandle::<P, Event, Families>::sender_to`

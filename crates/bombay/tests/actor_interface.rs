@@ -5,7 +5,6 @@ use core::any::type_name;
 use core::ptr;
 use tokio::runtime::Builder;
 
-use bombay::ProjectTerminal;
 use bombay::behavior::{EstablishedDelivery, MessageProtocol};
 use bombay::prelude::*;
 
@@ -88,47 +87,44 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(Service.stop_on_shutdown())
-                .run_with::<RootTerminal<StopOnShutdown<Service>>, _, _, _, _, _>(
-                    |application| async move {
-                        let interface = application.interface(Api {
-                            service: application.root().established_recipient(),
-                        });
-                        let interface_description = format!("{interface:?}");
-                        assert!(interface_description.contains("ActorInterface"));
-                        assert!(interface_description.contains("api_type"));
-                        assert!(interface_description.contains(type_name::<Api>()));
-                        assert!(!interface_description.contains("EstablishedRecipient"));
-                        let lifecycle = application.lifecycle();
-                        let service_address = application.root().address();
-                        let mut caller = interface
-                            .external::<Replies>()
-                            .expect("the external actor is established");
-                        let caller_address = caller.address();
+            Application::new(Service.stop_on_shutdown()).run_with(|application| async move {
+                let interface = application.interface(Api {
+                    service: application.root().established_recipient(),
+                });
+                let interface_description = format!("{interface:?}");
+                assert!(interface_description.contains("ActorInterface"));
+                assert!(interface_description.contains("api_type"));
+                assert!(interface_description.contains(type_name::<Api>()));
+                assert!(!interface_description.contains("EstablishedRecipient"));
+                let lifecycle = application.lifecycle();
+                let service_address = application.root().address();
+                let mut caller = interface
+                    .external::<Replies>()
+                    .expect("the external actor is established");
+                let caller_address = caller.address();
 
-                        let admitted = caller.try_send(
-                            &interface.api().service,
-                            Command::Get {
-                                value: 41,
-                                reply_to: caller.recipient(),
-                            },
-                        );
-                        match admitted {
-                            Ok(()) => {}
-                            Err(TrySendError::Full(_)) => panic!("the receptionist has capacity"),
-                            Err(TrySendError::Closed(_)) => panic!("the receptionist is open"),
-                        }
-
-                        let reply = caller
-                            .receive()
-                            .await
-                            .expect("the external actor receives the exact reply");
-                        assert_eq!(reply.from, service_address);
-                        assert_eq!(reply.message, (caller_address, 42));
-                        let termination = lifecycle.termination().await;
-                        assert_eq!(termination, Ok(Exit::Normal));
+                let admitted = caller.try_send(
+                    &interface.api().service,
+                    Command::Get {
+                        value: 41,
+                        reply_to: caller.recipient(),
                     },
-                ),
+                );
+                match admitted {
+                    Ok(()) => {}
+                    Err(TrySendError::Full(_)) => panic!("the receptionist has capacity"),
+                    Err(TrySendError::Closed(_)) => panic!("the receptionist is open"),
+                }
+
+                let reply = caller
+                    .receive()
+                    .await
+                    .expect("the external actor receives the exact reply");
+                assert_eq!(reply.from, service_address);
+                assert_eq!(reply.message, (caller_address, 42));
+                let termination = lifecycle.termination().await;
+                assert_eq!(termination, Ok(Exit::Normal));
+            }),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -149,7 +145,7 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -169,9 +165,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(WaitsForShutdown.stop_on_shutdown()).run_with::<RootTerminal<
-                StopOnShutdown<WaitsForShutdown>,
-            >, _, _, _, _, _>(
+            Application::new(WaitsForShutdown.stop_on_shutdown()).run_with(
                 |application| async move {
                     let interface = application.interface(());
                     let lifecycle = application.lifecycle();
@@ -239,7 +233,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -268,9 +262,7 @@ fn external_actor_try_send_keeps_full_and_closed_originals_and_truthful_origin()
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(WaitsForShutdown.stop_on_shutdown()).run_with::<RootTerminal<
-                StopOnShutdown<WaitsForShutdown>,
-            >, _, _, _, _, _>(
+            Application::new(WaitsForShutdown.stop_on_shutdown()).run_with(
                 |application| async move {
                     let interface = application.interface(());
                     let sender = interface
@@ -439,7 +431,7 @@ fn external_actor_try_send_keeps_full_and_closed_originals_and_truthful_origin()
     else {
         panic!("the Work, native actor and two actual notifications remain independent");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {

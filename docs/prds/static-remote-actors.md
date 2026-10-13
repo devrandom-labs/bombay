@@ -1,17 +1,1604 @@
 # Static remote actors and typed admission
 
+## Current integration contract — 2026-10-13
+
+The primary workspace and main671ba860 still select Behavior/Actors0.23.0,
+macros0.14.0 and patched Timers13e884da, with root lock47089444. The submitted
+DevX integration32cec46 selects Behavior/Actors0.25.0 at2bb4510, macros0.14.1,
+registry Timers0.2.0 at9369d1f and no patches, with root lock42eb8120 and native
+lock7ae93c48. Address0.3.0, Communication0.1.5 and Bombay-private Observe retain
+their owning contracts. Selected native transport remains bombay-zenoh1.10.8;
+lower packages retain their actual independently locked versions, including
+Config1.10.2. Do not relabel every transitive package1.10.8.
+
+Current integration source/evidence takes precedence over older checkpoint
+snapshots below for that integration only. Historical owner versions and
+passing probes never certify a later graph. The selected Behavior revision's
+complete760-line AGENTS and relevant current owning sources are inspected.
+The two working trees remain distinct until actual reviewed delivery. Preserve
+the primary AGENTS edit and leave the active DevX worktree untouched.
+
+All full R01–R25 obligations remain open. The optional remote feature and its
+public multi-node Application integration are not implemented by the existing
+Counter fixtures. The local and remote examples must remain separate.
+
+### Nested metadata comparison — delegated choice, 2026-10-13
+
+For the next ordinary-Rust comparison, select strict nested Bombay metadata
+and protocol-owned request/reply DTOs. The alternative retains repeated flat
+fields in every DTO; it is compatible with existing research fixtures but
+duplicates fourteen shared declarations and checks. Serde flattening is not
+an admissible third alternative: its official documentation excludes use with
+deny_unknown_fields. A nested strict struct preserves unknown-field refusal
+without a handwritten deserializer or another macro. This selection uses the
+standing recommendation delegation; it selects the comparison grammar, not
+an unproved public API or shipping compatibility promise.
+
+Keep wire/schema versions, declared provider profile, deployment, caller,
+controller, actor, host, protocol, grant issuer, runtime/actor/authority
+generations and request sequence together under one nested bombay field.
+Meaning and operation stay explicit in each genuine protocol DTO. Counter
+Read and MailLedger Read are the two native substitutions; Counter Increment
+remains a separate mutation obligation. Do not fabricate Ledger Append from
+Counter Increment, drop any binding fact or make optional fields stand for
+distinct request/admission/processing/read/stop/retirement phases. Preserve
+both providers' opaque owned receipts and their real futures, with mandatory
+projection and independently configured current authority before admission.
+
+The comparison must retain exact original JSON/proof bytes, use actual public
+Applications and existing EstablishedRecipient/ExternalActor, and acquire all
+native/two-stage notification products. Schema-version transition, concrete
+public products, identifier lifetimes, Ledger wire-reply projection and complete
+resource limits still need their own evidence/selection before production.
+No source implementation, dependency or default follows from this choice.
+Research3544470d and the immutable-source protocol review retain its known
+parser-allocation and provider-contract limits. Source:
+[Serde flattening](https://serde.rs/attr-flatten.html). Check retained public
+names and contracts against the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/checklist.html).
+
+For the runtime retarget comparison, select one additional genuine Counter
+Application only in the same-protocol retarget case. Counter and MailLedger
+already have distinct Rust protocols; swapping those native recipients is a
+compile-time denial, not an executed retarget control. Compare the original
+request against an independently issued hosting tuple for the spare Counter,
+and preserve all three native results and both notification stages. This
+proves refusal against that independent binding; it cannot detect a forged
+actor-label/capability association supplied by application code. No shipping
+target-identity mechanism, topology or additional public API follows from this
+test-shape choice. The agent prepares external evidence only; live source edits
+remain subject to the coordinator's pre-edit record and review.
+
+### Executed two-protocol scope comparison — pre-edit record, 2026-10-13
+
+The rejected cold borrowing patch supplied no executed generic remote gap.
+Prepare and review the replacement in owning Application tests: genuine Counter
+Read and MailLedger Read, with distinct finite recorded/scheduled opaque results
+and their actual lending futures. These controlled providers are policy fixtures,
+not production authentication or selection of a new provider framework. Strict
+nested metadata is the already-selected comparison grammar; its public shipping
+schema, compatibility and complete bounds remain unselected.
+
+Use a pure scope check plus the existing exact nonwaiting ExternalActor attempt;
+wrong scope/profile/purpose and independently hosted same-protocol retarget must
+leave the refused target unadmitted. Acquire actual completed work, native results
+and both notification stages before observing the oracle. Preserve original
+protected/proof allocations and provider products. Do not fabricate Ledger
+mutation, a universal reply value or a target-label/capability authenticity claim.
+
+Expected two owning-test paths, at most450 introduced Rust test lines,
+production+0/-0/net0, public API+0/-0, manifests/locks/dependencies unchanged.
+The preliminary external draft is392 lines and remains uncompiled/unapplied.
+Coordinator reviews the sealed proposal, then applies it and runs the meaningful
+positive/denial controls in debug/optimized through pinned Nix. Simulate omission
+of the scope check and require the intended post-cleanup native/reply oracle to
+fail in both profiles, then restore byte-exact and rerun. Retain acquisition/
+compile failures as such; they cannot substitute for intended negative execution.
+This may justify ordinary function seams; it neither ships a generic API nor
+closes replay, resource, service-failure, actor-outbound or subprocess obligations.
+
+The prepared comparison measures416 retained child lines plus three declaration
+lines, with445 chronological introductions. One looped test would stop at the
+first provider's intended inverse, leaving Scheduled unexecuted. Select two
+provider-named wrappers over the same comparison body so both actual equations
+have their own positive and intended negative executions. Reserve pinned-rustfmt
+and bounded corrective/cut authoring explicitly: increase this test-only stage
+ceiling to1000 introductions from450 and cumulative allowance6000 from5000.
+This changes no production, dependency, public API, limit or provider contract;
+report actual endpoint and chronological deltas separately before retaining it.
+
+Sealed replacement195609a6 is reviewed before application: raw tests+448/-0,
+501 chronological introductions across application_clients.rs and its private
+protected_requests child. Preparation receipt29d74c02 and planb464cbad retain
+the distinct finite equations and intentionally limited controls. The common
+native receiver definitions and all original tests remain unchanged; no effect
+occurs inside a Behavior fold. No production/public API or dependency follows.
+Apply only this patch, format it through pinned Nix, measure actual formatted
+introductions, then execute the two exact named tests in each profile.
+
+Actual pinned standalone rustfmt exits0 on the two adopted test paths, with
+skip_children=true. It adds466/removes169 physical lines against the raw candidate;
+the child now has742 physical lines and unchanged parent adds three. Chronological
+introductions are967/1000, retained test additions745; sourcebf08f81e is uncompiled
+at this formatting checkpoint. Coordinator format receipt retains both exact
+hashes. Do not count the formatted endpoint as the full authoring history or
+infer a test pass from formatting. Shared build target is exclusively leased to
+the coordinator for these named tests; other workers remain in external files.
+
+The first actual compilation fails two async-capture lifetimes and a retained
+mutable borrow of counter_result in the spare Application's Work closure. It
+executes no test. Use ordinary ownership: move the Application input into its
+async work, return the nested Counter result alongside the spare shutdown result,
+then acquire the existing work/native/notification products. Do not add a cell,
+channel, wrapper or borrow-ending drop to bypass this compiler veto. Forecast
+up to45 test introductions/removals and one standard formatting pass; select
+stage allowance1100 from1000 before the correction/cuts. Production/API/dependencies
+remain zero. Original compilation failure stays separate from semantic inversions.
+
+After ordinary ownership correction, Recorded executes1/0/0 in debug, with a
+warning that the original serde_json error is never inspected. Preserve that
+error instead of weakening it to unit or adding a lint waiver. Add one small
+real malformed-input witness: acquire the actual decoder error, inspect its
+EOF classification and retain the original protected/proof boxes. Forecast
+at most20 test introductions within1100; no shipping error/schema policy or
+new dependency. This only covers the finite fixture's original decoder cause.
+
+The formatted corrected comparison executes all three owning tests3/0/0 in
+debug and optimized: both named providers plus the real malformed-input cause.
+Ten existing tests are filtered in these focused commands, not newly executed.
+No warning remains. Logs are bombay-two-protocol-positive-{debug,release}.log;
+source and lock custody, causal inversions, existing target tests and strict
+checks remain required. This verifies ordinary native two-protocol application
+composition only; no generic shipping API or full remote acceptance is inferred.
+
+Seal healthy comparisonfe62df3c and actual selected debug/release executable
+copies38d699ef/5baaac51 before causal cuts. Under the selected control plan,
+remove only the actor-binding, profile or purpose refusal in three separate
+temporary test-source cuts. Each profile runs both provider-named tests and the
+unchanged malformed-input control: require two intended post-cleanup
+counter_read.is_none failures plus the one decoder pass. Restore exact healthy
+bytes after each cut, and require the final3/0/0 in both profiles.
+
+Select at most95 new standard-library orchestration lines for this serial
+coordinator campaign, separately count inherited healthy source/executable copies
+and disposable source/binary evidence. No other source/manifest/lock is mutated,
+no setup/compile/timeout outcome can count as an intended negative, and no source
+fix follows from the cuts. All Rust commands and executable selection run inside
+the pinned shell with the exclusively owned existing target. This is finite
+scope/purpose/profile evidence, not retarget identity, production authentication,
+provider cancellation, whole-service bounds or full remote witness closure.
+
+Actual55-line serial controller completes all eight Cargo invocations. Each of
+three cuts yields exactly two intended native-read-absence failures and one
+decoder pass in each profile; restored sourcefe62df3c yields3/0/0 in both, and
+the restored copied binaries equal the original healthy hashes. All eight logs/
+copied executables rehash correctly. This proves twelve scoped negative test
+executions, not twelve unique laws or a separate retarget inverse.
+
+Strict Clippy then rejects the new test code on fourteen style/future-size
+diagnostics. Select ordinary borrowed operation/Option inputs, exhaustive closed
+case arms, and complete empty-slice comparison. Preserve the actual Recorded
+producer's deferred work with one fulfilled function-local unused_async expectation.
+Preserve the complete causal test and two explicit opaque loans with fulfilled
+function-local too_many_lines/too_many_arguments expectations; no new wrapper
+or blanket lint waiver. Box::pin only the large nested spare Application future,
+keeping its concrete type, existing owners and unchanged actual verification
+factory/result acquisition. This adds a test-only allocation; no allocation or
+shipping resource claim follows. If that does not remove the enclosing future
+warnings, inspect actual sizes before another change.
+
+Forecast at most70 additional test/formatter introductions; select prototype
+stage ceiling1250 from1100 before these style edits/cuts. The cumulative6000
+test allowance and production/API/dependency zero remain; later original-source
+inversions and restored positives must qualify any retained styled source.
+
+### Renamed downstream receiving migration — pre-edit record, 2026-10-13
+
+The next combined compilation exposes the same already-proven receiving
+migration in imported DevX tests. Repository search identifies Application
+scope, clients, outcomes, shutdown, inferred/native child and timer custody,
+cold members, topology consumers and their compile fixtures. Complete this
+mechanical test-consumer migration in parallel with disjoint file ownership.
+Preserve each original assertion and distinguish ordinary three receipts from
+Entity four receipts; do not alter standalone ApplicationOutcome algebra tests.
+Select a revised cumulative test-introduction allowance of3000 (formerly1800)
+under the standing recommendation delegation before these edits. Keep the260
+path limit and production/public API/dependency allowances unchanged. Each
+worker may introduce at most400 test lines in its assigned existing consumers;
+report original assertion conservation and measured deltas. No compatibility
+wrapper, new API, default or production edit is authorized by compiler fallout.
+
+Focused scope compilation also exposes an imported Entity callback that lacks
+the already-approved runtime-issued retirement report. Preserve that report
+beside the native result in the test's existing retirement vector and assert
+both read-only assessments after acquisition. Port the corresponding remaining
+compile-denial callback signature, explicitly discharging its unexecuted report.
+Two existing test paths, at most40 test introductions, no production, public
+API or dependency change. This applies the existing Entity owner contract,
+not a new classifier or notification publisher.
+
+The renamed downstream migration retains test+23/-7/net16 and passes its
+three named tests in debug and optimized builds. Independent source review
+85492048 preserves all21 former assertions. The three parallel consumer
+batches retain tests+269/-63/net206, +144/-36/net108 and +146/-37/net109;
+their chronological introductions are272,147 and167 respectively. Production,
+new public API and dependencies are zero in these batches. Source reviews
+separately preserve original assertions and actual independent receiving facts.
+Root's four compile-denial ports retain+16/-4 test lines before diagnostics;
+their original denial mutations remain. Diagnostic snapshots require actual
+compiler output before replacement.
+
+The first scope compile fails the old Entity callback signature; the next
+fails one missing owning notification import. Neither receives execution
+credit. After those bounded test corrections, the six selected all-features
+scope/cold/native targets pass21/0/0 in debug, including the actual cold
+compile-pass and four compile-denial fixtures. Log
+`bombay-remote-devx-scope-consumers-debug-final.log` retains this result.
+Optimized counterparts and remaining combined gates remain required.
+
+The next consumer run passes clients10, outcomes15 and shutdown7 before the
+topology target reports four diagnostic mismatches. Actual errors retain the
+missing Trace/Readiness ingress, erased cold origin and missing Entity effect
+host denials. Two snapshots differ only in rustc excerpt truncation; two in
+line positions after the recorded test ports. Replace only these four existing
+stderr files from their retained actual output, then rerun without overwrite.
+No source/API/law change is selected by refreshing diagnostic positions.
+
+The refreshed seven-target consumer command passes50/0/0 in debug, including
+all topology denial fixtures. The resumed workspace build next rejects four
+ours-only remote prerequisite consumers that retain old explicit execution
+arguments, flat native fields and unit/positional child failures. Port only
+`admission_wake_custody`, `authorized_assignment`, `verification_service` and
+`parent_report_custody` to the already-proven inferred execution and ActorCustody.
+For the real parent→reporting-child witness, reuse one existing static topology
+declaration and its native child product, deleting the old presentation enum;
+preserve the original refused report and complete child EffectsFailed result.
+All notification, payload, scope, cancellation and causal assertions stay.
+Four existing test paths, at most250 introduced test lines per assigned worker,
+no production/public API/dependency change, within the revised cumulative test
+allowance. No new topology or report law is selected by this migration.
+
+Those four prerequisite targets now pass8/0/0 in all-features debug. One
+initial compilation assumed the singleton generated custody was an enum;
+the owning frozen generator defines a struct for one occurrence. Correcting
+that existing pattern requires no new type, bound or API; the failed compile
+has no runtime credit. The next workspace compile finds one remaining
+receiving consumer inside the inherited Axum example's test module. Port its
+actual cleanup/native/notification results with at most15 test introductions,
+one existing source path and no production/API change. This preserves existing
+evidence while the separately owned later example-quality work remains open;
+it does not certify the inherited assertion-heavy examples as distilled.
+
+The Axum example's five existing tests pass after the last consumer port.
+The complete combined all-features workspace command now exits0:86 Cargo
+test summaries total748 passed,0 failed,5 ignored (including documentation
+and inherited skips). Log39cacd33 binds the actual terminal command; do not
+credit ignored cases as execution. Workspace formatting and independent
+native-fixture formatting checks also exit0. Optimized migrated consumers,
+strict lint, default nextest, authoritative Nix gates, final change/API audit,
+review, PR delivery and required CI remain open. All full remote rows remain
+open; this is verified source integration, not an actual merge.
+
+Optimized migrated consumers pass79/0/0 across17 actual targets (logb25eda57).
+Strict all-target/all-feature Clippy first rejects two missing code spans in
+the compiled guide; those documentation-only corrections are applied. The
+next run rejects seven inherited empty-vector assertion spellings. Preserve
+the same empty-lane laws with borrowed slice equality in two existing cfg-test
+sources (seven replacement lines, no production/API/dependency change).
+Selected Behavior's EstablishedDelivery equality/debug implementations require
+only its concrete address/message traits, already supplied by these fixtures;
+add no bound or derive. This improves failure diagnostics without introducing
+another test law. Rerun the affected Counter test before strict checking.
+
+The affected local Counter target passes5/0/0 after the seven assertion
+spelling changes. The current whole-tree census, including untracked files,
+finds249 changed paths (limit260), with no untracked files. Against main671:
+production+5741/-3563/net2178 and tests+19168/-4875/net14293 before the latest
+seven test-only replacements. These totals include frozen DevX imports and
+earlier remote prerequisites; they are not new reconciliation authoring.
+The separately recorded source/API reviews and chronological stage counts
+remain necessary. No feature, distillation or merge state changes from this
+census.
+
+Strict checking also finds the same empty-vector spelling in the existing
+authorized Counter's native leaf inspector. Its concrete Vec<Never> is already
+the verified owning product. Replace that one assertion with slice equality:
+one existing production line added/removed, net0, no model/API/bound change.
+This stays inside the approved40-introduction native-inspector allowance.
+
+The following strict run finds six equivalent empty-lane spellings in the
+existing authorized and held-retirement fixtures, and an unnecessary borrow of
+the already Copy root origin. Preserve the six actual lane observations with
+borrowed slice equality; pass the origin value by its existing Copy contract
+while continuing to borrow the complete native retirement. Two existing source
+paths, six test replacements and two signature/call replacements, no new public
+type, bound, dependency or policy. The single private inspector signature is a
+production spelling change with +2/-2/net0 inside its existing allowance. Run
+protected controls and strict checking again; earlier passes bind earlier bytes.
+
+The first strict compile after these spellings correctly rejects two slice
+values mistaken for Vec values: joined_counter_descendants already returns
+borrowed slices. Compare those slices directly with [] instead of calling
+Vec::as_slice. Two additional replacement lines, no API/type/semantic change;
+this failed compilation receives no test credit.
+
+Continue the bounded strict-test spelling pass for at most40 further test
+replacement lines and fifteen existing paths: equivalent Result::expect_err,
+borrowed empty-slice assertions and ordinary Copy arguments only. Preserve
+original outcomes and all assertions; add no types, bounds, lint exemptions,
+policies or fixture machinery. Any finding beyond those equivalent expressions
+returns to its owning law before an edit. The first such finding is the existing
+Application outcome test's err().expect() spelling; use expect_err directly.
+
+Two existing topology causal tests now span103 lines because they also acquire
+the independently preserved notification receipts. Keep each original causal
+trace and its diagnostics together; under recommendation delegation select a
+local expected too_many_lines lint for those two named functions only. Splitting
+out forwarding test helpers would add machinery solely to satisfy a line count.
+Eight test attribute lines, no runtime/source model or public API change. This
+is an explicit narrow exception to the preceding spelling-only batch, not a
+blanket lint allowance. All other strict warnings remain denied.
+
+Final strict all-target/all-feature Clippy exits0 (log
+bombay-remote-devx-clippy-all-features-final.log); final workspace formatting
+also exits0. Equivalent lint changes add no model or public API. Current live
+source census249 paths/untracked0 against main671: production+5742/-3564/net2178,
+tests+19189/-4889/net14300. This includes imported source, not chronological
+reconciliation. The scoped independent Application receipt review4216b9c2 finds
+no new production ownership blocker, preserves the actual triple/quartet and
+rehashes all14 startup-control logs and13 copied executables. Its nine-file
+surface census is qualified rather than claimed as a complete method census.
+
+Local Nix no-build evaluation twice fails a missing cached nightly derivation;
+the actual full flake command repairs that derivation, then parallel artifact
+extraction exhausts disk. Root cancels only its own Nix PID92460; log retains the
+actual interruption and no-space errors. Concurrent default nextest cannot
+create its fingerprint and executes no tests. Neither receives passing credit.
+Nix temporary cleanup restores roughly3GiB; retry default nextest separately.
+Use required CI for the full Nix gate rather than multiplying local builds on
+this nearly full volume. No source, evidence or worktree is deleted by this
+interruption; all remote acceptance and merge gates stay open.
+
+The separate nextest retry now exits0:740 tests passed, one existing skip
+(log3471aa32). All-feature strict Clippy4f95905e and formatting82c77dd5 also
+exit0. The one skipped test is not runtime evidence. Additional obsolete
+standalone compiler metadata removald1214eaf deletes146 idle .rmeta files,
+133,020,148 bytes, preserving every other regular file's inode/size/mtime;
+no worktree, source, binary or evidence is removed. Local full Nix remains
+unpassed after its actual disk failure; required submitted-head CI must pass.
+
+Reachable public surface against main671: six nominal additions
+ApplicationScope, ApplicationClient, ApplicationSender, ActorCustody,
+PendingChild and entity::DirectoryConfigError; App removed. Five additional
+traits ApplicationTopology, RootRegistration, RetirementSchema, NativeChild
+and EstablishNativeChild are frozen DevX imports. Count+11 type/trait
+declarations/-1, and one topology macro separately. The five remote report/
+notification products already existed on main and are conserved, not claimed
+as new additions. Generated caller declarations are not fixed new library
+types. Receiving tuples, ActorCustody and schema/child fields carry source
+compatibility changes. The Entity report callback is conserved against main
+and restored against frozen DevX; its report argument is not a new main API. Final nominal route inventory is a
+separate source review, not proof of unchanged methods or full DX acceptance.
+
+Final default strict workspace/all-target Clippy and independent native-fixture
+strict Clippy also exit0. The primary workspace AGENTS and integration AGENTS
+are byte-identical; the active DevX worktree remains untouched. Remote main
+still resolves671ba860. Prepare the reviewed integration source on the feature
+branch, retaining the real merge parents9a7217b/c3b74ab and all reconciliation
+edits; submit a draft PR targeting main for complete CI. Commit/open PR is not
+a merge or completion state. Provider PR358 remains separately open with its
+unattributed48-byte Linux failure; integration includes identical provider
+source, so its new required CI must independently pass without relaxing that
+allocation assertion. Five report products remain conserved; every full R01–R25
+acceptance row stays open.
+
+Integration is committed48094379252426456141a7a74b29ecbbcc9596da and submitted
+as draft [PR359](https://github.com/devrandom-labs/bombay/pull/359), targeting
+main. Only feat/remote-devx-integration was pushed; main remains671ba860.
+Reachable public inventory443ff583 traces actual exports: main63→current68
+nominal types (+6/-1), traits13→18 (+5/-0), unchanged fixed aliases and one
+new topology macro. Six inferred-only Entity signature types remain unchanged
+and separate. These are source counts, not a zero-method-change assertion.
+Required CI, final delivery review and actual merge are pending. The current
+source tree is clean after the integration commit; this delivery-note commit
+changes documents only and must receive its own submitted-head CI.
+
+### CodeQL child-correlation adjudication — 2026-10-13
+
+Submitted32cec46 passes debug native TLS and analysis execution, but the CodeQL
+result flags nine fixed ChildOrigin::new route arguments in private cfg(test)
+modules as cryptographic nonces. Independent source/type review confirms each
+is a creator-local u64 correlation, retained only in origin storage, equality,
+accessor and diagnostic tests; no cryptographic operation consumes it. CreationId
+is separately issued through its checked sequence. Selected Behavior explicitly
+requires only Copy/Eq for this local nonce and disclaims identity/freshness proof.
+
+Under recommendation delegation select per-alert false-positive adjudication
+for exact alerts12–20, with a source-specific dismissal comment under GitHub's
+normal alert API. Preserve all test values, source, query/workflow and required
+checks; this is no security waiver or broader rule exclusion. GitHub's
+[triage guidance](https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-code-scanning-alerts/triage-alerts-in-pull-requests)
+and the [rule's cryptographic scope](https://codeql.github.com/codeql-query-help/rust/rust-hard-coded-cryptographic-value/)
+support this classification. Record actual API outcomes rather than claiming
+success from the plan. Release TLS has separately failed its protected campaign;
+retain actual artifacts and diagnose before any correction or retry. Full Nix
+continues running; PR359 remains draft and no feature or merge claim is made.
+
+The first alert update returns HTTP422 because GitHub enforces a280-character
+dismissal-comment limit absent from the inspected field description. No alert
+was changed. Shorten the same precise reason within that limit and retry only
+these nine reviewed alerts. Preserve the initial validation failure separately.
+
+All nine subsequent updates return dismissed/false-positive for alerts12–20;
+`bombay-devx-codeql-dismissal-results-valid.json` retains their actual responses.
+The independently reviewed per-location report is d5e28a3b. Required CodeQL
+check115457813251 now completes successfully with no new alerts on submitted
+32cec46. No source, query, workflow or required-check rule changed. The original
+HTTP422 and empty initial result record remain separate evidence.
+
+Required release TLS job115453898869 fails in the first protected campaign's
+child/peer/recorded case. Seven other cases pass. Recipient reaches RECEIVED,
+but caller never reaches PENDING_LOCAL_READ2; the controller guard and cleanup
+waits expire before killing both processes. No native-completion oracle or
+intended assertion executes in this case. All20 role logs match campaign
+receipt7b039159. The controller releases the recipient only after the caller's
+local Read2/cleanup marker; existing logs do not identify which preceding caller
+operation stalled. This is an unresolved causal diagnosis, not evidence for
+a runtime fix, longer guard, relaxed assertion or speculative retry. Full Nix
+remains running; PR359 stays draft and no merge is recorded.
+
+### Release TLS causal markers — pre-edit record, 2026-10-13
+
+Under the standing recommendation delegation, select a bounded diagnostic
+stage for the failed child/peer/recorded campaign. Add at most60 test lines in
+the existing cfg(test) remote_counter fixture, using its existing counter_control
+publisher outside every Behavior fold. Fixed payload-free markers surround
+native get return, independent local requester publication, typed sends,
+service/read acquisition and joined receiving. Preserve every original result,
+assertion, controller guard, custody transfer and lifecycle operation. Expected
+production+0/-0/net0; public API+0/-0; no dependency or policy change. Existing
+Application, Communication, native Querier and receipt owners remain unchanged.
+
+Reuse the protected target and pinned Nix. First compile the exact marked
+fixture, then run the same controller's single failed case using an explicitly
+recorded temporary case selector; this selector is diagnostic orchestration,
+not a replacement acceptance campaign. Record source/binary/selector hashes,
+actual markers, exits and any guard failure. Markers may affect scheduling, so
+a passing diagnostic run cannot explain or erase the original failure. A
+runtime correction requires an identified failing law and its own pre-edit
+regression; no timeout, allocation floor or assertion may be relaxed here.
+
+The marked optimized build exits0 through pinned Nix. Its copied executable
+be225bb1 executes the exact child/peer/recorded case on macOS: one case/two roles,
+both exit0 and execute the intended ignored test once. All14 local-progress
+markers appear and both role logs match receipt49c194b1. This observation does
+not explain the Linux stall or prove a correction. Restore the native source
+byte-exact to3ddd395b; root/native locks remain42eb8120/7ae93c48. Temporary test
+delta was+14/-0/net14; restored production/tests/public API delta is zero.
+All original assertions remain unchanged; no marker is retained in the ordinary
+example. Preparation, copied source and controller evidence remain separate.
+
+Select an isolated Linux diagnostic branch from submitted32cec46, containing
+only those same14 temporary cfg-test markers and their documentation. Reuse the
+existing workflow_dispatch entry and unchanged full controller rather than
+changing workflow, guards, assertions or delivery PR source. Create the branch
+through a separate Git index; add no worktree or duplicate target. The research
+workflow must retain actual source/role evidence; its result cannot substitute
+for required delivery-head CI. If it passes, the original failure still has no
+proven cause. Do not invent a runtime correction from that outcome.
+
+Research branch653fdcdc is pushed without changing delivery branch32cec46,
+main671ba860 or the active DevX worktree. Manual Linux diagnostic workflow
+[38448095363](https://github.com/devrandom-labs/bombay/actions/runs/38448095363)
+starts on that exact research commit. Its two changed paths contain documents
++94/-0 and temporary tests+14/-0; production/public API remain zero. The live
+integration retains only documentation edits with native source restored.
+Completion and original-failure attribution are pending; no passing CI or
+shipping feature claim follows from workflow dispatch.
+
+The diagnostic Linux native jobs now pass in both profiles. Independent release
+review and coordinator audit ec20c6cf verify archive11840187702/1962befe and all
+five protected campaigns:32 cases/80 roles, exact once-per-role execution,
+matching source/log hashes, exit0 and empty cleanup errors. The formerly stalled
+child/peer/recorded caller reaches every added marker, PENDING_LOCAL_READ2,
+NATIVE_ACQUIRED and FINISHED. This qualifies only marked653fdcdc/a5354a3d;
+the archive records the actual optimized executable but does not contain a new
+independently copied ELF. Original unmarked32cec46 failure remains unexplained.
+
+The separate marked research workflow later ends cancelled: Nix job115471673213
+finishes19:36:44Z with its Flake Check cancelled and subsequent fuzz/Miri steps
+skipped. Its raw log retains the cancellation; no full marked-source Nix pass
+is claimed. Both marked native jobs remain actual successes. This does not
+change the independently passing required Nix execution on unmarked delivery32.
+No research rerun, timeout change or causal explanation is selected from the
+cancelled job's status alone. Subsequent GitHub annotation identifies the exact
+one-hour job maximum; the log alone reported cancellation. Retain that actual
+infrastructure cause without treating it as a semantic test failure.
+
+Delivery Nix job115453898958 now completes successfully on32cec46; its complete
+logs/artifact checks remain to be inspected. The original workflow is terminal,
+with only native release failed. Under recommendation delegation select one
+controlled baseline rerun of that exact failed job after the marked Linux
+control succeeds. Preserve original source, guard, assertions and complete
+campaign cardinality; do not rerun passing jobs or infer a fix from a later pass.
+Record actual attempt/job identity and original-failure limitations. This is
+a source-preserving comparison, not a lowered gate or a new design choice.
+
+### Required integration CI audit — 2026-10-13
+
+All six observed checks pass on submitted32cec46. Required workflow38442793951
+attempt2 reruns only the failed native release job:115482629914 completes at
+19:15:39Z. The carried debug115482631351 and Nix115482632304 records retain
+their original executions and are not second passes. CodeQL analysis, reviewed
+alert adjudication and Deny also pass. Actual reviewed delivery is still pending;
+no full R01–R25 obligation closes from these prerequisite checks.
+
+The unmarked release archive11841747216 has SHA-2562b069cd5. Independent review
+and coordinator reinspection verify all five campaigns,32 cases/80 roles,
+each exact1/0/0 execution, source/certificate/log hashes, zero exits and empty
+cleanup errors. All ten declared source hashes match exact submitted32 Git
+objects; each certificate matches its committed fixture. Actor roles reach
+NATIVE_ACQUIRED/FINISHED and routers reach READY. Child-stop and query-count
+each execute2/0/0; their logs are e1c039ce/7ae27a7a. The formerly stalled
+child/peer/recorded case now finishes without diagnostic markers. Its recorded
+optimized executable hash88833b85 equals the failed attempt's recorded hash;
+the archive does not independently retain that ELF. This is positive baseline
+evidence, not a runtime correction or attribution of the original guard failure.
+
+Independent Nix review0a0e45e4/evidencec1f33b30 checks the actual original
+job115453898958 and its tested synthetic mergea02c10b, whose tree equals32.
+Optimized workspace executes740/0/1 across81 actual summaries. Counter's same
+55 named tests execute55/0/0 separately in ordinary debug, coverage debug and
+release, preserving the original allocation/custody and provider-ready laws.
+That does not explain PR358's historical48-byte observation. Parent-report
+executes coverage/release; ordinary debug0/1filtered earns no execution credit.
+All four owner coverage floors pass. Driver executes2048 ASAN cases and Observe
+four1024-case campaigns; ZIPs926673e2/b346bf50 match GitHub digests and contain
+108/347 files without named crash artifacts. Miri is explicitly skipped.
+The reviewer authored some consumer migrations; this is independent log/artifact
+inspection, not independent review of those implementation contributions.
+
+Nix audit collection retains38 lines and conservatively introduces73, exceeding
+its55 forecast by18; record this overrun rather than recasting endpoint size as
+chronological compliance. Coordinator's additional read-only release inspection
+is conservatively counted as35 command lines, with no retained collector file,
+snapshot, source edit or
+target mutation. Scope chronology remains separately qualified. The live tree
+still changes only PRD/backlog documents; native source and both locks remain
+byte-exact. Keep passing head32 unchanged through source review and PR delivery;
+publish the subsequent actual merge/evidence record in a focused follow-up PR.
+
+### Imported topology differential — verification blocker, 2026-10-13
+
+The final source review finds that current generated topology tests execute real
+applications and static denials, but do not compare against equivalent handwritten
+ApplicationTopology/RetirementSchema composition. Historical ordinary-Rust
+research identifies the recursive nominal-type gap; it does not replace current
+differential verification. The mandatory macro rule therefore blocks integration
+merge despite passing head32 CI. No runtime defect is inferred from this missing
+verification. Preserve the passing head and original unexplained release failure.
+
+Under recommendation delegation, prepare a bounded owning-test correction using
+independently written concrete topology/schema implementations and actual public
+Application executions. Compare genuine observable traces, exact native custody,
+role/provenance relationships, ordered effects and failure/retirement outcomes;
+do not compare a macro with its own expansion or derive the oracle from generator
+branches. Cover its recursive and other materially distinct selected composition
+paths; identify precise necessary cases before editing. Existing compile-fail,
+hygiene and renamed-crate gates remain required. Inversions must fail the intended
+differential law after completed cleanup, with restored positive controls in both
+profiles. Timeout or compile failure is not a semantic negative witness.
+
+Forecast up to750 introduced test lines in at most four owning-test paths,
+production+0/-0/net0, public API+0/-0 and no dependency/default change. Select
+cumulative test allowance4000 from3000 before this additional authoring, retaining
+the260 path ceiling and existing production allowances. This is a forecast, not
+a claim that previously unproved chronological accounting is repaired. Reuse
+the pinned shell and shared target serially after the coordinator reviews the
+prepared exact test plan. No new macro, framework or remote API is selected.
+The revised committed head must pass required CI and final source review; head32
+checks cannot certify future test/source changes.
+
+Sealed hydrated/supervisor candidate9e25aba1 receives independent source review
+df4eb4e0/machine88447a85 and coordinator inspection before adoption. It measures
+test+397/-29/net368 across four owning paths,494 chronological introductions,
+production/API/dependencies zero. The independently written spaces and nominal
+descendants delegate only to the public native establishment owner, and preserve
+all six original nongeneric tests. Shared complete prescribed native oracles
+establish transitive equivalence only after actual execution; existing partial
+destructuring does not certify every possible generator branch. Apply the exact
+patch and compile/run both existing and paired journeys. It has no compile or
+runtime credit at this source-review checkpoint. Finite/recursive comparisons
+remain separately prepared, not implied by this share.
+
+First hydrated/supervisor compilation fails eleven related supervisor type
+obligations; no test executes. The handwritten fixture names the submitted
+ManagedWorker instead of StableProxy's actual generated child, which its owning
+Behavior Actors0.25.0 source wraps in another StopOnShutdown. Preserve the
+original submitted actor and template policy. Use the exact owning Birth::Child
+projection for the existing native worker schema/trait signatures, not a guessed
+type or runtime change. Forecast at most25 test/formatter introductions; select
+the family/supervisor share550 from500 before correction, within combined1800.
+Only affected test annotations change; original assertions and actual actors
+remain. Actual compiler failure is not an intended inversion.
+
+Independent finite/recursive review5195eaf0 finds three preparation corrections:
+two stale root() calls, an extra manual Counter logical Hosts capability absent
+from the declared root-only graph, and unordered readiness compared as if sibling
+reports had a causal order. Preserve870-line candidate47a02d22 as historical
+uncompiled evidence; adopt it only with the recorded narrow corrections before
+compilation. Rename calls to the existing growing_garden_root constructor, remove
+only the unused extra capability, and sort copied readiness payloads on each
+side while preserving original content/multiplicity. Native descendant creation
+order and original authoritative fields stay intact. Forecast at most30 test/
+formatter introductions within the coordinator reserve; no production/API growth.
+
+The corrected finite/recursive compile still fails four import obligations before
+execution: ActorSpace is deliberately outside the ordinary prelude, and Exit
+belongs to the actor-template owner. Add direct module-scope owning imports
+only (at most five test/format introductions). No API or policy is changed;
+this compiler failure earns no regression credit.
+
+Actual debug executions qualify five topology comparisons (leaf, recursive
+garden, outer timer, exact initialization refusal and supervision); the family
+comparison fails its newly added scope-equality assertion after cleanup. The
+existing declaration has `account {}` without an explicit host assignment, so
+the macro owns a fresh child registration, distinct from the family account
+host. Correct the independent manual registration to ActorSpace::new and the
+new oracle to assert that separation; keep every original assertion unchanged.
+This is a falsified test assumption, not an intended runtime inversion or a
+production defect. Forecast at most five test introductions, API/production0.
+
+Corrected current sources execute six topology comparisons in debug (family1,
+other topologies5). All selected runtime actors and original assertions stay
+unchanged. Retained current-stage test delta is +2043/-29/net2014 across ten
+Rust test paths, separate from imported frozen DevX and chronological counts.
+Production/API/dependencies remain zero. Optimized execution and strict checking
+are still pending; positive debug alone does not close the merge blocker.
+
+For causal verification, select temporary generator-only custody and registration
+cuts, restoring exact source after each. Garden patchd58a6f71 adds11 disposable
+Rust lines and clears only already joined OwnerCancelled descendant rows in
+RootRetirements; its two original independent native-tree equality oracles must
+fail after cleanup. Family exact-only registration and supervision native-row
+preservation are separate cuts, never actor/setup/oracle changes. Reserve up to
+40 temporary source introductions and150 external orchestration lines; broaden
+the combined topology chronology allowance to1900 from1800 before these checks,
+with the existing cumulative6000 test allowance/path260 unchanged. No disposable
+mutation is retained as production or treated as a design choice for shipping.
+Leaf and original-refusal tests also require applicable static eligibility
+denials; a cut that never reaches their owner cannot prove those laws.
+
+All six corrected comparisons now execute successfully in optimized builds.
+Strict Clippy finds six test-style failures: an always-panicking failure loop,
+two complex native receiving signatures and two empty Never-lane assertions.
+Use first() for the first owned failure, compare complete empty slices, and
+a function-local fulfilled type-complexity expectation for the two distinct
+native products; no new alias/wrapper or production edit. Independent review
+also rejects a numeric inequality between CreationId and mailbox route as a
+law: their namespaces are distinct but may contain equal numbers. Remove that
+unsupported assertion and explicitly leave the route outside this refusal
+oracle; exact original CreationId, allocation, payload, error and kind remain.
+Forecast25 test/format introductions within the1900 ceiling; rerun current
+source positives/strict checks before causal controls.
+
+Style follow-up discovers one further empty audit-descendant assertion and
+a collapsible first-failure match. Keep the actual empty-count law and use a
+Rust2024 let-chain. Independent styled source review79e85ed5 confirms the
+provider-runner source eligibility; its sole namespace assertion concern has
+been removed as recorded above. Final styled execution remains required.
+
+For each temporary generator cut, first build and execute the final healthy
+focused source in both profiles and copy its actual Cargo-selected executables.
+After every exact source restoration, execute those immutable healthy copies
+with the matching test filter, guarded by all selected Rust/manifests/locks/Nix
+inputs. These restoration controls are actual executions of source-matched
+healthy artifacts, explicitly not fresh rebuilds. Finally rebuild and execute
+the restored source once in both profiles. This avoids recompiling the same
+unchanged source between cuts while retaining complete actual negative builds,
+source custody and final compiler verification. No target sharing across agents,
+new worktree, optimization downgrade or skipped intended oracle is selected.
+
+Final strict Clippy passes for application_clients/application_scope/application_topology.
+The final protected source17c74d0d executes all three tests in debug and optimized
+healthy builds, then six intended binding/profile/purpose negatives (two provider
+failures and decoder success each), then byte-exact restored positives in both
+profiles. All ten source/log/copied executable receipts are rehashed by the
+coordinator. Styled evidence lives in /tmp/bombay-two-protocol-styled-scope-controls;
+old fe62 evidence remains separate. Receiving acquisition precedes rejection; the final
+review below corrects the later validation order. This proves these private scope controls only, not
+resource bounds, production identity, cancellation or full acceptance.
+
+Independent review of topology controller0c928548 identifies permissive
+positive summary checks: a zero-match command could satisfy them. The campaign
+had already started its healthy build before that message arrived. Preserve
+the exact executing100-line script; its receipts alone grant no semantic
+credit. Add an independent final inventory validator within150 orchestration
+lines: every healthy/final log must name all six exact tests, every affected
+restoration its exact subset, and every negative its named failures, unchanged
+passes, summaries and intended source/location cause. Only actual qualified
+logs are acceptable. Current healthy debug log executes the required6; no
+zero-match pass is observed or inferred. Do not rewrite the running script
+and then claim it produced earlier results.
+
+Select orchestration200 from150 before the exact inventory/hash validator,
+retaining the100-line executing script and up to70 validator lines plus30
+receipt/review lines. This expands external verification only; no retained
+Rust/production/API/default/dependency change. Guarded-source records and
+actual execution inventory must both pass; neither substitutes for the other.
+
+Independent reader review3bb1905e accepts the exact16-record qualification
+gates. Guards cover the captured Rust/manifests/locks/Nix set, not newly created
+file membership or filesystem write protection. Coordinator remains the sole
+source writer and must repeat the final complete tracked/untracked census.
+Unexpected attempts lacking receipts/copied binaries receive no credit even
+when raw logs survive. Current garden negatives reach the intended equality
+in both profiles, preserving refusal success; restored healthy artifacts pass.
+Family debug reaches its actual post-cleanup scope-inequality failure. Full
+qualification and final restored source builds remain pending.
+
+Completed topology campaign qualifies all16 actual phase/profile records.
+Exact named inventories and intended source/location failures pass validator
+3bb1905e; all logs/copied executables and325 captured Rust/manifests/locks/Nix
+inputs are rehashed, with the macro owner restored byte-exact. Six negative
+builds kill the selected garden/family/supervisor laws in both profiles; six
+restored-artifact executions pass, then final fresh source builds pass all six
+comparisons in each profile. Source/domain oracles stay unchanged during cuts.
+The captured set is bounded custody evidence, not filesystem write protection.
+No macro mutation is retained. Whole-workspace formatting passes; combined
+workspace build/test/strict commands and final review are still pending.
+
+Independent completed artifact review127b8e84 passes all16 logs,14 distinct
+copied executables/20 references, four owner snapshots and325 current source
+inputs. The six negatives yield eight exact failed comparisons; all restored
+artifact executions match healthy profile/target, and the four final fresh
+Cargo executables hash-equal the corresponding healthy copies. Receipt7a32a0d5
+and qualified02e95966 remain separate from initial permissive controller0c928548.
+Final workspace build passes in16.56s; test/strict checking and fresh submitted
+head CI remain pending. This is scoped macro verification, not whole remote
+acceptance, full generator branch coverage or a merged claim.
+
+Final combined workspace commands pass through pinned Nix with the shared
+target and all three profile debug settings0, CARGO_INCREMENTAL0 and jobs1:
+`cargo build --locked --workspace` exits0; `cargo test --locked --workspace`
+exits0 (86 summaries:753 passed/0 failed/4 ignored); strict
+`cargo clippy --locked --workspace --all-targets -- -D warnings` exits0 in21.41s;
+`cargo fmt --all -- --check` exits0. Nextest and submitted-head Nix CI remain
+separate gates. Logs are /tmp/bombay-devx-final-comparison-workspace-{build,tests,clippy}.log
+and /tmp/bombay-devx-final-comparison-fmt.log; tests SHA7e7fc969.
+
+Complete live census reuses the owning lexical classifier without a historical
+children-source override. Against32cec46: production+0/-0/net0; tests
++2046/-29/net2017; public API+0types/-0types;13 paths at that checkpoint, before
+the acceptance record added the14th path, with five new test files.
+Against actual main671ba860, including frozen imports: production
++5742/-3564/net2178; tests+21206/-4889/net16317;255 paths when renames count
+as both old/new paths; five untracked test files. The former public-surface
+review retains imported+11/-1, rather than new current-stage API. Current
+endpoints do not reconstruct unproved historical authoring/cap chronology.
+
+Complete Markdown endpoint againsta9c5b7d now includes28 paths and frozen
+imports:19495 additions/22957 removals. This differs from the earlier scoped
+17500 root allowance; select20000 for the complete endpoint before final
+records. Preserve both measurements, without claiming a chronological total
+or hiding imported provenance. Source path260/test6000 allowances remain.
+
+Final scoped review finds an incorrect record/oracle-order claim in the
+two-protocol test: receiving products are acquired before all semantic
+assertions, but the cleanup/native validation statements follow rejection
+assertions. Old styled17c negative logs therefore cannot establish that those
+later assertions executed. Preserve them as scope-oracle evidence only. Move
+the existing complete cleanup/notifications/native/spare validation block before
+the first rejection oracle, without changing an assertion or adding a wrapper.
+Forecast at most80 moved/formatted test introductions; select prototype1400
+from1250 before editing, retaining cumulative6000/path260 and production/API0.
+Run affected positives/cuts/restorations in both profiles and final combined
+checks on the reordered source. Earlier claim that validation preceded rejection
+is superseded by this concrete source correction; no production defect is inferred.
+
+Reordered source04d7b958 executes fresh healthy, six intended binding/profile/
+purpose negatives, and byte-exact restored positives in both profiles. All
+ten source/log/copied executable records are rehashed. Existing successful
+cleanup, both notification stages and native/spare retirement checks now run
+before every selected rejection oracle. Historical17c controls stay separate.
+Final scoped source review5ef74cec finds no further production/ownership/API
+blocker and verifies66 owner/dependency files byte-equal32. Its14-path census
+correction is applied above. Final combined commands are rerunning on04d.
+
+Fresh independent scope receipt reviewf980f6b9 passes all ten04d source/log/
+copied-executable records and exact intended named failures. The original
+source line multiset is unchanged: this53-line reorder retains every oracle.
+Reviewer initial-prototype authorship stays disclosed; current artifact/correction
+review is separately attributed. Final reordered-source workspace build, format
+and Cargo tests pass (753/0/4); strict Clippy and Nextest are rerunning. The
+prior topology campaign remains proof at its captured endpoint, with its
+seven owning test files unchanged by this unrelated scope-test reorder; no
+325-input archive is relabeled as the new full tree.
+
+Final04d combined checks all pass through pinned Nix: build/test/format/strict
+workspace Clippy exits0, Cargo753/0/4, Nextest749 passed/one skipped in42.372s.
+Logs are /tmp/bombay-devx-cleanup-first-workspace-{build,tests,fmt,clippy,nextest}.log.
+SHA-256 receipts: buildebc87052, tests470951d2, fmt6d52904b, clippy18431bfc, nextest97f30842.
+Final owning source and receipt reviews retain their precise authorship limits.
+The retained composition introduces no production wrapper, runtime owner,
+public API, dependency or default. Current stage: production+0/-0/net0,
+tests+2046/-29/net2017, public API+0types/-0types,14 paths including five new
+files before staging. Complete main-relative retained source and255-path census
+remain as recorded above. This is added verification, not code reduction.
+Stage minimization passes; actual revised-head CI/PR delivery still precedes
+any merged status. Full remote requirements and clean separate example remain
+open. Preserve primary workspace AGENTS changes and the active DevX worktree.
+
+Prepared proposal8545b6b6 identifies four necessary representatives: leaf/
+singleton, recursive garden with multiple roles, hydrated family/cold member,
+and fixed supervision with implicit occurrence/logical hosting/replacement.
+Its fuller handwritten public-contract forecast is650–1000 test introductions.
+Select stage ceiling1000 and up to eight owning-test paths, cumulative test
+allowance5000 from4000, before authoring. The cumulative260 path ceiling remains;
+production/API/dependency change remains zero. Keep shared manifests, contracts,
+records and builds under the coordinator. Independent workers may prepare
+disjoint external test patches; no new worktree or duplicated target is needed.
+The manual side uses the owning public native establishment operation, never
+copies its startup algorithm. Stage the exact generated-side inversion only
+after positive execution identifies its concrete causal oracle.
+
+Finite/recursive preparation retains400 external Rust lines and approximately
+428 chronological introductions before the second wrapper order and original
+initialization-refusal allocation case. Select its recommended620-introduction/
+600-formatted-retained share from500, and the combined topology stage ceiling1300
+from1000, before completing those cases. Keep the other worker's500 share and
+reserve the remainder for measured coordinator corrections/inversions. Do not
+compress Rust or omit required cases to meet an earlier forecast. Production,
+public API, dependencies and cumulative260-path/6000-test allowances remain
+unchanged; the exact formatted patch and chronological receipt remain required.
+
+Pinned rustfmt exposes a larger honest footprint: the400-line finite/recursive
+draft formats to631 lines before the remaining wrapper/refusal cases; formatting
+introduces371/removes140 physical lines. That exceeds the just-selected600
+retained forecast. Record the overrun before adoption; select1100 chronological/
+820 formatted-retained lines for this share and a combined topology ceiling1800
+from1300, preserving500 for the other worker and200 coordinator corrections/cuts.
+The standard public native signatures and full native walkers must not be omitted
+or artificially compressed. Keep cumulative6000-test/260-path allowances, no
+production/public API/dependency growth. If the exact candidate exceeds its
+remaining allowance, measure and record before further authoring.
+
+Second-wrapper preparation forecasts727 formatted retained lines before the
+original initialization-refusal comparison. That case needs approximately95–130
+more, giving822–857; select the recommended890 retained ceiling from820 before
+adding it. Chronological1100 share, combined1800 and other allowances remain
+unchanged. The forecast alone is not a formatted or executed final candidate.
+
+The final finite/recursive formatter preview retains879 lines, within890, but
+its conservative chronological sum reaches1116 versus1100. Preserve the known
+sixteen-line overrun instead of promoting an undercounted receipt. Select1200
+chronological for this share before final promotion/additional authoring; the
+combined1800 ceiling still contains1200+500 and100 coordinator reserve. No
+production/API/dependency or cumulative path/default change follows.
+
+The existing Account definition fixes its associated host to the generated
+Topology. For the independent handwritten-host run, select an ordinary generic
+test definition Accounts<Spaces = topology::Topology>, with a standard PhantomData
+marker for the host type. Its existing hydration/retirement callbacks and all
+original assertions remain unchanged; this avoids a forwarding definition and
+duplicated callback ownership. Forecast12–25 test introductions within the
+selected1000 stage allowance, no production/public API or policy change. Actual
+two host substitutions must execute; do not retain generic fixture machinery
+merely to satisfy compiler diagnostics.
+
+For the family comparison, capture actual Address-issued registration-scope
+identities before transferring the spaces. After full family/root/native receipt
+checks, assert cold child registration belongs to the declared Account logical
+host and is distinct from root registration. This uses existing opaque Address
+facts, adds at most35 test introductions within the500 share, and proves actual
+hosting ownership rather than predicted numeric addresses. Arbitrary logical
+delivery is a separate witness; do not infer it from exact Entity references.
+
+Before the revised-head CI edit, select a90-minute Nix job allowance instead of
+60 under recommendation delegation. Required unmarked Nix used59m44s; the marked
+research job actually hit the one-hour maximum, and the new owning comparisons
+add compilation work. This changes only the CI job's time available to run the
+same required checks. All actor/controller guards, assertions, resource policies,
+commands, fuzz cardinalities and conditional Miri rules remain unchanged. The
+alternative retains60 minutes and risks discarding complete verification before
+the required gates finish. Forecast one workflow-line replacement, no production,
+dependency, public API or runtime default change; keep the native job30-minute
+allowance unchanged. The revised head must still pass actual full CI.
+
+Independent immutable-source review of the proposed cold Counter borrowing
+patch0846a2b9 finds no demonstrated actor-generic API gap. It still uses private
+Counter authorization/operation/receipt types; its static denials already belong
+to the existing capabilities. Its dropped cold execution/receiving proves no
+authentication, execution or cleanup. Leave that patch uncompiled/unapplied.
+A second genuine actor comparison needs truthful protocol-owned commands and
+receipt projection; mapping Counter Increment into Ledger Append would fabricate
+substitution evidence. Actual crate-owned remote API and the separate remote
+example remain delivery requirements, not claims from these research proposals.
+
+The combined workspace check exposes two stale test consumers of the former
+Application receiving shape. Port only those tests to the already-approved
+independent work outcome, native root receipt and two notification receipts.
+Preserve their original renamed-macro hygiene, child provenance, owned native
+state and real sender/reply assertions. Expected one existing test path,
+at most30 test introductions, production and public API delta zero; no new
+dependency, bound, policy or abstraction. Run the three renamed tests in debug
+and optimized builds before resuming the combined workspace checks.
+
+The protected Counter now passes59/0/1 in both profiles. Actual TLS campaigns
+then execute32 cases/80 roles per profile (64/160 combined); child Stop and
+query-count controls each pass2/0/0 per profile. Independent artifact review
+28236d08 verifies role logs, copied binaries and the19 declared input guards.
+These are scoped fixture proofs, not whole-tree custody, CI or full remote
+acceptance. The initial non-executable copied binary is retained as setup-only
+failure and receives no actor execution credit.
+
+### Separate local and remote examples — user direction, 2026-10-13
+
+Frozen topology provenance is in committed paired Behavior research:
+`docs/engineering/developer-experience-prd.md` at2c0204c6 records the selected
+application declaration; b4b9d65a records ordinary functions/builders/associated
+selection, handwritten finite custody and the recursive-alias E0391 gap.
+Frozen Bombay c3b74ab contains the actual schema generator and renamed/recursive
+custody fixtures; its macro blobs match this integration. The paired research
+document is absent from selected release2bb4510 and is historical design
+evidence, never replacement dependency authority. Its externally referenced
+comparison logs and a complete current macro/manual topology differential are
+not independently verified here. Do not credit actor-facade differential tests
+as topology proof. No later Behavior source or active DevX worktree is imported
+by this read-only audit.
+
+Keep the ordinary local counter in `examples/counter`. Deliver the remote
+counter as its own application in `examples/remote-counter`, using the
+crate-owned `remote` feature. Do not combine both applications in one example
+or put the remote application under the local counter's `src/bin` directory.
+Networking, verification and admission belong in their owning library layers;
+the example teaches composition. Assertions, fault injection and transport
+campaigns belong in test targets or isolated research. Preserve their existing
+evidence during relocation. Perform that relocation with remote crate delivery
+after the current committed DevX integration slice; do not import later DevX
+changes until the user requests them.
+
+### DevX reconciliation — pre-edit integration record, 2026-10-13
+
+User direction selects the committed DevX APIs before crate-owned `remote`
+implementation. Integration branch starts from main671 and fast-forwards the
+verified provider contribution9a7217b; that open PR's merge is not presumed.
+Import exact committed DevX tipc3b74ab, preserving its active dirty worktree.
+The common ancestor is c3afb301; read-only merge preview identifies41 conflicts
+and227 changed paths, including26 runtime/macro paths. Its conflict-marked raw
+Rust delta8684/-1947 includes tests and markers: it is not a production census.
+Keep imported authoring distinct from new reconciliation and cumulative history.
+
+Reuse DevX's ApplicationOutcome, ApplicationScope, clients, typed topology and
+native ActorCustody. Carry the already-approved remote prerequisites into those
+owners: exact capacity-nonwaiting ExternalActor admission, public exact-child
+shutdown, root/child joined-retirement reports and both notification receipts.
+An awaited send cannot replace fresh-check/nonwaiting admission; termination
+cannot replace joined retirement; Work completion cannot gate the service's
+root report. Existing Communication0.1.5 and private Observe remain the owners.
+Selected Behavior/Actors0.25.0 at2bb4510 and Timers0.2.0 at9369d1f are registry
+contracts without patches; their source/test verification precedes new laws.
+
+Under standing recommendation delegation, select a bounded reconciliation
+stage of at most260 changed paths, importing existing committed DevX source
+without treating it as newly invented remote design. Separately allow750 new
+production introductions,1800 test introductions and120 orchestration lines for
+porting the approved laws and their existing regressions. Restore the five
+previously approved report/notification public types where their native owners
+need them; add no new public type, dependency or semantic default beyond the
+explicit imported dependency selection. Record imported and newly authored
+classified deltas and public API before retaining the merged source.
+
+Preserve ours-only remote tests, fixtures, CI and PRD obligations. They are
+absent from the DevX snapshot because the branches diverged, not evidence of
+DevX-authored deletion. Resolve shared owners semantically, then migrate their
+consumers. Run focused debug/optimized original-defect controls before broader
+checks. All combined source and feature gates must pass after reconciliation.
+No new remote-library abstraction or R01–R25 acceptance is selected here.
+Notify the user when the DevX integration into this feature branch is verified.
+Deliver through a reviewed PR targeting main; never push main directly.
+
+Before the four raw-startup defect controls, expand the reconciliation stage's
+orchestration allowance from120 to200 lines under the user's standing selection
+of recommended answers. The bounded addition is at most105 external Python
+controller/configuration lines and14 distinct temporary Rust cut lines. The
+controller preserves the healthy source byte-for-byte, runs each exact owning
+regression with each cut in debug and optimized builds, and restores and reruns
+the healthy regression in both profiles. Preserve source hashes, actual command
+results and intended assertion failures. Compilation errors and hangs receive
+no semantic credit. This is verification machinery; no retained production,
+public API, dependency, resource policy or remote scope is added.
+
+The controller's105-line allowance includes the bounded command-boundary
+handoff to avoid redundant optimized healthy rebuilds. Four defects remain
+isolated; restore the original source between them and finish with fresh
+healthy tests in both profiles. Separately reuse the existing90-line source
+classifier and add28 census lines for retained endpoint deltas against main,
+the provider source and the frozen DevX tip. This census distinguishes test
+items and imported source; it does not establish chronological authoring or
+semantic API minimization by itself.
+
+Integration inspection finds the inherited Driver evidence manifests and native
+transport lock still identify the former0.23/Timers Git contracts. Reconcile
+these consumers with the already-selected0.25/macros0.14.1/Timers0.2 registry
+graph before combined checks; historical receipts keep their original versions.
+Update only evidence identity and owning assertions, not law definitions or
+required killers. Remove the obsolete native Timers patch and update its lock
+narrowly. Expected six manifest/test/document paths, no production/API change,
+at most12 changed Rust test lines. Native public-Application fixture migration,
+if needed, remains a separate measured reconciliation before edits.
+
+The native Counter fixture still spells six `run_with` type arguments and the
+former flat `ActorRetirement` fields. Reuse the imported inferred `run_with`,
+native `ActorCustody` and actual `Vec<Never>` child-failure product. Preserve
+every original completion, residual, error and allocation assertion. Expected
+one additional fixture source path, at most30 fixture introductions, no new
+production capability, API, dependency or semantic choice. Its actual native
+transport and protected subprocess campaigns must rerun on the reconciled
+graph before integration delivery.
+
+For the inherited authorized Counter consumer, first port only no-birth
+`execute_with` calls to the already-proven inferred Application API and its
+two native leaf-inspection functions to `ActorCustody`/`Vec<Never>`. Keep
+all original fields, failures and assertions. Expected one existing source
+path, at most20 production and40 test introductions, no public type or new
+runtime law. Child-topology/presentation and held-subtree migration require
+their own concrete port record; complete consumer gates remain pending.
+
+Measured leaf port is production+21/-18/net3 and tests+19/-16/net3 against the
+provider parent. Production introductions exceed the20-line forecast by one;
+raise this narrow allowance to40 before any further source work. The first
+external script expected13 no-birth calls, found12, and stopped before writing;
+the corrected12-call migration is retained. No failed setup receives test credit.
+
+The intermediate source census has244 changed paths and no untracked files.
+Against actual main671: production+5516/-3344/net2172; tests+17859/-4036/net13823.
+These include the frozen imported DevX implementation, earlier provider work,
+and reconciliation. They are not a new-remote-capability or chronological count.
+The existing classifier treats complete cfg(test) items and test/bench/fuzz/native
+fixture sources as tests; it explicitly reads the sealed healthy children source
+while isolated cuts are running. Final live-source census and review remain
+required. A two-parent line comparison finds612 retained production and921 test
+lines absent from both parent line multisets; this is useful attribution evidence,
+not proof of cumulative authoring limits. Preserve both full endpoint and separate
+attribution records rather than treating imported source as free new authoring.
+
+Before remaining counter-consumer edits, reuse the frozen topology construction
+already proven in the fixed-supervisor recovery consumer. The parent owns two
+actual Counter births of one child class; a single explicit parent→Counter
+declaration replaces its obsolete presentation enum. The held fixture owns
+supervisor→proxy→worker; one declaration replaces its old spaces and presentation.
+Read each generated native origin and boxed retirement without reconstructing
+either; use the actual flat child-failure vector and `RetirementSchema`/`Never`
+leaf products. Preserve every original target, sibling, proof, allocation,
+held-resource, cancellation and native-notification assertion. Expected three
+existing consumer paths: root-owned authorized parent (at most350 introduced
+test lines plus40 production introductions for its existing native inspectors),
+remote and held consumers (together at most350 chronological test introductions).
+Their externally formatted candidates have retained+193/-208/net-15 test lines;
+the earlier unformatted preparation is separately accounted. Both are test-only
+consumers, with no new production/public API/dependency. Preserve150 original
+remote assertions and51 held assertions; the latter adds two explicit checks of
+its real flat Never-failure vectors. Remove the
+two old presentation enums and one spaces declaration. No new crate public API,
+dependency, runtime adapter, default or policy. This imports an existing accepted
+topology spelling; it does not select a new remote macro. Final source census,
+original-cause controls and native campaigns remain required.
+
+Raw-startup controls are qualified: all four distinct defects fail their
+intended assertions in debug and optimized builds. Fresh restored seven-test
+modules pass7/0/0 in both. Final receipt e4962b98 binds14 command records:
+eight intended negatives, five positive commands, and one deliberately stopped
+redundant build with no semantic credit. Source restores byte-exactly to caa310;
+the final independent collector rehashes14 logs/source snapshots and13 actual
+copied executables. The complete owning library then passes321/0/0 in debug
+(`bombay-remote-devx-owning-debug-restored.log`); its complete optimized
+counterpart also passes321/0/0 (`bombay-remote-devx-owning-release-restored.log`).
+This closes the focused raw-startup proof, not the
+remote acceptance matrix or integration delivery.
+
+The five selected template consumer targets pass15/0/0 in default debug
+configuration: external customers3, FIFO recovery5/runtime2, fixed recovery4/
+runtime1. The optimized counterparts also pass15/0/0. Log0dbaa629 and
+owning-library logs9783e5ef/09ac07b5 bind the actual commands. Do not substitute the
+earlier source-review count19 for these15 executed tests or infer other
+feature configurations from this command.
+
+Current Driver evidence validation passes9/0/0 after the fresh owner rebind.
+The protected Counter consumer builds on the reconciled graph, then passes
+59/0/1 in debug. The one ignored case is the actual subprocess transport
+entrypoint; it is not transport credit. Two obsolete imports are removed
+after deleting their former presentation/host declarations. Original scopes,
+replay/cancellation/allocation witnesses and actual native receipt assertions
+remain; optimized protected tests and native campaigns are still required.
+The latest parent source has independent conservation review at5bc2a504 before
+those import removals. These are bounded consumer results, not full remote
+acceptance, final distillation or merge evidence.
+
+The scoped interface review checks the official Rust API Guidelines for
+[naming](https://rust-lang.github.io/api-guidelines/naming.html),
+[interoperability](https://rust-lang.github.io/api-guidelines/interoperability.html)
+and [future proofing](https://rust-lang.github.io/api-guidelines/future-proofing.html).
+Keep the runtime-issued report's construction private, preserve owned error
+products and expose the existing owners rather than adding forwarding wrappers.
+This consultation adds no API, crate name or feature choice.
+
+Before actual native verification, expand this reconciliation stage's total
+orchestration allowance from200 to250 under standing recommendation delegation.
+Reuse the existing38-line native runner and add at most20 parameter/custody
+lines. Freeze the ten controller-declared source inputs, controller, certificates
+and copied actual executable during each campaign. The five existing campaigns
+must execute32 cases/80 subprocess roles per profile (64/160 across both),
+with distinct target and child-origin claims; run the existing two child-stop and
+two query-count controls. Debug verification can run alongside optimized
+compilation because its actual executable is acquired and copied first; no
+source, manifest, lock or target writes by that verifier. No new production,
+API, dependency, policy or acceptance scope is selected by this orchestration.
+
+The separate PR358 Linux diagnostic keeps its original allocation failure
+unresolved. New collector38354582679 runs unchanged baseline and isolated trace
+three times each: all named allocation tests and55-test summaries pass, with
+byte-stable source ledgers. Twelve actual DHAT profiles contain24 comparison
+windows with the expected Box-copy allocations and no additional48 bytes.
+Four command exit failures occur after successful tests during Nix output
+reproducibility comparison. Receipt d2fcaeb7 retains actual profiles and logs;
+none explains or waives the original required-CI failure. Keep that PR open.
+
+The actual auto-merge preserves nonwaiting admission, exact-child shutdown and
+root/child report APIs. Reconcile their rewritten owners rather than rebuilding
+those capabilities. Select the previously approved independent receiving tuple:
+ApplicationOutcome with actual unit cleanup, original native root receipt, and
+both notification receipts; Entity receiving also retains its family receipts.
+DevX's inferred topology/scope inputs and outcome selectors remain. A cleanup
+failure cannot replace a separately acquired native result or either notification
+cause. No new named product is needed. Preserve DevX's Starting/RetiringStartup
+custody and exact CreationId/CreationKind; derive reports before application
+projection in established and raw-startup paths. Reuse ActorCustody and the
+existing RetirementSchema failure routing. Root owns shared public contracts.
+
+Raw startup has no established child capability. Preserve its original
+termination notification beside actual task/projection errors in the existing
+startup failure variants; retain a notification-only failure when projection
+succeeds, while its native result stays retired. Add one existing ChildFailure
+variant for that case, with the actual notification error and no fabricated
+retirement publication. Reuse each rejected row's retained retirement report
+for startup assessment; remove the obsolete duplicate startup_report aggregate
+after proving the new borrowed creation path cannot maintain it. Rejected rows
+with actual notification failure remain in retirement order. No new public type.
+
+The existing private ChildAuthority borrowed view must also borrow its row's
+retirement observation when issuing an InstalledActor; this preserves the
+already-approved exact report capability without exposing the whole binding.
+For the existing measured parent/child fixture, select a4–6-line implementation
+of the existing ApplicationTopology on its already-owned ActorSpace, using its
+actual CompletedExecutionChild schema. Preserve its NativeChild owner and real
+workload; add no namespace, public type, framework or placeholder actor.
+
+User direction further requires simple Application-level multi-node composition
+and deliberate lower-level power-user access. The receiving tuple above is the
+advanced custody seam; ordinary examples must not expose notification/disposal
+bookkeeping. Final application-facing composition and its inferred accessors
+remain a separate plain-Rust comparison before public retention. Examples must
+be production-quality application composition, not assertion or Drop schedules.
+AGENTS.md now enforces that rule; its32-line policy addition is one shared path
+copied into this integration worktree, with the primary workspace change preserved.
+
+The combined ordinary and `axum` libraries pass pinned-Nix `cargo check
+-p bombay-rs --lib --locked` (with `--features axum` for the latter).
+Their logs are `7a766ae2` and `bef8b06a`; selected lock is `42eb8120`.
+The first command used the wrong package name and subsequent checks exposed
+the new raw-startup constructor's omitted actual notification receipt; those
+failed attempts receive no passing credit. The existing OwnedTask now receives
+both the original JoinHandle and actual notification receiver. No new API.
+Runtime regressions, remaining consumer/document conflicts, source census,
+independent review and complete CI remain pending; the branch is not merged.
+
+For the existing held-source test, select the already-approved topology
+generator on its real PreparationOwner → supervisor → proxy → worker graph.
+The nine-line private declaration replaces the old16-line spaces and86-line
+presentation graph. Its existing native-custody assertion borrows each generated
+RetirementSchema and Never leaves; preserve all original traces and receipts.
+No new runtime adapter, public type, authority or lifecycle policy is selected.
+
+Permission/authority admission and exact-child stop tests pass9/0 in both
+debug and optimized builds (logs311a9c05 and22fc0527). Seven further receiving
+targets initially fail on old HTTP/recursive-Entity test shapes and disk-full
+intermediates; no passing credit. The retry preserves the original assertions
+and native/report/notification products, uses no incremental cache or debug
+symbols, and limits compilation to one job. Removed only842 failed-run object
+files (4,637,596,304 bytes) and their seven incremental caches; no worktree,
+source, retained executable or evidence was deleted. The corrected debug retry
+passes75 tests with1 ignored across the seven targets, including their nested
+compile-pass/compile-fail checks (log14e7594b). Optimized counterparts, owning
+raw-startup regressions and full combined checks remain pending.
+
+The same seven receiving targets pass75/0/1 in optimized builds. Before raw
+startup qualification, retain the corrected test-only proposal c1078db5:
+extend three existing traces (+215/-14, zero production/API/dependency changes,
+at most260 chronological test introductions). Use actual private startup receipt,
+standard Wake panic and explicit test-only surrender of the original ACK before
+cleanup. Prove complete native/initialization custody, original notification panic,
+actual projection JoinError and actual disappeared-producer receipt independently.
+An earlier unexecuted proposal inferred retirement from startup failure; reject
+that predicate. These fully joined cases require Established/FailuresFound,
+while their endpoint remains unavailable. Four intended source inversions and
+restored debug/optimized controls are required before retaining the new witnesses.
+
+The existing RetiringLedgerSpace fault fixture must keep its actual space-disposal
+law. Select the existing RootRegistration and ApplicationTopology implementations
+on that same fixture (about11 cfg-test lines, Descendants=Never); do not replace
+it with a different ActorSpace or add a wrapper/schema. Port its obsolete App
+calls and native patterns to the proven Application/ActorCustody syntax. This is
+test-only migration within the current stage, with no production/API change.
+
+### Crate delivery and DevX integration — user direction, 2026-10-13
+
+The user explicitly requires remote capability in `crates/bombay`, behind the
+optional Cargo feature `remote`. Example-only support cannot deliver this PRD.
+Local-only builds remain supported; remote dependencies and public networking
+capabilities must be gated by that feature. This selects feature placement,
+not new protocol semantics, default limits or production identity.
+
+Before that implementation, the user requests the Bombay DevX worktree's
+changes. Inspected committed tip is `c3b74ab7a70535eef776351e490ecec8de39d4ca`
+on `codex/developer-experience-docs`, in the active `docs-devx` worktree. Preserve
+its uncommitted worker-factory work. Integrate committed changes in a separate
+worktree, retaining the remote PRD's proven ownership obligations and tests.
+The branch changes Application/client/terminal APIs and selects published
+Behavior/Actors0.25.0, macros0.14.1 and Timers0.2.0 without patches. Behavior's
+archive revision is `2bb4510077bfa5aed82e08d25453c146b3184285`; its complete
+760-line AGENTS.md is identical to the previously inspected selected revision.
+Fresh dependency-source verification and integration checks remain required.
+
+A read-only merge preview finds conflicts in shared runtime owners, tests and
+guidance. No wholesale side selection is accepted: especially preserve final
+permission-check/nonwaiting admission, joined-retirement reports and original
+native/notification custody. Finish the current narrow provider correction on
+its source-bound branch; reconcile DevX before new crate-owned remote work.
+This preparation grants no additional R01–R25 acceptance or merged status.
+
+### Provider lending composition — failing-boundary investigation, 2026-10-13
+
+Under standing recommendation delegation, test the existing caller's async
+adapter before retaining a shipping design. A new isolated branch starts from
+actual latest main `671ba860`; overlay only the verified PR358 parent source
+`da90e500` without committing it. PR358 remains separately gated. Selected
+Behavior/Actors0.23.0 at `d69f992b`, root/native locks `47089444`/`1c077a7b`,
+and published Zenoh1.10.8 remain unchanged; no dependency choice is reopened.
+
+Source inspection finds actual callers await an inner provider within an
+async closure. The outer acquisition can conserve only the Result its supplied
+future actually returns; an inner producer may erase that Result first. This
+is a hypothesis, not a passing witness or a diagnosed shipping defect.
+Reuse the exact allocation/opaque-panic regression and add only the actual
+async adapter shape. Prove intended failure in debug and optimized, then
+restore the verified direct-future control. Expected two tracked paths (this
+PRD and authorized.rs), at most20 introduced test lines, no new public API,
+dependency, runtime owner or production correction. Reused PR358 source is
+recorded separately from new authoring. Compare ordinary direct lending
+calls before selecting any new abstraction. A correction requires a concrete
+failing law and its own pre-edit change record. Full remote witnesses stay open.
+
+The nested diagnostic now fails the intended receipt-erasure oracle in both
+profiles after observing the original opaque panic, Ready event and unchanged
+request/proof. Receipt `dc19edd7` binds negative source `8e3c44db`; restored
+direct controls pass both profiles at exact `da90e500`, receipt `4fbd246d`.
+Four chronological test introductions and eight new orchestration lines are
+recorded separately from reused48/15-line campaign machinery. No production
+correction has been applied. This proves the adapter shape, not a TLS failure.
+
+Before further edits, select an ordinary-Rust binding comparison under standing
+recommendation delegation. First return the actual nine-argument provider's
+Future from a normal closure using the existing acquisition signature. If
+that cannot express the borrow, compare one explicit request-borrow lifetime
+and standard FnOnce/Future bounds, keeping the same PendingAdmission owner
+and construction guard. A separately borrowed verification slot with a
+zero-argument factory is the fallback; it changes more caller syntax. No new
+provider trait, context, task, cell, API or dependency is justified. Compiler
+output only qualifies these concrete borrow equations; it does not select an
+architecture. Preserve unsuccessful probes and byte-exact healthy restoration.
+
+Comparison budget before probes: up to60 introduced test lines (including the
+four already introduced),40 new orchestration lines and40 introduced production
+probe lines, two tracked paths. Any retained correction and all real caller
+changes require the measured proposal and another pre-edit record. Shipping
+extraction remains pending this prerequisite; all full remote witnesses stay open.
+
+The concrete comparison also touches the existing native test module, making
+three tracked paths. Its actual provider requires a borrowed limits value;
+own that existing test input before returning the provider Future, rather than
+borrowing a closure-local temporary. Forecast up to8 introduced test lines
+for this direct call probe and6–9 production probe lines only if the explicit
+borrow-lifetime comparison is needed. Existing60/40 introduction ceilings hold.
+No all-caller migration or resource-default change is authorized by this probe.
+
+The direct native call is rejected by five genuine lifetime-generalization
+diagnostics (`d026565f`); the explicit one-request borrow and FnOnce/Future
+comparison passes the complete protected-feature compile check (`f1b623e9`).
+These are static results, with no runtime/executable credit. Sources are
+restored byte-exact. Measured comparison production +7/-5, formatting0;
+test introductions20/60 include the earlier nested diagnostic. Proposal
+`ac37a0fe` inventories19 sites:14 pure bindings, four delayed test operations
+and the unchanged direct regression. Two pure bindings are non-test callers.
+
+Before retaining production changes, select complete migration of these18
+wrappers, reusing the same pending owner, factory guard and in-poll commit.
+Keep the explicit request-borrow lifetime; pure bindings return the actual
+provider Future with existing limits owned outside. In each delayed test,
+wait inside the same pinned operation before direct committing acquisition;
+preserve the actual receiver error as existing Unavailable without invoking
+the provider. Already acquired/terminal entries skip delay and construction.
+No new helper, phase, trait, context, field, public API, dependency or default.
+Narrow migration would leave15 known wrappers and weaken shipping eligibility.
+
+Expected retained production is central +7/-5 plus4–10 caller lines; allow
+100 chronological production introductions for complete formatting/probes.
+Allow400 introduced test lines including20 already introduced, all caller
+edits, formatting and delay-close/no-construction controls. Orchestration
+ceiling100 includes the known comparison lines; reused readers remain separate.
+Expected five tracked paths: parent/native sources, PRD, acceptance and backlog.
+Record actual deltas and overruns before widening; unproved historical union
+must not become a reconstructed endpoint claim. Public API +0/-0 throughout.
+
+Require both-profile custody controls and intended old-commit/adapter inversions,
+closed-delay original-error conservation, borrowed cancellation/revocation,
+already-acquired factory denial and actual count/ordinary/provider regressions.
+Then verify combined workspace/feature/actual TLS source and minimize. Once
+verified, integrate this directly related correction into the focused provider
+PR rather than deliver an avoidably incomplete caller composition. Only final
+submitted-head review, required CI and actual merge establish delivery.
+
+First complete patch measures production +12/-9/net3 and tests +152/-103/net49
+against the verified PR358 source. All18 wrappers are migrated; no async
+original-argument adapter remains. Chronological production22/100 and tests
+244/400 include prior probes and formatting; orchestration77/100 separately
+attributes reused runners. Frozen parent `f864dbc9` and native `c216a79f`
+have not yet received runtime verification.
+
+Before the closed-delay control, select a600 introduced-test ceiling from400
+under recommendation delegation. Reuse the existing public-Application
+pending-verification test for both existing availability alternatives, counting
+actual factory calls and observing closed-receiver Unavailable versus the
+permitted-release control. Retain raw/proof/reservation originals and native
+cleanup before assertions. Expected reindentation adds190–230 introductions
+and20–35 causal assertions; no new helper, owner, type or production design.
+Raise orchestration ceiling to140 before further pinned command adaptations;
+known77 remains unchanged. Keep forecast and measured introductions distinct.
+
+The first closed-control draft failed compilation with E0382 and receives no
+runtime credit. Borrow the existing counter into Work with two test lines;
+the Atomic remains with the outside observer. Corrected parent `5f929068`
+and native `5cdbce9c` pass the actual full59/0/1 feature suite in both profiles.
+An initial collector called this focused two-test execution; retained argv
+and outer summaries show full-suite execution, so no focused-count claim.
+Correct the cut controller's filter ordering before source mutation.
+
+Before inversions, select four owning cuts: erase the in-poll Ready commit;
+restore the async adapter at the original receipt-custody boundary; omit the
+existing acquired-state factory guard; discard the real closed-delay error
+instead of storing existing Unavailable. Each must fail its named post-native
+custody/construction/refusal oracle in both profiles, with byte-exact healthy
+restored controls. These reuse existing tests, add no model or production
+policy, and remain within100 production/600 test/140 orchestration ceilings.
+Already-acquired factory denial is executed centrally; non-Awaiting outer
+delay skipping remains source-only. Scope covers18 acquisition wrappers,
+not every provider await elsewhere or any full remote acceptance witness.
+
+User steering: existing Counter research/example naming and folder placement
+are hard to follow. The user subsequently directs finishing this PRD and
+defers DevX correction to their separate work. Record that concern without
+starting a naming/layout migration or presenting the current research harness
+as the final application API. Continue accepted correctness and delivery work.
+
+At the temporary pause, source is restored byte-exact `5f929068`/`5cdbce9c`.
+Ready-commit and async-adapter cuts fail the intended oracle in both profiles;
+matched restored controls each execute1/0/0. Guard and Unavailable-store cuts
+and final strict checks remain pending. Current retained-script accounting
+does not prove the140 chronological orchestration ceiling: ad hoc preparation
+and read-only measurement snippets add roughly50–60 lines beyond the roughly120
+reusable-controller account. Preserve that discrepancy; under recommendation
+delegation select a conservative200 ceiling before further evidence work.
+Rust ceilings remain100 production/600 tests, with no proven Rust overrun.
+
+### Provider result custody — isolated failing-regression stage, 2026-10-13
+
+Lending contribution integrated into this same focused PR358 after all four
+owning cuts failed their intended oracle in debug/optimized and every byte-exact
+restored control passed. Final protected suites pass59/0/1 per profile;
+ordinary/protected all-target strict Clippy pass both profiles, and formatting
+passes. Receipt `b88337fd` binds parent `5f929068`, native `5cdbce9c` and actual
+copied executables `7c3d2503`/`a2ba5d3d`. Recorded chronological introductions
+are25/100 production and555/600 tests. Retained lexical classification against
+the previous PR358 source: production+12/-9/net3, tests+367/-273/net94,
+public API+0/-0. Raw Git counts+377/-280/net97; lexical accounting counts two
+additional additions/deletions across mixed test/production lines, with the same
+net97. Historical original-stage and source-bound49e8 CI records below remain
+preserved; they do not qualify the changed submitted source. Combined checks,
+actual TLS campaign, final review, replacement CI and merge remain required.
+
+Before final collection, select the recommended240-line author orchestration
+allowance from200; transient read-only snippets remain a conservative account,
+not an exhaustively sealed historical union. Coordinator integration separately
+allows80 new command/guard adaptations, reusing the prior native controller and
+391-input snapshot inventory. Preserve old snapshots; freeze the changed source
+and the actual newly selected executable copies before both-profile TLS checks.
+No new Rust, public API or dependency is authorized by this evidence allowance.
+
+Combined final source passes build, Cargo645/0/1, Nextest644 passed/1 skipped,
+workspace strict Clippy and formatting. Frozen391-input snapshot `ea78a698`
+contains8,072,452 bytes. Both actual copied profiles complete all12 guarded
+CLI invocations:64 TLS cases/160 roles and child-stop2/0/0 per profile, with
+command receipts `9b8d1049`/`875a0668`. Guards surround each CLI invocation,
+not each internal role. No native cleanup credit comes from killed controls.
+Final independent review and replacement submitted-head CI remain pending.
+
+Under standing recommendation delegation, investigate the actual Counter
+acquire_verification owner independently of PR357. Branch starts at actual latest
+main2572 before any commit; parent authorized.rs remains98e054b0 and selected
+Behavior/Actors0.23.0 revisiond69f992b. Root/native locks remain47089444/1c077a7b.
+The hypothesized law is conservation of an original provider Ready result when
+disposing its completed future subsequently panics. Existing PendingAdmission and
+Verification own that result; Engine receive_operation supplies a plain-Rust
+commit-before-disposal precedent, not a replacement provider abstraction.
+
+Select one cfg(test) regression in the existing authorized binary, using its real
+owner and a concrete FnOnce future. Keep native panic opaque: compare its original
+outer allocation without downcasting or inspecting its private content. Observe
+actual Ready, original raw/proof and result allocations, then the custody oracle.
+Forecast up to140 introduced test lines and80 orchestration lines, two tracked
+paths (authorized.rs and this PRD); production+0/-0, public API+0/-0, dependencies0.
+Prepared117 lines count toward the140 allowance; mechanical discarded edits count.
+First prove intended original failure in debug and optimized through pinned Nix.
+No correction, new API, resource default, shipping or full-witness closure is
+selected from the hypothesis. Any production correction requires its own measured
+pre-edit record after the failing law is established.
+
+Before applying the probe, select the standard boxed array as the opaque original
+panic value, comparing its outer allocation through std::ptr. This removes the
+prepared panic wrapper and downcast; ProviderVerification is only the concrete
+test future that returns the original R. No replacement runtime/provider port is
+introduced. Forecast nine changed introductions beyond the prepared117, within140.
+
+Both actual original-owner profiles now fail the intended custody oracle after
+observing one genuine Ready result, exact opaque native panic allocation and the
+unchanged original request/proof. No compiler/setup/timeout/abort is credited.
+Frozen sourceb4b7fea0; campaign75ee0605 retains actual Cargo-selected executable
+copies and debug8f066963/optimized7f4b937a logs. Final introduced regression128/140,
+retained tests+107/-0; production/API/dependencies0 so far.
+
+Before production edits, select the existing Engine/standard Rust pattern:
+borrow original request and verification slot separately, pin the real provider
+future, and use poll_fn to preserve Pending or commit Ready directly into the
+existing slot before disposing that future. This conserves the acquired result
+beside the original later panic. Catching only after awaited disposal cannot
+recover an erased result; a new task, cell or provider trait has no proven need.
+Reuse std Future/poll_fn/pin/Poll; no new crate or replacement interpreter.
+Expected authorized.rs production+13/-2/net11 (up to15 introductions allowing a
+law comment), zero public types added/removed, same two tracked stage paths.
+PendingAdmission/Verification phases, result alternatives and transition owner
+remain unchanged; only the acquisition commit precedes disposal. No competing
+state machine or semantic boolean is introduced. Original panic stays opaque.
+
+Run the exact regression in debug and optimized, then restore the original two
+production lines and prove both intended failures again before byte-exact restored
+controls. Verify affected ordinary provider/cancellation tests in both profiles;
+broader combined gates follow integration with PR357. Whole-service faults,
+production identity, native transport and full remote witnesses remain separate.
+
+Formatting exposed an underestimated edit forecast before any corrected Cargo run:
+raw correction824eafa7 adds14/removes2; formattedda90e500 retains16/removes2/net14.
+Formatter introduces12/removes10, so conservative authoring26 exceeds the prior15
+allowance by11. Record the overrun; under recommendation delegation select40
+introduced production lines before further edits/verification, retaining all raw
+and formatted evidence. Test128/140 and other allowances are unchanged. No new
+semantic state, type, API, dependency or catch layer was introduced.
+
+Original/replayed defects fail as intended in both profiles; exact healthy and
+restored controls pass. Existing ordinary authorized/provider/cancellation suites
+pass55/0/0 in both, narrow all-target Clippy passes both and formatting passes.
+Root takes the released target lease. Integrate reviewed PR357 source726 early,
+preserving both stage files and exact da90/0dad hashes; no dependency change.
+Its CI/actual merge remains independently gated. Verify the combined workspace,
+protected suite and affected actual TLS before submitting this separate correction.
+
+Early integration fast-forwards to reviewed726 without a new commit. Preserved
+stage files via named stash and exact binary patch; resolve the sole documentation
+heading conflict by retaining the entire provider stage and current Oct13 checkpoint.
+Source remains exactlyda90/0dad; both locks unchanged. No production resolution.
+Before combined verification/snapshot/CI custody, select orchestration allowance200
+from80 under recommendation delegation; author retained73 known lines, while ad hoc
+observational tool-check history is not exhaustive union certification. Preserve
+the original forecast and that limitation; do not count copied scripts as new laws.
+
+Combined build/workspace645/0/1, strict workspace Clippy and formatting pass.
+Protected suites execute59/0/1 in both profiles; a preliminary debug collector
+summed nested filtered subprocess summaries as61, which earns no extra test credit.
+Use the actual outer59/0/1 with zero filtered tests. Actual copied feature binaries
+2a43302e/c986b822 and391-file snapshotf511d666 (8,045,387 bytes) freeze da90/0dad.
+Before final TLS inspection, select35 native evidence-authoring lines from25 under
+delegation:23 known parameter/writer/progress lines leave12 for role assertions.
+All12 CLI invocations already exit0 with complete before/after custody guards;
+final role/cleanup assertions remain pending. Combined orchestration ceiling200
+is unchanged; no transport scenario, default or implementation is added.
+
+Combined verification is terminal: protected strict Clippy passes both profiles;
+Nextest executes644 passed/1 skipped, distinct from Cargo's645/0/1 including its
+doc test. Frozen actual TLS verification passes64cases/160roles, each exact1/0/0
+and clean exit/cleanup. Child-stop2/0/0 per profile also passes. Complete391-file
+and two-copy guards hold before/after all12 CLI invocations, not each internal role.
+Evidence /tmp/bombay-provider-combined-native command receipts64c280c5/4f5dbd2c,
+runner0026dd5e and child logsf64ae98e; native orchestration35 known introduced lines.
+Independent correction review52600035 rehashes all12 scoped commands/10 executable
+copies, discloses original-test-idea contribution and credits only source/receipt
+minimization. Whole-service, identity, heap/pressure and fullR remain unproved.
+Current stage: two tracked paths/untracked0, production+16/-2/net14,
+tests+107/-0/net107, public API+0/-0. No manifest/lock/public-export changes.
+Reviewed upstream PR357 still awaits required Nix38332675990; no merge is inferred.
+
+PR357 required Nix finishesSUCCESS at2026-10-13T02:29:31Z, raw log62c434c6;
+all six exact-head checks pass. Final CI reader hits an uncredited arrival-order
+assumption: coverage parent-report1 precedes plain0/1filtered and release1 in the
+parallel log. Select only executable-path/profile attribution before existing
+per-profile assertions; never sort counts or relabel plain zero as execution.
+Retain that failed reader attempt. Actual CI commands/source are unchanged;
+artifact/fuzz audit and guarded actual merge remain pending.
+
+Final artifact review passes: independent review `d712aa7b` binds all six
+successful checks to submitted head `726698f7`, its matching tested tree, the
+two count witnesses per native profile, 64 protected cases/160 roles, and
+434 rehashed fuzz files. The reader preserves raw blocks and attributes them
+to their actual executable paths. Miri was skipped; CI executable bytes were
+not retained. Technical COMMENT review is recorded, with no human approval
+claim. [PR357](https://github.com/devrandom-labs/bombay/pull/357) merged at
+2026-10-13T02:41:04Z, commit `671ba86094fe96d6333b1c3645a85b0ac1918f68`.
+Its tree `76ffedf3` exactly matches the submitted and tested source.
+
+The provider branch now fast-forwards to that actual latest main, preserving
+the verified `da90e500` parent source and `0dad3e31` native module. Independent
+combined review `96248e45` verifies all nine workspace/feature logs and the
+actual copied binaries. The already executed gates apply to this identical
+source tree; no Rust edit followed verification. Prepare one focused provider
+correction PR. Add current acceptance and backlog records alongside this PRD;
+final stage scope is four tracked paths, no untracked files, production
++16/-2/net14, tests +107/-0/net107, public API +0/-0. Required submitted-head
+CI, technical review and actual merge remain delivery gates. Full R01–R25,
+AUTH1/NET1, whole-service fault custody and production identity remain open.
+
+Final pre-commit census against actual main `671ba860`: four tracked paths,
+untracked0; production +16/-2/net14, tests +107/-0/net107, public API +0/-0.
+The documentation endpoint before these census lines is +171/-14 across the
+three stage records. Cumulative Markdown endpoint against `a9c5b7d` is
++17,102/-97 across15 files, below the delegated17,500 ceiling; this is not a
+chronological path/authoring union. Historical166-path attribution remains
+unproved. Root/native/flake locks and actual verified Rust hashes are unchanged.
+
+Submitted as [PR358](https://github.com/devrandom-labs/bombay/pull/358), head
+`ace57295`, with exact-head CI38338257512 running. Parallel source review
+qualifies the law: acquisition preserves the Result returned by the supplied
+Future. An async adapter awaiting an inner provider can dispose that inner
+future before the outer Future returns Ready; this correction does not prove
+that earlier boundary. A separate isolated failing-boundary investigation is
+recorded before testing it. Retain this limitation in acceptance and the PR
+description; no new production design follows from source inspection alone.
+CI evidence review reuses the existing readers, allowing at most20 additional
+invocation lines within the recorded200 orchestration allowance. Reviewer
+contribution to the original regression idea remains disclosed; independent
+review credit concerns correction, minimization and evidence, not test invention.
+
 ### Current delivery checkpoint — 2026-10-13 UTC
 
-Bombay main is2572bf3000654011d6bfb1e150898a131d0681b7 ([PR356](https://github.com/devrandom-labs/bombay/pull/356));
+Bombay main is `671ba86094fe96d6333b1c3645a85b0ac1918f68`
+([PR357](https://github.com/devrandom-labs/bombay/pull/357));
 its two owning locks select published Zenoh1.10.8. The native Read/Stop and local
 held-child prerequisites merged after independent exact-head/source/artifact
 review and all six CI checks passed, including required Nix38322598237.
 Controlled PR11 remains merged5bebbcb0; exact-main CI38308414717, publication
 38313859795 and registered consumer/source review pass their scoped gates.
-The separate count-before-copy work now uses a branch from actual latest main.
+The count-before-copy prerequisite merged after scoped minimization, exact-head
+review and all six passing checks, including required Nix run38332675990.
 Both providers reproduce the original count violation in debug/optimized;
-corrected controls and all five causal cuts pass, along with workspace and affected
-TLS checks. Scoped minimization passes; submitted-head CI/PR delivery remains pending.
+corrected controls and all five causal cuts pass. The separate provider-result
+correction passes local and combined gates and scoped minimization; its own
+submitted-head CI, review and actual merge remain pending.
 See [acceptance evidence](static-remote-actors/acceptance.md) and
 [backlog status](../prd-backlog/status.md). FullR01–R25 remain open; AUTH1 is
 candidate and NET1 blocked. Dated preparation and delivery records below retain

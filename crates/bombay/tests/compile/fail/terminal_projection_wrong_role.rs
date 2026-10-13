@@ -1,5 +1,5 @@
 use bombay::behavior::{ChildRole, Never};
-use bombay::{ChildOrigin, ActorRetirement, ProjectTerminal, TerminalProjection};
+use bombay::{ChildOrigin, ActorRetirement, TerminalProjection};
 
 struct Worker;
 
@@ -30,10 +30,10 @@ type PrimaryPosition = <ParentChildrenPrimary as ChildRole<Parent>>::Position;
 
 fn require_wrong_role<T>()
 where
-    T: ProjectTerminal<
+    T: From<(
             ChildOrigin<Parent, PrimaryPosition>,
             ActorRetirement<Worker, ApplicationTerminal, ()>,
-        >,
+        )>,
 {
 }
 

@@ -1,5 +1,5 @@
 use bombay::prelude::{MailAddr, Protocol};
-use bombay::{ActorSpace, ActorSpaces, App, Hosts};
+use bombay::{ActorSpace, ActorSpaces, Application, Hosts};
 
 struct Orders;
 
@@ -21,5 +21,5 @@ fn main() {
         orders: ActorSpace::new(),
     };
     require_host(&spaces);
-    let _ = App::new((), spaces);
+    let _ = Application::with_topology((), spaces);
 }

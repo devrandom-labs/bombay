@@ -1,11 +1,12 @@
+use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
+use bombay::ApplicationOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, ChildRole, Never};
 use bombay::prelude::{
     ActorRetirement, Application, ChildOrigin, Completion, MailAddr, RootOrigin, StopOnShutdown,
     TerminalProjection,
 };
-use bombay::{ApplicationOutcome, ProjectTerminal};
 
 struct Root;
 
@@ -22,7 +23,7 @@ impl Root {
 }
 
 type RootLocation = RootOrigin<StopOnShutdown<Root>>;
-type RootDeparture = ActorRetirement<StopOnShutdown<Root>, ApplicationTerminal, ()>;
+type RootDeparture = ActorRetirement<StopOnShutdown<Root>, Never, Vec<Never>>;
 
 #[derive(TerminalProjection)]
 enum ApplicationTerminal {
@@ -69,7 +70,7 @@ enum RoleTerminal {
 
 fn accepts_projection<Origin, Terminal, Root>()
 where
-    Root: ProjectTerminal<Origin, Terminal>,
+    Root: From<(Origin, Terminal)>,
 {
 }
 
@@ -91,13 +92,9 @@ fn equal_child_types_project_from_their_distinct_generated_role_positions() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     let application_outcome = Application::new(Root.stop_on_shutdown())
-        .run::<_, _, ApplicationTerminal, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -135,17 +132,21 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: ApplicationTerminal = ProjectTerminal::project(origin, retirement);
+    let terminal: ApplicationTerminal = (origin, retirement).into();
     let ApplicationTerminal::Root {
         origin,
         terminal:
             ActorRetirement::Completed {
-                capability_failures,
-                unread_owner_cancellation,
-                control,
-                user,
-                descendants,
-                child_failures: (),
+                custody:
+                    ActorCustody {
+                        capability_failures,
+                        unread_owner_cancellation,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        ..
+                    },
                 completion,
                 ..
             },
@@ -159,13 +160,15 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(control.len(), 0);
     assert_eq!(user.len(), 0);
-    assert!(descendants.is_empty());
+    assert_eq!(descendants.len(), 0);
+    assert_eq!(child_failures.len(), 0);
     assert_eq!(completion, Completion::Stopped);
 }
 
 #[test]
 fn projection_shape_is_compile_checked() {
     let cases = trybuild::TestCases::new();
+    cases.pass("tests/compile/pass/terminal_inclusion_sources.rs");
     cases.compile_fail("tests/compile/fail/terminal_projection_incomplete_variant.rs");
     cases.compile_fail("tests/compile/fail/terminal_projection_duplicate_pair.rs");
     cases.compile_fail("tests/compile/fail/terminal_projection_wrong_role.rs");

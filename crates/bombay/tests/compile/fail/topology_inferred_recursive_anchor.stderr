@@ -1,0 +1,11 @@
+error: recursive actor classes require a concrete actor type anchor
+ --> tests/compile/fail/topology_inferred_recursive_anchor.rs:4:9
+  |
+4 |         node { Child => node; }
+  |         ^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/compile/fail/topology_inferred_recursive_anchor.rs:6:2
+  |
+6 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/compile/fail/topology_inferred_recursive_anchor.rs`

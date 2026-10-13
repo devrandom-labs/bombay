@@ -1,7 +1,7 @@
 //! Private local admission/replay evidence; no production identity or networking contract.
 use bombay::behavior::{BehaviorBase, EstablishedDelivery, MessageProtocol, Protocol};
 use bombay::prelude::*;
-use bombay::{ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
 use core::ops::AsyncFn;
 use std::collections::{TryReserveError, VecDeque};
 use std::future::Future;
@@ -12,7 +12,7 @@ use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
 use tokio::{runtime::Builder, sync::oneshot};
 mod application_support;
-use application_support::{RootTerminal, assert_completed};
+use application_support::assert_completed;
 
 #[global_allocator]
 static ALLOCATION_PROFILE: dhat::Alloc = dhat::Alloc;
@@ -937,9 +937,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
             .expect("configured host");
         let received = host
             .block_on(
-                Application::new(Counter::default().stop_on_shutdown()).run_with::<RootTerminal<
-                    StopOnShutdown<Counter>,
-                >, _, _, _, _, _>(
+                Application::new(Counter::default().stop_on_shutdown()).run_with(
                     |application| async move {
                         let mut service = application
                             .interface(())
@@ -990,7 +988,11 @@ fn record_provider_consumer_uses_exclusive_admission() {
         };
         let ((disposition, snapshot, allocation, first_attempt, final_attempt), progress) =
             observations;
-        let ActorRetirement::Completed { behavior, .. } = &terminal else {
+        let ActorRetirement::Completed {
+            custody: ActorCustody { behavior, .. },
+            ..
+        } = &terminal
+        else {
             panic!("native completed Counter")
         };
         let expected = usize::from(matches!(case, AdmissionCase::Granted));
@@ -1035,7 +1037,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
             );
         }
         assert_disposition(case, disposition, allocation);
-        assert_completed(RootTerminal::Root { origin, terminal }, None);
+        assert_completed((origin, terminal), None);
     }
 }
 #[test]
@@ -1059,35 +1061,33 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
                     }
                     .stop_on_shutdown(),
                 )
-                .run_with::<RootTerminal<StopOnShutdown<Arithmetic>>, _, _, _, _, _>(
-                    |application| async move {
-                        let mut service = application
-                            .interface(())
-                            .external::<Replies>()
-                            .expect("typed service");
-                        let target = application.root().established_recipient();
-                        let result = exercise(
-                            case,
-                            timing,
-                            Scope::Arithmetic,
-                            &mut service,
-                            &target,
-                            scheduled_provider::verify,
-                            scheduled_provider::projection,
-                            ArithmeticCommand::Prefix,
-                            ArithmeticCommand::Protected,
-                            arithmetic_recovery,
-                            ArithmeticCommand::Snapshot,
-                        )
-                        .await;
-                        service.close_admission();
-                        let drained = service.receive().await;
-                        assert!(drained.is_none());
-                        let stopped = application.lifecycle().request_shutdown();
-                        assert_eq!(stopped, Ok(()));
-                        (result, service.address())
-                    },
-                ),
+                .run_with(|application| async move {
+                    let mut service = application
+                        .interface(())
+                        .external::<Replies>()
+                        .expect("typed service");
+                    let target = application.root().established_recipient();
+                    let result = exercise(
+                        case,
+                        timing,
+                        Scope::Arithmetic,
+                        &mut service,
+                        &target,
+                        scheduled_provider::verify,
+                        scheduled_provider::projection,
+                        ArithmeticCommand::Prefix,
+                        ArithmeticCommand::Protected,
+                        arithmetic_recovery,
+                        ArithmeticCommand::Snapshot,
+                    )
+                    .await;
+                    service.close_admission();
+                    let drained = service.receive().await;
+                    assert!(drained.is_none());
+                    let stopped = application.lifecycle().request_shutdown();
+                    assert_eq!(stopped, Ok(()));
+                    (result, service.address())
+                }),
             )
             .unwrap_or_else(|original| {
                 drop(original);
@@ -1110,7 +1110,11 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
         };
         let ((disposition, snapshot, allocation, first_attempt, final_attempt), progress) =
             observations;
-        let ActorRetirement::Completed { behavior, .. } = &terminal else {
+        let ActorRetirement::Completed {
+            custody: ActorCustody { behavior, .. },
+            ..
+        } = &terminal
+        else {
             panic!("native completed Arithmetic")
         };
         let expected = usize::from(matches!(case, AdmissionCase::Granted));
@@ -1158,7 +1162,7 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
             );
         }
         assert_disposition(case, disposition, allocation);
-        assert_completed(RootTerminal::Root { origin, terminal }, None);
+        assert_completed((origin, terminal), None);
     }
 }
 fn bounded_originals<R>(expected_target: Scope) {
@@ -1247,7 +1251,7 @@ mod replay {
     use super::{
         Admission, AdmissionCase, AdmissionService, Arithmetic, ArithmeticCommand, Builder,
         Counter, CounterCommand, Instant, PendingAdmission, ProtectedCommand, Refusal, Replies,
-        RootTerminal, Scope, Snapshot, VerificationError, allocated_storage, arithmetic_recovery,
+        Scope, Snapshot, VerificationError, allocated_storage, arithmetic_recovery,
         assert_completed, attempt_pending, counter_recovery, nonzero, record_provider,
         scheduled_provider, size_of_val,
     };
@@ -1256,7 +1260,7 @@ mod replay {
     };
     use bombay::behavior::{BehaviorBase, Protocol};
     use bombay::prelude::*;
-    use bombay::{ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+    use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
     use core::ops::AsyncFn;
     use std::collections::TryReserveError;
     use std::env::{self, VarError};
@@ -2892,52 +2896,51 @@ mod replay {
             };
             let received = host
                 .block_on(
-                    Application::new(Counter::default().stop_on_shutdown())
-                        .run_with::<RootTerminal<StopOnShutdown<Counter>>, _, _, _, _, _>(
-                            |application| async move {
-                                let mut service = application
-                                    .interface(())
-                                    .external::<Replies>()
-                                    .expect("typed service");
-                                let target = application.root().established_recipient();
-                                let observations = exercise(
-                                    case,
-                                    Scope::Counter,
-                                    &mut service,
-                                    &target,
-                                    previous,
-                                    || {
-                                        application
-                                            .interface(())
-                                            .external::<Replies>()
-                                            .expect("new local service connection")
-                                    },
-                                    record_provider::verify_replay,
-                                    async |original, deadline| {
-                                        record_provider::verify(
-                                            original,
-                                            AdmissionCase::Granted,
-                                            deadline,
-                                            None,
-                                        )
-                                        .await
-                                    },
-                                    record_provider::identity,
-                                    record_provider::projection,
-                                    CounterCommand::Prefix,
-                                    CounterCommand::Protected,
-                                    counter_recovery,
-                                    CounterCommand::Snapshot,
-                                )
-                                .await;
-                                service.close_admission();
-                                let drained = service.receive().await;
-                                assert!(drained.is_none());
-                                let stopped = application.lifecycle().request_shutdown();
-                                assert_eq!(stopped, Ok(()));
-                                (observations, target)
-                            },
-                        ),
+                    Application::new(Counter::default().stop_on_shutdown()).run_with(
+                        |application| async move {
+                            let mut service = application
+                                .interface(())
+                                .external::<Replies>()
+                                .expect("typed service");
+                            let target = application.root().established_recipient();
+                            let observations = exercise(
+                                case,
+                                Scope::Counter,
+                                &mut service,
+                                &target,
+                                previous,
+                                || {
+                                    application
+                                        .interface(())
+                                        .external::<Replies>()
+                                        .expect("new local service connection")
+                                },
+                                record_provider::verify_replay,
+                                async |original, deadline| {
+                                    record_provider::verify(
+                                        original,
+                                        AdmissionCase::Granted,
+                                        deadline,
+                                        None,
+                                    )
+                                    .await
+                                },
+                                record_provider::identity,
+                                record_provider::projection,
+                                CounterCommand::Prefix,
+                                CounterCommand::Protected,
+                                counter_recovery,
+                                CounterCommand::Snapshot,
+                            )
+                            .await;
+                            service.close_admission();
+                            let drained = service.receive().await;
+                            assert!(drained.is_none());
+                            let stopped = application.lifecycle().request_shutdown();
+                            assert_eq!(stopped, Ok(()));
+                            (observations, target)
+                        },
+                    ),
                 )
                 .unwrap_or_else(|original| {
                     drop(original);
@@ -2958,7 +2961,11 @@ mod replay {
             else {
                 panic!("complete native and notification originals");
             };
-            let ActorRetirement::Completed { behavior, .. } = &terminal else {
+            let ActorRetirement::Completed {
+                custody: ActorCustody { behavior, .. },
+                ..
+            } = &terminal
+            else {
                 panic!("native Counter");
             };
             let expected = match case {
@@ -2999,7 +3006,7 @@ mod replay {
                 );
             }
             assert_prefix(&behavior.base().prefix, &observations.senders, case);
-            assert_completed(RootTerminal::Root { origin, terminal }, None);
+            assert_completed((origin, terminal), None);
             drop(observations); // The volatile ledger is destroyed before the replacement Application exists.
             retired = Some(target);
         }
@@ -3030,51 +3037,49 @@ mod replay {
                         }
                         .stop_on_shutdown(),
                     )
-                    .run_with::<RootTerminal<StopOnShutdown<Arithmetic>>, _, _, _, _, _>(
-                        |application| async move {
-                            let mut service = application
-                                .interface(())
-                                .external::<Replies>()
-                                .expect("typed service");
-                            let target = application.root().established_recipient();
-                            let observations = exercise(
-                                case,
-                                Scope::Arithmetic,
-                                &mut service,
-                                &target,
-                                previous,
-                                || {
-                                    application
-                                        .interface(())
-                                        .external::<Replies>()
-                                        .expect("new local service connection")
-                                },
-                                scheduled_provider::verify_replay,
-                                async |original, deadline| {
-                                    scheduled_provider::verify(
-                                        original,
-                                        AdmissionCase::Granted,
-                                        deadline,
-                                        None,
-                                    )
-                                    .await
-                                },
-                                scheduled_provider::identity,
-                                scheduled_provider::projection,
-                                ArithmeticCommand::Prefix,
-                                ArithmeticCommand::Protected,
-                                arithmetic_recovery,
-                                ArithmeticCommand::Snapshot,
-                            )
-                            .await;
-                            service.close_admission();
-                            let drained = service.receive().await;
-                            assert!(drained.is_none());
-                            let stopped = application.lifecycle().request_shutdown();
-                            assert_eq!(stopped, Ok(()));
-                            (observations, target)
-                        },
-                    ),
+                    .run_with(|application| async move {
+                        let mut service = application
+                            .interface(())
+                            .external::<Replies>()
+                            .expect("typed service");
+                        let target = application.root().established_recipient();
+                        let observations = exercise(
+                            case,
+                            Scope::Arithmetic,
+                            &mut service,
+                            &target,
+                            previous,
+                            || {
+                                application
+                                    .interface(())
+                                    .external::<Replies>()
+                                    .expect("new local service connection")
+                            },
+                            scheduled_provider::verify_replay,
+                            async |original, deadline| {
+                                scheduled_provider::verify(
+                                    original,
+                                    AdmissionCase::Granted,
+                                    deadline,
+                                    None,
+                                )
+                                .await
+                            },
+                            scheduled_provider::identity,
+                            scheduled_provider::projection,
+                            ArithmeticCommand::Prefix,
+                            ArithmeticCommand::Protected,
+                            arithmetic_recovery,
+                            ArithmeticCommand::Snapshot,
+                        )
+                        .await;
+                        service.close_admission();
+                        let drained = service.receive().await;
+                        assert!(drained.is_none());
+                        let stopped = application.lifecycle().request_shutdown();
+                        assert_eq!(stopped, Ok(()));
+                        (observations, target)
+                    }),
                 )
                 .unwrap_or_else(|original| {
                     drop(original);
@@ -3095,7 +3100,11 @@ mod replay {
             else {
                 panic!("complete native and notification originals");
             };
-            let ActorRetirement::Completed { behavior, .. } = &terminal else {
+            let ActorRetirement::Completed {
+                custody: ActorCustody { behavior, .. },
+                ..
+            } = &terminal
+            else {
                 panic!("native Arithmetic");
             };
             let expected = match case {
@@ -3141,7 +3150,7 @@ mod replay {
                 );
             }
             assert_prefix(&behavior.base().prefix, &observations.senders, case);
-            assert_completed(RootTerminal::Root { origin, terminal }, None);
+            assert_completed((origin, terminal), None);
             drop(observations);
             retired = Some(target);
         }

@@ -1,15 +1,15 @@
 use behavior_actors::{ShutdownRejection, ShutdownRequested};
 use bombay::behavior::{
-    ActiveTurn, Behavior, BehaviorBase, Births, ChildCreationOutcome, ChildHead,
-    ClassifySettlement, CreateChild, CreationEvent, CreationSequence, CreationSettlement,
-    CreationSettlements, Creations, EstablishedActor, EstablishedDelivery, Here, Ingress,
-    InitializationTurn, InterpretInstalledActor, ItemSettlement, MessageProtocol, NoSends,
-    SettledItem, SettlementStatus,
+    ActiveTurn, Behavior, BehaviorBase, Births, ChildCreationOutcome, ClassifySettlement,
+    CreateChild, CreationEvent, CreationSequence, CreationSettlement, CreationSettlements,
+    Creations, EstablishedActor, EstablishedDelivery, Here, Ingress, InitializationTurn,
+    InterpretInstalledActor, ItemSettlement, MessageProtocol, NoSends, SettledItem,
+    SettlementStatus,
 };
 use bombay::prelude::*;
 use bombay::{
-    ActorFailureAssessment, ActorNotificationReceipts, ApplicationOutcome, InstalledActor,
-    ProjectTerminal, RetirementAssessment,
+    ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ApplicationOutcome,
+    InstalledActor, RetirementAssessment,
 };
 use core::{
     future::Future,
@@ -166,28 +166,11 @@ impl InterpretInstalledActor<Worker> for ChildService {
     }
 }
 
-#[expect(
-    clippy::type_complexity,
-    reason = "the owning derive retains complete native actor products; this finite trace introduces no boxing or alias policy"
-)]
-#[derive(TerminalProjection)]
-enum ChildTerminals {
-    Root {
-        origin: RootOrigin<StopOnShutdown<Creator>>,
-        terminal: ActorRetirement<
-            StopOnShutdown<Creator>,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<Creator, ChildHead>, Worker>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Child {
-        origin: ChildOrigin<Creator, ChildHead>,
-        terminal: ActorRetirement<Worker, Self, ()>,
-    },
+bombay::topology! {
+    child_service {
+        root { Worker => worker; }
+        worker {}
+    }
 }
 
 #[expect(
@@ -202,167 +185,167 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
         .expect("the explicit local host");
     let originals = host
         .block_on(
-            Application::new(Creator::default().stop_on_shutdown())
-                .run_with::<ChildTerminals, _, _, _, _, _>(|application| async move {
-                    let interface = application.interface(());
-                    let mut replies = interface
-                        .external::<ServiceReplies>()
-                        .expect("the actual service mailbox");
-                    let creator = application.root().established_recipient();
-                    let creator_address = application.root().address();
-                    let exported = replies
-                        .send(&creator, CreatorCommand::Export(replies.recipient()))
-                        .await;
-                    assert!(exported.is_ok());
-                    let exports = replies
-                        .receive()
-                        .await
-                        .expect("real creator Actions exports");
-                    assert_eq!(exports.from, creator_address);
-                    let ServiceReply::Exported(target_actor, sibling_actor) = exports.message
-                    else {
-                        panic!("both full actor proofs")
-                    };
-                    let mut service = ChildService {
-                        installed: None,
-                        permission: Permission::Granted,
-                        now: 0,
-                    };
-                    target_actor.clone().interpret_actor(&mut service);
-                    let installed = service
-                        .installed
-                        .as_ref()
-                        .expect("the actual installed target");
-                    let mut retirement = Box::pin(installed.retirement());
-                    let mut borrowing = Box::pin(async { retirement.as_mut().await });
-                    let pending = borrowing
-                        .as_mut()
-                        .poll(&mut Context::from_waker(Waker::noop()));
-                    assert!(matches!(pending, Poll::Pending));
-                    drop(borrowing);
-                    let target_inspect = replies
+            Application::with_topology(
+                Creator::default().stop_on_shutdown(),
+                child_service::Topology::new(),
+            )
+            .run_with(|application| async move {
+                let interface = application.interface(());
+                let mut replies = interface
+                    .external::<ServiceReplies>()
+                    .expect("the actual service mailbox");
+                let creator = application.root().established_recipient();
+                let creator_address = application.root().address();
+                let exported = replies
+                    .send(&creator, CreatorCommand::Export(replies.recipient()))
+                    .await;
+                assert!(exported.is_ok());
+                let exports = replies
+                    .receive()
+                    .await
+                    .expect("real creator Actions exports");
+                assert_eq!(exports.from, creator_address);
+                let ServiceReply::Exported(target_actor, sibling_actor) = exports.message else {
+                    panic!("both full actor proofs")
+                };
+                let mut service = ChildService {
+                    installed: None,
+                    permission: Permission::Granted,
+                    now: 0,
+                };
+                target_actor.clone().interpret_actor(&mut service);
+                let installed = service
+                    .installed
+                    .as_ref()
+                    .expect("the actual installed target");
+                let mut retirement = Box::pin(installed.retirement());
+                let mut borrowing = Box::pin(async { retirement.as_mut().await });
+                let pending = borrowing
+                    .as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()));
+                assert!(matches!(pending, Poll::Pending));
+                drop(borrowing);
+                let target_inspect = replies
+                    .send(
+                        &target_actor.recipient(),
+                        ChildCommand::Inspect(replies.recipient()),
+                    )
+                    .await;
+                assert!(target_inspect.is_ok());
+                let target_before = replies
+                    .receive()
+                    .await
+                    .expect("A performs useful typed work");
+                let target_address = target_before.from;
+                let ServiceReply::Processed(amount) = target_before.message else {
+                    panic!("A's typed reply")
+                };
+                assert_eq!(amount, 11);
+                let sibling_recipient = sibling_actor.recipient();
+                let before = replies
+                    .send(
+                        &sibling_recipient,
+                        ChildCommand::Inspect(replies.recipient()),
+                    )
+                    .await;
+                assert!(before.is_ok());
+                let before = replies.receive().await.expect("B progresses before A stop");
+                let ServiceReply::Processed(amount) = before.message else {
+                    panic!("B's typed reply")
+                };
+                assert_eq!(amount, 17);
+                let sibling_address = before.from;
+                let mut refused_attempts = Vec::new();
+                let mut target_replies = Vec::new();
+                let mut pending_reports = Vec::new();
+                for (permission, now, expected) in [
+                    (Permission::Revoked, 0, StopRejection::Revoked),
+                    (Permission::Granted, 10, StopRejection::Expired),
+                ] {
+                    service.permission = permission;
+                    service.now = now;
+                    let attempted = request_permitted_shutdown(&mut service, 10);
+                    refused_attempts.push((expected, attempted));
+                    let inspected = replies
                         .send(
                             &target_actor.recipient(),
                             ChildCommand::Inspect(replies.recipient()),
                         )
                         .await;
-                    assert!(target_inspect.is_ok());
-                    let target_before = replies
-                        .receive()
-                        .await
-                        .expect("A performs useful typed work");
-                    let target_address = target_before.from;
-                    let ServiceReply::Processed(amount) = target_before.message else {
-                        panic!("A's typed reply")
+                    let target_reply = match inspected {
+                        Ok(()) => Ok(replies.receive().await.expect("A's complete typed reply")),
+                        Err(original) => Err(original),
                     };
-                    assert_eq!(amount, 11);
-                    let sibling_recipient = sibling_actor.recipient();
-                    let before = replies
+                    target_replies.push(target_reply);
+                    let inspected = replies
                         .send(
                             &sibling_recipient,
                             ChildCommand::Inspect(replies.recipient()),
                         )
                         .await;
-                    assert!(before.is_ok());
-                    let before = replies.receive().await.expect("B progresses before A stop");
-                    let ServiceReply::Processed(amount) = before.message else {
-                        panic!("B's typed reply")
-                    };
-                    assert_eq!(amount, 17);
-                    let sibling_address = before.from;
-                    let mut refused_attempts = Vec::new();
-                    let mut target_replies = Vec::new();
-                    let mut pending_reports = Vec::new();
-                    for (permission, now, expected) in [
-                        (Permission::Revoked, 0, StopRejection::Revoked),
-                        (Permission::Granted, 10, StopRejection::Expired),
-                    ] {
-                        service.permission = permission;
-                        service.now = now;
-                        let attempted = request_permitted_shutdown(&mut service, 10);
-                        refused_attempts.push((expected, attempted));
-                        let inspected = replies
-                            .send(
-                                &target_actor.recipient(),
-                                ChildCommand::Inspect(replies.recipient()),
-                            )
-                            .await;
-                        let target_reply = match inspected {
-                            Ok(()) => {
-                                Ok(replies.receive().await.expect("A's complete typed reply"))
-                            }
-                            Err(original) => Err(original),
-                        };
-                        target_replies.push(target_reply);
-                        let inspected = replies
-                            .send(
-                                &sibling_recipient,
-                                ChildCommand::Inspect(replies.recipient()),
-                            )
-                            .await;
-                        assert!(inspected.is_ok());
-                        let reply = replies
-                            .receive()
-                            .await
-                            .expect("B progresses after each refusal");
-                        let ServiceReply::Processed(amount) = reply.message else {
-                            panic!("B's complete typed reply")
-                        };
-                        assert_eq!(amount, 17);
-                        assert_eq!(reply.from, sibling_address);
-                        let mut joined = Box::pin(
-                            service
-                                .installed
-                                .as_ref()
-                                .expect("the same installed A")
-                                .retirement(),
-                        );
-                        let pending = joined
-                            .as_mut()
-                            .poll(&mut Context::from_waker(Waker::noop()));
-                        pending_reports.push(pending);
-                    }
-                    let permitted = request_permitted_shutdown(&mut service, 20);
-                    let report = match &permitted {
-                        Ok(()) => Some(retirement.await),
-                        Err(_) => None,
-                    };
-                    let after = replies
-                        .send(
-                            &sibling_recipient,
-                            ChildCommand::Inspect(replies.recipient()),
-                        )
-                        .await;
-                    assert!(after.is_ok());
-                    let after = replies
+                    assert!(inspected.is_ok());
+                    let reply = replies
                         .receive()
                         .await
-                        .expect("B progresses after A joined report");
-                    let ServiceReply::Processed(amount) = after.message else {
-                        panic!("B's typed reply")
+                        .expect("B progresses after each refusal");
+                    let ServiceReply::Processed(amount) = reply.message else {
+                        panic!("B's complete typed reply")
                     };
                     assert_eq!(amount, 17);
-                    assert_eq!(after.from, sibling_address);
-                    let repeated = report.as_ref().map(|_| {
+                    assert_eq!(reply.from, sibling_address);
+                    let mut joined = Box::pin(
                         service
                             .installed
                             .as_ref()
-                            .expect("the original installed A remains owned")
-                            .request_shutdown(Ingress::<ShutdownRequested, Here>::new())
-                    });
-                    let stopped = application.lifecycle().request_shutdown();
-                    assert_eq!(stopped, Ok(()));
-                    (
-                        target_address,
-                        sibling_address,
-                        refused_attempts,
-                        target_replies,
-                        pending_reports,
-                        permitted,
-                        report,
-                        repeated,
+                            .expect("the same installed A")
+                            .retirement(),
+                    );
+                    let pending = joined
+                        .as_mut()
+                        .poll(&mut Context::from_waker(Waker::noop()));
+                    pending_reports.push(pending);
+                }
+                let permitted = request_permitted_shutdown(&mut service, 20);
+                let report = match &permitted {
+                    Ok(()) => Some(retirement.await),
+                    Err(_) => None,
+                };
+                let after = replies
+                    .send(
+                        &sibling_recipient,
+                        ChildCommand::Inspect(replies.recipient()),
                     )
-                }),
+                    .await;
+                assert!(after.is_ok());
+                let after = replies
+                    .receive()
+                    .await
+                    .expect("B progresses after A joined report");
+                let ServiceReply::Processed(amount) = after.message else {
+                    panic!("B's typed reply")
+                };
+                assert_eq!(amount, 17);
+                assert_eq!(after.from, sibling_address);
+                let repeated = report.as_ref().map(|_| {
+                    service
+                        .installed
+                        .as_ref()
+                        .expect("the original installed A remains owned")
+                        .request_shutdown(Ingress::<ShutdownRequested, Here>::new())
+                });
+                let stopped = application.lifecycle().request_shutdown();
+                assert_eq!(stopped, Ok(()));
+                (
+                    target_address,
+                    sibling_address,
+                    refused_attempts,
+                    target_replies,
+                    pending_reports,
+                    permitted,
+                    report,
+                    repeated,
+                )
+            }),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -423,19 +406,14 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert_eq!(repeated, Some(Err(ShutdownRejection::AlreadyStopped)));
-    let terminal: ChildTerminals = ProjectTerminal::project(origin, native);
-    let ChildTerminals::Root {
-        origin,
-        terminal:
-            ActorRetirement::Completed {
+    let ActorRetirement::Completed {
+        custody:
+            ActorCustody {
                 behavior,
-                interpretation,
-                source,
-                settlements,
                 control,
                 user,
                 descendants,
-                child_failures: (child_failures, ()),
+                child_failures,
                 capability_failures,
                 additional_failures,
                 received_interpretation,
@@ -445,9 +423,12 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
                 retirement_failures,
                 terminal_report,
                 unread_owner_cancellation,
-                completion,
             },
-    } = terminal
+        interpretation,
+        source,
+        settlements,
+        completion,
+    } = native
     else {
         panic!("the full original root completes")
     };
@@ -486,21 +467,22 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
     assert!(settlement.sends.inner.is_empty());
     assert!(matches!(settlement.become_, Step::Stop(_)));
     assert_eq!(descendants.len(), 2);
-    for child in &descendants {
-        let ChildTerminals::Child { origin, terminal } = child else {
-            panic!("both original children remain native")
-        };
+    for child_service::RootRetirements { origin, retirement } in &descendants {
+        let terminal = retirement.as_ref();
         match terminal {
             ActorRetirement::Completed {
                 completion,
-                behavior,
+                custody: ActorCustody { behavior, .. },
                 ..
             } => {
                 assert_eq!(behavior.base().amount, 11);
                 assert_eq!(origin.address(), target_address);
                 assert_eq!(*completion, Completion::Stopped);
             }
-            ActorRetirement::OwnerCancelled { behavior, .. } => {
+            ActorRetirement::OwnerCancelled {
+                custody: ActorCustody { behavior, .. },
+                ..
+            } => {
                 assert_eq!(behavior.base().amount, 17);
                 assert_eq!(origin.address(), sibling_address);
             }
@@ -510,45 +492,51 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
     }
 }
 
-fn assert_child_native(terminal: &ActorRetirement<Worker, ChildTerminals, ()>) {
+fn assert_child_native(terminal: &ActorRetirement<Worker, Never, Vec<Never>>) {
     let (ActorRetirement::Completed {
-        behavior: _,
+        custody:
+            ActorCustody {
+                behavior: _,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
         completion: _,
     }
     | ActorRetirement::OwnerCancelled {
-        behavior: _,
+        custody:
+            ActorCustody {
+                behavior: _,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
     }) = terminal
     else {
         panic!("the acquired original child phase")
@@ -561,6 +549,7 @@ fn assert_child_native(terminal: &ActorRetirement<Worker, ChildTerminals, ()>) {
             && descendants.is_empty()
     );
     assert!(capability_failures.is_empty() && additional_failures.is_empty());
+    assert_eq!(child_failures.as_slice(), []);
     assert!(
         received_interpretation.is_none() && received_source.is_none() && source_index.is_none()
     );

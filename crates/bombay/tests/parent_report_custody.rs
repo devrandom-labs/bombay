@@ -1,11 +1,11 @@
 use bombay::behavior::{
-    ActiveTurn, Behavior, BehaviorBase, ChildHead, ChildReport, ClassifySettlement, CreateChild,
+    ActiveTurn, Behavior, BehaviorBase, ChildReport, ClassifySettlement, CreateChild,
     CreationSequence, Creations, EventIngress, InitializationTurn, InterpreterRequests,
     ItemSettlement, Never, NoSends, ParentReportReason, ReportToParent, RetirementBirths,
     SettledItem, SettlementStatus, Stopped, User, UserEvent,
 };
 use bombay::prelude::*;
-use bombay::{ActorNotificationReceipts, ApplicationOutcome, ProjectTerminal};
+use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome};
 
 struct ReportChild {
     report: Option<Box<[u8]>>,
@@ -97,28 +97,11 @@ impl Behavior for ReportParent {
     }
 }
 
-#[derive(TerminalProjection)]
-enum ParentReportTerminals {
-    Root {
-        origin: RootOrigin<StopOnShutdown<ReportParent>>,
-        #[expect(
-            clippy::type_complexity,
-            reason = "retain the exact parent-owned child failure product"
-        )]
-        terminal: ActorRetirement<
-            StopOnShutdown<ReportParent>,
-            Self,
-            (
-                Vec<ChildFailure<ChildOrigin<ReportParent, ChildHead>, ReportChild>>,
-                (),
-            ),
-        >,
-    },
-    #[structural_child]
-    Child {
-        origin: ChildOrigin<ReportParent, ChildHead>,
-        terminal: ActorRetirement<ReportChild, Self, ()>,
-    },
+bombay::topology! {
+    report_application {
+        root: ReportParent { Child => child; }
+        child: ReportChild {}
+    }
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -129,78 +112,83 @@ enum ParentReportTerminals {
 async fn early_parent_stop_retains_the_original_refused_child_report() {
     let report: Box<[u8]> = Box::from([7, 13, 17]);
     let report_allocation = report.as_ptr();
-    let application = Application::new(
+    let application = Application::with_topology(
         ReportParent {
             report: Some(report),
         }
         .stop_on_shutdown(),
+        report_application::Topology::new(),
     );
     let (execution, receiving) = application
-        .execute_with::<_, _, ParentReportTerminals, _, _, _>(|application| async move {
-            application.lifecycle().termination().await
-        })
+        .execute_with(|application| async move { application.lifecycle().termination().await })
         .unwrap_or_else(|original| panic!("the entered host owns startup: {}", original.2));
     execution.await;
     let (work, native, notifications) = receiving.await;
-    let root = native.map(|(origin, terminal)| ParentReportTerminals::project(origin, terminal));
-    let Ok(ParentReportTerminals::Root {
-        origin: root_origin,
-        terminal: root_retirement,
-    }) = &root
-    else {
+    let Ok((root_origin, root_retirement)) = &native else {
         panic!("the parent retains its original native result")
     };
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (child_failures, ()),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
         completion,
     } = root_retirement
     else {
         panic!("the parent must complete after acquiring all child retirement")
     };
-    let [ParentReportTerminals::Child { origin, terminal }] = descendants.as_slice() else {
+    let [
+        report_application::RootRetirements {
+            origin,
+            retirement: terminal,
+        },
+    ] = descendants.as_slice()
+    else {
         panic!("exactly one original child native result remains")
     };
     // The complete Work/native/notification owners above survive this first
     // semantic oracle, including the original host panic on the old interpreter.
     let ActorRetirement::EffectsFailed {
+        custody:
+            ActorCustody {
+                behavior: child,
+                control: child_control,
+                user: child_user,
+                descendants: child_descendants,
+                child_failures: child_child_failures,
+                capability_failures: child_capability_failures,
+                additional_failures: child_additional_failures,
+                received_interpretation: child_received_interpretation,
+                received_source: child_received_source,
+                source_index: child_source_index,
+                acquired_ingress: child_acquired_ingress,
+                retirement_failures: child_retirement_failures,
+                terminal_report: child_terminal_report,
+                // The original unread owner request remains borrowed in native custody.
+                unread_owner_cancellation: _,
+            },
         initialization,
-        behavior: child,
         interpretation: child_interpretation,
         source: child_source,
         settlements: child_settlements,
         error,
-        control: child_control,
-        user: child_user,
-        descendants: child_descendants,
-        child_failures: (),
-        capability_failures: child_capability_failures,
-        additional_failures: child_additional_failures,
-        received_interpretation: child_received_interpretation,
-        received_source: child_received_source,
-        source_index: child_source_index,
-        acquired_ingress: child_acquired_ingress,
-        retirement_failures: child_retirement_failures,
-        terminal_report: child_terminal_report,
-        // The whole borrowed native child keeps its original unread owner
-        // request; report refusal does not claim to consume that request.
-        unread_owner_cancellation: _,
-    } = terminal
+    } = terminal.as_ref()
     else {
         panic!("the refused child report must remain a typed EffectsFailed settlement")
     };
@@ -264,7 +252,8 @@ async fn early_parent_stop_retains_the_original_refused_child_report() {
     assert!(child_source.is_none());
     assert_eq!(child_control.as_slice(), []);
     assert_eq!(child_user.as_slice(), []);
-    assert!(child_descendants.is_empty());
+    assert_eq!(child_descendants.as_slice(), []);
+    assert_eq!(child_child_failures.as_slice(), []);
     assert!(child_capability_failures.is_empty());
     assert!(child_additional_failures.is_empty());
     assert!(child_received_interpretation.is_none());

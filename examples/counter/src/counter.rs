@@ -100,8 +100,8 @@ pub(super) fn assert_increment_processing_actions(
         creates,
         become_,
     } = initialized.actions;
-    assert!(values.is_empty());
-    assert!(processed_increments.is_empty());
+    assert_eq!(values.as_slice(), []);
+    assert_eq!(processed_increments.as_slice(), []);
     assert!(creates.is_empty());
     assert!(matches!(become_, Step::Continue));
     let mut counter = initialized.behavior;
@@ -126,7 +126,7 @@ pub(super) fn assert_increment_processing_actions(
         } = increment;
         assert!(matches!(become_, Step::Continue));
         assert!(creates.is_empty());
-        assert!(values.is_empty());
+        assert_eq!(values.as_slice(), []);
         assert_eq!(processed_increments.len(), 1);
         assert_eq!(
             processed_increments[0].message,
@@ -146,8 +146,8 @@ pub(super) fn assert_increment_processing_actions(
         creates,
         become_,
     } = increment;
-    assert!(values.is_empty());
-    assert!(processed_increments.is_empty());
+    assert_eq!(values.as_slice(), []);
+    assert_eq!(processed_increments.as_slice(), []);
     assert!(creates.is_empty());
     assert!(matches!(become_, Step::Continue));
     let read = counter
@@ -163,7 +163,7 @@ pub(super) fn assert_increment_processing_actions(
     } = read;
     assert_eq!(values.len(), 1);
     assert_eq!(values[0].message, 3);
-    assert!(processed_increments.is_empty());
+    assert_eq!(processed_increments.as_slice(), []);
     assert!(creates.is_empty());
     assert!(matches!(become_, Step::Continue));
     let mut exhausted = Counter::at_maximum().initialize().unwrap().behavior;
@@ -195,9 +195,9 @@ mod tests {
 
         assert_eq!(counter.value, 1);
         assert!(matches!(initialization_actions.become_, Step::Continue));
-        assert!(initialization_actions.sends.values.is_empty());
+        assert_eq!(initialization_actions.sends.values.len(), 0);
         assert!(matches!(increment.become_, Step::Continue));
-        assert!(increment.sends.values.is_empty());
+        assert_eq!(increment.sends.values.len(), 0);
     }
 
     #[test]

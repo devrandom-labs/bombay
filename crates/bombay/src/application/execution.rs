@@ -1,10 +1,11 @@
+use super::ApplicationScope;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::composition::ComposeApplication;
-use crate::application::{App, Application, ApplicationHandle};
+use crate::application::{Application, ApplicationHandle};
 use crate::entity::{InstallEntityFamilies, InstalledEntityFamilies};
-use crate::launch::{ActorSpace, spawn_local_execution};
+use crate::launch::spawn_local_execution;
 use crate::local::children::{
-    ChildBindings, RetireChildTasks, RuntimeChildBindings, StructuralOrigins,
+    ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::local::effects::{
     ActionInterpreter, ApplicationCapabilities, ApplicationCapabilityInputs, CommitActions,
@@ -14,14 +15,13 @@ use crate::local::ingress::{DEFAULT_USER_CAPACITY, StandardIngress};
 use crate::observe;
 use crate::terminal::{
     ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, RetirementNotificationError,
-    RootOrigin, publish_retirement_report,
+    RetirementSchema, RootOrigin, publish_retirement_report,
 };
-use crate::topology::Hosts;
+use crate::topology::{ApplicationTopology, RootRegistration};
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
-    ChildOccurrenceProduct, ClassifySettlement, Here, InjectEvent, Never, Protocol,
+    ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
-use behavior_actors::ShutdownRequested;
 use core::fmt;
 use core::future::{Future, Ready, poll_fn};
 use core::ops::AsyncFnOnce;
@@ -45,371 +45,18 @@ impl fmt::Debug for RunError {
 
 #[allow(
     private_bounds,
-    reason = "the launch proof is private static runtime composition"
-)]
-impl<Root, Spaces> App<Root, Spaces>
-where
-    Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
-{
-    /// Construct genuine absent work with original inputs and joined raw root facts.
-    /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
-    /// This comparison selects no terminal projection and constructs no callable value.
-    /// The execution remains cold; only polling stages or starts the actor.
-    ///
-    /// # Errors
-    /// Returns the untouched application and actual entered-host error.
-    ///
-    /// # Panics
-    /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
-    #[expect(
-        clippy::type_complexity,
-        reason = "the existing concrete pair preserves original inputs and independent exact root custody without a new wrapper"
-    )]
-    pub fn execute<Terminal, ChildFailures>(self) -> Result<(impl Future<Output = ()>, impl Future<Output = (ApplicationOutcome<Self,
-Option<Never>,
-Option<Never>,
-(),
-Never,
-(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>)>), (Self, TryCurrentError)>
-where
-    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
-    BehaviorMessage<Root>: Send + 'static,
-    Root::Sends: Send + 'static,
-    Root::Error: Send + 'static,
-    Root::InterpretationCustody: Send + 'static,
-    Root::SourceCustody: Send + 'static,
-    <Root::Birth as BirthMode>::Child:
-        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
-    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
-    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
-        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
-            Root,
-            Retired = (
-                Vec<Terminal>,
-                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
-            ),
-        > + Send
-        + 'static,
-    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
-    Terminal: Send + 'static,
-    ChildFailures: Send + 'static,
-{
-        let executor = match Handle::try_current() {
-            Ok(executor) => executor,
-            Err(error) => return Err((self, error)),
-        };
-        let (execution, receiving) = execute_application_with::<
-            Self,
-            Root,
-            Root,
-            Spaces,
-            StructuralOrigins<Root::Base>,
-            Terminal,
-            (),
-            Never,
-            _,
-            _,
-            _,
-            Never,
-            fn(Never, ApplicationHandle<Root::Protocol, Root::Event>) -> Ready<Never>,
-            Ready<Never>,
-            _,
-            _,
-            (),
-        >(
-            executor,
-            self,
-            (),
-            async |_| {},
-            |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
-             startup_inputs,
-             _allocations| {
-                let (application, cold_work, publication) = original_work.into_unstarted();
-                let () = cold_work;
-                let original_work = ApplicationWorkPublication {
-                    publication: Some((
-                        ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Absent(()),
-                            None,
-                        ),
-                        publication,
-                    )),
-                };
-                let App {
-                    root,
-                    spaces,
-                    families: (),
-                } = application;
-                let () = startup_inputs;
-                let installed_families = ();
-                let (work, publication) = original_work.into_not_invoked();
-                Ok((
-                    ApplicationWorkPublication {
-                        publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
-                            publication,
-                        )),
-                    },
-                    installed_families,
-                ))
-            },
-            ((), |_executor, (), ()| None),
-        );
-        let receiving = async move {
-            let (work, root, termination_notification) = receiving.await;
-            (work.into_absent(), root, termination_notification)
-        };
-        Ok((execution, receiving))
-    }
-
-    /// Await genuine absent work with original inputs and joined raw root facts.
-    /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
-    /// This comparison selects no terminal projection and constructs no callable value.
-    /// The execution remains cold; only polling stages or starts the actor.
-    ///
-    /// # Errors
-    /// Returns the untouched application and actual entered-host error.
-    ///
-    /// # Panics
-    /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
-    pub async fn run<Terminal, ChildFailures>(self) -> Result<(ApplicationOutcome<Self,
-Option<Never>,
-Option<Never>,
-(),
-Never,
-(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>), (Self, TryCurrentError)>
-where
-    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
-    BehaviorMessage<Root>: Send + 'static,
-    Root::Sends: Send + 'static,
-    Root::Error: Send + 'static,
-    Root::InterpretationCustody: Send + 'static,
-    Root::SourceCustody: Send + 'static,
-    <Root::Birth as BirthMode>::Child:
-        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
-    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
-    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
-        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
-            Root,
-            Retired = (
-                Vec<Terminal>,
-                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
-            ),
-        > + Send
-        + 'static,
-    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
-    Terminal: Send + 'static,
-    ChildFailures: Send + 'static,
-{
-        let (execution, result) = self.execute::<Terminal, ChildFailures>()?;
-        execution.await;
-        Ok(result.await)
-    }
-
-    /// Construct caller-local execution and its independently owned result receiver.
-    ///
-    /// The returned execution is cold. The original work may borrow and return
-    /// non-Send values. Only the exact actor and static cleanup move to Tokio.
-    /// The current executor is selected here; the synchronous actor handoff
-    /// enters that executor before its first spawn.
-    /// Original interpretation and source custody travel with actor retirement;
-    /// their `Send + 'static` requirements do not constrain caller-local work.
-    ///
-    /// # Errors
-    ///
-    /// Returns the original application and callable with the actual Tokio
-    /// context error when no executor is currently entered.
-    ///
-    /// # Panics
-    ///
-    /// The execution future propagates panics from application setup and work.
-    #[expect(
-        clippy::type_complexity,
-        reason = "the independent execution and result preserve exact input, output and two join boundaries"
-    )]
-    pub fn execute_with<Terminal, ChildFailures, Work, WorkFuture, >(
-        self,
-        work: Work,
-    ) -> Result<
-        (
-            impl Future<Output = ()>,
-            impl Future<Output = (ApplicationOutcome<Self,
-Work,
-<WorkFuture as Future>::Output,
-(),
-(Root, Work, Never),
-(Root, Spaces)>, Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>, Result<ActorNotificationReceipts, RecvError>)>,
-        ),
-        (Self, Work, TryCurrentError),
-    >
-where
-    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
-    BehaviorMessage<Root>: Send + 'static,
-    Root::Sends: Send + 'static,
-    Root::Error: Send + 'static,
-    Root::InterpretationCustody: Send + 'static,
-    Root::SourceCustody: Send + 'static,
-    <Root::Birth as BirthMode>::Child:
-        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
-    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
-    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
-        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
-            Root,
-            Retired = (
-                Vec<Terminal>,
-                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
-            ),
-        > + Send
-        + 'static,
-    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
-    Terminal: Send + 'static,
-    ChildFailures: Send + 'static,
-    Work: FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> WorkFuture,
-        WorkFuture: Future,
-{
-        let executor = match Handle::try_current() {
-            Ok(executor) => executor,
-            Err(error) => return Err((self, work, error)),
-        };
-        let (execution, receiving) = execute_application_with::<
-            Self,
-            Root,
-            Root,
-            Spaces,
-            StructuralOrigins<Root::Base>,
-            Terminal,
-            (),
-            (Root, Work, Never),
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            Never,
-        >(
-            executor,
-            self,
-            (work, |work: Work, application| work(application)),
-            async |_| {},
-            |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
-             startup_inputs,
-             _allocations| {
-                let (application, cold_work, publication) = original_work.into_unstarted();
-                let original_work = ApplicationWorkPublication {
-                    publication: Some((
-                        ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Supplied(cold_work),
-                            None,
-                        ),
-                        publication,
-                    )),
-                };
-                let App {
-                    root,
-                    spaces,
-                    families: (),
-                } = application;
-                let () = startup_inputs;
-                let installed_families = ();
-                let (work, publication) = original_work.into_not_invoked();
-                Ok((
-                    ApplicationWorkPublication {
-                        publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
-                            publication,
-                        )),
-                    },
-                    installed_families,
-                ))
-            },
-            ((), |_executor, (), ()| None),
-        );
-        let receiving = async move {
-            let (work, root, termination_notification) = receiving.await;
-            (work.into_supplied(), root, termination_notification)
-        };
-        Ok((execution, receiving))
-    }
-
-    /// Await caller-local work and the exact application result on the entered host.
-    ///
-    /// This future is cold until polled. Work and its output may borrow or be non-Send.
-    /// Use `execute_with` when the result receiver must remain independently owned
-    /// after dropping execution; dropping this convenience also drops that receiver.
-    ///
-    /// # Errors
-    /// Returns the original application and work with the actual entered-host error.
-    ///
-    /// # Panics
-    /// Setup and work may unwind; original native causes remain with the caller.
-    pub async fn run_with<Terminal, ChildFailures, Work, WorkFuture, >(
-        self,
-        work: Work,
-    ) -> Result<
-        (ApplicationOutcome<Self,
-Work,
-<WorkFuture as Future>::Output,
-(),
-(Root, Work, Never),
-(Root, Spaces)>, Result<(
-                RootOrigin<Root>,
-                ActorRetirement<Root, Terminal, ChildFailures>,
-            ), RecvError>, Result<ActorNotificationReceipts, RecvError>),
-        (Self, Work, TryCurrentError),
-    >
-where
-    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
-    BehaviorMessage<Root>: Send + 'static,
-    Root::Sends: Send + 'static,
-    Root::Error: Send + 'static,
-    Root::InterpretationCustody: Send + 'static,
-    Root::SourceCustody: Send + 'static,
-    <Root::Birth as BirthMode>::Child:
-        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
-    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
-    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
-        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-    RootInterpreter<Root, Spaces, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
-            Root,
-            Retired = (
-                Vec<Terminal>,
-                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
-            ),
-        > + Send
-        + 'static,
-    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
-    Terminal: Send + 'static,
-    ChildFailures: Send + 'static,
-    Work: FnOnce(ApplicationHandle<Root::Protocol, Root::Event>) -> WorkFuture,
-        WorkFuture: Future,
-{
-        let (execution, result) =
-            self.execute_with::<Terminal, ChildFailures, Work, WorkFuture>(work)?;
-        execution.await;
-        Ok(result.await)
-    }
-}
-
-#[allow(
-    private_bounds,
     reason = "native installation and launch proofs remain private static composition"
 )]
-impl<Root, Spaces, Families> App<Root, Spaces, Families>
+impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
+    Members: ComposeApplication<Root>,
     Families: InstallEntityFamilies<Spaces> + Send,
+    Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
     /// Pair caller-local Entity work with original root and family retirement receiving.
+    /// The application's topology selects the complete descendant schema;
+    /// callers need no retirement type argument.
     /// The receiving product keeps work/startup phase, root receiving and each family receiving result.
     /// Its cleanup join remains the actual unit producer outcome beside independently acquired facts.
     /// A receiving error never infers root absence or completed family shutdown.
@@ -424,55 +71,101 @@ where
         clippy::type_complexity,
         reason = "retain independent work phase, original root reply and role-indexed shutdown receiving results"
     )]
-    pub fn execute_with_entities<Terminal, ChildFailures, Work, WorkFuture, >(
+    pub fn execute_with_entities<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
         (
             impl Future<Output = ()>,
-            impl Future<Output = (ApplicationOutcome<
-                Self,
-                Work,
-                <WorkFuture as Future>::Output,
-                (),
-                (Root, Work, Never),
-                (Root, Arc<Spaces>),
+            impl Future<
+                Output = (
+                    ApplicationOutcome<
+                        Self,
+                        Work,
+                        <WorkFuture as Future>::Output,
+                        (),
+                        (
+                            Root,
+                            Spaces,
+                            Families,
+                            Work,
+                            StagingFailure,
+                            ApplicationScope,
+                        ),
+                        (Actor, Arc<Spaces>, ApplicationScope),
+                    >,
+                    Result<
+                        (
+                            RootOrigin<Root>,
+                            ActorRetirement<
+                                Actor,
+                                <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                                ChildFailures,
+                            >,
+                        ),
+                        RecvError,
+                    >,
+                    Result<ActorNotificationReceipts, RecvError>,
+                    Families::Shutdowns,
+                ),
             >,
-                Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>,
-                Result<ActorNotificationReceipts, RecvError>,
-            Families::Shutdowns,
-            )>,
         ),
         (Self, Work, TryCurrentError),
     >
-where
-    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
-    BehaviorMessage<Root>: Send + 'static,
-    Root::Sends: Send + 'static,
-    Root::Error: Send + 'static,
-    Root::InterpretationCustody: Send + 'static,
-    Root::SourceCustody: Send + 'static,
-    <Root::Birth as BirthMode>::Child:
-        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
-    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
-    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
-        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-    RootInterpreter<Root, Arc<Spaces>, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
-            Root,
-            Retired = (
-                Vec<Terminal>,
-                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
-            ),
-        > + Send
-        + 'static,
-    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
-    Terminal: Send + 'static,
-    ChildFailures: Send + 'static,
-    Families::Installed: 'static,
-    Work: FnOnce(ApplicationHandle<Root::Protocol, Root::Event, Families::Receptionists>) -> WorkFuture,
-    WorkFuture: Future,
-{
+    where
+        Spaces: ApplicationTopology<Root, Members>,
+        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
+            + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Arc<Spaces>>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Arc<Spaces>,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
+        ChildFailures: Send + 'static,
+        Families::Installed: 'static,
+        Work: FnOnce(
+            ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
+        ) -> WorkFuture,
+        WorkFuture: Future,
+    {
         let executor = match Handle::try_current() {
             Ok(executor) => executor,
             Err(error) => return Err((self, work, error)),
@@ -483,12 +176,12 @@ where
         let (execution, receiving) = execute_application_with::<
             Self,
             Root,
-            Root,
+            Actor,
             Arc<Spaces>,
-            StructuralOrigins<Root::Base>,
-            Terminal,
+            Members::Origins,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             Families::Installed,
-            (Root, Work, Never),
+            _,
             _,
             _,
             _,
@@ -502,7 +195,7 @@ where
             executor,
             self,
             (work, |work: Work, application| work(application)),
-            async |_| {},
+            async |application: &Self| ((), application.allocations()),
             move |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
                   startup_inputs,
                   allocations| {
@@ -517,11 +210,26 @@ where
                     )),
                 };
                 let () = startup_inputs;
-                let App {
-                    root,
-                    spaces,
-                    families,
-                } = application;
+                let (root, spaces, members, families, scope) = application.into_parts();
+                let scope = scope.unwrap_or_else(|| ApplicationScope {
+                    allocations: allocations.clone(),
+                });
+                let root = match members.compose(root) {
+                    Ok(actor) => actor,
+                    Err((root, failure)) => {
+                        let (work, publication) = original_work.into_not_invoked();
+                        let (work, invoke) = work.into_supplied();
+                        let _ = invoke;
+                        return Err(ApplicationWorkPublication {
+                            publication: Some((
+                                ApplicationWorkCustody::StagingRejected((
+                                    root, spaces, families, work, failure, scope,
+                                )),
+                                publication,
+                            )),
+                        });
+                    }
+                };
                 let spaces = Arc::new(spaces);
                 let installed_families =
                     families.install(Arc::clone(&spaces), allocations, entity_executor);
@@ -529,7 +237,7 @@ where
                 Ok((
                     ApplicationWorkPublication {
                         publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
+                            ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
@@ -558,6 +266,7 @@ where
     }
 
     /// Await caller-local Entity work and the exact independent root/family receiving product.
+    /// Descendant custody is selected by the same application topology as ordinary execution.
     /// Use `execute_with_entities` to retain receiving independently after execution is dropped.
     ///
     /// # Errors
@@ -565,54 +274,97 @@ where
     ///
     /// # Panics
     /// Setup and Work can unwind; original native causes remain caller-owned.
-    pub async fn run_with_entities<Terminal, ChildFailures, Work, WorkFuture, >(
+    pub async fn run_with_entities<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
-        (ApplicationOutcome<
-            Self,
-            Work,
-            <WorkFuture as Future>::Output,
-            (),
-            (Root, Work, Never),
-            (Root, Arc<Spaces>),
-        >,
-            Result<(RootOrigin<Root>, ActorRetirement<Root, Terminal, ChildFailures>), RecvError>,
+        (
+            ApplicationOutcome<
+                Self,
+                Work,
+                <WorkFuture as Future>::Output,
+                (),
+                (
+                    Root,
+                    Spaces,
+                    Families,
+                    Work,
+                    StagingFailure,
+                    ApplicationScope,
+                ),
+                (Actor, Arc<Spaces>, ApplicationScope),
+            >,
+            Result<
+                (
+                    RootOrigin<Root>,
+                    ActorRetirement<
+                        Actor,
+                        <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                        ChildFailures,
+                    >,
+                ),
+                RecvError,
+            >,
             Result<ActorNotificationReceipts, RecvError>,
             Families::Shutdowns,
         ),
         (Self, Work, TryCurrentError),
     >
-where
-    Root: BehaviorBase + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
-    Root::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
-    BehaviorMessage<Root>: Send + 'static,
-    Root::Sends: Send + 'static,
-    Root::Error: Send + 'static,
-    Root::InterpretationCustody: Send + 'static,
-    Root::SourceCustody: Send + 'static,
-    <Root::Birth as BirthMode>::Child:
-        ChildOccurrenceProduct<RuntimeChildBindings<Terminal, StructuralOrigins<Root::Base>>> + Send + 'static,
-    Spaces: Hosts<Root::Protocol> + Send + Sync + 'static,
-    ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>>:
-        Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-    RootInterpreter<Root, Arc<Spaces>, Terminal, StructuralOrigins<Root::Base>>: CommitActions<
-            Root,
-            Retired = (
-                Vec<Terminal>,
-                <ChildBindings<Root, Terminal, StructuralOrigins<Root::Base>> as RetireChildTasks>::Failures,
-            ),
-        > + Send
-        + 'static,
-    <Root as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
-    Terminal: Send + 'static,
-    ChildFailures: Send + 'static,
-    Families::Installed: 'static,
-    Work: FnOnce(ApplicationHandle<Root::Protocol, Root::Event, Families::Receptionists>) -> WorkFuture,
-    WorkFuture: Future,
-{
-        let (execution, result) =
-            self.execute_with_entities::<Terminal, ChildFailures, Work, WorkFuture>(work)?;
+    where
+        Spaces: ApplicationTopology<Root, Members>,
+        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
+            + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Arc<Spaces>>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Arc<Spaces>,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
+        ChildFailures: Send + 'static,
+        Families::Installed: 'static,
+        Work: FnOnce(
+            ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
+        ) -> WorkFuture,
+        WorkFuture: Future,
+    {
+        let (execution, result) = self.execute_with_entities(work)?;
         execution.await;
         Ok(result.await)
     }
@@ -622,12 +374,15 @@ where
     private_bounds,
     reason = "the running application and its launch proof remain private"
 )]
-impl<Root, Members> Application<Root, Members>
+impl<Root, Spaces, Members> Application<Root, Spaces, Members>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     Members: ComposeApplication<Root>,
+    Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
     /// Execute declared cold composition and caller-local work with an independent result receiver.
+    /// The application's topology selects the complete descendant schema;
+    /// callers need no retirement type argument.
     ///
     /// A cold staging rejection owns the actual partial and original callable without a cleanup fiction.
     /// Original interpretation and source custody travel with actor retirement;
@@ -641,7 +396,7 @@ where
         clippy::type_complexity,
         reason = "return independent local work and actual cold-partial or joined actor products without another wrapper"
     )]
-    pub fn execute_with<Actor, StagingFailure, Terminal, ChildFailures, Work, WorkFuture>(
+    pub fn execute_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
@@ -654,13 +409,17 @@ where
                         Work,
                         <WorkFuture as Future>::Output,
                         (),
-                        (Root, Work, StagingFailure),
-                        (Actor, ActorSpace<Root::Protocol>),
+                        (Root, Spaces, Work, StagingFailure, ApplicationScope),
+                        (Actor, Spaces, ApplicationScope),
                     >,
                     Result<
                         (
                             RootOrigin<Root>,
-                            ActorRetirement<Actor, Terminal, ChildFailures>,
+                            ActorRetirement<
+                                Actor,
+                                <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                                ChildFailures,
+                            >,
                         ),
                         RecvError,
                     >,
@@ -671,27 +430,52 @@ where
         (Self, Work, TryCurrentError),
     >
     where
+        Spaces: ApplicationTopology<Root, Members>,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
         Actor::InterpretationCustody: Send + 'static,
         Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
-            + Send
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
             + 'static,
-        ChildBindings<Actor, Terminal, Members::Origins>:
-            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
-            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
         Actor::Settlements: ClassifySettlement + Send,
         RootOrigin<Root>: Send + 'static,
-        Terminal: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
@@ -704,11 +488,11 @@ where
             Self,
             Root,
             Actor,
-            ActorSpace<Root::Protocol>,
+            Spaces,
             Members::Origins,
-            Terminal,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             (),
-            (Root, Work, StagingFailure),
+            (Root, Spaces, Work, StagingFailure, ApplicationScope),
             _,
             _,
             _,
@@ -722,10 +506,10 @@ where
             executor,
             self,
             (work, |work: Work, application| work(application)),
-            async |_| {},
+            async |application: &Self| ((), application.allocations()),
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
-             _allocations| {
+             allocations| {
                 let (application, cold_work, publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
@@ -737,14 +521,18 @@ where
                     )),
                 };
                 let () = startup_inputs;
-                let (root, members) = application.into_parts();
+                let (root, spaces, members, (), scope) = application.into_parts();
+                let scope = match scope {
+                    Some(scope) => scope,
+                    None => ApplicationScope { allocations },
+                };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
                         let (work, invoke) = work.into_supplied();
                         let _ = invoke;
-                        let inputs = (root, work, failure);
+                        let inputs = (root, spaces, work, failure, scope);
                         return Err(ApplicationWorkPublication {
                             publication: Some((
                                 ApplicationWorkCustody::StagingRejected(inputs),
@@ -753,13 +541,12 @@ where
                         });
                     }
                 };
-                let spaces = ActorSpace::new();
                 let installed_families = ();
                 let (work, publication) = original_work.into_not_invoked();
                 Ok((
                     ApplicationWorkPublication {
                         publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
+                            ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
@@ -776,6 +563,7 @@ where
     }
 
     /// Construct genuine absent work with original inputs and joined raw root facts.
+    /// Descendant custody is selected by the same application topology as supplied work.
     /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
     /// This comparison selects no terminal projection and constructs no callable value.
     /// The execution remains cold; only polling stages or starts the actor.
@@ -789,7 +577,7 @@ where
         clippy::type_complexity,
         reason = "the existing concrete pair preserves original inputs and independent exact root custody without a new wrapper"
     )]
-    pub fn execute<Actor, StagingFailure, Terminal, ChildFailures>(
+    pub fn execute<Actor, StagingFailure, ChildFailures>(
         self,
     ) -> Result<
         (
@@ -801,13 +589,17 @@ where
                         Option<Never>,
                         Option<Never>,
                         (),
-                        (Root, StagingFailure),
-                        (Actor, ActorSpace<Root::Protocol>),
+                        (Root, Spaces, StagingFailure, ApplicationScope),
+                        (Actor, Spaces, ApplicationScope),
                     >,
                     Result<
                         (
                             RootOrigin<Root>,
-                            ActorRetirement<Actor, Terminal, ChildFailures>,
+                            ActorRetirement<
+                                Actor,
+                                <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                                ChildFailures,
+                            >,
                         ),
                         RecvError,
                     >,
@@ -818,27 +610,52 @@ where
         (Self, TryCurrentError),
     >
     where
+        Spaces: ApplicationTopology<Root, Members>,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
         Actor::InterpretationCustody: Send + 'static,
         Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
-            + Send
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
             + 'static,
-        ChildBindings<Actor, Terminal, Members::Origins>:
-            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
-            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
         Actor::Settlements: ClassifySettlement + Send,
         RootOrigin<Root>: Send + 'static,
-        Terminal: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
     {
         let executor = match Handle::try_current() {
@@ -849,11 +666,11 @@ where
             Self,
             Root,
             Actor,
-            ActorSpace<Root::Protocol>,
+            Spaces,
             Members::Origins,
-            Terminal,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             (),
-            (Root, StagingFailure),
+            (Root, Spaces, StagingFailure, ApplicationScope),
             _,
             _,
             _,
@@ -867,10 +684,10 @@ where
             executor,
             self,
             (),
-            async |_| {},
+            async |application: &Self| ((), application.allocations()),
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
-             _allocations| {
+             allocations| {
                 let (application, cold_work, publication) = original_work.into_unstarted();
                 let () = cold_work;
                 let original_work = ApplicationWorkPublication {
@@ -883,7 +700,11 @@ where
                     )),
                 };
                 let () = startup_inputs;
-                let (root, members) = application.into_parts();
+                let (root, spaces, members, (), scope) = application.into_parts();
+                let scope = match scope {
+                    Some(scope) => scope,
+                    None => ApplicationScope { allocations },
+                };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
                     Err((root, failure)) => {
@@ -892,7 +713,7 @@ where
                             ApplicationWorkPresence::Absent(()) => {}
                             ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
                         }
-                        let inputs = (root, failure);
+                        let inputs = (root, spaces, failure, scope);
                         return Err(ApplicationWorkPublication {
                             publication: Some((
                                 ApplicationWorkCustody::StagingRejected(inputs),
@@ -901,13 +722,12 @@ where
                         });
                     }
                 };
-                let spaces = ActorSpace::new();
                 let installed_families = ();
                 let (work, publication) = original_work.into_not_invoked();
                 Ok((
                     ApplicationWorkPublication {
                         publication: Some((
-                            ApplicationWorkCustody::Prepared((root, spaces), work),
+                            ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
@@ -933,7 +753,7 @@ where
     ///
     /// # Panics
     /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
-    pub async fn run<Actor, StagingFailure, Terminal, ChildFailures>(
+    pub async fn run<Actor, StagingFailure, ChildFailures>(
         self,
     ) -> Result<
         (
@@ -942,13 +762,17 @@ where
                 Option<Never>,
                 Option<Never>,
                 (),
-                (Root, StagingFailure),
-                (Actor, ActorSpace<Root::Protocol>),
+                (Root, Spaces, StagingFailure, ApplicationScope),
+                (Actor, Spaces, ApplicationScope),
             >,
             Result<
                 (
                     RootOrigin<Root>,
-                    ActorRetirement<Actor, Terminal, ChildFailures>,
+                    ActorRetirement<
+                        Actor,
+                        <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                        ChildFailures,
+                    >,
                 ),
                 RecvError,
             >,
@@ -957,31 +781,55 @@ where
         (Self, TryCurrentError),
     >
     where
+        Spaces: ApplicationTopology<Root, Members>,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
         Actor::InterpretationCustody: Send + 'static,
         Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
-            + Send
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
             + 'static,
-        ChildBindings<Actor, Terminal, Members::Origins>:
-            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
-            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
         Actor::Settlements: ClassifySettlement + Send,
         RootOrigin<Root>: Send + 'static,
-        Terminal: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
     {
-        let (execution, result) =
-            self.execute::<Actor, StagingFailure, Terminal, ChildFailures>()?;
+        let (execution, result) = self.execute()?;
         execution.await;
         Ok(result.await)
     }
@@ -1012,7 +860,7 @@ where
         clippy::result_large_err,
         reason = "return the actual configured Builder and declaration without boxing originals"
     )]
-    pub fn run_blocking<Actor, StagingFailure, Terminal, ChildFailures>(
+    pub fn run_blocking<Actor, StagingFailure, ChildFailures>(
         self,
         mut builder: Builder,
     ) -> Result<
@@ -1023,13 +871,17 @@ where
                     Option<Never>,
                     Option<Never>,
                     (),
-                    (Root, StagingFailure),
-                    (Actor, ActorSpace<Root::Protocol>),
+                    (Root, Spaces, StagingFailure, ApplicationScope),
+                    (Actor, Spaces, ApplicationScope),
                 >,
                 Result<
                     (
                         RootOrigin<Root>,
-                        ActorRetirement<Actor, Terminal, ChildFailures>,
+                        ActorRetirement<
+                            Actor,
+                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                            ChildFailures,
+                        >,
                     ),
                     RecvError,
                 >,
@@ -1040,27 +892,52 @@ where
         (Self, Builder, RunError),
     >
     where
+        Spaces: ApplicationTopology<Root, Members>,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
         Actor::InterpretationCustody: Send + 'static,
         Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
-            + Send
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
             + 'static,
-        ChildBindings<Actor, Terminal, Members::Origins>:
-            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
-            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
         Actor::Settlements: ClassifySettlement + Send,
         RootOrigin<Root>: Send + 'static,
-        Terminal: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
     {
         if let Ok(entered_executor) = Handle::try_current() {
@@ -1071,7 +948,7 @@ where
             Ok(application_host) => application_host,
             Err(source) => return Err((self, builder, RunError::Runtime(source))),
         };
-        Ok(application_host.block_on(self.run::<Actor, StagingFailure, Terminal, ChildFailures>()))
+        Ok(application_host.block_on(self.run::<Actor, StagingFailure, ChildFailures>()))
     }
 
     /// Await declared composition, caller-local work and the exact joined result.
@@ -1085,7 +962,7 @@ where
     ///
     /// # Panics
     /// Setup and work may unwind; the actual cause remains with the caller.
-    pub async fn run_with<Terminal, Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+    pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
@@ -1095,13 +972,17 @@ where
                 Work,
                 <WorkFuture as Future>::Output,
                 (),
-                (Root, Work, StagingFailure),
-                (Actor, ActorSpace<Root::Protocol>),
+                (Root, Spaces, Work, StagingFailure, ApplicationScope),
+                (Actor, Spaces, ApplicationScope),
             >,
             Result<
                 (
                     RootOrigin<Root>,
-                    ActorRetirement<Actor, Terminal, ChildFailures>,
+                    ActorRetirement<
+                        Actor,
+                        <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                        ChildFailures,
+                    >,
                 ),
                 RecvError,
             >,
@@ -1110,35 +991,57 @@ where
         (Self, Work, TryCurrentError),
     >
     where
+        Spaces: ApplicationTopology<Root, Members>,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
             + 'static,
-        Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+        Actor::Event: Send + 'static,
         BehaviorMessage<Actor>: Send + 'static,
         Actor::Sends: Send + 'static,
         Actor::Error: Send + 'static,
         Actor::InterpretationCustody: Send + 'static,
         Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Members::Origins>>
-            + Send
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
             + 'static,
-        ChildBindings<Actor, Terminal, Members::Origins>:
-            Default + RetireChildTasks<Root = Terminal, Failures = ChildFailures> + Send + 'static,
-        RootInterpreter<Actor, ActorSpace<Root::Protocol>, Terminal, Members::Origins>:
-            CommitActions<Actor, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
         Actor::Settlements: ClassifySettlement + Send,
         RootOrigin<Root>: Send + 'static,
-        Terminal: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
     {
-        let (execution, result) = self
-            .execute_with::<Actor, StagingFailure, Terminal, ChildFailures, Work, WorkFuture>(
-                work,
-            )?;
+        let (execution, result) = self.execute_with(work)?;
         execution.await;
         Ok(result.await)
     }
@@ -1490,6 +1393,63 @@ pub enum ApplicationOutcome<
     },
 }
 
+impl<Inputs, Work, Output, Cleanup, StagingInputs, PreparedInputs, ColdWork>
+    ApplicationOutcome<Inputs, Work, Output, Cleanup, StagingInputs, PreparedInputs, ColdWork>
+{
+    /// Borrow the original completed work value, including a domain failure.
+    ///
+    /// Presence says only that work returned. Cleanup and actor retirement
+    /// remain independent facts; inspection consumes neither.
+    #[must_use]
+    pub const fn work_output(&self) -> Option<&Output> {
+        match self {
+            Self::Completed { output, .. } => Some(output),
+            Self::StagingRejected { .. }
+            | Self::Unstarted { .. }
+            | Self::Prepared { .. }
+            | Self::NotInvoked { .. }
+            | Self::Interrupted { .. } => None,
+        }
+    }
+
+    /// Borrow the received cleanup result without consuming its evidence.
+    ///
+    /// Cold declaration and staging rejection have no cleanup result. An
+    /// `Ok` cleanup value still owns the actor's actual retirement disposition;
+    /// it does not itself certify successful actor initialization or execution.
+    #[must_use]
+    pub const fn cleanup(&self) -> Option<&Result<Cleanup, ApplicationCleanupError>> {
+        match self {
+            Self::Prepared { cleanup, .. }
+            | Self::NotInvoked { cleanup, .. }
+            | Self::Completed { cleanup, .. }
+            | Self::Interrupted { cleanup } => Some(cleanup),
+            Self::StagingRejected { .. } | Self::Unstarted { .. } => None,
+        }
+    }
+
+    /// Consume completed work together with its independent cleanup result.
+    ///
+    /// Cleanup failure accompanies the original output on the successful side
+    /// of this selection. The caller retains responsibility for both values.
+    ///
+    /// # Errors
+    /// Returns the entire original outcome when work has not returned. No
+    /// original declaration, callable, prepared input or cleanup is discarded.
+    pub fn try_into_completed(
+        self,
+    ) -> Result<(Output, Result<Cleanup, ApplicationCleanupError>), Self> {
+        match self {
+            Self::Completed { output, cleanup } => Ok((output, cleanup)),
+            outcome @ (Self::StagingRejected { .. }
+            | Self::Unstarted { .. }
+            | Self::Prepared { .. }
+            | Self::NotInvoked { .. }
+            | Self::Interrupted { .. }) => Err(outcome),
+        }
+    }
+}
+
 pub(in crate::application) enum ApplicationWorkPresence<Work, NoWork> {
     Supplied(Work),
     Absent(NoWork),
@@ -1587,7 +1547,7 @@ pub(in crate::application) fn execute_application_with<
                 ApplicationWorkPresence<WorkFuture::Output, NoWork>,
                 (),
                 StagingInputs,
-                (Actor, Spaces),
+                (Actor, Spaces, ApplicationScope),
                 ColdWork,
             >,
             Result<
@@ -1610,7 +1570,7 @@ where
         + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>
         + Send
         + 'static,
-    Actor::Event: InjectEvent<ShutdownRequested, Here> + Send + 'static,
+    Actor::Event: Send + 'static,
     BehaviorMessage<Actor>: Send + 'static,
     Actor::Sends: Send + 'static,
     Actor::Error: Send + 'static,
@@ -1618,9 +1578,9 @@ where
     Actor::SourceCustody: Send + 'static,
     <Actor::Birth as BirthMode>::Child:
         ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Origins>> + Send + 'static,
-    Spaces: Hosts<Actor::Protocol> + Send + Sync + 'static,
+    Spaces: RootRegistration<Actor::Protocol> + Send + Sync + 'static,
     ChildBindings<Actor, Terminal, Origins>:
-        Default + RetireChildTasks<Root = Terminal> + Send + 'static,
+        ChildBindingsIn<Actor, Spaces> + RetireChildTasks<Root = Terminal> + Send + 'static,
     RootInterpreter<Actor, Spaces, Terminal, Origins>: CommitActions<
             Actor,
             Retired = (
@@ -1631,9 +1591,9 @@ where
         + 'static,
     <Actor as BehaviorSettlements>::Settlements: ClassifySettlement + Send,
     RootOrigin<Owner>: Send + 'static,
-    Terminal: Send + 'static,
+    Terminal: RetirementSchema + Send + 'static,
     <ChildBindings<Actor, Terminal, Origins> as RetireChildTasks>::Failures: Send + 'static,
-    AcquireStartupInputs: AsyncFnOnce(&Inputs) -> StartupInputs,
+    AcquireStartupInputs: AsyncFnOnce(&Inputs) -> (StartupInputs, ApplicationAddresses),
     InstalledFamilies: InstalledEntityFamilies + Send + 'static,
     Prepare: FnOnce(
         ApplicationWorkPublication<
@@ -1642,7 +1602,7 @@ where
             ApplicationWorkPresence<(Work, Invoke), NoWork>,
             ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
             StagingInputs,
-            (Actor, Spaces),
+            (Actor, Spaces, ApplicationScope),
         >,
         StartupInputs,
         ApplicationAddresses,
@@ -1654,7 +1614,7 @@ where
                 ApplicationWorkPresence<(Work, Invoke), NoWork>,
                 ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
                 StagingInputs,
-                (Actor, Spaces),
+                (Actor, Spaces, ApplicationScope),
             >,
             InstalledFamilies,
         ),
@@ -1664,7 +1624,7 @@ where
             ApplicationWorkPresence<(Work, Invoke), NoWork>,
             ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
             StagingInputs,
-            (Actor, Spaces),
+            (Actor, Spaces, ApplicationScope),
         >,
     >,
     Invoke: FnOnce(
@@ -1690,7 +1650,7 @@ where
     let (notification_publication, received_notification) = oneshot::channel();
     let execution = async move {
         let mut original_work = original_work;
-        let startup_inputs = {
+        let (startup_inputs, allocations) = {
             let Some((ApplicationWorkCustody::Unstarted(application, _), _)) =
                 original_work.publication.as_ref()
             else {
@@ -1705,7 +1665,6 @@ where
             })
             .await
         };
-        let allocations = ApplicationAddresses::new();
         let (prepared_work, installed_families) =
             match prepare(original_work, startup_inputs, allocations.clone()) {
                 Ok(prepared) => prepared,
@@ -1716,13 +1675,13 @@ where
             };
         original_work = prepared_work;
         let setup = catch_unwind(AssertUnwindSafe(|| {
-            let Some((ApplicationWorkCustody::Prepared((_, spaces), _), _)) =
+            let Some((ApplicationWorkCustody::Prepared((_, spaces, _), _), _)) =
                 original_work.publication.as_ref()
             else {
                 unreachable!("setup borrows the single prepared input publication");
             };
-            let roots = <Spaces as Hosts<Actor::Protocol>>::space(spaces).clone();
-            let bindings = ChildBindings::<Actor, Terminal, Origins>::default();
+            let roots = <Spaces as RootRegistration<Actor::Protocol>>::root_space(spaces).clone();
+            let bindings = ChildBindings::<Actor, Terminal, Origins>::new_in(spaces);
             let receptionists = installed_families.receptionists();
             (roots, bindings, receptionists)
         }));
@@ -1749,13 +1708,14 @@ where
             let entered_executor = executor.enter();
             let address = MailAddr::APPLICATION_ROOT;
             let config = communication::Config::new(DEFAULT_USER_CAPACITY);
-            let Some((ApplicationWorkCustody::Prepared((root, spaces), work), publication)) =
+            let Some((ApplicationWorkCustody::Prepared((root, spaces, scope), work), publication)) =
                 original_work.publication.take()
             else {
                 unreachable!("handoff consumes the single prepared input publication");
             };
             original_work.publication =
                 Some((ApplicationWorkCustody::NotInvoked(work, None), publication));
+            drop(scope);
             let actor_spaces = Arc::new(spaces);
             let started = spawn_local_execution::<Actor, _, StandardIngress, _, _, _>(
                 roots,

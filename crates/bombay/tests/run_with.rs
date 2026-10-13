@@ -1,3 +1,4 @@
+use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
 use bombay::behavior::{NoSends, Step, Stopped};
 use std::error::Error;
@@ -17,18 +18,17 @@ use behavior_actors::{
     FinalizeOnShutdown, ReportTerminalOutcome, RestartDenial, ShutdownRequested,
     SupervisionFailureReason,
 };
-use bombay::ProjectTerminal;
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, EventLayer, InitializationTurn, InterpreterRequests,
     NoBirths, User,
 };
 use bombay::prelude::*;
-use bombay::{ActorSpace, App, ApplicationOutcome};
+use bombay::{ActorSpace, Application, ApplicationOutcome};
 
 mod application_support;
 
 use application_support::{
-    RootTerminal as ApplicationTerminal, assert_completed as assert_completed_root, into_root,
+    RootTerminal as ApplicationTerminal, assert_completed as assert_completed_root,
 };
 
 const TEST_BOUNDARY: MailAddr = MailAddr(u64::MAX);
@@ -385,7 +385,7 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -429,7 +429,7 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -444,10 +444,6 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
 }
 
 #[test]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 fn run_is_the_unit_boundary_specialization() {
     let terminal = {
         let executor = tokio::runtime::Builder::new_current_thread()
@@ -455,10 +451,7 @@ fn run_is_the_unit_boundary_specialization() {
             .build()
             .expect("the caller constructs its explicit current-thread host");
         let application_outcome = executor
-            .block_on(
-                Application::new(StopsDuringInitialization.stop_on_shutdown())
-                    .run::<_, _, ApplicationTerminal<_>, _>(),
-            )
+            .block_on(Application::new(StopsDuringInitialization.stop_on_shutdown()).run())
             .unwrap_or_else(|(application, error)| {
                 drop(application);
                 panic!("the caller owns the application's live entered host: {error}");
@@ -479,7 +472,7 @@ fn run_is_the_unit_boundary_specialization() {
             drop(application_outcome);
             panic!("the original startup phase and complete joined root remain exact");
         };
-        let terminal: ApplicationTerminal<_> = ProjectTerminal::project(origin, retirement);
+        let terminal: ApplicationTerminal<_> = (origin, retirement);
         terminal
     };
     assert_completed_root(terminal, None);
@@ -513,7 +506,7 @@ fn run_is_the_unit_boundary_specialization() {
             panic!("the generic boundary must withhold the unpublished root");
         };
         drop((work, startup_error));
-        ProjectTerminal::project(origin, retirement)
+        (origin, retirement)
     };
     assert_completed_root(terminal, None);
 }
@@ -566,7 +559,7 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -610,7 +603,7 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -655,7 +648,7 @@ async fn continuing_report_cannot_select_the_later_stop_outcome() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -708,7 +701,7 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -761,7 +754,7 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -823,7 +816,7 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -867,28 +860,32 @@ async fn activation_failure_does_not_invoke_the_boundary() {
         panic!("startup refusal returns the unpublished complete root retirement");
     };
     drop((work, startup_error));
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(origin, retirement);
-    let (origin, retirement) = into_root(terminal);
+    let terminal: ApplicationTerminal<_> = (origin, retirement);
+    let (origin, retirement) = terminal;
     let ActorRetirement::InitializationRejected {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         error,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
     } = retirement
     else {
         panic!("the exact initialization refusal remains a distinct root outcome");
     };
+    assert_eq!(child_failures, []);
     assert!(additional_failures.is_empty());
     assert!(received_interpretation.is_none());
     assert!(received_source.is_none());
@@ -943,7 +940,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -956,29 +953,33 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     let (
         origin,
         ActorRetirement::BehaviorFailed {
-            child_failures: (),
-            capability_failures,
+            custody:
+                ActorCustody {
+                    child_failures,
+                    capability_failures,
+                    additional_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    retirement_failures,
+                    terminal_report,
+                    unread_owner_cancellation,
+                    behavior: _behavior,
+                    control,
+                    user,
+                    descendants,
+                },
             interpretation,
             source,
-            additional_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            retirement_failures,
-            terminal_report,
-            unread_owner_cancellation,
-            behavior: _behavior,
             settlements,
-            control,
-            user,
-            descendants,
             error: RootFailure,
         },
-    ) = into_root(terminal)
+    ) = terminal
     else {
         panic!("the root behavior failure must remain an exact typed terminal")
     };
+    assert_eq!(child_failures, []);
     assert!(interpretation.is_none());
     assert!(source.is_none());
     assert!(additional_failures.is_empty());
@@ -994,7 +995,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     assert_eq!(settlements.len(), 0);
     assert_eq!(control.len(), 0);
     assert_eq!(user.len(), 0);
-    assert!(descendants.is_empty());
+    assert_eq!(descendants, []);
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -1033,7 +1034,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let ordinary_terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let ordinary_terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -1053,7 +1054,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
-    ) = App::new(Root.stop_on_shutdown(), ActorSpace::new())
+    ) = Application::with_topology(Root.stop_on_shutdown(), ActorSpace::new())
         .run_with(|application| async move {
             application
                 .root()
@@ -1077,7 +1078,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let explicit_terminal: ApplicationTerminal<_> = ProjectTerminal::project(
+    let explicit_terminal: ApplicationTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -1099,8 +1100,8 @@ fn run_with_protocol_is_compile_checked() {
     cases.compile_fail("tests/compile/fail/run_with_wrong_root_protocol.rs");
     cases.compile_fail("tests/compile/fail/actor_ref_has_no_shutdown.rs");
     cases.compile_fail("tests/compile/fail/application_lifecycle_wrong_event.rs");
-    cases.compile_fail("tests/compile/fail/application_handle_has_no_direct_lifecycle.rs");
-    cases.compile_fail("tests/compile/fail/app_local_is_not_an_ordinary_path.rs");
+    cases.compile_fail("tests/compile/fail/application_shutdown_requires_event_lane.rs");
+    cases.compile_fail("tests/compile/fail/removed_parallel_application.rs");
 }
 
 struct BlockingRoot {
@@ -1121,32 +1122,36 @@ impl BlockingRoot {
 
 fn assert_blocking_root_retirement(
     origin: RootOrigin<StopOnShutdown<BlockingRoot>>,
-    retirement: ActorRetirement<StopOnShutdown<BlockingRoot>, Never, ()>,
+    retirement: ActorRetirement<StopOnShutdown<BlockingRoot>, Never, Vec<Never>>,
     allocation: *const u64,
 ) {
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
         completion,
     } = retirement
     else {
         panic!("the original finite root must return its complete stopped retirement");
     };
+    assert_eq!(child_failures, []);
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let root = behavior.into_inner();
     assert_eq!(root.entries.as_ptr(), allocation);
@@ -1220,7 +1225,7 @@ fn public_run_blocking_returns_entered_host_inputs_and_retries_both_configuratio
             .build()
             .expect("the independent entered caller host is valid");
         let entered = outer.enter();
-        let refused = application.run_blocking::<_, _, Never, ()>(builder);
+        let refused = application.run_blocking(builder);
         let Err((application, builder, RunError::BlockingInEnteredRuntime)) = refused else {
             panic!("the public blocking boundary must refuse before building or staging");
         };
@@ -1231,7 +1236,7 @@ fn public_run_blocking_returns_entered_host_inputs_and_retries_both_configuratio
         drop(entered);
         drop(outer);
         let retried = application
-            .run_blocking::<_, _, Never, ()>(builder)
+            .run_blocking(builder)
             .unwrap_or_else(|_| panic!("the exact returned inputs retry outside the entered host"))
             .unwrap_or_else(|_| panic!("the owned host supplies the actual async executor"));
         let (
@@ -1300,7 +1305,7 @@ fn public_run_blocking_recovers_real_build_error_in_limited_child() {
                 Err(error) => break error,
             }
         };
-        let refused = application.run_blocking::<_, _, Never, ()>(builder);
+        let refused = application.run_blocking(builder);
         drop(files);
         let Err((application, builder, RunError::Runtime(source))) = refused else {
             panic!("actual enabled selector construction must refuse before any actor starts");
@@ -1310,7 +1315,7 @@ fn public_run_blocking_recovers_real_build_error_in_limited_child() {
         let starts_before_retry = starts.load(Ordering::SeqCst);
         let stops_before_retry = stops.load(Ordering::SeqCst);
         let retried = application
-            .run_blocking::<_, _, Never, ()>(builder)
+            .run_blocking(builder)
             .unwrap_or_else(|_| {
                 panic!("the same declaration and Builder retry after descriptor recovery")
             })

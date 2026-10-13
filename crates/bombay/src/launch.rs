@@ -17,8 +17,9 @@ use crate::local::effects::observation::TerminationObservations;
 use crate::local::effects::timers::LocalTimers;
 use crate::observe;
 use crate::terminal::{
-    ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, LocalOutcome,
-    ProjectTerminal, RetirementNotificationError, publish_retirement_report, retirement_ingress,
+    ActorCustody, ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, LocalOutcome,
+    ProjectTerminal, RetirementNotificationError, RetirementSchema, publish_retirement_report,
+    retirement_ingress,
 };
 use crate::{ActorExecutionOutcome, Retirement};
 #[cfg(test)]
@@ -235,7 +236,7 @@ where
         clippy::too_many_lines,
         reason = "one exhaustive owning phase/failure conversion preserves every original typed field; forwarding functions or aliases would only relocate the same conservation obligation"
     )]
-    fn from_local(
+    pub(crate) fn from_local(
         outcome: LocalOutcome<B, Descendants>,
         termination_notification: Result<(), RetirementNotificationError>,
         retirement_report: ActorRetirementReport,
@@ -501,21 +502,23 @@ where
                 acquired_ingress,
             } => Ok((
                 ActorRetirement::InitializationRejected {
+                    custody: ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                    },
                     error,
-                    behavior,
-                    control,
-                    user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    unread_owner_cancellation,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
                 },
                 retirement_report,
                 termination_notification,
@@ -539,21 +542,23 @@ where
                 acquired_ingress,
             } => Ok((
                 ActorRetirement::InitializationPanicked {
+                    custody: ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                    },
                     payload,
-                    behavior,
-                    control,
-                    user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    unread_owner_cancellation,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
                 },
                 retirement_report,
                 termination_notification,
@@ -578,22 +583,24 @@ where
                 acquired_ingress,
             } => Ok((
                 ActorRetirement::HostRejected {
+                    custody: ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                    },
                     initialization,
                     error,
-                    behavior,
-                    control,
-                    user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    unread_owner_cancellation,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
                 },
                 retirement_report,
                 termination_notification,
@@ -617,21 +624,23 @@ where
                 acquired_ingress,
             } => Ok((
                 ActorRetirement::BindingAbandoned {
+                    custody: ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        unread_owner_cancellation,
+                        additional_failures,
+                        terminal_report,
+                        retirement_failures,
+                        received_interpretation,
+                        received_source,
+                        source_index,
+                        acquired_ingress: retirement_ingress(acquired_ingress),
+                    },
                     initialization,
-                    behavior,
-                    control,
-                    user,
-                    descendants,
-                    child_failures,
-                    capability_failures,
-                    unread_owner_cancellation,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress: retirement_ingress(acquired_ingress),
                 },
                 retirement_report,
                 termination_notification,
@@ -770,6 +779,10 @@ where
     B: BehaviorSettlements,
     B::Event: Send + 'static,
 {
+    pub(crate) fn request_retirement(&mut self) {
+        self.cancellation.request();
+    }
+
     /// Acquire this exact actor result in the caller's destination before
     /// disposing the join operation. Empty or coexisting slots stay unchanged.
     pub(crate) async fn receive_finish(
@@ -927,15 +940,22 @@ where
     ActionSettlementOf<B>: Send + 'static,
     Root: Send + 'static,
 {
-    pub(crate) fn project<Origin, ChildFailures>(
-        task: OwnedTask<B, (Vec<Root>, ChildFailures)>,
+    pub(crate) fn project<Origin, Descendants>(
+        task: OwnedTask<
+            B,
+            (
+                Vec<Descendants>,
+                Vec<<Descendants as RetirementSchema>::Failure>,
+            ),
+        >,
         origin: Origin,
         retirement_publisher: observe::Publisher<ActorRetirementReport>,
     ) -> Self
     where
         Origin: Send + 'static,
-        ChildFailures: Send + 'static,
-        Root: ProjectTerminal<Origin, ActorRetirement<B, Root, ChildFailures>>,
+        Descendants: RetirementSchema + Send + 'static,
+        Descendants::Failure: Send + 'static,
+        Root: ProjectTerminal<Origin, B, Descendants = Descendants>,
     {
         let OwnedTask {
             task: actor_task,
@@ -1057,6 +1077,7 @@ pub type ActorSpace<P> = AddressSpace<<P as Protocol>::Addr, ActorRef<P>>;
     clippy::result_large_err,
     reason = "Return the complete original actor rejection by value without adding allocation."
 )]
+#[cfg(test)]
 pub(crate) async fn spawn_owned_with<B, I>(
     addresses: ActorSpace<B::Protocol>,
     config: Config,
@@ -1090,6 +1111,67 @@ where
         make_interpreter,
     )
     .await
+}
+
+#[expect(
+    clippy::type_complexity,
+    reason = "startup transfers the original private receipt, actor control and typed native task together"
+)]
+pub(crate) fn spawn_owned_execution<B, I>(
+    addresses: ActorSpace<B::Protocol>,
+    config: Config,
+    address: MailAddr,
+    behavior: B,
+    make_interpreter: impl FnOnce(
+        communication::ControlSender<B::Event>,
+        LocalTerminalReports,
+        LocalTimers<B::Event>,
+        TerminationObservations<MailAddr, B::Event>,
+    ) -> I,
+) -> (
+    oneshot::Receiver<(ActorRef<B::Protocol>, oneshot::Sender<()>)>,
+    communication::ControlSender<B::Event>,
+    OwnedTask<B, I::Retired>,
+)
+where
+    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + Send + 'static,
+    B::Event: Send + 'static,
+    BehaviorMessage<B>: Send + 'static,
+    B::Sends: Send + 'static,
+    B::Error: Send + 'static,
+    B::InterpretationCustody: Send + 'static,
+    B::SourceCustody: Send + 'static,
+    <B::Birth as BirthMode>::Child: Send + 'static,
+    I: CommitActions<B> + Send + 'static,
+    crate::local::effects::ActionSettlementOf<B>: ClassifySettlement + Send,
+    I::Retired: Send + 'static,
+{
+    let (cancellation, startup, control, task, termination_notification) =
+        spawn_local_execution::<B, I, StandardIngress, _, _, _>(
+            addresses,
+            config,
+            address,
+            behavior,
+            make_interpreter,
+            |environment| {
+                let (commitment, committed) = oneshot::channel();
+                let control = environment.control();
+                (
+                    environment.with_private_commitment(commitment),
+                    committed,
+                    control,
+                )
+            },
+        );
+    (
+        startup,
+        control,
+        OwnedTask {
+            task: Some(task),
+            termination_notification,
+            cancellation,
+        },
+    )
 }
 
 #[cfg(test)]
@@ -1690,6 +1772,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::ActorCustody;
     use crate::terminal::{ActorFailureAssessment, ChildOrigin, RetirementAssessment};
     use std::any::Any;
     use std::convert::Infallible;
@@ -1718,12 +1801,33 @@ mod tests {
     struct ProbeChildRole;
 
     #[derive(crate::TerminalProjection)]
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain the complete actual native child custody without a forwarding type alias"
+    )]
     enum ProbeTerminal {
         #[application_actor]
         Probe {
             origin: ChildOrigin<RootProbe, ProbeChildRole>,
-            terminal: ActorRetirement<RootProbe, Self, ()>,
+            terminal: ActorRetirement<
+                RootProbe,
+                Self,
+                Vec<crate::ChildFailure<ChildOrigin<RootProbe, ProbeChildRole>, RootProbe>>,
+            >,
         },
+    }
+
+    impl RetirementSchema for ProbeTerminal {
+        type Failure = crate::ChildFailure<ChildOrigin<RootProbe, ProbeChildRole>, RootProbe>;
+    }
+    impl ProjectTerminal<ChildOrigin<RootProbe, ProbeChildRole>, RootProbe> for ProbeTerminal {
+        type Descendants = Self;
+        fn project(
+            origin: ChildOrigin<RootProbe, ProbeChildRole>,
+            terminal: ActorRetirement<RootProbe, Self, Vec<<Self as RetirementSchema>::Failure>>,
+        ) -> Self {
+            Self::from((origin, terminal))
+        }
     }
 
     fn ignore_root_actions(_: &ActionsOf<RootProbe>) {}
@@ -2478,36 +2582,55 @@ mod tests {
     )]
     async fn projected_child_retirement_preserves_origin_state_and_descendants() {
         let mut descendant_creations = CreationSequence::new();
-        let descendant_nonce = descendant_creations
+        let descendant_id = descendant_creations
             .issue()
-            .expect("the descendant's first creator-local ID exists")
-            .get();
-        let descendant_origin =
-            ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(2), descendant_nonce);
+            .expect("the descendant's first creator-local ID exists");
+        let descendant_nonce = descendant_id.get();
+        let descendant_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(
+            MailAddr(2),
+            descendant_nonce,
+            descendant_id,
+            behavior::CreationKind::Birth,
+        );
         let descendant = ProbeTerminal::Probe {
             origin: descendant_origin,
             terminal: ActorRetirement::Cancelled,
         };
-        let mut child = spawn_owned_with(
-            ActorSpace::new(),
-            Config::new(2),
-            MailAddr(1),
-            RootProbe { terminal_marker: 0 },
-            |_, _, _, _| ObserveActionsWithRetirement {
-                observe: ignore_root_actions,
-                retirement: (vec![descendant], ()),
-            },
-        )
-        .await
-        .expect("the child must transfer private commitment before publication");
+        let mut child =
+            spawn_owned_with(
+                ActorSpace::new(),
+                Config::new(2),
+                MailAddr(1),
+                RootProbe { terminal_marker: 0 },
+                |_, _, _, _| ObserveActionsWithRetirement {
+                    observe: ignore_root_actions,
+                    retirement:
+                        (
+                            vec![descendant],
+                            Vec::<
+                                crate::ChildFailure<
+                                    ChildOrigin<RootProbe, ProbeChildRole>,
+                                    RootProbe,
+                                >,
+                            >::new(),
+                        ),
+                },
+            )
+            .await
+            .expect("the child must transfer private commitment before publication");
         child.acknowledge_binding();
         assert!(child.binding.is_none());
         let mut child_creations = CreationSequence::new();
-        let child_nonce = child_creations
+        let child_id = child_creations
             .issue()
-            .expect("the child's first creator-local ID exists")
-            .get();
-        let child_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(MailAddr(1), child_nonce);
+            .expect("the child's first creator-local ID exists");
+        let child_nonce = child_id.get();
+        let child_origin = ChildOrigin::<RootProbe, ProbeChildRole>::new(
+            MailAddr(1),
+            child_nonce,
+            child_id,
+            behavior::CreationKind::Birth,
+        );
 
         let (retirement_publisher, retirement_report) = observe::pair();
         let terminal = ProjectedTask::project(child.task, child_origin, retirement_publisher)
@@ -2538,29 +2661,32 @@ mod tests {
             .expect_err("closed parent admission returns the exact terminal value");
         let ProbeTerminal::Probe { origin, terminal } = rejected;
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
+                    additional_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures,
+                },
             interpretation,
             source,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            terminal_report,
-            retirement_failures,
-            additional_failures,
-
-            capability_failures,
-            unread_owner_cancellation,
-            behavior,
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
             completion,
         } = terminal
         else {
             panic!("the projected child must preserve its completed disposition")
         };
+        assert!(child_failures.is_empty());
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(received_interpretation.is_none());
@@ -2749,6 +2875,8 @@ mod ordinary_owner_retirement {
 
 #[cfg(test)]
 mod transitive_source_cancellation {
+    use crate::ActorCustody;
+
     use super::ActorExecution;
     use crate::ActorExecutionOutcome;
     use crate::MailAddr;
@@ -2877,7 +3005,7 @@ mod transitive_source_cancellation {
         release_progress: Option<oneshot::Receiver<()>>,
     }
     impl CommitActions<SourceCycleActor> for YieldingSourceInterpreter {
-        type Retired = (Vec<Never>, ());
+        type Retired = (Vec<Never>, Vec<Never>);
         async fn commit(
             &mut self,
             progress: &mut Option<
@@ -3105,7 +3233,7 @@ mod transitive_source_cancellation {
         drop(control);
     }
     fn verify_source_retirement_custody(
-        retirement: LocalOutcome<SourceCycleActor, (Vec<Never>, ())>,
+        retirement: LocalOutcome<SourceCycleActor, (Vec<Never>, Vec<Never>)>,
         observer: &ActorSpace<<SourceCycleActor as Behavior>::Protocol>,
         address: MailAddr,
     ) {
@@ -3126,25 +3254,27 @@ mod transitive_source_cancellation {
         };
         assert!(activation_tasks.is_empty());
         let ActorRetirement::OwnerCancelled {
+            custody:
+                ActorCustody {
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    terminal_report,
+                    retirement_failures,
+                    additional_failures,
+                    child_failures,
+                    capability_failures,
+                    unread_owner_cancellation,
+                    behavior,
+                    control: admitted,
+                    user,
+                    descendants,
+                },
             interpretation,
             source,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            terminal_report,
-            retirement_failures,
-            additional_failures,
-
-            child_failures: (),
-            capability_failures,
-            unread_owner_cancellation,
-            behavior,
             settlements,
-            control: admitted,
-            user,
-            descendants,
-        } = ActorRetirement::<SourceCycleActor, Never, ()>::from_local(retirement)
+        } = ActorRetirement::<SourceCycleActor, Never, Vec<Never>>::from_local(retirement)
         else {
             panic!("the public exact projection preserves the same selected owner fact");
         };
@@ -3159,6 +3289,7 @@ mod transitive_source_cancellation {
         assert!(additional_failures.is_empty());
         assert!(capability_failures.is_empty());
         assert!(unread_owner_cancellation.is_none());
+        assert_eq!(child_failures.as_slice(), []);
         assert_eq!(
             behavior.scheduling_receipts, 0,
             "an admitted receipt remains exact custody when owner retirement wins before its fold"
@@ -3207,6 +3338,8 @@ mod transitive_source_cancellation {
 
 #[cfg(all(test, tokio_unstable))]
 mod independent_actor_execution {
+    use crate::ActorCustody;
+
     use crate::actor_execution::tests::{
         allocations_during, begin_allocations, current_allocations, finish_allocations,
     };
@@ -4554,9 +4687,21 @@ mod independent_actor_execution {
         }
     }
 
+    impl crate::RetirementSchema for CompletedExecutionChild {
+        type Failure = crate::ChildFailure<
+            ChildOrigin<ExecutionParent, ChildHead>,
+            StopOnShutdown<ExecutionChild>,
+        >;
+    }
     struct CompletedExecutionChild {
         origin: ChildOrigin<ExecutionParent, ChildHead>,
-        terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
+        terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Never, Vec<Never>>,
+    }
+
+    impl crate::ApplicationTopology<StopOnShutdown<ExecutionParent>, ()>
+        for crate::ActorSpace<ExecutionParent>
+    {
+        type Descendants = CompletedExecutionChild;
     }
 
     #[expect(
@@ -4567,15 +4712,13 @@ mod independent_actor_execution {
         Option<oneshot::Sender<(Id, ChildOrigin<ExecutionParent, ChildHead>)>>,
     > = Mutex::new(None);
 
-    impl
-        ProjectTerminal<
-            ChildOrigin<ExecutionParent, ChildHead>,
-            ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
-        > for CompletedExecutionChild
+    impl ProjectTerminal<ChildOrigin<ExecutionParent, ChildHead>, StopOnShutdown<ExecutionChild>>
+        for CompletedExecutionChild
     {
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<ExecutionParent, ChildHead>,
-            terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Self, ()>,
+            terminal: ActorRetirement<StopOnShutdown<ExecutionChild>, Never, Vec<Never>>,
         ) -> Self {
             let publication = CHILD_EXECUTION_COMPLETION
                 .lock()
@@ -4585,6 +4728,58 @@ mod independent_actor_execution {
             let sent = publication.send((id(), origin));
             sent.expect("the caller retains its actual child completion receiver");
             Self { origin, terminal }
+        }
+    }
+
+    impl
+        crate::NativeChild<
+            StopOnShutdown<ExecutionParent>,
+            ChildHead,
+            StopOnShutdown<ExecutionChild>,
+            CompletedExecutionChild,
+            Never,
+        > for crate::ActorSpace<ExecutionParent>
+    {
+        fn registration(
+            &self,
+        ) -> crate::ActorSpace<<StopOnShutdown<ExecutionChild> as behavior::Behavior>::Protocol>
+        {
+            crate::ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: crate::PendingChild<
+                '_,
+                StopOnShutdown<ExecutionParent>,
+                Self,
+                ChildHead,
+                StopOnShutdown<ExecutionChild>,
+                CompletedExecutionChild,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl core::future::Future<
+            Output = behavior::ItemSettlement<
+                behavior::RoutedCreation<crate::MailAddr, StopOnShutdown<ExecutionChild>>,
+                behavior::ChildCreationOutcome<StopOnShutdown<ExecutionChild>, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            CompletedExecutionChild: crate::ProjectTerminal<Origin, StopOnShutdown<ExecutionChild>, Descendants = Never>
+                + Send
+                + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(crate::MailAddr, u64, behavior::CreationId, behavior::CreationKind) -> Origin
+                + Send,
+        {
+            <Self as crate::EstablishNativeChild<
+                StopOnShutdown<ExecutionParent>,
+                StopOnShutdown<ExecutionChild>,
+                Never,
+            >>::establish_native_child::<ChildHead, CompletedExecutionChild, Origin, OriginFn>(
+                pending,
+            )
         }
     }
 
@@ -4658,35 +4853,30 @@ mod independent_actor_execution {
             let entered = runtime.enter();
             formed = Some(
                 application
-                    .execute_with::<_, _, CompletedExecutionChild, _, _, _>(
-                        move |application| async move {
-                            for command in submissions {
-                                let sent =
-                                    application.root().send_from(MailAddr(1031), command).await;
-                                sent.expect("each original parent computation is admitted");
-                            }
-                            let sent = application
-                                .root()
-                                .send_from(MailAddr(1031), ParentWorkCommand::FinishChild)
-                                .await;
-                            sent.expect("the child finish follows all original computations");
-                            let (projector, projected_origin) = completed_child
-                                .await
-                                .expect("actual eager child projection");
-                            let sent = application
-                                .root()
-                                .send_from(MailAddr(1031), ParentWorkCommand::Finish)
-                                .await;
-                            sent.expect(
-                                "parent finish is explicit after original child completion",
-                            );
-                            (
-                                projector,
-                                projected_origin,
-                                application.lifecycle().termination().await,
-                            )
-                        },
-                    )
+                    .execute_with(move |application| async move {
+                        for command in submissions {
+                            let sent = application.root().send_from(MailAddr(1031), command).await;
+                            sent.expect("each original parent computation is admitted");
+                        }
+                        let sent = application
+                            .root()
+                            .send_from(MailAddr(1031), ParentWorkCommand::FinishChild)
+                            .await;
+                        sent.expect("the child finish follows all original computations");
+                        let (projector, projected_origin) = completed_child
+                            .await
+                            .expect("actual eager child projection");
+                        let sent = application
+                            .root()
+                            .send_from(MailAddr(1031), ParentWorkCommand::Finish)
+                            .await;
+                        sent.expect("parent finish is explicit after original child completion");
+                        (
+                            projector,
+                            projected_origin,
+                            application.lifecycle().termination().await,
+                        )
+                    })
                     .unwrap_or_else(|_| panic!("the explicit measured host is entered")),
             );
             drop(entered);
@@ -4701,41 +4891,53 @@ mod independent_actor_execution {
         drop(runtime);
         let stale = CHILD_EXECUTION_COMPLETION.lock().unwrap().take();
         assert!(stale.is_none());
-        let application_outcome = joined.expect("whole original application result remains");
-        if let ApplicationOutcome::Completed {
-            output: _,
-            cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-        } = &application_outcome
-        {
+        let (application_outcome, root_retirement, notifications) =
+            joined.expect("whole original application result remains");
+        if matches!(
+            &root_retirement,
+            Ok((_, ActorRetirement::ActorTaskFailed(_)))
+        ) {
             panic!("the measured application owns completed work and both native joins");
         }
         let ApplicationOutcome::Completed {
             output: (projector, projected_origin, termination),
-            cleanup: Ok((origin, retirement)),
+            cleanup: Ok(()),
         } = application_outcome
         else {
             panic!("the measured application owns completed work and both native joins");
         };
+        let (origin, retirement) =
+            root_retirement.expect("the original root retirement transferred");
+        let notifications = notifications.expect("both original notification results transferred");
+        notifications
+            .termination
+            .expect("the first actual termination notification succeeded");
+        notifications
+            .retirement
+            .expect("the actual joined retirement notification succeeded");
         assert_eq!(termination, Ok(Exit::Normal));
         assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
         let ActorRetirement::Completed {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    unread_owner_cancellation,
+                },
             interpretation,
             source,
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (child_failures, ()),
-            capability_failures,
-            additional_failures,
-            terminal_report,
-            retirement_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            unread_owner_cancellation,
             completion,
         } = retirement
         else {
@@ -4805,23 +5007,26 @@ mod independent_actor_execution {
         assert_eq!(child_origin, projected_origin);
         assert_ne!(child_origin.address(), origin.address());
         let ActorRetirement::Completed {
-            behavior,
+            custody:
+                ActorCustody {
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    child_failures,
+                    capability_failures,
+                    additional_failures,
+                    terminal_report,
+                    retirement_failures,
+                    received_interpretation,
+                    received_source,
+                    source_index,
+                    acquired_ingress,
+                    unread_owner_cancellation,
+                },
             interpretation,
             source,
             settlements,
-            control,
-            user,
-            descendants,
-            child_failures: (),
-            capability_failures,
-            additional_failures,
-            terminal_report,
-            retirement_failures,
-            received_interpretation,
-            received_source,
-            source_index,
-            acquired_ingress,
-            unread_owner_cancellation,
             completion,
         } = terminal
         else {
@@ -4832,6 +5037,7 @@ mod independent_actor_execution {
         assert!(source_index.is_none() && acquired_ingress.is_none());
         assert!(unread_owner_cancellation.is_none() && terminal_report.is_none());
         assert!(control.is_empty() && user.is_empty() && descendants.is_empty());
+        assert_eq!(child_failures.as_slice(), []);
         assert!(additional_failures.is_empty() && capability_failures.is_empty());
         assert!(retirement_failures.is_empty());
         assert!(matches!(completion, Completion::Stopped));
@@ -4962,8 +5168,9 @@ mod root_join_custody {
     use crate::local::execution::{ActivationTasks, LocalRetirementRequest, OwnerCancellation};
     use crate::local::ingress::StandardIngress;
     use crate::terminal::{
-        ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement, ActorRetirementReport,
-        LocalOutcome, ProjectTerminal, RetirementAssessment, RetirementNotificationError,
+        ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement,
+        ActorRetirementReport, LocalOutcome, ProjectTerminal, RetirementAssessment,
+        RetirementNotificationError, RetirementSchema,
     };
     use crate::termination::TerminationPublication;
     use crate::{ActorExecution, ActorExecutionOutcome, ActorSpace, observe};
@@ -6188,11 +6395,20 @@ mod root_join_custody {
     }
     struct ChildRetirement {
         address: MailAddr,
-        retirement: ActorRetirement<RootState, Self, ()>,
+        retirement: ActorRetirement<RootState, Self, Vec<Never>>,
     }
 
-    impl ProjectTerminal<MailAddr, ActorRetirement<RootState, Self, ()>> for ChildRetirement {
-        fn project(address: MailAddr, retirement: ActorRetirement<RootState, Self, ()>) -> Self {
+    impl RetirementSchema for ChildRetirement {
+        type Failure = Never;
+    }
+
+    impl ProjectTerminal<MailAddr, RootState> for ChildRetirement {
+        type Descendants = Self;
+
+        fn project(
+            address: MailAddr,
+            retirement: ActorRetirement<RootState, Self, Vec<Never>>,
+        ) -> Self {
             Self {
                 address,
                 retirement,
@@ -6242,27 +6458,31 @@ mod root_join_custody {
         ) = match (retirement, expected_completion) {
             (
                 ActorRetirement::Completed {
-                    behavior,
                     interpretation,
                     source,
                     settlements,
-                    received_interpretation,
-                    received_source,
-                    source_index,
-                    acquired_ingress,
-                    control,
-                    user,
-                    descendants,
-                    child_failures: (),
-                    capability_failures,
-                    unread_owner_cancellation,
-                    additional_failures,
-                    terminal_report,
-                    retirement_failures,
+                    custody:
+                        ActorCustody {
+                            behavior,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            control,
+                            user,
+                            descendants,
+                            child_failures,
+                            capability_failures,
+                            unread_owner_cancellation,
+                            additional_failures,
+                            terminal_report,
+                            retirement_failures,
+                        },
                     completion,
                 },
                 ChildCompletion::Stopped,
             ) => {
+                assert_eq!(child_failures.as_slice(), []);
                 assert!(matches!(completion, Completion::Stopped));
                 (
                     behavior,
@@ -6285,6 +6505,31 @@ mod root_join_custody {
             }
             (
                 ActorRetirement::OwnerCancelled {
+                    interpretation,
+                    source,
+                    settlements,
+                    custody:
+                        ActorCustody {
+                            behavior,
+                            received_interpretation,
+                            received_source,
+                            source_index,
+                            acquired_ingress,
+                            control,
+                            user,
+                            descendants,
+                            child_failures,
+                            capability_failures,
+                            unread_owner_cancellation,
+                            additional_failures,
+                            terminal_report,
+                            retirement_failures,
+                        },
+                },
+                ChildCompletion::OwnerCancelled,
+            ) => {
+                assert_eq!(child_failures.as_slice(), []);
+                (
                     behavior,
                     interpretation,
                     source,
@@ -6296,32 +6541,13 @@ mod root_join_custody {
                     control,
                     user,
                     descendants,
-                    child_failures: (),
                     capability_failures,
                     unread_owner_cancellation,
                     additional_failures,
                     terminal_report,
                     retirement_failures,
-                },
-                ChildCompletion::OwnerCancelled,
-            ) => (
-                behavior,
-                interpretation,
-                source,
-                settlements,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                control,
-                user,
-                descendants,
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
-            ),
+                )
+            }
             _ => panic!("the complete original native result keeps its actual completion policy"),
         };
         assert_eq!(behavior.values.as_slice(), [31, 37]);
@@ -6382,7 +6608,7 @@ mod root_join_custody {
                         assert!(actions.creates.is_empty());
                         assert!(matches!(actions.become_, Step::Stop(Stopped)));
                     },
-                    retirement: (Vec::<ChildRetirement>::new(), ()),
+                    retirement: (Vec::<ChildRetirement>::new(), Vec::<Never>::new()),
                 },
             )
             .await
@@ -6454,7 +6680,7 @@ mod root_join_custody {
                         assert!(actions.creates.is_empty());
                         interpreted.lock().unwrap().push(actions.become_);
                     },
-                    retirement: (Vec::<ChildRetirement>::new(), ()),
+                    retirement: (Vec::<ChildRetirement>::new(), Vec::<Never>::new()),
                 },
             )
             .await
@@ -6597,12 +6823,12 @@ mod root_join_custody {
         projection_panic: Box<dyn Any + Send>,
     }
 
-    impl ProjectTerminal<ChildRetirementCustody, ActorRetirement<RootState, Self, ()>>
-        for ChildRetirement
-    {
+    impl ProjectTerminal<ChildRetirementCustody, RootState> for ChildRetirement {
+        type Descendants = Self;
+
         fn project(
             origin: ChildRetirementCustody,
-            retirement: ActorRetirement<RootState, Self, ()>,
+            retirement: ActorRetirement<RootState, Self, Vec<Never>>,
         ) -> Self {
             let ChildRetirementCustody {
                 address,
@@ -6658,7 +6884,7 @@ mod root_join_custody {
                         assert!(actions.creates.is_empty());
                         interpreted.lock().unwrap().push(actions.become_);
                     },
-                    retirement: (Vec::<ChildRetirement>::new(), ()),
+                    retirement: (Vec::<ChildRetirement>::new(), Vec::<Never>::new()),
                 },
             )
             .await
@@ -6694,7 +6920,7 @@ mod root_join_custody {
                 .as_mut()
                 .poll(&mut Context::from_waker(&report_waker));
             assert!(matches!(registered_report, Poll::Pending));
-            let projected = ProjectedTask::project(
+            let projected: ProjectedTask<RootState, ChildRetirement> = ProjectedTask::project(
                 actor.task,
                 ChildRetirementCustody {
                     address: actor.actor.address(),
@@ -6839,7 +7065,7 @@ mod root_join_custody {
                     retiring: Some(retiring),
                     release: released,
                     activation_tasks,
-                    descendants: (Vec::<ChildRetirement>::new(), ()),
+                    descendants: (Vec::<ChildRetirement>::new(), Vec::<Never>::new()),
                     descendant_report: ActorRetirementReport::new(
                         RetirementAssessment::Established,
                         ActorFailureAssessment::NoFailuresFound,

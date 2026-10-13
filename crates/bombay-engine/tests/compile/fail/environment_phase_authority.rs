@@ -145,12 +145,19 @@ impl ActiveEnvironment<Definition> for Active {
     }
 }
 
-fn main() {
+fn receive_before_activation() {
     let mut prepared = Prepared;
     let _ = prepared.next();
+}
 
+fn activate_after_activation() {
     let mut active = Some(Active);
     let mut actions = Some(Actions::stop());
     let mut received = None;
     let _ = Environment::<Definition>::activate(&mut active, &mut actions, &mut received);
+}
+
+fn main() {
+    receive_before_activation();
+    activate_after_activation();
 }

@@ -1,0 +1,19 @@
+error: cold members or multiple birth roles require the root domain actor type
+  --> tests/compile/fail/topology_inferred_multiple_root.rs:23:9
+   |
+23 |         root { Left(RootChildrenLeft) => left; Right(RootChildrenRight) => right; }
+   |         ^^^^
+
+warning: unused import: `bombay::actors::ActorExt`
+ --> tests/compile/fail/topology_inferred_multiple_root.rs:1:5
+  |
+1 | use bombay::actors::ActorExt;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0601]: `main` function not found in crate `$CRATE`
+  --> tests/compile/fail/topology_inferred_multiple_root.rs:28:2
+   |
+28 | }
+   |  ^ consider adding a `main` function to `$DIR/tests/compile/fail/topology_inferred_multiple_root.rs`

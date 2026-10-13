@@ -236,6 +236,43 @@ ordinary Bombay spelling, or add a semantically irrelevant wrapper merely to
 exercise the extension trait. Every selected template in an executable example
 must perform its actual policy during the example or its tests.
 
+### Public examples are user applications
+
+Examples teach users to construct clean, production-quality applications through
+composition of Bombay's public API. Keep `main` and domain modules focused on
+real configuration, actor construction, capability composition, application
+execution, useful output, and ordinary typed error handling.
+
+Keep local and remote applications in separate example directories. The local
+counter stays in `examples/counter`; the remote counter belongs in
+`examples/remote-counter`, using the crate-owned `remote` feature. Do not hide
+a second application beneath the first example's `src/bin` directory.
+
+Examples are not correctness test harnesses. Keep assertion ledgers, fault
+injection, mutation campaigns, allocation profiling, subprocess verification,
+test-controlled delays, and internal mechanism probes in the owning crate's
+tests or explicitly isolated research. Do not put this machinery in example
+entrypoints or their application modules, including behind `cfg(test)`.
+Tests may execute a public example as a consumer; their assertions and control
+machinery remain in the test target. Production invariants use the appropriate
+typed validation or error contract rather than test assertions in `main`.
+
+Runtime owners handle routine resource lifetimes and retirement ordering.
+Do not make users learn sequences of explicit `drop` calls, borrow-ending
+workarounds, manual notification bookkeeping, or hidden cleanup barriers to
+start and stop an ordinary application. Prefer normal Rust scopes and explicit
+domain lifecycle operations whose completion can be awaited. An advanced
+example may demonstrate deliberate early release only when that ownership
+operation is itself the example's subject and its consequences are explained.
+
+Show the ordinary application composition first. Keep networking, verification,
+admission, replay, and cleanup mechanisms in their owning library layers.
+Provide deliberate lower-level access for power users without requiring every
+ordinary caller to assemble those mechanisms. A short example must still use
+real public capabilities and preserve their correctness contracts. Before
+claiming completion, audit examples against these rules and remove retained
+verification plumbing from user-facing application code.
+
 ## Change containment and abstraction budget
 
 Correct architecture does not justify unlimited code growth. Treat source

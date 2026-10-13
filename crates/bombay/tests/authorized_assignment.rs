@@ -1,11 +1,11 @@
 //! Finite assignment/deadline evidence; raw serial equality is not caller authentication or KERI proof.
 use bombay::behavior::{Behavior, BehaviorBase, EstablishedDelivery, MessageProtocol, User};
 use bombay::prelude::*;
-use bombay::{ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
 use std::time::{Duration, Instant};
 use tokio::{runtime::Builder, sync::oneshot};
 mod application_support;
-use application_support::{RootTerminal, assert_completed};
+use application_support::assert_completed;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Grant {
@@ -230,53 +230,51 @@ fn authorized_assignments_survive_application_replacement() {
                 .expect("first authorized assignment");
             let first_serial = first.serial();
             let received = Application::new(Counter::default().stop_on_shutdown())
-                .run_with::<RootTerminal<StopOnShutdown<Counter>>, _, _, _, _, _>(
-                    |application| async move {
-                        let mut service = application
-                            .interface(())
-                            .external::<Replies>()
-                            .expect("service");
-                        let recipient = application.root().established_recipient();
-                        let configured = ConfiguredExport::activated(
-                            first,
-                            recipient.clone(),
-                            Duration::from_secs(60),
-                        );
-                        for _ in 0..1_024 {
-                            let prefix = service.try_send(&recipient, Command::Prefix);
-                            assert!(prefix.is_ok(), "actual prefix setup");
+                .run_with(|application| async move {
+                    let mut service = application
+                        .interface(())
+                        .external::<Replies>()
+                        .expect("service");
+                    let recipient = application.root().established_recipient();
+                    let configured = ConfiguredExport::activated(
+                        first,
+                        recipient.clone(),
+                        Duration::from_secs(60),
+                    );
+                    for _ in 0..1_024 {
+                        let prefix = service.try_send(&recipient, Command::Prefix);
+                        assert!(prefix.is_ok(), "actual prefix setup");
+                    }
+                    let original = request(first_serial);
+                    let allocation = original.original.as_ptr() as usize;
+                    let full = configured.attempt(&service, original);
+                    let drained_barrier = service
+                        .send(&recipient, Command::Snapshot(service.recipient()))
+                        .await;
+                    let drained = service.receive().await;
+                    let attempted = match full {
+                        Err(Refusal::Mailbox(TrySendError::Full(Command::Protected(original)))) => {
+                            Ok(configured.attempt(&service, original))
                         }
-                        let original = request(first_serial);
-                        let allocation = original.original.as_ptr() as usize;
-                        let full = configured.attempt(&service, original);
-                        let drained_barrier = service
-                            .send(&recipient, Command::Snapshot(service.recipient()))
-                            .await;
-                        let drained = service.receive().await;
-                        let attempted = match full {
-                            Err(Refusal::Mailbox(TrySendError::Full(Command::Protected(
-                                original,
-                            )))) => Ok(configured.attempt(&service, original)),
-                            original => Err(original),
-                        };
-                        let barrier = service
-                            .send(&recipient, Command::Snapshot(service.recipient()))
-                            .await;
-                        let snapshot = service.receive().await;
-                        let shutdown = application.lifecycle().request_shutdown();
-                        (
-                            recipient,
-                            allocation,
-                            service.address(),
-                            attempted,
-                            barrier,
-                            snapshot,
-                            shutdown,
-                            drained,
-                            drained_barrier,
-                        )
-                    },
-                )
+                        original => Err(original),
+                    };
+                    let barrier = service
+                        .send(&recipient, Command::Snapshot(service.recipient()))
+                        .await;
+                    let snapshot = service.receive().await;
+                    let shutdown = application.lifecycle().request_shutdown();
+                    (
+                        recipient,
+                        allocation,
+                        service.address(),
+                        attempted,
+                        barrier,
+                        snapshot,
+                        shutdown,
+                        drained,
+                        drained_barrier,
+                    )
+                })
                 .await
                 .unwrap_or_else(|_| panic!("Application owns its execution"));
             let (
@@ -304,7 +302,11 @@ fn authorized_assignments_survive_application_replacement() {
                 drained,
                 drained_barrier,
             ) = observed;
-            let ActorRetirement::Completed { behavior, .. } = &terminal else {
+            let ActorRetirement::Completed {
+                custody: ActorCustody { behavior, .. },
+                ..
+            } = &terminal
+            else {
                 panic!("first native state");
             };
             assert_counter(behavior.base(), &[(sender, allocation, first_serial)]);
@@ -318,7 +320,7 @@ fn authorized_assignments_survive_application_replacement() {
             assert_eq!(behavior.base().prefix, 1_024);
             assert_snapshot(snapshot, origin.address(), 1_024, 1);
             assert_eq!(shutdown, Ok(()));
-            assert_completed(RootTerminal::Root { origin, terminal }, None);
+            assert_completed((origin, terminal), None);
 
             // This same trusted issuer survives; all old native ownership retired before replacement.
             let next = authority
@@ -326,46 +328,44 @@ fn authorized_assignments_survive_application_replacement() {
                 .expect("replacement authorized assignment");
             let next_serial = next.serial();
             let received = Application::new(Counter::default().stop_on_shutdown())
-                .run_with::<RootTerminal<StopOnShutdown<Counter>>, _, _, _, _, _>(
-                    |application| async move {
-                        let mut service = application
-                            .interface(())
-                            .external::<Replies>()
-                            .expect("service");
-                        let recipient = application.root().established_recipient();
-                        let configured = ConfiguredExport::activated(
-                            next,
-                            recipient.clone(),
-                            Duration::from_secs(60),
-                        );
-                        let stale = request(first_serial);
-                        let stale_allocation = stale.original.as_ptr() as usize;
-                        let refused = configured.attempt(&service, stale);
-                        let fresh = request(next_serial);
-                        let fresh_allocation = fresh.original.as_ptr() as usize;
-                        let accepted = configured.attempt(&service, fresh);
-                        let old_request = request(first_serial);
-                        let old_allocation = old_request.original.as_ptr() as usize;
-                        let old_attempt = service.try_send(&old, Command::Protected(old_request));
-                        let barrier = service
-                            .send(&recipient, Command::Snapshot(service.recipient()))
-                            .await;
-                        let snapshot = service.receive().await;
-                        let shutdown = application.lifecycle().request_shutdown();
-                        (
-                            stale_allocation,
-                            fresh_allocation,
-                            old_allocation,
-                            service.address(),
-                            refused,
-                            accepted,
-                            old_attempt,
-                            barrier,
-                            snapshot,
-                            shutdown,
-                        )
-                    },
-                )
+                .run_with(|application| async move {
+                    let mut service = application
+                        .interface(())
+                        .external::<Replies>()
+                        .expect("service");
+                    let recipient = application.root().established_recipient();
+                    let configured = ConfiguredExport::activated(
+                        next,
+                        recipient.clone(),
+                        Duration::from_secs(60),
+                    );
+                    let stale = request(first_serial);
+                    let stale_allocation = stale.original.as_ptr() as usize;
+                    let refused = configured.attempt(&service, stale);
+                    let fresh = request(next_serial);
+                    let fresh_allocation = fresh.original.as_ptr() as usize;
+                    let accepted = configured.attempt(&service, fresh);
+                    let old_request = request(first_serial);
+                    let old_allocation = old_request.original.as_ptr() as usize;
+                    let old_attempt = service.try_send(&old, Command::Protected(old_request));
+                    let barrier = service
+                        .send(&recipient, Command::Snapshot(service.recipient()))
+                        .await;
+                    let snapshot = service.receive().await;
+                    let shutdown = application.lifecycle().request_shutdown();
+                    (
+                        stale_allocation,
+                        fresh_allocation,
+                        old_allocation,
+                        service.address(),
+                        refused,
+                        accepted,
+                        old_attempt,
+                        barrier,
+                        snapshot,
+                        shutdown,
+                    )
+                })
                 .await
                 .unwrap_or_else(|_| panic!("Application owns its replacement"));
             let (
@@ -394,7 +394,11 @@ fn authorized_assignments_survive_application_replacement() {
                 snapshot,
                 shutdown,
             ) = observed;
-            let ActorRetirement::Completed { behavior, .. } = &terminal else {
+            let ActorRetirement::Completed {
+                custody: ActorCustody { behavior, .. },
+                ..
+            } = &terminal
+            else {
                 panic!("replacement native state");
             };
             assert_counter(behavior.base(), &[(sender, fresh_allocation, next_serial)]);
@@ -411,7 +415,7 @@ fn authorized_assignments_survive_application_replacement() {
             assert!(barrier.is_ok());
             assert_snapshot(snapshot, origin.address(), 0, 1);
             assert_eq!(shutdown, Ok(()));
-            assert_completed(RootTerminal::Root { origin, terminal }, None);
+            assert_completed((origin, terminal), None);
         }
         let cold = assignment_authority::select(Deployment::ExplicitTest, None).and_then(
             |mut authority| {
@@ -437,9 +441,7 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
         .expect("configured host");
     let received = host
         .block_on(
-            Application::new(Counter::default().stop_on_shutdown()).run_with::<RootTerminal<
-                StopOnShutdown<Counter>,
-            >, _, _, _, _, _>(
+            Application::new(Counter::default().stop_on_shutdown()).run_with(
                 |application| async move {
                     let mut authority = Authority::configured(19);
                     let mut service = application
@@ -531,7 +533,11 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
         snapshot,
         shutdown,
     ) = observed;
-    let ActorRetirement::Completed { behavior, .. } = &terminal else {
+    let ActorRetirement::Completed {
+        custody: ActorCustody { behavior, .. },
+        ..
+    } = &terminal
+    else {
         panic!("expiry native state");
     };
     assert_eq!(
@@ -558,7 +564,7 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
     assert_snapshot(drained, origin.address(), 1_024, 0);
     assert_snapshot(snapshot, origin.address(), 1_024, 0);
     assert_eq!(shutdown, Ok(()));
-    assert_completed(RootTerminal::Root { origin, terminal }, None);
+    assert_completed((origin, terminal), None);
 }
 
 async fn export_assignment(
@@ -566,40 +572,38 @@ async fn export_assignment(
 ) -> Result<u64, StartupRefusal> {
     let assignment = selected?;
     let received = Application::new(Counter::default().stop_on_shutdown())
-        .run_with::<RootTerminal<StopOnShutdown<Counter>>, _, _, _, _, _>(
-            |application| async move {
-                let mut service = application
-                    .interface(())
-                    .external::<Replies>()
-                    .expect("service");
-                let configured = ConfiguredExport::activated(
-                    assignment,
-                    application.root().established_recipient(),
-                    Duration::from_secs(60),
-                );
-                let serial = configured.assignment.serial();
-                let original = request(serial);
-                let allocation = original.original.as_ptr() as usize;
-                let admitted = configured.attempt(&service, original);
-                let barrier = service
-                    .send(
-                        &configured.recipient,
-                        Command::Snapshot(service.recipient()),
-                    )
-                    .await;
-                let snapshot = service.receive().await;
-                let shutdown = application.lifecycle().request_shutdown();
-                (
-                    serial,
-                    allocation,
-                    service.address(),
-                    admitted,
-                    barrier,
-                    snapshot,
-                    shutdown,
+        .run_with(|application| async move {
+            let mut service = application
+                .interface(())
+                .external::<Replies>()
+                .expect("service");
+            let configured = ConfiguredExport::activated(
+                assignment,
+                application.root().established_recipient(),
+                Duration::from_secs(60),
+            );
+            let serial = configured.assignment.serial();
+            let original = request(serial);
+            let allocation = original.original.as_ptr() as usize;
+            let admitted = configured.attempt(&service, original);
+            let barrier = service
+                .send(
+                    &configured.recipient,
+                    Command::Snapshot(service.recipient()),
                 )
-            },
-        )
+                .await;
+            let snapshot = service.receive().await;
+            let shutdown = application.lifecycle().request_shutdown();
+            (
+                serial,
+                allocation,
+                service.address(),
+                admitted,
+                barrier,
+                snapshot,
+                shutdown,
+            )
+        })
         .await
         .unwrap_or_else(|_| panic!("every actual export still cleaned up"));
     let (
@@ -617,7 +621,11 @@ async fn export_assignment(
         panic!("complete startup export native and both notifications");
     };
     let (serial, allocation, sender, admitted, barrier, snapshot, shutdown) = observed;
-    let ActorRetirement::Completed { behavior, .. } = &terminal else {
+    let ActorRetirement::Completed {
+        custody: ActorCustody { behavior, .. },
+        ..
+    } = &terminal
+    else {
         panic!("native authorized export");
     };
     assert_counter(behavior.base(), &[(sender, allocation, serial)]);
@@ -625,7 +633,7 @@ async fn export_assignment(
     assert!(barrier.is_ok());
     assert_snapshot(snapshot, origin.address(), 0, 1);
     assert_eq!(shutdown, Ok(()));
-    assert_completed(RootTerminal::Root { origin, terminal }, None);
+    assert_completed((origin, terminal), None);
     Ok(serial)
 }
 

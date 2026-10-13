@@ -1,0 +1,5 @@
+error: nominal role parent requires a named child role
+  --> tests/compile/fail/topology_inferred_unused_role_parent.rs:11:20
+   |
+11 |         worker for Root {}
+   |                    ^^^^

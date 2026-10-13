@@ -1,0 +1,22 @@
+error[E0277]: the trait bound `Profiles: EntityDefinition` is not satisfied
+  --> tests/compile/fail/topology_family_wrong_definition.rs:23:9
+   |
+21 |     .entity_family(
+   |      ------------- required by a bound introduced by this call
+22 |         ProfilesRole,
+23 |         Profiles,
+   |         ^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `EntityDefinition` is not implemented for `Profiles`
+  --> tests/compile/fail/topology_family_wrong_definition.rs:5:1
+   |
+ 5 | struct Profiles;
+   | ^^^^^^^^^^^^^^^
+note: required by a bound in `Application::<Root, Spaces, Members, Families>::entity_family`
+  --> src/application/mod.rs
+   |
+   |     pub fn entity_family<Role, D>(
+   |            ------------- required by a bound in this associated function
+...
+   |         D: EntityDefinition<Hosts = Spaces>,
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Application::<Root, Spaces, Members, Families>::entity_family`

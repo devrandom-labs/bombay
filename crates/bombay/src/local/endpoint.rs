@@ -127,6 +127,33 @@ impl<P: Protocol> Clone for ActorRef<P> {
     }
 }
 
+impl<P: Protocol> PartialEq for ActorRef<P> {
+    fn eq(&self, other: &Self) -> bool {
+        match (&self.endpoint, &other.endpoint) {
+            (
+                EndpointMailbox::Standard {
+                    admission: left, ..
+                },
+                EndpointMailbox::Standard {
+                    admission: right, ..
+                },
+            ) => Weak::ptr_eq(left, right),
+            (
+                EndpointMailbox::Entity {
+                    admission: left, ..
+                },
+                EndpointMailbox::Entity {
+                    admission: right, ..
+                },
+            ) => Weak::ptr_eq(left, right),
+            (EndpointMailbox::Standard { .. }, EndpointMailbox::Entity { .. })
+            | (EndpointMailbox::Entity { .. }, EndpointMailbox::Standard { .. }) => false,
+        }
+    }
+}
+
+impl<P: Protocol> Eq for ActorRef<P> {}
+
 impl<P: Protocol> ActorRef<P> {
     pub(in crate::local) fn new(
         address: P::Addr,
@@ -309,6 +336,9 @@ where
 /// The Communication anchor cannot keep or resurrect an actor. Indexing by
 /// `P` preserves destination protocol identity independently of the concrete
 /// behavior or transparent wrappers currently implementing it.
+/// Equality identifies the exact endpoint, including after closure. Clones
+/// compare equal; equal logical addresses in different application namespaces
+/// or fresh incarnations do not. Comparison does not keep the actor alive.
 pub struct ActorRef<P: Protocol> {
     address: P::Addr,
     endpoint: EndpointMailbox<P::Addr, P::Msg>,

@@ -1,0 +1,5 @@
+error[E0599]: no method named `clone` found for struct `ApplicationScope` in the current scope
+ --> tests/compile/fail/application_scope_cannot_clone.rs:3:28
+  |
+3 |     let _duplicate = scope.clone();
+  |                            ^^^^^ method not found in `ApplicationScope`

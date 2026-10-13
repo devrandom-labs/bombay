@@ -6,7 +6,6 @@ use behavior_actors::{
     Activate, Machine, Move, Stash, StashRoute, StopOnShutdown, TimerElapsed, TimerGeneration,
     TimerId,
 };
-use bombay::ProjectTerminal;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Become, Behavior, BehaviorActed, BehaviorBase, Never, NoBirths, Protocol,
@@ -70,10 +69,6 @@ fn stop_at_deadline(_: &mut TimerRoot) -> Become {
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn one_shot_template_runs_as_an_ordinary_application_root() {
     let root = OneShot::new(
         TimerRoot,
@@ -83,7 +78,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
     );
 
     let application_outcome = Application::new(root.stop_on_shutdown())
-        .run::<_, _, RootTerminal<_>, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -119,15 +114,11 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
     let root = ReceiveTimeout::new(
         TimerRoot,
@@ -137,7 +128,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
     );
 
     let application_outcome = Application::new(root.stop_on_shutdown())
-        .run::<_, _, RootTerminal<_>, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -173,15 +164,11 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn periodic_template_runs_as_an_ordinary_application_root() {
     let root = Periodic::new(
         TimerRoot,
@@ -191,7 +178,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
     );
 
     let application_outcome = Application::new(root.stop_on_shutdown())
-        .run::<_, _, RootTerminal<_>, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -227,15 +214,11 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }
 
 #[tokio::test(flavor = "current_thread")]
-#[expect(
-    clippy::drop_non_drop,
-    reason = "explicitly release the recovered concrete input at this ownership boundary, before the following retry or failure"
-)]
 async fn deadline_template_runs_as_an_ordinary_application_root() {
     let root = Deadline::new(
         TimerRoot,
@@ -245,7 +228,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
     );
 
     let application_outcome = Application::new(root.stop_on_shutdown())
-        .run::<_, _, RootTerminal<_>, _>()
+        .run()
         .await
         .unwrap_or_else(|(application, error)| {
             drop(application);
@@ -281,7 +264,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }
 
@@ -358,7 +341,7 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -463,13 +446,14 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         .with_stash(deliver_never)
         .with_receive_timeout(TimerId(5), delay, stop_wrapped::<Stash<TimerRoot>>)
         .stop_on_shutdown();
-    let application_outcome = Application::new(runtime)
-        .run::<_, _, RootTerminal<_>, _>()
-        .await
-        .unwrap_or_else(|(application, error)| {
-            drop(application);
-            panic!("the caller owns the application's live entered host: {error}");
-        });
+    let application_outcome =
+        Application::new(runtime)
+            .run()
+            .await
+            .unwrap_or_else(|(application, error)| {
+                drop(application);
+                panic!("the caller owns the application's live entered host: {error}");
+            });
     if let (
         ApplicationOutcome::Completed {
             output: _,
@@ -500,6 +484,6 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(origin, retirement);
+    let terminal: RootTerminal<_> = (origin, retirement);
     assert_completed(terminal, None);
 }

@@ -4,7 +4,6 @@ use behavior_actors::{
 };
 use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
-use bombay::ProjectTerminal;
 use bombay::behavior::MessageProtocol;
 use bombay::prelude::*;
 use tokio::runtime::Builder;
@@ -26,10 +25,7 @@ fn cache_preserves_an_exact_external_customer() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(cache.stop_on_shutdown()).run_with::<RootTerminal<
-                StopOnShutdown<Cache<MailAddr, u8, u16, EstablishedRecipient<CacheReplies>>>,
-            >, _, _, _, _, _>(
-                |application| async move {
+            Application::new(cache.stop_on_shutdown()).run_with(|application| async move {
                 let interface = application.interface(application.root().established_recipient());
                 let lifecycle = application.lifecycle();
                 let mut caller = interface
@@ -73,8 +69,7 @@ fn cache_preserves_an_exact_external_customer() {
                 assert_eq!(shutdown, Ok(()));
                 let repeated = lifecycle.request_shutdown();
                 assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
-            }
-            ),
+            }),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -95,7 +90,7 @@ fn cache_preserves_an_exact_external_customer() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -121,63 +116,58 @@ fn barrier_releases_two_exact_external_participants() {
         .expect("the synchronous caller owns its explicit current-thread host");
     let application_outcome = application_host
         .block_on(
-            Application::new(barrier.stop_on_shutdown()).run_with::<RootTerminal<
-                StopOnShutdown<Barrier<MailAddr, u8, EstablishedRecipient<BarrierReplies>>>,
-            >, _, _, _, _, _>(
-                |application| async move {
-                    let interface =
-                        application.interface(application.root().established_recipient());
-                    let lifecycle = application.lifecycle();
-                    let mut first = interface
-                        .external::<BarrierReplies>()
-                        .expect("the first barrier participant is established");
-                    let mut second = interface
-                        .external::<BarrierReplies>()
-                        .expect("the second barrier participant is established");
+            Application::new(barrier.stop_on_shutdown()).run_with(|application| async move {
+                let interface = application.interface(application.root().established_recipient());
+                let lifecycle = application.lifecycle();
+                let mut first = interface
+                    .external::<BarrierReplies>()
+                    .expect("the first barrier participant is established");
+                let mut second = interface
+                    .external::<BarrierReplies>()
+                    .expect("the second barrier participant is established");
 
-                    first
-                        .send(
-                            interface.api(),
-                            BarrierMessage {
-                                generation: BarrierGeneration(0),
-                                participant: 1,
-                                reply_to: first.recipient(),
-                            },
-                        )
-                        .await
-                        .expect("the barrier admits the first arrival");
-                    second
-                        .send(
-                            interface.api(),
-                            BarrierMessage {
-                                generation: BarrierGeneration(0),
-                                participant: 2,
-                                reply_to: second.recipient(),
-                            },
-                        )
-                        .await
-                        .expect("the barrier admits the second arrival");
+                first
+                    .send(
+                        interface.api(),
+                        BarrierMessage {
+                            generation: BarrierGeneration(0),
+                            participant: 1,
+                            reply_to: first.recipient(),
+                        },
+                    )
+                    .await
+                    .expect("the barrier admits the first arrival");
+                second
+                    .send(
+                        interface.api(),
+                        BarrierMessage {
+                            generation: BarrierGeneration(0),
+                            participant: 2,
+                            reply_to: second.recipient(),
+                        },
+                    )
+                    .await
+                    .expect("the barrier admits the second arrival");
 
-                    let first_release = first.receive().await.map(|reply| reply.message);
-                    assert_eq!(
-                        first_release,
-                        Some(BarrierReleased {
-                            generation: BarrierGeneration(0),
-                        })
-                    );
-                    let second_release = second.receive().await.map(|reply| reply.message);
-                    assert_eq!(
-                        second_release,
-                        Some(BarrierReleased {
-                            generation: BarrierGeneration(0),
-                        })
-                    );
-                    let shutdown = lifecycle.request_shutdown();
-                    assert_eq!(shutdown, Ok(()));
-                    let repeated = lifecycle.request_shutdown();
-                    assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
-                },
-            ),
+                let first_release = first.receive().await.map(|reply| reply.message);
+                assert_eq!(
+                    first_release,
+                    Some(BarrierReleased {
+                        generation: BarrierGeneration(0),
+                    })
+                );
+                let second_release = second.receive().await.map(|reply| reply.message);
+                assert_eq!(
+                    second_release,
+                    Some(BarrierReleased {
+                        generation: BarrierGeneration(0),
+                    })
+                );
+                let shutdown = lifecycle.request_shutdown();
+                assert_eq!(shutdown, Ok(()));
+                let repeated = lifecycle.request_shutdown();
+                assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+            }),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -198,7 +188,7 @@ fn barrier_releases_two_exact_external_participants() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {
@@ -223,9 +213,7 @@ fn latch_releases_exact_external_participants() {
             Application::new(
                 Latch::<MailAddr, EstablishedRecipient<LatchReplies>>::new(2).stop_on_shutdown(),
             )
-            .run_with::<RootTerminal<
-                StopOnShutdown<Latch<MailAddr, EstablishedRecipient<LatchReplies>>>,
-            >, _, _, _, _, _>(|application| async move {
+            .run_with(|application| async move {
                 let interface = application.interface(application.root().established_recipient());
                 let lifecycle = application.lifecycle();
                 let mut first = interface
@@ -273,7 +261,7 @@ fn latch_releases_exact_external_participants() {
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
-    let terminal: RootTerminal<_> = ProjectTerminal::project(
+    let terminal: RootTerminal<_> = (
         root_origin,
         match joined_actor {
             ActorRetirement::ActorTaskFailed(failure) => {

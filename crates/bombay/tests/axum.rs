@@ -1,13 +1,13 @@
 #![cfg(feature = "axum")]
+
 use axum::routing::get;
 use behavior_actors::ShutdownRequested;
-use bombay::ActorNotificationReceipts;
-use bombay::ProjectTerminal;
 use bombay::behavior::{
-    ActionSettlement, Behavior, BehaviorBase, ChildChoice, ChildCons, ChildCreationOutcome,
-    CreationKind, CreationSettlement, Creations, EventLayer, ItemSettlement, NoChildren, NoSends,
-    SendLayer, SettledItem, Step, Stopped, User,
+    ActionSettlement, Behavior, BehaviorBase, ChildChoice, ChildCreationOutcome, CreationKind,
+    CreationSettlement, Creations, EventLayer, ItemSettlement, MessageProtocol, NoSends, SendLayer,
+    SettledItem, Step, Stopped, User,
 };
+use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::pin::pin;
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -27,7 +27,7 @@ use std::sync::{
 use axum::Router;
 use bombay::prelude::*;
 
-use bombay::ApplicationOutcome;
+use bombay::{ApplicationOutcome, ApplicationScope};
 
 struct Root;
 
@@ -61,20 +61,18 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
         .build()
         .expect("the caller owns its explicit HTTP host");
     let returned = caller
-        .block_on(
-            Application::new(Root.stop_on_shutdown()).run_axum::<Never, _, _, (), _>(
-                "127.0.0.1:0".parse().expect("socket address parses"),
-                move |application| {
-                    assert_eq!(application.root().address(), MailAddr(0));
-                    observed.fetch_add(1, Ordering::SeqCst);
-                    let shutdown = application.lifecycle().request_shutdown();
-                    assert_eq!(shutdown, Ok(()));
-                    let repeated = application.lifecycle().request_shutdown();
-                    assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
-                    Router::new()
-                },
-            ),
-        )
+        .block_on(Application::new(Root.stop_on_shutdown()).run_axum(
+            "127.0.0.1:0".parse().expect("socket address parses"),
+            move |application| {
+                assert_eq!(application.root().address(), MailAddr(0));
+                observed.fetch_add(1, Ordering::SeqCst);
+                let shutdown = application.request_shutdown();
+                assert_eq!(shutdown, Ok(()));
+                let repeated = application.request_shutdown();
+                assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+                Router::new()
+            },
+        ))
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the actual caller HTTP host is entered");
@@ -98,19 +96,24 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
 
     assert_eq!(calls.load(Ordering::SeqCst), 1);
     let ActorRetirement::Completed {
-        child_failures: (),
-        capability_failures,
-        unread_owner_cancellation,
+        custody:
+            ActorCustody {
+                child_failures,
+                capability_failures,
+                unread_owner_cancellation,
+                control,
+                user,
+                descendants,
+                ..
+            },
         settlements,
-        control,
-        user,
-        descendants,
         completion,
         ..
     } = retirement
     else {
         panic!("the shutdown request must complete the published root")
     };
+    assert_eq!(child_failures, []);
     assert!(capability_failures.is_empty());
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
@@ -134,13 +137,10 @@ fn bind_failure_does_not_activate_or_build_the_router() {
         .expect("the caller owns its explicit HTTP host");
     let refused = caller
         .block_on(
-            Application::new(Root.stop_on_shutdown()).run_axum::<Never, _, _, (), _>(
-                address,
-                move |_| {
-                    observed.fetch_add(1, Ordering::SeqCst);
-                    Router::new()
-                },
-            ),
+            Application::new(Root.stop_on_shutdown()).run_axum(address, move |_| {
+                observed.fetch_add(1, Ordering::SeqCst);
+                Router::new()
+            }),
         )
         .unwrap_or_else(|failed| {
             drop(failed);
@@ -169,7 +169,19 @@ fn axum_protocol_inversion_is_compile_checked() {
     cases.compile_fail("tests/compile/fail/axum_wrong_root_protocol.rs");
 }
 
-struct HttpWorkerRole;
+enum HttpWorkerRole {
+    Declared,
+    DisposalRefused,
+}
+
+impl Drop for HttpWorkerRole {
+    fn drop(&mut self) {
+        match self {
+            Self::Declared => {}
+            Self::DisposalRefused => panic!("original HTTP child role disposal failure"),
+        }
+    }
+}
 
 struct HttpWorker {
     entries: Vec<u64>,
@@ -178,36 +190,12 @@ struct HttpWorker {
 #[bombay::actor(message = Never)]
 impl HttpWorker {}
 
-#[expect(
-    clippy::type_complexity,
-    reason = "the concrete declared actor retirement preserves its original composition and failures"
-)]
-#[derive(TerminalProjection)]
-enum HttpTerminal {
-    Root {
-        origin: RootOrigin<StopOnShutdown<Root>>,
-        terminal: ActorRetirement<
-            ApplicationBehavior<
-                StopOnShutdown<Root>,
-                ChildCons<MailAddr, StopOnShutdown<HttpWorker>, NoChildren>,
-            >,
-            Self,
-            (
-                Vec<
-                    ChildFailure<
-                        ChildOrigin<StopOnShutdown<Root>, HttpWorkerRole>,
-                        StopOnShutdown<HttpWorker>,
-                    >,
-                >,
-                (),
-            ),
-        >,
-    },
-    #[application_actor]
-    HttpWorker {
-        origin: ChildOrigin<StopOnShutdown<Root>, HttpWorkerRole>,
-        terminal: ActorRetirement<StopOnShutdown<HttpWorker>, Self, ()>,
-    },
+bombay::topology! {
+    http_application {
+        root: Root {}
+        members { Worker(HttpWorkerRole) => worker; }
+        worker {}
+    }
 }
 
 #[test]
@@ -228,13 +216,21 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     let router_entries = vec![277_u64, 281, 283];
     let router_allocation = router_entries.as_ptr();
     let (router_started, router_output) = oneshot::channel();
-    let application = Application::new(Root.stop_on_shutdown()).child(
-        HttpWorkerRole,
-        HttpWorker {
-            entries: child_entries,
-        }
-        .stop_on_shutdown(),
-    );
+    let scope = ApplicationScope::new();
+    let mut early = scope
+        .external::<MessageProtocol<MailAddr, u64>>()
+        .expect("early HTTP receipt endpoint");
+    let early_address = early.address();
+    let early_recipient = early.recipient();
+    let application = scope
+        .with_topology(Root.stop_on_shutdown(), http_application::Topology::new())
+        .child(
+            HttpWorkerRole::Declared,
+            HttpWorker {
+                entries: child_entries,
+            }
+            .stop_on_shutdown(),
+        );
     let router = move |application: ApplicationHandle<
         <StopOnShutdown<Root> as Behavior>::Protocol,
         <StopOnShutdown<Root> as Behavior>::Event,
@@ -250,7 +246,18 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             "/shutdown",
             get(move || {
                 let lifecycle = lifecycle.clone();
+                let application = application.clone();
+                let recipient = early_recipient.clone();
                 async move {
+                    let sender = application.sender_to(recipient).unwrap_or_else(|original| {
+                        drop(original);
+                        panic!("HTTP caller established in the retained namespace");
+                    });
+                    assert_ne!(sender.address(), early_address);
+                    sender
+                        .send(283)
+                        .await
+                        .expect("early receipt remains live after bind retry");
                     let requested = lifecycle.request_shutdown();
                     assert_eq!(requested, Ok(()));
                     "stopped"
@@ -265,7 +272,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     let journey = runtime.block_on(async move {
         tokio::time::timeout(Duration::from_secs(15), async move {
             let (execution, receiving) = application
-                .execute_axum::<HttpTerminal, _, _, _, _>(address, router)
+                .execute_axum(address, router)
                 .unwrap_or_else(|_| panic!("the actual caller host is entered"));
             drop(execution);
             let (ApplicationOutcome::Unstarted {
@@ -278,7 +285,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             let cold_calls = calls.load(Ordering::SeqCst);
             assert_eq!(returned_address, address);
             let refused = application
-                .run_axum::<HttpTerminal, _, _, _, _>(returned_address, router)
+                .run_axum(returned_address, router)
                 .await
                 .unwrap_or_else(|_| panic!("binding still uses the actual entered host"));
             let (ApplicationOutcome::StagingRejected {
@@ -297,7 +304,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             let mut router_output = router_output;
             let (outcome, router_entries, response) = loop {
                 let (execution, receiving) = application
-                    .execute_axum::<HttpTerminal, _, _, _, _>(returned_address, router)
+                    .execute_axum(returned_address, router)
                     .unwrap_or_else(|_| panic!("the exact originals retry on the entered caller host"));
                 let mut completion = pin!(async move {
                     execution.await;
@@ -354,6 +361,9 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                             response
                         };
                         let (outcome, response) = tokio::join!(completion, client);
+                        let receipt = early.receive().await.expect("original pre-root endpoint receives HTTP receipt");
+                        assert_eq!(receipt.message, 283);
+                        assert_ne!(receipt.from, early_address);
                         break (outcome, router_entries, response);
                     }
                 }
@@ -410,33 +420,27 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     else {
         panic!("actual graceful serving and all native cleanup facts must coexist");
     };
-    let HttpTerminal::Root {
-        origin,
-        terminal: retirement,
-    } = HttpTerminal::project(origin, retirement)
-    else {
-        panic!(
-            "the genuine root projection preserves the original Root owner and composed Actor retirement"
-        );
-    };
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+                mut descendants,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        mut descendants,
-        child_failures: (child_failures, ()),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
         completion,
     } = retirement
     else {
@@ -500,33 +504,33 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     let descendant = descendants
         .pop()
         .expect("the actual single child was joined");
-    let HttpTerminal::HttpWorker {
+    let http_application::RootRetirements {
         origin: child_origin,
-        terminal,
-    } = descendant
-    else {
-        panic!("the declared role preserves its genuine child origin and retirement");
-    };
+        retirement: terminal,
+    } = descendant;
     assert_ne!(child_origin.address(), origin.address());
     let ActorRetirement::OwnerCancelled {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
-    } = terminal
+    } = *terminal
     else {
         panic!("the live declared child retains its actual parent-owned cancellation");
     };
@@ -544,7 +548,8 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
         [] as [EventLayer<ShutdownRequested, User<MailAddr, Never>>; 0]
     );
     assert_eq!(user, [] as [User<MailAddr, Never>; 0]);
-    assert!(descendants.is_empty());
+    assert_eq!(descendants, [] as [Never; 0]);
+    assert_eq!(child_failures, []);
     assert!(capability_failures.is_empty());
     assert!(additional_failures.is_empty());
     assert!(received_interpretation.is_none());
@@ -563,6 +568,135 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
 // The native task below is a supplied Work-owned retirement input. It is not
 // the application root task. Likewise Err(source) is a supplied completed
 // serving result from a real bind refusal, not a native Axum serving error.
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one HTTP staging rejection, owned listener and original-value retry proves complete custody"
+)]
+fn http_staging_rejection_retains_bound_listener_and_namespace() {
+    let scope = ApplicationScope::new();
+    let mut early = scope
+        .external::<MessageProtocol<MailAddr, u64>>()
+        .expect("pre-root receipt endpoint");
+    let early_address = early.address();
+    let recipient = early.recipient();
+    let entries = vec![307, 311];
+    let entries_pointer = entries.as_ptr();
+    let router_entries = vec![313, 317];
+    let router_pointer = router_entries.as_ptr();
+    let (published, received) = oneshot::channel();
+    let application = scope
+        .with_topology(Root.stop_on_shutdown(), http_application::Topology::new())
+        .child(
+            HttpWorkerRole::DisposalRefused,
+            HttpWorker { entries }.stop_on_shutdown(),
+        );
+    let host = TokioBuilder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("caller host");
+    host.block_on(async move {
+        let rejected = application
+            .run_axum("127.0.0.1:0".parse().expect("socket"), move |application| {
+                let sender = application.sender_to(recipient).unwrap_or_else(|original| {
+                    drop(original);
+                    panic!("sender shares the original scope");
+                });
+                let published = published.send((router_entries, sender));
+                assert!(published.is_ok());
+                let shutdown = application.request_shutdown();
+                assert_eq!(shutdown, Ok(()));
+                Router::new()
+            })
+            .await
+            .unwrap_or_else(|original| {
+                drop(original);
+                panic!("the host is entered");
+            });
+        let (
+            ApplicationOutcome::StagingRejected {
+                inputs: Err((root, spaces, router, failure, listener, scope)),
+            },
+            native,
+            notifications,
+        ) = rejected
+        else {
+            panic!("successful binding retains all inputs when child staging rejects");
+        };
+        assert!(native.is_err());
+        assert!(notifications.is_err());
+        let bound_address = listener.local_addr().expect("original bound listener");
+        let blocked = TokioTcpListener::bind(bound_address).await;
+        let blocked = blocked.expect_err("the returned listener still owns its socket");
+        assert_eq!(blocked.kind(), io::ErrorKind::AddrInUse);
+        let bombay::ApplicationStagingError::RoleDisposalPanicked {
+            id,
+            actor,
+            children,
+            cause,
+        } = failure
+        else {
+            panic!("the original child and exact role failure return together");
+        };
+        assert_eq!(actor.base().entries.as_ptr(), entries_pointer);
+        assert_eq!(actor.base().entries, [307, 311]);
+        drop((listener, blocked, id, children, cause));
+        let (outcome, native, notifications) = scope
+            .with_topology(root, spaces)
+            .child(HttpWorkerRole::Declared, actor)
+            .run_axum(bound_address, router)
+            .await
+            .unwrap_or_else(|original| {
+                drop(original);
+                panic!("retry uses the original router and actor");
+            });
+        let (serving, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+            drop(original);
+            panic!("HTTP work and original cleanup return together");
+        });
+        serving.expect("real HTTP serving ends after root shutdown");
+        let (origin, retirement) = native.expect("retry preserves its original root");
+        assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+        let notifications = notifications.expect("retry preserves both notifications");
+        assert!(notifications.termination.is_ok());
+        assert!(notifications.retirement.is_ok());
+        let (router_entries, sender) = received.await.expect("original router invoked on retry");
+        assert_eq!(router_entries.as_ptr(), router_pointer);
+        assert_eq!(router_entries, [313, 317]);
+        assert_ne!(sender.address(), early_address);
+        sender
+            .send(331)
+            .await
+            .expect("independently owned early endpoint remains live");
+        let receipt = early
+            .receive()
+            .await
+            .expect("actual original endpoint receives");
+        assert_eq!(receipt.message, 331);
+        assert_eq!(receipt.from, sender.address());
+        cleanup.expect("the original cleanup task completed");
+        assert_eq!(retirement.completion(), Some(&Completion::Stopped));
+        let custody = retirement.custody().expect("complete root custody");
+        assert_eq!(custody.child_failures.len(), 0);
+        assert_eq!(custody.capability_failures.len(), 0);
+        assert_eq!(custody.additional_failures.len(), 0);
+        assert_eq!(custody.descendants.len(), 1);
+        let child = &custody.descendants[0];
+        assert_ne!(child.origin.address(), early_address);
+        assert_ne!(child.origin.address(), sender.address());
+        let child_custody = child.retirement.custody().expect("whole original child");
+        assert_eq!(
+            child_custody.behavior.base().entries.as_ptr(),
+            entries_pointer
+        );
+        assert_eq!(child_custody.behavior.base().entries, [307, 311]);
+        assert_eq!(child_custody.descendants.len(), 0);
+        assert_eq!(child_custody.child_failures.len(), 0);
+        assert_eq!(child_custody.capability_failures.len(), 0);
+        assert_eq!(child_custody.additional_failures.len(), 0);
+    });
+}
+
 #[test]
 fn failed_work_owned_retirement_preserves_completed_serving_result() {
     let caller = TokioBuilder::new_current_thread()
@@ -593,9 +727,9 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
             let task: JoinHandle<()> = spawn(async move { resume_unwind(payload) });
             let original_task_id = task.id();
             let (execution, receiving) = Application::new(Root.stop_on_shutdown())
-                .execute_with::<_, _, Never, (), _, _>(move |application| async move {
+                .execute_with(move |application| async move {
                     let supplied_retirement = task.await;
-                    let requested = application.lifecycle().request_shutdown();
+                    let requested = application.request_shutdown();
                     match requested {
                         Ok(())
                         | Err(
@@ -678,9 +812,9 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
     let outcome = caller.block_on(async {
         let task = spawn(async move { values });
         let (execution, receiving) = Application::new(Root.stop_on_shutdown())
-            .execute_with::<_, _, Never, (), _, _>(move |application| async move {
+            .execute_with(move |application| async move {
                 let supplied_retirement = task.await;
-                let requested = application.lifecycle().request_shutdown();
+                let requested = application.request_shutdown();
                 match requested {
                     Ok(())
                     | Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped) =>
@@ -729,26 +863,29 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
 )]
 fn assert_joined_http_root(
     origin: RootOrigin<StopOnShutdown<Root>>,
-    root_retirement: ActorRetirement<StopOnShutdown<Root>, Never, ()>,
+    root_retirement: ActorRetirement<StopOnShutdown<Root>, Never, Vec<Never>>,
 ) {
     let ActorRetirement::Completed {
-        behavior,
+        custody:
+            ActorCustody {
+                behavior,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
         interpretation,
         source,
         settlements,
-        control,
-        user,
-        descendants,
-        child_failures: (),
-        capability_failures,
-        additional_failures,
-        received_interpretation,
-        received_source,
-        source_index,
-        acquired_ingress,
-        retirement_failures,
-        terminal_report,
-        unread_owner_cancellation,
         completion,
     } = root_retirement
     else {
@@ -765,6 +902,7 @@ fn assert_joined_http_root(
     );
     assert_eq!(user, [] as [User<MailAddr, Never>; 0]);
     assert_eq!(descendants, [] as [Never; 0]);
+    assert_eq!(child_failures, []);
     assert!(capability_failures.is_empty());
     assert!(additional_failures.is_empty());
     assert!(received_interpretation.is_none());

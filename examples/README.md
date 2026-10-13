@@ -2,9 +2,9 @@
 
 Every example is a downstream Cargo package that depends on the public
 `bombay-rs` façade. There is one examples tree and each folder is named for the
-API concept it demonstrates. Most use the ordinary `Application` boundary;
-the Entity example deliberately uses advanced `App` composition because its
-nominal definition must statically name the concrete protocols it hosts.
+API concept it demonstrates. Every example uses the same `Application` owner.
+Child graphs use closed `topology!` declarations for their static hosting and
+native descendant custody; actor templates retain their owning constructors.
 
 Examples use `bombay::actors::ActorExt` (imported by the prelude) whenever an
 existing actor is decorated with reusable stash, timer, deadline,
@@ -41,18 +41,16 @@ successful tests assert that result explicitly rather than pretending the fold
 is infallible.
 The unit tests consume the definition through the owning `.initialize()` API
 before any pure receive, so initialization cannot be silently skipped or
-repeated. The binary runs the same actor through `Application`, establishes a
-typed external customers, sends bare and correlated increments, reads the exact
-snapshot, and requests
-shutdown through the application's separate lifecycle capability. The binary
-also consumes the exact projected terminal and checks that root state,
-descendant custody, ingress residuals, and completion are preserved. There is
-no second artificial domain stop command.
+repeated. The local binary runs the same actor through `Application`, establishes
+a root-bound typed client, sends one Increment and one Read, and requests
+shutdown through the application's separate lifecycle capability. It acquires
+Work, cleanup, native retirement and both notification results, then prints the
+snapshot and retirement completion. There is no artificial domain stop command.
 
 `IncrementAndReply` returns its correlated receipt through Actions only after
-the checked increment succeeds. The ordinary binary checks both admissions,
-snapshot2 and processing sequence1 after acquiring native retirement and both
-notification receipts. A snapshot alone does not acknowledge an increment.
+the checked increment succeeds. The owning tests exercise this processing
+receipt and complete native custody. A Read snapshot alone does not acknowledge
+an increment.
 
 The owning Read test creates a separate typed reply port for each request.
 Cancelling a borrowed receive preserves that request's reply; closing a settled
@@ -65,8 +63,16 @@ src/main.rs       executable Application request/reply and lifecycle shutdown
 src/counter.rs    state, protocol, messages, receive logic, and invariant
 ```
 
-The additional `authorized` binary runs an explicit local test profile using the
-same Counter and typed requester Applications. Its application-owned service
+## Remote Counter prerequisites
+
+The user-selected layout separates the local Counter from a remote Counter
+example under `examples/remote-counter/`. Remote runtime capabilities belong in
+`crates/bombay` behind the optional `remote` feature. That package and feature
+remain pending; the existing sources below are verification fixtures awaiting
+migration, not the ordinary remote entrypoint.
+
+The current `authorized` binary under `examples/counter/` runs an explicit local
+test profile using the same Counter and typed requester Applications. Its application-owned service
 verifies two finite providers, checks current permission at nonwaiting mailbox
 admission, retains replay protection, and preserves original request/evidence
 and native retirement results. A Read is a snapshot, not an Increment receipt.

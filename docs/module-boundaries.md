@@ -15,6 +15,8 @@ substrate; deterministic test hosts remain supported. Selo's KERI integration
 is supplied by Selo, which builds on Bombay, Mnesis and `mnesis-bombay`;
 there is no reverse Bombay dependency. These are planned ownership boundaries,
 not additional source modules or currently implemented public APIs.
+Crate-owned remote entry points and ordinary multi-node Application composition
+remain pending; transport fixtures do not establish that public surface.
 
 ## Workspace boundary
 
@@ -61,7 +63,7 @@ Bombay owns:
 - static interpretation of named creation, delivery, observation, timer,
   report, and shutdown effect lanes;
 - recursive child-task retirement;
-- inherent async `Application::run` and advanced `App::run`, supplied Work,
+- inherent async `Application::run`, supplied Work,
   and paired execution/result receiving over one common execution owner, with native
   root and two-stage notification receipts independent of Work-phase cleanup;
 - configured `Application::run_blocking`, which drives that same pair;
@@ -88,15 +90,16 @@ tree:
 
 | Module | Current responsibility | Public disposition |
 |---|---|---|
-| `lib.rs` | minimal façade and semantic-level re-exports | curated application prelude, template-family modules, `Application`, `App`, `RunError`, typed boundaries, transitional hosting evidence, and deliberate `behavior` power surface |
-| `application/mod.rs` | root, role-indexed child and Entity-family declarations; curate the application surface | `Application` owns pure declarations; advanced `App` also owns its supplied spaces. Construction starts no task and adds no birth algebra. |
+| `lib.rs` | minimal façade and semantic-level re-exports | curated application prelude, template-family modules, `Application`, `RunError`, typed boundaries, transitional hosting evidence, and deliberate `behavior` power surface |
+| `application/mod.rs` | root, role-indexed child and Entity-family declarations; curate the application surface | `Application` owns root, selected protocol spaces, role-indexed cold actors and Entity families. Construction starts no task and adds no birth algebra. |
+| `application/scope.rs` | establish external endpoints needed before root construction | `ApplicationScope` transfers one root declaration and the existing address allocation source into Application. Prepared and staging rejection retain it for exact-value retry; receivers remain independently owned. |
 | `application/composition.rs` | static declaration-to-Behavior composition and exact origin selection | canonical `ApplicationBehavior`, `ApplicationDefinitionError` and `ApplicationStagingError`; implementation traits remain private |
 | `application/execution.rs` | one paired execution/result owner, supplied Work, cleanup custody and configured blocking entry | `ApplicationOutcome`, `ApplicationCleanupError` and `RunError`; async, owned blocking and Entity execution share this owner |
-| `application/interface.rs` | application handle/lifecycle projection and affine external actor interfaces | `ApplicationHandle`, `ApplicationLifecycle`, `ActorInterface`, `ExternalTarget`, `ExternalActor` and `ExternalActorError`; messaging alone grants no shutdown authority |
+| `application/interface.rs` | application capability construction, root-bound communication and explicit lifecycle projection | ApplicationHandle is the entry; ApplicationClient owns root-bound replies and ApplicationSender owns one-way sending. Both reuse ExternalActor. ApplicationLifecycle owns shutdown/termination/joined-report observation; handle methods delegate. ActorInterface exports named capabilities without lifecycle authority. ExternalTarget and ExternalActor remain the typed exported-target port; no receiving is cloned. |
 | `application/http.rs` | opt-in HTTP preparation, binding and serving over the common execution owner | existing application methods; retains bind, serving and actor failures. The feature-gated outcome mapper remains in `application/execution.rs`. |
 | `local/children.rs` | closed occurrence product, exact creation status, endpoint/control and descendant task retirement | crate-private; creation-order native custody and independent descendant retirement assessments stay with the local actor |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |
-| `topology.rs` | static `Hosts<P>` actor-space selection | public for deliberate advanced `App` composition; ordinary `Application` privately materializes its closed actor-space product |
+| `topology.rs` | logical protocol hosting, root registration and application-selected descendant schema | `Hosts<P>`, `RootRegistration<P>` and `ApplicationTopology<Root, Members>` preserve distinct logical/physical registration; no-birth roots use their own ActorSpace |
 | `local/mod.rs` | curate the concrete local composition and its child modules | private module; canonical public capabilities are re-exported at crate root |
 | `local/endpoint.rs` | exact messaging endpoint, installed-actor proof and shutdown authority | root-curated `ActorRef`, `InstalledActor` and exact-payload `SendError`; `InstalledActor` has no public constructor; its typed `request_shutdown` submits to the exact child control lane |
 | `local/ingress.rs` | mailbox admission, standard/Entity ingress and exact retirement drain | private; reuses Communication's mailbox |
@@ -105,24 +108,29 @@ tree:
 | `launch.rs` | spawn concrete owned incarnation tasks, request owner cancellation on abandoned waits, and settle actor-owned activation tasks inside the spawned incarnation task | only the `ActorSpace<P>` alias is public; lower-layer RootActor/spawn_root_with/OwnedTask.finish remain cfg(test) native owners, not a second production runner |
 | `observe/` | actor-independent exact publication and shared/affine waiting | private to Bombay; its ordinary tests run in Bombay, while the isolated test package compiles the same source for Loom and for fuzz/performance dependencies |
 | `local/effects/mod.rs` | concrete actor capability product and ordered complete action settlement | private; uses Behavior's owning interpretation and settlement types, never a second effect algebra |
-| `local/effects/creation.rs` | install fresh child requests and retain exact rejected creation inputs | private; child creation precedes dependent sends |
+| `local/effects/creation.rs` | establish fresh child requests and retain exact rejected creation inputs | root-curated `NativeChild`, affine `PendingChild` and sealed `EstablishNativeChild` select one existing native kernel; child creation precedes dependent sends |
 | `local/effects/delivery.rs` | interpret named logical, established and child sends | private; exact endpoint selection and rejected payload recovery |
 | `local/effects/observation.rs` | own the actor's pending peer and child termination facts in registration order and inject their typed Behavior events | private; the application capability product owns its single queue |
 | `local/effects/timers.rs` | own the actor's `TimerQueue` and adapt due entries into typed events | private; the application capability product owns its single queue |
-| `terminal.rs` | preserve exact root and child origin provenance and typed actor retirement | public exact origins, `ActorRetirement`, `ProjectTerminal`, runtime-issued read-only `ActorRetirementReport` with its two assessment sums, and affine `ActorNotificationReceipts`/`RetirementNotificationError`; root origins have no nonce and child origins require one |
+| `terminal.rs` | preserve exact root and child origin provenance and typed actor retirement | public `RootOrigin<Owner>`, `ChildOrigin<Owner, Role>`, `ActorRetirement`/`ActorCustody`, `RetirementSchema`/`ProjectTerminal`, runtime-issued read-only `ActorRetirementReport` with its two assessment sums, and affine `ActorNotificationReceipts`/`RetirementNotificationError`; child origins retain nonce, CreationId and CreationKind, while root origins have no child nonce |
 | `local/effects/reports.rs` | action-scoped terminal-report custody and exact typed parent reports | private; one curated crate-private `LocalTerminalReports` crossing, not an exposed reports module |
 | `termination.rs` | publish the coarse external termination observation | private |
 | `actor_execution.rs` | one Driver execution plus terminal classification | private `ActorExecution` owning the Driver and retirement authority |
 | `actor_outcome.rs` | exact terminal vocabulary | private `ActorExecutionOutcome` preserving every disposition |
 | `retirement.rs` | affine terminal handoff | private |
 
-`crates/bombay-macros` owns three syntax-only projections: the narrow
+`crates/bombay-macros` owns syntax-only projections: the narrow
 `#[bombay::actor]` facade delegates to Behavior's owning actor expansion,
 `TerminalProjection` lifts exact actor retirements into an application-owned
-sum using explicit child-source markers and Rust's `ChildRole` proofs, and
+sum through total owned `From` inclusions using explicit child-source markers
+and Rust's `ChildRole` proofs, and
 transitional `ActorSpaces` derives static protocol-host proofs from explicit
 field annotations. Neither derives type identity from a spelling. None
 owns actor semantics, an effect algebra, lifecycle policy, or runtime behavior.
+The optional inclusion grants no native execution authority. The `topology!`
+declaration derives exact native selection, protocol spaces and actor-indexed
+recursive custody, reusing the sealed consuming startup operation and existing
+Application interpreter. It owns no parallel runtime or lifecycle policy.
 Bombay has no protocol macro.
 
 Communication UC1, Observe UO1, actor-owned timers, exact report preservation,

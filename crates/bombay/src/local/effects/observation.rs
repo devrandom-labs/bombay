@@ -1,6 +1,6 @@
 use crate::address::MailAddr;
 use crate::launch::ActorSpace;
-use crate::local::children::{ChildBindingAt, CreationBinding};
+use crate::local::children::{ChildAuthority, ChildBindingAt};
 use crate::local::effects::ApplicationCapabilities;
 use crate::local::endpoint::{ActorRef, InstalledActor, request_actor_shutdown};
 use crate::observe::{Observation, ObservationFuture};
@@ -68,9 +68,8 @@ where
                     .expect("live child bindings remain installed")
                     .creation(request.creation)
                 {
-                    Some(CreationBinding::Established { endpoint, kind, .. }) => {
+                    Some(ChildAuthority::Established { endpoint, kind, .. }) => {
                         let address = endpoint.address();
-                        let kind = *kind;
                         self.inject_control_event::<_, Path>(CreationResolved::installed(
                             request.creation,
                             kind,
@@ -78,12 +77,10 @@ where
                         ));
                         ItemSettlement::Accepted(())
                     }
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
-                        ItemSettlement::Blocked {
-                            prerequisite: CreationCorrelation::new(request.creation),
-                            item: request,
-                        }
-                    }
+                    Some(ChildAuthority::Unavailable(correlation)) => ItemSettlement::Blocked {
+                        prerequisite: CreationCorrelation::new(correlation),
+                        item: request,
+                    },
                     None => ItemSettlement::Corrupt {
                         item: request,
                         fault: InterpreterFault::MissingCapability,
@@ -134,7 +131,7 @@ where
                     .expect("live child bindings remain installed")
                     .creation(request.creation)
                 {
-                    Some(CreationBinding::Established {
+                    Some(ChildAuthority::Established {
                         endpoint,
                         control,
                         kind,
@@ -146,16 +143,14 @@ where
                             control.clone(),
                             retirement.clone(),
                         ));
-                        let child = CommittedChild::new(request.creation, *kind, actor);
+                        let child = CommittedChild::new(request.creation, kind, actor);
                         self.inject_control_event::<_, Path>(EstablishedCreation::installed(child));
                         ItemSettlement::Accepted(())
                     }
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
-                        ItemSettlement::Blocked {
-                            prerequisite: CreationCorrelation::new(request.creation),
-                            item: request,
-                        }
-                    }
+                    Some(ChildAuthority::Unavailable(correlation)) => ItemSettlement::Blocked {
+                        prerequisite: CreationCorrelation::new(correlation),
+                        item: request,
+                    },
                     None => ItemSettlement::Corrupt {
                         item: request,
                         fault: InterpreterFault::MissingCapability,
@@ -252,10 +247,10 @@ where
                     .expect("live child bindings remain installed")
                     .creation(request.child)
                 {
-                    Some(CreationBinding::Established { endpoint, .. }) => endpoint.clone(),
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
+                    Some(ChildAuthority::Established { endpoint, .. }) => endpoint.clone(),
+                    Some(ChildAuthority::Unavailable(correlation)) => {
                         break 'settlement ItemSettlement::Blocked {
-                            prerequisite: CreationCorrelation::new(request.child),
+                            prerequisite: CreationCorrelation::new(correlation),
                             item: request,
                         };
                     }
@@ -313,12 +308,12 @@ where
                     .expect("live child bindings remain installed")
                     .creation(request.child)
                 {
-                    Some(CreationBinding::Established {
+                    Some(ChildAuthority::Established {
                         endpoint, control, ..
                     }) => (endpoint.clone(), control.clone()),
-                    Some(CreationBinding::Rejected | CreationBinding::StartupRejected { .. }) => {
+                    Some(ChildAuthority::Unavailable(correlation)) => {
                         break 'settlement ItemSettlement::Blocked {
-                            prerequisite: CreationCorrelation::new(request.child),
+                            prerequisite: CreationCorrelation::new(correlation),
                             item: request,
                         };
                     }
@@ -976,6 +971,7 @@ mod tests {
 
 #[cfg(test)]
 mod installed_shutdown_contract {
+    use crate::ActorCustody;
 
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, ChildCreationOutcome,
@@ -996,7 +992,9 @@ mod installed_shutdown_contract {
     use crate::address::{ApplicationAddresses, MailAddr};
 
     use crate::local::children::StructuralOrigins;
-    use crate::local::children::{ChildBinding, NoChildBindings, RetireChildTasks};
+    use crate::local::children::{
+        ChildBinding, ChildBindingsIn, NoChildBindings, RetireChildTasks,
+    };
     use crate::local::effects::observation::TerminationObservations;
     use crate::local::effects::reports::LocalTerminalReports;
     use crate::local::effects::timers::LocalTimers;
@@ -1038,38 +1036,129 @@ mod installed_shutdown_contract {
             self
         }
     }
+    #[expect(
+        dead_code,
+        reason = "both exact failure payloads remain typed custody; this commitment journey produces neither failure"
+    )]
+    enum ShutdownChildFailure {
+        Direct(crate::ChildFailure<ChildOrigin<ShutdownObserver, ChildHead>, DirectLedger>),
+        Nested(crate::ChildFailure<ChildOrigin<ShutdownObserver, ChildHead>, NestedLedger>),
+    }
+    impl crate::RetirementSchema for ShutdownChildren {
+        type Failure = ShutdownChildFailure;
+    }
+    impl From<crate::ChildFailure<ChildOrigin<ShutdownObserver, ChildHead>, DirectLedger>>
+        for ShutdownChildFailure
+    {
+        fn from(
+            original: crate::ChildFailure<ChildOrigin<ShutdownObserver, ChildHead>, DirectLedger>,
+        ) -> Self {
+            Self::Direct(original)
+        }
+    }
+    impl From<crate::ChildFailure<ChildOrigin<ShutdownObserver, ChildHead>, NestedLedger>>
+        for ShutdownChildFailure
+    {
+        fn from(
+            original: crate::ChildFailure<ChildOrigin<ShutdownObserver, ChildHead>, NestedLedger>,
+        ) -> Self {
+            Self::Nested(original)
+        }
+    }
+    impl crate::NativeChild<ShutdownObserver, ChildHead, DirectLedger, ShutdownChildren, Never> for () {
+        fn registration(
+            &self,
+        ) -> crate::ActorSpace<<DirectLedger as behavior::Behavior>::Protocol> {
+            crate::ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: crate::PendingChild<
+                '_,
+                ShutdownObserver,
+                Self,
+                ChildHead,
+                DirectLedger,
+                ShutdownChildren,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl core::future::Future<
+            Output = behavior::ItemSettlement<
+                behavior::RoutedCreation<crate::MailAddr, DirectLedger>,
+                behavior::ChildCreationOutcome<DirectLedger, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            ShutdownChildren:
+                crate::ProjectTerminal<Origin, DirectLedger, Descendants = Never> + Send + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(crate::MailAddr, u64, behavior::CreationId, behavior::CreationKind) -> Origin
+                + Send,
+        {
+            <Self as crate::EstablishNativeChild<ShutdownObserver, DirectLedger, Never>>::establish_native_child::<ChildHead, ShutdownChildren, Origin, OriginFn>(pending)
+        }
+    }
+    impl crate::NativeChild<ShutdownObserver, ChildHead, NestedLedger, ShutdownChildren, Never> for () {
+        fn registration(
+            &self,
+        ) -> crate::ActorSpace<<NestedLedger as behavior::Behavior>::Protocol> {
+            crate::ActorSpace::new()
+        }
+        fn establish<Origin, OriginFn>(
+            pending: crate::PendingChild<
+                '_,
+                ShutdownObserver,
+                Self,
+                ChildHead,
+                NestedLedger,
+                ShutdownChildren,
+                Never,
+                OriginFn,
+            >,
+        ) -> impl core::future::Future<
+            Output = behavior::ItemSettlement<
+                behavior::RoutedCreation<crate::MailAddr, NestedLedger>,
+                behavior::ChildCreationOutcome<NestedLedger, ChildHead>,
+                behavior::CreationRejection,
+                Never,
+            >,
+        > + Send
+        where
+            ShutdownChildren:
+                crate::ProjectTerminal<Origin, NestedLedger, Descendants = Never> + Send + 'static,
+            Origin: Send + 'static,
+            OriginFn: Fn(crate::MailAddr, u64, behavior::CreationId, behavior::CreationKind) -> Origin
+                + Send,
+        {
+            <Self as crate::EstablishNativeChild<ShutdownObserver, NestedLedger, Never>>::establish_native_child::<ChildHead, ShutdownChildren, Origin, OriginFn>(pending)
+        }
+    }
     enum ShutdownChildren {
         Direct {
             origin: ChildOrigin<ShutdownObserver, ChildHead>,
-            retirement: ActorRetirement<DirectLedger, Self, ()>,
+            retirement: ActorRetirement<DirectLedger, Never, Vec<Never>>,
         },
         Nested {
             origin: ChildOrigin<ShutdownObserver, ChildHead>,
-            retirement: ActorRetirement<NestedLedger, Self, ()>,
+            retirement: ActorRetirement<NestedLedger, Never, Vec<Never>>,
         },
     }
-    impl
-        ProjectTerminal<
-            ChildOrigin<ShutdownObserver, ChildHead>,
-            ActorRetirement<DirectLedger, Self, ()>,
-        > for ShutdownChildren
-    {
+    impl ProjectTerminal<ChildOrigin<ShutdownObserver, ChildHead>, DirectLedger> for ShutdownChildren {
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<ShutdownObserver, ChildHead>,
-            retirement: ActorRetirement<DirectLedger, Self, ()>,
+            retirement: ActorRetirement<DirectLedger, Never, Vec<Never>>,
         ) -> Self {
             Self::Direct { origin, retirement }
         }
     }
-    impl
-        ProjectTerminal<
-            ChildOrigin<ShutdownObserver, ChildHead>,
-            ActorRetirement<NestedLedger, Self, ()>,
-        > for ShutdownChildren
-    {
+    impl ProjectTerminal<ChildOrigin<ShutdownObserver, ChildHead>, NestedLedger> for ShutdownChildren {
+        type Descendants = Never;
         fn project(
             origin: ChildOrigin<ShutdownObserver, ChildHead>,
-            retirement: ActorRetirement<NestedLedger, Self, ()>,
+            retirement: ActorRetirement<NestedLedger, Never, Vec<Never>>,
         ) -> Self {
             Self::Nested { origin, retirement }
         }
@@ -1096,6 +1185,7 @@ mod installed_shutdown_contract {
                 ShutdownChildren,
                 StructuralOrigins<ShutdownObserver>,
                 NoChildBindings<ShutdownChildren>,
+                Never,
             >,
             StructuralOrigins<ShutdownObserver>,
         >::new_with_bindings(
@@ -1108,7 +1198,7 @@ mod installed_shutdown_contract {
                 observations: TerminationObservations::new(),
                 terminal_reports: LocalTerminalReports::new(direct_terminal),
             },
-            ChildBinding::default(),
+            ChildBinding::new_in(&()),
         );
         let (nested_control, nested_owner, nested_mailbox, nested_receiver) =
             mailbox_channel::<<ShutdownObserver as Behavior>::Event, User<MailAddr, Never>>(
@@ -1125,6 +1215,7 @@ mod installed_shutdown_contract {
                 ShutdownChildren,
                 StructuralOrigins<ShutdownObserver>,
                 NoChildBindings<ShutdownChildren>,
+                Never,
             >,
             StructuralOrigins<ShutdownObserver>,
         >::new_with_bindings(
@@ -1137,7 +1228,7 @@ mod installed_shutdown_contract {
                 observations: TerminationObservations::new(),
                 terminal_reports: LocalTerminalReports::new(nested_terminal),
             },
-            ChildBinding::default(),
+            ChildBinding::new_in(&()),
         );
         let mut creations = CreationSequence::new();
         let direct_id = creations.issue().expect("direct child identity");
@@ -1337,13 +1428,13 @@ mod installed_shutdown_contract {
                 (ShutdownId(37), Err(ShutdownRejection::AlreadyStopped))
             ]
         );
-        let (direct_retired, (direct_failures, ()), direct_retirement_report) = direct_creator
+        let (direct_retired, direct_failures, direct_retirement_report) = direct_creator
             .child_bindings
             .take()
             .expect("original child bindings remain installed")
             .retire_child_tasks()
             .await;
-        let (nested_retired, (nested_failures, ()), nested_retirement_report) = nested_creator
+        let (nested_retired, nested_failures, nested_retirement_report) = nested_creator
             .child_bindings
             .take()
             .expect("original child bindings remain installed")
@@ -1373,28 +1464,32 @@ mod installed_shutdown_contract {
         assert_eq!(origin.address(), direct_endpoint.address());
         assert_eq!(origin.nonce(), 0);
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    terminal_report: retirement_terminal_report,
+                    retirement_failures: retirement_native_failures,
+                    additional_failures: retirement_additional_failures,
+                    child_failures,
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                },
             interpretation: retirement_interpretation,
             source: retirement_source,
-            received_interpretation: retirement_received_interpretation,
-            received_source: retirement_received_source,
-            source_index: retirement_source_index,
-            acquired_ingress: retirement_acquired_ingress,
-            terminal_report: retirement_terminal_report,
-            retirement_failures: retirement_native_failures,
-            additional_failures: retirement_additional_failures,
-            child_failures: (),
-            behavior,
             settlements,
-            control,
-            user,
-            descendants,
             completion,
-            capability_failures,
-            unread_owner_cancellation,
         } = retirement
         else {
             panic!("direct completed result")
         };
+        assert_eq!(child_failures.as_slice(), []);
         assert!(retirement_interpretation.is_none());
         assert!(retirement_source.is_none());
         assert!(retirement_received_interpretation.is_none());
@@ -1423,28 +1518,32 @@ mod installed_shutdown_contract {
         assert_eq!(origin.address(), nested_endpoint.address());
         assert_eq!(origin.nonce(), 1);
         let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    received_interpretation: retirement_received_interpretation,
+                    received_source: retirement_received_source,
+                    source_index: retirement_source_index,
+                    acquired_ingress: retirement_acquired_ingress,
+                    terminal_report: retirement_terminal_report,
+                    retirement_failures: retirement_native_failures,
+                    additional_failures: retirement_additional_failures,
+                    child_failures,
+                    behavior,
+                    control,
+                    user,
+                    descendants,
+                    capability_failures,
+                    unread_owner_cancellation,
+                },
             interpretation: retirement_interpretation,
             source: retirement_source,
-            received_interpretation: retirement_received_interpretation,
-            received_source: retirement_received_source,
-            source_index: retirement_source_index,
-            acquired_ingress: retirement_acquired_ingress,
-            terminal_report: retirement_terminal_report,
-            retirement_failures: retirement_native_failures,
-            additional_failures: retirement_additional_failures,
-            child_failures: (),
-            behavior,
             settlements,
-            control,
-            user,
-            descendants,
             completion,
-            capability_failures,
-            unread_owner_cancellation,
         } = retirement
         else {
             panic!("nested completed result")
         };
+        assert_eq!(child_failures.as_slice(), []);
         assert!(retirement_interpretation.is_none());
         assert!(retirement_source.is_none());
         assert!(retirement_received_interpretation.is_none());
