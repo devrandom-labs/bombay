@@ -34,8 +34,10 @@ also pass48 complete queue/dynamic journeys and24 executable doctests; three exi
 ignored per configuration. All61 packaged Rust source files and the guide are
 byte-identical to source. The archive consumer uses actual extracted unpublished
 Engine/Bombay macros and101 unchanged resolved registry dependencies; it is not
-a registry-only publication claim. Full native Nix checks for this batch are
-running. The owning PRD records the complete model and measured deltas; library
+a registry-only publication claim. All21 native Nix gates for this batch pass in2244.019 seconds;
+the captured runtime source, manifests, locks and compiled guide match8011d49.
+Four later edits only correct dependency-version prose and coordination; no
+signing or disk waiver applies. The owning PRD records the complete model and measured deltas; library
 production grows184 lines for one public scope capability, with no actor state
 or dependency added. Five paired counter journeys measure an incremental8 bytes
 of peak heap and no additional allocation blocks. Constructor policy lists and
