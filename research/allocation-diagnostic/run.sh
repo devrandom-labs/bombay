@@ -14,16 +14,20 @@ done
 for phase in baseline trace; do
   source="$evidence/$phase"
   (cd "$source" && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$evidence/$phase.inputs.sha256"
+  build_args=()
   for attempt in 1 2 3; do
     prefix="$evidence/$phase.$attempt"
     (cd "$source" && sha256sum --check "$evidence/$phase.inputs.sha256") > "$prefix.before"
     set +e
-    (cd "$source" && nix build --no-update-lock-file --no-link --rebuild \
+    (cd "$source" && nix build --no-update-lock-file --no-link "${build_args[@]}" \
       --print-build-logs .#checks.x86_64-linux.bombay-example-counter) \
       > "$prefix.stdout" 2> "$prefix.stderr"
     status=$?
     set -e
     printf '%s\n' "$status" > "$prefix.exit"
+    if [[ "$status" == 0 ]]; then
+      build_args=(--rebuild)
+    fi
     (cd "$source" && sha256sum --check "$evidence/$phase.inputs.sha256") > "$prefix.after"
   done
 done
