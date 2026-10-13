@@ -195,11 +195,20 @@ No new Rust, public API or dependency is authorized by this evidence allowance.
 
 Combined final source passes build, Cargo645/0/1, Nextest644 passed/1 skipped,
 workspace strict Clippy and formatting. Frozen391-input snapshot `ea78a698`
-contains8,072,452 bytes. Both actual copied profiles complete all12 guarded
-CLI invocations:64 TLS cases/160 roles and child-stop2/0/0 per profile, with
+contains8,072,452 bytes. Across both actual copied profiles, all12 guarded
+CLI invocations pass64 TLS cases/160 roles, plus child-stop2/0/0 in each profile, with
 command receipts `9b8d1049`/`875a0668`. Guards surround each CLI invocation,
 not each internal role. No native cleanup credit comes from killed controls.
 Final independent review and replacement submitted-head CI remain pending.
+
+Independent integrated source/receipt/minimization review `cd226c3b` passes
+against exact5f929068/5cdbce9c and unchanged owning locks. It rehashes all22
+author commands, actual executable copies,391 snapshot inputs and both native
+profiles. The reviewer contributed the original test idea; independence covers
+the correction, composition and evidence assessment. Its initial reader-only
+path/import errors receive no test credit. Submitted contribution9a7217b is
+clean; its in-progress CI is superseded by this documentation qualification.
+Replacement final-head CI, technical PR review and actual merge remain open.
 
 Under standing recommendation delegation, investigate the actual Counter
 acquire_verification owner independently of PR357. Branch starts at actual latest
