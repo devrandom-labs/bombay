@@ -1,0 +1,7 @@
+error[E0308]: mismatched types
+  --> tests/compile/fail/worker_factory_source_refusal.rs:17:31
+   |
+17 |         let _reason: String = reason;
+   |                      ------   ^^^^^^ expected `String`, found `Never`
+   |                      |
+   |                      expected due to this

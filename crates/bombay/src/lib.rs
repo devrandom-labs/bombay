@@ -66,7 +66,9 @@ pub use crate::terminal::{
     RootOrigin,
 };
 pub use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
-pub use crate::worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
+pub use crate::worker_preparation::{
+    WorkerFactory, WorkerPreparationSource, WorkerPreparationStart,
+};
 
 /// Conventional imports for Bombay applications.
 pub mod prelude {

@@ -10,11 +10,11 @@ use bombay::actors::ActorExt as _;
 use bombay::atomic::{
     ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
     FailureReaction, FixedCommand, FixedSnapshot, OrderedRoles, Recovery, RestartLimit,
-    RestartRelease, Strategy, WorkerSource, WorkerSubmission, fixed,
+    RestartRelease, Strategy, WorkerSubmission, fixed,
 };
 use bombay::behavior::{Actions, BehaviorActed, MessageProtocol, Never};
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr, StopOnShutdown};
-use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
+use bombay::{Application, WorkerFactory};
 use tokio::sync::mpsc;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -60,39 +60,6 @@ impl ActivationPlan for ActivationNotice {
     }
 }
 
-struct Workshop {
-    activated: mpsc::UnboundedSender<WorkerRole>,
-}
-
-impl WorkerSource<WorkerRole, ManagedWorker, ActivationNotice> for Workshop {
-    type WorkerRejection = Never;
-    type SourceRejection = Never;
-}
-
-impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Workshop {
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "Defer trait-port work and owned inputs until the future is polled."
-    )]
-    async fn prepare_first(
-        &mut self,
-        role: &WorkerRole,
-    ) -> WorkerPreparationStart<ManagedWorker, ActivationNotice, Never, Never> {
-        WorkerPreparationStart::Submitted(worker_submission(*role, &self.activated))
-    }
-
-    #[expect(
-        clippy::unused_async_trait_impl,
-        reason = "Defer trait-port work and owned inputs until the future is polled."
-    )]
-    async fn prepare_next(
-        &mut self,
-        role: &WorkerRole,
-    ) -> Result<WorkerSubmission<ManagedWorker, ActivationNotice>, Never> {
-        Ok(worker_submission(*role, &self.activated))
-    }
-}
-
 fn worker_submission(
     role: WorkerRole,
     activated: &mpsc::UnboundedSender<WorkerRole>,
@@ -133,7 +100,7 @@ fn run_supervision() {
             roles,
             ActivationPolicy::new(1).expect("one worker fits the activation policy"),
             Recovery::permanent(
-                Workshop { activated },
+                WorkerFactory::new(move |role| worker_submission(*role, &activated)),
                 Strategy::OneForOne,
                 RestartLimit::new(1, Duration::from_secs(30)),
                 RestartRelease::immediate(),
@@ -300,7 +267,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{WorkerRole, Workshop, worker_submission};
+    use super::{WorkerFactory, WorkerRole, worker_submission};
     use bombay::atomic::ProxyPhase;
     use bombay::atomic::{
         ActivationPolicy, ActorDrainPolicy, DiagnosticDisposition, FailureReaction, OrderedRoles,
@@ -323,7 +290,7 @@ mod tests {
                 roles,
                 ActivationPolicy::new(1).expect("one worker fits the activation policy"),
                 Recovery::permanent(
-                    Workshop { activated },
+                    WorkerFactory::new(move |role| worker_submission(*role, &activated)),
                     Strategy::OneForOne,
                     RestartLimit::new(1, Duration::from_secs(30)),
                     RestartRelease::immediate(),

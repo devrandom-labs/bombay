@@ -1,0 +1,5 @@
+error[E0599]: no method named `clone` found for struct `WorkerFactory<Role, Factory, Preparation>` in the current scope
+  --> tests/compile/fail/worker_factory_clone.rs:13:86
+   |
+13 | fn main() { let source = bombay::WorkerFactory::new(worker); let _duplicate = source.clone(); }
+   |                                                                                      ^^^^^ method not found in `WorkerFactory<u8, for<'a> fn(&'a u8) -> WorkerSubmission<Worker, ImmediateActivation> {worker}, WorkerSubmission<Worker, ImmediateActivation>>`

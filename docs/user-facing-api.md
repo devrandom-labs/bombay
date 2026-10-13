@@ -416,6 +416,21 @@ Reusable roles are concrete Behavior Actors templates. Ordinary wrappers use
 `ActorExt`; standalone actors, supervisors, and worker pools use their owning
 constructors. Bombay adds no aggregate aliases or compatibility catalogue.
 
+For ordinary replacement workers, pass `WorkerFactory::new(|role| ...)` to the
+existing recovery constructor. Return `WorkerSubmission` directly, or a `Result`
+with your own worker error. The supervisor or pool infers the role, worker,
+activation plan and error types. The [supervision example](../examples/supervision/src/main.rs)
+uses this path without a source struct or preparation trait implementations.
+The [factory tests](../crates/bombay/tests/worker_factory.rs) cover partial recovery,
+exact rejection and both stash/shutdown orders; the [FIFO recovery tests](../crates/bombay/tests/fifo_pool_recovery.rs)
+exercise a real replacement and complete worker retirement.
+
+`WorkerFactory` calls the function only when Bombay polls the requested
+replacement. For asynchronous construction or whole-source refusal, implement
+`WorkerPreparationSource` instead. Consuming a factory through `into_factory()`
+returns its original function or closure with its current captured values.
+These are successive layers of the same typed recovery contract.
+
 `Application::new(root)` declares one pure root. Chained
 `.child(role, actor)` calls declare application-owned actors under nominal
 semantic roles while each actor expression determines its concrete type. The

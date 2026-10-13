@@ -1,12 +1,109 @@
 //! Application-owned preparation of workers requested by Behavior Actors.
 
 use core::future::Future;
+use core::marker::PhantomData;
 use core::ops::ControlFlow;
 
 use behavior::{Behavior, Never};
 use behavior_actors::atomic::{
-    ActivationPlan, StartingWorkerPreparation, WorkerPreparation, WorkerSource, WorkerSubmission,
+    ActivationPlan, InitialWorkerPreparation, StartingWorkerPreparation, WorkerPreparation,
+    WorkerSource, WorkerSubmission,
 };
+
+/// Construct replacement workers with a function or closure.
+///
+/// A supervisor or pool supplies the worker's role. Return a complete
+/// [`WorkerSubmission`], directly or in a fallible `Result`. An error rejects
+/// that worker. Use [`WorkerPreparationSource`] for asynchronous construction
+/// or whole-source refusal.
+///
+/// Creating a factory does not call it or start an actor. Bombay calls it only
+/// when polling a requested replacement, outside the actor transition.
+pub struct WorkerFactory<Role, Factory, Preparation>
+where
+    Factory: FnMut(&Role) -> Preparation,
+    Preparation: InitialWorkerPreparation,
+{
+    factory: Factory,
+    role: PhantomData<fn(&Role) -> Preparation>,
+}
+
+impl<Role, Factory, Preparation> WorkerFactory<Role, Factory, Preparation>
+where
+    Factory: FnMut(&Role) -> Preparation + Send,
+    Preparation: InitialWorkerPreparation,
+    Preparation::Worker: Behavior + Send,
+    Preparation::Plan: ActivationPlan,
+    Preparation::Rejection: Send,
+{
+    /// Select the constructor without invoking it or starting an actor.
+    #[must_use]
+    pub const fn new(factory: Factory) -> Self {
+        Self {
+            factory,
+            role: PhantomData,
+        }
+    }
+
+    /// Consume this factory and return its original function or closure.
+    /// Captured values remain owned; this does not call the factory.
+    #[must_use]
+    pub fn into_factory(self) -> Factory {
+        self.factory
+    }
+}
+
+impl<Role, Factory, Preparation> WorkerSource<Role, Preparation::Worker, Preparation::Plan>
+    for WorkerFactory<Role, Factory, Preparation>
+where
+    Factory: FnMut(&Role) -> Preparation + Send,
+    Preparation: InitialWorkerPreparation,
+    Preparation::Worker: Behavior + Send,
+    Preparation::Plan: ActivationPlan,
+    Preparation::Rejection: Send,
+{
+    type WorkerRejection = Preparation::Rejection;
+    type SourceRejection = Never;
+}
+
+impl<Role, Factory, Preparation>
+    WorkerPreparationSource<Role, Preparation::Worker, Preparation::Plan>
+    for WorkerFactory<Role, Factory, Preparation>
+where
+    Role: Sync,
+    Factory: FnMut(&Role) -> Preparation + Send,
+    Preparation: InitialWorkerPreparation,
+    Preparation::Worker: Behavior + Send,
+    Preparation::Plan: ActivationPlan,
+    Preparation::Rejection: Send,
+{
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Invoke the factory only when the preparation future is polled."
+    )]
+    async fn prepare_first(
+        &mut self,
+        role: &Role,
+    ) -> WorkerPreparationStart<Preparation::Worker, Preparation::Plan, Preparation::Rejection, Never>
+    {
+        match (self.factory)(role).into_submission() {
+            Ok(submission) => WorkerPreparationStart::Submitted(submission),
+            Err(reason) => WorkerPreparationStart::WorkerRejected(reason),
+        }
+    }
+
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "Invoke the factory only when the preparation future is polled."
+    )]
+    async fn prepare_next(
+        &mut self,
+        role: &Role,
+    ) -> Result<WorkerSubmission<Preparation::Worker, Preparation::Plan>, Preparation::Rejection>
+    {
+        (self.factory)(role).into_submission()
+    }
+}
 
 /// The first role's preparation can reject the complete source before a
 /// worker attempt begins. Later roles have already admitted that source.
@@ -168,7 +265,7 @@ mod tests {
     use tokio::sync::oneshot;
 
     use crate::worker_preparation::{
-        WorkerPreparationSource, WorkerPreparationStart, settle_worker_preparation,
+        WorkerFactory, WorkerPreparationSource, WorkerPreparationStart, settle_worker_preparation,
     };
 
     macro_rules! start_preparation {
@@ -227,6 +324,64 @@ mod tests {
     }
 
     struct SearchWorker;
+
+    #[test]
+    fn consuming_factory_returns_the_original_callable_and_captured_refusal() {
+        let refusal = Box::new(vec![173_u64, 179]);
+        let allocation = refusal.as_ptr();
+        let mut remaining_refusal = Some(refusal);
+        let source = WorkerFactory::new(move |_role| match remaining_refusal.take() {
+            Some(refusal) => Err(refusal),
+            None => Ok(WorkerSubmission::immediate(SearchWorker)),
+        });
+        let mut factory = source.into_factory();
+        let rejected = factory(&SearchRole::Primary);
+        let Err(refusal) = rejected else {
+            panic!("the owned callable retains its exact original refusal");
+        };
+        assert_eq!(refusal.as_ptr(), allocation);
+        assert_eq!(*refusal, [173, 179]);
+    }
+
+    #[tokio::test]
+    async fn worker_factory_waits_for_polling_and_returns_the_exact_role_refusal() {
+        let refusal = Box::new(vec![151_u64, 157]);
+        let refusal_pointer = refusal.as_ptr();
+        let mut submissions =
+            VecDeque::from([Ok(WorkerSubmission::immediate(SearchWorker)), Err(refusal)]);
+        let roles = Arc::new(Mutex::new(Vec::new()));
+        let observed = Arc::clone(&roles);
+        let mut source = WorkerFactory::new(move |role| {
+            observed.lock().expect("observed roles").push(*role);
+            submissions.pop_front().expect("two declared factory calls")
+        });
+        let abandoned = source.prepare_first(&SearchRole::Primary);
+        assert_eq!(roles.lock().expect("observed roles").len(), 0);
+        drop(abandoned);
+        assert_eq!(roles.lock().expect("observed roles").len(), 0);
+        let prepared = source.prepare_first(&SearchRole::Primary).await;
+        let WorkerPreparationStart::Submitted(_submission) = prepared else {
+            panic!("the untouched first worker is still prepared");
+        };
+        assert_eq!(
+            *roles.lock().expect("observed roles"),
+            [SearchRole::Primary]
+        );
+        let abandoned = source.prepare_next(&SearchRole::Primary);
+        assert_eq!(roles.lock().expect("observed roles").len(), 1);
+        drop(abandoned);
+        assert_eq!(roles.lock().expect("observed roles").len(), 1);
+        let rejected = source.prepare_next(&SearchRole::Primary).await;
+        let Err(refusal) = rejected else {
+            panic!("the second declared result is an owned role refusal");
+        };
+        assert_eq!(refusal.as_ptr(), refusal_pointer);
+        assert_eq!(*refusal, [151, 157]);
+        assert_eq!(
+            *roles.lock().expect("observed roles"),
+            [SearchRole::Primary, SearchRole::Primary]
+        );
+    }
 
     impl Protocol for SearchWorker {
         type Addr = PoolMailAddr;

@@ -112,12 +112,38 @@ Behavior commit821380e adds its missing typed reason, passing962 pinned tests,
 strict Clippy and all ten owner Nix gates. A private native guard returns the
 original birth/replacement/replay request before allocation and preserves the
 accepted prefix/later sibling and joined children on both compilers/profiles.
-Both defect inverses reproduce the panic. The owner is draft
-[PR93](https://github.com/devrandom-labs/bombay-behavior/pull/93), with exact-head
-CI and four-workspace packaged-consumer preflight pass; merge/publication is
-pending authorization. The generated version PR still needs review and its own
-gates. The guard is not registry-delivered;
-owner release and the remaining identity/rejection corpus stay open.
+Both defect inverses reproduce the panic. PR93 merged externally as6eb4f73;
+its exact main CI and normal Release pass. PR91's pure birth-alias fix merged
+under explicit authorization as79cae26. The bot-generated release is now PR97
+(Core/Actors0.26.0, macros0.14.2); its corrected four-workspace/package preflight
+and all ten native gates pass. Fresh CI and actual publication remain pending;
+Bombay still selects the published0.25/0.14.1 contracts.
+
+WorkerFactory now owns an ordinary callable for replacement preparation, so
+fixed/FIFO callers need neither a custom source struct nor two trait impls.
+Direct and fallible submissions use the existing exact ordered preparation and
+retirement path. Three fixed native tests prove every rejection position,
+accepted prefix/untouched suffix and both stash/shutdown orders; a separate FIFO
+journey proves customer completion, replacement and joined graph retirement.
+Six capability denials cover invalid callability/output/thread ownership,
+forged source refusal, cloning and affine reuse. Real source-task failure and
+cancellation custody retain their existing distinct contracts. Current/MSRV
+and debug/release native matrices pass; actual empty/captured factory sizes
+remain0/0 and8/8 bytes, with a24-byte preparation future. The example deletes33
+production lines and preserves25 assertion bodies. Library production grows99
+lines for one public runtime capability; no actor state, dependency or trait is
+added. All21 final-source native Nix gates pass in705.439 seconds after freeing
+completed task-owned caches. The preceding1906.182-second disk-exhausted run is
+a failed attempt, not a waiver. All18 captured changed files match source.
+Fresh extracted Engine/macros/Bombay archives contain61 identical Rust files
+and the identical guide; current and MSRV debug/release journeys/doctests pass.
+The144 resolved registry identities match the earlier archive graph. Current
+trybuild snapshots pass all six denials; MSRV checks use the separately passing
+category/span corpus, rather than treating current-compiler snapshots as portable.
+The three existing schematic doctests stay ignored. Constructor settings and
+source hierarchy remain selected work: the user requires familiar nouns,
+meaningful parent/child ownership and startup vocabulary, with private details
+curated by each owner. Those naming changes are not yet registry-delivered.
 
 Five paired complete counter journeys use identical77 registry dependencies.
 Allocation counts remain74, while peak heap is122916→123644 bytes (+728,
