@@ -1,19 +1,21 @@
 # Static remote actors and typed admission
 
-### Current delivery checkpoint — 2026-10-12 UTC
+### Current delivery checkpoint — 2026-10-13 UTC
 
-Bombay main is aa2c696d (PR355); its independent TLS fixture selects the published
-Zenoh1.10.7. Controlled PR11 has merged as5bebbcb0 after required reviewed-head
-CI passed. Exact-main CI38308414717 and publication38313859795 pass, with
-independent artifact and all-nine registered-archive review. Registry-only executable
-gates and independent receipt reviews pass on default Rust and Rust1.88. The isolated
-stage selects1.10.8 in both owning locks; combined actor/workspace and native TLS
-verification passes independent artifact review. The protected native Read/Stop comparison and final local held-child
-witness pass their scoped local gates and independent reviews; both remain
-unmerged in an isolated worktree. See the [acceptance evidence](static-remote-actors/acceptance.md)
-and [backlog status](../prd-backlog/status.md) for their scoped results. FullR01–R25
-remain open; AUTH1 is candidate and NET1 blocked. The following dated preparation
-and delivery records are historical checkpoints, not current dependency selection.
+Bombay main is2572bf3000654011d6bfb1e150898a131d0681b7 ([PR356](https://github.com/devrandom-labs/bombay/pull/356));
+its two owning locks select published Zenoh1.10.8. The native Read/Stop and local
+held-child prerequisites merged after independent exact-head/source/artifact
+review and all six CI checks passed, including required Nix38322598237.
+Controlled PR11 remains merged5bebbcb0; exact-main CI38308414717, publication
+38313859795 and registered consumer/source review pass their scoped gates.
+The separate count-before-copy work now uses a branch from actual latest main.
+Both providers reproduce the original count violation in debug/optimized;
+corrected controls and all five causal cuts pass, along with workspace and affected
+TLS checks. Scoped minimization passes; submitted-head CI/PR delivery remains pending.
+See [acceptance evidence](static-remote-actors/acceptance.md) and
+[backlog status](../prd-backlog/status.md). FullR01–R25 remain open; AUTH1 is
+candidate and NET1 blocked. Dated preparation and delivery records below retain
+their historical source selections and do not substitute for current eligibility.
 
 ### Published routed-query correction adoption: historical pre-edit record
 
@@ -18384,3 +18386,372 @@ CI, exact submitted-head review and actual merge remain delivery gates. No full
 R01–R25, AUTH1/NET1, production KERI, global identity/fencing, combined ingress
 bounds, whole-service fault custody, remote held-target retirement or supported
 non-test export is marked complete from these passing local prerequisites.
+
+### Count-before-copy comparison: selected next experiment
+
+2026-10-12 UTC. Under standing recommendation delegation, select the count-only
+experiment in `/tmp/bombay-pr356-next-ingress-stage.md` (4a5d4c4d). This is Bombay
+resource policy, not an actor-model law or a production default. Explicit fixture
+capacity is two accepted application-owned requests across queued, active and
+acquired-but-unread ownership. Acquire the already locked Tokio1.53.1 owned
+semaphore permit before copying or provider polling. Carry the existing
+`(Query, OwnedSemaphorePermit)` product across dequeue and borrowed waits;
+compare ordinary functions and lending closures before any additional type.
+
+CounterAuthorization remains the sole authorization owner for correlation,
+replay, fresh nonwaiting admission, original boxes and provider results. Queue
+scheduling capacity does not replace the combined accepted-owner count. Explicit
+consumption requires the outside caller to acquire the complete CounterAdmission,
+dispose the original Query, then release its permit. Producing a full result into
+an unread slot transfers its permit with it. Cancelling a borrowed wait releases
+neither request nor charge; local byte-reservation consumption stays separate.
+
+Smallest failing regression: hold one real provider and its original Query; queue
+a second actual Query; independently acquire a third. Its exact original must be
+refused with the native capacity cause before copying or provider polling.
+Provider completion with an unread result still refuses the third; outside
+consumption permits useful progress through the same public Application.
+Preserve actual Full/Closed originals, issued binding, provider causes, complete
+actor trace and Work/native/two-notification/Session cleanup results. Run both
+existing providers and debug/optimized profiles. Establish the intended failure
+against original queue-only source before retaining the correction. Cuts omit
+acquisition, release at dequeue/provider completion/borrowed cancellation, or
+lose a rejected original. Setup, timeout and kills receive no semantic credit.
+
+Scope before edits: at most five existing paths (native Counter owning tests,
+their transport controller, this PRD, acceptance and backlog status). Forecast
+250–400 Rust test lines and40–70 controller lines; select ceilings450 and85,
+including introduced lines later removed. Production+0/-0/net0; public API+0/-0.
+No runtime owner, dependency, feature, topology or numeric default change.
+Production extraction needs its own measured pre-edit selection. Reuse current
+private callback/copy/pending operations, never a parallel admission model.
+Record necessary semantic shape before editing; reopen any measured overrun.
+
+Research checkout is detached at submitted e5cd8b7, keeping PR356 and primary
+source untouched. Before delivery commit, create its feature branch from freshly
+checked latest main and integrate the actual prerequisite merge. Root retains
+shared manifests/locks/exports and target leases. No execution is claimed by this
+selection; required PR356 Nix CI still runs. The two unsuccessful documentation
+patch anchors changed no files and earn no verification credit.
+
+Excluded: total arrivals, rejected diagnostic storage, byte/backing capacity,
+provider/decoder/replay heap, native response/FINAL congestion and whole-service
+cancellation/unwind. The finite rejected-original observer is outside this
+accepted-owner count; unbounded rejection storage is forbidden. FINAL, timeout
+and reply_err success prove no authenticated refusal or global nonadmission.
+Production overflow disposition remains open. Exact source is root47089444 and
+nested1c077a7b, registered Zenoh1.10.8, Behavior/Actors0.23.0/d69f992b,
+Communication0.1.5, Address0.3.0 and existing Observe/Timers owners. FullR01–R25
+and AUTH1/NET1 statuses remain unchanged.
+
+Original-source witness shape: first extract the existing callback unchanged into
+a private function taking the actual Sender<Query> and returning its original
+TrySendError<Query>, shared by fixture and regression. Hold requestA with a real
+provider, queueB/C and acquire all native/application cleanup before the expected
+three-originals-versus-two assertion. Initial Session-local native dispatch earns
+no TLS pressure/layout credit and selects no additional supported topology.
+
+Independent source-only prerequisite: disposal addendum806d17e7 distinguishes
+borrowed cancellation from producer disposal after Ready. Select a bounded
+compiler eligibility probe of the exact stable AsyncFnOnce provider shape,
+at most60 Rust research lines and20 orchestration lines, through pinned Nix.
+No workspace source/API/dependency change or Counter defect credit follows;
+an actual owning regression is required before any replacement or guarantee.
+
+Compiler eligibility executes with pinned Rust1.99, edition2024, exit0:
+ordinary borrowing function satisfies the exact stable AsyncFnOnce bound.
+Evidence: `/tmp/bombay-provider-producer-port-eligibility/` (source13b4ac55,
+commandscd6ea07f). Source44 retained/46 introduced, controller16/20; its unread
+field warning stays visible. Binary is retained but unexecuted: no post-Ready
+fault, actual Counter custody or production-interface proof is claimed.
+
+Select independent preparation of an actual owning acquire_verification regression
+patch: at most130 introduced Rust-test lines and25 law/scope lines. Do not apply
+or build it alongside the count owner. Its concrete allowed producer must return
+the original move-only receipt before raising its original disposal panic; invoke
+the real pending/acquisition function and preserve raw request ownership. A
+private-function failure gives no Application, authenticity or native-cleanup
+credit. This prepares a separate fault test, not a replacement or production edit;
+complete the selected count blocker before any broader production correction.
+
+First original count debug run is setup-only101: selected zenoh-runtime1.10.1
+refuses the test's current-thread host before any count/cleanup oracle. Preserve
+that executable/log and unchanged optimized attempt without semantic credit.
+Select the existing supported multithread Builder with one explicit fixture
+worker before rerunning; no production executor/default or topology change.
+Do not edit source while the current optimized build is live. Format/source
+measurement before this correction is native+359/-10/net349, public/production0.
+
+Provider-regression preparation is sealed but unapplied/unexecuted: patchd2864e5d,
+testsource3ad8a4de,113 retained/117 introduced lines within130. Its prose record
+measures25 retained/28 introduced, exceeding25 by3; disclose the overrun and
+select35 before further reconciliation. Two one-line patch-generation expressions
+are separate. No real Counter defect, replacement or Application proof yet.
+
+### Count ownership correction: expanded test stage selected
+
+2026-10-13 UTC. Apply standing recommendation delegation to the prepared
+correction /tmp/bombay-static-remote-count-correction-proposal.md. Original
+360c648b fails the intended accepted-originals count3 versus limit2 after full
+cleanup for both real providers in debug and optimized: four named failures.
+Receipt01debe8f retains and rehashes each selected executable and source. The
+prior current-thread attempts were setup failures and earn no semantic credit.
+
+Select existing owned semaphore capacity before copying, with the actual Query
+and permit kept together through queueing, provider wait, borrowed cancellation,
+and acquired-but-unread results. Only outside acquisition of the complete
+admission, followed by original Query disposal and permit release, discharges
+that accepted owner. CounterAuthorization remains the sole typed authorization
+and replay owner. Its separate local byte accounting proves no byte/heap bound.
+
+Select private CounterQueryRejection with Capacity owning original Query and
+TryAcquireError, or Queue owning TrySendError<(Query, OwnedSemaphorePermit)>.
+NoPermits and semaphore Closed remain distinct from queue Full and queue Closed;
+existing discard metrics count only their actual queue causes. This product
+preserves exact native errors and originals without another admission machine.
+The existing six-command caller explicitly consumes its local result; this does
+not establish outer whole-service cancellation or unread-result custody there.
+
+Use the existing real public Counter Application and SessionLocal pipeline:
+A acquired-but-unread and B provider-held still charge both slots; C is refused.
+Acquire A outside, dispose Query, release permit, then admit C and independently
+read3 from the same Counter. Preserve distinct queue-Closed and capacity-Closed
+originals and causes. Seven finite callback observation slots cover the exact
+planned arrivals; that diagnostic custody is excluded from accepted-owner and
+heap claims. Classify actual Results, not fixed array lengths. Finish all native,
+Session, application Work and notification cleanup before semantic assertions.
+
+Select five causal cuts: omit shared capacity acquisition, release at dequeue,
+release after provider completion, release on borrowed cancellation, or discard
+the actual rejected Query/cause and incorrectly return Ok. The last cut changes
+the owning branch, never an assertion or observer. Each must fail the intended
+post-cleanup oracle for both providers in debug/optimized, followed by exact
+restored positives; setup/timeouts/kills cannot satisfy this requirement.
+
+The initial450 Rust/85 controller ceilings cannot contain this full ownership
+witness. Before dependent edits, select850 cumulative introduced Rust test lines
+and140 unique controller lines, including authored lines subsequently removed.
+Forecast retained520–620 and introduced720–840 Rust, controllers110–135. Current
+Rust+366/-10/net356, introduced370; controllers69 introduced. Maximum five existing
+tracked paths remains; production+0/-0/net0, public API+0/-0, dependencies0.
+Root alone owns shared records and integration; the admission agent owns the
+single native Counter test path and its exclusively leased build target. Record
+measured overruns before further edits. No production extraction is selected.
+
+This remains count-only SessionLocal evidence, not TLS pressure or total-arrival,
+byte/backing, decoder/provider/replay heap, FINAL congestion, global nonadmission,
+production overflow, or whole-service unwind proof. FullR01–R25 and AUTH1/NET1
+remain open. PR356 is unchanged and its required Nix check remains pending.
+
+Independent count review retains two limits: healthy gate2/queue2 reaches
+NoPermits before queue Full, so preserving Full's native variant/metric earns
+no executed Full refusal credit here. Query clones share QueryInner; dropping
+this uncloned original before its permit proves neither retirement of aliases
+nor all native memory. Settle real reply builders before Query disposal. Tokio
+owned acquire/split/drop and Zenoh Query/QueryInner source support these cuts;
+they do not close FINAL congestion or whole-service custody requirements.
+
+### Native and held prerequisite delivered through PR356
+
+2026-10-13 UTC. [PR356](https://github.com/devrandom-labs/bombay/pull/356)
+merged at00:33:33Z, commit2572bf3000654011d6bfb1e150898a131d0681b7.
+All six observed checks pass on submitted e5cd8b7. Required Nix job115053895551
+in [CI38322598237](https://github.com/devrandom-labs/bombay/actions/runs/38322598237)
+finishes00:29:40Z, with flake, Driver and Observe fuzz and artifact uploads passing.
+Actual manual/scheduled-only Miri steps are skipped, never credited as executed.
+Native debug/release, Deny and CodeQL pass their actual selected jobs. Technical
+review5497072591 is a COMMENT on exact e5; no human approving review is claimed.
+Repository rules require PR and Nix, with zero required approving reviews; merge
+uses exact-head guard without bypass after fresh actual-mainaa2/source checks.
+
+Independent terminal receipt836511b3 binds the actual logc4c23079, all checks and
+449 rehashed fuzz files (108 Driver,341 Observe). Driver2048 and four Observe1024
+campaigns finish with no named crashes. Linux optimized workspace66 summary rows
+643/0/1 is distinct from local71 rows644/0/1. Counter54 named tests execute in plain
+and coverage debug plus release. Parent-report witness executes coverage/release;
+plain debug reports0 with1filtered, which earns no execution. Owner coverage
+737/818,962/1001,95/97,502/525 satisfies each recorded floor. Collector36 introduced
+lines stays within its independently selected45; no test command is weakened.
+
+Native audit0dfca335 rehashes205 files/profile: protected64cases/160roles combined
+have one intended test each, clean zero exits and complete causal markers. The
+separate historical transport cohort retains invalid RELEASE setup refusals,
+late uncertainty and killed-role cleanup limitations; those are not authentication
+or successful retirement proof. CI reports executable identities but retains no
+independent executable copies; local copied binaries remain separate evidence.
+
+Remote main actually equals2572bf30; its parentsaa2/e5 and tree48df38e9 match the
+submitted and synthetic tested trees, independently observed by the CI reviewer.
+Record this scoped adoption/native/held contribution as merged. All fullR01–R25,
+AUTH1/NET1, production KERI, supported shipping export, combined bounds and outer
+fault custody remain open. The count-only correction is uncommitted separate work.
+
+Sealed independent final CI review36405d22 is retained at
+/tmp/bombay-pr356-ci-independent-review/review.md (28 prose lines). The selected
+supplement36 lines plus one separately attributed checksum invocation remain
+within45. Exact merge/source/log custody and unexecuted Miri are explicit there.
+
+Count delivery branch feat/native-query-count-ownership is created from freshly
+fetched actual main2572bf30 before any commit. Custody receiptbf5e0fb9 preserves
+all four dirty paths, both root/native locks and flake.lock byte-for-byte, including
+c3ee43cc source. Main's tree equals e5; no merge/rebase/source rewrite was needed.
+First branch-preparation read used an absent example lock path and changed
+nothing; corrected custody uses the actual transport-custody/Cargo.lock.
+
+CI integration selected before workflow edits: native jobs compile the optional
+protected-transport target but execute only native roles and child-stop filters;
+the default Nix workspace does not enable this example feature. Add an explicit
+native_query_count_covers_provider_and_queue invocation to each existing debug/
+release job, through pinned Nix, using its exact Cargo-selected executable.
+Retain the log and require both exact provider test names and one2/0/0 summary;
+compilation or zero-test success cannot substitute. No command/check is removed.
+
+Forecast15–20 new workflow/controller lines. Select combined orchestration cap165
+from140 before edits, including all unique local collectors/cuts and these actual
+CI instructions. Rust cap850 remains. Maximum five existing tracked paths now
+means native Counter tests, checks.yml and three owning records; the existing
+transport controller is unchanged. Production/API/dependency delta remains0.
+These workflow checks are unexecuted until actual submitted-head CI passes;
+local SessionLocal count evidence still earns no transport-pressure credit.
+
+Strengthened ed649976 preserves bounded drained-original observations and passes
+both providers in debug/optimized. Strict feature Clippy reports only three style
+issues; no semantic failure is credited. Under recommendation delegation, select
+fulfilled function-local expect(result_large_err) on exact Query/native error/
+permit return (retain original custody without another allocation), and
+expect(too_many_lines) on the one complete two-provider native owner/cleanup law.
+Each reason must state that law; keep global strict linting unchanged and prove
+expectations fulfilled. Use ordinary assert_eq!(remaining_records.as_slice(), &[])
+for the complete empty inventory. Forecast10 cfg-test lines, within850; no boxing,
+new alias/product/trait, API or dependency. Compiler output justifies no new
+architecture. Source remains ed649976 before these selected edits/cuts.
+
+CI exact-name parser accepts actual initial corrected debug/optimized logs and
+refuses both original defect logs. Its13 unique standard-library orchestration
+lines plus12 workflow lines reserve25 of the selected165, leaving140 for local
+controllers. Actual updated CI execution remains pending; no pressure credit.
+
+Parallel native verification selected before snapshot/orchestration: after final
+styled healthy binaries are copied and source editing pauses, archive the exact
+main2572 tracked tree and overlay the five measured dirty paths into one immutable
+source directory. Forecast391 inherited file copies; count actual files/bytes and
+hash every source, separately from newly authored code. No worktree, commit,
+dependency or target is added. The unchanged native controller only hashes its
+fixed source paths and executes the supplied binary; it performs no Cargo/git or
+live-target operation. Use copied actual healthy executables, never overwritten
+mutable target paths, and rehash them and snapshot inputs before each campaign.
+
+Root may run the existing five native campaigns plus child-stop controls in both
+profiles through pinned Nix while the admission agent owns cut builds elsewhere.
+Every role keeps its exact cleanup/exit/proof results; timeout/setup/kill is no
+success. Forecast up to70 additional unique snapshot/command/evidence lines, with
+unchanged controller copies separately attributed. Select combined orchestration
+cap240 from165 before writes, retaining Rust850 and the same five tracked paths.
+No new native scenario, resource default, layout or public surface is selected.
+
+Parallel snapshot receiptb373a65d seals391 inherited files/8,027,512 bytes,
+all hash-equal before/after archive-plus-overlay. Full source/copied-binary guards
+apply before/after each existing CLI campaign invocation, not each internal native
+role case. Controller retains its own ten source hashes per invocation; no extra
+per-role391 rehash or filesystem write-protection claim. Use ordinary guards,
+never replace standard Path.write_text or add a global evidence hook.
+
+Affected native invocations finish successfully in both profiles; independent
+role-marker inspection initially wrongly required actor-native markers from
+routers. Preserve that uncredited inspection failure. Select one corrected
+role-specific inspection line before execution:41 introduced lines versus prior40,
+within combined227/240. No native rerun or source/controller change is selected;
+routers own Sessions, not Counter actor-native results.
+
+Affected native verification on sealed0dad3e31 passes64cases/160roles combined,
+plus child-stop2/0/0 per profile. All12 CLI invocations exit0, with source391 and
+both copied binaries unchanged before/after. Actor roles128 retain NATIVE_ACQUIRED
+and FINISHED; routers32 retain READY and own no actor-native report. Commands
+0bc8051a/321e6252 and copied binaries81a35651/86c35389 remain separate from live cut
+builds. Runner38 plus three inspections totals41 introduced lines. These are
+actual affected TLS controls, not full R14/R19 or production identity proof.
+
+Five-cut campaign f16baec2 seals20 Cargo records:10 intended101 negatives and10
+byte-exact restored0 controls, each running both providers. Independent10-line
+reader rehashes every phase source/log/copied executable and seven unchanged
+inputs, with correct feature/source/optimization. Twenty negative executions fail
+only the chosen post-cleanup count or rejected-original oracle; twenty restored
+executions pass. Healthy source0dad remains distinct from original360c and setup
+failures. The then-known introduced Rust subtotal702 (693 plus9 disposable additions),
+local controllers137; queue Full/copy-provider denial counters/fullR stay open.
+
+Before combined required commands, select orchestration cap250 from240 to cover
+up to ten unique command/check lines beyond current238. Rust850 and five tracked
+paths remain; production/API/dependencies0. Reuse the released target only after
+final strict/fmt handoff, run locked workspace build/test/strict Clippy through
+pinned Nix, and retain their actual logs. No passing source is inferred from a
+command list or prior e5 verification. This is final scoped prerequisite checking,
+not proof of whole remote delivery.
+
+Author minimization already produced52 external prose lines before the later
+20-line request; preserve that draft rather than hiding history. Select80 cumulative
+external prose lines before distilling a final record of at most20. These copied/
+external records are separate from the root Markdown endpoint ceiling, with
+no new shared source/production/API. The author no longer owns or reads the
+released target. Root workspace build passes on restored0dad before broader tests.
+
+### Count-owner final verification checkpoint — 2026-10-13
+
+Under the standing recommendation delegation, select orchestration ceiling300
+before the final receipt, review and PR operations; the prior250 allowance covers
+the four workspace commands and seven-line result collector (known249). This
+adds no source, dependency, public API, runtime policy or resource default.
+Chronological Rust introduction accounting is being reconstructed from the
+actual saved edits;702 is a known subtotal, not an exhaustive850-cap proof.
+
+Restored source0dad3e31 passes pinned-Nix locked workspace build and strict Clippy;
+workspace tests execute644 passed/0 failed/1 ignored. The protected-transport
+authorized suite executes58/0/1, with no filtered tests. Final formatting and
+protected strict Clippy in debug/optimized pass as recorded in strict.json.
+The workspace commands use CARGO_TARGET_DIR=/tmp/bombay-protected-counter-application/target,
+CARGO_BUILD_JOBS=2, CARGO_INCREMENTAL=0 and all three profile debug settings=0:
+`nix develop -c env … cargo build --locked --workspace`,
+`cargo test --locked --workspace`,
+`cargo test --locked -p bombay-example-counter --bin authorized --features protected-transport`,
+and `cargo clippy --locked --workspace --all-targets -- -D warnings`.
+The ellipsis abbreviates only those explicitly recorded environment settings.
+Logs are /tmp/bombay-static-remote-count-workspace-{build,test,clippy}.log and
+/tmp/bombay-static-remote-count-feature-suite.log; actual exits are all0.
+
+Five tracked paths are changed and no untracked files are present. Source:
+production +0/-0/net0; tests +552/-16/net536; public API +0 types/-0 types.
+CI adds12 lines without removing a check. Dependency manifests and both Cargo
+locks are unchanged. This is an added test capability, not code reduction.
+Independent final minimization passes; submitted-head CI/PR delivery is pending.
+The full R01–R25 witnesses, AUTH1 and NET1 retain their existing open states.
+
+Actual saved edit history resolves the missing formatter accounting:729 explicit
+source-edit introductions plus221 formatter-produced introductions total950,
+with414 removals and net536. Every intermediate sealed hash through0dad matches.
+Adding nine conservative disposable cut additions yields959 cumulative introduced
+Rust lines. The earlier702 subtotal omitted257; the850 ceiling was exceeded109.
+Record that overrun explicitly; under recommendation delegation select1000 before
+further authoring. No further Rust edits are planned for this focused PR. This
+conservative chronological count is separate from retained+552/-16 and from the
+historical166-path union, which remains unproved. No missing edit/format stage is
+claimed in this count-stage reconstruction; independent receipt review passes.
+
+Root workspace log SHA-256 receipts: build7ae9205e, tests8f3b009d,
+strict Clippy7455dccf and optional suite24fcba85. Actual Clippy exit0 is observed;
+an attempted subsequent poll of its already closed session adds no evidence.
+
+Sealed authoring-reconciliation.mde41c57dc records chronological stages
+421+7+9+484+20+9=950, plus9 cut additions=959; author external prose77/80.
+Before final review and delivery receipts, select root Markdown endpoint ceiling
+17500 from17000 under recommendation delegation. Current endpoint additions are
+16930 across15 Markdown paths versusa9c5b7d; they are not a chronological total.
+This changes documentation allowance only; historical166-path union remains open.
+
+Independent scoped source/CI/receipt minimization passes after reviewing the
+actual ownership paths, all20 inversion records and actual saved authoring replay.
+No retained wrapper or duplicated runtime/authorization owner remains. Query
+capacity/rejection owns only original values and distinct native causes; the
+Counter aggregate and native runtime phases are unchanged. The full PRD remains
+active with no full witness closure. Final stage has five paths/untracked0:
+Rust tests+552/-16, CI+12/-0, backlog+17/-3, acceptance+15/-4; production/API0.
+PRD prose additions are recorded by the final committed diff, not a stale forecast.

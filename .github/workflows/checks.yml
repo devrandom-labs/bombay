@@ -190,6 +190,18 @@ jobs:
           if len(executed) != 2 or set(executed) != expected or summaries != [("2", "0", "0")]:
               raise SystemExit("exact child Stop witnesses did not execute successfully")
           PYTHON
+          nix develop -c "$executable" native_query_count_covers_provider_and_queue \
+            --nocapture > "$evidence/protected-query-count.log" 2>&1
+          python3 - "$evidence/protected-query-count.log" <<'PYTHON'
+          import re, sys
+          from pathlib import Path
+          observed = Path(sys.argv[1]).read_text()
+          expected = {"remote_counter::native_query_count_covers_provider_and_queue_for_" + provider + "_proof" for provider in ("recorded", "scheduled")}
+          executed = re.findall(r"^test (\S+) \.\.\. ok$", observed, re.MULTILINE)
+          summaries = re.findall(r"^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;", observed, re.MULTILINE)
+          if len(executed) != 2 or set(executed) != expected or summaries != [("2", "0", "0")]:
+              raise SystemExit("exact native Query count witnesses did not execute successfully")
+          PYTHON
       - name: Retain native transport observations
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

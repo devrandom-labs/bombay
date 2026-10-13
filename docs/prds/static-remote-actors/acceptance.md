@@ -9,6 +9,13 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
+The selected count-before-copy comparison covers accepted queued, active and
+unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in
+debug and optimized. Corrected controls and all five causal cuts pass both
+providers in both profiles; scoped minimization passes and submitted-head CI/PR
+delivery remains pending. It cannot close R14/R19 byte, overflow, congestion or
+whole-service fault obligations; the PRD records its scope and release policy.
+
 ## Requirement traceability
 
 The inventory IDs below map exactly to the PRD's selected scope. Several IDs
@@ -273,8 +280,8 @@ triple and confirms original outcomes remain owned. Earlier e8d intermediate
 receiptbdc62461/campaign370ad57a remains historical. Each intended failure follows
 actual native acquisition. The cuts test held-resource ownership and a consumer
 distinguishing Stop acceptance from joined retirement; they do not prove a runtime
-early-publication defect. This is local unmerged evidence, with no remote held-target
-Stop, global identity or full R11 acceptance credit.
+early-publication defect. This local evidence is included in the scoped PR356 prerequisite merge; it earns
+no remote held-target Stop, global identity or full R11 acceptance credit.
 
 ### Adopted dependency and combined verification checkpoint
 
@@ -297,5 +304,9 @@ protected and nested suites pass56/0/1 in both profiles, with ignored subprocess
 roles earning no network credit. Independent review52013cb4/evidence860a17d3
 verifies workspace644/0/1, all64 protected cases/160 roles with exact single
 execution and clean exits, and both child-stop pairs2/0/0. Source minimization
-29edd721 and endpoint accounting73439a5d find no scoped blocker. Required CI
-and actual reviewed merge remain pending. All fullR01–R25 stay open.
+29edd721 and endpoint accounting73439a5d find no scoped blocker. [PR356](https://github.com/devrandom-labs/bombay/pull/356) merged2572bf30 after
+exact-head review and all six passing checks, with required Nix38322598237.
+Actual Linux optimized workspace643/0/1 remains distinct from local644/0/1;
+Counter54 executes plain/coverage debug and release, owner floors pass, and
+Driver2048/Observe4×1024 finish. Miri is skipped. Native64cases/160roles pass
+separately; held controls retain local inversion provenance. All fullR01–R25 stay open.

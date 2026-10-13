@@ -1,10 +1,19 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-12. This is the implementation index for the
+Updated: 2026-10-13. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
+
+Next selected experiment: count-before-copy ownership across queued, verifying
+and unread native requests, using existing Tokio permits and authorization.
+Both real providers reproduce the original count violation in debug and optimized;
+Corrected controls and all five causal cuts pass both providers in debug and
+optimized; combined workspace and affected TLS checks pass. Scoped minimization
+passes; submitted-head CI/PR delivery remains pending. See the
+[PRD](../prds/static-remote-actors.md#count-before-copy-comparison-selected-next-experiment).
+This test-only selection leaves AUTH1/NET1 and full remote acceptance unchanged.
 
 Protected-Application prerequisite [PR354](https://github.com/devrandom-labs/bombay/pull/354)
 merged36c00d53c84482c2b1fdf0587dca788bc6c39250 at2026-10-12T04:16:32Z after
@@ -43,12 +52,17 @@ ordinary suites pass54/0/0 and protected/nested56/0/1 in both profiles. All five
 healthy controller campaigns are integrated into existing CI jobs; adopted combined
 workspace644/0/1, build, formatting, strict Clippy and both all-features policy
 checks pass locally with independent artifact review52013cb4.
-This comparison remains cfg(test) and unmerged. A separate local held-descendant
+This comparison remains cfg(test). A separate local held-descendant
 comparison passes real-resource and acceptance-versus-joined controls/cuts in both
 profiles, with final complete-control oracle correction and independent review.
 Remote held-target retirement, combined ingress bounds and the shipping entrypoint
 remain open.
-Bombay1.10.8 local adoption passes combined verification; protected-stage PR delivery remains pending.
+Adoption and native/held prerequisites [PR356](https://github.com/devrandom-labs/bombay/pull/356)
+merged2572bf3000654011d6bfb1e150898a131d0681b7 at2026-10-13T00:33:33Z after
+exact-head review and all six passing checks. Required Nix38322598237 passes
+workspace optimized643/0/1, owner coverage and Driver2048/Observe4×1024; actual
+Miri is skipped. Native64cases/160roles pass separately. Local644/0/1 and historical
+inversion counts retain their own provenance; this delivers no full remote row.
 The candidate quota covers ordinary query registrations; liveliness and inherited
 unstable native-cancellation outcomes remain outside that claim. All
 fullR01–R25 and AUTH1/NET1 acceptance remain open.

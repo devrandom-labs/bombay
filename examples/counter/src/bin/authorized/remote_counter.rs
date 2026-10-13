@@ -2,15 +2,17 @@ use super::*;
 use bombay::ActorInterface;
 use std::io::{self, BufRead, Read, Write};
 use std::path::Path;
+use std::sync::Mutex;
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
 };
-use tokio::sync::mpsc;
+use tokio::sync::{OwnedSemaphorePermit, Semaphore, TryAcquireError, mpsc};
 use zenoh::{
     Config,
     bytes::ZBytes,
     query::{ConsolidationMode, Query, QueryTarget, Reply},
+    sample::Locality,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -313,7 +315,9 @@ async fn counter_native_applications<R>(
             RemoteCounterRole::Caller => None,
             RemoteCounterRole::Router => unreachable!("router has its own Session scope"),
         };
-        let (native_queries, mut received_queries) = mpsc::channel::<Query>(2);
+        let (native_queries, mut received_queries) =
+            mpsc::channel::<(Query, OwnedSemaphorePermit)>(2);
+        let query_capacity = Arc::new(Semaphore::new(2));
         let query_dispositions = Arc::new(RawCounterDiscards::default());
         let reply_dispositions = Arc::new(RawCounterDiscards::default());
         let queryable = match role {
@@ -323,16 +327,14 @@ async fn counter_native_applications<R>(
                     session
                         .declare_queryable("bombay/counter/protected")
                         .complete(true)
-                        .callback(move |query| match native_queries.try_send(query) {
-                            Ok(()) => (),
-                            Err(mpsc::error::TrySendError::Full(original)) => {
-                                dispositions.full.fetch_add(1, Ordering::Relaxed);
-                                drop(original);
-                            }
-                            Err(mpsc::error::TrySendError::Closed(original)) => {
-                                dispositions.closed.fetch_add(1, Ordering::Relaxed);
-                                drop(original);
-                            }
+                        .callback(move |query| {
+                            let original = queue_counter_query(
+                                &native_queries,
+                                &query_capacity,
+                                &dispositions,
+                                query,
+                            );
+                            drop(original);
                         })
                         .await
                         .expect("native queryable"),
@@ -694,10 +696,11 @@ async fn counter_native_applications<R>(
                     }
                     stop_grant = Some(release);
                 }
-                let query = received_queries
+                let accepted_query = received_queries
                     .recv()
                     .await
                     .expect("actual native request");
+                let query = &accepted_query.0;
                 if ordinal == 0 {
                     counter_control("RECEIVED");
                     query_releases.push(counter_release());
@@ -719,7 +722,7 @@ async fn counter_native_applications<R>(
                         reservations.push(authorization.reserve(original));
                         let Ok(correlation) = reservations.last().expect("original reservation")
                         else {
-                            drop(query);
+                            drop(accepted_query);
                             continue;
                         };
                         let correlation = *correlation;
@@ -750,7 +753,7 @@ async fn counter_native_applications<R>(
                             &authorization.pending[position].verification
                         else {
                             admissions.push(authorization.consume(correlation));
-                            drop(query);
+                            drop(accepted_query);
                             continue;
                         };
                         let scope = *projection(receipt).0;
@@ -965,7 +968,7 @@ async fn counter_native_applications<R>(
                     original => request_reads.push(original),
                 }
                 read_ports.push((request_values, read_reply));
-                drop(query); // Release native FINAL only after the original reply Results are retained.
+                drop(accepted_query); // Release native FINAL only after the original reply Results are retained.
             }
         }
         let read_sent = requests
@@ -2067,4 +2070,537 @@ fn counter_child_stop<R>(
         exports,
         values,
     ));
+}
+
+enum CounterQueryRejection {
+    Capacity {
+        original: Query,
+        cause: TryAcquireError,
+    },
+    Queue(mpsc::error::TrySendError<(Query, OwnedSemaphorePermit)>),
+}
+
+#[expect(
+    clippy::result_large_err,
+    reason = "Retain the original Query, native cause and queued permit without extra allocation."
+)]
+fn queue_counter_query(
+    queries: &mpsc::Sender<(Query, OwnedSemaphorePermit)>,
+    capacity: &Arc<Semaphore>,
+    dispositions: &RawCounterDiscards,
+    query: Query,
+) -> Result<(), CounterQueryRejection> {
+    let permit = match capacity.clone().try_acquire_owned() {
+        Ok(permit) => permit,
+        Err(cause) => {
+            return Err(CounterQueryRejection::Capacity {
+                original: query,
+                cause,
+            });
+        }
+    };
+    match queries.try_send((query, permit)) {
+        Ok(()) => Ok(()),
+        Err(original @ mpsc::error::TrySendError::Full(_)) => {
+            dispositions.full.fetch_add(1, Ordering::Relaxed);
+            Err(CounterQueryRejection::Queue(original))
+        }
+        Err(original @ mpsc::error::TrySendError::Closed(_)) => {
+            dispositions.closed.fetch_add(1, Ordering::Relaxed);
+            Err(CounterQueryRejection::Queue(original))
+        }
+    }
+}
+
+#[test]
+fn native_query_count_covers_provider_and_queue_for_recorded_proof() {
+    counter_query_count(
+        CounterProofProfile::RecordedTest,
+        &record_provider::verify,
+        record_provider::projection,
+    );
+}
+
+#[test]
+fn native_query_count_covers_provider_and_queue_for_scheduled_proof() {
+    counter_query_count(
+        CounterProofProfile::ScheduledTest,
+        &scheduled_provider::verify,
+        scheduled_provider::projection,
+    );
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "One two-provider native ownership law acquires every original and complete cleanup before independent count and custody oracles."
+)]
+fn counter_query_count<R>(
+    profile: CounterProofProfile,
+    provider: &impl AsyncFn(
+        &CounterRequest,
+        &[ProtectedRecord],
+        AuthorityFreshness,
+        ProviderAvailability,
+        CounterProofProfile,
+        CounterProofPurpose,
+        &str,
+        &str,
+        &protected::Limits,
+    ) -> Result<R, VerificationError>,
+    projection: fn(&R) -> (&Scope, CounterProofProfile, CounterProofPurpose),
+) {
+    let host = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let acquired = host.block_on(async {
+        let mut authority = AssignmentAuthority {
+            host: &host,
+            runtime_generation: 23,
+            grant_issuer: "grant-controller",
+            authority_generation: 7,
+            permitted_operations: &[CounterOperation::Increment],
+            next: Some(29),
+        };
+        let issued = authority.issue().expect("actual entered finite authority");
+        let (binding, deadline) = issued;
+        let configured = [0, 1, 2].map(|sequence| {
+            counter_record(
+                Scope {
+                    identity: Identity { binding, sequence },
+                    operation: CounterOperation::Increment,
+                    grant_issuer: authority.grant_issuer,
+                    authority_generation: authority.authority_generation,
+                },
+                profile,
+                CounterProtectedMeaning::Request,
+                &[41],
+                &mut [0; 8192],
+            )
+            .expect("finite registered native request")
+        });
+        let (published, ports) = oneshot::channel();
+        let (permitted, permission) = oneshot::channel();
+        let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+            .execute_with::<_, _, Never, (), _, _>(|application| async move {
+                let interface = application.interface(());
+                let publication = published.send((
+                    application.lifecycle(),
+                    application.root().established_recipient(),
+                    application.root().address(),
+                    interface.external::<CounterRequests>().unwrap(),
+                    interface.external::<CounterValue>().unwrap(),
+                ));
+                let permission = permission.await;
+                (publication, permission)
+            })
+            .unwrap_or_else(|original| {
+                drop(original);
+                panic!("actual Counter Application construction");
+            });
+        let service = async {
+            let (lifecycle, target, target_origin, requests, mut values) = ports.await.unwrap();
+            let mut authorization = CounterAuthorization::new(
+                StartupMode::ExplicitTest,
+                Some((binding, deadline, target.clone())),
+                authority.grant_issuer,
+                authority.authority_generation,
+                authority.permitted_operations,
+                projection,
+                profile,
+                CounterLimits {
+                    incoming: NonZeroUsize::new(2).unwrap(),
+                    retained: NonZeroUsize::new(3).unwrap(),
+                    individual: NonZeroUsize::new(131_072).unwrap(),
+                    total: NonZeroUsize::new(262_144).unwrap(),
+                    verification_maximum: 65_536,
+                },
+            )
+            .unwrap();
+            let config = Config::from_json5(
+                r#"{mode:"peer",scouting:{multicast:{enabled:false,listen:false},gossip:{enabled:false}}}"#,
+            )
+            .unwrap();
+            let session = zenoh::open(config).await.unwrap();
+            let capacity = Arc::new(Semaphore::new(2));
+            let (queries, mut received) = mpsc::channel(2);
+            let dispositions = Arc::new(RawCounterDiscards::default());
+            let publications = Arc::new(Mutex::new([None, None, None, None, None, None, None]));
+            let callback_publications = publications.clone();
+            let callback_dispositions = dispositions.clone();
+            let callback_capacity = capacity.clone();
+            let queryable = session
+                .declare_queryable("bombay/counter/count")
+                .allowed_origin(Locality::SessionLocal)
+                .callback(move |query| {
+                    let original = queue_counter_query(&queries, &callback_capacity, &callback_dispositions, query);
+                    let mut publications = callback_publications.lock().unwrap();
+                    let vacant = publications.iter_mut().find(|slot| slot.is_none()).unwrap();
+                    *vacant = Some(original);
+                })
+                .await
+                .unwrap();
+            let query_record = async |record: &ProtectedRecord| {
+                session.get("bombay/counter/count")
+                    .allowed_destination(Locality::SessionLocal)
+                    .consolidation(ConsolidationMode::None)
+                    .payload(record.protected.to_vec())
+                    .attachment(record.proof.to_vec())
+                    .await
+            };
+            let mut query_receivers = Vec::new();
+            let mut caller_admissions = Vec::new();
+            let mut pointers = Vec::new();
+            let mut reports = Vec::new();
+            let mut replies = Vec::new();
+            query_receivers.push(query_record(&configured[0]).await);
+            let first = received.recv().await.expect("actual first Query");
+            let copied = counter_native_record(
+                    first.0.payload().unwrap(),
+                    first.0.attachment().unwrap(),
+                );
+            let Some(Ok(original)) = copied else {
+                    panic!("original first native copy");
+                };
+            pointers.push((original.protected.as_ptr(), original.proof.as_ptr()));
+            let correlation = authorization.reserve(original).unwrap_or_else(|original| {
+                drop(original);
+                panic!("first accepted pending ownership");
+            });
+            let (canceled_wait, still_pending, initial_count, released) = {
+                let (release, released) = oneshot::channel();
+                let mut verification = pin!(acquire_verification(
+                    &mut authorization.pending[0],
+                    async |original| {
+                        released.await.map_err(VerificationError::Unavailable)?;
+                        provider(
+                            original,
+                            &configured,
+                            AuthorityFreshness::Current,
+                            ProviderAvailability::Available,
+                            profile,
+                            CounterProofPurpose::Request,
+                            binding.caller,
+                            binding.host,
+                            &counter_test_json_limits(),
+                        )
+                        .await
+                    }
+                ));
+                let canceled_wait = verification.as_mut().now_or_never();
+                query_receivers.push(query_record(&configured[1]).await);
+                query_receivers.push(query_record(&configured[2]).await);
+                let still_pending = verification.as_mut().now_or_never();
+                let initial_count = 1 + received.len();
+                let released = release.send(());
+                verification.await;
+                (canceled_wait, still_pending, initial_count, released)
+            };
+            authorization.associate(0, &requests, &values.recipient());
+            authorization.attempt(correlation, &requests);
+            reports.push(authorization.report(correlation));
+            let unread = (authorization.consume(correlation), first.0, first.1);
+            let second = received.recv().await.expect("original queued Query");
+            let copied = counter_native_record(
+                    second.0.payload().unwrap(),
+                    second.0.attachment().unwrap(),
+                );
+            let Some(Ok(original)) = copied else {
+                    panic!("original second native copy");
+                };
+            pointers.push((original.protected.as_ptr(), original.proof.as_ptr()));
+            let second_correlation = authorization.reserve(original).unwrap_or_else(|original| {
+                drop(original);
+                panic!("second accepted pending ownership");
+            });
+            let (second_pending, unread_count, second_released) = {
+                let (release, released) = oneshot::channel();
+                let mut verification = pin!(acquire_verification(
+                    &mut authorization.pending[0],
+                    async |original| {
+                        released.await.map_err(VerificationError::Unavailable)?;
+                        provider(
+                            original,
+                            &configured,
+                            AuthorityFreshness::Current,
+                            ProviderAvailability::Available,
+                            profile,
+                            CounterProofPurpose::Request,
+                            binding.caller,
+                            binding.host,
+                            &counter_test_json_limits(),
+                        )
+                        .await
+                    }
+                ));
+                let second_pending = verification.as_mut().now_or_never();
+                query_receivers.push(query_record(&configured[2]).await);
+                let unread_count = 2 + received.len();
+                let (admission, original_query, permit) = unread;
+                caller_admissions.push(admission);
+                replies.push(original_query.reply("bombay/counter/count", *b"A").await);
+                drop(original_query);
+                drop(permit);
+                query_receivers.push(query_record(&configured[2]).await);
+                let second_released = release.send(());
+                verification.await;
+                (second_pending, unread_count, second_released)
+            };
+            authorization.associate(0, &requests, &values.recipient());
+            authorization.attempt(second_correlation, &requests);
+            reports.push(authorization.report(second_correlation));
+            caller_admissions.push(authorization.consume(second_correlation));
+            replies.push(second.0.reply("bombay/counter/count", *b"B").await);
+            drop(second);
+            let third_receiving = match received.try_recv() {
+                Ok(third) => {
+                let copied = counter_native_record(
+                    third.0.payload().unwrap(),
+                    third.0.attachment().unwrap(),
+                );
+                let Some(Ok(original)) = copied else {
+                    panic!("original third native copy");
+                };
+                pointers.push((original.protected.as_ptr(), original.proof.as_ptr()));
+                let correlation = authorization.reserve(original).unwrap_or_else(|original| {
+                    drop(original);
+                    panic!("third accepted pending ownership");
+                });
+                acquire_verification(&mut authorization.pending[0], async |original| {
+                    provider(
+                        original,
+                        &configured,
+                        AuthorityFreshness::Current,
+                        ProviderAvailability::Available,
+                        profile,
+                        CounterProofPurpose::Request,
+                        binding.caller,
+                        binding.host,
+                        &counter_test_json_limits(),
+                    )
+                    .await
+                }).await;
+                authorization.associate(0, &requests, &values.recipient());
+                authorization.attempt(correlation, &requests);
+                reports.push(authorization.report(correlation));
+                caller_admissions.push(authorization.consume(correlation));
+                replies.push(third.0.reply("bombay/counter/count", *b"C").await);
+                drop(third);
+                Ok(())
+                }
+                Err(cause) => Err(cause),
+            };
+            let mut remaining_queries = Vec::new();
+            let drained = loop {
+                match received.try_recv() {
+                    Ok(original) => remaining_queries.push(original),
+                    Err(cause) => break cause,
+                }
+            };
+            let remaining_records: Vec<_> = remaining_queries.iter().map(|(query, permit)| {
+                (query.payload().map(|bytes| bytes.to_bytes().into_owned()),
+                 query.attachment().map(|bytes| bytes.to_bytes().into_owned()),
+                 permit.num_permits())
+            }).collect();
+            received.close();
+            query_receivers.push(query_record(&configured[2]).await);
+            capacity.close();
+            query_receivers.push(query_record(&configured[2]).await);
+            let read = values.send(&target, CounterMessage::Read(values.recipient())).await;
+            let value = match &read {
+                Ok(()) => values.receive().await,
+                Err(_) => None,
+            };
+            drop(remaining_queries);
+            let undeclared = queryable.undeclare().await;
+            let closed = session.close().await;
+            let mut received_replies = Vec::new();
+            for native in &query_receivers {
+                received_replies.push(match native {
+                    Ok(native) => Some(native.recv_async().await),
+                    Err(_) => None,
+                });
+            }
+            let stopped = lifecycle.request_shutdown();
+            let permission = permitted.send(());
+            (
+                authorization,
+                configured,
+                target_origin,
+                [canceled_wait, still_pending, second_pending],
+                [initial_count, unread_count],
+                [released, second_released],
+                caller_admissions,
+                pointers,
+                reports,
+                replies,
+                query_receivers,
+                received_replies,
+                read,
+                value,
+                (undeclared, closed, stopped, permission),
+                third_receiving,
+                (remaining_records, drained),
+                dispositions,
+                publications,
+                requests,
+                values,
+            )
+        };
+        let (execution, observations) =
+            tokio::join!(AssertUnwindSafe(execution).catch_unwind(), service);
+        let native = receiving.await;
+        (issued, execution, native, observations)
+    });
+    let (issued, execution, native, observations) = acquired;
+    let (
+        authorization,
+        configured,
+        target_origin,
+        pending,
+        counts,
+        releases,
+        admissions,
+        pointers,
+        reports,
+        replies,
+        query_receivers,
+        received_replies,
+        read,
+        value,
+        (undeclared, closed, stopped, permission),
+        third_receiving,
+        (remaining_records, drained),
+        dispositions,
+        publications,
+        _requests,
+        _values,
+    ) = observations;
+    let (
+        ApplicationOutcome::Completed {
+            output: (publication, continued),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = native
+    else {
+        panic!("all original Counter Work/native/two-notification products");
+    };
+    let _retired_counter = completed_actor(origin, retirement);
+    assert!(execution.is_ok() && publication.is_ok() && continued.is_ok());
+    assert!(undeclared.is_ok() && closed.is_ok() && stopped.is_ok() && permission.is_ok());
+    assert_eq!(
+        counts[0], 2,
+        "accepted Query count includes provider-held and queued originals"
+    );
+    assert_eq!(
+        counts[1], 2,
+        "accepted Query count includes unread full product and provider-held original"
+    );
+    assert_eq!(pending, [None, None, None]);
+    assert!(releases.iter().all(Result::is_ok) && read.is_ok());
+    assert_eq!(
+        value.as_ref().map(|value| (value.from, value.message)),
+        Some((target_origin, 3))
+    );
+    assert_eq!((admissions.len(), pointers.len(), reports.len()), (3, 3, 3));
+    for ((admission, pointers), record) in admissions.iter().zip(&pointers).zip(&configured) {
+        let Some(admission) = admission else {
+            panic!("original full admission acquired by caller");
+        };
+        assert_eq!(
+            (
+                admission.original.protected.as_ptr(),
+                admission.original.proof.as_ptr()
+            ),
+            *pointers
+        );
+        assert_eq!(
+            admission.original.protected.as_ref(),
+            record.protected.as_ref()
+        );
+        assert_eq!(admission.original.proof.as_ref(), record.proof.as_ref());
+        let Verification::Native {
+            receipt,
+            delivery: CounterDelivery::IncrementAdmitted,
+        } = &admission.verification
+        else {
+            panic!("original provider receipt and native admission retained");
+        };
+        assert_eq!(
+            projection(receipt),
+            (&record.scope, profile, CounterProofPurpose::Request)
+        );
+    }
+    assert!(reports.iter().all(|report| matches!(
+        report,
+        Some(CounterReport {
+            status: CounterStatus::IncrementAdmitted,
+            ..
+        })
+    )));
+    assert_eq!(issued.0, configured[0].scope.identity.binding);
+    assert!(authorization.pending.is_empty());
+    assert!(third_receiving.is_ok());
+    assert!(matches!(drained, mpsc::error::TryRecvError::Empty));
+    for (payload, proof, permits) in &remaining_records {
+        assert_eq!(payload.as_deref(), Some(configured[2].protected.as_ref()));
+        assert_eq!(proof.as_deref(), Some(configured[2].proof.as_ref()));
+        assert_eq!(*permits, 1);
+    }
+    assert_eq!(remaining_records.as_slice(), &[]);
+    assert!(replies.iter().all(Result::is_ok) && query_receivers.iter().all(Result::is_ok));
+    assert_eq!(dispositions.full.load(Ordering::Relaxed), 0);
+    assert_eq!(dispositions.closed.load(Ordering::Relaxed), 1);
+    let publications = publications.lock().unwrap();
+    for position in [0, 1, 4] {
+        assert!(matches!(publications[position], Some(Ok(()))));
+    }
+    for position in [2, 3, 6] {
+        let Some(Err(CounterQueryRejection::Capacity { original, cause })) =
+            &publications[position]
+        else {
+            panic!("capacity rejection retains the actual original Query and cause");
+        };
+        assert!(matches!(
+            (position, cause),
+            (2 | 3, TryAcquireError::NoPermits) | (6, TryAcquireError::Closed)
+        ));
+        assert_eq!(
+            original.payload().unwrap().to_bytes().as_ref(),
+            configured[2].protected.as_ref()
+        );
+        assert_eq!(
+            original.attachment().unwrap().to_bytes().as_ref(),
+            configured[2].proof.as_ref()
+        );
+    }
+    let Some(Err(CounterQueryRejection::Queue(mpsc::error::TrySendError::Closed((
+        original,
+        permit,
+    ))))) = &publications[5]
+    else {
+        panic!("queue closure retains the original Query, permit and native cause");
+    };
+    assert_eq!(permit.num_permits(), 1);
+    assert_eq!(
+        original.payload().unwrap().to_bytes().as_ref(),
+        configured[2].protected.as_ref()
+    );
+    assert_eq!(
+        original.attachment().unwrap().to_bytes().as_ref(),
+        configured[2].proof.as_ref()
+    );
+    assert_eq!(received_replies.len(), 7);
+    for position in [0, 1, 4] {
+        assert!(matches!(received_replies[position], Some(Ok(_))));
+    }
+    for position in [2, 3, 5, 6] {
+        assert!(matches!(received_replies[position], Some(Err(_))));
+    }
 }
