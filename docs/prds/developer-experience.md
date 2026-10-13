@@ -283,5 +283,8 @@ The finalization facade at b2c208b adds one method and no stored state or owner
 contract. Its pure two-order test distinguishes outer stop from outer finalization.
 The final optimized workspace suite passes651 tests with one existing subprocess
 skip; strict lint and both MSRV profiles pass. All106 original assertion statements
-remain. The owning PRD records the order law and exact counts. Final-source full
-Nix gates and extracted-package proof remain pending.
+remain. The owning PRD records the order law and exact counts. All21 native Nix gates pass at80348a6 in2358.777 seconds with source unchanged.
+Extracted-package current/MSRV debug/release runs pass21/21/20/20 cases, using
+all61 identical production Rust files, the complete guide and native tests. No
+signing/disk waiver or registry-publication claim applies. Other DX criteria
+and policy publication remain open.
