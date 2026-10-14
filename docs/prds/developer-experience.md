@@ -288,3 +288,18 @@ Extracted-package current/MSRV debug/release runs pass21/21/20/20 cases, using
 all61 identical production Rust files, the complete guide and native tests. No
 signing/disk waiver or registry-publication claim applies. Other DX criteria
 and policy publication remain open.
+
+Timer ownership (DX13): the owning PRD records the pre-edit law and baseline
+journey. The selected registry interpreter keys timers by TimerId; distinct
+wrapper occurrences cannot acquire automatic identity by sharing a fixed ID.
+The next proof uses actual delivery, closure and full retirement, with no
+production change or dependency upgrade before the ownership equation is proven.
+
+The timer baseline now retains two complete native session witnesses, passing
+both compilers/profiles and strict focused lint. Distinct IDs deliver every
+notice; equal explicit IDs replace the earlier schedule. No-ID syntax fails
+E0061. Reifying the existing event lane into the unchanged queue's key compiles
+but breaks named replacement in both profiles; the exact interpreter is restored.
+The owning PRD and DEAD_ENDS record the falsifier and counts. Automatic and
+explicit names need separate meaning before production/migration; DX13 remains
+open. These focused tests do not replace the final repository gates.
