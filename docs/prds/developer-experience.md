@@ -406,3 +406,21 @@ original custody oracles are retained in runtime tests.
 Entity, final package/MSRV/full native gates, compact documentation and the
 remaining owning DX checklist requirements stay open. The combined workspace
 pass does not close those requirements or authorize publication.
+
+The Entity owner now provides `application.retire_entity(role, &id).await`,
+returning the existing graceful/forced mode after exact-slot release. The
+request-only `passivate_entity` remains available. Error cases are precisely
+no active incarnation and family shutdown. Completion is shared, cancellation
+of one wait preserves other observers, and missing publication stays pending
+while the original task failure remains in family shutdown. Original native
+and callback failures remain independent of the completed mode.
+
+Six native witnesses pass current/MSRV debug/release (24 executions), along
+with six compile denials and an ordinary error consumer in all four builds.
+Three defect inversions fail in debug/release; six restored controls pass.
+The affected owner23-test corpus and downstream2+11 cases pass debug/release;
+strict all-target/all-feature lint, formatting and active doctests pass. The
+added publication field is16 bytes; one observation pair allocates72 bytes and
+releases them after its owners leave scope. No dependency or generic bound
+changes. The public example still needs distillation, and final full/package
+checks plus other owning DX requirements remain open.

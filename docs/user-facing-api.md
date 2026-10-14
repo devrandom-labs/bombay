@@ -883,13 +883,17 @@ let application_receiving = application.run_with_entities(
         let accounts = application.entities(AccountsRole);
         let account = accounts.entity(account_id);
         let caller = application.sender_to(account)?;
-        caller.send(AccountCommand::Deposit(amount)).await
+        caller.send(AccountCommand::Deposit(amount)).await.expect("deposit admitted");
+        let mode = application.retire_entity(AccountsRole, &account_id)
+            .await.expect("the captured incarnation retired");
+        application.request_shutdown().expect("root shutdown admitted");
+        mode
     },
 ).await;
 ```
 
-`application_receiving` is a `Result`: success retains
-`(work_outcome, root_receiving, notification_receiving, family_receiving)`; host-entry rejection returns
+`application_receiving` is a `Result`: success owns one `ApplicationOutcome`
+containing independent work, root, notification and family results; host-entry rejection returns
 the original application, Work callable, and actual entered-host error.
 
 `EntityRef<Accounts>` retains the logical account ID, not an actor address or
@@ -897,8 +901,19 @@ incarnation. The same value therefore survives passivation and replacement.
 Its definition is nominal: two families remain non-interchangeable even when
 they select identical ID and message types. `Entities<D>` is only the
 cloneable admission/passivation receptionist; `Application` retains family shutdown
-and task-join authority. `ApplicationHandle::passivate_entity` starts graceful
-passivation by role without exposing an incarnation address.
+and task-join authority. `ApplicationHandle::retire_entity` starts retirement
+and awaits release of the captured incarnation's slot, without an application
+semaphore or an incarnation address. Its `RetirementMode` records successful
+fencing or the actual forced-drain reason; native/callback failures remain
+independently owned by the family result. `EntityRetirementError` distinguishes
+no active incarnation from family shutdown. Independent waits share the same
+completion; cancelling one wait does not cancel retirement. If no completion
+was acquired, the observation stays pending and family shutdown retains the
+original task failure. Use the paired execution/receiving path when cancellation
+and independent result recovery are required.
+
+The lower-level `passivate_entity` operation returns the immediate request
+decision. It does not wait for retirement and must not be treated as completion.
 
 External actors use the same `send` operation for exact actor recipients and
 Entity references, and their claimed address reaches the incarnation as

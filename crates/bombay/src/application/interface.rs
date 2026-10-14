@@ -1,6 +1,7 @@
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::entity::{
-    AdmissionFailure, EntityDefinition, EntityFamilyAt, EntityRef, NativeEntityHost, Passivation,
+    AdmissionFailure, EntityDefinition, EntityFamilyAt, EntityRef, EntityRetirementError,
+    NativeEntityHost, Passivation, RetirementMode,
 };
 use crate::local::endpoint::{ActorRef, ExtractLocalEndpoint, SendError, request_actor_shutdown};
 use crate::local::ingress::{Admission, AdmissionClosure};
@@ -166,6 +167,35 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         Families: EntityFamilyAt<Role, Position>,
     {
         self.families.select_family()
+    }
+
+    /// Retire the captured incarnation through its existing processing fence.
+    /// Independent observers share completion; cancelling a wait does not cancel retirement.
+    /// The mode reports graceful fencing or its original forced reason, not error-free cleanup.
+    /// Complete native and callback failures remain in the application family result.
+    /// Without an acquired completion the wait remains pending, matching other retirement observations.
+    ///
+    /// # Errors
+    /// Returns the exact early refusal without affecting another incarnation.
+    #[allow(
+        private_bounds,
+        reason = "native execution remains a sealed application composition proof"
+    )]
+    pub async fn retire_entity<Role, Position>(
+        &self,
+        role: Role,
+        id: &<<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Id,
+    ) -> Result<RetirementMode, EntityRetirementError>
+    where
+        Families: EntityFamilyAt<Role, Position>,
+        <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Hosts:
+            NativeEntityHost<
+                <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Behavior,
+                <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Terminal,
+                <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::ChildFailures,
+            >,
+{
+        self.entities(role).retire_entity(id).await
     }
 
     /// Begin passivation of one identity in a statically declared family.

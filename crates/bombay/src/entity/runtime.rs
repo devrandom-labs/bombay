@@ -39,6 +39,17 @@ pub enum FenceFailure {
     Acknowledgement,
 }
 
+/// Refusal before an exact Entity retirement can be observed.
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+pub enum EntityRetirementError {
+    /// The captured slot has no active incarnation to retire.
+    #[error("the entity has no active incarnation to retire")]
+    NotActive,
+    /// Family shutdown already owns retirement.
+    #[error("family shutdown already owns entity retirement")]
+    ShuttingDown,
+}
+
 /// Outcome of one [`EntityRuntime::passivate`] call.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Passivation {
@@ -850,6 +861,28 @@ where
         }
     }
 
+    /// Begin retirement and observe completion of the captured incarnation.
+    /// Native errors remain independently owned by the family shutdown result.
+    pub(crate) async fn retire_entity(
+        &self,
+        entity_id: &EntityId<I>,
+    ) -> Result<RetirementMode, EntityRetirementError> {
+        let observation = {
+            let admission = self
+                .inner
+                .admission
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            if matches!(*admission, EntityAdmission::Closed) {
+                return Err(EntityRetirementError::ShuttingDown);
+            }
+            let (decision, observation) = self.inner.directory.begin_retirement(entity_id)?;
+            self.inner.interpret(decision);
+            observation
+        };
+        Ok(observation.await)
+    }
+
     /// Begin graceful passivation if the entity currently has an active incarnation.
     ///
     /// Admission closes at this call's lifecycle linearization point. Fence and
@@ -914,6 +947,17 @@ where
             inner: Arc::clone(&self.inner),
         }
         .admit(origin, entity_id, command)
+        .await
+    }
+
+    pub(crate) async fn retire_entity(
+        &self,
+        entity_id: &EntityId<I>,
+    ) -> Result<RetirementMode, EntityRetirementError> {
+        EntityRuntime {
+            inner: Arc::clone(&self.inner),
+        }
+        .retire_entity(entity_id)
         .await
     }
 
@@ -1252,7 +1296,8 @@ where
         slot.submit_owned(SlotEvent::Terminated {
             activation_id: activation,
         });
-        self.interpret_slot(id, slot);
+        self.interpret_slot(id, DirectoryArc::clone(&slot));
+        slot.complete_retirement(mode);
     }
 
     fn spawn_owned(self: &Arc<Self>, task: impl Future<Output = ()> + Send + 'static) {
@@ -1262,5 +1307,279 @@ where
             task.await;
         });
         self.tasks.track(scheduled);
+    }
+}
+
+#[cfg(all(test, not(bombay_entity_loom)))]
+mod tests {
+    use super::{
+        Activated, EntityRetirementError, EntityRuntime, FenceFailure, LocalEntityRuntime,
+    };
+    use crate::actors::ActorExt;
+    use crate::address::{ApplicationAddresses, MailAddr};
+    use crate::application::ActorInterface;
+    use crate::entity::bombay::{BombayEntityRuntime, bombay_entity_runtime};
+    use crate::entity::family::EntityMetricState;
+    use crate::entity::{
+        ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
+        EntityCapacity, EntityDefinition, EntityId, EntityShutdown, RetirementMode,
+    };
+    use crate::launch::ActorSpace;
+    use crate::{ActorRetirement, ActorRetirementReport};
+    use behavior::{Actions, BehaviorActed, MessageProtocol, Never};
+    use behavior_actors::StopOnShutdown;
+    use core::future::{Future, poll_fn};
+    use core::num::NonZeroUsize;
+    use core::pin::pin;
+    use core::task::Poll;
+    use std::panic::resume_unwind;
+    use std::ptr;
+    use std::sync::{Arc, Mutex, PoisonError};
+    use tokio::runtime::Handle;
+
+    struct Balance {
+        value: u64,
+    }
+
+    #[crate::actor]
+    impl Balance {
+        fn receive(&mut self, value: u64) -> BehaviorActed<Self> {
+            self.value = value;
+            Ok(Actions::cont())
+        }
+    }
+
+    type BalanceRetirement =
+        Result<ActorRetirement<StopOnShutdown<Balance>, Never, Vec<Never>>, tokio::task::JoinError>;
+    type BalanceStartupError =
+        EntityActivationError<Never, StopOnShutdown<Balance>, Never, Vec<Never>>;
+
+    #[derive(Default)]
+    struct Balances {
+        startup: Mutex<Vec<(EntityId<u64>, ActivationId, BalanceStartupError)>>,
+        admission: Mutex<Vec<(EntityId<u64>, AdmissionFailure<u64>)>>,
+        forced: Mutex<Vec<(EntityId<u64>, ActivationId, DrainFailure)>>,
+        #[expect(
+            clippy::type_complexity,
+            reason = "the native test retains identity, exact incarnation, original retirement and independent assessment"
+        )]
+        retired: Mutex<
+            Vec<(
+                EntityId<u64>,
+                ActivationId,
+                BalanceRetirement,
+                ActorRetirementReport,
+            )>,
+        >,
+    }
+
+    impl EntityDefinition for Balances {
+        type Id = u64;
+        type Behavior = StopOnShutdown<Balance>;
+        type Hosts = ActorSpace<Balance>;
+        type HydrationError = Never;
+        type Terminal = Never;
+        type ChildFailures = Vec<Never>;
+
+        #[expect(
+            clippy::unused_async_trait_impl,
+            reason = "the actual hydration port is cold until polled"
+        )]
+        async fn hydrate(&self, _: EntityId<u64>) -> Result<Self::Behavior, Never> {
+            Ok(Balance { value: 0 }.stop_on_shutdown())
+        }
+
+        fn activation_failed(
+            &self,
+            id: EntityId<u64>,
+            activation: ActivationId,
+            failure: BalanceStartupError,
+        ) {
+            self.startup
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push((id, activation, failure));
+        }
+
+        fn admission_refused(&self, id: EntityId<u64>, failure: AdmissionFailure<u64>) {
+            self.admission
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push((id, failure));
+        }
+
+        fn forced_retirement(
+            &self,
+            id: &EntityId<u64>,
+            activation: ActivationId,
+            failure: DrainFailure,
+        ) {
+            self.forced
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push((*id, activation, failure));
+        }
+
+        fn retired(
+            &self,
+            id: &EntityId<u64>,
+            activation: ActivationId,
+            retirement: BalanceRetirement,
+            report: ActorRetirementReport,
+        ) {
+            self.retired
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push((*id, activation, retirement, report));
+        }
+    }
+
+    type BalanceRuntime = BombayEntityRuntime<Balances>;
+
+    struct FailedRetirement {
+        native: BalanceRuntime,
+        cause: Mutex<Option<Box<u64>>>,
+    }
+
+    impl LocalEntityRuntime<u64, u64> for FailedRetirement {
+        type Origin = <BalanceRuntime as LocalEntityRuntime<u64, u64>>::Origin;
+        type Endpoint = <BalanceRuntime as LocalEntityRuntime<u64, u64>>::Endpoint;
+        type Lease = <BalanceRuntime as LocalEntityRuntime<u64, u64>>::Lease;
+        type ActivationError = <BalanceRuntime as LocalEntityRuntime<u64, u64>>::ActivationError;
+        type Task = <BalanceRuntime as LocalEntityRuntime<u64, u64>>::Task;
+        type TaskFailure = <BalanceRuntime as LocalEntityRuntime<u64, u64>>::TaskFailure;
+        type RetirementFailure =
+            <BalanceRuntime as LocalEntityRuntime<u64, u64>>::RetirementFailure;
+
+        fn spawn(&self, task: impl Future<Output = ()> + Send + 'static) -> Self::Task {
+            self.native.spawn(task)
+        }
+        fn join(
+            task: &mut Self::Task,
+        ) -> impl Future<Output = Result<(), Self::TaskFailure>> + Send {
+            BalanceRuntime::join(task)
+        }
+        fn activate(
+            &self,
+            id: EntityId<u64>,
+            activation: ActivationId,
+        ) -> impl Future<
+            Output = Result<Activated<Self::Endpoint, Self::Lease>, Self::ActivationError>,
+        > + Send {
+            self.native.activate(id, activation)
+        }
+        fn activation_failed(
+            &self,
+            id: EntityId<u64>,
+            activation: ActivationId,
+            failure: Self::ActivationError,
+        ) {
+            self.native.activation_failed(id, activation, failure);
+        }
+        fn deliver(
+            &self,
+            endpoint: Self::Endpoint,
+            origin: MailAddr,
+            command: u64,
+        ) -> impl Future<Output = Result<(), u64>> + Send {
+            self.native.deliver(endpoint, origin, command)
+        }
+        fn fence(
+            &self,
+            endpoint: Self::Endpoint,
+        ) -> impl Future<Output = Result<(), FenceFailure>> + Send {
+            self.native.fence(endpoint)
+        }
+        async fn retire(
+            &self,
+            id: &EntityId<u64>,
+            activation: ActivationId,
+            lease: Self::Lease,
+            mode: RetirementMode,
+        ) -> Result<(), Self::RetirementFailure> {
+            self.native.retire(id, activation, lease, mode).await?;
+            let cause = self
+                .cause
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .take()
+                .expect("the test owns one exact interpreter failure");
+            resume_unwind(cause);
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn missing_retirement_completion_stays_pending_and_retains_the_original_task_failure() {
+        let addresses = ApplicationAddresses::new();
+        let caller = ActorInterface::new((), addresses.clone())
+            .external::<MessageProtocol<MailAddr, Never>>()
+            .expect("the actual external origin is established");
+        let records = Arc::new(Balances::default());
+        let cause = Box::new(743_u64);
+        let allocation = ptr::from_ref(cause.as_ref()).cast::<()>();
+        let native = bombay_entity_runtime(
+            Arc::clone(&records),
+            Arc::new(ActorSpace::new()),
+            addresses,
+            EntityCapacity::new(
+                NonZeroUsize::new(1).expect("one"),
+                NonZeroUsize::new(2).expect("two"),
+            ),
+            Arc::new(EntityMetricState::default()),
+            Handle::current(),
+        );
+        let runtime = EntityRuntime::new(
+            DirectoryConfig::default(),
+            FailedRetirement {
+                native,
+                cause: Mutex::new(Some(cause)),
+            },
+        );
+        let admitted = runtime.admit(caller.address(), EntityId::new(7), 29).await;
+        assert!(matches!(admitted, Ok(())));
+        {
+            let id = EntityId::new(7);
+            let mut waiting = pin!(runtime.retire_entity(&id));
+            poll_fn(|cx| {
+                let status = waiting.as_mut().poll(cx);
+                assert!(matches!(status, Poll::Pending));
+                Poll::Ready(())
+            })
+            .await;
+            runtime.inner.tasks.wait_idle().await;
+            poll_fn(|cx| {
+                let status = waiting.as_mut().poll(cx);
+                assert!(matches!(status, Poll::Pending));
+                Poll::Ready(())
+            })
+            .await;
+        }
+        let shutdown = runtime.shutdown().await;
+        let EntityShutdown::Unsettled {
+            represented,
+            entities,
+            mut failures,
+        } = shutdown
+        else {
+            panic!("a missing completion cannot fabricate successful family shutdown");
+        };
+        assert_eq!(represented, 1);
+        assert_eq!(entities.len(), 1);
+        assert!(matches!(entities[0].1, Err(Some(_))));
+        assert!(entities[0].2.is_empty());
+        assert_eq!(failures.len(), 1);
+        let cause = failures
+            .pop()
+            .expect("the exact task failure is retained")
+            .into_panic();
+        assert_eq!(ptr::from_ref(cause.as_ref()).cast::<()>(), allocation);
+        let absent = runtime.retire_entity(&EntityId::new(7)).await;
+        assert_eq!(absent, Err(EntityRetirementError::ShuttingDown));
+        let records = records
+            .retired
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        assert_eq!(records.len(), 1);
+        assert!(records[0].2.is_ok());
     }
 }

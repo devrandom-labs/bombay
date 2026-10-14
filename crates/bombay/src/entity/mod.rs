@@ -34,8 +34,8 @@ pub use lifecycle::{
 pub(crate) use retirement::FamilyAt;
 pub use retirement::FamilyRetirement;
 pub use runtime::{
-    Activated, AdmissionFailure, EntityRuntime, EntityShutdown, FenceFailure, LocalEntityRuntime,
-    Passivation,
+    Activated, AdmissionFailure, EntityRetirementError, EntityRuntime, EntityShutdown,
+    FenceFailure, LocalEntityRuntime, Passivation,
 };
 
 /// A stable, typed identifier for a logical entity.

@@ -32,8 +32,8 @@ use super::bombay::{
 };
 use super::runtime::EntityReceptionist;
 use super::{
-    ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityId, EntityRuntime,
-    EntityShutdown, FamilyRetirement, Passivation,
+    ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityId, EntityRetirementError,
+    EntityRuntime, EntityShutdown, FamilyRetirement, Passivation, RetirementMode,
 };
 
 /// One nominal, asynchronously hydrated native Entity family.
@@ -391,6 +391,18 @@ where
             entities: self.clone(),
             id: EntityId::new(id),
         }
+    }
+
+    pub(crate) async fn retire_entity(
+        &self,
+        id: &D::Id,
+    ) -> Result<RetirementMode, EntityRetirementError>
+    where
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    {
+        self.receptionist
+            .retire_entity(&EntityId::new(id.clone()))
+            .await
     }
 
     pub(crate) fn passivate(&self, id: &D::Id) -> Passivation
