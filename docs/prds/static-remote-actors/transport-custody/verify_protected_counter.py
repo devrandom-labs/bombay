@@ -14,8 +14,9 @@ configuration = arguments.parse_args()
 configuration.evidence.mkdir(parents=True, exist_ok=True)
 source_paths = ("Cargo.toml", "Cargo.lock", "flake.lock", "examples/counter/Cargo.toml",
     "docs/prds/static-remote-actors/transport-custody/Cargo.toml", "docs/prds/static-remote-actors/transport-custody/Cargo.lock",
-    "examples/counter/src/bin/authorized.rs", "examples/counter/src/bin/authorized/remote_counter.rs",
-    "examples/counter/src/bin/authorized/protected/mod.rs", "examples/counter/src/bin/authorized/protected/tests.rs")
+    "examples/counter/src/counter.rs", "crates/bombay/tests/protected_counter/mod.rs",
+    "crates/bombay/tests/protected_counter/transport.rs", "crates/bombay/tests/protected_counter/retirement.rs",
+    "crates/bombay/tests/protected_counter/protected/mod.rs", "crates/bombay/tests/protected_counter/protected/tests.rs")
 sources = {name: hashlib.sha256((configuration.source_root / name).read_bytes()).hexdigest() for name in source_paths}
 certificates = {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
     for path in sorted(configuration.certificates.glob("*.pem"))}

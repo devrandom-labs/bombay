@@ -111,6 +111,10 @@
           '';
         };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        protectedCounterVendor = craneLib.vendorCargoDeps {
+          inherit src;
+          cargoLock = ./docs/prds/static-remote-actors/transport-custody/Cargo.lock;
+        };
 
         # Miri and fuzzing stay opt-in so the default shell remains stable.
         miriToolchain =
@@ -298,6 +302,19 @@
               buildPhaseCargoCommand = ''
                 cargo test --locked -p bombay-example-counter
                 cargo run --locked -p bombay-example-counter
+              '';
+            }
+          );
+          bombay-protected-counter = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              cargoArtifacts = null;
+              cargoVendorDir = protectedCounterVendor;
+              buildPhaseCargoCommand = ''
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --release --test protected_counter
+                cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check
+                cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter -- --deny warnings
               '';
             }
           );

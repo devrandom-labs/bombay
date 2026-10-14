@@ -1,5 +1,22 @@
 # Static remote actors and typed admission
 
+## Crate verification prerequisite delivered — 2026-10-14 UTC
+
+[PR361](https://github.com/devrandom-labs/bombay/pull/361) merged at
+2026-10-14T00:02:44Z as `b2beaa9c816f1b0c065f28bb855552d15118f59d`.
+Reviewed head4ef41b1 and actual main share tree
+a184fb1fe7dc521a34843c348343a04560edc3a0. All six checks passed;
+required [Nix job115582221685](https://github.com/devrandom-labs/bombay/actions/runs/38480682687/job/115582221685)
+executes16 public remote tests in each profile, strict remote Clippy/rustdoc,
+default optimized workspace746/0/1 and four owning coverage floors.
+Fresh archives independently rehash108 Driver and330 Observe entries; Driver2048
+and four Observe1024 campaigns finish without failure artifacts. Miri is skipped.
+Source, native and final required-job reviews are posted on the PR; Nix review
+2c364b49 and raw loga6a70e5a retain exact-head provenance. Native fixture results
+do not execute public verification; those tests run in their explicit Nix checks.
+The function delivers acquisition only. All full R01–R25, AUTH1/NET1 and the
+network/export/admission API and separate remote-counter application remain open.
+
 ## Reviewed DevX integration delivery — 2026-10-13
 
 [PR359](https://github.com/devrandom-labs/bombay/pull/359) merged at
@@ -32,7 +49,7 @@ was deleted.
 
 ## Current integration contract — 2026-10-13
 
-Merged main7fccf08b and the coordinator's new feature branch select
+Merged mainb2beaa9 and the coordinator's current feature branch select
 Behavior/Actors0.25.0 at2bb4510, macros0.14.1, registry Timers0.2.0 at9369d1f
 and no patches, with root lock42eb8120 and native lock7ae93c48. The preserved
 primary workspace remains at671ba860 with its original0.23/Timers patch graph
@@ -51,8 +68,123 @@ the primary AGENTS edit and leave the active DevX worktree untouched.
 
 All full R01–R25 obligations remain open. Existing Counter fixtures do not
 implement public multi-node Application integration. The acquisition stage below
-introduces the optional remote feature; networking remains pending. The local
+delivers the optional remote acquisition feature; networking remains pending. The local
 and remote examples must remain separate.
+
+### Separate counter applications — test relocation pre-edit decision, 2026-10-13
+
+The user explicitly requires separate local and remote counter applications.
+The existing five-source,14,037-line authorized-counter harness is a test
+fixture, not a production-quality remote example. Move its source to
+`crates/bombay/tests/protected_counter/mod.rs` and private children; preserve
+existing Rust test names, finite providers, admission phases and all assertions.
+Remove the binary-only CLI entrypoint. Keep the actual local Counter domain
+source shared by its existing relative include, updating only the relative path.
+Do not create an empty remote-counter package or present this harness as that app.
+
+Under recommended-choice delegation select the existing isolated
+transport-custody package's explicit `[[test]] protected_counter` target and
+unchanged `protected-transport` feature. The alternative puts this target in the
+root package and requires additional owning test dependencies/feature policy.
+Remove the old binary's required-feature restriction from the new test target
+so its existing plain regressions can run with that feature disabled; native
+source branches and native CI retain their explicit protected-transport flag.
+Retaining the isolated package preserves its already selected dependency graph
+without another public runtime feature or production dependency. The selected
+Behavior revision and owning primitive sources remain the verified4ef41b1 graph.
+Any root-lock removal must preserve every remaining selected owner version.
+
+Pinned Crane2c71e194 source confirms dedicated `vendorCargoDeps` supports the
+isolated Cargo.lock; `vendorMultipleCargoDeps` supports a shared lock-list union.
+Select the dedicated vendor directory/check to contain the test package change.
+Root-only automatic vendoring would silently omit removed harness dependencies;
+the separate lock alone is insufficient. Add explicit plain and optimized test
+execution, formatting and strict linting for the actual relocated test target.
+Update native CI's exact package/target/path selectors and controller source
+guards together. Preserve five native matrices, both child/count tests per
+profile, original transport campaign and all source/certificate/lock custody.
+
+Expected stage: no runtime Rust changes, no public types/functions, no new
+dependency versions or transport/identity/resource policy. Up to25 changed paths
+including relocation sources and records; up to40 cumulative main-relative
+paths including the previous acquisition stage. Material moved test source may
+count as14,100 introduced lines and14,100 removed lines; additional test/config
+edits bounded at300 lines. Select that review surface under delegation before
+edits. It is relocation, not production code reduction or remote delivery.
+The old private acquisition equation remains migration debt. The real separate
+`examples/remote-counter` still requires the crate network/export/admission API.
+PR361's4ef41b1 source stayed immutable through review and passing required CI.
+This separate branch is reconciled onto its actual merged mainb2beaa9.
+Source inventorycd22299a and Crane prerequisite5111a1d0 are read-only evidence;
+actual relocation regressions, all native campaigns, distillation and delivery
+remain unexecuted. Every full R01–R25 row remains open.
+
+Applied source patchdae07dde moves five files. Four child sources are byte-equal;
+the parent's four path edits and66-line CLI removal exactly reconstruct the
+old source when reversed (inventory893440f8). No admission, verification phase,
+provider or assertion body changes. The isolated explicit target executes55/55
+plain debug tests. The local Counter tests still require futures-util; retain
+that existing selected crate as a dev dependency rather than removing it.
+Root `cargo update --workspace --offline` through pinned Nix removes223 unused
+packages without introducing or changing any selected version. Root lock now
+e896b8c0; isolated lock remains7ae93c48. Behavior/Actors0.25.0, macros0.14.1,
+Address0.3.0, Communication0.1.5 and Timers0.2.0 remain unchanged.
+The first Nix shell evaluation rejects an omitted required cargoArtifacts
+argument in the dedicated check; explicit null selects no artifact inheritance
+and subsequent pinned execution succeeds. This is a build-configuration error,
+not a semantic regression. Local optimized/native/combined gates pass as below;
+submitted-head CI and actual delivery remain required.
+
+### Relocated Counter verification and minimization — 2026-10-14 UTC
+
+The isolated explicit target passes55/0/0 in debug and optimized builds, its
+formatting and plain/native strict Clippy. Combined workspace build, formatting
+and strict all-target Clippy pass; workspace tests now execute695/0/4 separately
+from those55 fixture tests. Public remote tests execute16/0/0, and the actual
+local counter application runs successfully. Moving the fixture out of default
+workspace tests requires the dedicated Nix check; evaluation succeeds, while
+its hermetic execution remains a submitted-head CI obligation.
+
+Actual Cargo artifact metadata contains a source path with relative segments.
+The old raw string selector finds zero test executables; resolving both exact
+paths finds one in each profile. This is an artifact-selection inversion,
+not a new actor semantic law. Structural review reconstructs the original
+source exactly after reversing four path edits and the66-line CLI removal;
+four child files are byte-equal. Surviving locked package versions/sources stay
+unchanged, while dependency lists are normalized after223 unused packages leave
+root Cargo.lock. The isolated lock remains unchanged.
+
+The final native rerun uses retained copies, not mutable target executables:
+five protected matrices in both profiles pass64 cases/160 roles combined;
+eight exact child/count invocations pass. Independent review8e1d49d2 rehashes
+all role logs and binds the copies to Cargo-selected test artifacts. All23
+declared source/certificate/binary paths match across the entire paired suite.
+This is a whole-suite boundary, not per-case or whole-tree custody. Initial
+runs preceded copying and do not gain retroactive copied-binary custody.
+Ordinary transport reruns pass30 cases/84 roles per profile; independent review
+2588dd8d rehashes117 retained files per profile and ties actual argv to the two
+copied binaries. Four late-uncertainty cases and ten killed workers per profile
+receive no successful cleanup or admission credit. Parsed stdout events are
+retained; separate raw stdout files are not. These remain fixture-profile proofs.
+
+The stage retains no new runtime function, public type, dependency version or
+admission policy. The test package owns the harness; examples own applications.
+The old private acquisition equation remains recorded migration debt. No full
+remote row closes and no remote-counter application is claimed.
+
+Final main-relative census includes staged and unstaged files and no untracked
+files:17 logical changes/22 physical paths including both sides of five renames.
+Runtime production: +0/-0/net0; tests: +4/-70/net−66 after rename recognition
+(or13,971 introduced/14,037 removed source lines as physical relocation).
+Public API: +0 types/-0 types, no functions. Controllers: +3/-2/net1;
+configuration: +27/-24/net3; root lock: +668/-2,978/net−2,310. Documentation:
++169/-36/net133. Native/private semantics are
+unchanged; this is test relocation, not runtime production reduction.
+Source structural and dedicated-vendor reviews pass; all independent reviews
+retain their read-only and actual-source boundaries. Local Nix evaluation alone
+is not a passing hermetic check. Reviewed PR, required CI and actual merge
+remain required before recording this stage as delivered.
+
 
 ### Crate-owned verification acquisition — pre-edit decision, 2026-10-13
 

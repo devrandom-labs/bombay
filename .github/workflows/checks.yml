@@ -142,14 +142,14 @@ jobs:
           fi
           evidence="target/transport-evidence/${{ matrix.profile }}"
           mkdir -p "$evidence"
-          nix develop -c cargo test --locked --jobs 2 -p bombay-example-counter \
-            --bin authorized --features protected-transport --no-run --message-format=json \
+          nix develop -c cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml \
+            --locked --jobs 2 --test protected_counter --features protected-transport --no-run --message-format=json \
             "${profile_args[@]}" > "$evidence/protected-counter-build.jsonl" \
             2> "$evidence/protected-counter-build.stderr"
           executable=$(python3 - "$evidence/protected-counter-build.jsonl" '${{ matrix.profile }}' <<'PYTHON'
           import json, sys
           from pathlib import Path
-          source = str(Path("examples/counter/src/bin/authorized.rs").resolve())
+          source = Path("crates/bombay/tests/protected_counter/mod.rs").resolve()
           executables = []
           expected_optimization = "3" if sys.argv[2] == "release" else "0"
           for line in Path(sys.argv[1]).read_text().splitlines():
@@ -158,8 +158,9 @@ jobs:
               except json.JSONDecodeError:
                   continue
               if (artifact.get("reason") == "compiler-artifact"
-                  and artifact["target"]["name"] == "authorized"
-                  and artifact["target"]["src_path"] == source
+                  and artifact["target"]["name"] == "protected_counter"
+                  and artifact["target"]["kind"] == ["test"]
+                  and Path(artifact["target"]["src_path"]).resolve() == source
                   and artifact["profile"]["test"]
                   and artifact["profile"]["opt_level"] == expected_optimization
                   and "protected-transport" in artifact["features"]):
