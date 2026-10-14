@@ -1,5 +1,111 @@
 # Static remote actors and typed admission
 
+## Rustls0.23.46 selected-build qualification
+
+Both narrow locks now select the exact upstream archive checksum48e13bd8.
+Parsed comparison preserves all other full package records/normalized edges:
+399 root packages and324 isolated packages. Four unrelated resolver Windows-edge
+rewrites were restored from captured original package records; locked Cargo
+metadata accepts that graph. Separate locked `--features remote` metadata proves
+the actual Rustls union: log/logging/ring/std/tls12, with Brotli/AWS/PQ absent.
+This qualifies selected feature exposure, not every possible consumer profile.
+
+Fresh pinned-Nix protected tests pass66/0/1 in each profile, including every
+actual Node name. Five public Application/remote targets pass35/0/0 per profile.
+Strict remote all-target and protected Clippy pass; warnings-denied remote
+documentation passes. affected-execution.json records five exact commands;
+build-results.json retains all four runtime log hashes, inventories and original
+terminal outcomes. The Node/startup/metadata/execution/tests remain unchanged.
+These are compatibility regressions on the new dependency graph, not new
+Rustls vulnerability witnesses or repetitions of the two invariant reviews.
+
+Old CI4cfab6e selects0.23.45 and its dependency gate fails for four new advisories;
+its native jobs pass but cannot qualify0.23.46. Require fresh exact-head full
+Nix/dependency/native checks and review after committing this narrow correction.
+The independent published-owner proposal remains a separate pending stage;
+no0.23.46 published minimum or full remote acceptance is claimed from locks.
+
+## Published Rustls minimum successor — prepared stage checkpoint
+
+The selected-build lock correction cannot prevent a fresh published consumer
+from choosing Rustls0.23.45. Independent exact-source research6a39d08d identifies
+the two owning minima and five exact-version successors; its raw graph/source
+receipt9a06dcbc preserves existing archive provenance and the stale checkout.
+Under delegated recommended choices adopt the prepared finite release profile,
+not a new release framework: commons1.10.2; TLS/link/transport1.10.3; SDK1.10.9.
+Both existing owning Rustls declarations require0.23.46. Config/plugin1.10.2 and
+the two generator2.2.0 archives remain immutable. The new commons header states
+1.88, matching its already selected time dependency; require actual floor proof.
+
+Before source edits reserve the17 prepared core paths plus at most eight records
+or owning tests. Root controls shared manifests/locks/release integration. Use a
+fresh controlled repository worktree from latest main5bebbcb0; preserve the stale
+checkout and its existing deletions. Candidate Rust production/test/API delta is
+zero; manifest/floor/version edits remain separate. Reused release scripts add
+an explicit five-package profile, with forecast60–140 lines added/15–45 removed
+and20–60 Python test lines. Reserve at most250 introduced script lines and120
+introduced Python test lines before a further checkpoint. No new dependency or
+runtime abstraction is selected; this is upstream patch adoption and existing
+package-release graph repair.
+
+Cumulative cross-repository checkpoint: current24-path Bombay endpoint,
+production+722/-2/net720 and four added public types, plus17 forecast core
+controlled-source paths. Retain temporary-cut/preparation accounting and reserve
+55 cumulative changed paths,1000 net production lines including release scripts,
+four new public types, and the above bounded stage-test budget. This is expanded
+source/release scope selected under the user's automatic recommendation
+instruction, not code reduction. Record the complete actual tracked/untracked
+census and chronology at each retained checkpoint rather than attributing raw
+worktree copies as new patches.
+
+Required tests receive coordinator invariant review and independent counterexample
+review, exact owner-minimum/candidate-set/edge/archive negatives and intended
+source inversions. Prepublication execution uses four real candidate archive
+patches with unchanged Config tested from its actual immutable archive. Preserve
+all existing profiles and tests. Require full exact-head CI, scoped review,
+actual PR merge, guarded publication, nine immutable archive/API receipts and
+registry-only default/floor consumer proof before claiming the published floor
+fixed. This stage may proceed alongside Node delivery and admission research;
+no premature publication or full R01–R25 completion is credited.
+
+## PR364 fresh Rustls advisories — before narrow lock correction
+
+Replacement cargo-deny38593250909 fails against unchanged Rustls0.23.45 for
+four actual new advisories RUSTSEC-2026-0346 through0349. Upstream releases
+0.23.46 on2026-10-14 and declares the fixes in
+https://github.com/rustls/rustls/releases. The failure is neither a test inversion
+nor a reason to suppress advisory policy. Old filtered-source controls retain
+their exact dependency graph and are not reassigned to an updated graph.
+
+Under the user's recommended-choice delegation select the owning upstream
+patch release0.23.46, updating only Rustls in both existing root and isolated
+transport locks. Retain every other package identity/checksum and edge unless
+resolution proves an independently required change, which must be recorded
+before further adoption. Expected paths are the two existing locks and PRD,
+zero Bombay production/test/public API delta, within29 paths/800 production/
+four types. Snapshot both original locks before pinned-Nix Cargo resolution.
+Alternatives: broad lock refresh changes unrelated packages; ignoring advisories
+weakens the required gate. Neither is selected.
+
+Actual narrow Cargo resolution also rewrites four unchanged root-package Windows
+edges: errno, rustix, tempfile and winapi-util now select the already-present
+windows-sys0.61.2 instead of their original0.52.0. Package versions/checksums
+and declared constraints are unchanged. Preserve their previously verified exact
+choices from the captured original package records, then require locked Cargo
+metadata/build to validate that graph. This is restoration of unrelated edges,
+not a new dependency selection. The isolated lock only sorts Bombay edges and
+updates Rustls. Raw resolver diff is retained separately before minimization.
+
+Required evidence: actual package graph comparison, upstream source/fix review,
+affected Node/protected native controls in debug and optimized, strict affected
+lint, replacement full required CI and exact-head review. The source correction
+also needs a fresh published Rustls minimum in its existing owner; a lock-only
+update qualifies this selected build, not the published consumer floor. Parallel
+read-only owning-package research is authorized, not premature publication.
+Do not claim every advisory is exploitable in the selected profile: Brotli is
+feature-conditional, other conditions need exact source/feature inspection.
+The complete remote PRD remains active and every R01–R25 stays open.
+
 ## PR364 packaged-source correction — local verification
 
 The corrected immutable source53qd1xs4h9748pv2b6b4458y0sbh8vy0-source is

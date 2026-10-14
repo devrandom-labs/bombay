@@ -46,7 +46,13 @@ verified startup and root/child composition. Six public Node controls, intended
 owner cuts/restorations, combined local checks and scoped minimization pass;
 submitted-head CI and reviewed PR delivery remain pending. Authentication,
 admission and multi-node integration remain open. This contribution is not
-yet submitted or merged, and no full requirement changes state.
+yet merged; [PR364](https://github.com/devrandom-labs/bombay/pull/364) is submitted.
+Its first Nix failure exposed omitted certificate fixtures, now corrected and
+verified from the actual filtered source. Fresh Rustls advisories require0.23.46:
+both selected locks now preserve every unrelated graph choice, and protected66/0/1
+plus affected public35/0/0 pass per profile. Replacement exact-head CI/review and
+the separate controlled-package published minimum correction remain pending.
+No full requirement changes state.
 
 Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
 merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at

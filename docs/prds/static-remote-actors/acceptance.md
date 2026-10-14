@@ -50,7 +50,12 @@ corrected startup controls pass in debug and optimized after independent
 review. Six actual public Node cases pass both profiles after real-owner
 falsifiers and byte-exact restoration. Combined local workspace/remote/protected
 checks and scoped minimization pass; reviewed PR, required CI and actual merge
-remain pending. No full row closes from this contribution.
+remain pending in [PR364](https://github.com/devrandom-labs/bombay/pull/364).
+The missing certificate fixtures are now included and the six unchanged cases
+pass from actual filtered Nix source in both profiles. New Rustls advisories
+require0.23.46; selected locks and affected controls pass locally on that graph,
+while fresh required CI and the published owner-minimum correction remain
+separate gates. No full row closes from this contribution.
 
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in
