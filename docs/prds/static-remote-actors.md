@@ -1,5 +1,34 @@
 # Static remote actors and typed admission
 
+## Delivered Node prerequisite — recorded merge
+
+[PR364](https://github.com/devrandom-labs/bombay/pull/364) merged
+`406df116dd081593e1099a1f3301d2fb91bfc4fc` at2026-10-14T17:43:09Z through the
+normal guarded PR operation, with exact head04c47413 and all six checks SUCCESS.
+Final review991ef1cd/receipt0203db7f independently qualifies actual source,
+required Nix38596070399/job115963560778, both native campaigns and retained
+primitive fuzz artifacts. Required log398bd296 executes each six Node names once
+per actual debug/optimized command, plus35 public tests/profile. Actual optimized
+workspace is691/0/1; Miri is skipped. Merge and submitted trees both23b55c1a.
+No direct main push or review bypass occurred. Published SDK minimum, complete
+shipping operations, remote-counter and all full R01–R25/AUTH1/NET1 remain open.
+
+The hosting branch incorporates actual delivered main through2648f32. Squash
+history produced three textual conflicts; exact submitted/merged tree equality
+proved its already reviewed source had no new competing changes. Preserving the
+branch's three deliberate successors resolves them without changing Node code.
+Actual local execution of the new exact CI loop on d609 passes one named test
+per debug/release, including the explicit name/count guards; receipt
+hosting-ci-gate-results.json binds source2a6d56c1, scriptcd0fd4ca and both logs.
+Cloud CI/focused PR/merge of this subsequent test remain pending.
+
+Controlled source23676e6 archive suffix also exits0. Independent final review
+16145d65/receipt48ca3e05 verifies56 exact1/0/0 packaged cases (36 SDK,20 Config),
+two metadata-only records, normalized source/lock profiles and all nine archive
+hashes/29 edges. Candidate path overlays are explicit; no registry-only successor
+claim. Actual1.88 floor and controlled required CI are running separately; merge,
+publication and clean registry-only adoption remain pending.
+
 ## Controlled security successor — actual delivery checkpoint
 
 Controlled source23676e6c is committed and pushed; draft [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
