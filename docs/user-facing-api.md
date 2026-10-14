@@ -32,7 +32,7 @@ each layer.
 | --- | --- |
 | Root execution, typed terminal, application children | [application topology example](../examples/application-topology/src/main.rs), [terminal projection tests](../crates/bombay/tests/terminal_projection.rs) |
 | `run_with`, lifecycle, shutdown, exact terminal results | [paired execution tests](../crates/bombay/tests/run_with.rs) |
-| Axum adapter | [Axum example](../examples/axum/src/main.rs), [HTTP tests](../examples/axum/src/http.rs) |
+| Axum adapter | [Axum example](../examples/axum/src/main.rs), [HTTP tests](../crates/bombay/tests/orders.rs) |
 | Advanced actor-space product and protocol hosts | [supervision example](../examples/supervision/src/main.rs), [host compile fixtures](../crates/bombay/tests/actor_spaces.rs) |
 | `Machine`, timers, and `ActorExt` wrappers | [actor-template example](../examples/actor-templates/src/main.rs), [template application tests](../crates/bombay/tests/template_application.rs) |
 | Actor facade and exact send lane | [counter example](../examples/counter/src/counter.rs), [macro parity tests](../crates/bombay/tests/macro_last_authoring.rs) |
@@ -555,16 +555,14 @@ concrete protocol space directly:
 
 ```text
 let outcome = Application::new(OrderBook::default().stop_on_shutdown())
-    .run_axum(address, |application| {
-        let interface = application.interface(order_http::OrderApi {
-            orders: application.root().established_recipient(),
-        });
-        order_http::router(interface, application.lifecycle())
-    })
+    .run_axum(address, order_http::router)
     .await;
 ```
 
-This is the ordinary Axum example boundary. Advanced compositions whose
+This is the ordinary Axum example boundary. A router that exports several
+protocols can deliberately project an
+`ActorInterface<Api>` and a separate lifecycle view from the same handle.
+Advanced compositions whose
 intentional logical-address effects need more local protocols explicitly own
 the corresponding concrete actor spaces. Behavior's duplicate-preserving
 `LogicalHostRequirements` product validates that product as repeated

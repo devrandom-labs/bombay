@@ -228,11 +228,8 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "bombay-rs",
- "http-body-util",
  "serde",
- "serde_json",
  "tokio",
- "tower",
 ]
 
 [[package]]
@@ -300,6 +297,7 @@ dependencies = [
  "bombay-timers",
  "dhat",
  "futures-util",
+ "http-body-util",
  "loom",
  "parking_lot",
  "proptest",
@@ -307,6 +305,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
+ "tower",
  "triomphe",
  "trybuild",
 ]

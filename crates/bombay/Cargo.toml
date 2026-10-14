@@ -34,6 +34,8 @@ triomphe = { workspace = true }
 axum = { workspace = true, optional = true }
 
 [dev-dependencies]
+http-body-util = "0.1.5"
+tower = { version = "0.5.3", features = ["util"] }
 futures-util = { version = "0.3.34", default-features = false, features = [
   "std",
 ] }
