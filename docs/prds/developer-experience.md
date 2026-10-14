@@ -422,5 +422,11 @@ The affected owner23-test corpus and downstream2+11 cases pass debug/release;
 strict all-target/all-feature lint, formatting and active doctests pass. The
 added publication field is16 bytes; one observation pair allocates72 bytes and
 releases them after its owners leave scope. No dependency or generic bound
-changes. The public example still needs distillation, and final full/package
-checks plus other owning DX requirements remain open.
+changes. The public example is distilled to95 main lines,26 account lines and176
+family-policy lines (401→297 total; main body102→64). It awaits retirement instead
+of coordinating a semaphore, and retains all four complete callback products.
+The runtime tests include the actual actor and policy source: seven tests plus
+the real binary pass current/MSRV debug/release, with source hashes frozen during
+the final matrix. The focused report-product RED fails on the original example,
+then passes on all four builds. Callback and associated-type simplification,
+final full/package checks and other owning DX requirements remain open.

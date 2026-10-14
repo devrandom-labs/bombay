@@ -840,7 +840,10 @@ Users never manually construct or implement:
 ## Stable Entity references
 
 An ordinary application names asynchronous reconstruction and exact lifecycle
-fact consumers once in a nominal definition:
+report consumers once in a nominal definition. The executable account family keeps
+[actor state](../examples/entity/src/account.rs),
+[family policy and complete reports](../examples/entity/src/accounts.rs), and
+[application assembly](../examples/entity/src/main.rs) under their respective owners:
 
 Directory limits are validated before any root, child, family or runtime port
 transfers. Use `DirectoryConfig::default()` or

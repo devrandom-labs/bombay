@@ -19,8 +19,8 @@ use std::time::Duration;
 
 use bombay::actors::ActorExt;
 use bombay::behavior::{
-    Actions, BehaviorActed, BehaviorBase, BehaviorSettlements, ClassifySettlement, EventLayer,
-    Never, Protocol, SettlementStatus,
+    BehaviorBase, BehaviorSettlements, ClassifySettlement, EventLayer, Never, Protocol,
+    SettlementStatus,
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
@@ -39,30 +39,11 @@ struct Root;
 #[bombay::actor(message = Never)]
 impl Root {}
 
-#[derive(Debug)]
-enum AccountCommand {
-    Deposit(u64),
+mod account {
+    include!("../../../examples/entity/src/account.rs");
 }
 
-struct Account {
-    balance: u64,
-}
-
-#[bombay::actor]
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the Behavior fold returns the typed action algebra"
-)]
-impl Account {
-    fn receive(&mut self, command: AccountCommand) -> BehaviorActed<Self> {
-        let AccountCommand::Deposit(amount) = command;
-        self.balance = self
-            .balance
-            .checked_add(amount)
-            .expect("the example account balance remains bounded");
-        Ok(Actions::cont())
-    }
-}
+use account::{Account, AccountCommand};
 
 type AccountRetirement =
     Result<ActorRetirement<StopOnShutdown<Account>, Never, Vec<Never>>, tokio::task::JoinError>;
@@ -834,4 +815,205 @@ fn reactivated_entity_cannot_reuse_the_previous_retirement_fact() {
         })
         .collect::<Vec<_>>();
     assert_eq!(balances, [40, 2]);
+}
+
+mod account_reports {
+    include!("../../../examples/entity/src/accounts.rs");
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use crate::{ACCOUNT_ID, AccountsRole, Root};
+        use bombay::Application;
+        use bombay::entity::{
+            DirectoryConfig, DrainStage, EntityCapacity, EntityShutdown, Refusal, RetirementMode,
+        };
+        use core::num::{NonZeroU64, NonZeroUsize};
+
+        #[test]
+        fn callbacks_retain_complete_account_values_instead_of_counting_and_discarding_them() {
+            let reports = Arc::new(Mutex::new(Vec::new()));
+            let definition = Accounts {
+                reports: Arc::clone(&reports),
+            };
+            let attempt =
+                ActivationId::new(NonZeroU64::new(17).expect("the protocol attempt is nonzero"));
+            definition.activation_failed(
+                EntityId::new(73),
+                attempt,
+                EntityActivationError::AllocationRejected {
+                    behavior: Account { balance: 431 }.stop_on_shutdown(),
+                    reason: bombay::behavior::AllocationRejection::Exhausted,
+                },
+            );
+            definition.admission_refused(
+                EntityId::new(74),
+                AdmissionFailure::Refused {
+                    command: AccountCommand::Deposit(57),
+                    reason: Refusal::Draining,
+                },
+            );
+            let reason = DrainFailure {
+                stage: DrainStage::Reservations,
+                outstanding_reservations: 3,
+            };
+            definition.forced_retirement(&EntityId::new(75), attempt, reason);
+            let reports = reports.lock().unwrap_or_else(PoisonError::into_inner);
+            let [
+                AccountReport::Startup {
+                    id,
+                    attempt: returned,
+                    failure:
+                        EntityActivationError::AllocationRejected {
+                            behavior,
+                            reason: rejection,
+                        },
+                },
+                AccountReport::Admission {
+                    id: rejected_id,
+                    rejection:
+                        AdmissionFailure::Refused {
+                            command: AccountCommand::Deposit(amount),
+                            reason: refusal,
+                        },
+                },
+                AccountReport::Drain {
+                    id: drained_id,
+                    attempt: drained_attempt,
+                    reason: drained,
+                },
+            ] = reports.as_slice()
+            else {
+                panic!("all complete callback inputs must remain owned in order");
+            };
+            assert_eq!(id, &EntityId::new(73));
+            assert_eq!(*returned, attempt);
+            assert_eq!(behavior.base().balance, 431);
+            assert_eq!(rejection, &bombay::behavior::AllocationRejection::Exhausted);
+            assert_eq!(rejected_id, &EntityId::new(74));
+            assert_eq!(*amount, 57);
+            assert_eq!(*refusal, Refusal::Draining);
+            assert_eq!(drained_id, &EntityId::new(75));
+            assert_eq!(*drained_attempt, attempt);
+            assert_eq!(*drained, reason);
+        }
+        #[test]
+        #[expect(
+            clippy::too_many_lines,
+            reason = "one native journey checks the actual family policy, fresh reactivation and both complete callback retirements"
+        )]
+        fn native_account_reports_preserve_both_retired_incarnations() {
+            let reports = Arc::new(Mutex::new(Vec::new()));
+            let definition = Accounts {
+                reports: Arc::clone(&reports),
+            };
+            let capacity = EntityCapacity::new(
+                NonZeroUsize::new(2).expect("two concurrent hydrations"),
+                NonZeroUsize::new(32).expect("32 residents"),
+            );
+            let host = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("the native host starts");
+            let outcome = host
+                .block_on(
+                    Application::with_topology(
+                        Root.stop_on_shutdown(),
+                        account_application::Topology::new(),
+                    )
+                    .entity_family(
+                        AccountsRole,
+                        definition,
+                        DirectoryConfig::default(),
+                        capacity,
+                    )
+                    .run_with_entities(|application| async move {
+                        let caller = application
+                            .sender_to(application.entities(AccountsRole).entity(ACCOUNT_ID))
+                            .unwrap_or_else(|_| panic!("the actual account sender starts"));
+                        caller
+                            .send(AccountCommand::Deposit(40))
+                            .await
+                            .expect("first deposit admitted");
+                        let mode = application.retire_entity(AccountsRole, &ACCOUNT_ID).await;
+                        assert_eq!(mode, Ok(RetirementMode::Graceful));
+                        caller
+                            .send(AccountCommand::Deposit(2))
+                            .await
+                            .expect("fresh incarnation admits deposit");
+                        let shutdown = application.request_shutdown();
+                        assert_eq!(shutdown, Ok(()));
+                    }),
+                )
+                .unwrap_or_else(|_| panic!("the application starts"));
+            let ((), retirement) = outcome
+                .try_into_completed()
+                .unwrap_or_else(|_| panic!("the work completes beside original cleanup"));
+            assert!(retirement.cleanup().is_ok());
+            let family = retirement
+                .family(AccountsRole)
+                .expect("the original family is acquired");
+            assert!(family.disposal_failure().is_none());
+            assert_eq!(family.metrics().activations, 2);
+            assert_eq!(family.metrics().residents, 0);
+            let EntityShutdown::Settled {
+                represented,
+                entities,
+            } = family.shutdown()
+            else {
+                panic!("the actual family must settle");
+            };
+            assert_eq!(*represented, 1);
+            assert_eq!(entities, &vec![EntityId::new(ACCOUNT_ID)]);
+            let records = reports.lock().unwrap_or_else(PoisonError::into_inner);
+            let [
+                AccountReport::Retirement {
+                    id: first_id,
+                    attempt: first_attempt,
+                    result: first,
+                    report: first_report,
+                },
+                AccountReport::Retirement {
+                    id: second_id,
+                    attempt: second_attempt,
+                    result: second,
+                    report: second_report,
+                },
+            ] = records.as_slice()
+            else {
+                panic!("both complete native retirements must reach the actual policy");
+            };
+            assert_eq!(first_id, &EntityId::new(ACCOUNT_ID));
+            assert_eq!(second_id, first_id);
+            assert_ne!(first_attempt, second_attempt);
+            assert_eq!(
+                first
+                    .as_ref()
+                    .expect("first native join succeeds")
+                    .behavior()
+                    .expect("first actor custody is retained")
+                    .base()
+                    .balance,
+                40
+            );
+            assert_eq!(
+                second
+                    .as_ref()
+                    .expect("second native join succeeds")
+                    .behavior()
+                    .expect("second actor custody is retained")
+                    .base()
+                    .balance,
+                2
+            );
+            assert_eq!(
+                first_report.retirement(),
+                bombay::RetirementAssessment::Established
+            );
+            assert_eq!(
+                second_report.retirement(),
+                bombay::RetirementAssessment::Established
+            );
+        }
+    }
 }

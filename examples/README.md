@@ -80,14 +80,16 @@ fixtures. Their commands and evidence belong in the
 
 Application-owned native Entity installation. A nominal asynchronous
 `EntityDefinition` is declared under a semantic role with independent
-hydration and resident bounds. The executable admits a command, passivates the
-incarnation, uses the same stable `EntityRef` to activate a replacement, then
+hydration and resident bounds. The executable admits a command, awaits retirement through
+`application.retire_entity(role, &id)`, uses the same stable `EntityRef` to start a fresh incarnation, then
 settles the root before Bombay closes, drains, and joins the family. It inspects
 both exact retirement payloads and the bounded final metrics; no actor fold
 performs hydration, admission, passivation, or observation directly.
 
 ```text
-src/main.rs  native definition, stable reference journey, and retirement custody
+src/main.rs      application assembly, stable reference journey and reporting
+src/account.rs   account commands and actor state
+src/accounts.rs  hydration and complete family callback custody
 ```
 
 ## `application-topology`
