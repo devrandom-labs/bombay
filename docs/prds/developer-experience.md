@@ -661,3 +661,27 @@ actor-model checkpoint. Disposition: pass for cold inference and limit inheritan
 resource accounting, archive/full gates and programme acceptance remain open.
 Evidence: COMBINED-CAPACITY-VERIFIED.json, COLD-REVIEWED-VERIFIED.json,
 COMBINED-FINAL-VERIFIED.json and the preserved independent review.
+
+Latest-main reconciliation pre-edit (DX01/03/16/22): user-authorized integration
+of origin/main c1d5b2b (1320dfa charged-ingress originals,406df11 native Node and
+release versions) into an isolated codex/devx-main-reconciliation worktree.
+Preserve the selected registry Behavior/Actors0.26.0 and all local DevX changes.
+Upstream networking remains its separately owned programme; this stage adds no
+networking policy. Derived custody law: every existing Application execution
+port must return its original Work disposition plus independent root, notification
+and family receiving products in the established ApplicationOutcome product.
+Node lends its original Session and callable through existing invocation custody;
+no result/error may be dropped, recreated or turned into a success classification.
+
+Inspect upstream Node, execute_with_invocation and public native consumers before
+lowering. Existing upstream Node still spells the obsolete split receiving
+carrier; merging must first retain that mismatch as executable RED, then write
+or preserve the smallest complete original-work/native retirement consumer before
+any adaptation. Reuse the tested ApplicationOutcome/ApplicationRetirement and
+existing WorkOutcome/execute_work invocation spine. No new public types, bound,
+wrapper, trait, generic policy or placeholder is selected. Expected custom owner
+files: execution/node, focused native consumer and current guidance/evidence;
+expected custom production delta below30 lines beyond imported upstream changes.
+Cumulative expanded authorization remains2026-10-09. Require normal/refusal/
+cancellation custody, exact source restoration, all relevant downstream tests,
+strict lint, archive and full pinned-Nix gates before crediting integration.
