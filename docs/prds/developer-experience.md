@@ -346,8 +346,9 @@ existing ignored subprocess case. Six lifecycle/protocol denials and six
 worker-factory denials retain their exact current-compiler snapshots. Strict
 workspace/all-target/all-feature Clippy passes. Imported production is retained;
 relative to selected main, existing DevX production is+203/-8/net195 across
-four files, with no merge-invented public type or capability. Full combined
-gates and optimized/MSRV consumers remain pending.
+four files, with no merge-invented public type or capability. The merged optimized workspace subsequently passes717 all-feature tests;
+all24 combined native Nix gates pass ataf87ef4 after isolated lock repair.
+Remaining programme consumers and final reconciliation remain open.
 
 The user requires every upstream integration to improve its developer
 experience. The independent work/native/notification product preserves
@@ -370,3 +371,11 @@ only the isolated lock to the already selected published owner contracts.
 Expected delta: three package versions/checksums, zero production symbols,
 semantic states, APIs or dependencies. Verify its exact debug/release/fmt/lint
 gate and re-run the combined native checks; preserve all remote custody tests.
+
+Combined verification ataf87ef4: all24 native aarch64-darwin Nix checks pass
+in2786.262seconds with all528 captured tracked-file hashes unchanged. The
+protected-counter check retains55 debug and55 release passes, strict lint and
+formatting; no disk/signing failure is waived. Other platforms remain locally
+unexecuted. The new result comparison remains outside repository production
+until named family selection, complete native/HTTP failure and static denials
+close the ordinary API design; its evidence stays in the owning PRD.
