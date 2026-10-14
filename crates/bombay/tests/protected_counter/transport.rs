@@ -1139,7 +1139,9 @@ async fn counter_native_applications<R>(
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }), ()) = native
+                }),
+                (),
+            ) = native
             else {
                 panic!("all original parent Work/native/two-notification products");
             };
@@ -1298,7 +1300,9 @@ async fn counter_native_applications<R>(
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
                         retirement: Ok(()),
-                    }), ()) = actual
+                    }),
+                    (),
+                ) = actual
                 else {
                     panic!("all original root Work/native/two-notification products");
                 };
@@ -1368,7 +1372,9 @@ async fn counter_native_applications<R>(
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }), ()) = native
+            }),
+            (),
+        ) = native
         else {
             panic!("all original Requester Work/native/two-notification products");
         };
@@ -1637,7 +1643,9 @@ async fn counter_native_applications<R>(
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }), ()) = local
+            }),
+            (),
+        ) = local
         else {
             panic!("independent local requester native and notifications")
         };
@@ -1968,7 +1976,9 @@ fn counter_child_stop<R>(
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
             retirement: Ok(()),
-        }), ()) = native
+        }),
+        (),
+    ) = native
     else {
         panic!("all original parent Work/native/two-notification products");
     };
@@ -2516,7 +2526,9 @@ fn counter_query_count<R>(
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
             retirement: Ok(()),
-        }), ()) = native
+        }),
+        (),
+    ) = native
     else {
         panic!("all original Counter Work/native/two-notification products");
     };

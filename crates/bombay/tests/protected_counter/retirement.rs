@@ -9,7 +9,7 @@ use bombay::behavior::{Behavior, BehaviorSettlements, Here, MessageProtocol, Nev
 use bombay::prelude::*;
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, Application,
-    WorkOutcome, RetirementAssessment, RetirementSchema,
+    RetirementAssessment, RetirementSchema, WorkOutcome,
 };
 use futures_util::FutureExt;
 use std::convert::Infallible;
@@ -280,7 +280,8 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                 },
             ),
         )
-        .unwrap_or_else(|_| panic!("the target enters the actual caller-owned host")).into_parts()owned host"));
+        .unwrap_or_else(|_| panic!("the target enters the actual caller-owned host"))
+        .into_parts();
     drop(host);
     let (
         WorkOutcome::Completed {
@@ -291,7 +292,9 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
             retirement: Ok(()),
-        }), ()) = target_outcome
+        }),
+        (),
+    ) = target_outcome
     else {
         panic!("target Work, native result and both notifications remain owned");
     };
@@ -313,7 +316,11 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
             retirement: Ok(()),
-        }), ()) = sibling_outcome.unwrap_or_else(|_| panic!("the sibling enters the same caller-owned host"))
+        }),
+        (),
+    ) = sibling_outcome
+        .unwrap_or_else(|_| panic!("the sibling enters the same caller-owned host"))
+        .into_parts()
     else {
         panic!("sibling Work, native result and both notifications remain owned");
     };

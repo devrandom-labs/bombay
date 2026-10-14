@@ -448,3 +448,14 @@ An equal two-reply endpoint journey at capacity1024 versus2 measures35442 versus
 not a whole-application or framework ranking. Root/birth/Entity mailbox limits,
 complete resource accounting, final package/full gates and the other owning
 requirements remain open.
+
+The c2c2abb full native check failed in the isolated protected-counter target:
+old tuple consumers remained, and a prior mechanical result migration malformed
+one string line. The correction reuses complete ApplicationOutcome::into_parts;
+no library, protocol, policy or transport feature changes. All829 original
+fixture assertions remain, with only two borrow patterns gaining the empty
+family product. The isolated53 native cases pass debug/release plus strict lint
+and formatting. Its two former example Counter tests remain in the owning
+five-test runtime target and pass there. The failed full run's548 source hashes
+were unchanged. All24 full native gates still require a fresh final-source run;
+cancelled gates are not counted as passed.
