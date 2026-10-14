@@ -363,6 +363,12 @@ DX1 now selects its owning contracts and acceptance witnesses; implementation
 remains subject to the paired PRD’s staged proofs. The product table groups the remaining programme work;
 it does not remove the inventory's finer requirements or optional decisions.
 
+## Local event fairness
+
+| Item | State | Blocked by | Unblocks | Evidence |
+| --- | --- | --- | --- | --- |
+| FAIR1: PERF-07 local selection prerequisite | active | none | none | [Event fairness](../prds/event-fairness.md); deterministic source service only, full overload/latency work remains open. |
+
 ## Retained local evidence
 
 These pointers preserve the completed prerequisites used by the backlog and
