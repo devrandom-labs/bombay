@@ -358,3 +358,15 @@ Counter and unrelated application consumers must exercise completion, startup
 refusal, work interruption, native retirement failure and notification failure
 without lost values. This remains selected DX01/05/17/19 work, not a completed
 merge-only requirement. AGENTS now records the standing integration rule.
+
+Combined bdaf904 optimized all-feature nextest passes717 tests, with one
+existing skip (860.467seconds including compilation). The complete native
+Nix check fails after1001.945seconds with528 source hashes unchanged: main's
+protected-counter vendor uses its isolated lock's Behavior/Actors0.25.0 and
+macros0.14.1, incompatible with runtime0.26.0. These imported native checks
+add three gates, bringing the combined scope to24. This failure is not waived.
+Before editing, retain the failed vendor resolution as the regression; update
+only the isolated lock to the already selected published owner contracts.
+Expected delta: three package versions/checksums, zero production symbols,
+semantic states, APIs or dependencies. Verify its exact debug/release/fmt/lint
+gate and re-run the combined native checks; preserve all remote custody tests.
