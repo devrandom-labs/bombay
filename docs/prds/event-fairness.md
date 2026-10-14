@@ -629,3 +629,39 @@ executions remain earlier evidence; no new cuts or copied test binaries claimed.
 Final ownership/lock reviewaa427163 passes. Full combined checks and CI remain
 required before merge. The coordinator will include this reviewed contribution
 in hosting for parallel CI; native fairness delivery stays owned by PR366.
+
+### HTTP fixture binding correction — selection before retained edit
+
+Combined remote workspace run exits101 at the existing HTTP staging/retry
+witness; retain its raw failure. Source review proves the fixture discards its
+listener, then treats the derived ephemeral port as reserved. Current API
+promises original request/input custody, not reservation after disposal.
+
+Smallest concrete failing witness retains an actual bound listener and reverts
+only the retry argument to its occupied address: exact named test fails in debug
+and optimized. Separate diagnostics observe native StagingRejected/AddrInUse.
+The retained candidate reuses original requested127.0.0.1:0 and keeps the returned
+listener through retry. All original actor/router/scope/native/notification
+assertions remain byte-identical; no additional bind, retry loop or deadline.
+Existing ApplicationScope, HTTP execution and Tokio listener ownership suffice.
+
+Expected retained edit: axum.rs+5/-3/net2 testlines; production Rust0/API0. One
+additional path gives fairness16 and combined20, authorized under standing
+recommendation delegation before this edit. Paired inversions/controls and
+full seven-test Axum suites pass both profiles with explicitremote,axum. Two
+source/semantic and execution/vacuity reviews7db05f1e/63eb940a pass.
+
+Earlier20 diagnostics plus first occupied-port invocation ran ZERO tests due
+to missingaxum; they receive no runtime credit. All raw failures are preserved.
+The initial uncontrolled full-workspace failure's phase remains unclassified;
+this corrects a separately proven fixture race, not all HTTP lifecycle behavior.
+Combined source checks and fresh updated-head CI remain required before merge.
+
+Retained sourceceed8bd1 passes exact paired controls and both seven-test Axum
+suites. Minimal inverse0bac14b7 changes only the retry argument and fails the
+intended completion oracle in both profiles; source reversal restores every
+original assertion. Combined no-fail-fast remote run is in progress; earlier
+failed full run remains recorded, not converted to a pass. New submitted heads
+must rerun required CI; prior26b/24c native pairs pass independently but do not
+qualify the changed head. Current retained HTTP delta is test+5/-3/net2;
+production/API0 added, combined20paths/fairness16.
