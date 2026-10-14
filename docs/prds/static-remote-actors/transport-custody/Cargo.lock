@@ -272,6 +272,7 @@ dependencies = [
  "bombay-timers",
  "loom",
  "parking_lot",
+ "serde",
  "thiserror",
  "tokio",
  "triomphe",

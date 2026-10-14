@@ -12,8 +12,8 @@ executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
 or multithread execution. Durability and crate-owned remote networking remain
 planned. The merged optional `remote` feature provides `remote::verify` for
-provider-result custody. The current ingress candidate adds `remote::try_retain`
-for nonwaiting count retention; its delivery remains pending. Neither supplies
+provider-result custody. The merged ingress primitive adds `remote::try_retain`
+for nonwaiting count retention (PR363). Neither supplies
 authentication, actor admission or multi-node Application assembly.
 Protected Counter transport regressions
 live in Bombay's tests, built by the isolated transport-custody test package.
@@ -428,7 +428,7 @@ exact bare `Result<(), io::Error>` from serving; raw root and cleanup facts coex
 completion is not proof that the root result is successful. Axum owns HTTP
 extraction/responses; Bombay adds no projected aggregate `AxumRunError`.
 
-## Remote verification and ingress retention
+## Remote declarations, verification and ingress retention
 
 The opt-in `remote` feature exposes `bombay::remote::verify`. It borrows the
 original request and stores a provider's complete `Result` in the caller's
@@ -441,7 +441,7 @@ It does not grant actor access or perform mailbox admission. Keep the operation
 pinned outside a temporary borrowed wait to cancel only that wait. Dropping the
 operation itself drops its provider future; the outside request and slot remain.
 
-The current ingress candidate adds `remote::try_retain`, transferring one static
+The merged ingress primitive adds `remote::try_retain`, transferring one static
 original and an `OwnedSemaphorePermit` into a caller-owned Tokio channel without
 waiting or copying. The caller supplies an `Arc<Semaphore>` and keeps each
 `(original, permit)` intact across queueing, active work and unread output. Dispose
@@ -455,7 +455,15 @@ original and its acquired permit. Diagnostics omit the payload; no original
 and establishes no byte, producer-task, native-allocation or provider-heap bound.
 Unpacking early or cloning originals can defeat the caller's count discipline.
 It performs no authentication, actor admission or network setup; delivery of
-this candidate remains pending.
+this primitive is recorded in PR363.
+
+The new `remote::Metadata` provides fifteen required raw declarations for the
+concrete protocol's `bombay` field. Its Serde traits reject unknown/duplicate
+object fields, but decoding alone accepts positional structs too. The pending
+bounded receiving boundary must establish the selected JSON object shape and
+check versions, profiles, SDK identities, replay and permission. Metadata neither
+authenticates input nor grants actor access. Providers protect the exact original
+transmitted bytes; deserializing and reserializing is not proof verification.
 
 Network connections and the multi-node Application API are still pending.
 The local `examples/counter` and future `examples/remote-counter` are separate

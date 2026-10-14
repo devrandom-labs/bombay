@@ -27,11 +27,22 @@ merged `fb533b5bddb1ba20d6514f590167faef60b028d0` at
 2026-10-14T01:22:54Z with all six checks passing. Neither acquisition nor
 relocation closes any full remote witness or delivers remote-counter hosting.
 
-The public ingress candidate retains an original with its count permit through
-queueing, active use and unread output; exact capacity and channel errors remain
-distinct. Its native Reply pool is an explicit per-query fixture input, not a
-caller-wide default or byte/heap bound. This prerequisite does not authenticate,
-admit an actor command or close any full R01–R25 row; final delivery remains open.
+[PR363](https://github.com/devrandom-labs/bombay/pull/363) delivers public ingress
+retention, merged1320dfa9 at2026-10-14T03:07:08Z after all six checks and recorded
+source/native/required-Nix reviews pass. It retains an original/count-permit through
+queueing, active use and unread output, with exact distinct native refusal causes.
+Required CI executes four ingress tests in each profile; native SessionLocal counts
+are separate from TLS campaigns. The Reply pool remains an explicit per-query
+fixture input, not a caller-wide default or byte/heap bound. This prerequisite does
+not authenticate/admit an actor command or close any full R01–R25 row.
+
+Current raw metadata composition uses the actual public fifteen-field owner with
+Counter/Ledger fixed vectors. Seven structural schema tests pass in both profiles,
+and the intended unknown-field inverse fails before exact restoration. Its Serde
+array control exposes a receiving-boundary prerequisite: shipping input must have
+the selected object shape. No authentication, zero-admission, full bound or full
+R02 acceptance is credited from raw decoding. Node/profile construction and the
+bounded receiving decoder still need actual implementation and proofs.
 
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in

@@ -18,12 +18,18 @@ not additional source modules or currently implemented public APIs.
 With the opt-in `remote` feature, `remote::verify` owns storing the provider's
 returned result before its future is disposed. Its private verification module
 uses an outside standard result slot and owns no authentication policy.
-The current ingress candidate's private `remote/ingress.rs` owns the nonwaiting
+The merged ingress primitive's private `remote/ingress.rs` owns the nonwaiting
 acquire-and-transfer operation exported as `remote::try_retain` and its two native
-refusal causes in `IngressError`; delivery remains pending. The caller owns the
-Tokio channel, count capacity and intact original/permit products. This module
-adds no mailbox, actor authority or transport runtime. Network entry points and
-ordinary multi-node Application composition remain pending;
+refusal causes in `IngressError`; reviewed PR363 records delivery. The caller
+owns the Tokio channel, count capacity and intact original/permit products. This module
+adds no mailbox, actor authority or transport runtime. The new private
+`remote/metadata.rs` owns the shared raw fifteen-field `Metadata` declaration
+exported with `remote`. Existing optional Serde owns its structural codec;
+protocol products own their fields. Metadata is untrusted and format-neutral:
+object-shape, resource, profile/version, SDK, replay and permission acceptance
+remain the pending receiving boundary. No parser or SDK root dependency is
+added. Network entry points and ordinary multi-node Application composition
+remain pending;
 transport fixtures do not establish that public surface. Protected Counter
 regressions belong to `crates/bombay/tests/protected_counter`, executed by the
 isolated transport-custody package rather than an example binary.

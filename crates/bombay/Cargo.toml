@@ -16,7 +16,7 @@ workspace = true
 
 [features]
 default = []
-remote = []
+remote = ["dep:serde"]
 axum = ["dep:axum", "tokio/net"]
 
 [dependencies]
@@ -32,6 +32,7 @@ tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
 timers = { workspace = true }
 triomphe = { workspace = true }
 axum = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
 
 [dev-dependencies]
 serde = { workspace = true }

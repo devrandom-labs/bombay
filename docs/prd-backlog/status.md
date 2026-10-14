@@ -26,11 +26,22 @@ merged `fb533b5bddb1ba20d6514f590167faef60b028d0` at
 2026-10-14T01:22:54Z after exact-head review and all six passing checks.
 The separate remote-counter application remains required.
 
-The current ingress candidate adds public `remote::try_retain` and `IngressError`
-for an intact original/count-permit transfer. Its inputs and native rejection
-causes are explicit; it establishes no authentication, actor admission, byte or
-whole-service bound. Delivery and final CI remain pending; AUTH1/NET1 and every
-full R01–R25 obligation remain open. See the PRD's crate-ingress change record.
+Public `remote::try_retain` and `IngressError` are delivered through reviewed
+[PR363](https://github.com/devrandom-labs/bombay/pull/363), merged1320dfa9 at
+2026-10-14T03:07:08Z after all six checks pass. Required Nix executes20 public
+remote tests and three SessionLocal native-count tests in each profile; scoped
+source/native/required-log reviews are recorded. The intact original/count-permit
+transfer preserves exact capacity/channel causes, not authentication, actor
+admission, bytes or whole-service bounds. AUTH1/NET1 and every full R01–R25
+obligation remain open. Node and common message declarations are next.
+
+The research branch now implements the shared fifteen-field raw `remote::Metadata`
+with an optional existing Serde edge. Seven structural schema tests and twenty
+other affected public tests pass in both profiles; strict checks and scoped
+minimization pass. The isolated lock adds only its existing Serde edge, preserving
+all324 packages. Object-shape, bounded decoding and all policy/admission remain
+pending; public Node/Application integration is next. This contribution is not
+yet submitted or merged, and no full requirement changes state.
 
 Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
 merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at
