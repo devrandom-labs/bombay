@@ -157,6 +157,25 @@
               buildPhaseCargoCommand = "cargo test --locked -p bombay-rs --all-features --test application_children";
             }
           );
+          bombay-remote-debug = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              env.RUSTDOCFLAGS = "--deny warnings";
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-rs --features remote --test remote_verification --test application_clients
+                cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
+                cargo doc --locked -p bombay-rs --features remote --no-deps
+              '';
+            }
+          );
+          bombay-remote-release = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --test remote_verification --test application_clients";
+            }
+          );
           bombay-fmt = craneLib.cargoFmt commonArgs;
           bombay-clippy = craneLib.cargoClippy (
             commonArgs

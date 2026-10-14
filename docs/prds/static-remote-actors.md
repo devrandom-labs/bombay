@@ -1,12 +1,43 @@
 # Static remote actors and typed admission
 
+## Reviewed DevX integration delivery — 2026-10-13
+
+[PR359](https://github.com/devrandom-labs/bombay/pull/359) merged at
+2026-10-13T22:17:06Z as `7fccf08b120dc468de6e5aa2ed9719724814c375`.
+Reviewed head `df6144f37c1db5a4c760b544d27f42c2cfff0bc6` and merged main
+have the same tree `1ab9ea6db753d9bd5ab6843e40a558904a37018b`.
+All six observed checks pass. Required
+[Nix job115544829136](https://github.com/devrandom-labs/bombay/actions/runs/38469571372/job/115544829136)
+executes749 optimized workspace tests, zero failures and one ignored; Counter55
+executes in plain debug, coverage and optimized builds. The six topology
+comparisons and three protected-scope/decoder witnesses execute in coverage
+and optimized builds. Plain filtered listings receive no execution credit.
+Driver2048 and four Observe1024 fuzz campaigns and their fresh archives pass
+artifact review; Miri does not execute for this pull-request event. Returned
+step metadata is stale; terminal job status, complete logs and actual artifacts
+are retained separately. Source review0c29aecb, native review55f6f795 and
+required-CI review8029eb80 are recorded on the reviewed PR.
+
+This delivers the frozen DevX integration and provider-custody prerequisites.
+Every full R01–R25 obligation, AUTH1/NET1, the crate-owned networking entrypoint
+and separate `examples/remote-counter` remain open. Older unexplained release
+and allocation failures retain their historical qualifications. The coordinator
+starts `feat/static-remote-library` from actual merged main in the existing
+integration worktree; primary AGENTS edits and the active DevX tree are preserved.
+
+One independently verified clean worktree, the exact merged PR357 head, was
+removed under the user's cleanup instruction: about8.7MiB. Other old trees
+retain local changes or lack merge proof. No shared target or evidence archive
+was deleted.
+
 ## Current integration contract — 2026-10-13
 
-The primary workspace and main671ba860 still select Behavior/Actors0.23.0,
-macros0.14.0 and patched Timers13e884da, with root lock47089444. The submitted
-DevX integration32cec46 selects Behavior/Actors0.25.0 at2bb4510, macros0.14.1,
-registry Timers0.2.0 at9369d1f and no patches, with root lock42eb8120 and native
-lock7ae93c48. Address0.3.0, Communication0.1.5 and Bombay-private Observe retain
+Merged main7fccf08b and the coordinator's new feature branch select
+Behavior/Actors0.25.0 at2bb4510, macros0.14.1, registry Timers0.2.0 at9369d1f
+and no patches, with root lock42eb8120 and native lock7ae93c48. The preserved
+primary workspace remains at671ba860 with its original0.23/Timers patch graph
+and AGENTS edit; it is not the source of the next implementation stage.
+Address0.3.0, Communication0.1.5 and Bombay-private Observe retain
 their owning contracts. Selected native transport remains bombay-zenoh1.10.8;
 lower packages retain their actual independently locked versions, including
 Config1.10.2. Do not relabel every transitive package1.10.8.
@@ -15,12 +46,144 @@ Current integration source/evidence takes precedence over older checkpoint
 snapshots below for that integration only. Historical owner versions and
 passing probes never certify a later graph. The selected Behavior revision's
 complete760-line AGENTS and relevant current owning sources are inspected.
-The two working trees remain distinct until actual reviewed delivery. Preserve
+The two working trees remain distinct after reviewed integration delivery. Preserve
 the primary AGENTS edit and leave the active DevX worktree untouched.
 
-All full R01–R25 obligations remain open. The optional remote feature and its
-public multi-node Application integration are not implemented by the existing
-Counter fixtures. The local and remote examples must remain separate.
+All full R01–R25 obligations remain open. Existing Counter fixtures do not
+implement public multi-node Application integration. The acquisition stage below
+introduces the optional remote feature; networking remains pending. The local
+and remote examples must remain separate.
+
+### Crate-owned verification acquisition — pre-edit decision, 2026-10-13
+
+Select the ordinary function proposed in source-bound research e6ae532d:
+`remote::verify(&original, &mut Option<Result<Receipt, Error>>, provider)`.
+The actual factory-returned future is pinned and polled; its complete returned
+Result is stored outside before the completed producer is disposed. A filled
+slot suppresses another factory call. Requests, receipts and causes remain
+owned by their existing callers. Cancelling a temporary borrowed wait of an
+outside pinned operation retains that same operation and slot. Dropping the
+operation itself after Pending disposes its provider future; the outside request
+and slot remain. Both Some(Ok) and Some(Err) suppress factory invocation, not
+evaluation or destruction of the caller's closure captures. Unit completion is
+acquisition only, not successful authentication or admission. The guarantee
+covers the actual returned future, not a lossy adapter inside that future.
+This is the existing Ready-before-disposal law, not a new authentication policy.
+
+The user delegates recommended choices. Prefer this standard slot/function to
+an additional wrapper or an arbitrary commit/From callback: those alternatives
+add state or can run application code before storing the acquired original.
+Reuse core Future, pin and poll_fn; no new crate, trait, public type, default
+resource limit, wire grammar or cryptographic mechanism is selected. The public
+function states the acquisition contract; provider selection and current scope,
+grant, replay and actual mailbox admission keep their separate owners.
+
+The exact graph remains Behavior/Actors0.25.0 at2bb4510, macros0.14.1,
+Address0.3.0, Communication0.1.5, registry Timers0.2.0 and private Observe;
+both locks and all relevant owner files match reviewed7fccf08b. Selected Behavior
+instructions remain the completely read760-line source at2bb4510. Relevant
+native admission, observing, task-result and provider disposal tests/source are
+rechecked; no owning primitive or Behavior/Actions contract changes.
+
+Smallest failing law: the existing actual provider returns its original receipt
+and then raises its original disposal panic. Await-then-store loses that receipt;
+the outside slot must retain its exact allocation beside the original cause.
+Before production, execute that law through the standard-slot comparison;
+then use both real Counter/Ledger Application consumers and their two opaque
+provider futures through the public crate function. Test Pending borrowed waits,
+original Err, full-slot suppression and exact original bytes. Run intended
+await-before-store inversions and restored controls in debug and optimized.
+Raw module-absence errors do not count as the semantic regression.
+
+Add an opt-in `remote=[]` feature, one gated public module and its private
+verification source; keep default local builds independent. Gate the existing
+three protected-request comparison tests on remote and delete their copied
+acquisition body. Preserve every original cleanup/native/scope assertion.
+Add explicit remote-feature verification to pinned-Nix checks so gating removes
+no acceptance coverage. The five-phase Counter harness stays unchanged until
+its independent relocation/phase-equivalence stage; its private acquisition
+body remains recorded migration debt. No empty remote-counter example is added.
+
+Expected paths: four crate source/manifest files, one owning verification test,
+two existing Application-test consumers, flake verification and five records;
+at most13 paths,250 production introductions and500 test introductions,
+public types+0/-0, public functions+1/-0, dependencies/lock changes0.
+Under recommendation delegation select this additional bounded stage before
+edits; retain earlier reconciliation/import allowances and unproved historical
+chronology separately. The complete retained main-relative census is still
+required. This adds capability code and cannot be called code reduction.
+Full AUTH1/NET1, public remote networking, bindings, bounds and R01–R25 remain
+open; this component is a prerequisite inside the unchanged full objective.
+
+The pre-production standard-slot Ready/disposal regression executes through
+`nix develop -c python3 /tmp/bombay-remote-verification-tests-prepared/run_ready_disposal.py`.
+The actual await-then-store body fails with the intended receipt-erasure message
+in debug and optimized builds (exit101); direct poll/store controls pass both
+(exit0). Source9c1dc1af, original debug loga69a68fd and optimized log8ef39e9e
+are separate local evidence, not CI or a public runtime test. The owning public
+tests now compile and execute3/3; Application clients execute13/13, including
+all three previously retained protected-request witnesses. That first debug run
+reports one obsolete Future import after deletion; remove it before strict
+checking. Production/public API execution and final delivery remain unqualified
+until restored source controls, optimized tests and strict checks complete.
+The source review corrects cancellation wording: only cancelling a temporary
+borrow retains the pinned producer; destroying the operation drops that producer.
+The13-path bound includes necessary public/API/ownership guidance and status
+updates; it expands the initial12-path estimate under recommendation delegation.
+
+Exact public source inversions execute through pinned Nix in
+`run_public_inversions.py`: await-before-store loses the actual returned receipt
+and removing the occupied-slot guard invokes both factories (observed2 rather
+than0). Both fail their intended assertion in debug and optimized (exit101).
+Byte-exact restored sourcec121e16d passes all three owning tests in both profiles;
+the full optimized Application target passes13/13. Source-only independent review
+92735310 finds no blocker in the owner, assertions, feature gates or explicit
+Nix checks. The scheduled test proves explicit repoll after borrowed-wait
+cancellation with a noop waker, not executor wake delivery; RecvError remains
+the actual typed receiver error without an allocation-identity claim.
+
+Retained stage census, including untracked source/tests:13 paths; production
+Rust+52/-0/net52; tests+290/-28/net262; public types+0/-0, functions+1/-0;
+manifest+1 and Nix verification+19. The existing main-relative delivery record
+adds one record path (14 total) and no production or tests. These are retained
+endpoint counts, not reconstruction of older chronological introductions.
+Both locks remain byte-identical42eb8120/7ae93c48; no dependencies changed.
+This capability addition is net-positive. The old five-phase Counter acquisition
+copy and standalone remote application remain explicit next-stage work.
+
+Combined pinned-Nix commands pass on restored production sourcec121e16d:
+`cargo build --locked --workspace`, `cargo test --locked --workspace`
+(750 passed,0 failed,4 ignored across87 summaries), `cargo fmt --all -- --check`,
+`cargo clippy --locked --workspace --all-targets -- -D warnings`,
+`cargo clippy --locked -p bombay-rs --features remote --all-targets -- -D warnings`
+and `cargo doc --locked -p bombay-rs --features remote --no-deps` with
+RUSTDOCFLAGS denying warnings. Root-only shared target and no incremental/debug
+information retain the pinned toolchain and normal release optimization.
+Default-local tests deliberately exclude the three protected-request witnesses;
+explicit remote debug/optimized checks execute those and the three new owning
+tests. The new Nix check names evaluate successfully; local command execution
+does not establish hermetic CI execution or a merged release.
+Independent inversion reviewa4eff9b4 verifies actual local logs and restored
+hashes. The first guard inversion stops at Some(Ok). A separate Err-only guard
+inversion subsequently fails the actual1-versus0 factory oracle in both profiles:
+it permits the first factory for the original Err, then its returned Ok suppresses
+the second. The external log validator initially expected the blanket inversion's
+count2; correcting that validator to observed1 changes no test or product code.
+Byte-exact restored controls again pass3/3 per profile. No standalone Err negative
+execution is inferred from the earlier Some(Ok) failure.
+
+Final debug remote targets on restored source execute16/16 (Application13 and
+acquisition3), with no obsolete-import warning. Optimized targets execute the
+same16/16. Independent supplement7f0979ca verifies the separate Err inverse,
+restored controls and completed six-command local gate logs. Scoped minimization
+retains one function because ordinary await loses an independently observed
+authoritative result; it deletes the existing comparison's copied equation,
+adds no wrapper/trait/product and leaves provider policy with its owner.
+Retained production remains+52/-0/net52, tests+290/-28/net262 and public
+types+0/-0 (one function). All14 main-relative tracked/untracked paths include
+the earlier delivery record; only13 belong to this acquisition stage.
+Review/required CI/merge for this component are pending; the full PRD is active
+and every full acceptance row remains open.
 
 ### Nested metadata comparison — delegated choice, 2026-10-13
 

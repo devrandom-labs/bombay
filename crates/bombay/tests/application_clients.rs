@@ -490,5 +490,6 @@ async fn closing_root_client_preserves_accepted_reply_and_then_exhausts() {
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
 }
 
+#[cfg(feature = "remote")]
 #[path = "application_clients/protected_requests.rs"]
 mod protected_requests;

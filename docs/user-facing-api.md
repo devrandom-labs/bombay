@@ -422,6 +422,22 @@ exact bare `Result<(), io::Error>` from serving; raw root and cleanup facts coex
 completion is not proof that the root result is successful. Axum owns HTTP
 extraction/responses; Bombay adds no projected aggregate `AxumRunError`.
 
+## Remote verification
+
+The opt-in `remote` feature exposes `bombay::remote::verify`. It borrows the
+original request and stores a provider's complete `Result` in the caller's
+`Option<Result<Receipt, Error>>` before dropping the completed provider future.
+An existing receipt or error prevents a second provider invocation. The caller
+keeps the result even when the completed provider's destructor panics.
+
+The function returns unit; the retained result describes the provider outcome.
+It does not grant actor access or perform mailbox admission. Keep the operation
+pinned outside a temporary borrowed wait to cancel only that wait. Dropping the
+operation itself drops its provider future; the outside request and slot remain.
+Network connections and the multi-node Application API are still pending.
+The local `examples/counter` and future `examples/remote-counter` are separate
+applications; owning tests retain custody and fault assertions.
+
 ## Application composition
 
 The root is an ordinary Behavior composition. Application-owned user-message

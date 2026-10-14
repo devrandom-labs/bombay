@@ -6,6 +6,20 @@ locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
 
+DevX integration prerequisite [PR359](https://github.com/devrandom-labs/bombay/pull/359)
+merged `7fccf08b120dc468de6e5aa2ed9719724814c375` at2026-10-13T22:17:06Z.
+Its tree matches revieweddf6144f; all six checks pass with recorded source,
+native artifact and required-Nix reviews. Actual Nix executes749/0/1 optimized
+workspace tests, current topology/scope witnesses, coverage and primitive fuzz;
+Miri does not execute. This also delivers the provider-custody prerequisite
+that formerly awaited replacement CI. Historical failures remain unexplained.
+The selected main now uses Behavior/Actors0.25.0 and registry Timers0.2.0.
+The following older checkpoints retain their original source/CI provenance.
+AUTH1/NET1, every full remote witness, network entry points and the separate
+remote-counter application remain open. The current unmerged acquisition stage
+adds only opt-in `remote::verify`; full multi-node Application integration is
+still outstanding. Its verification and delivery evidence belong in the PRD.
+
 Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
 merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at
 2026-10-13T02:41:04Z after independent review and all six passing checks,

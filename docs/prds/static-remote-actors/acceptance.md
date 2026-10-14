@@ -9,6 +9,14 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
+The DevX integration prerequisite is delivered through reviewed
+[PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
+2026-10-13T22:17:06Z after all six checks pass ondf6144f. Source trees match.
+Actual required Nix and fresh native artifacts have recorded technical review;
+optimized workspace749/0/1, current comparisons, coverage and primitive fuzz
+pass. Miri does not execute. Historical pending-delivery paragraphs below refer
+to their original checkpoints. No full R01–R25 row closes from this integration.
+
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in
 debug and optimized. Corrected controls and all five causal cuts pass both

@@ -16,6 +16,7 @@ workspace = true
 
 [features]
 default = []
+remote = []
 axum = ["dep:axum", "tokio/net"]
 
 [dependencies]

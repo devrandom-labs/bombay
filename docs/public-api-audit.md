@@ -29,7 +29,13 @@ The root entry checks are owned by the [application topology](../examples/applic
 [authoring compile matrix](../crates/bombay/tests/macro_last_authoring.rs) establish narrower
 positive and negative boundaries. These references identify the owning checks;
 the combined integration still requires its final full verification. No ordinary
-multi-node remote API or `remote` feature is implemented by this reconciliation.
+multi-node remote API is implemented by this reconciliation. The subsequent
+opt-in `remote` feature adds only `remote::verify`: one ordinary function over
+a borrowed request, a caller-owned standard result slot and a concrete provider
+future. It adds no public type, trait or bound beyond `FnOnce` and `Future`.
+Its owning verification and protected Application tests cover result custody,
+borrowed-wait cancellation and occupied-slot suppression; network composition
+remains pending.
 The Engine surface is exercised by its
 [Driver law tests](../crates/bombay-engine/tests/driver_law.rs) and
 [terminal custody tests](../crates/bombay-engine/tests/terminal_custody.rs).
