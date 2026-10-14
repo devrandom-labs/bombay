@@ -616,3 +616,48 @@ records preserved denials, not a passing MSRV snapshot gate. No snapshot weakeni
 or overwrite. Final full Nix gates and integrated actor-capacity cold journey
 remain required. Evidence: COLD-MATRIX-VERIFIED.json, COLD-TOPOLOGY-INVERSES.json,
 COLD-FINAL-VERIFIED.json, COLD-MSRV-DENIAL-BASELINE.json and existing denial logs.
+
+Combined cold-capacity consumer pre-edit (DX03/06): integrate the already-proven
+mailbox and selected-edge corrections; no new production design. Restore the
+original cold Library→Archive failing consumer without an actor annotation or
+terminal alias. Its two-slot fresh-child saturation must return the original
+third Box, preserve the accepted prefix and return every original accepted
+allocation through joined cold-member retirement. Expected delta: one test
+module and its parent declaration, production0, public types0. The recorded
+COLD-MEMBER-CAPACITY-INFERENCE source/E0275 is the independent RED; both owners
+are now integrated at333dddb. Preserve all existing tests and static denials.
+
+Cold witness review: first review maps original creation/reply, allocation and
+capacity observations to DX03/06. Independent recursive_factory second review
+finds the defining projection rule sound, preserving explicit targets, other
+parents, named roles and ExecutedRoot. It also finds that custody()/behavior()
+alone accept failure-bearing retirement variants. Before retaining the combined
+journey, strengthen both native witnesses to require Completed(Stopped) for the
+root, OwnerCancelled for descendants under the existing parent-retirement law,
+successful independent notifications and empty child/capability/additional/
+retirement failure lanes. Production0, no new type or bound. Existing source
+inversions remain the regression falsifiers. The first frozen combined matrix
+passes80 executions; it does not certify these added retirement observations.
+
+Combined cold-capacity checkpoint: all80 mailbox/client/native Entity executions
+pass current/MSRV debug/release with552 frozen files; the two strengthened cold
+witnesses additionally pass all eight executions on final source. Independent
+second review confirms failure-bearing retirements can no longer pass the
+oracle; required operations remain outside assertions. Final strict workspace
+all-target/all-feature lint, formatting and all24 current-compiler topology
+denials pass with source hashes unchanged. A Clippy assertion-style failure
+on Vec<Never> was corrected using the existing count assertion style; its log
+is preserved and no type, bound or production edit was introduced.
+
+Production+0/-0/net0; tests+174/-8/net166 (new cold consumer136, parent+3,
+existing native witness+35/-8), public types0; test modules+1, production modules0.
+All control/subordinate sums, interpreter branches and public spellings remain
+unchanged. Exact current values are the original rejected Box, accepted document
+prefix, child origins, actor state and independent notification/failure reports;
+no arrival-history label or repeated cause added. No structural caller syntax,
+semantic flag, false cardinality or nested transition authority. Cross-check
+DX03/06, owning creation/cancellation/retirement contracts and preceding normalized
+actor-model checkpoint. Disposition: pass for cold inference and limit inheritance;
+resource accounting, archive/full gates and programme acceptance remain open.
+Evidence: COMBINED-CAPACITY-VERIFIED.json, COLD-REVIEWED-VERIFIED.json,
+COMBINED-FINAL-VERIFIED.json and the preserved independent review.

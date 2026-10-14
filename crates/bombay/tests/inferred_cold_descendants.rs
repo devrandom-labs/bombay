@@ -109,18 +109,38 @@ async fn inferred_cold_branch_creates_worker_and_keeps_native_reply_and_complete
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the full cold-member subtree joins"));
     assert!(retirement.cleanup().is_ok());
+    let notifications = retirement
+        .notifications()
+        .as_ref()
+        .expect("both notifications return");
+    assert!(notifications.termination.is_ok());
+    assert!(notifications.retirement.is_ok());
     let (_, root) = retirement
         .retirement()
         .as_ref()
         .expect("the original root remains owned");
-    let root = root
-        .custody()
-        .expect("complete root custody retains its cold branch");
+    assert_eq!(root.completion(), Some(&Completion::Stopped));
+    let ActorRetirement::Completed { custody: root, .. } = root else {
+        panic!("the root stops normally");
+    };
+    assert_eq!(root.child_failures.len(), 0);
+    assert_eq!(root.capability_failures.len(), 0);
+    assert_eq!(root.additional_failures.len(), 0);
+    assert_eq!(root.retirement_failures.len(), 0);
     assert_eq!(root.descendants.len(), 1);
     let branches::RootRetirements {
         retirement: branch, ..
     } = &root.descendants[0];
-    let branch = branch.custody().expect("the original branch remains owned");
+    let ActorRetirement::OwnerCancelled {
+        custody: branch, ..
+    } = branch.as_ref()
+    else {
+        panic!("parent retirement cancels its original cold child");
+    };
+    assert_eq!(branch.child_failures.len(), 0);
+    assert_eq!(branch.capability_failures.len(), 0);
+    assert_eq!(branch.additional_failures.len(), 0);
+    assert_eq!(branch.retirement_failures.len(), 0);
     assert!(branch.behavior.base().worker.is_none());
     assert_eq!(branch.descendants.len(), 1);
     let branches::BranchRetirements {
@@ -128,10 +148,17 @@ async fn inferred_cold_branch_creates_worker_and_keeps_native_reply_and_complete
         retirement: worker,
     } = &branch.descendants[0];
     assert_eq!(origin.address(), worker_address);
-    let worker = worker
-        .behavior()
-        .expect("the actual fresh child retains its original state")
-        .base();
+    let ActorRetirement::OwnerCancelled {
+        custody: worker, ..
+    } = worker.as_ref()
+    else {
+        panic!("parent retirement cancels its original fresh child");
+    };
+    assert_eq!(worker.child_failures.len(), 0);
+    assert_eq!(worker.capability_failures.len(), 0);
+    assert_eq!(worker.additional_failures.len(), 0);
+    assert_eq!(worker.retirement_failures.len(), 0);
+    let worker = worker.behavior.base();
     assert!(ptr::eq(worker.payload.as_ptr(), identity));
     assert_eq!(&*worker.payload, &[41, 43]);
     assert_eq!(worker.value, 42);

@@ -8,6 +8,9 @@ use communication::TrySendError;
 use std::ptr;
 use tokio::runtime::Builder;
 
+#[path = "actor_capacity/cold.rs"]
+mod cold;
+
 #[path = "actor_capacity/entity.rs"]
 mod entity;
 
