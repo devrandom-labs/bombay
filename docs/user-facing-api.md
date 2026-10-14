@@ -361,6 +361,27 @@ client.send(CounterMessage::Read(client.recipient())).await?;
 let reply = client.receive().await;
 ```
 
+Reply mailboxes keep a bounded default of1,024 slots. Select a smaller limit
+once on the application or its pre-root scope:
+
+```text
+let replies = bombay::MailboxCapacity::new(8)?;
+let application = bombay::Application::new(root).client_capacity(replies);
+// Or select the limit before establishing early endpoints:
+let scope = bombay::ApplicationScope::new().client_capacity(replies);
+```
+
+This limit applies to subsequently established external actors, bound clients
+and exported interfaces. Changing a scope/application setting does not resize an
+existing endpoint. Communication rounds a positive minimum up to a power of two
+with floor2: requesting3 means4 effective slots, available through `get()`.
+Zero or overflowing rounding returns `MailboxCapacityError` with the original
+minimum, before mailbox allocation. Closing admission preserves accepted replies;
+`try_send` returns the original input when full or closed. Actor mailboxes, pool
+backlogs and Entity hydration/resident limits are separate resources.
+The [capacity witnesses](../crates/bombay/tests/client_capacity.rs) exercise
+saturation, prefix draining, exact rejection, shutdown and missing-host retry.
+
 The [counter](../examples/counter/src/main.rs) and
 [FIFO pool](../examples/worker-pool/src/main.rs) use this root-bound path.
 [Client regressions](../crates/bombay/tests/application_clients.rs) preserve

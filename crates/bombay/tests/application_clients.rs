@@ -353,6 +353,7 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
         .with_one_shot(TimerId(13), Duration::from_secs(3600), |_| Actions::stop())
         .stop_on_shutdown();
     let outcome = Application::new(actor)
+        .client_capacity(bombay::MailboxCapacity::new(2).expect("two bounded reply slots"))
         .run_with(|application| async move {
             let mut client = application.client().expect("real reply endpoint");
             client
@@ -392,6 +393,7 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
         |_| Actions::stop(),
     );
     let outcome = Application::new(actor)
+        .client_capacity(bombay::MailboxCapacity::new(2).expect("two bounded reply slots"))
         .run_with(|application| async move {
             let mut client = application.client().expect("real reply endpoint");
             client

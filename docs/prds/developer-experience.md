@@ -430,3 +430,21 @@ the real binary pass current/MSRV debug/release, with source hashes frozen durin
 the final matrix. The focused report-product RED fails on the original example,
 then passes on all four builds. Callback and associated-type simplification,
 final full/package checks and other owning DX requirements remain open.
+
+Reply mailboxes now accept `Application::client_capacity(MailboxCapacity)` and
+the same setting on ApplicationScope before early endpoint creation. The selected
+limit reaches external actors, bound clients and exported interfaces; existing
+endpoints retain their original limits. Validation rejects zero/overflow with the
+original minimum and reports Communication's effective power-of-two/floor2 size.
+Four focused laws plus the existing interface/client/scope corpus pass current/
+MSRV debug/release; new rustdoc denials preserve validated construction. Saturated
+reply queues preserve exact rejected values and accepted prefixes while root
+retirement still completes. Missing-host retry retains the chosen configuration.
+Three debug/release inversions fail and all restored controls pass.
+
+An equal two-reply endpoint journey at capacity1024 versus2 measures35442 versus
+2738 peak tracked heap bytes:32704 fewer bytes, with unchanged25 allocations and
+56 end bytes in every compiler/profile build. This is a scoped capacity comparison,
+not a whole-application or framework ranking. Root/birth/Entity mailbox limits,
+complete resource accounting, final package/full gates and the other owning
+requirements remain open.

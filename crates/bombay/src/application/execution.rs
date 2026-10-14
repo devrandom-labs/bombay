@@ -1,4 +1,4 @@
-use super::ApplicationScope;
+use super::{ApplicationScope, MailboxCapacity};
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::composition::ComposeApplication;
 use crate::application::{Application, ApplicationHandle, ApplicationOutcome, WorkOutcome};
@@ -209,6 +209,7 @@ where
                 let (root, spaces, members, families, scope) = application.into_parts();
                 let scope = scope.unwrap_or_else(|| ApplicationScope {
                     allocations: allocations.clone(),
+                    client_capacity: MailboxCapacity::default(),
                 });
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
@@ -513,7 +514,10 @@ where
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,
-                    None => ApplicationScope { allocations },
+                    None => ApplicationScope {
+                        allocations,
+                        client_capacity: MailboxCapacity::default(),
+                    },
                 };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
@@ -689,7 +693,10 @@ where
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,
-                    None => ApplicationScope { allocations },
+                    None => ApplicationScope {
+                        allocations,
+                        client_capacity: MailboxCapacity::default(),
+                    },
                 };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
@@ -1360,7 +1367,7 @@ where
             };
         original_work = prepared_work;
         let setup = catch_unwind(AssertUnwindSafe(|| {
-            let Some((ApplicationWorkCustody::Prepared((_, spaces, _), _), _)) =
+            let Some((ApplicationWorkCustody::Prepared((_, spaces, scope), _), _)) =
                 original_work.publication.as_ref()
             else {
                 unreachable!("setup borrows the single prepared input publication");
@@ -1368,9 +1375,9 @@ where
             let roots = <Spaces as RootRegistration<Actor::Protocol>>::root_space(spaces).clone();
             let bindings = ChildBindings::<Actor, Terminal, Origins>::new_in(spaces);
             let receptionists = installed_families.receptionists();
-            (roots, bindings, receptionists)
+            (roots, bindings, receptionists, scope.client_capacity)
         }));
-        let (roots, bindings, receptionists) = match setup {
+        let (roots, bindings, receptionists, client_capacity) = match setup {
             Ok(setup) => setup,
             Err(cause) => {
                 // The actor is still inside Prepared; no task was handed off at this cut.
@@ -1499,6 +1506,7 @@ where
                             shutdown_control,
                             retirement_observation,
                             interface_allocations,
+                            client_capacity,
                             receptionists,
                         );
                         {

@@ -1,4 +1,4 @@
-use super::ApplicationScope;
+use super::{ApplicationScope, MailboxCapacity};
 use crate::address::MailAddr;
 use crate::application::composition::ComposeApplication;
 use crate::application::execution::{
@@ -238,7 +238,10 @@ where
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,
-                    None => ApplicationScope { allocations },
+                    None => ApplicationScope {
+                        allocations,
+                        client_capacity: MailboxCapacity::default(),
+                    },
                 };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,

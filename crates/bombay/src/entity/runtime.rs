@@ -1511,7 +1511,7 @@ mod tests {
     #[tokio::test(flavor = "current_thread")]
     async fn missing_retirement_completion_stays_pending_and_retains_the_original_task_failure() {
         let addresses = ApplicationAddresses::new();
-        let caller = ActorInterface::new((), addresses.clone())
+        let caller = ActorInterface::new((), addresses.clone(), crate::MailboxCapacity::default())
             .external::<MessageProtocol<MailAddr, Never>>()
             .expect("the actual external origin is established");
         let records = Arc::new(Balances::default());

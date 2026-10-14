@@ -1,3 +1,4 @@
+use super::MailboxCapacity;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::entity::{
     AdmissionFailure, EntityDefinition, EntityFamilyAt, EntityRef, EntityRetirementError,
@@ -39,6 +40,7 @@ impl<P: Protocol, Event, Families: Clone> Clone for ApplicationHandle<P, Event, 
             shutdown_control: self.shutdown_control.clone(),
             retirement: self.retirement.clone(),
             allocations: self.allocations.clone(),
+            client_capacity: self.client_capacity,
             families: self.families.clone(),
         }
     }
@@ -50,6 +52,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         shutdown_control: Weak<ControlSender<Event>>,
         retirement: Observation<ActorRetirementReport>,
         allocations: ApplicationAddresses,
+        client_capacity: MailboxCapacity,
         families: Families,
     ) -> Self {
         Self {
@@ -57,6 +60,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
             shutdown_control,
             retirement,
             allocations,
+            client_capacity,
             families,
         }
     }
@@ -69,7 +73,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
 
     /// Form a transport-neutral interface from an explicit receptionist product.
     pub fn interface<Api>(&self, api: Api) -> ActorInterface<Api> {
-        ActorInterface::new(api, self.allocations.clone())
+        ActorInterface::new(api, self.allocations.clone(), self.client_capacity)
     }
 
     /// Establish one affine caller that explicitly selects a target on each send.
@@ -82,7 +86,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         Replies: Protocol<Addr = MailAddr>,
         Replies::Msg: Send,
     {
-        ExternalActor::establish(&self.allocations)
+        ExternalActor::establish(&self.allocations, self.client_capacity)
     }
 
     /// Bind one exact actor recipient or stable Entity reference to a reply client.
@@ -99,7 +103,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         Replies: Protocol<Addr = MailAddr>,
         Replies::Msg: Send,
     {
-        ApplicationClient::establish(target, &self.allocations)
+        ApplicationClient::establish(target, &self.allocations, self.client_capacity)
     }
 
     /// Bind one exact actor recipient or stable Entity reference to a one-way sender.
@@ -113,7 +117,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     where
         Target: ExternalTarget,
     {
-        ApplicationSender::establish(target, &self.allocations)
+        ApplicationSender::establish(target, &self.allocations, self.client_capacity)
     }
 
     /// Project lifecycle authority without exposing topology ownership.
@@ -239,8 +243,12 @@ where
         Replies: Protocol<Addr = MailAddr>,
         Replies::Msg: Send,
     {
-        ApplicationClient::establish(self.root.established_recipient(), &self.allocations)
-            .map_err(|(_, error)| error)
+        ApplicationClient::establish(
+            self.root.established_recipient(),
+            &self.allocations,
+            self.client_capacity,
+        )
+        .map_err(|(_, error)| error)
     }
 
     /// Allocate one root-bound sender with no reply or lifecycle authority.
@@ -250,8 +258,12 @@ where
     /// # Errors
     /// Returns the existing allocation rejection, leaving this handle untouched.
     pub fn sender(&self) -> Result<ApplicationSender<EstablishedRecipient<P>>, ExternalActorError> {
-        ApplicationSender::establish(self.root.established_recipient(), &self.allocations)
-            .map_err(|(_, error)| error)
+        ApplicationSender::establish(
+            self.root.established_recipient(),
+            &self.allocations,
+            self.client_capacity,
+        )
+        .map_err(|(_, error)| error)
     }
 }
 
@@ -274,8 +286,9 @@ where
     fn establish(
         target: Target,
         allocations: &ApplicationAddresses,
+        capacity: MailboxCapacity,
     ) -> Result<Self, (Target, ExternalActorError)> {
-        match ExternalActor::establish(allocations) {
+        match ExternalActor::establish(allocations, capacity) {
             Ok(caller) => Ok(Self { target, caller }),
             Err(error) => Err((target, error)),
         }
@@ -331,8 +344,9 @@ impl<Target> ApplicationSender<Target> {
     fn establish(
         target: Target,
         allocations: &ApplicationAddresses,
+        capacity: MailboxCapacity,
     ) -> Result<Self, (Target, ExternalActorError)> {
-        match ExternalActor::establish(allocations) {
+        match ExternalActor::establish(allocations, capacity) {
             Ok(caller) => Ok(Self { target, caller }),
             Err(error) => Err((target, error)),
         }
@@ -504,13 +518,22 @@ where
         Self {
             api: self.api.clone(),
             allocations: self.allocations.clone(),
+            client_capacity: self.client_capacity,
         }
     }
 }
 
 impl<Api> ActorInterface<Api> {
-    pub(crate) const fn new(api: Api, allocations: ApplicationAddresses) -> Self {
-        Self { api, allocations }
+    pub(crate) const fn new(
+        api: Api,
+        allocations: ApplicationAddresses,
+        client_capacity: MailboxCapacity,
+    ) -> Self {
+        Self {
+            api,
+            allocations,
+            client_capacity,
+        }
     }
 
     /// Borrow the statically declared receptionist product.
@@ -533,7 +556,7 @@ impl<Api> ActorInterface<Api> {
         Replies: Protocol<Addr = MailAddr>,
         Replies::Msg: Send,
     {
-        ApplicationClient::establish(target, &self.allocations)
+        ApplicationClient::establish(target, &self.allocations, self.client_capacity)
     }
 
     /// Bind one explicitly exported target to a real one-way sender.
@@ -547,7 +570,7 @@ impl<Api> ActorInterface<Api> {
     where
         Target: ExternalTarget,
     {
-        ApplicationSender::establish(target, &self.allocations)
+        ApplicationSender::establish(target, &self.allocations, self.client_capacity)
     }
 
     /// Establish one real external actor for a concrete reply protocol.
@@ -564,7 +587,7 @@ impl<Api> ActorInterface<Api> {
         P: Protocol<Addr = MailAddr>,
         P::Msg: Send,
     {
-        ExternalActor::establish(&self.allocations)
+        ExternalActor::establish(&self.allocations, self.client_capacity)
     }
 }
 
@@ -587,13 +610,14 @@ where
 {
     pub(super) fn establish(
         allocations: &ApplicationAddresses,
+        capacity: MailboxCapacity,
     ) -> Result<Self, ExternalActorError> {
         let address = allocations
             .allocate()
             .map_err(ExternalActorError::Allocation)?;
         let (control_liveness, owner, mailbox, receiver) =
             mailbox_channel::<Never, User<MailAddr, P::Msg>>(communication::Config::new(
-                EXTERNAL_USER_CAPACITY,
+                capacity.get(),
             ));
         let admission = Arc::new(Admission::new(owner));
         let (termination, observation) = pair();
@@ -714,6 +738,7 @@ pub struct ApplicationHandle<P: Protocol, Event, Families = ()> {
     shutdown_control: Weak<ControlSender<Event>>,
     retirement: Observation<ActorRetirementReport>,
     allocations: ApplicationAddresses,
+    client_capacity: MailboxCapacity,
     families: Families,
 }
 
@@ -724,8 +749,6 @@ pub struct ApplicationLifecycle<P: Protocol, Event> {
     retirement: Observation<ActorRetirementReport>,
 }
 
-const EXTERNAL_USER_CAPACITY: usize = 1_024;
-
 /// A transport-neutral product of explicitly exported actor capabilities.
 ///
 /// `Api` is application-defined. Bombay neither infers exports from topology
@@ -733,6 +756,7 @@ const EXTERNAL_USER_CAPACITY: usize = 1_024;
 pub struct ActorInterface<Api> {
     api: Api,
     allocations: ApplicationAddresses,
+    client_capacity: MailboxCapacity,
 }
 
 /// Exact failure to establish an external actor endpoint.
@@ -1071,8 +1095,11 @@ mod tests {
     #[test]
     fn external_actor_drop_publishes_normal_termination_to_its_exact_recipient() {
         let allocations = ApplicationAddresses::new();
-        let external = ExternalActor::<MessageProtocol<MailAddr, u64>>::establish(&allocations)
-            .expect("the external actor is established");
+        let external = ExternalActor::<MessageProtocol<MailAddr, u64>>::establish(
+            &allocations,
+            crate::MailboxCapacity::default(),
+        )
+        .expect("the external actor is established");
         let address = external.address();
         let recipient = external.recipient().interpret(&mut ExtractLocalEndpoint);
         let description = format!("{external:?}");
@@ -1665,7 +1692,11 @@ mod installed_shutdown_contract {
 
     #[tokio::test]
     async fn external_customer_owns_admission_without_behavior_shutdown() {
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let mut external = interface
             .external::<LedgerProtocol>()
             .expect("real external endpoint");

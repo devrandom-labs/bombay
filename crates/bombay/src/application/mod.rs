@@ -3,10 +3,12 @@ mod execution;
 #[cfg(feature = "axum")]
 mod http;
 mod interface;
+mod mailbox;
 mod outcome;
 mod scope;
 mod work;
 
+pub use mailbox::{MailboxCapacity, MailboxCapacityError};
 pub use scope::ApplicationScope;
 
 pub use composition::{ApplicationBehavior, ApplicationDefinitionError, ApplicationStagingError};
@@ -49,6 +51,21 @@ impl<Root, Spaces> Application<Root, Spaces> {
 }
 
 impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families> {
+    /// Select the bounded reply mailbox size for clients established during execution.
+    /// Existing early endpoints retain their own previously selected capacity.
+    ///
+    /// Unvalidated integers cannot select a client mailbox:
+    ///
+    /// ```compile_fail,E0308
+    /// let scope = bombay::ApplicationScope::new().client_capacity(3);
+    /// ```
+    #[must_use]
+    pub fn client_capacity(mut self, capacity: MailboxCapacity) -> Self {
+        let scope = self.scope.get_or_insert_with(ApplicationScope::new);
+        scope.client_capacity = capacity;
+        self
+    }
+
     /// Append one application-owned actor under a nominal semantic role.
     ///
     /// The actor expression determines its complete concrete type. The role

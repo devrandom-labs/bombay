@@ -1055,7 +1055,11 @@ mod atomic_interpretation_contract {
             inputs,
             NoChildBindings::default(),
         );
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let external = interface
             .external::<ObservationProtocol>()
             .expect("the observed external actor is established");
@@ -1146,7 +1150,11 @@ mod atomic_interpretation_contract {
             inputs,
             NoChildBindings::default(),
         );
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let old = interface
             .external::<ObservationProtocol>()
             .expect("original target");
@@ -1297,7 +1305,11 @@ mod atomic_interpretation_contract {
             inputs,
             NoChildBindings::default(),
         );
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let target = interface
             .external::<ObservationProtocol>()
             .expect("actual target");
@@ -1435,7 +1447,11 @@ mod atomic_interpretation_contract {
             inputs,
             NoChildBindings::default(),
         );
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let first = interface
             .external::<ObservationProtocol>()
             .expect("first concrete protocol");
@@ -1559,7 +1575,11 @@ mod atomic_interpretation_contract {
                 inputs,
                 NoChildBindings::default(),
             );
-            let interface = ActorInterface::new((), ApplicationAddresses::new());
+            let interface = ActorInterface::new(
+                (),
+                ApplicationAddresses::new(),
+                crate::MailboxCapacity::default(),
+            );
             let target = interface
                 .external::<ObservationProtocol>()
                 .expect("actual target");
@@ -1716,7 +1736,11 @@ mod atomic_interpretation_contract {
             inputs,
             NoChildBindings::default(),
         );
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let target = interface
             .external::<ObservationProtocol>()
             .expect("actual advanced target");
@@ -1786,7 +1810,11 @@ mod atomic_interpretation_contract {
 
         // Standard lifetime: real typed Shutdown retires the actor after its
         // target completion decision, before its notification can be admitted.
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let target = interface
             .external::<ObservationProtocol>()
             .expect("actual standard target");
@@ -2136,7 +2164,11 @@ mod atomic_interpretation_contract {
     )]
     async fn foreign_observer_grant_cannot_cancel_same_id_and_shared_target_consumers_remain_independent()
      {
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let target = interface
             .external::<ObservationProtocol>()
             .expect("one exact shared target");
@@ -2380,7 +2412,11 @@ mod atomic_interpretation_contract {
             CompletionReportArrival::TerminalFirst,
             CompletionReportArrival::RejectionFirst,
         ] {
-            let interface = ActorInterface::new((), ApplicationAddresses::new());
+            let interface = ActorInterface::new(
+                (),
+                ApplicationAddresses::new(),
+                crate::MailboxCapacity::default(),
+            );
             let target = interface
                 .external::<ObservationProtocol>()
                 .expect("actual observed target");
@@ -2698,7 +2734,11 @@ mod atomic_interpretation_contract {
             CompletionReportArrival::TerminalFirst,
             CompletionReportArrival::RejectionFirst,
         ] {
-            let interface = ActorInterface::new((), ApplicationAddresses::new());
+            let interface = ActorInterface::new(
+                (),
+                ApplicationAddresses::new(),
+                crate::MailboxCapacity::default(),
+            );
             let target = interface
                 .external::<ObservationProtocol>()
                 .expect("actual observed target");
@@ -3099,7 +3139,11 @@ mod live_capability_retirement {
     async fn acquired_capability_failure_preserves_available_actor_values() {
         let values = vec![77, 177];
         let allocation = values.as_ptr() as usize;
-        let interface = ActorInterface::new((), ApplicationAddresses::new());
+        let interface = ActorInterface::new(
+            (),
+            ApplicationAddresses::new(),
+            crate::MailboxCapacity::default(),
+        );
         let target = interface
             .external::<ObservedProtocol>()
             .expect("established target");
