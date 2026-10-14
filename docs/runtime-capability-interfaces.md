@@ -14,8 +14,11 @@ networking substrate; a deterministic network test host is a verification seam.
 Selo builds on Bombay, Mnesis and `mnesis-bombay`; Bombay does not depend on
 Selo or Mnesis. The new document's proposed distributed contracts are not
 implemented capabilities or additions to the current Engine port. The ordinary
-multi-node Application API and crate-owned `remote` feature remain pending;
-current native transport fixtures are scoped verification consumers.
+multi-node Application API remains pending. The merged opt-in `remote` feature
+provides provider-result acquisition through `remote::verify`; the current
+candidate adds `remote::try_retain` for count retention, with delivery pending.
+Neither establishes authentication, actor admission or a networking runtime.
+Native transport fixtures remain scoped verification consumers.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The

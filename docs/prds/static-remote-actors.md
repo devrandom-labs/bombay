@@ -1,5 +1,221 @@
 # Static remote actors and typed admission
 
+## Counter test separation delivered — 2026-10-14 UTC
+
+[PR362](https://github.com/devrandom-labs/bombay/pull/362) merged at
+2026-10-14T01:22:54Z as `fb533b5bddb1ba20d6514f590167faef60b028d0`.
+Reviewed headf7a2272 and actual main have identical tree
+abba40d8c3ada0a58771b6797b92b66e31207596. All six checks passed.
+The final required [Nix job115606698398](https://github.com/devrandom-labs/bombay/actions/runs/38488151263/job/115606698398)
+executes the isolated Counter55 in both profiles, public verification3 and
+Application13 in both profiles, and optimized default workspace691/0/1.
+These inventories remain separate. Strict checks and four coverage floors pass;
+fresh fuzz archives retain108 Driver and344 Observe files, with Driver2048 and
+four Observe1024 campaigns completed. Both Miri steps are explicitly skipped.
+The exact-head source/native reviews and final required-job review are posted
+on the PR; required review8eae97a9 and raw log58b702f1 retain provenance.
+CI executable bytes were not copied; report hashes do not establish that custody.
+Local Counter remains an application in examples/counter. The separate
+examples/remote-counter application and all full remote acceptance rows remain
+open pending the crate networking/export/admission interface.
+
+## Ingress documentation checkpoint — before further production edits
+
+Under the user's standing recommended-choice delegation, select the complete
+current-contract documentation audit: seven guidance/index/acceptance documents
+in addition to the nine existing ingress source/test/configuration/PRD paths.
+Raise this stage's path forecast from12 to16. This crosses the ordinary15-path
+checkpoint; the recorded delegated recommendation authorizes that documentation
+surface, not extra runtime scope. Retain the existing at-most100 production-line
+forecast, one public error type and one function; no new dependencies, numeric
+defaults, or example package are selected. Final cumulative measurement remains
+required. The new function is still uncommitted and unmerged.
+
+## Ingress verification and minimization checkpoint — 2026-10-14 UTC
+
+The coordinator branch now starts at actual PR362 mainfb533b5; its source tree
+equals the reviewed f7 tree. Moving the branch base preserved the complete
+working-tree patch and staged/unstaged status byte-for-byte.
+
+Pinned-Nix commands pass: locked workspace build, workspace tests695/0/4 and
+feature-enabled strict Clippy, formatting and warning-denied rustdoc. Public
+remote verification/Application/ingress targets execute20/0/0 in each profile;
+isolated plain Counter55/0/0 and actual native Query/Reply count3/0/0 execute in
+each profile. Exact child-stop selection executes2/0/0 in each profile.
+
+Both actual TLS campaign groups pass64 cases/160 role executions total across
+the five matrices, two profiles, approved peer/router layouts and root/child
+targets. Their executables are retained byte-equal copies resolved from actual
+Cargo test-artifact JSON. All declared16 source inputs, the additional controller,
+seven certificates and two retained executables remain unchanged through the
+paired executions. The input guard starts before TLS execution while a preceding
+native count command is active; it is not a before-compilation-start or whole-tree
+guard. The initial receipt reader had a Python syntax error before making any
+receipt change; the corrected reader rehashes every actual role log and seals
+final-native-input-guard.json. No policy/provider stand-in becomes production
+identity, whole-service pressure or full acceptance evidence.
+
+Independent ownership/API review9d20df22 and strengthened-source supplement
+80d7350c retain exact source provenance. One function/error sum owns only the
+existing acquire-and-transfer equation; actual Query and Reply callers replace
+the duplicate fixture equation. No extra queue, wrapper, provider or lifecycle
+owner survives. The final test formatting adds only three line breaks to the
+supplement's observed source; final owning source14d16a0e executes4/0/0 in each
+profile and strict remote Clippy passes afterward.
+
+The strengthened tests downcast standard Error::source and compare its address
+to the actual native cause still owned by each error branch. Removing both
+native sources fails exactly the capacity and channel witnesses in both profiles
+(2 pass/2 fail, exit101); restored controls pass4/0/0. Control/restored05919fb6
+and source-loss cutced8c59a preserve byte-exact production custody. The earlier
+shared-count Query and Reply bypasses also retain their intended failures and
+restored controls. This is observed law failure, not a missing symbol or build
+failure. An initial formatting check precedes the source cut and changes no
+production source; its output is retained separately.
+
+Scoped ingress ownership/interface minimization is complete; submitted-head
+review, required CI and actual PR delivery remain pending. Full PRD state stays
+active and all R01–R25/AUTH1/NET1 remain open. This lower layer still does not
+supply the network/export/admission frontend or separate remote-counter app.
+
+Final stage census includes all staged, unstaged and untracked changes:
+16 paths, zero untracked; production +88/-1/net87, tests +329/-67/net262,
+public API +1 type/-0 types and one function. Configuration +18/-3/net15 and
+controller +2/-0/net2; documentation +279/-15/net264.
+No lock, dependency version or numeric default changes.
+This is positive retained capability code, not production code reduction.
+
+## Crate ingress retention — pre-edit decision, 2026-10-14 UTC
+
+Under recommended-choice delegation select an ordinary `remote::try_retain`
+function over the already selected Tokio Sender, shared Semaphore and owned
+permit. It transfers an original and its count charge together without waiting.
+One `IngressError<Original>` distinguishes capacity refusal (original plus the
+actual NoPermits/Closed cause) from channel refusal (the native Full/Closed
+error containing original plus permit). Diagnostics omit the original payload.
+No new channel, queue owner, task, trait, wrapper, default limit or dependency
+is selected. This lower layer is retention, not authentication or actor admission.
+
+The blocker is the already observed A-unread/B-provider-held/C third-owner
+violation: counting only channel slots permits three accepted originals under
+a declared two-original limit. The native public Application regression remains
+the end-to-end oracle. Plain Tokio composition with no retained permit is the
+failing alternative; explicit acquire-and-transfer implements the proven law.
+Prototype with non-Clone originals and both actual Query/Reply callers
+before retaining generic surface. A missing-symbol compile failure is not a law.
+Repeat a count-bypass inversion and restored control in both profiles.
+
+Expected stage: remote/ingress.rs and its public export; owning retention tests;
+native Counter callback migration; isolated manifest feature selection and PRD
+records (at most12 paths including verification and current guidance). Production forecast +45–100/-0; one public error type
+and one function. Tests forecast +200–350 plus native migration, bounded at450
+introduced lines. Complete fixture/CI checks remain required. This is a separate
+review stage on feat/static-remote-ingress, based on immutable PR362 headf7a2272;
+reconcile its actual delivered main before final combined review and PR.
+
+Fresh root/isolated lock inspection retains Behavior/Actors0.25.0 at2bb4510,
+macros0.14.1, Address0.3.0, Communication0.1.5, Timers0.2.0, Tokio1.53.1 and no
+patches; complete selected Behavior instructions remain SHA2b7a9195. Current
+Tokio try_acquire_owned, permit Drop, try_send and native error source/tests
+confirm nonwaiting transfer and exact original recovery. Existing Behavior,
+Address, Communication, Observe and Timers keep their respective folds, lease,
+mailbox, observation and timer ownership; this function introduces none of them.
+
+The Query and Reply proposal uses the actual native callbacks; the Reply count
+pool belongs to each existing query and matches its explicit fixture channel
+capacity2. Retain the intact Reply/permit product inside native_records and any
+completed pending receive. This changes no production limit and claims no
+caller-wide or Session-wide bound; reusing a Session-wide capacity2 would block
+later required results while earlier originals remain unread. The two original
+types must execute through the public function before generic retention.
+
+The caller must retain the intact original/permit product through active and
+unread custody and dispose the original before releasing its charge. The function
+cannot prevent a power user from unpacking it early or cloning native originals;
+it does not bound native allocations, proof bytes or provider/task resources.
+Reply retention must preserve acquired originals before any later producer Drop.
+A first compile rejects deriving Error on the unconstrained original because
+Error::source requires its returned native cause to be static. Do not impose
+a type-wide static requirement merely to appease that expansion. Select ordinary
+Debug/Display implementations for all originals and Error only for static
+originals; the actual native causes remain public and intact for borrowed callers.
+Independent native-API review recommends restricting this ingress boundary
+to static originals: both genuine callback types already require that lifetime,
+while a borrowed-array probe adds flexibility with no demonstrated native
+consumer. Select that narrower domain before publication. Keep all native
+sources and remove the artificial borrowed-transfer claim; no Clone or Debug
+bound is added. This makes every returned error a standard Error rather than
+weakening Queue source inspection. The Error-source requirements and
+[Rust API Guidelines](https://rust-lang.github.io/api-guidelines/interoperability.html#c-good-err)
+are checked against the actual callback owners, not used to invent a wrapper.
+The prior conditional Error implementation is a rejected pre-publication probe.
+No extra wrapper, conversion or architecture is introduced. The production
+forecast is at most100 lines under the delegated recommendation.
+
+A fresh source-only comparison revisits locked thiserror2.0.20 after selecting
+static originals. The lifetime obstacle is gone, and retaining manual Debug
+would avoid imposing Original:Debug. The candidate saves13 lines, but its
+source-bearing Error expansion inserts a function-local AsDynError import
+(thiserror-impl/src/expand.rs267–268), contrary to the selected generated-code
+import rule. Retain explicit Display/Error implementations and exact native
+sources; do not remove source attributes, fork the dependency or add a wrapper.
+The rejected patchd5d01fd3 and source-only reviewcfd11950 are external comparison
+evidence, not a compiled alternative or a repository-wide thiserror audit.
+
+Delete the fixture's duplicate transfer equation and rejection type, keeping its
+separate metric observations. No remote-counter application or full row closes.
+
+The initial generic probe passes5 owning tests in both profiles, including an
+extra borrowed-array case. Native Query count tests pass2/0/0 in each profile.
+The shared-capacity bypass then fails both providers after cleanup with actual
+count3 versus limit2 in debug and optimized; byte-exact restored controls pass
+2/0/0 in each. Control5a2d7ad3/cutcb80d353 and raw logs retain that pre-publication
+model's provenance. No missing-symbol failure is credited. The subsequently
+selected static-native interface passes4 owning debug tests; the borrowed-array
+probe is retained externally as rejected scope, not current public support.
+The selected static-native interface passes4 owning tests in both profiles.
+Strict remote all-target Clippy first rejects five match spellings and a
+truncating test-marker cast; idiomatic let-else and an actual byte marker
+resolve those test-only findings, and strict Clippy passes. The initial census
+includes all staged/unstaged/untracked paths:7 changed paths, production
++88/-1/net87, tests +208/-67/net141, public API +1 type/-0 types and one
+function. Configuration +3/-3/net0; documentation +92/-0/net92.
+No dependency version or numeric production default changes. This is retained
+capability code with a positive production delta, not production reduction.
+At that checkpoint same-query Reply pressure, final native TLS campaigns,
+combined checks and submitted-head delivery remained pending; subsequent Reply
+results below supersede only its pressure-test status.
+PR362 source remained immutable through review and its actual recorded merge.
+
+The native Reply witness now passes actual SessionLocal debug and optimized
+execution. A is held through a borrowed Pending wait, B remains an unread owned
+Reply/permit product, and C retains the actual NoPermits refusal. Producer join,
+Queryable undeclare and Session close precede the assertion; neither profile
+proves TLS connectivity. The broad native_ release selector also executes seven
+existing ownership/scope witnesses:10/0/0 total, not merely the three count tests.
+Source-only author minimization finds no retained-sender deadlock and preserves
+its applied-snapshot provenance. The redundant Option<()> Pending projection
+is removed; the distinct Option<&Reply> observation still proves that the
+actual retained reply participated in the Pending borrowed wait.
+
+The dedicated Nix check and native CI will explicitly execute all three Query/
+Reply count witnesses in both profiles, with exact test-name/result checks.
+Native source guards add the public remote modules and owning crate manifest
+(16 declared source paths); this remains a declared-input guard, not whole-tree
+or complete compiled-source custody. No numerical production limit or dependency
+version changes. The actual TLS reruns and new same-query bypass inversions
+remain required before retention/delivery; the function cannot bound uncharged
+capacity-refusal originals retained separately by its caller.
+
+The actual same-query Reply shared-quota bypass fails for the intended third-
+Reply refusal in both debug and optimized builds (exit101); both restored
+controls pass1/0/0. Control05919fb6, cutaa9353c7 and restored05919fb6 retain
+byte-exact provenance in reply-inversion.json. Its external process guards do
+not supply actor or transport outcomes. Final combined checks and actual TLS
+reruns remain in progress; no submitted-head or merge credit is claimed.
+
+
+
 ## Crate verification prerequisite delivered — 2026-10-14 UTC
 
 [PR361](https://github.com/devrandom-labs/bombay/pull/361) merged at

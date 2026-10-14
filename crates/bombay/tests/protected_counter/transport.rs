@@ -1,5 +1,6 @@
 use super::*;
 use bombay::ActorInterface;
+use bombay::remote::{IngressError, try_retain};
 use std::io::{self, BufRead, Read, Write};
 use std::path::Path;
 use std::sync::Mutex;
@@ -328,12 +329,20 @@ async fn counter_native_applications<R>(
                         .declare_queryable("bombay/counter/protected")
                         .complete(true)
                         .callback(move |query| {
-                            let original = queue_counter_query(
-                                &native_queries,
-                                &query_capacity,
-                                &dispositions,
-                                query,
-                            );
+                            let original = try_retain(&native_queries, &query_capacity, query);
+                            match &original {
+                                Err(IngressError::Queue {
+                                    cause: mpsc::error::TrySendError::Full(_),
+                                }) => {
+                                    dispositions.full.fetch_add(1, Ordering::Relaxed);
+                                }
+                                Err(IngressError::Queue {
+                                    cause: mpsc::error::TrySendError::Closed(_),
+                                }) => {
+                                    dispositions.closed.fetch_add(1, Ordering::Relaxed);
+                                }
+                                Ok(()) | Err(IngressError::Capacity { .. }) => {}
+                            }
                             drop(original);
                         })
                         .await
@@ -440,22 +449,31 @@ async fn counter_native_applications<R>(
                         )
                         .await;
                     let triggered = requests.receive().await;
-                    let (native_replies, mut replies) = mpsc::channel::<Reply>(2);
+                    let (native_replies, mut replies) =
+                        mpsc::channel::<(Reply, OwnedSemaphorePermit)>(2);
+                    // This explicit pool belongs to one native query, not the Session.
+                    let reply_capacity = Arc::new(Semaphore::new(2));
                     let dispositions = reply_dispositions.clone();
                     let issued = querier
                         .get()
                         .payload(ZBytes::from(records[sequence].protected.as_ref()))
                         .attachment(ZBytes::from(records[sequence].proof.as_ref()))
-                        .callback(move |reply| match native_replies.try_send(reply) {
-                            Ok(()) => (),
-                            Err(mpsc::error::TrySendError::Full(original)) => {
-                                dispositions.full.fetch_add(1, Ordering::Relaxed);
-                                drop(original);
+                        .callback(move |reply| {
+                            let original = try_retain(&native_replies, &reply_capacity, reply);
+                            match &original {
+                                Err(IngressError::Queue {
+                                    cause: mpsc::error::TrySendError::Full(_),
+                                }) => {
+                                    dispositions.full.fetch_add(1, Ordering::Relaxed);
+                                }
+                                Err(IngressError::Queue {
+                                    cause: mpsc::error::TrySendError::Closed(_),
+                                }) => {
+                                    dispositions.closed.fetch_add(1, Ordering::Relaxed);
+                                }
+                                Ok(()) | Err(IngressError::Capacity { .. }) => {}
                             }
-                            Err(mpsc::error::TrySendError::Closed(original)) => {
-                                dispositions.closed.fetch_add(1, Ordering::Relaxed);
-                                drop(original);
-                            }
+                            drop(original);
                         })
                         .await;
                     invocations.push(issued);
@@ -563,13 +581,13 @@ async fn counter_native_applications<R>(
                             counter_control("LOCAL_READ_UNESTABLISHED");
                         }
                     }
-                    while let Some(reply) = replies.recv().await {
-                        let copied = reply.result().as_ref().ok().and_then(|sample| {
+                    while let Some(incoming_reply) = replies.recv().await {
+                        let copied = incoming_reply.0.result().as_ref().ok().and_then(|sample| {
                             sample
                                 .attachment()
                                 .and_then(|proof| counter_native_record(sample.payload(), proof))
                         });
-                        native_records.push((reply, copied));
+                        native_records.push((incoming_reply, copied));
                         let Some(Ok(original)) = &native_records.last().expect("native original").1
                         else {
                             continue;
@@ -2085,46 +2103,6 @@ fn counter_child_stop<R>(
     ));
 }
 
-enum CounterQueryRejection {
-    Capacity {
-        original: Query,
-        cause: TryAcquireError,
-    },
-    Queue(mpsc::error::TrySendError<(Query, OwnedSemaphorePermit)>),
-}
-
-#[expect(
-    clippy::result_large_err,
-    reason = "Retain the original Query, native cause and queued permit without extra allocation."
-)]
-fn queue_counter_query(
-    queries: &mpsc::Sender<(Query, OwnedSemaphorePermit)>,
-    capacity: &Arc<Semaphore>,
-    dispositions: &RawCounterDiscards,
-    query: Query,
-) -> Result<(), CounterQueryRejection> {
-    let permit = match capacity.clone().try_acquire_owned() {
-        Ok(permit) => permit,
-        Err(cause) => {
-            return Err(CounterQueryRejection::Capacity {
-                original: query,
-                cause,
-            });
-        }
-    };
-    match queries.try_send((query, permit)) {
-        Ok(()) => Ok(()),
-        Err(original @ mpsc::error::TrySendError::Full(_)) => {
-            dispositions.full.fetch_add(1, Ordering::Relaxed);
-            Err(CounterQueryRejection::Queue(original))
-        }
-        Err(original @ mpsc::error::TrySendError::Closed(_)) => {
-            dispositions.closed.fetch_add(1, Ordering::Relaxed);
-            Err(CounterQueryRejection::Queue(original))
-        }
-    }
-}
-
 #[test]
 fn native_query_count_covers_provider_and_queue_for_recorded_proof() {
     counter_query_count(
@@ -2247,7 +2225,16 @@ fn counter_query_count<R>(
                 .declare_queryable("bombay/counter/count")
                 .allowed_origin(Locality::SessionLocal)
                 .callback(move |query| {
-                    let original = queue_counter_query(&queries, &callback_capacity, &callback_dispositions, query);
+                    let original = try_retain(&queries, &callback_capacity, query);
+                    match &original {
+                        Err(IngressError::Queue { cause: mpsc::error::TrySendError::Full(_) }) => {
+                            callback_dispositions.full.fetch_add(1, Ordering::Relaxed);
+                        }
+                        Err(IngressError::Queue { cause: mpsc::error::TrySendError::Closed(_) }) => {
+                            callback_dispositions.closed.fetch_add(1, Ordering::Relaxed);
+                        }
+                        Ok(()) | Err(IngressError::Capacity { .. }) => {}
+                    }
                     let mut publications = callback_publications.lock().unwrap();
                     let vacant = publications.iter_mut().find(|slot| slot.is_none()).unwrap();
                     *vacant = Some(original);
@@ -2597,9 +2584,7 @@ fn counter_query_count<R>(
         assert!(matches!(publications[position], Some(Ok(()))));
     }
     for position in [2, 3, 6] {
-        let Some(Err(CounterQueryRejection::Capacity { original, cause })) =
-            &publications[position]
-        else {
+        let Some(Err(IngressError::Capacity { original, cause })) = &publications[position] else {
             panic!("capacity rejection retains the actual original Query and cause");
         };
         assert!(matches!(
@@ -2615,10 +2600,9 @@ fn counter_query_count<R>(
             configured[2].proof.as_ref()
         );
     }
-    let Some(Err(CounterQueryRejection::Queue(mpsc::error::TrySendError::Closed((
-        original,
-        permit,
-    ))))) = &publications[5]
+    let Some(Err(IngressError::Queue {
+        cause: mpsc::error::TrySendError::Closed((original, permit)),
+    })) = &publications[5]
     else {
         panic!("queue closure retains the original Query, permit and native cause");
     };
@@ -2638,4 +2622,102 @@ fn counter_query_count<R>(
     for position in [2, 3, 5, 6] {
         assert!(matches!(received_replies[position], Some(Err(_))));
     }
+}
+
+#[test]
+fn native_reply_count_keeps_active_and_unread_originals() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    host.block_on(async {
+        let config = Config::from_json5(
+            r#"{mode:"peer",scouting:{multicast:{enabled:false,listen:false},gossip:{enabled:false}}}"#,
+        ).unwrap();
+        let session = zenoh::open(config).await.unwrap();
+        let queryable = session.declare_queryable("bombay/reply/count")
+            .allowed_origin(Locality::SessionLocal).await.unwrap();
+        let capacity = Arc::new(Semaphore::new(2));
+        let (incoming, mut received) = mpsc::channel::<(Reply, OwnedSemaphorePermit)>(2);
+        let (published, mut publications) = mpsc::channel(3);
+        let publication_results = Arc::new(Mutex::new(Vec::new()));
+        let callback_results = publication_results.clone();
+        let callback_capacity = capacity.clone();
+        let issued = session.get("bombay/reply/count")
+            .allowed_destination(Locality::SessionLocal)
+            .consolidation(ConsolidationMode::None)
+            .target(QueryTarget::All)
+            .callback(move |reply| {
+                let retained = try_retain(&incoming, &callback_capacity, reply);
+                let publication = published.try_send(retained);
+                callback_results.lock().unwrap().push(publication);
+            }).await;
+        let query = queryable.recv_async().await.unwrap();
+        let (requests, mut requested) = mpsc::channel::<[u8; 1]>(3);
+        let producer = tokio::spawn(async move {
+            let mut emitted = Vec::new();
+            while let Some(payload) = requested.recv().await {
+                emitted.push(query.reply("bombay/reply/count", payload).await);
+            }
+            drop(query);
+            emitted
+        });
+        let sent_a = requests.send(*b"A").await;
+        let retained_a = publications.recv().await.unwrap();
+        let first = received.recv().await.unwrap();
+        let (release, released) = oneshot::channel();
+        let mut held = pin!(async {
+            let released = released.await;
+            (&first.0, released)
+        });
+        let original_poll = held.as_mut().now_or_never();
+        let observed_reply = original_poll.as_ref().map(|(reply, _)| *reply);
+        let sent_b = requests.send(*b"B").await;
+        let retained_b = publications.recv().await.unwrap();
+        let unread = received.recv().await.unwrap();
+        let charged_before_third = capacity.available_permits();
+        let sent_c = requests.send(*b"C").await;
+        let retained_c = publications.recv().await.unwrap();
+        let charged_after_third = capacity.available_permits();
+        drop(requests);
+        let produced = producer.await;
+        let released = release.send(());
+        let completed = match original_poll {
+            Some(original) => original,
+            None => held.await,
+        };
+        let undeclared = queryable.undeclare().await;
+        let closed = session.close().await;
+        let mut unexpected = Vec::new();
+        let drained = loop {
+            match received.try_recv() {
+                Ok(original) => unexpected.push(original),
+                Err(original) => break original,
+            }
+        };
+        assert!(issued.is_ok() && sent_a.is_ok() && sent_b.is_ok() && sent_c.is_ok());
+        assert!(undeclared.is_ok() && closed.is_ok() && released.is_ok());
+        let emitted = produced.expect("the original native producer joined");
+        assert_eq!(emitted.len(), 3);
+        assert!(emitted.iter().all(Result::is_ok));
+        let publications = publication_results.lock().unwrap();
+        assert_eq!(publications.len(), 3);
+        assert!(publications.iter().all(Result::is_ok));
+        assert!(retained_a.is_ok() && retained_b.is_ok());
+        assert!(ptr::eq(completed.0, &first.0));
+        assert!(completed.1.is_ok());
+        let Err(IngressError::Capacity { original, cause }) = &retained_c else {
+            panic!("the third Reply retains its original native capacity refusal");
+        };
+        assert!(matches!(cause, TryAcquireError::NoPermits));
+        assert!(observed_reply.is_none());
+        assert_eq!((charged_before_third, charged_after_third), (0, 0));
+        assert_eq!(original.result().unwrap().payload().to_bytes().as_ref(), b"C");
+        assert_eq!(first.0.result().unwrap().payload().to_bytes().as_ref(), b"A");
+        assert_eq!(unread.0.result().unwrap().payload().to_bytes().as_ref(), b"B");
+        assert_eq!((first.1.num_permits(), unread.1.num_permits()), (1, 1));
+        assert!(unexpected.is_empty());
+        assert!(matches!(drained, mpsc::error::TryRecvError::Disconnected));
+    });
 }

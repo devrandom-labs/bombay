@@ -167,7 +167,7 @@
               inherit cargoArtifacts;
               env.RUSTDOCFLAGS = "--deny warnings";
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --test remote_verification --test application_clients
+                cargo test --locked -p bombay-rs --features remote --test remote_verification --test remote_ingress --test application_clients
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';
@@ -177,7 +177,7 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --test remote_verification --test application_clients";
+              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --test remote_verification --test remote_ingress --test application_clients";
             }
           );
           bombay-fmt = craneLib.cargoFmt commonArgs;
@@ -313,8 +313,11 @@
               buildPhaseCargoCommand = ''
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --release --test protected_counter
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter remote_counter::native_ -- --test-threads=1
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter remote_counter::native_ -- --test-threads=1
                 cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check
                 cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter -- --deny warnings
+                cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter -- --deny warnings
               '';
             }
           );

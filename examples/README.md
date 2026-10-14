@@ -68,7 +68,8 @@ src/counter.rs    state, protocol, messages, receive logic, and invariant
 The local application lives in `examples/counter`. A separate
 `examples/remote-counter` application will consume Bombay's crate-owned
 network/export/admission APIs behind `remote`. It remains pending; the existing
-`remote::verify` acquisition function alone does not provide multi-node hosting.
+`remote::verify` acquisition function and candidate `remote::try_retain`
+count-retention function do not provide multi-node hosting.
 
 Protected Counter fault and transport regressions live under
 `crates/bombay/tests/protected_counter`, built by the isolated transport-custody

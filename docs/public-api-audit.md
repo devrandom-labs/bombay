@@ -30,12 +30,15 @@ The root entry checks are owned by the [application topology](../examples/applic
 positive and negative boundaries. These references identify the owning checks;
 the combined integration still requires its final full verification. No ordinary
 multi-node remote API is implemented by this reconciliation. The subsequent
-opt-in `remote` feature adds only `remote::verify`: one ordinary function over
+merged opt-in `remote` feature provides `remote::verify`: one ordinary function over
 a borrowed request, a caller-owned standard result slot and a concrete provider
 future. It adds no public type, trait or bound beyond `FnOnce` and `Future`.
 Its owning verification and protected Application tests cover result custody,
 borrowed-wait cancellation and occupied-slot suppression; network composition
-remains pending.
+remains pending. The current ingress candidate adds `remote::try_retain` and one
+`IngressError<Original>` sum, reusing existing Tokio ownership products without a
+new dependency, actor protocol or network assembly API. Its delivery and final
+CI remain pending; the two candidate entries below describe source, not a merge.
 The Engine surface is exercised by its
 [Driver law tests](../crates/bombay-engine/tests/driver_law.rs) and
 [terminal custody tests](../crates/bombay-engine/tests/terminal_custody.rs).
@@ -45,6 +48,8 @@ The Engine surface is exercised by its
 | Item and operations | Owner, caller, construction invariant | Traits and custody / failure |
 | --- | --- | --- |
 | `MailAddr`, `APPLICATION_ROOT`, `From<u64>` | Bombay local address; runtime allocates a non-wrapping address, while advanced hosts/tests may name one explicitly. The number is identity, never endpoint authority. | `Debug`, `Copy`, `Clone`, equality, order, hash; no error payload. |
+| `remote::try_retain` (candidate) | Opt-in nonwaiting ingress transfer into a caller-owned Tokio channel using its explicit shared Semaphore. | `Original: 'static`, no original Clone/Debug bound; accepted `(original, OwnedSemaphorePermit)` remains caller-owned across active/unread custody. No authentication, actor admission, numeric default or byte/heap bound. |
+| `remote::IngressError` (candidate) | Exact capacity refusal or native channel refusal. | Payload-free Debug/Display and standard Error source; Capacity retains original + TryAcquireError, Queue retains TrySendError<(Original, OwnedSemaphorePermit)>. No Clone; channel refusal keeps the charge beside the original. |
 | `Application::new`, `child`, `root` | Bombay root-first declaration; app author supplies each concrete Behavior and semantic role before launch. | Conditional `Debug`; affine declaration. `child` consumes the old declaration and retains its root, selected scope, existing actors and families. |
 | `Application::with_topology`, `entity_family`, inherent async `run`, `run_with`, `run_with_entities`, `run_axum` | The same Application owns caller-selected static hosting and explicit Entity policies. Cold actors and families coexist, staged before root initialization. | Conditional `Debug`; affine application inputs. `entity_family` consumes validated `DirectoryConfig` and has no configuration-error branch; async calls return original inputs with `TryCurrentError` or complete phase/Work/cleanup/root/family custody. |
 | `Application::execute`, `execute_with`, `execute_axum`, `execute_with_entities` | Paired constructor captures a live entered host, retains cold inputs, and separates execution from result receiving. | No erased future or extra wrapper; receiving can outlive dropped execution. Work/output need no `Send` or `'static` bound. Actual actor tasks preserve their owning bounds. |

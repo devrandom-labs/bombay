@@ -23,7 +23,7 @@ json-event-parser = { version = "=0.2.3", default-features = false }
 dhat = "=0.3.3"
 
 [features]
-protected-transport = ["zenoh/transport_tls"]
+protected-transport = ["zenoh/transport_tls", "bombay/remote"]
 
 [[test]]
 name = "protected_counter"

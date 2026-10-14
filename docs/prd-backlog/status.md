@@ -21,9 +21,16 @@ remote-counter application remain open. [PR361](https://github.com/devrandom-lab
 checks pass. Required Nix executes16 remote tests per profile and746/0/1 default
 optimized tests; exact-head review and artifacts are recorded in the PRD.
 Full multi-node Application integration is still outstanding. The separate
-Counter test-relocation stage passes local combined and native checks; its
-submitted-head CI, review and merge remain pending. A remote-counter application
-is still required and is not delivered by moving the harness.
+Counter test relocation [PR362](https://github.com/devrandom-labs/bombay/pull/362)
+merged `fb533b5bddb1ba20d6514f590167faef60b028d0` at
+2026-10-14T01:22:54Z after exact-head review and all six passing checks.
+The separate remote-counter application remains required.
+
+The current ingress candidate adds public `remote::try_retain` and `IngressError`
+for an intact original/count-permit transfer. Its inputs and native rejection
+causes are explicit; it establishes no authentication, actor admission, byte or
+whole-service bound. Delivery and final CI remain pending; AUTH1/NET1 and every
+full R01–R25 obligation remain open. See the PRD's crate-ingress change record.
 
 Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
 merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at
