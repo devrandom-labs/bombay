@@ -22138,3 +22138,37 @@ Counter aggregate and native runtime phases are unchanged. The full PRD remains
 active with no full witness closure. Final stage has five paths/untracked0:
 Rust tests+552/-16, CI+12/-0, backlog+17/-3, acceptance+15/-4; production/API0.
 PRD prose additions are recorded by the final committed diff, not a stale forecast.
+
+
+### Release fixture lock correction — 2026-10-14
+
+PR360 bumps the local Engine to0.2.3 and Macros to0.1.3, but omits their
+records in the isolated transport-custody lock. Its required Nix and both native
+jobs stop at locked dependency resolution before running their tests. Local
+`nix develop -c cargo metadata --manifest-path
+docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked
+--format-version 1` reproduces exit101 on the exact release head7c181a0.
+
+Under the standing recommendation delegation, select the narrow correction:
+update only those two existing path-package versions through Cargo; retain every
+other package record and all manifests. No architecture, production code, public
+type, new dependency or resource policy changes. This stage touches the
+nested lock and this record only. Verify locked resolution afterwards and compare
+all package records independently; the original stale lock must still refuse.
+Required combined-source CI remains mandatory before merging the release PR.
+The independent TLS correction and full remote acceptance remain open.
+
+Independent source review also finds the Driver fuzz lock still selecting the
+old local Engine0.2.2. Select that third path-version correction before editing;
+the stage now touches two locks and this record. Preserve all30 unrelated fuzz
+records,322 unrelated fixture records and the complete root lock. The fuzz
+command was skipped after the earlier Nix failure; this is source evidence of
+a stale record, not a claim that a fuzz failure executed.
+
+Cargo performs exactly the selected updates: fixture324 records with322 unchanged;
+fuzz31 records with30 unchanged. The original locked fixture resolution exits101;
+the corrected fixture and fuzz locked resolutions exit0. Root lock and manifests
+remain byte-unchanged. No source tests were added for this dependency-only change;
+fresh required CI supplies combined-source builds and both native profiles.
+Complete stage delta: production+0/-0/net0; tests+0/-0/net0; public API+0/-0
+types; two locks each replace only the selected version lines, plus this record.
