@@ -22,8 +22,16 @@ to their original checkpoints. No full R01–R25 row closes from this integratio
 Its required Nix executes16 public remote tests in each profile; fixture native
 evidence remains separate. The relocated protected Counter target executes55
 plain tests per profile through its isolated package, with native campaigns
-verified separately. Relocation delivery is pending. Neither acquisition nor
+verified separately. [PR362](https://github.com/devrandom-labs/bombay/pull/362)
+merged `fb533b5bddb1ba20d6514f590167faef60b028d0` at
+2026-10-14T01:22:54Z with all six checks passing. Neither acquisition nor
 relocation closes any full remote witness or delivers remote-counter hosting.
+
+The public ingress candidate retains an original with its count permit through
+queueing, active use and unread output; exact capacity and channel errors remain
+distinct. Its native Reply pool is an explicit per-query fixture input, not a
+caller-wide default or byte/heap bound. This prerequisite does not authenticate,
+admit an actor command or close any full R01–R25 row; final delivery remains open.
 
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in

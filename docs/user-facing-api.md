@@ -11,9 +11,11 @@ external interface, timer, Entity, supervisor, and worker-pool paths have
 executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
 or multithread execution. Durability and crate-owned remote networking remain
-planned. The optional `remote` feature currently provides `remote::verify` for
-retaining a provider result before its future is disposed; ordinary multi-node
-Application assembly remains pending. Protected Counter transport regressions
+planned. The merged optional `remote` feature provides `remote::verify` for
+provider-result custody. The current ingress candidate adds `remote::try_retain`
+for nonwaiting count retention; its delivery remains pending. Neither supplies
+authentication, actor admission or multi-node Application assembly.
+Protected Counter transport regressions
 live in Bombay's tests, built by the isolated transport-custody test package.
 The local `examples/counter` and future `examples/remote-counter` applications
 remain separate.
@@ -426,7 +428,7 @@ exact bare `Result<(), io::Error>` from serving; raw root and cleanup facts coex
 completion is not proof that the root result is successful. Axum owns HTTP
 extraction/responses; Bombay adds no projected aggregate `AxumRunError`.
 
-## Remote verification
+## Remote verification and ingress retention
 
 The opt-in `remote` feature exposes `bombay::remote::verify`. It borrows the
 original request and stores a provider's complete `Result` in the caller's
@@ -438,6 +440,23 @@ The function returns unit; the retained result describes the provider outcome.
 It does not grant actor access or perform mailbox admission. Keep the operation
 pinned outside a temporary borrowed wait to cancel only that wait. Dropping the
 operation itself drops its provider future; the outside request and slot remain.
+
+The current ingress candidate adds `remote::try_retain`, transferring one static
+original and an `OwnedSemaphorePermit` into a caller-owned Tokio channel without
+waiting or copying. The caller supplies an `Arc<Semaphore>` and keeps each
+`(original, permit)` intact across queueing, active work and unread output. Dispose
+the original before releasing its permit; dequeue and provider completion do not
+release that charge.
+
+`IngressError::Capacity` returns the original and native `NoPermits` or `Closed`
+cause. `IngressError::Queue` returns native channel `Full` or `Closed` with the
+original and its acquired permit. Diagnostics omit the payload; no original
+`Clone` or `Debug` bound is required. The operation selects no numeric default
+and establishes no byte, producer-task, native-allocation or provider-heap bound.
+Unpacking early or cloning originals can defeat the caller's count discipline.
+It performs no authentication, actor admission or network setup; delivery of
+this candidate remains pending.
+
 Network connections and the multi-node Application API are still pending.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.

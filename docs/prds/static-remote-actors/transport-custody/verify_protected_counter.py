@@ -13,6 +13,8 @@ arguments.add_argument("--evidence-source", choices=("target", "sibling-processi
 configuration = arguments.parse_args()
 configuration.evidence.mkdir(parents=True, exist_ok=True)
 source_paths = ("Cargo.toml", "Cargo.lock", "flake.lock", "examples/counter/Cargo.toml",
+    "crates/bombay/Cargo.toml", "crates/bombay/src/remote/mod.rs",
+    "crates/bombay/src/remote/ingress.rs", "crates/bombay/src/remote/verification.rs",
     "docs/prds/static-remote-actors/transport-custody/Cargo.toml", "docs/prds/static-remote-actors/transport-custody/Cargo.lock",
     "examples/counter/src/counter.rs", "crates/bombay/tests/protected_counter/mod.rs",
     "crates/bombay/tests/protected_counter/transport.rs", "crates/bombay/tests/protected_counter/retirement.rs",
