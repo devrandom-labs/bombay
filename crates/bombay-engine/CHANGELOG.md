@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.2...bombay-engine-v0.2.3) - 2026-10-14
+
+### Other
+
+- integrate DevX and preserve remote custody ([#359](https://github.com/devrandom-labs/bombay/pull/359))
+
 ## [0.2.2](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.1...bombay-engine-v0.2.2) - 2026-10-08
 
 ### Fixed

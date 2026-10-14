@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/devrandom-labs/bombay/compare/bombay-macros-v0.1.2...bombay-macros-v0.1.3) - 2026-10-14
+
+### Other
+
+- integrate DevX and preserve remote custody ([#359](https://github.com/devrandom-labs/bombay/pull/359))
+
 ## [0.1.2](https://github.com/devrandom-labs/bombay/compare/bombay-macros-v0.1.1...bombay-macros-v0.1.2) - 2026-10-08
 
 ### Other
