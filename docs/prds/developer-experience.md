@@ -459,3 +459,30 @@ and formatting. Its two former example Counter tests remain in the owning
 five-test runtime target and pass there. The failed full run's548 source hashes
 were unchanged. All24 full native gates still require a fresh final-source run;
 cancelled gates are not counted as passed.
+
+Feature-isolation correction (pre-edit): the frozen c8f871c full Nix run
+passes ten gates, then remote-debug's strict all-target lint fails because
+outcome.rs imports optional Axum and compiles its two HTTP journeys without
+the axum feature. Remaining thirteen checks were cancelled, not passed.
+Bombay policy: optional HTTP code and its tests are present exactly when the
+existing axum feature is selected; non-HTTP outcome laws remain executable
+without it. Preserve both HTTP tests and every assertion. Add feature conditions
+only to their four exclusive imports and two test functions. Expected delta:
+one test file +6 lines, production0, public types0; no state, interpreter,
+dependency, bound or capability changes. The existing failed native gate is
+the RED witness. Verify remote-only strict lint and default outcome tests,
+then axum outcome tests in debug/release before another full run.
+
+Feature-isolation checkpoint: all seven non-HTTP outcome tests pass with
+no default features; all nine pass with axum in debug/release. Remote-only
+all-target strict Clippy and workspace formatting pass through pinned Nix.
+The six conditions are the entire Rust delta: removing them reproduces the
+original source byte-for-byte; all131 assertions remain unchanged. Aggregate
+and subordinate states, branches, modules and public spellings are unchanged;
+production+0/-0/net0, tests+6/-0/net6, public types0. No structural caller
+syntax, placeholders, flags, bounds or repeated causes were introduced.
+Cross-check: DX04/25/27, existing optional HTTP contract and complete outcome
+custody. Disposition: pass for feature isolation. Evidence:
+OUTCOME-FEATURE-VERIFIED.json and OUTCOME-FEATURE-ORACLES.json. Full24-gate
+verification remains open; c8f871c failed at861.140 seconds with548 unchanged
+source hashes (ten passed, one failed, thirteen cancelled).

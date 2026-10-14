@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+#[cfg(feature = "axum")]
 use axum::{Router, routing::get};
 use bombay::WorkOutcome;
 use bombay::entity::{
@@ -10,10 +11,13 @@ use bombay::{ActorRetirement, ActorRetirementReport};
 use core::future::{Future, ready};
 use core::num::NonZeroUsize;
 use core::task::{Context, Poll, Waker};
+#[cfg(feature = "axum")]
 use std::cell::Cell;
+#[cfg(feature = "axum")]
 use std::net::TcpListener;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, PoisonError};
+#[cfg(feature = "axum")]
 use std::time::Duration;
 use tokio::runtime::Builder;
 use tokio::task::JoinError;
@@ -797,6 +801,7 @@ async fn same_protocol_families_select_both_real_positions_and_preserve_separate
     );
 }
 
+#[cfg(feature = "axum")]
 #[tokio::test(flavor = "current_thread")]
 async fn http_binding_refusal_returns_whole_inputs_for_real_retry_and_joined_retirement() {
     let occupied = TcpListener::bind("127.0.0.1:0").expect("the actual occupied port exists");
@@ -871,6 +876,7 @@ async fn http_binding_refusal_returns_whole_inputs_for_real_retry_and_joined_ret
     assert!(notifications.retirement.is_ok());
 }
 
+#[cfg(feature = "axum")]
 #[tokio::test(flavor = "current_thread")]
 async fn natural_root_expiry_returns_http_serving_beside_complete_timer_retirement() {
     let available =
