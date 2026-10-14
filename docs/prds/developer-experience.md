@@ -303,3 +303,16 @@ but breaks named replacement in both profiles; the exact interpreter is restored
 The owning PRD and DEAD_ENDS record the falsifier and counts. Automatic and
 explicit names need separate meaning before production/migration; DX13 remains
 open. These focused tests do not replace the final repository gates.
+
+Exact termination decoration (DX09): ActorExt::observe_termination returns the
+existing registry EstablishedTerminationMonitor with the complete original
+request and reaction. The owning PRD contains the pre-edit law and native
+constructor baseline, missing-method RED, custody equations and change budget.
+The real external peer's original terminal report crosses both shutdown orders.
+Shutdown while observation is pending retains an independently accepting peer,
+complete joined monitor custody and the exact later rejected command. This
+coordination note adds no checklist or new Behavior contract. Four native cases pass all eight compiler/profile/feature configurations;
+all17 existing interpreter regressions pass both compilers/profiles. The actual
+three archives preserve61 production Rust files, the guide and observation.rs;
+four packaged compiler/profile runs pass the native cases and executable guide.
+Full repository gates for this addition remain pending.

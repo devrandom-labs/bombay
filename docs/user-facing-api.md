@@ -530,6 +530,19 @@ choose one meaningful shutdown policy. The complete executable witness is
 [`run_with.rs`](../crates/bombay/tests/run_with.rs), including both timer orders,
 expiry and panic custody.
 
+Use `.observe_termination(request, reaction)` to react once to the termination
+of an exact established recipient. Construct the typed `ObserveEstablished`
+request with its real recipient and explicit observation ID. The reaction owns
+the complete report and returns `Actions`; it can forward the original report
+as a typed message. The returned `EstablishedTerminationMonitor` exposes its
+observation and cancellation operations when more control is needed. Shutdown
+of the observer does not close the observed endpoint.
+[`observation.rs`](../crates/bombay/tests/observation.rs)
+executes both shutdown orders, shutdown while observation is pending and rejected
+report delivery. Normal actor completion preserves the complete rejected report
+in its retirement settlement; the independent endpoint remains owned. A recurring logical
+name watch has a different lifetime and keeps its owning `Watch` constructor.
+
 Choose a template by the application problem it owns:
 
 | Application need | Existing Behavior Actors vocabulary |
@@ -538,7 +551,7 @@ Choose a template by the application problem it owns:
 | Hold and replay selected messages | `.with_stash(...)` |
 | Idle, relative, periodic, or absolute time policy | `.with_receive_timeout(...)`, `.with_one_shot(...)`, `.with_periodic(...)`, `.with_deadline(...)`, `Lease` |
 | One result with cancellation | `Task` |
-| Graceful lifecycle policy | `.stop_on_shutdown()`, `.finalize_on_shutdown(...)`, `Watch`, `TerminationMonitor` |
+| Lifecycle policy | `.stop_on_shutdown()`, `.finalize_on_shutdown(...)`, `.observe_termination(request, reaction)`; `Watch` for recurring logical names |
 | Fixed and dynamic supervision (runtime integration incomplete) | `FixedSupervisor`, `DynamicSupervisor`, `StableProxy` |
 | FIFO and keyed assignment (runtime integration incomplete) | `FifoPool`, `KeyedPool` |
 | Transform or route protocols | `MessageAdapter`, `Router` |
