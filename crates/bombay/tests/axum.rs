@@ -574,6 +574,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     reason = "one HTTP staging rejection, owned listener and original-value retry proves complete custody"
 )]
 fn http_staging_rejection_retains_bound_listener_and_namespace() {
+    let requested_address = "127.0.0.1:0".parse().expect("socket");
     let scope = ApplicationScope::new();
     let mut early = scope
         .external::<MessageProtocol<MailAddr, u64>>()
@@ -597,7 +598,7 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
         .expect("caller host");
     host.block_on(async move {
         let rejected = application
-            .run_axum("127.0.0.1:0".parse().expect("socket"), move |application| {
+            .run_axum(requested_address, move |application| {
                 let sender = application.sender_to(recipient).unwrap_or_else(|original| {
                     drop(original);
                     panic!("sender shares the original scope");
@@ -640,16 +641,17 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
         };
         assert_eq!(actor.base().entries.as_ptr(), entries_pointer);
         assert_eq!(actor.base().entries, [307, 311]);
-        drop((listener, blocked, id, children, cause));
+        drop((blocked, id, children, cause));
         let (outcome, native, notifications) = scope
             .with_topology(root, spaces)
             .child(HttpWorkerRole::Declared, actor)
-            .run_axum(bound_address, router)
+            .run_axum(requested_address, router)
             .await
             .unwrap_or_else(|original| {
                 drop(original);
                 panic!("retry uses the original router and actor");
             });
+        drop(listener);
         let (serving, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
             drop(original);
             panic!("HTTP work and original cleanup return together");
