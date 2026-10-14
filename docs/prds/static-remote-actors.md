@@ -1,5 +1,234 @@
 # Static remote actors and typed admission
 
+## Hosting source ready for review — final local record
+
+Independent execution review7c741a3b and receipt38a55d42 qualify the captured
+lower-owner inversions and restored controls. Reviewer authored earlier fixture
+source; this is independent execution/source review, not independent invention
+of the model. Both intended B3-versus2 failures occur after native acquisitions;
+later native-tree assertions are reached in healthy controls only. Missing
+combined command/executable custody remains explicitly qualified.
+
+Canonical Nix formatting, targeted source evaluation/realization and Bash syntax
+all pass. The actual filtered sourcefzlk8k17 includes the staged new hosting
+module, its owning parent and both unchanged locks byte-exact; receipt
+hosting-gate-source-custody.json records full hashes. This proves source packaging,
+not actual execution of the added gate or required CI. Current retained scope is
+four paths, production +0/-0/net0; Rust tests +383/-0/net383; CI +8/-0/net8;
+public API +0 types/-0 types. PRD prose is additional and measured separately.
+The complete source remains a local primitive prerequisite; shipping association,
+full remote witnesses, actual focused PR delivery and merge remain pending.
+
+## Two-review test qualification — current local checkpoint
+
+The adopted security tests have final source review one (coordinator) and source/
+counterexample review two f0e08cf8 with receiptcdf60477. Independent literals
+survive the five pre-observer bindings. Captured actual version owner cutde6cd5ed
+fails the unchanged expected dependency-version oracle; restored ownerd820cd24
+passes. Six pure controls pass. Both actual Cargo-resolved graphs preserve every
+unrelated record/edge. Current controlled19-path diff is297/-95/net202, not the
+prepared patch's hunk totals; no Rust/public API/new dependency identity. Affected
+source-release commands are still running, so this record grants no release,
+archive/floor/CI/publication credit.
+
+Hosting introduced-line replay reconstructs199 prior external plus272 formatter,
+14 explicit-host and13 disposition/custody correction introductions:498. Add one
+comment correction, three module-mount lines and one disposable endpoint-owner
+cut line for conservative503/550. Retained tests are383 additions (380 new module,
+three mount), production +0/-0/net0, public API +0/-0. Added owning Nix gate is
+8 lines before canonical formatting. Its exact-name/1-passed checks prevent a
+missing-filter zero-test result from succeeding. The current comment-only test
+successor2a6d56c1 preserves executable code from the inverse's2d6dcc94 snapshot.
+The four captured inverse/restored runs retain exact source/command custody;
+combined67/0/1 raw-log outcomes do not acquire a retrospectively invented argv.
+No feature acceptance requirement or PR merge is inferred from these local facts.
+
+## Hosting delivery gate — selection before CI edit
+
+Actual endpoint-owner inverse execution records four commands: debug/optimized
+both fail at B3-versus2, byte-exact restored controls both pass1/0/0. Combined raw
+logs show67/0/1 per profile and strict Clippy completion; their original command
+manifest was not retained, so do not claim the same independently sealed command
+custody as the four inversion runs. No stored executable custody is invented.
+
+Before delivery add an explicit hosting invocation to the existing owning Nix
+protected-counter check in each profile. Require the exact test's successful
+name and1/0/0 count, so a missing filter cannot pass vacuously. Forecast nine Nix
+lines and one test-module comment correction (the test is now compiled). Record
+four retained paths including flake.nix; no production/API/dependency additions.
+Select cumulative orchestration ceiling320 from300 before these new gate/receipt
+lines, under standing recommendation delegation. Hosting550 test introductions
+and55-path/1000-production/four-type limits remain. Actual source2d6dcc94 inversion
+credit stays attached to that snapshot; a comment-only successor needs a source
+comparison and review, not a claim that the captured source was different.
+
+## Published-minimum integration — resolved graph and captured inverse checkpoint
+
+Pinned Cargo resolved both actual controlled locks normally: 368 root and302
+consumer packages. Full-record/edge comparison permits only the five selected
+local successors and Rustls0.23.46; no unrelated drift. Root/consumer SHA-256
+starts a25fedaa/d85076e4. Positive selector/version producers now precede their
+observers (five extra test lines); independent second final-source review is
+pending. The six pure controls pass; this is not release/floor proof.
+
+Before capturing the previously missing version-owner negative, select a300
+cumulative orchestration/script introduction ceiling from275 under the standing
+recommendation delegation. Prior272 plus a forecast25 local capture/receipt
+lines fits297. The positive binding test allowance remains120 and all cumulative
+55-path/1000-production/four-public-type ceilings remain. Capture the actual
+version owner's altered source, require the independent literal dependency
+version oracle to fail, then restore byte-exact and rerun. No negative from a
+setup failure, synthesized log or duplicated version computation is credited.
+
+For local affected release checks, reuse the coordinator's existing target with
+explicit environment settings instead of another build tree. Commands requiring
+repository-local package archives will be run separately with their actual
+archive paths recorded. No existing required gate is waived; whole release
+verification, compiler floor, archived consumers, exact-head CI, reviewed merge,
+publication and registry-only consumption remain pending.
+
+## Published-minimum revised source — reviewed adoption checkpoint
+
+Coordinator first source review and independent second9132a075 qualify the
+81b0e1d nineteen-path revision: all three source reopens resolved,296/-99/net197,
+no Rust production/test/API/dependency additions. External script chronology
+272/275 and Python104/120 stay qualified. Literal-version inverse negative
+source was not captured; its intended log is not a substitute for root's fresh
+captured helper cut. Profile and reader cuts retain actual mutated source.
+Actual immutable Config None-denial/restored payload controls are separate from
+unexecuted new SDK archive gates.
+
+Before adoption apply only the seventeen non-lock files to the clean controlled
+5b worktree. Snapshot both original locks, then let pinned Cargo resolve the
+five already selected local versions and Rustls0.23.46 normally. Preserve every
+unrelated package/source/checksum/edge; record any real prerequisite before
+broadening. Root owns edits and source integration. Bind positive Python
+selector/version calls before observers as a test-only refinement, within120
+introductions, and recheck both reviews on final source. Existing55-path/1000-
+production/four-type and275-script budgets remain. No new SDK release/floor,
+registry availability or full remote completion is credited by source adoption.
+
+## Published-minimum revision — second-review checkpoint before edit
+
+First source review and independent second review8307feb9 reopen the prepared
+19-path31349e5b proposal. Its pure candidate versions repeat the production
+version helper, registry mode defaults to the old profile, contradictory profile/
+kind choices are accepted, and a candidate ledger checksum None can disable the
+existing archive reader's checksum comparison. Preserve that sealed source;
+pure passes are not enough to retain these weaknesses.
+
+Under delegated recommended selection adopt independent literal four-dependency
+and top-version oracles; one owning finite query/release-kind selection with
+explicit supported pairs and a source-version guard; require an actual string
+checksum in the existing owning archive reader before tar decoding. Its initial
+candidate verifier explicitly computes and passes the fresh candidate hash;
+immutable expected hashes remain pinned. Keep original archives and require
+actual None refusal/restored-checksum controls. Also guard selected historical
+release kind/current top source before Cargo dry-run and credential discharge,
+reusing the existing version owner rather than a second release framework.
+
+Before revision authoring raise the script chronological-introduction ceiling
+from250 to275: conservative prior240 plus forecast18 selection/checksum lines
+and8 early-source-guard lines gives266. Python-test forecast106 remains within
+120; no Rust production/test, public type or dependency addition. Cumulative
+55-path/1000-production/four-type ceiling remains. Recheck exact final delta and
+both test reviews before integration. Source guards, real archive inversions,
+Cargo/floor/full CI, reviewed merge, publication and registry-only adoption all
+remain required. This records a prepared correction, not delivered security or
+whole-platform acceptance.
+
+## Hosting comparison — actual endpoint-owner inverse selection
+
+The corrected control executes its one exact named test successfully in both
+profiles, source2d6dcc94,380 lines. Independent second review5361d896 qualifies
+that actual corrected source and offered-B custody; runtime credit remains in
+root logs. The earlier E0277 and false Completed expectation remain separate
+non-inverse failures.
+
+Select an actual owning-source inverse instead of weakening only the local test
+lambda: change only ActorRef::PartialEq's Standard mailbox arm so equal numeric
+addresses also compare equal despite distinct admission anchors. Preserve its
+Entity/mixed-arm behavior and both actual ActorRef inputs. The real topology
+lookup should then admit B, and B's independent audited domain value must be3
+instead of2 after complete owner cleanup. This precise predicate defect adds
+no semantic flag, dependency or public type and is never retained production.
+Snapshot the owner and healthy test before mutation; run debug/optimized and
+require the actual existing B-value assertion to fail, then restore byte-exact
+and reacquire both positives. Compilation/setup/retirement assertion failures
+are not inverse kills. One temporary existing-owner path remains within55-path/
+1000-production/four-type budget; retained production delta stays zero for this
+primitive stage. Preserve exact source/log/command and both review records.
+
+## Hosting comparison — native disposition and second-review corrections
+
+The positive reaches its independent A Read1/B Read2 oracles but fails the later
+assumption that every child native result is Completed. No mutation was applied;
+this is a false test expectation, not an inversion. Existing parent cleanup
+requests child retirement (local/children.rs request_retirement); terminal.rs
+preserves its distinct OwnerCancelled result. The test sends no child-domain
+shutdown, unlike the older explicit-stop case. Preserve that original owner
+cancellation classification and inspect all its custody/error/settlement lanes;
+require no fabricated normal completion. The parent still must be Completed/
+Stopped. This change follows the owning documented transition, not a blanket
+unhappy-outcome allowance.
+
+Independent second review also finds that refusal presence and inequality to A
+do not prove exact offered B capability recovery. Before editing add an exact
+comparison to B's retained offered capability, with the borrowing projection
+outside assertions. This requires no new constructor, wrapper or public API.
+Preserve the failed positive/source and recheck both corrected branches and the
+intended B2-versus3 guard omission after valid controls. Existing550 test-line
+introductions and cumulative budgets remain; measure changes before further
+source acceptance. Full native-owner/fault laws remain separate requirements.
+
+## Hosting comparison — verified source prerequisite correction
+
+The initial integrated debug build fails E0277 before executing any test:
+existing counter_children_application::Topology does not implement Hosts<Counter>.
+This is a compiler/setup veto, not the promised foreign-delivery inverse. Source
+inspection shows why: existing unhosted child declarations deliberately create
+one fresh ActorSpace per birth; only explicit existing `hosts`/`in` declarations
+share a logical protocol table. The earlier uncompiled source map overclaimed
+that every generated child topology provides Hosts; preserve the failed source
+and correct that qualification.
+
+The hosting law requires the exact registration space actually consumed by A.
+Use the already owning explicit logical-host declaration in this isolated test
+for both otherwise unchanged Applications, reusing CounterParent and existing
+Counter/exports. This creates no new macro, blanket Hosts implementation, runtime
+registry or public constructor. Adopt that explicit existing test topology
+before editing; no compiler diagnostic originates new production architecture.
+The existing550-introduction test and55-path/1000-production/four-type budgets
+cover its at most15 additional formatted lines. Recheck both test reviews on the
+actual final source. Unhosted-child export support remains a shipping ownership
+prerequisite; do not narrow the accepted root-and-child scope without evidence.
+
+## Initial hosting capability comparison — before integration
+
+Existing recipient equality distinguishes exact mailbox admission anchors, while
+same numeric addresses can be issued in separate Applications. Prepare the
+smallest actual two-Application comparison from selected existing Counter,
+creator, Hosts/ActorSpace and Node owners: capture the exact topology consumed
+by A, challenge it with B's actual child, and observe permitted A Read1 and
+unmodified B Read2 after both complete native cleanup products and native close.
+The guard-omission baseline must expose B Read3 at that independent domain oracle.
+This establishes a primitive distinction; shipping Node-owned association and
+full R03/R04 remain unimplemented.
+
+Author source/law review and coordinator counterexample review qualify the189
+raw-line f035978c candidate before integration; no runtime credit. Integrate in
+an isolated test branch from04c47413 while its Node PR CI remains frozen.
+Expected paths: one new owning hosting test module, one existing child-module
+mount and this PRD. Rust production/API/dependency0. Canonical formatting is
+forecast350–500 retained test lines; reserve550 test introductions after the
+known199 external source introductions, with a fresh checkpoint if exceeded.
+This fits the existing55 cumulative cross-repository paths/1000 production/four
+public types envelope; measure exact formatted/current source and all untracked
+paths. Run pinned-Nix debug/optimized controls, owning test guard omission,
+intended restored controls and strict affected lint. Preserve native/session
+setup errors as setup failures, and first/second review findings through fixes.
+No new API, namespace, transport/security profile or macro is selected.
+
 ## Rustls0.23.46 selected-build qualification
 
 Both narrow locks now select the exact upstream archive checksum48e13bd8.
