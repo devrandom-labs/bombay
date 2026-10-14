@@ -42,7 +42,7 @@ sequences. A finite scenario table alone is not a proof of all executions.
 | Behavior | Pure transition and complete typed Actions. | Domain rejection versus emitted request versus interpreter settlement. |
 | Behavior Actors | Supervision, pool, timing, routing and shutdown policy. | Policy decision versus actually completed worker activation/restart. |
 | Driver | Universal causal execution through one affine Environment. | Fold error, effect interpretation error, cancellation and retained terminal custody. |
-| Address | Local endpoint claim, resolution and lease retirement. | Stable local name versus exact generation; hidden reservation versus publication remains unresolved locally. |
+| Address | Local endpoint claim, resolution and lease retirement. | Stable local name versus exact generation; invisible reservation and committed publication are implemented locally under Address 0.3.0 (ARC-006). Remote export/hosting authority still needs separate proof. |
 | Communication | Two-lane delivery, user pressure, closure and rejected payload custody. | Mailbox acceptance versus application processing; network input must not bypass bounds through control traffic. |
 | Observe | Completion publication and waiting. | An observed authoritative local outcome versus unavailable knowledge of a remote process. |
 | Timers | Actor-owned scheduling and generation safety. | Due signal versus valid current generation; volatile timer versus durable reminder. |
@@ -81,7 +81,7 @@ owning contract exists; it does not waive integration verification.
 | --- | --- | --- |
 | LAW-01 | Existing Behavior | Every externally observable actor effect is represented in Actions and interpreted outside the fold. |
 | LAW-02 | Existing local composition | One active actor incarnation has at most one fold executing at a time. Independent actors may run concurrently. |
-| LAW-03 | Existing target activation law; implementation blocked | No resolvable ready endpoint represents rejected initialization. Earlier accepted effects remain facts even when later initialization work fails. |
+| LAW-03 | Existing local activation law; ARC-006/EXEC evidence retained in the status index | No resolvable ready endpoint represents rejected initialization. Earlier accepted effects remain facts even when later initialization work fails. Remote export extends this law and needs its own witness. |
 | LAW-04 | Existing ownership law | Every affine request is accepted once or returned once on definitive rejection; no reconstructed/duplicated custody. |
 | LAW-05 | Existing generation law, extended to network | Exact recipients, receipts, timer signals and I/O completions cannot affect a newer incarnation by name reuse. |
 | LAW-06 | Existing authoritative-fact conservation | Independent consumers receive their required facts; one policy's restart/discharge does not erase another observer's outcome. |

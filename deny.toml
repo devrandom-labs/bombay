@@ -1,29 +1,31 @@
 # cargo-deny configuration. The full CI gate runs `cargo deny check advisories
-# licenses` (see .github/workflows/deny.yml): RustSec advisories for the locked
+# licenses bans` (see .github/workflows/deny.yml): RustSec advisories for the locked
 # dependency tree, and a license allowlist for everything we ship.
 
 [advisories]
-# Ignored advisories go here, each with a reason. Keep this list empty unless a
-# vulnerable version is genuinely unavoidable — an unexplained ignore defeats
-# the gate.
-ignore = []
+# This one maintenance exception retains the audited immutable build-time macro.
+# Native bans below constrain its owning edge and stable versions; any source,
+# version, edge or compiler change reopens the PRD decision. Vulnerabilities stay checked.
+ignore = [
+  { id = "RUSTSEC-2024-0436", reason = "Audited paste 1.0.15 only via token-cell 2.1.1; see static-remote-actors PRD and owning bans." },
+]
 
 [licenses]
 # Standard permissive allowlist. Anything outside this set fails the license
 # check and must be either added deliberately (with a note in the PR) or
 # replaced.
 allow = [
-    "MIT",
-    "Apache-2.0",
-    "Apache-2.0 WITH LLVM-exception",
-    "BSD-2-Clause",
-    "BSD-3-Clause",
-    "ISC",
-    "Unicode-3.0",
-    "CDLA-Permissive-2.0",
-    "MPL-2.0",
-    "Zlib",
-    "CC0-1.0",
+  "MIT",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+  "CDLA-Permissive-2.0",
+  "MPL-2.0",
+  "Zlib",
+  "CC0-1.0",
 ]
 confidence-threshold = 0.8
 
@@ -33,3 +35,15 @@ confidence-threshold = 0.8
 # (which exists for what we publish) skips them. Published crates keep full
 # checks.
 ignore = true
+
+# Exact archive/lock custody also remains required: these ranges guard stable versions.
+[bans]
+deny = [
+  { name = "paste", wrappers = [
+    "token-cell",
+  ], reason = "Only the audited owning edge" },
+  { name = "paste", version = "<1.0.15", reason = "Only the qualified stable macro version" },
+  { name = "paste", version = ">1.0.15", reason = "Reopen maintenance review before upgrade" },
+  { name = "token-cell", version = "<2.1.1", reason = "Only the qualified stable owner" },
+  { name = "token-cell", version = ">2.1.1", reason = "Reopen compatibility review before upgrade" },
+]

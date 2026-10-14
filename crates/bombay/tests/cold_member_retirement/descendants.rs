@@ -8,7 +8,7 @@ use bombay::behavior::{
 use bombay::lifecycle::StopOnShutdown;
 use bombay::prelude::{Exit, TimerId};
 use bombay::timing::OneShot;
-use bombay::{ActorRetirement, Application, MailAddr};
+use bombay::{ActorNotificationReceipts, ActorRetirement, Application, MailAddr};
 use core::time::Duration;
 use std::collections::BTreeSet;
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -203,7 +203,7 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();
-    let outcome = Application::with_topology(
+    let (outcome, native, notifications) = Application::with_topology(
         TimedParent::new().stop_on_shutdown(),
         timed_application::Topology::new(),
     )
@@ -223,7 +223,14 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
         .try_into_completed()
         .unwrap_or_else(|_| panic!("both actual report journeys complete"));
     assert_eq!(termination, Ok(Exit::Normal));
-    let (_, root) = cleanup.expect("independent original root custody");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (_, root) = native.expect("independent original root custody");
     let ActorRetirement::Completed { custody, .. } = root else {
         panic!("the root received both actual reports")
     };

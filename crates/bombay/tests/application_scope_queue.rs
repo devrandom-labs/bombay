@@ -7,7 +7,8 @@ use bombay::composition::StashRoute;
 use bombay::prelude::{Completion, Exit, MailAddr, StopOnShutdown};
 use bombay::routing::{WorkQueue, WorkQueueMessage, WorkQueueOutcome, WorkQueueRejection};
 use bombay::{
-    ActorSpace, ApplicationCleanupError, ApplicationOutcome, ApplicationTopology, RootRegistration,
+    ActorNotificationReceipts, ActorSpace, ApplicationCleanupError, ApplicationOutcome,
+    ApplicationTopology, RootRegistration,
 };
 use core::future::{Future, poll_fn};
 use core::task::Poll;
@@ -188,7 +189,7 @@ fn work_queue_preserves_exact_dispatch_and_full_rejection_through_shutdown() {
     let Err((application, work, _missing_host)) = unstarted else {
         panic!("missing host returns the entire scope, root and uninvoked work");
     };
-    let outcome = host
+    let (outcome, native, notifications) = host
         .block_on(application.run_with(work))
         .unwrap_or_else(|original| {
             drop(original);
@@ -201,7 +202,14 @@ fn work_queue_preserves_exact_dispatch_and_full_rejection_through_shutdown() {
     assert_eq!(ptr::from_ref(work.0.as_ref()), first_pointer);
     assert_eq!(ptr::from_ref(work.1.as_ref()), waiting_pointer);
     assert_eq!(ptr::from_ref(work.2.as_ref()), rejected_pointer);
-    let (origin, retirement) = cleanup.expect("joined queue cleanup");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (origin, retirement) = native.expect("joined queue cleanup");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let state = retirement
@@ -233,7 +241,7 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
         .enable_all()
         .build()
         .expect("caller host");
-    let outcome = host.block_on(async {
+    let (outcome, native, notifications) = host.block_on(async {
         let (execution, receiver) = scope
             .with_topology(root, spaces)
             .execute_with(|application| async move {
@@ -283,11 +291,14 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
         .await;
         drop(execution);
         assert!(failed_setup.is_err());
+        let (outcome, native, notifications) = receiver.await;
+        assert!(native.is_err());
+        assert!(notifications.is_err());
         let ApplicationOutcome::Prepared {
             inputs: (root, spaces, scope),
             work,
             cleanup,
-        } = receiver.await
+        } = outcome
         else {
             panic!("original root, topology, namespace and uninvoked work returned");
         };
@@ -311,7 +322,14 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
     });
     assert_eq!(ptr::from_ref(value.as_ref()), pointer);
     assert_eq!(value.as_str(), "original retry payload");
-    let (_, retirement) = cleanup.expect("retried root custody");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (_, retirement) = native.expect("retried root custody");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     assert_eq!(
         retirement
@@ -342,7 +360,7 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
             }
         })
         .stop_on_shutdown();
-    let outcome = scope
+    let (outcome, native, notifications) = scope
         .with_root(root)
         .run_with(|application| async move {
             let caller = application.sender().expect("live root sender");
@@ -389,7 +407,14 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
     });
     assert_eq!(ptr::from_ref(value.as_ref()), pointer);
     assert_eq!(value.as_str(), "released work");
-    let (_, retirement) = cleanup.expect("joined wrapped root");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (_, retirement) = native.expect("joined wrapped root");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let state = retirement
         .behavior()
@@ -418,7 +443,7 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
                 StashRoute::Deliver
             }
         });
-    let outcome = scope
+    let (outcome, native, notifications) = scope
         .with_root(root)
         .run_with(|application| async move {
             let caller = application.sender().expect("live root sender");
@@ -465,7 +490,14 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
     });
     assert_eq!(ptr::from_ref(value.as_ref()), pointer);
     assert_eq!(value.as_str(), "released work");
-    let (_, retirement) = cleanup.expect("joined wrapped root");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (_, retirement) = native.expect("joined wrapped root");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let state = retirement
         .behavior()

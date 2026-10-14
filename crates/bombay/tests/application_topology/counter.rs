@@ -19,7 +19,7 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
-    let application_outcome = application_host
+    let (application_outcome, native, notifications) = application_host
         .block_on(
             Application::with_topology(
                 Counter::new().stop_on_shutdown(),
@@ -59,7 +59,15 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
             drop(original);
             panic!("the counter work must complete with its original outcome retained");
         });
-    let (origin, retirement) = cleanup.expect("the counter's independent cleanup must be received");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications
+        .termination
+        .expect("actual ordinary termination notification");
+    notifications
+        .retirement
+        .expect("actual joined retirement notification");
+    let (origin, retirement) = native.expect("the counter's independent cleanup must be received");
     let retirement = match retirement {
         ActorRetirement::ActorTaskFailed(failure) => {
             panic!("the counter root returns its actual retirement: {failure}")
@@ -102,3 +110,6 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
     assert_eq!(custody.descendants.len(), 0);
     assert_eq!(completion, Completion::Stopped);
 }
+
+#[path = "counter/comparison.rs"]
+mod comparison;

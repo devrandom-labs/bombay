@@ -2,9 +2,9 @@
 
 Every example is a downstream Cargo package that depends on the public
 `bombay-rs` façade. There is one examples tree and each folder is named for the
-API concept it demonstrates. Every example uses the same `Application` owner. Supervision, pools and Entity
-still supply explicit static hosting and terminal projections; deriving those
-from one topology declaration remains open.
+API concept it demonstrates. Every example uses the same `Application` owner.
+Child graphs use closed `topology!` declarations for their static hosting and
+native descendant custody; actor templates retain their owning constructors.
 
 Examples use `bombay::actors::ActorExt` (imported by the prelude) whenever an
 existing actor is decorated with reusable stash, timer, deadline,
@@ -30,27 +30,51 @@ src/main.rs       ActorExt composition and executable application boundary
 ## `counter`
 
 Direct level-1 actor authoring: state, a public message enum, typed
-request/reply, a named send lane, initialization, continuation, controlled
+request/reply, named send lanes, initialization, continuation, controlled
 overflow, and application-owned shutdown. The example uses `#[bombay::actor]`,
 which lowers directly to the owning Behavior attribute while removing only
-fixed address, ignored sender, and framework lint boilerplate. The reply
-protocol remains an ordinary explicit nominal `Protocol`; Bombay has no
+fixed address, ignored sender, and framework lint boilerplate. The snapshot
+protocol remains an ordinary explicit nominal `Protocol`; the increment
+processing reply uses the existing `MessageProtocol` alias. Bombay has no
 protocol macro. Because the actor owns an inhabited domain error, its
 successful tests assert that result explicitly rather than pretending the fold
 is infallible.
 The unit tests consume the definition through the owning `.initialize()` API
 before any pure receive, so initialization cannot be silently skipped or
-repeated. The binary runs the same actor through `Application`, establishes a
-typed external customer, increments, reads the exact reply, and requests
-shutdown through the application's separate lifecycle capability. The binary
-also consumes the exact projected terminal and checks that root state,
-descendant custody, ingress residuals, and completion are preserved. There is
-no second artificial domain stop command.
+repeated. The local binary runs the same actor through `Application`, establishes
+a root-bound typed client, sends one Increment and one Read, and requests
+shutdown through the application's separate lifecycle capability. It acquires
+Work, cleanup, native retirement and both notification results, then prints the
+snapshot and retirement completion. There is no artificial domain stop command.
+
+`IncrementAndReply` returns its correlated receipt through Actions only after
+the checked increment succeeds. The owning tests exercise this processing
+receipt and complete native custody. A Read snapshot alone does not acknowledge
+an increment.
+
+The owning Read test creates a separate typed reply port for each request.
+Cancelling a borrowed receive preserves that request's reply; closing a settled
+port refuses late replies with their original payloads. The Counter continues
+through a fresh port, while its native result retains the rejected send and its
+retirement report records the failure. This is local ownership evidence.
 
 ```text
 src/main.rs       executable Application request/reply and lifecycle shutdown
 src/counter.rs    state, protocol, messages, receive logic, and invariant
 ```
+
+## Remote Counter prerequisites
+
+The local application lives in `examples/counter`. A separate
+`examples/remote-counter` application will consume Bombay's crate-owned
+network/export/admission APIs behind `remote`. It remains pending; the existing
+`remote::verify` acquisition function alone does not provide multi-node hosting.
+
+Protected Counter fault and transport regressions live under
+`crates/bombay/tests/protected_counter`, built by the isolated transport-custody
+test package. They use explicit finite test providers and are verification
+fixtures. Their commands and evidence belong in the
+[remote PRD](../docs/prds/static-remote-actors.md), rather than application setup.
 
 ## `entity`
 

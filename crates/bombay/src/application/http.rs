@@ -10,7 +10,7 @@ use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::local::effects::CommitActions;
-use crate::terminal::{ActorRetirement, RetirementSchema, RootOrigin};
+use crate::terminal::{ActorNotificationReceipts, ActorRetirement, RetirementSchema, RootOrigin};
 use crate::topology::{ApplicationTopology, RootRegistration};
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -21,6 +21,7 @@ use std::io;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::runtime::{Handle, TryCurrentError};
+use tokio::sync::oneshot::error::RecvError;
 
 #[allow(
     private_bounds,
@@ -64,32 +65,39 @@ where
         (
             impl Future<Output = ()>,
             impl Future<
-                Output = ApplicationOutcome<
-                    (Self, Router, SocketAddr),
-                    (Router, TcpListener),
-                    Result<(), io::Error>,
-                    (
-                        RootOrigin<Root>,
-                        ActorRetirement<
-                            Actor,
-                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            ChildFailures,
+                Output = (
+                    ApplicationOutcome<
+                        (Self, Router, SocketAddr),
+                        (Router, TcpListener),
+                        Result<(), io::Error>,
+                        (),
+                        Result<
+                            (Self, Router, SocketAddr, io::Error),
+                            (
+                                Root,
+                                Spaces,
+                                Router,
+                                StagingFailure,
+                                TcpListener,
+                                ApplicationScope,
+                            ),
                         >,
-                    ),
-                    Result<
-                        (Self, Router, SocketAddr, io::Error),
-                        (
-                            Root,
-                            Spaces,
-                            Router,
-                            StagingFailure,
-                            TcpListener,
-                            ApplicationScope,
-                        ),
+                        (Actor, Spaces, ApplicationScope),
+                        (),
                     >,
-                    (Actor, Spaces, ApplicationScope),
-                    (),
-                >,
+                    Result<
+                        (
+                            RootOrigin<Root>,
+                            ActorRetirement<
+                                Actor,
+                                <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                                ChildFailures,
+                            >,
+                        ),
+                        RecvError,
+                    >,
+                    Result<ActorNotificationReceipts, RecvError>,
+                ),
             >,
         ),
         ((Self, Router, SocketAddr), TryCurrentError),
@@ -167,8 +175,6 @@ where
                     ApplicationScope,
                 ),
             >,
-            _,
-            _,
             _,
             _,
             _,
@@ -266,9 +272,11 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
-            |root| root,
         );
-        let receiving = async move { receiving.await.into_http() };
+        let receiving = async move {
+            let (work, root, termination_notification) = receiving.await;
+            (work.into_http(), root, termination_notification)
+        };
         Ok((execution, receiving))
     }
 
@@ -288,32 +296,39 @@ where
         address: SocketAddr,
         router: Router,
     ) -> Result<
-        ApplicationOutcome<
-            (Self, Router, SocketAddr),
-            (Router, TcpListener),
-            Result<(), io::Error>,
-            (
-                RootOrigin<Root>,
-                ActorRetirement<
-                    Actor,
-                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                    ChildFailures,
+        (
+            ApplicationOutcome<
+                (Self, Router, SocketAddr),
+                (Router, TcpListener),
+                Result<(), io::Error>,
+                (),
+                Result<
+                    (Self, Router, SocketAddr, io::Error),
+                    (
+                        Root,
+                        Spaces,
+                        Router,
+                        StagingFailure,
+                        TcpListener,
+                        ApplicationScope,
+                    ),
                 >,
-            ),
-            Result<
-                (Self, Router, SocketAddr, io::Error),
-                (
-                    Root,
-                    Spaces,
-                    Router,
-                    StagingFailure,
-                    TcpListener,
-                    ApplicationScope,
-                ),
+                (Actor, Spaces, ApplicationScope),
+                (),
             >,
-            (Actor, Spaces, ApplicationScope),
-            (),
-        >,
+            Result<
+                (
+                    RootOrigin<Root>,
+                    ActorRetirement<
+                        Actor,
+                        <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                        ChildFailures,
+                    >,
+                ),
+                RecvError,
+            >,
+            Result<ActorNotificationReceipts, RecvError>,
+        ),
         ((Self, Router, SocketAddr), TryCurrentError),
     >
     where

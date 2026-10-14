@@ -1,10 +1,150 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-08. This is the implementation index for the
+Updated: 2026-10-13. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
+
+DevX integration prerequisite [PR359](https://github.com/devrandom-labs/bombay/pull/359)
+merged `7fccf08b120dc468de6e5aa2ed9719724814c375` at2026-10-13T22:17:06Z.
+Its tree matches revieweddf6144f; all six checks pass with recorded source,
+native artifact and required-Nix reviews. Actual Nix executes749/0/1 optimized
+workspace tests, current topology/scope witnesses, coverage and primitive fuzz;
+Miri does not execute. This also delivers the provider-custody prerequisite
+that formerly awaited replacement CI. Historical failures remain unexplained.
+The selected main now uses Behavior/Actors0.25.0 and registry Timers0.2.0.
+The following older checkpoints retain their original source/CI provenance.
+AUTH1/NET1, every full remote witness, network entry points and the separate
+remote-counter application remain open. [PR361](https://github.com/devrandom-labs/bombay/pull/361) delivers opt-in
+`remote::verify` through actual mergeb2beaa9 at2026-10-14T00:02:44Z after all six
+checks pass. Required Nix executes16 remote tests per profile and746/0/1 default
+optimized tests; exact-head review and artifacts are recorded in the PRD.
+Full multi-node Application integration is still outstanding. The separate
+Counter test-relocation stage passes local combined and native checks; its
+submitted-head CI, review and merge remain pending. A remote-counter application
+is still required and is not delivered by moving the harness.
+
+Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
+merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at
+2026-10-13T02:41:04Z after independent review and all six passing checks,
+including required Nix38332675990. Original violations and five causal cuts
+retain their local provenance. The two count witnesses execute in each native
+profile; capacity proof remains SessionLocal, with byte/heap/overflow and
+whole-service obligations open.
+
+Next focused correction preserves an acquired provider result before disposing
+its completed future. Original and replayed defects fail the intended custody
+oracle in both profiles; corrected and restored controls, combined workspace,
+protected suites and actual TLS controls pass independent review. Production
+delta was +16/-2/net14. The related actual-Future migration adds production
++12/-9/net3 and migrates18 wrappers; four intended cuts/restored controls and
+protected59/0/1 pass both profiles. No new public API or dependency. The submitted head6d has passing native TLS checks in both profiles, but its
+required Linux Nix check fails the original comparison allocation assertion
+by48 bytes. That cause is unproved; isolated attribution, reviewed PR and
+actual merge remain pending. See the
+[PRD](../prds/static-remote-actors.md#provider-result-custody--isolated-failing-regression-stage-2026-10-13).
+AUTH1/NET1 and every full remote acceptance row remain open.
+The user requires actual Bombay crate support behind feature `remote`, following
+reconciliation with committed DevX Application APIs (c3b74ab). The combined
+ordinary/axum library checks and75 receiving tests plus9 admission/shutdown
+tests pass in both test profiles; owning regressions, remaining integration
+and complete CI remain open. Examples are consumers;
+their passing probes do not deliver the crate capability.
+
+The reconciled owning library now passes321/0/0 in both profiles, and the
+protected Counter passes59/0/1 in each. Actual TLS campaigns pass32 cases/
+80 roles per profile; child Stop and query-count controls pass2/0/0 each.
+Independent artifact review preserves their fixture scope and setup-failure
+limitations. Combined compilation identifies imported test consumers of the
+old Application receiving shape; completed disjoint migration reuses the
+approved independent native and notification receipts. Keep the local
+Counter in its own example; the separate `examples/remote-counter` application
+and Bombay's actual `remote` feature remain required crate-delivery work.
+
+Combined DevX integration passes all-features Cargo748/0/5 before equivalent
+lint spellings, optimized migrated consumers79/0/0, and final default nextest
+740 passed/one skipped, formatting and all-feature strict Clippy. The final
+scoped Application review finds no new custody blocker. Local full Nix hits
+actual disk exhaustion and is not passing evidence; submitted-head CI and
+actual merge remain required. No full remote witness or DX programme closes.
+
+The integration is submitted as draft
+[PR359](https://github.com/devrandom-labs/bombay/pull/359) from committed4809437,
+with required CI and actual delivery pending. Its scoped review and passing
+local commands do not mark the feature merged. Main is unchanged671ba860.
+On submitted32cec46, native debug and reviewed CodeQL adjudication pass;
+native release stalls before the child/peer/recorded caller's local-read marker,
+and required Nix remains running. The cause is unproved. Temporary local markers
+pass the single macOS case and are restored byte-exact; separate Linux diagnostic
+run38448095363 preserves the unchanged controller and all assertions. Research
+results cannot substitute for passing delivery-head CI or an actual merge.
+The unchanged delivery source32cec46 now passes all six observed checks.
+Required Nix executes740/0/1, three actual Counter55/0/0 profiles, recorded
+coverage and ASAN campaigns; Miri is skipped. Release attempt2 passes32cases/
+80roles plus child-stop/query-count2/0/0 each. The original attempt's guard
+failure remains unexplained. Independent final source review and actual PR
+merge are still required; no full remote obligation closes from this slice.
+Final source review identified missing current topology macro/manual differential
+verification. Six owning comparisons now pass debug/optimized; three generator
+cuts fail their intended laws in both profiles, with exact restoration and
+independent artifact review. Styled two-protocol scope controls also pass their
+three causal cuts/restorations. Combined workspace Cargo753/0/4, Nextest749 passed/one skipped, build, strict
+Clippy and formatting pass on cleanup-first04d. Scoped source and receipt reviews
+pass. Revised-head CI and actual delivery remain required; passing
+head32 does not certify these added tests or close full remote acceptance.
+
+Protected-Application prerequisite [PR354](https://github.com/devrandom-labs/bombay/pull/354)
+merged36c00d53c84482c2b1fdf0587dca788bc6c39250 at2026-10-12T04:16:32Z after
+independent exact-head review and all six passing CI checks on be995. Required
+Nix38199644193 executes protected51 in three profiles, workspace640/0/1,
+Driver2048 and Observe4×1024;458 artifact files were rehashed. Miri was skipped.
+Controlled router correction [PR10](https://github.com/devrandom-labs/bombay-zenoh/pull/10)
+merged4820 with required CI, exact-main verification and actual1.10.7 publication
+and clean-consumer proof passing. Its narrow Bombay fixture adoption
+[PR355](https://github.com/devrandom-labs/bombay/pull/355) merged
+aa2c696df3f0070b06c3b61a9a0dd84d0a4362b9 at2026-10-12T05:34:23Z after
+independent exact-head review and all six checks passed, including required
+Nix38204875216. The actual1.10.7 native campaigns remain separate from protected
+actor transport. Controlled dependency [PR11](https://github.com/devrandom-labs/bombay-zenoh/pull/11)
+merged5bebbcb07a7650aff33e08736b8434cf2ccf1706 at2026-10-12T21:05:20Z after
+exact-head review and required Linux38301427259 passed all steps. Query capacity,
+owning PEM/YAML corrections, nine archives, genuine
+Rust1.88 and Miri pass scoped local gates and independent review. Its first Linux
+run fails complete source custody because Python creates a cache; Rust and locks
+remain unchanged. The reviewed two-line execution correction retains all checks;
+revised-head CI38301427259 verifies112 named packaged executions, complete
+source custody and both actual Miri tests with independent artifact review.
+Revised54d local VCS archives and112 local packaged passes have independent
+custody review; exact-head technical review is recorded on PR11.
+Exact merged-main CI38308414717 passes source/archive, compiler-floor and Miri
+gates with independent artifact review. Actual publication38313859795 passes;
+all nine fresh registered archives have independent checksum/source review.
+Registry-only executable gates on default Rust and actual1.88 pass independent
+receipt review. The isolated stage selects1.10.8; combined actor/workspace and
+native TLS campaigns pass independent artifact review before PR delivery.
+The main and publication receipts do not close remote actor gates.
+Protected native Increment/Read/Stop comparison now passes64healthy cases/
+160subprocess roles and80deliberate negative cases with independent review;
+Historical defect cuts retain their exact pre-adoption provenance. Current adopted
+ordinary suites pass54/0/0 and protected/nested56/0/1 in both profiles. All five
+healthy controller campaigns are integrated into existing CI jobs; adopted combined
+workspace644/0/1, build, formatting, strict Clippy and both all-features policy
+checks pass locally with independent artifact review52013cb4.
+This comparison remains cfg(test). A separate local held-descendant
+comparison passes real-resource and acceptance-versus-joined controls/cuts in both
+profiles, with final complete-control oracle correction and independent review.
+Remote held-target retirement, combined ingress bounds and the shipping entrypoint
+remain open.
+Adoption and native/held prerequisites [PR356](https://github.com/devrandom-labs/bombay/pull/356)
+merged2572bf3000654011d6bfb1e150898a131d0681b7 at2026-10-13T00:33:33Z after
+exact-head review and all six passing checks. Required Nix38322598237 passes
+workspace optimized643/0/1, owner coverage and Driver2048/Observe4×1024; actual
+Miri is skipped. Native64cases/160roles pass separately. Local644/0/1 and historical
+inversion counts retain their own provenance; this delivers no full remote row.
+The candidate quota covers ordinary query registrations; liveliness and inherited
+unstable native-cancellation outcomes remain outside that claim. All
+fullR01–R25 and AUTH1/NET1 acceptance remain open.
 
 The previous local-runtime audit is closed: 25 TEST items were verified,
 ARC-009 was retained, and the other 19 ARC items were distilled. Its chronological
@@ -18,19 +158,155 @@ prerequisites. A feature becomes `active` only when its PRD records the required
 verification and accepted decisions. `merged` records actual reviewed delivery;
 other product rows remain incomplete.
 
+The audited static-remote-actor specification and post-EXEC audit merged through
+[PR329](https://github.com/devrandom-labs/bombay/pull/329), commit
+`a9c5b7d4a1cf2b15504acef43c20c0da9b5e320e`, after final-head review and all four
+observed CI checks passed. [Preparation delivery](../prds/static-remote-actors.md#change-record-and-current-checkpoint)
+records exact evidence and skipped optional Miri work. This is documentation
+delivery; AUTH1 and NET1 keep their implementation statuses below.
+
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
 | DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): paired owning PRD tracks DX01–DX28; bounded application-result consumption is in progress. Topology/terminal inference and full acceptance remain open. |
-| NET1 | blocked | External: immutable Zenoh/codec selection and verified typed extension contract | PLACE1, DIST1, SELO1 | [Networking](networking.md): two-process request/reply, exact versus ambiguous delivery, bounded queues and static routing; exercise the same law with Zenoh and a deterministic faulting test host. |
-| AUTH1 | candidate | — | PLACE1, DIST1, SELO1 | [Identity](identity-and-placement.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. |
-| PLACE1 | blocked | NET1, AUTH1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. |
-| MNE1 | blocked | External: Mnesis-Bombay release and dependency-graph alignment | DIST1, SELO1 | [Durability](durability-and-operations.md): select current Bombay and compatible Behavior; hydrate before routability and retain exact admission, decision, conflict, uncertain commit and durable completion outcomes. |
+| NET1 | blocked | AUTH1; external: verified typed composition, protocol/security and resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md) retains the selected profile and open remote gates. Its nine controlled dependencies are published, reviewed and merged, with passing registry-only consumer proof. Joined-retirement prerequisite [PR330](https://github.com/devrandom-labs/bombay/pull/330) merged at2026-10-10T08:11:03Z, commit017ec7603e0193e26129e0af6d10b8c04fdad78e, after independent source review and all four observed CI checks passed on690e628. Local debug/optimized controls, intended source inversions, actual report-construction denials, standard cleanup-panic custody, full workspace/docs/all-target tests and strict Clippy pass; exact evidence and limitations remain in the PRD. The isolated exact-recipient capacity-nonwaiting service admission prerequisite passes public/owning debug and optimized controls, intended inversions, full local checks and independent minimization review; [PR331](https://github.com/devrandom-labs/bombay/pull/331) merged at2026-10-10T09:45:37Z, commit9fc225ee0e96e697f0b48b619abe6ea8c6721e7c, after independent review and all four observed checks passed (required Nix38039822580). [Research PR332](https://github.com/devrandom-labs/bombay/pull/332) merged at2026-10-10T11:47:54Z, commita3a018790b4a0edb61d67e190d8978b1ce38464f, after independent review and all six observed checks passed, including both actual Linux TLS campaigns (16 cases/profile); its local scope/transport prerequisites do not close full remote witnesses. The owning closure-diagnostic correction is reviewed, merged and actually published as Communication0.1.4; the candidate selects only that corrected registry node, preserving all other178 locked records. Exact local child shutdown [PR333](https://github.com/devrandom-labs/bombay/pull/333) merged acb6cc188f03ded29863d8d2565e3fd093e65558 at2026-10-10T13:25:15Z after independent review and all six checks (Nix38051236713) passed. Real root-owned-work waiting [PR334](https://github.com/devrandom-labs/bombay/pull/334) merged fbc714c176792411ea00fdf73876c30aa17fd4ca at13:27:30Z after exact final main scope review and all six checks (Nix38052058178) passed; its two-Application local witness does not close child/shared-session R11. Controlled Zenoh pressure [PR3](https://github.com/devrandom-labs/bombay-zenoh/pull/3) merged1291c3e019de19c2a2e1e713380383526347bb59 after required38048704318 passed; observed native retention is not quota enforcement. Protected remote admission, two-process/fault-host correctness, exact versus ambiguous delivery and bounded remote ownership remain unimplemented; all full R01–R25 witnesses remain unexecuted. Choices use delegated recommended selections. |
+| AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
+| PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |
+| MNE1 | blocked | External: Mnesis-Bombay release and dependency-graph alignment | PLACE1, DIST1, SELO1 | [Durability](durability-and-operations.md): select current Bombay and compatible Behavior; hydrate before routability and retain exact admission, decision, conflict, uncertain commit and durable completion outcomes. Local migration can proceed independently of NET1; complete distributed writer fencing with PLACE1. |
 | DIST1 | blocked | NET1, AUTH1, PLACE1, MNE1 | OPS1 | [Distributed composition](durability-and-operations.md): supervised, durable, authenticated actors recover across host failure. |
 | OPS1 | blocked | DIST1 | — | [Operations](durability-and-operations.md): equivalent semantics on self-hosted and Kubernetes deployments, bounded telemetry, drain and compatible upgrades. |
 | SELO1 | blocked | AUTH1, NET1, MNE1; external: Selo KERI runtime | — | [Downstream identity](identity-and-placement.md): run the admission contract suite against Selo, then prove rotation, delegation, revocation and deployment scenarios. |
 
+Latest research prerequisite delivery: [PR335](https://github.com/devrandom-labs/bombay/pull/335)
+merged `8cb82e5b785fcd04b0d991c51758fba6c75096f6` after review and all six
+checks passed, including both native TLS campaigns. Its typed local verification
+service and exact payload/proof custody tests preserve the full remote acceptance
+obligations. The controlled Unicode correction and successor release preparation
+also merged through [PR4](https://github.com/devrandom-labs/bombay-zenoh/pull/4)
+and [PR5](https://github.com/devrandom-labs/bombay-zenoh/pull/5). Successor1.10.2
+published through exact-main release38089508115; all nine actual registry archives
+and normal/maintainer registry-only consumer checks pass. Endpoint-waker witness
+[PR336](https://github.com/devrandom-labs/bombay/pull/336) merged
+2104559072b4321ab55beaea50dfa3a805a6723e after independent review and all six
+checks passed. Actual two-Application Counter integration
+[PR337](https://github.com/devrandom-labs/bombay/pull/337) merged
+65bb88456aeee13570b706b629b25de0341abb0b after independent review and all six
+checks passed, including its actual Linux debug/optimized TLS artifacts.
+Its restored 24-case matrix and scoped inversions retain their limits. The
+ordinary Rust two-provider admission comparison passes local debug/optimized
+controls and intended revocation/expiry and static inversions. PR338 merged7139409ac7d98f222008153e3917689773ae759e on2026-10-11
+after exact-head review and all six CI checks passed. Its stalled-verifier
+follow-up PR339 merged44a4e3961bb444f5c26afc31f42d03248f60248e after review
+and all six checks passed. Exact-target overlap PR340 subsequently merged
+1f8673350dcd30ad45015c62f65524a2e005fadb after review and all six checks.
+Their scoped controls/inversions and actual Linux artifacts retain their limits. Controlled resource-interest
+PR6 merged3e45ba6b1098b3589b242935284610d0113e13a8 after review and required
+CI; exact-main verification38098545513 also passes. Publication38099991563
+actually released1.10.3; all nine registry archives and all seven clean consumer
+checks pass. Fixture adoption PR341 merged10f734eeb829f3ad35ec57a2795299c87edb9da1
+after exact-head review and all six checks. Replay PR342 merged
+2c264c705d2fb07eccb1a86f3a5852bc0d598ef5 with the same delivery gates.
+Configured assignment/deadline PR343 merged01683e86bbe0f74536f6f94c49d94211e117f115
+at2026-10-11T03:07:40Z after scoped review and all six checks passed.
+Bounded JSON PR344 merged244efe414da85d51fb616e22379da5a660a63cb1
+at2026-10-11T03:24:42Z after scoped review and all six checks passed.
+Corrected resource PR345 merged1aad2616a1bdf529290d72d98c823172fc322bd2
+at2026-10-11T04:37:23Z after scoped exact-head review and all six checks passed.
+Declaration PR346 merged15fc7aa6be9348fef4ac2be6ac48be657fd6dc41
+at2026-10-11T05:19:25Z after scoped exact-head review and all six checks passed.
+These contributions do not close full AUTH1/NET1 acceptance.
+[Counter PR347](https://github.com/devrandom-labs/bombay/pull/347) now has focused Full/retry and
+component-allocation controls plus intended debug/optimized inversions.
+Both concrete providers now preserve accepted/invalid/stale/unavailable results
+through actual public Application consumers, with all sixteen focused tests passing in
+debug and optimized builds. Fresh finite refusal allocations fit the existing
+256-byte allowance. Same-owner finite proof rotation preserves live replay
+eligibility; actual retention/proof-check inversions fail both profiles.
+Actual native-Closed custody and original allocation-error-source controls also
+pass, with intended inversions in both profiles and scoped independent reviews.
+Payload-free requester diagnostics retain the complete original message. Owning
+strict checks and scoped ownership minimization pass. Eight final combined
+checks pass; the serialized full Nix retry passes all21 local checks after the
+disk-only failure. Counter PR347 merged04b89f7a3a5fe59ce66d0119658b3082413662ed
+at2026-10-11T09:44:33Z after scoped exact-head technical review and all six
+checks passed. Actual Linux CI executes all16 tests in debug, coverage and release;
+both native TLS profiles and required Driver/Observe fuzz campaigns pass. Miri
+was skipped. This contribution does not close any full remote acceptance row.
+The native Session query-ID correction merged through controlled Zenoh PR7
+(9cc83867dce5804a172d7b582fd3b4c2550257fe), after exact-head review and
+passing required CI, including two executed Miri tests. Controlled1.10.4
+publication run38136194227 passes after exact-main CI; actual all-nine registry
+archives and the clean public consumer are verified. Standalone published-source
+unit compilation exposed an implicit unstable-feature dependency in its test;
+the owning configuration import correction passes both profiles with only TLS
+enabled. Controlled PRs8–9, exact-main CI and actual1.10.6 publication now pass;
+all-nine registry archives, seven consumer checks and six individual owning tests
+are verified (receiptcbaca303). Narrow fixture-only PR352 mergedabdc779fc84c3c72a4dcbabc5bb8a4d4bd34465c
+at2026-10-11T19:03:30Z after exact-head technical review and all six CI checks
+passed, including both actual native layouts/profiles and required Nix38162857886.
+Main now selects1.10.6 in the fixture; all317 other lock records and root Behavior
+0.23 remain unchanged. Exact-main CI38166406725 was cancelled and has no pass
+credit. Further Behavior merges remained outside that historical boundary; the
+user's current steering authorizes a read-only seven-hour watch of the active
+Devx worktree and later verified integration. Selected0.23 stays fixed here.
+
+Controlled PR10 merged4820 after review and required CI. Exact-main38196442019,
+publication38199669832 and all-nine registry checksum/source proof pass;
+top1.10.7 archive30d30143 keeps the eight support packages unchanged. Seven clean
+consumer checks pass, with independent installed-source reviewf82865b5.
+The prepared fixture adoption preserves317 other complete lock records; it is
+now rebased on actualmain36c00d5. Combined verification, reviewed PR and actual
+merge remain open. Main still selects1.10.6 until those gates pass. Native resource
+quotas, protected real-network witnesses and every fullR01–R25 remain incomplete.
+
+The next Counter contribution proves actor-processing receipts, native Overflow
+and intended debug/optimized inversions. All four required workspace commands
+pass through pinned Nix; focused PR348 merged reviewed2b97d9df with all six CI
+checks passing. Actual guarded merge101cfb8ff03635d00f991ecaa3224f9971f01eb9 occurred
+at2026-10-11T12:19:08Z after independent final CI inspection. Fresh Read
+ownership and runtime-assignment controls pass both profiles and independent
+scoped review. Read PR349 merged12d9c8493261badf0b14b364b2b71d5dcf19f927
+at2026-10-11T13:15:08Z after exact-head technical review and all six checks passed.
+Linux CI executed its fifth Read test in debug, coverage and optimized builds;
+required Driver/Observe fuzz passed, Miri was skipped. Complete configured Scope
+merged through PR350 as20fb999dfe57f72d85afb1a2ccd07d42942cc6c8 after exact-head
+review and all six checks; its21 tests passed debug, coverage and optimized.
+Fixture adoption PR352 and child-owned preparation PR351 are merged after scoped
+review and all six checks passed; actual mergesabdc779/c66c42c are recorded above.
+Combined main CI38166674058 passed at c66c42c; Miri was skipped. Protected
+postpublication custody and native router exhaustion remain active; no full
+remote acceptance row is closed.
+Protected Counter combined43-test controls pass both profiles, with scoped
+publication defects/restores and strict/fmt passing; postpublication custody,
+final minimization and delivery remain. Later Behavior merges are excluded
+by user steering; current frozen stages retain0.23 until the audited049c candidate
+has its own narrow verified migration.
+The selected PRD retains identity, replay, bounds and protected actor-network gates.
+AUTH1 and NET1 retain their statuses above.
+
+Original child-report refusal merged through reviewed
+[PR353](https://github.com/devrandom-labs/bombay/pull/353) as9932792924c0bb05c0ab7b644a0886dae98c96d0
+at2026-10-12T00:01:26Z after all six CI checks passed. Communication0.1.5 preserves the original request
+before conversion, and the existing rejected settlement retains it after early
+parent stop. Primary/control/inversion laws pass in both profiles; all four
+combined local workspace commands pass611/0/1; Linux executes the new witness
+in coverage debug and optimized builds, with610/0/1 visible release results;
+the separate plain-debug invocation ran zero tests. Miri was skipped.
+New exact-main CI38186444808 passes all three jobs, independently reviewed.
+The selected requester-custody correction passes51 tests in both profiles,
+all four combined workspace commands (641/0/1 tests), and14 intended custody
+failures with14 restored controls. The router checked-ID correction passes28
+forwarding tests in both profiles; actual archive compilation exposed a test-only
+feature dependency now corrected for fresh verification. Reviewed delivery of
+both corrections remains open. Full remote
+requirements retain their states above.
+
 Every internal `Blocked by` edge has its reciprocal `Unblocks` edge here.
+The [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records
+fresh delivery/source checks and the corrected AUTH1 → NET1 and MNE1 → PLACE1
+edges. The [next PRD's parallel plan](../prds/static-remote-actors.md#parallel-execution-and-critical-path)
+separates concurrent contract research, independent implementation and shared
+integration gates. Neither research eligibility nor this plan completes a row.
 ARC-006 activation, ARC-010 capability interpretation and TEST-025 executable
 supervisor/pool evidence are completed local prerequisites, so they do not
 remain unresolved edges into PLACE1 or DIST1. Broader template-policy coverage
@@ -71,7 +347,9 @@ Historical release pointers (not the current selection): Behavior Core/Actors
 `5ca96444f0a66e9a013b6989e3e53d345cbabf65`. The Driver and template
 manifests retain revision-bound evidence. Earlier EXEC notes selected 0.17.0:
 their hashes, source inventories and open representation experiments are
-historical until their PRD explicitly reconciles them with the current owners.
+historical; EXEC's published selection and current manifests now use
+Core/Actors 0.23.0 and Macros 0.14.0 at
+`d69f992b371c12ab34e73b18e45b8112c90a1508`.
 
 ## Historical audit evidence
 
@@ -80,3 +358,21 @@ The previous audit's change counts, commands and pass marks remain in the
 They describe that earlier change, not this workspace. Current feature checks
 belong beside the selected PRD. Documentation cleanup is recorded in
 [DX1](../prds/developer-experience.md#documentation-change-record).
+
+Historical static-remote prerequisite delivery at the PR350 preparation checkpoint: complete configured Scope
+[PR350](https://github.com/devrandom-labs/bombay/pull/350) merged20fb999dfe57f72d85afb1a2ccd07d42942cc6c8
+at2026-10-11T14:23:31Z after independent exact-head review and all six passing
+checks, including required Nix38143604929. Its21-test authorized suites include
+19 owning tests and2 imported Counter laws; native fixture campaigns remain
+separate registry1.10.3 evidence. Controlled [PR8](https://github.com/devrandom-labs/bombay-zenoh/pull/8)
+merged4f5e7be at14:03:46Z; exact-main CI38145659859 and actual1.10.5
+publication38149136515 pass, with registry receipt/checksum948780fd inspected.
+All-nine registry/clean-consumer/source verification passes (proof10b9e1ec);
+Bombay adoption remains pending. Native-retirement successor
+[PR9](https://github.com/devrandom-labs/bombay-zenoh/pull/9) merged
+e902c6e3877d6602ba69c79a20bdb795e6a45e4b at2026-10-11T15:56:55Z
+after independent review and required CI38149485937 passed. Exact-main
+CI38153406874 and publication38158907672 passed; full registry-consumer proof
+and Bombay adoption remain open.
+Protected JSON Application integration and genuine child-owned preparation
+verification run independently under the PRD's selected contracts. All full R01–R25, AUTH1/NET1 states and reciprocal dependencies stay open.

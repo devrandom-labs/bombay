@@ -30,17 +30,20 @@ is held, without starting a replacement, and preserves exact source custody.
 
 | Owner | Selected contract inspected | Consequence |
 | --- | --- | --- |
-| Behavior | bombay-behavior 0.23.0, registry archive revision `d69f992b371c12ab34e73b18e45b8112c90a1508` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
-| Behavior Actors | bombay-behavior-actors 0.23.0, same registry archive revision | Owns existing supervision, pools and template policies. |
-| Behavior macros | bombay-behavior-macros 0.14.0, same registry archive revision | Owns syntax generation; Bombay must not replace its semantics. |
+| Behavior | bombay-behavior 0.25.0, registry archive revision `2bb4510077bfa5aed82e08d25453c146b3184285` | Owns Actions and the typed capability algebra. Exact revision's AGENTS.md applies. |
+| Behavior Actors | bombay-behavior-actors 0.25.0, same registry archive revision | Owns existing supervision, pools and template policies. |
+| Behavior macros | bombay-behavior-macros 0.14.1, same registry archive revision | Owns syntax generation; Bombay must not replace its semantics. |
 | Address | bombay-address 0.3.0 | Owns local claims/leases and opaque resolution; its process-local representation is not a wire address. |
-| Communication | bombay-communication 0.1.3 | Owns bounded user delivery, separate control delivery, closure and payload recovery. |
+| Communication | bombay-communication 0.1.5 | Owns bounded user delivery, separate control delivery, closure, payload recovery and original custody before mapped delivery. |
 | Observe | Private Bombay implementation | Owns completion publication and waiting; is not a missing external dependency. |
 | Timers | Registry 0.2.0, archive revision `9369d1f6c7fcda91e7de5bf3c19e6769f92145bd` | Owns volatile actor scheduling/generations and complete typed exhaustion return, not persistent reminders. |
 | Tokio | 1.53.1 in this lockfile | Caller-host async execution and configured Builder-only owned current-thread/multithread execution share one paired owner; final acceptance remains separate. |
 
-Selected-contract table reconciled on 2026-10-08 for the final EXEC source;
-the Timers registry delivery was verified on 2026-10-09. The earlier dated
+Selected-contract table reconciled on 2026-10-13 for committed DevX integration,
+including Communication's mapped-delivery custody adopted through
+[PR353](https://github.com/devrandom-labs/bombay/pull/353). Fresh combined
+verification is recorded in the remote-actors PRD; older execution observations
+retain their original dated selections. The earlier dated
 0.20.0 execution observations below remain historical evidence. Behavior
 Actors 0.21.2 publication retains its historical distinct live capability-failure
 cause evidence. The final selected source and full acceptance remain in EXEC. See the
@@ -50,8 +53,8 @@ for publication, source and verification evidence.
 Sources: [Cargo.lock](../../Cargo.lock), [workspace manifest](../../Cargo.toml),
 [Bombay manifest](../../crates/bombay/Cargo.toml). Behavior source was read from
 the authenticated registry archives and prior selected snapshots at their
-recorded epochs. The root patch selects only Timers; a nearby checkout at
-another revision is not the build contract.
+recorded epochs. There is no root Cargo patch; a nearby checkout at another
+revision is not the build contract.
 
 Current architectural references remain
 [capability ownership](../runtime-capability-interfaces.md),

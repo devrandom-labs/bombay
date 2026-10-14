@@ -3,7 +3,8 @@ use bombay::behavior::{
     AllocationRejection, BehaviorActed, BehaviorBase, ClassifySettlement, Never, SettlementStatus,
 };
 use bombay::{
-    ActorCustody, ActorRetirement, Application, ApplicationCleanupError, ApplicationOutcome,
+    ActorCustody, ActorNotificationReceipts, ActorRetirement, Application, ApplicationCleanupError,
+    ApplicationOutcome,
 };
 use core::ptr;
 use std::cell::Cell;
@@ -238,11 +239,20 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
         })
         .await
         .unwrap_or_else(|_| panic!("the caller entered a host"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     assert_eq!(outcome.work_output().expect("counter completed").value, 1);
     let (snapshot, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("counter work completed"));
-    let (origin, retirement) = cleanup.expect("joined root was received");
+    cleanup.expect("actual application cleanup completes");
+    let (origin, retirement) = native.expect("joined root was received");
     assert_eq!(snapshot.value, 1);
     assert_eq!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
@@ -302,20 +312,27 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
         })
         .await
         .unwrap_or_else(|_| panic!("a host is entered"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     assert!(outcome.work_output().is_none());
     assert!(matches!(
-        outcome.cleanup(),
-        Some(Ok((
+        &native,
+        Ok((
             _,
             ActorRetirement::InitializationRejected {
                 error: CounterRefusal::Initialization,
                 ..
             }
-        )))
+        ))
     ));
-    let custody = outcome
-        .cleanup()
-        .expect("startup cleanup received")
+    assert!(matches!(outcome.cleanup(), Some(Ok(()))));
+    let custody = native
         .as_ref()
         .expect("startup refusal joined")
         .1
@@ -326,11 +343,7 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
         original_audit
     );
     assert_eq!(custody.user, []);
-    let (_, retirement) = outcome
-        .cleanup()
-        .expect("startup cleanup was received")
-        .as_ref()
-        .expect("startup rejection was joined");
+    let (_, retirement) = native.as_ref().expect("startup rejection was joined");
     assert!(retirement.completion().is_none());
     let original = &retirement
         .behavior()
@@ -343,8 +356,7 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
     );
     let returned = outcome
         .try_into_completed()
-        .err()
-        .expect("startup did not invoke work");
+        .expect_err("startup did not invoke work");
     let ApplicationOutcome::NotInvoked {
         work,
         startup_error,
@@ -355,7 +367,8 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
     };
     assert!(startup_error.is_some());
     assert_eq!(invoked.get(), 0);
-    let (_, retirement) = cleanup.expect("startup rejection was joined");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("startup rejection was joined");
     let ActorRetirement::InitializationRejected {
         custody: ActorCustody { behavior, .. },
         error: CounterRefusal::Initialization,
@@ -442,12 +455,21 @@ async fn independent_counter_execution_infers_custody_and_keeps_local_work() {
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     execution.await;
     let outcome = receiving.await;
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (returned, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the real local work completed"));
     assert!(Rc::ptr_eq(&original, &returned));
     assert_eq!(returned.audit.as_ptr(), allocation);
-    let (_, retirement) = cleanup.expect("the independent retirement is acquired");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("the independent retirement is acquired");
     assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
     let custody = retirement.custody().expect("complete actor custody");
     assert_eq!(custody.descendants, []);
@@ -465,19 +487,25 @@ async fn independent_absent_work_infers_original_initialization_rejection() {
         .execute()
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     execution.await;
-    let ApplicationOutcome::NotInvoked {
-        work: None,
-        startup_error: Some(_),
-        cleanup:
-            Ok((
-                _,
-                ActorRetirement::InitializationRejected {
-                    custody,
-                    error: CounterRefusal::Initialization,
-                    ..
-                },
-            )),
-    } = receiving.await
+    let (
+        ApplicationOutcome::NotInvoked {
+            work: None,
+            startup_error: Some(_),
+            cleanup: Ok(()),
+        },
+        Ok((
+            _,
+            ActorRetirement::InitializationRejected {
+                custody,
+                error: CounterRefusal::Initialization,
+                ..
+            },
+        )),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = receiving.await
     else {
         panic!("absence and the original actor rejection remain independent");
     };
@@ -500,20 +528,32 @@ async fn independent_execution_cancellation_returns_original_cold_callable() {
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     drop(execution);
-    let ApplicationOutcome::Unstarted { application, work } = receiving.await else {
+    let (cold_outcome, cold_native, cold_notifications) = receiving.await;
+    let ApplicationOutcome::Unstarted { application, work } = cold_outcome else {
         panic!("the original callable remains cold after execution surrender");
     };
+    assert!(cold_native.is_err());
+    assert!(cold_notifications.is_err());
     assert_eq!(original.get(), 0);
     let outcome = application
         .run_with(work)
         .await
         .unwrap_or_else(|_| panic!("the same callable can be retried on this host"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (returned, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("retried work completed"));
     assert!(Rc::ptr_eq(&original, &returned));
     assert_eq!(returned.get(), 1);
-    let (_, retirement) = cleanup.expect("retry retains its original retirement");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("retry retains its original retirement");
     assert!(retirement.behavior().is_some());
 }
 
@@ -529,7 +569,14 @@ async fn independent_entity_execution_infers_root_custody_without_families() {
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     execution.await;
-    let (outcome, root, ()) = receiving.await;
+    let (outcome, root, notifications, ()) = receiving.await;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (returned, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("local work completed independently of receiving"));
@@ -549,12 +596,20 @@ async fn entity_runner_infers_rejected_root_and_preserves_uninvoked_work() {
     let allocation = original.audit.as_ptr();
     let invoked = Rc::new(Cell::new(0));
     let calls = Rc::clone(&invoked);
-    let (outcome, root, ()) = Application::new(RejectedCounter { original }.stop_on_shutdown())
-        .run_with_entities(|_| async move {
-            calls.set(calls.get() + 1);
-        })
-        .await
-        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    let (outcome, root, notifications, ()) =
+        Application::new(RejectedCounter { original }.stop_on_shutdown())
+            .run_with_entities(|_| async move {
+                calls.set(calls.get() + 1);
+            })
+            .await
+            .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let ApplicationOutcome::NotInvoked {
         work,
         startup_error: Some(_),
@@ -603,12 +658,15 @@ async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered HTTP host"));
     execution.await;
+    let (cold_outcome, cold_native, cold_notifications) = receiving.await;
     let ApplicationOutcome::StagingRejected {
         inputs: Ok((application, router, returned_address, cause)),
-    } = receiving.await
+    } = cold_outcome
     else {
         panic!("prebinding returns the original cold application and router");
     };
+    assert!(cold_native.is_err());
+    assert!(cold_notifications.is_err());
     assert_eq!(called.get(), 0);
     assert_eq!(returned_address, address);
     assert_eq!(cause.kind(), std::io::ErrorKind::AddrInUse);
@@ -617,12 +675,21 @@ async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
         .run_axum(returned_address, router)
         .await
         .unwrap_or_else(|_| panic!("the same returned router is retryable"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (serving, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the actual router ran and HTTP serving completed"));
     serving.expect("root termination gracefully stops serving");
     assert_eq!(called.get(), 1);
     assert_eq!(original.audit.as_ptr(), allocation);
-    let (_, retirement) = cleanup.expect("the real root retirement is independently acquired");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("the real root retirement is independently acquired");
     assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
 }

@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use bombay::MailAddr;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
@@ -113,11 +114,20 @@ async fn named_birth_delivers_both_reports_and_preserves_retirement() {
         drop(original);
         panic!("the original application is retained on rejection");
     });
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("the complete original outcome is retained");
     });
-    let (origin, retirement) = cleanup.expect("original root retirement");
+    cleanup.expect("actual application cleanup completes");
+    let (origin, retirement) = native.expect("original root retirement");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let bombay::ActorRetirement::Completed { custody, .. } = retirement else {
         panic!("root completes after exact initialization reports");

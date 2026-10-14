@@ -52,7 +52,7 @@ bombay::topology! {
 async fn main() {
     let entries: Box<[u8]> = Box::from([5, 11]);
     let allocation = entries.as_ptr();
-    let outcome = Application::with_topology(
+    let (outcome, native, notifications) = Application::with_topology(
         counter::Counter::new().stop_on_shutdown(),
         journal_application::Topology::new(),
     )
@@ -99,7 +99,11 @@ async fn main() {
         panic!("the caller work completes independently of cleanup");
     });
     assert_eq!(value, 1);
-    let (_, retirement) = cleanup.expect("the complete component custody is joined");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications.termination.expect("actual ordinary termination notification");
+    notifications.retirement.expect("actual joined retirement notification");
+    let (_, retirement) = native.expect("the complete component custody is joined");
     let ActorRetirement::Completed {
         custody: ActorCustody { descendants, .. },
         ..

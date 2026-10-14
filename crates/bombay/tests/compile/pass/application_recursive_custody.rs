@@ -58,7 +58,7 @@ bombay::topology! {
 }
 
 async fn nominal_recursive_creations() {
-    let outcome = Application::with_topology(
+    let (outcome, native, notifications) = Application::with_topology(
         Node {
             startup: NodeStartup::Grow { remaining: 3 },
         }
@@ -80,7 +80,11 @@ async fn nominal_recursive_creations() {
         drop(original);
         panic!("work completed");
     });
-    let (_, retirement) = cleanup.expect("actual cleanup acquired");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications.termination.expect("actual ordinary termination notification");
+    notifications.retirement.expect("actual joined retirement notification");
+    let (_, retirement) = native.expect("actual cleanup acquired");
     let ActorRetirement::Completed {
         custody: ActorCustody { descendants, .. },
         ..
@@ -162,7 +166,7 @@ async fn initialization_rejection_returns_the_original_child_and_work() {
     .stop_on_shutdown();
     let work = Box::new(String::from("root work survived"));
     let work_allocation = work.as_ptr();
-    let outcome = Application::with_topology(root, parent_application::Topology::new())
+    let (outcome, native, notifications) = Application::with_topology(root, parent_application::Topology::new())
         .run_with(move |application| async move {
             application
                 .lifecycle()
@@ -180,7 +184,11 @@ async fn initialization_rejection_returns_the_original_child_and_work() {
         panic!("root work completed beside child failure");
     });
     assert_eq!(work.as_ptr(), work_allocation);
-    let (_, retirement) = cleanup.expect("joined root");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications.termination.expect("actual ordinary termination notification");
+    notifications.retirement.expect("actual joined retirement notification");
+    let (_, retirement) = native.expect("joined root");
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
@@ -242,7 +250,7 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
         child: Some(CreateChild::birth(id, child)),
     }
     .stop_on_shutdown();
-    let outcome = Application::with_topology(root, parent_application::Topology::new())
+    let (outcome, native, notifications) = Application::with_topology(root, parent_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
@@ -258,7 +266,11 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
         drop(original);
         panic!("work returned");
     });
-    let (_, retirement) = cleanup.expect("joined root");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications.termination.expect("actual ordinary termination notification");
+    notifications.retirement.expect("actual joined retirement notification");
+    let (_, retirement) = native.expect("joined root");
     let ActorRetirement::Completed {
         custody: ActorCustody {
             mut descendants, ..
@@ -314,7 +326,7 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
         )),
     }
     .stop_on_shutdown();
-    let outcome = Application::with_topology(root, parent_application::Topology::new())
+    let (outcome, native, notifications) = Application::with_topology(root, parent_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
@@ -330,7 +342,11 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
         drop(original);
         panic!("work completed");
     });
-    let (_, retirement) = cleanup.expect("complete parent retirement");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications.termination.expect("actual ordinary termination notification");
+    notifications.retirement.expect("actual joined retirement notification");
+    let (_, retirement) = native.expect("complete parent retirement");
     let ActorRetirement::Completed {
         custody: ActorCustody {
             mut descendants, ..
@@ -436,7 +452,7 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
         ]),
     }
     .stop_on_shutdown();
-    let outcome = Application::with_topology(root, sibling_application::Topology::new())
+    let (outcome, native, notifications) = Application::with_topology(root, sibling_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
@@ -452,7 +468,11 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
         drop(original);
         panic!("work completed");
     });
-    let (_, retirement) = cleanup.expect("complete sibling retirement");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications.termination.expect("actual ordinary termination notification");
+    notifications.retirement.expect("actual joined retirement notification");
+    let (_, retirement) = native.expect("complete sibling retirement");
     let ActorRetirement::Completed {
         custody: ActorCustody { descendants, .. },
         ..

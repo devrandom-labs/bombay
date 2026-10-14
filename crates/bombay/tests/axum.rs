@@ -2,12 +2,12 @@
 
 use axum::routing::get;
 use behavior_actors::ShutdownRequested;
-use bombay::ActorCustody;
 use bombay::behavior::{
     ActionSettlement, Behavior, BehaviorBase, ChildChoice, ChildCreationOutcome, CreationKind,
     CreationSettlement, Creations, EventLayer, ItemSettlement, MessageProtocol, NoSends, SendLayer,
     SettledItem, Step, Stopped, User,
 };
+use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::pin::pin;
 use std::io::{self, Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -77,10 +77,17 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
             drop(failed);
             panic!("the actual caller HTTP host is entered");
         });
-    let ApplicationOutcome::Completed {
-        output: serving,
-        cleanup: Ok((origin, retirement)),
-    } = returned
+    let (
+        ApplicationOutcome::Completed {
+            output: serving,
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = returned
     else {
         panic!("HTTP serving and the complete joined root must both return");
     };
@@ -139,9 +146,13 @@ fn bind_failure_does_not_activate_or_build_the_router() {
             drop(failed);
             panic!("the actual caller HTTP host is entered");
         });
-    let ApplicationOutcome::StagingRejected {
-        inputs: Ok((application, router, rejected, bind_error)),
-    } = refused
+    let (
+        ApplicationOutcome::StagingRejected {
+            inputs: Ok((application, router, rejected, bind_error)),
+        },
+        Err(_),
+        Err(_),
+    ) = refused
     else {
         panic!("the occupied address must reject a second listener");
     };
@@ -264,10 +275,10 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                 .execute_axum(address, router)
                 .unwrap_or_else(|_| panic!("the actual caller host is entered"));
             drop(execution);
-            let ApplicationOutcome::Unstarted {
+            let (ApplicationOutcome::Unstarted {
                 application: (application, router, returned_address),
                 work: (),
-            } = receiving.await
+            }, Err(_), Err(_)) = receiving.await
             else {
                 panic!("unpolled HTTP execution must return all untouched cold inputs");
             };
@@ -277,9 +288,9 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                 .run_axum(returned_address, router)
                 .await
                 .unwrap_or_else(|_| panic!("binding still uses the actual entered host"));
-            let ApplicationOutcome::StagingRejected {
+            let (ApplicationOutcome::StagingRejected {
                 inputs: Ok((application, router, returned_address, bind_error)),
-            } = refused
+            }, Err(_), Err(_)) = refused
             else {
                 panic!(
                     "the real occupied address refuses before actor staging or router invocation"
@@ -301,9 +312,9 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                 });
                 tokio::select! {
                     returned = &mut completion => {
-                        let ApplicationOutcome::StagingRejected {
+                        let (ApplicationOutcome::StagingRejected {
                             inputs: Ok((returned_application, returned_router, retry_address, error)),
-                        } = returned else {
+                        }, Err(_), Err(_)) = returned else {
                             panic!("an early HTTP result must retain the actual bind refusal and original inputs");
                         };
                         assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
@@ -395,10 +406,17 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     );
     assert!(headers.starts_with(b"HTTP/1.1 200 OK\r\n"));
     assert_eq!(body, b"stopped");
-    let ApplicationOutcome::Completed {
-        output: Ok(()),
-        cleanup: Ok((origin, retirement)),
-    } = outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: Ok(()),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = outcome
     else {
         panic!("actual graceful serving and all native cleanup facts must coexist");
     };
@@ -595,12 +613,18 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
                 drop(original);
                 panic!("the host is entered");
             });
-        let ApplicationOutcome::StagingRejected {
-            inputs: Err((root, spaces, router, failure, listener, scope)),
-        } = rejected
+        let (
+            ApplicationOutcome::StagingRejected {
+                inputs: Err((root, spaces, router, failure, listener, scope)),
+            },
+            native,
+            notifications,
+        ) = rejected
         else {
             panic!("successful binding retains all inputs when child staging rejects");
         };
+        assert!(native.is_err());
+        assert!(notifications.is_err());
         let bound_address = listener.local_addr().expect("original bound listener");
         let blocked = TokioTcpListener::bind(bound_address).await;
         let blocked = blocked.expect_err("the returned listener still owns its socket");
@@ -617,7 +641,7 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
         assert_eq!(actor.base().entries.as_ptr(), entries_pointer);
         assert_eq!(actor.base().entries, [307, 311]);
         drop((listener, blocked, id, children, cause));
-        let outcome = scope
+        let (outcome, native, notifications) = scope
             .with_topology(root, spaces)
             .child(HttpWorkerRole::Declared, actor)
             .run_axum(bound_address, router)
@@ -631,6 +655,11 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
             panic!("HTTP work and original cleanup return together");
         });
         serving.expect("real HTTP serving ends after root shutdown");
+        let (origin, retirement) = native.expect("retry preserves its original root");
+        assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+        let notifications = notifications.expect("retry preserves both notifications");
+        assert!(notifications.termination.is_ok());
+        assert!(notifications.retirement.is_ok());
         let (router_entries, sender) = received.await.expect("original router invoked on retry");
         assert_eq!(router_entries.as_ptr(), router_pointer);
         assert_eq!(router_entries, [313, 317]);
@@ -645,7 +674,7 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
             .expect("actual original endpoint receives");
         assert_eq!(receipt.message, 331);
         assert_eq!(receipt.from, sender.address());
-        let (_, retirement) = cleanup.expect("joined original root and child");
+        cleanup.expect("the original cleanup task completed");
         assert_eq!(retirement.completion(), Some(&Completion::Stopped));
         let custody = retirement.custody().expect("complete root custody");
         assert_eq!(custody.child_failures.len(), 0);
@@ -729,10 +758,17 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
     // Every supplied task and every actual root/cleanup is joined before oracles.
     for (original_serve, original_payload, original_carrier, original_task_id, outcome) in returned
     {
-        let ApplicationOutcome::Completed {
-            output: (retained_serve, supplied_retirement),
-            cleanup: Ok((origin, root_retirement)),
-        } = outcome
+        let (
+            ApplicationOutcome::Completed {
+                output: (retained_serve, supplied_retirement),
+                cleanup: Ok(()),
+            },
+            Ok((origin, root_retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
         else {
             panic!("completed Work input and the separately joined root must both survive");
         };
@@ -794,10 +830,17 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
         receiving.await
     });
     drop(caller);
-    let ApplicationOutcome::Completed {
-        output: (serve, Ok(values)),
-        cleanup: Ok((origin, root_retirement)),
-    } = outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (serve, Ok(values)),
+            cleanup: Ok(()),
+        },
+        Ok((origin, root_retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = outcome
     else {
         panic!("the joined task returns its whole original outcome beside the real root");
     };

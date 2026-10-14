@@ -73,8 +73,11 @@ fn main() {
         assert_eq!(termination, Ok(Exit::Normal));
     })).unwrap_or_else(|original| { drop(original); panic!("original declaration retained on missing host"); });
     drop(host);
+    let (outcome, native, notifications) = outcome;
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| { drop(original); panic!("complete original outcome"); });
-    let (root_origin, retirement) = cleanup.expect("independent root custody");
+    cleanup.expect("the cleanup producer completes");
+    let bombay::ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) } = notifications.expect("both notification receipts are acquired") else { panic!("both notifications succeed"); };
+    let (root_origin, retirement) = native.expect("independent root custody");
     assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let ActorRetirement::Completed { custody, .. } = retirement else { panic!("root completes") };

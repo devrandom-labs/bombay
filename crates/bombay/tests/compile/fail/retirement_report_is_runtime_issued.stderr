@@ -1,0 +1,9 @@
+error[E0451]: fields `retirement` and `failures` of struct `ActorRetirementReport` are private
+ --> tests/compile/fail/retirement_report_is_runtime_issued.rs:3:9
+  |
+2 |     let _forged = bombay::ActorRetirementReport {
+  |                   ----------------------------- in this type
+3 |         retirement: bombay::RetirementAssessment::Established,
+  |         ^^^^^^^^^^ private field
+4 |         failures: bombay::ActorFailureAssessment::NoFailuresFound,
+  |         ^^^^^^^^ private field

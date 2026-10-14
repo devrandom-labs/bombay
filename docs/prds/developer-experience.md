@@ -7,6 +7,14 @@ Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 Behavior/Actors0.26.0, macros0.14.2, Communication0.1.5 and Timers0.2.0
 without repository patches.
 
+The frozen committed c3b74ab is being integrated on
+feat/remote-devx-integration; its active authoring worktree is untouched.
+Records below retain their original source and verification provenance.
+The combined remote-custody integration has its own change, source and test
+records in [the remote PRD](static-remote-actors.md#devx-reconciliation--pre-edit-integration-record-2026-10-13).
+Its reviewed PR and passing required CI remain pending; imported historical
+gates do not certify this combined source or close the complete DX programme.
+
 One Application candidate owns ordinary roots, cold actors, declared topology,
 HTTP and Entity families. Clients/senders select the root, another exact recipient
 or a stable Entity reference; lifecycle delegates to its existing owner. Topology
@@ -315,4 +323,38 @@ coordination note adds no checklist or new Behavior contract. Four native cases 
 all17 existing interpreter regressions pass both compilers/profiles. The actual
 three archives preserve61 production Rust files, the guide and observation.rs;
 four packaged compiler/profile runs pass the native cases and executable guide.
-Full repository gates for this addition remain pending.
+All21 native Nix gates pass atfcb85ca before main integration; the combined
+revision requires fresh verification.
+
+Main integration: the user requested the isolated DevX branch adopt current
+Bombay main. Fetch selected fb533b5 (#362); #359 squashed the DevX work through
+c3b74ab. Reconcile from that imported source revision, preserving later main
+retirement/notification custody and remote work together with DevX worker
+factories, creation correlation, finalization and exact observation. No new
+actor semantics or public types are selected. Adapt only added consumers to
+main's independent work/native/notification receiving product, checking every
+original value before assertions. Manifest owner selection remains the released
+Behavior/Actors0.26.0 and macros0.14.2. Focused merged regressions, examples,
+strict lint and all native gates remain required before claiming integration.
+
+Pre-merge fcb85ca: all21 aarch64-darwin Nix checks passed in2504.413seconds;
+all485 captured tracked-file hashes remain unchanged. Darwin signing and disk
+failures were not waived. This result does not verify the merged revision.
+
+Merged consumer verification:39 focused all-feature cases pass, with one
+existing ignored subprocess case. Six lifecycle/protocol denials and six
+worker-factory denials retain their exact current-compiler snapshots. Strict
+workspace/all-target/all-feature Clippy passes. Imported production is retained;
+relative to selected main, existing DevX production is+203/-8/net195 across
+four files, with no merge-invented public type or capability. Full combined
+gates and optimized/MSRV consumers remain pending.
+
+The user requires every upstream integration to improve its developer
+experience. The independent work/native/notification product preserves
+correctness but exposes cleanup bookkeeping in ordinary applications. Retain
+this advanced receiving capability while proving a simpler complete ordinary
+result path; do not wrap the tuple just to rename storage or hide originals.
+Counter and unrelated application consumers must exercise completion, startup
+refusal, work interruption, native retirement failure and notification failure
+without lost values. This remains selected DX01/05/17/19 work, not a completed
+merge-only requirement. AGENTS now records the standing integration rule.

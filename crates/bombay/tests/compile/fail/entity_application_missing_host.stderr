@@ -1,15 +1,15 @@
 error[E0277]: the actor system does not host actor protocol `Account` locally
-  --> tests/compile/fail/entity_application_missing_host.rs:34:18
+  --> tests/compile/fail/entity_application_missing_host.rs:35:18
    |
-34 |     type Hosts = MissingAccountSpace;
+35 |     type Hosts = MissingAccountSpace;
    |                  ^^^^^^^^^^^^^^^^^^^ missing local actor protocol
    |
    = note: add an `ActorSpace<Account>` and implement `Hosts<Account>` for the actor-space product
 help: the trait `Hosts<Account>` is not implemented for `MissingAccountSpace`
       but trait `Hosts<Root>` is implemented for it
-  --> tests/compile/fail/entity_application_missing_host.rs:18:10
+  --> tests/compile/fail/entity_application_missing_host.rs:19:10
    |
-18 | #[derive(ActorSpaces)]
+19 | #[derive(ActorSpaces)]
    |          ^^^^^^^^^^^
    = help: for that trait implementation, expected `Root`, found `Account`
 note: required by a bound in `bombay::entity::EntityDefinition::Hosts`

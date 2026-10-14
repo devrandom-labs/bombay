@@ -13,7 +13,9 @@ Selo identity support supplied from Selo. Zenoh is the only planned production
 networking substrate; a deterministic network test host is a verification seam.
 Selo builds on Bombay, Mnesis and `mnesis-bombay`; Bombay does not depend on
 Selo or Mnesis. The new document's proposed distributed contracts are not
-implemented capabilities or additions to the current Engine port.
+implemented capabilities or additions to the current Engine port. The ordinary
+multi-node Application API and crate-owned `remote` feature remain pending;
+current native transport fixtures are scoped verification consumers.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The
@@ -27,7 +29,8 @@ behavior/environment custody through the one Driver.
 
 Bombay's terminal projection uses separate `RootOrigin<Owner>` and
 `ChildOrigin<Owner, Role>` products. A root retains its exact address; a child
-retains its exact address and required creator-local nonce. The existing
+retains its exact address, required creator-local nonce and original CreationId
+and CreationKind. The existing
 `ChildRole` proof maps a structural child position to its declared role, and
 total owned `From` inclusion preserves the exact retirement payload. Native
 `ProjectTerminal<Origin, Actor>` selects the raw descendant family
@@ -41,7 +44,7 @@ derives pure owned presentation only, with no launch or source authority.
 ApplicationHandle constructs root-bound clients and one-way senders through
 the existing external-actor allocator/mailbox owner. ApplicationClient owns
 sole typed reply receiving; ApplicationSender has no receive authority. Both
-fix one exact root target at construction and return complete rejected commands.
+fix one selected target at construction and return complete rejected commands.
 Neither gains lifecycle authority. The application's direct shutdown request
 and termination methods delegate to ApplicationLifecycle; they define no
 additional lifecycle state or engine. Named exported interfaces remain separate
@@ -91,7 +94,7 @@ verification snapshots retain their exact revisions and do not prove new signatu
 | Behavior | lockfile-selected crates.io `bombay-behavior` and `bombay-behavior-macros` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
 | Behavior Actors | lockfile-selected crates.io `bombay-behavior-actors` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
 | Address | crates.io `bombay-address 0.3.0`, checksum `8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc` | exclusive non-resolvable reservation, exact publication lease and retirement, opaque resolution |
-| Communication | lockfile-selected crates.io `bombay-communication` | two-lane mailbox, delivery, backpressure, affine user-admission retirement |
+| Communication | crates.io checksum `aa933d28c4af9a94c18494667eb0385aa88de2927d1ea78904453780afa5965d`, package `bombay-communication 0.1.5`, archive revision `24ad2b9db9f5fefd08d6d2441f84c804b4c84338` | two-lane mailbox, delivery, backpressure, affine user-admission retirement, exact original custody before mapped delivery |
 | Observe | Bombay-private import of semantic commit `b3b5f36a3b514713012086dfc72f5327d15fe2b2` plus exact Loom-bound fix `ef2ea13e65889aa3bf713822041e032020e98d73` from `feat/affine-observation` | keyed exact-generation facts plus shared and affine unkeyed publication pairs; no separately published actor API |
 | Timers | crates.io `bombay-timers 0.2.0`, archive revision `9369d1f6c7fcda91e7de5bf3c19e6769f92145bd` | single-owner generation-safe timer queue; checked scheduling retains complete exhaustion inputs |
 
@@ -137,7 +140,7 @@ termination methods delegate to the existing lifecycle owner.
 `Api` is an application-defined static product of receptionist capabilities;
 the runtime neither discovers exports from topology nor grants lifecycle
 authority through the product. Its explicit-target constructors use the same
-client and sender products and allocator as Application. `ApplicationLifecycle<P, E>` is the separate
+client and sender products and allocator as ApplicationHandle. `ApplicationLifecycle<P, E>` is the separate
 projection for root shutdown and termination; `E` is the installed root's
 concrete event sum.
 
@@ -152,7 +155,17 @@ origin. Its receiver returns the complete `User` so reply provenance is not
 discarded. Closure precedes terminal publication, and stale exact recipients
 reject without retargeting.
 
-`ExternalTarget` is sealed and selects the admission contract for an
+Application-owned service code can use `ExternalActor::try_send` for one exact
+`EstablishedRecipient` without waiting for mailbox capacity. Communication's
+existing `TrySendError` returns the original message as Full or Closed; closure
+does not establish actor termination or joined retirement. This operation
+creates no future/task and adds no message Clone, Debug, Send or static bound.
+Existing endpoint construction keeps its own requirements. The caller owns
+permission checks, retained pending messages and fresh checks on retries;
+synchronous mailbox synchronization is not a wait-free execution promise.
+Stable Entity resolution/hydration continues through the awaited send path.
+
+Awaited `send` uses sealed `ExternalTarget`, which selects the admission contract for an
 `EstablishedRecipient<Target>` or native `EntityRef<Definition>`. The former
 returns complete `SendError` custody; the latter preserves `AdmissionFailure`
 and existing Entity fencing/reactivation. A logical `Recipient<Target>` resolves in one
@@ -313,12 +326,14 @@ leak, stress, property, and Loom coverage. Bombay must reuse these semantics,
 not wrap them in Tokio channels.
 
 Communication 0.1.2 allowed a surviving pre-close send to keep admission open
-for a new post-close send. The selected 0.1.3 corrects that defect while retaining
+for a new post-close send. Version 0.1.3 corrected that defect while retaining
 already accepted messages and returning exact rejected payloads. Both the
 original failure and released correction are verified through actual ActorRef
 in debug and optimized builds; see
 [EXEC's delivery record (historical)](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
-That prerequisite correction does not accept the remaining EXEC laws.
+The selected Communication0.1.5 retains that correction and the original
+pre-mapping rejected-item custody. Its [release record](prds/static-remote-actors.md#owning-closure-correction-delivery-and-registry-selection)
+preserves source, CI and registry evidence. That prerequisite correction does not accept the remaining EXEC laws.
 
 ### Affine user-admission retirement
 
@@ -453,7 +468,10 @@ the definition's typed `admission_refused` consumer. Admission remains
 distinct from processing and durable completion.
 
 `EntityActivationError` distinguishes resident-capacity refusal, hydration
-failure, and exact actor launch retirement. Forced drains retain their complete
+failure, allocation refusal before launch, and a started native actor launch
+retirement with its report and first notification receipt. The existing
+`EntityDefinition::retired` callback receives the full native result beside its
+runtime-issued report; family callback/conversion faults remain separate. Forced drains retain their complete
 `DrainFailure`; normal retirement retains final state, residual ingress,
 descendant terminals, and completion. Shutdown closes family admission only
 after the root settles, drains every represented incarnation, and joins all
@@ -691,6 +709,11 @@ temporarily unresolved. Both are forbidden.
    before this settlement completes; application and parent task joins await
    the complete residual.
 9. Release the Bombay task owner.
+10. The existing joining owner derives and publishes the shared read-only actor
+    retirement report after acquiring the actual task result. It retains the
+    native result and both original notification receipts independently of later
+    application conversion or family cleanup. Root report publication proceeds
+    while application Work is live; final native handoff retains its Work barrier.
 
 The Address lease must retire before terminal publication: an observer that
 sees termination must never subsequently resolve that same incarnation as
@@ -713,7 +736,10 @@ owner on the entered caller host. `execute`/`execute_with`/`execute_axum` expose
 those two futures separately when receiving must survive dropped execution.
 Calling `run` without Work retains genuine absence. Supplied Work and
 `WorkFuture::Output` remain bare original values; a user Option or Result is
-unchanged. Ready output is owned before producer disposal. The actual raw root
+unchanged. Ready output is owned before producer disposal. Successful receiving
+returns the work outcome beside independent native-root and two-stage notification
+receipts; Entity receiving additionally retains its family receipts. Work-phase
+cleanup retains its own unit success or exact cleanup error. The actual raw root
 retains native actor failure in `ActorRetirement::ActorTaskFailed`.
 `ApplicationCleanupError` separately retains cleanup-publication receiving and
 cleanup-task failures. `Terminal` is a descendant projection destination, not
@@ -768,3 +794,12 @@ requires all of the following:
 13. workspace tests, compile tests, documentation tests, formatting, strict
     Clippy, Loom/model suites in owning repositories, and repository-wide
     obsolete-pattern scans are green.
+
+An application-owned service holding the runtime-issued `InstalledActor` may
+perform a fresh local permission check and its synchronous `request_shutdown`
+in one exclusive operation. The same existing control lane and typed ingress
+own submission; an `EstablishedRecipient` remains send-only. Successful
+submission is distinct from the shared joined-retirement report. The operation
+closes user admission before event injection/control submission; a rejected
+attempt does not reopen admission, and event/waker unwind may leave partial
+effects. Behavior folds still request shutdown through typed `Actions` lanes.

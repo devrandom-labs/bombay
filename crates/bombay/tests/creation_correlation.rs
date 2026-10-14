@@ -1,4 +1,5 @@
 #![cfg(test)]
+use bombay::ActorNotificationReceipts;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, ClassifySettlement, CreateChild, CreationKind, CreationRejection,
@@ -102,11 +103,18 @@ async fn recorded_creation_correlation_rejects_the_original_child_and_keeps_late
             drop(original);
             panic!("the native host is entered");
         });
-        let ApplicationOutcome::NotInvoked {
-            work: None,
-            startup_error: Some(_),
-            cleanup: Ok((root_origin, retirement)),
-        } = outcome
+        let (
+            ApplicationOutcome::NotInvoked {
+                work: None,
+                startup_error: Some(_),
+                cleanup: Ok(()),
+            },
+            Ok((root_origin, retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
         else {
             drop(outcome);
             panic!("the creator stops after its complete initialization effects");

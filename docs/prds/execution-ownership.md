@@ -1,9 +1,12 @@
 # Execution ownership contract
 
-This is a compact preservation contract and source map for the implementation
-at `c3afb3011090ac4c9112fd39e4a76980db856df0`. It replaces the historical EXEC
-campaign and its nine chronological companion files. It does not certify a
-fresh test run or close later developer-experience requirements.
+This is the preservation contract and source map for Bombay's current execution
+owners. The historical EXEC campaign and its nine companion records remain
+pinned below. The [post-delivery audit](execution-ownership/post-delivery-audit.md)
+retains its dated findings and proof limits. Later joined-retirement requirements
+and current integration evidence belong to the
+[remote-actors PRD](static-remote-actors.md); historical signatures and pass marks
+do not certify the combined source or close its remaining requirements.
 
 The original requirements, decisions, rejected experiments, measurements and
 delivery receipts remain in the
@@ -26,6 +29,21 @@ Startup, supplied but uninvoked work, active work, completed work and cleanup
 can leave different owned values. A work result can coexist with cleanup
 failure. Keep every acquired value in the owning result path across cancellation
 and panic cuts; do not replace missing evidence with success.
+
+The advanced receiving interface retains application-work outcome, original native
+root result and both notification results independently; Entity execution also
+retains its family results. Joining the exact root and publishing its retirement
+report may finish while application work is running. Final native handoff and
+application-family shutdown retain their work barrier. A later cleanup-task failure
+cannot erase an acquired native result or either original notification cause.
+
+Children retain the original native result with their parent. Shared read-only
+retirement reports are derived by runtime owners from actual joined tasks and
+resource retirement before application projection. Actor failure, incomplete
+retirement and notification failure remain separate facts. Unpublished startup
+retains its actual termination-notification result without inventing a second
+publication. Actor establishment and complete resource retirement are separate
+assessments; failure to establish an actor does not itself prove incomplete cleanup.
 
 Behavior remains the pure typed transition algebra. Driver causality, staged
 creation, initialization commitment, typed action settlements, source-return
@@ -94,8 +112,9 @@ resolved, or as evidence for the current documentation branch.
 The [DevX coordination record](developer-experience.md) selects a single
 `Application` composition spine and one explicit topology declaration with derived
 hosting and complete terminal custody. The current code uses one `Application`
-owner for roots, cold actors, explicit hosting and Entity families. Explicit
-terminal projection and structural hosting remain simplification targets.
+owner for roots, cold actors, explicit hosting and Entity families. The actual topology supplies
+native ActorCustody and its typed RetirementSchema; presentation does not replace
+the runtime's joined-retirement evidence.
 
 The backlog's [EXEC requirements](../prd-backlog/local-runtime.md) and
 [failure contracts](../prd-backlog/failure-contracts.md) remain acceptance inputs.

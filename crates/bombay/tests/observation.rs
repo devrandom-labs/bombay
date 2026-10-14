@@ -1,4 +1,5 @@
 use behavior_actors::{EstablishedObservation, ObservationId, ObserveEstablished};
+use bombay::ActorNotificationReceipts;
 use bombay::behavior::{
     ActionSettlement, BehaviorBase, ExactDeliveryReason, ItemSettlement, MessageProtocol,
     SendLayer, SettledItem, Stopped,
@@ -47,7 +48,7 @@ async fn exact_observation_survives_outer_shutdown_and_transfers_the_original_te
         Actions::stop().with_send(EstablishedDelivery::new(watcher.recipient.clone(), report))
     })
     .stop_on_shutdown();
-    let outcome = scope
+    let (outcome, native, notifications) = scope
         .with_root(watcher)
         .run_with(|_| async move {
             drop(target);
@@ -61,7 +62,15 @@ async fn exact_observation_survives_outer_shutdown_and_transfers_the_original_te
     let ((report, remaining, recipient), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("work and independent retirement remain owned"));
-    let terminal = cleanup.expect("the complete monitor retirement is joined");
+    cleanup.expect("the complete monitor retirement is joined");
+    let terminal = native.expect("the original native retirement remains available");
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("the independent notification results remain owned");
+    };
     assert!(remaining.is_none());
     assert_eq!(
         terminal
@@ -108,7 +117,7 @@ async fn exact_observation_survives_inner_shutdown_and_transfers_the_original_te
             report,
         ))
     });
-    let outcome = scope
+    let (outcome, native, notifications) = scope
         .with_root(watcher)
         .run_with(|_| async move {
             drop(target);
@@ -122,7 +131,15 @@ async fn exact_observation_survives_inner_shutdown_and_transfers_the_original_te
     let ((report, remaining, recipient), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("observation cannot erase the independent work result"));
-    let terminal = cleanup.expect("the actual observation and inner actor retire together");
+    cleanup.expect("the actual observation and inner actor retire together");
+    let terminal = native.expect("the original native retirement remains available");
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("the independent notification results remain owned");
+    };
     assert!(remaining.is_none());
     assert_eq!(
         terminal
@@ -166,7 +183,7 @@ async fn shutdown_while_observing_preserves_the_live_target_and_complete_retirem
         panic!("shutdown must not fabricate a peer's terminal report")
     })
     .stop_on_shutdown();
-    let outcome = scope
+    let (outcome, native, notifications) = scope
         .with_root(watcher)
         .run_with(|application| async move {
             let sender = application
@@ -183,8 +200,15 @@ async fn shutdown_while_observing_preserves_the_live_target_and_complete_retirem
         .unwrap_or_else(|_| panic!("shutdown retains the complete original external owners"));
     assert_eq!(shutdown, Ok(()));
     assert_eq!(termination, Ok(Exit::Normal));
-    let terminal =
-        cleanup.expect("the pending observation task joins before terminal custody returns");
+    cleanup.expect("the pending observation task joins before terminal custody returns");
+    let terminal = native.expect("the original native retirement remains available");
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("the independent notification results remain owned");
+    };
     observer.close_admission();
     let fabricated = observer.receive().await;
     assert!(fabricated.is_none());
@@ -242,7 +266,7 @@ async fn rejected_report_delivery_retains_the_whole_original_report_and_normal_a
     .observe_termination(request, |watcher, report| {
         Actions::stop().with_send(EstablishedDelivery::new(watcher.recipient.clone(), report))
     });
-    let outcome = scope
+    let (outcome, native, notifications) = scope
         .with_root(watcher)
         .run_with(|application| async move {
             drop(target);
@@ -254,7 +278,15 @@ async fn rejected_report_delivery_retains_the_whole_original_report_and_normal_a
         .try_into_completed()
         .unwrap_or_else(|_| panic!("failed report delivery preserves the independent work result"));
     assert_eq!(termination, Ok(Exit::Normal));
-    let (origin, retirement) = cleanup.expect("the failed effect retains complete joined custody");
+    cleanup.expect("the failed effect retains complete joined custody");
+    let (origin, retirement) = native.expect("the original native retirement remains available");
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("the independent notification results remain owned");
+    };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
         custody:

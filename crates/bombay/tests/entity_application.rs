@@ -15,7 +15,10 @@ use bombay::entity::{
     EntityActivationError, EntityAdmission, EntityCapacity, EntityDefinition, EntityId, EntityRef,
     EntityShutdown, Passivation, Refusal,
 };
-use bombay::{ActorRetirement, Application, MailAddr, RetirementSchema};
+use bombay::{
+    ActorFailureAssessment, ActorRetirement, ActorRetirementReport, Application, MailAddr,
+    RetirementAssessment, RetirementSchema,
+};
 use bombay_engine::Completion;
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
@@ -139,7 +142,16 @@ type AccountRetirement =
 type AccountActivationFacts =
     Arc<Mutex<Vec<(EntityId<u64>, ActivationId, AccountActivationFailure)>>>;
 type ForcedRetirementFacts = Arc<Mutex<Vec<(EntityId<u64>, ActivationId, DrainFailure)>>>;
-type AccountRetirementFacts = Arc<Mutex<Vec<(EntityId<u64>, ActivationId, AccountRetirement)>>>;
+type AccountRetirementFacts = Arc<
+    Mutex<
+        Vec<(
+            EntityId<u64>,
+            ActivationId,
+            AccountRetirement,
+            ActorRetirementReport,
+        )>,
+    >,
+>;
 
 #[derive(Clone)]
 struct Accounts {
@@ -237,11 +249,12 @@ impl EntityDefinition for Accounts {
         id: &EntityId<Self::Id>,
         activation: ActivationId,
         retirement: AccountRetirement,
+        retirement_report: ActorRetirementReport,
     ) {
         self.retirements
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push((*id, activation, retirement));
+            .push((*id, activation, retirement, retirement_report));
         self.retirements_completed.add_permits(1);
     }
 }
@@ -254,7 +267,7 @@ type ProfileRetirement = Result<
     >,
     tokio::task::JoinError,
 >;
-type ProfileRetirementFact = Arc<Mutex<Option<ProfileRetirement>>>;
+type ProfileRetirementFact = Arc<Mutex<Option<(ProfileRetirement, ActorRetirementReport)>>>;
 
 struct Profiles {
     retirement: ProfileRetirementFact,
@@ -309,11 +322,12 @@ impl EntityDefinition for Profiles {
             ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
             tokio::task::JoinError,
         >,
+        retirement_report: ActorRetirementReport,
     ) {
         *self
             .retirement
             .lock()
-            .unwrap_or_else(PoisonError::into_inner) = Some(retirement);
+            .unwrap_or_else(PoisonError::into_inner) = Some((retirement, retirement_report));
     }
 }
 
@@ -382,7 +396,7 @@ fn application_runs_two_native_entity_families() {
         .enable_all()
         .build()
         .expect("the synchronous journey owns one enabled application host");
-    let (outcome, root_receiving, shutdowns) = application_host
+    let (outcome, root_receiving, notification_receiving, shutdowns) = application_host
         .block_on(
             application.run_with_entities(move |application| async move {
                 let accounts = application.entities(AccountsRole);
@@ -457,6 +471,14 @@ fn application_runs_two_native_entity_families() {
             panic!("the explicit application host must be entered: {error}");
         });
     drop(application_host);
+    let notifications = notification_receiving
+        .expect("the existing cleanup owner transferred both original notifications");
+    notifications
+        .termination
+        .expect("ordinary root termination notification succeeded");
+    notifications
+        .retirement
+        .expect("joined root report notification succeeded");
     let ApplicationOutcome::Completed {
         output: (),
         cleanup: Ok(()),
@@ -511,11 +533,13 @@ fn application_runs_two_native_entity_families() {
     assert_eq!(account_metrics.peak_hydrations, 1);
     assert_eq!(profile_metrics.residents, 0);
     assert_eq!(account_metrics.residents, 0);
-    let profile_retirement = profile_retirement
+    let (profile_retirement, report) = profile_retirement
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
         .take()
         .expect("the profile definition receives its exact retirement");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     // The family fence drains prior deliveries; it does not select the actor's
     // winner between shutdown acquisition and same-lease owner cancellation.
     let (behavior, settlements, user, mut descendants, child_failures, capability_failures) =
@@ -655,13 +679,27 @@ fn application_runs_two_native_entity_families() {
         EntityActivationError::Hydration(HydrationFailure::Unavailable)
     ));
     assert_eq!(failures[2].0, EntityId::new(LAUNCH_REFUSAL));
-    assert!(matches!(
-        &failures[2].2,
-        EntityActivationError::Launch(ActorRetirement::InitializationRejected {
-            error: AccountError::Initialization,
-            ..
-        })
-    ));
+    let EntityActivationError::Launch {
+        retirement:
+            ActorRetirement::InitializationRejected {
+                error: AccountError::Initialization,
+                ..
+            },
+        retirement_report,
+        termination_notification,
+    } = &failures[2].2
+    else {
+        panic!("the started incarnation preserves its exact initialization rejection");
+    };
+    assert_eq!(
+        retirement_report.retirement(),
+        RetirementAssessment::Established
+    );
+    assert_eq!(
+        retirement_report.failures(),
+        ActorFailureAssessment::FailuresFound
+    );
+    assert!(termination_notification.is_ok());
     drop(failures);
 
     let forced = forced_retirements
@@ -675,7 +713,9 @@ fn application_runs_two_native_entity_families() {
 
     let retirements = retirements.lock().unwrap_or_else(PoisonError::into_inner);
     assert_eq!(retirements.len(), 4);
-    for (_, _, retirement) in retirements.iter() {
+    for (_, _, retirement, report) in retirements.iter() {
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
         let (settlements, user, descendants, capability_failures) = match retirement {
             Ok(ActorRetirement::Completed {
                 custody:
@@ -726,7 +766,7 @@ fn application_runs_two_native_entity_families() {
     }
     let mut retired_ids = retirements
         .iter()
-        .map(|(id, _, _)| *id.get())
+        .map(|(id, _, _, _)| *id.get())
         .collect::<Vec<_>>();
     retired_ids.sort_unstable();
     assert_eq!(

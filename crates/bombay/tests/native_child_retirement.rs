@@ -5,7 +5,8 @@ use bombay::behavior::{
 };
 use bombay::lifecycle::StopOnShutdown;
 use bombay::{
-    ActorCustody, ActorRetirement, Application, ApplicationOutcome, Completion, MailAddr,
+    ActorCustody, ActorNotificationReceipts, ActorRetirement, Application, ApplicationOutcome,
+    Completion, MailAddr,
 };
 
 struct Worker {
@@ -69,7 +70,7 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
         second_id,
         Worker { payload: second }.stop_on_shutdown(),
     ));
-    let outcome = Application::with_topology(
+    let (outcome, native, notifications) = Application::with_topology(
         Creator {
             children: Some(children),
         }
@@ -85,12 +86,19 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
     let ApplicationOutcome::NotInvoked {
         work: None,
         startup_error: Some(_),
-        cleanup: Ok((root_origin, retirement)),
+        cleanup: Ok(()),
     } = outcome
     else {
         drop(outcome);
         panic!("the creator stops after its complete initialization effects");
     };
+    let (root_origin, retirement) = native.expect("independent original root retirement");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
     assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
     let ActorRetirement::Completed {
         custody,

@@ -1,5 +1,6 @@
 //! Root-bound communication preserves affine receiving and truthful sender identity.
 
+use bombay::ActorNotificationReceipts;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, EstablishedDelivery, EstablishedRecipient, Protocol};
 use bombay::prelude::{
@@ -107,12 +108,21 @@ async fn explicit_targets_and_one_shared_caller_preserve_protocols_origins_and_r
         })
         .await
         .unwrap_or_else(|_| panic!("the actual caller owns the entered host"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (original, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("exact accepted work remains independently owned"));
     assert_eq!(original.as_ptr(), original_allocation);
     assert_eq!(&*original, &[59, 61]);
-    let (_, retirement) = cleanup.expect("complete counter cleanup is acquired");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("complete counter cleanup is acquired");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let custody = retirement.custody().expect("the actual counter survives");
     assert_eq!(custody.descendants, []);
@@ -173,10 +183,19 @@ async fn exported_targets_use_the_same_client_and_sender_authority() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual caller host is entered"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let ((), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the independent caller completes"));
-    let (_, retirement) = cleanup.expect("the original root is received");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("the original root is received");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let custody = retirement.custody().expect("all root custody remains");
     assert_eq!(custody.descendants, []);
@@ -208,11 +227,20 @@ async fn inferred_root_client_reads_counter_without_an_interface_product() {
         })
         .await
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (value, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("counter work completes independently of cleanup"));
     assert_eq!(value, 1);
-    let (_, retirement) = cleanup.expect("the complete actual root retirement is acquired");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("the complete actual root retirement is acquired");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let custody = retirement
         .custody()
@@ -289,10 +317,19 @@ async fn sender_and_client_keep_distinct_origins_and_exact_closed_root_rejection
     })
     .await
     .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (origins, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("business work and original cleanup remain independent"));
-    let (_, ActorRetirement::Completed { custody, .. }) = cleanup.expect("the actual root result")
+    cleanup.expect("actual application cleanup completes");
+    let (_, ActorRetirement::Completed { custody, .. }) = native.expect("the actual root result")
     else {
         panic!("the exact ledger completes after its accepted reply");
     };
@@ -329,11 +366,20 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual caller owns the entered host"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (value, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("work completed"));
     assert_eq!(value, 1);
-    let (_, retirement) = cleanup.expect("timer and shutdown retirement retained");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("timer and shutdown retirement retained");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let actor = Counter::new().stop_on_shutdown().with_one_shot(
         TimerId(17),
@@ -358,11 +404,20 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual caller owns the entered host"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (value, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("work completed"));
     assert_eq!(value, 1);
-    let (_, retirement) = cleanup.expect("shutdown and timer retirement retained");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("shutdown and timer retirement retained");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
 }
 
@@ -419,9 +474,22 @@ async fn closing_root_client_preserves_accepted_reply_and_then_exhausts() {
     })
     .await
     .unwrap_or_else(|_| panic!("the actual host is entered"));
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let ((), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("work completed"));
-    let (_, retirement) = cleanup.expect("complete actor retirement remains independently owned");
+    cleanup.expect("actual application cleanup completes");
+    let (_, retirement) = native.expect("complete actor retirement remains independently owned");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
 }
+
+#[cfg(feature = "remote")]
+#[path = "application_clients/protected_requests.rs"]
+mod protected_requests;

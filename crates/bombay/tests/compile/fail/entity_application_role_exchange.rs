@@ -4,6 +4,7 @@ use bombay::entity::{
     ActivationId, AdmissionFailure, DrainFailure, Entities, EntityActivationError,
     EntityDefinition, EntityId,
 };
+use bombay::ActorRetirementReport;
 use bombay::{ActorRetirement, ActorSpace, ActorSpaces, ApplicationHandle};
 
 struct Root;
@@ -76,7 +77,10 @@ impl EntityDefinition for Accounts {
         _: &EntityId<Self::Id>,
         _: ActivationId,
         _: Result<ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>, tokio::task::JoinError>,
+        retirement_report: ActorRetirementReport,
     ) {
+        // This compile-denial fixture executes no retirement consumer.
+        let _ = retirement_report;
     }
 }
 
@@ -112,7 +116,10 @@ impl EntityDefinition for Profiles {
         _: &EntityId<Self::Id>,
         _: ActivationId,
         _: Result<ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>, tokio::task::JoinError>,
+        retirement_report: ActorRetirementReport,
     ) {
+        // This compile-denial fixture executes no retirement consumer.
+        let _ = retirement_report;
     }
 }
 

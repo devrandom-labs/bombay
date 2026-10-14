@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
@@ -215,10 +216,17 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
             drop(original);
             panic!("live entered application");
         });
-    let ApplicationOutcome::Completed {
-        output: (work, termination),
-        cleanup: Ok((origin, retirement)),
-    } = outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (work, termination),
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = outcome
     else {
         panic!("caller work and full independent cleanup return");
     };

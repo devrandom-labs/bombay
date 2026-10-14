@@ -381,7 +381,7 @@ fn inspect_node(
 #[tokio::test(flavor = "current_thread")]
 async fn recursive_reports_return_full_native_retirement() {
     pure_alias_definitions();
-    let outcome = Application::with_topology(
+    let (outcome, native, notifications) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Grow { remaining: 3 }),
             trace: None,
@@ -412,7 +412,15 @@ async fn recursive_reports_return_full_native_retirement() {
         drop(original);
         panic!("caller work completed")
     });
-    let (_, retirement) = cleanup.expect("native root joined");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications
+        .termination
+        .expect("actual ordinary termination notification");
+    notifications
+        .retirement
+        .expect("actual joined retirement notification");
+    let (_, retirement) = native.expect("native root joined");
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
@@ -459,7 +467,7 @@ async fn recursive_reports_return_full_native_retirement() {
 #[tokio::test(flavor = "current_thread")]
 async fn recursive_reports_keep_custody_with_outer_timer() {
     pure_alias_definitions();
-    let outcome = Application::with_topology(
+    let (outcome, native, notifications) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Grow { remaining: 3 }),
             trace: None,
@@ -490,7 +498,15 @@ async fn recursive_reports_keep_custody_with_outer_timer() {
         drop(original);
         panic!("caller work completed")
     });
-    let (_, retirement) = cleanup.expect("native root joined");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications
+        .termination
+        .expect("actual ordinary termination notification");
+    notifications
+        .retirement
+        .expect("actual joined retirement notification");
+    let (_, retirement) = native.expect("native root joined");
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
@@ -553,7 +569,7 @@ async fn recursive_scope_returns_original_initialization_refusal() {
         }
         .stop_on_shutdown(),
     );
-    let outcome = Application::with_topology(
+    let (outcome, native, notifications) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Refuse { creation }),
             trace: None,
@@ -569,13 +585,20 @@ async fn recursive_scope_returns_original_initialization_refusal() {
         panic!("native host entered")
     });
     let bombay::ApplicationOutcome::NotInvoked {
-        cleanup: Ok((_, retirement)),
-        ..
+        cleanup: Ok(()), ..
     } = outcome
     else {
         drop(outcome);
         panic!("no fabricated caller work")
     };
+    let notifications = notifications.expect("both original startup notification receipts survive");
+    notifications
+        .termination
+        .expect("actual startup termination notification");
+    notifications
+        .retirement
+        .expect("actual joined startup retirement notification");
+    let (_, retirement) = native.expect("exact original startup root retirement");
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
@@ -687,3 +710,6 @@ fn stopped_root_deadline_reached(
 {
     Actions::stop()
 }
+
+#[path = "recursive/comparison.rs"]
+mod comparison;

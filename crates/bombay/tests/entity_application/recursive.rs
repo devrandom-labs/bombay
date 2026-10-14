@@ -8,7 +8,10 @@ use bombay::entity::{
     EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
 };
 use bombay::prelude::{ActorRetirement, Completion, StopOnShutdown};
-use bombay::{Application, MailAddr, RetirementSchema};
+use bombay::{
+    ActorFailureAssessment, ActorRetirementReport, Application, MailAddr, RetirementAssessment,
+    RetirementSchema,
+};
 use core::num::NonZeroUsize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -80,6 +83,7 @@ type TreeRetirementFacts = Arc<
         Vec<(
             EntityId<u64>,
             Result<TreeRetirement, tokio::task::JoinError>,
+            ActorRetirementReport,
         )>,
     >,
 >;
@@ -139,11 +143,12 @@ impl EntityDefinition for Trees {
         id: &EntityId<u64>,
         _: ActivationId,
         retirement: Result<TreeRetirement, tokio::task::JoinError>,
+        retirement_report: ActorRetirementReport,
     ) {
         self.retirements
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push((*id, retirement));
+            .push((*id, retirement, retirement_report));
         self.retired.add_permits(1);
     }
 }
@@ -221,7 +226,7 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
         .enable_all()
         .build()
         .unwrap();
-    let (outcome, root, (family, ())) = host
+    let (outcome, root, notifications, (family, ())) = host
         .block_on(application.run_with_entities(|application| async move {
             let trees = application.entities(TreesRole);
             let caller = application
@@ -266,6 +271,9 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
     let (origin, root) = root.expect("independent root receiving");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(root.completion(), Some(&Completion::Stopped));
+    let notifications = notifications.expect("independent original root notifications");
+    assert!(notifications.termination.is_ok());
+    assert!(notifications.retirement.is_ok());
     let (TreesRole, (shutdown, metrics, disposal)) = family.expect("independent family receiving");
     assert!(disposal.is_none());
     assert!(matches!(
@@ -290,21 +298,43 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
     let mut failures = failures.lock().unwrap_or_else(PoisonError::into_inner);
     let (
         id,
-        EntityActivationError::Launch(ActorRetirement::InitializationRejected { custody, error }),
+        EntityActivationError::Launch {
+            retirement: ActorRetirement::InitializationRejected { custody, error },
+            retirement_report,
+            termination_notification,
+        },
     ) = failures.pop().expect("original launch refusal")
     else {
         panic!("exact root refusal");
     };
     assert_eq!(id, EntityId::new(2));
     assert_eq!(error, TreeRefusal::Initialization);
+    assert_eq!(
+        retirement_report.retirement(),
+        RetirementAssessment::Established
+    );
+    assert_eq!(
+        retirement_report.failures(),
+        ActorFailureAssessment::FailuresFound
+    );
+    assert!(termination_notification.is_ok());
     assert_eq!(custody.behavior.base().payload.as_ptr(), refused_pointer);
     assert_eq!(&*custody.behavior.base().payload, &[13, 17]);
     assert!(custody.descendants.is_empty());
     assert!(custody.child_failures.is_empty());
     assert!(failures.is_empty());
     let mut retirements = retirements.lock().unwrap_or_else(PoisonError::into_inner);
-    let (id, retirement) = retirements.pop().expect("actual family tree retirement");
+    let (id, retirement, retirement_report) =
+        retirements.pop().expect("actual family tree retirement");
     assert_eq!(id, EntityId::new(1));
+    assert_eq!(
+        retirement_report.retirement(),
+        RetirementAssessment::Established
+    );
+    assert_eq!(
+        retirement_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
     assert!(retirements.is_empty());
     let mut retirement = retirement.expect("native root result");
     assert_eq!(

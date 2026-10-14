@@ -1,0 +1,300 @@
+"""Finite native TLS/Counter observations; no production identity or replay proof."""
+import asyncio
+import enum
+import hashlib
+import json
+from pathlib import Path
+import socket
+import sys
+
+PROTECTED_TEXT = '\t { "amount": 9007199254740993, "marker": "static-remote-fixture🦀" }\n '
+REQUEST_PROOF = list(b'\0fixture-request\xff\r\n')
+REPLY_PROOF = list(b'\xfffixture-reply\0\n')
+CERTIFICATES = Path(sys.argv[2])
+EVIDENCE = Path(sys.argv[3])
+
+class ObservationCase(enum.Enum):
+    RECEIPT = 'receipt'
+    CANCELLED = 'cancelled'
+    REJECTED = 'rejected'
+    LATE_EXIT = 'late_exit'
+
+class TransportWorker:
+    def __init__(self, role, executable, layout, operation, address, directory):
+        self.role = role
+        self.arguments = [executable, role, layout, operation, address, str(CERTIFICATES)]
+        self.directory = directory
+        self.events = []
+        self.child = None
+        self.stderr = None
+
+    async def start(self):
+        self.stderr = (self.directory / (self.role + '.stderr')).open('wb')
+        self.child = await asyncio.create_subprocess_exec(
+            *self.arguments, stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE, stderr=self.stderr)
+        event = await self.observe('ready')
+        assert event['role'] == self.role, event
+
+    async def command(self, command):
+        self.child.stdin.write((json.dumps(command) + '\n').encode())
+        await self.child.stdin.drain()
+
+    async def observe(self, expected):
+        encoded = await asyncio.wait_for(self.child.stdout.readline(), 12)
+        assert encoded, (self.role, 'unexpected EOF', self.child.returncode)
+        event = json.loads(encoded)
+        self.events.append(event)
+        expected_events = (expected,) if isinstance(expected, str) else expected
+        if event['event'] == 'worker_failed' and 'worker_failed' not in expected_events:
+            # Acquire the native close and exit before rejecting an unexpected worker error.
+            encoded_close = await asyncio.wait_for(self.child.stdout.readline(), 12)
+            assert encoded_close, (self.role, 'missing close after worker failure', event)
+            close = json.loads(encoded_close)
+            self.events.append(close)
+            assert close == {'event': 'session_close_returned', 'role': self.role}, close
+            exit_code = await asyncio.wait_for(self.child.wait(), 12)
+            assert exit_code == 1, (self.role, exit_code)
+        assert event['event'] in expected_events, (self.role, expected, event)
+        return event
+
+    async def close(self, native_expected=None):
+        if self.child is None or self.child.returncode is not None:
+            raise AssertionError((self.role, 'unexpected exit before close observation', self.child.returncode if self.child else None))
+        await self.command('EXIT')
+        if native_expected is not None:
+            native = await self.observe(native_expected['event'])
+            assert native == native_expected, native
+        event = await self.observe('session_close_returned')
+        assert event['role'] == self.role, event
+        self.child.stdin.close()
+        exit_code = await asyncio.wait_for(self.child.wait(), 12)
+        assert exit_code == 0, (self.role, exit_code)
+        if self.stderr:
+            self.stderr.close()
+
+    async def abandon(self):
+        if self.child and self.child.returncode is None:
+            self.child.kill()
+            await self.child.wait()
+        if self.stderr:
+            self.stderr.close()
+
+async def campaign(executable, layout, operation, case):
+    directory = EVIDENCE / (layout + '-' + operation + '-' + case.value)
+    directory.mkdir(parents=True, exist_ok=True)
+    with socket.socket() as port_claim:
+        port_claim.bind(('127.0.0.1', 0))
+        address = 'tls/localhost:' + str(port_claim.getsockname()[1])
+    roles = ['router', 'recipient', 'caller'] if layout == 'router_client' else ['recipient', 'caller']
+    workers = [TransportWorker(role, executable, layout, operation, address, directory) for role in roles]
+    record = {'layout': layout, 'operation': operation, 'case': case.value,
+              'address': address, 'binary_sha256': hashlib.sha256(Path(executable).read_bytes()).hexdigest(),
+              'failures': [], 'workers': []}
+    try:
+        for worker in workers:
+            await worker.start()
+        recipient, caller = workers[-2:]
+        if case is ObservationCase.REJECTED:
+            await caller.command('RELEASE')
+            event = await caller.observe('worker_failed')
+            assert event['cause'] == 'caller cannot release recipient work', event
+            event = await caller.observe('session_close_returned')
+            assert event['role'] == 'caller', event
+            exit_code = await asyncio.wait_for(caller.child.wait(), 12)
+            assert exit_code == 1, exit_code
+        else:
+            await caller.command('RUN')
+            for milestone in ['potentially_transmitted', 'invocation_returned']:
+                event = await caller.observe(milestone)
+                assert event['operation'] == operation, event
+            if case is ObservationCase.CANCELLED:
+                await caller.command('CANCEL')
+                await caller.observe('wait_cancelled')
+            await recipient.command('RELEASE')
+            received = await recipient.observe('received')
+            assert received['protected_text'].encode() == PROTECTED_TEXT.encode(), received
+            assert received['proof'] == REQUEST_PROOF, received
+            for milestone in ['potentially_transmitted', 'invocation_returned']:
+                event = await recipient.observe(milestone)
+                assert event['operation'] == operation, event
+            if case in (ObservationCase.RECEIPT, ObservationCase.LATE_EXIT):
+                await caller.command('WAIT')
+                event = await caller.observe('receipt')
+                assert event['receipt'] == {'protected_text': PROTECTED_TEXT, 'observations': 1}, event
+                assert event['proof'] == REPLY_PROOF, event
+        if case is ObservationCase.LATE_EXIT:
+            caller.child.kill()
+            await caller.child.wait()
+        remaining = workers[:-1] if case is ObservationCase.REJECTED else workers
+        for worker in reversed(remaining):
+            await worker.close()
+    except Exception as cause:
+        record['failures'].append(repr(cause))
+    finally:
+        for worker in workers:
+            await worker.abandon()
+            record['workers'].append({'role': worker.role, 'argv': worker.arguments,
+                                      'exit': worker.child.returncode if worker.child else None,
+                                      'events': worker.events})
+        (directory / 'observations.json').write_text(json.dumps(record, indent=2) + '\n')
+    print(json.dumps({key: record[key] for key in ['layout', 'operation', 'case', 'failures']}), flush=True)
+    return record
+
+async def observe_campaigns(executable):
+    records = []
+    for layout in ['peer', 'router_client']:
+        for operation in ['query', 'publication']:
+            for case in ObservationCase:
+                records.append(await campaign(executable, layout, operation, case))
+    EVIDENCE.mkdir(exist_ok=True)
+    (EVIDENCE / 'campaigns.json').write_text(json.dumps(records, indent=2) + '\n')
+    for record in records:
+        if record['case'] == ObservationCase.LATE_EXIT.value:
+            expected = AssertionError(('caller', 'unexpected exit before close observation', -9))
+            assert record['failures'] == [repr(expected)], record
+        elif record['failures']:
+            raise SystemExit(1)
+
+async def counter_campaign(executable, layout, operation, provider):
+    directory = EVIDENCE / (layout + '-' + operation + '-' + provider + '-counter')
+    directory.mkdir(parents=True, exist_ok=True)
+    with socket.socket() as port_claim:
+        port_claim.bind(('127.0.0.1', 0))
+        address = 'tls/localhost:' + str(port_claim.getsockname()[1])
+    roles = [provider + '_counter_recipient', provider + '_counter_caller']
+    if layout == 'router_client':
+        roles.insert(0, 'router')
+    workers = [TransportWorker(role, executable, layout, operation, address, directory) for role in roles]
+    record = {'layout': layout, 'operation': operation, 'provider': provider,
+              'binary_sha256': hashlib.sha256(Path(executable).read_bytes()).hexdigest(),
+              'failures': [], 'workers': []}
+    try:
+        for worker in workers:
+            await worker.start()
+        recipient, caller = workers[-2:]
+        await caller.command('RUN')
+        for request in [1, 2]:
+            for milestone in ['potentially_transmitted', 'invocation_returned']:
+                event = await caller.observe(milestone)
+                assert event['operation'] == operation, event
+            await recipient.command('RELEASE')
+            received = await recipient.observe('counter_received')
+            assert received == {'event': 'counter_received', 'request': request}, received
+            processed = await recipient.observe('counter_processed')
+            assert processed == {'event': 'counter_processed', 'request': request, 'value': 42}, processed
+            for milestone in ['potentially_transmitted', 'invocation_returned']:
+                event = await recipient.observe(milestone)
+                assert event['operation'] == operation, event
+            consumed = await caller.observe('counter_consumed')
+            assert consumed == {'event': 'counter_consumed', 'request': request, 'value': 42}, consumed
+        # Caller cleanup precedes recipient's post-close processing oracle.
+        await caller.close({'event': 'counter_client_native', 'replies': 2})
+        for worker in reversed(workers[:-2]):
+            await worker.close()
+        await recipient.close({'event': 'counter_native', 'value': 42, 'commands': 2})
+    except Exception as cause:
+        record['failures'].append(repr(cause))
+    finally:
+        for worker in workers:
+            await worker.abandon()
+            record['workers'].append({'role': worker.role, 'argv': worker.arguments,
+                                      'exit': worker.child.returncode if worker.child else None,
+                                      'events': worker.events})
+        (directory / 'observations.json').write_text(json.dumps(record, indent=2) + '\n')
+    print(json.dumps({key: record[key] for key in ['layout', 'operation', 'provider', 'failures']}), flush=True)
+    return record
+
+async def observe_counter_campaigns(executable):
+    records = []
+    for layout in ['peer', 'router_client']:
+        for operation in ['query', 'publication']:
+            for provider in ['record', 'scheduled']:
+                records.append(await counter_campaign(executable, layout, operation, provider))
+    (EVIDENCE / 'counter-campaigns.json').write_text(json.dumps(records, indent=2) + '\n')
+    if any(record['failures'] for record in records):
+        raise SystemExit(1)
+
+async def overlap_campaign(executable, provider, component):
+    directory = EVIDENCE / (provider + '-overlap-' + component)
+    directory.mkdir(parents=True, exist_ok=True)
+    with socket.socket() as port_claim:
+        port_claim.bind(('127.0.0.1', 0))
+        address = 'tls/localhost:' + str(port_claim.getsockname()[1])
+    assignments = {
+        'host': ['another-node', '3', '5'],
+        'runtime': ['delegated-node', '4', '5'],
+        'actor_generation': ['delegated-node', '3', '6'],
+    }
+    router = TransportWorker('router', executable, 'router_client', 'query', address, directory)
+    recipients = []
+    for name in ['selected', 'overlapping']:
+        recipient_directory = directory / name
+        recipient_directory.mkdir(exist_ok=True)
+        recipients.append(TransportWorker(provider + '_counter_recipient', executable,
+                                         'router_client', 'query', address, recipient_directory))
+    selected, overlapping = recipients
+    selected.arguments.extend(['delegated-node', '3', '5'])
+    overlapping.arguments.extend(assignments[component])
+    caller = TransportWorker(provider + '_counter_caller', executable,
+                             'router_client', 'query', address, directory)
+    workers = [router, selected, overlapping, caller]
+    record = {'provider': provider, 'component': component,
+              'binary_sha256': hashlib.sha256(Path(executable).read_bytes()).hexdigest(),
+              'failures': [], 'workers': []}
+    arrivals, dispositions = [], []
+    try:
+        for worker in workers:
+            await worker.start()
+        await caller.command('RUN')
+        for request in [1, 2]:
+            for milestone in ['potentially_transmitted', 'invocation_returned']:
+                await caller.observe(milestone)
+            # Both queryables must acquire the same command; matching presence alone is insufficient.
+            for recipient in recipients:
+                await recipient.command('RELEASE')
+            for recipient in recipients:
+                arrivals.append((recipient.directory.name, await recipient.observe('counter_received')))
+                disposition = await recipient.observe(('counter_processed', 'counter_target_refused'))
+                dispositions.append((recipient.directory.name, disposition))
+                if disposition['event'] == 'counter_processed':
+                    for milestone in ['potentially_transmitted', 'invocation_returned']:
+                        await recipient.observe(milestone)
+            await caller.observe('counter_consumed')
+        await caller.close({'event': 'counter_client_native', 'replies': 2})
+        await router.close()
+        await selected.close({'event': 'counter_native', 'value': 42, 'commands': 2})
+        await overlapping.close({'event': 'counter_native', 'value': 41, 'commands': 0})
+        # The independent no-admission oracle follows all original native products and actual closes.
+        assert arrivals == [(name, {'event': 'counter_received', 'request': request})
+                            for request in [1, 2] for name in ['selected', 'overlapping']], arrivals
+        assert dispositions == [entry for request in [1, 2] for entry in [
+            ('selected', {'event': 'counter_processed', 'request': request, 'value': 42}),
+            ('overlapping', {'event': 'counter_target_refused', 'request': request,
+                             'refusal': component})]], dispositions
+    except Exception as cause:
+        record['failures'].append(repr(cause))
+    finally:
+        for worker in workers:
+            await worker.abandon()
+            record['workers'].append({'role': worker.role, 'assignment': worker.directory.name,
+                                      'argv': worker.arguments,
+                                      'exit': worker.child.returncode if worker.child else None,
+                                      'events': worker.events})
+        (directory / 'observations.json').write_text(json.dumps(record, indent=2) + '\n')
+    print(json.dumps({key: record[key] for key in ['provider', 'component', 'failures']}), flush=True)
+    return record
+
+async def observe_overlap_campaigns(executable):
+    records = []
+    for provider in ['record', 'scheduled']:
+        for component in ['host', 'runtime', 'actor_generation']:
+            records.append(await overlap_campaign(executable, provider, component))
+    (EVIDENCE / 'overlap-campaigns.json').write_text(json.dumps(records, indent=2) + '\n')
+    if any(record['failures'] for record in records):
+        raise SystemExit(1)
+
+if __name__ == '__main__':
+    asyncio.run(observe_campaigns(sys.argv[1]))
+    asyncio.run(observe_counter_campaigns(sys.argv[1]))
+    asyncio.run(observe_overlap_campaigns(sys.argv[1]))

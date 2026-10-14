@@ -49,8 +49,11 @@ impl EntityDefinition for Auditors {
         drop(failure);
     }
     fn retired(&self, _: &EntityId<u64>, _: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, tokio::task::JoinError>) {
+        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, tokio::task::JoinError>,
+        retirement_report: bombay::ActorRetirementReport) {
         drop(retirement);
+        // This compile-denial fixture executes no retirement consumer.
+        let _ = retirement_report;
     }
 }
 

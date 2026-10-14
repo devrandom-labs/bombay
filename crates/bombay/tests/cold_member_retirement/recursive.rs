@@ -6,7 +6,7 @@ use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, CreateChild, CreationSequence, Creations, Never};
 use bombay::lifecycle::StopOnShutdown;
-use bombay::{ActorRetirement, Application};
+use bombay::{ActorNotificationReceipts, ActorRetirement, Application};
 use counter::{Counter, CounterMessage};
 
 enum NodeStartup {
@@ -63,7 +63,7 @@ bombay::topology! {
 
 #[tokio::test(flavor = "current_thread")]
 async fn cold_recursive_creation_retains_every_original_descendant() {
-    let outcome =
+    let (outcome, native, notifications) =
         Application::with_topology(Counter::new().stop_on_shutdown(), forest::Topology::new())
             .child(
                 Canopy,
@@ -95,7 +95,14 @@ async fn cold_recursive_creation_retains_every_original_descendant() {
         drop(original);
         panic!("work returned");
     });
-    let (_, retirement) = cleanup.expect("root joined");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (_, retirement) = native.expect("root joined");
     let ActorRetirement::Completed {
         custody:
             ActorCustody {
@@ -163,7 +170,7 @@ async fn cold_initialization_refusal_returns_the_original_definition_and_indepen
     let allocation = payload.as_ptr();
     let work = Box::new(String::from("counter work survived"));
     let work_allocation = work.as_ptr();
-    let outcome =
+    let (outcome, native, notifications) =
         Application::with_topology(Counter::new().stop_on_shutdown(), forest::Topology::new())
             .child(
                 Canopy,
@@ -200,7 +207,14 @@ async fn cold_initialization_refusal_returns_the_original_definition_and_indepen
         panic!("work returned independently");
     });
     assert_eq!(work.as_ptr(), work_allocation);
-    let (_, retirement) = cleanup.expect("joined root");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (_, retirement) = native.expect("joined root");
     let ActorRetirement::Completed {
         custody:
             ActorCustody {

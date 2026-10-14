@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, Protocol, SettlementStatus};
 use bombay::prelude::*;
 use bombay::{ActorSpace, ApplicationLifecycle};
@@ -117,11 +118,20 @@ async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
             drop(original);
             panic!("live application host");
         });
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("business work completes");
     });
-    let (origin, retirement) = cleanup.expect("independent complete cleanup");
+    cleanup.expect("actual application cleanup completes");
+    let (origin, retirement) = native.expect("independent complete cleanup");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_counter_retirement(retirement);
 }
@@ -151,11 +161,20 @@ async fn timer_outside_shutdown_infers_the_actual_lifecycle_lane() {
             drop(original);
             panic!("live application host");
         });
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("business work completes");
     });
-    let (origin, retirement) = cleanup.expect("independent complete cleanup");
+    cleanup.expect("actual application cleanup completes");
+    let (origin, retirement) = native.expect("independent complete cleanup");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_counter_retirement(retirement);
 }
@@ -189,11 +208,20 @@ async fn natural_completion_needs_no_unused_shutdown_capability() {
             drop(original);
             panic!("live application host");
         });
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("business work completes");
     });
-    let (origin, retirement) = cleanup.expect("independent complete cleanup");
+    cleanup.expect("actual application cleanup completes");
+    let (origin, retirement) = native.expect("independent complete cleanup");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.behavior().expect("original session").value, 1);
     assert_counter_retirement(retirement);
@@ -247,12 +275,21 @@ async fn http_ends_with_the_domain_session_without_a_shutdown_lane() {
         .expect("original customer task returns")
         .await
         .expect("customer completes independently");
+    let (outcome, native, notifications) = outcome;
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("both original actor notifications succeed");
+    };
     let (serving, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("graceful serving completes");
     });
     serving.expect("original serving result");
-    let (origin, retirement) = cleanup.expect("independent complete root cleanup");
+    cleanup.expect("actual application cleanup completes");
+    let (origin, retirement) = native.expect("independent complete root cleanup");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.behavior().expect("original session").value, 1);
     assert_counter_retirement(retirement);

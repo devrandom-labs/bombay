@@ -58,7 +58,7 @@ fn keyed_search_preserves_affinity_rejected_payload_and_joined_worker() {
         .enable_all()
         .build()
         .expect("the caller owns its current-thread host");
-    let outcome = application_host
+    let (outcome, native, notifications) = application_host
         .block_on(
             Application::with_topology(pool, search_application::Topology::new()).run_with(
                 |application| async move {
@@ -191,7 +191,15 @@ fn keyed_search_preserves_affinity_rejected_payload_and_joined_worker() {
         drop(original);
         panic!("business completion retains its independent cleanup");
     });
-    let (origin, retirement) = cleanup.expect("the exact root retirement is received");
+    cleanup.expect("the actual cleanup producer completed independently");
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications
+        .termination
+        .expect("actual ordinary termination notification");
+    notifications
+        .retirement
+        .expect("actual joined retirement notification");
+    let (origin, retirement) = native.expect("the exact root retirement is received");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let ActorRetirement::Completed {

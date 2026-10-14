@@ -10,10 +10,16 @@ Implementation status is separate from this target contract. Local application,
 external interface, timer, Entity, supervisor, and worker-pool paths have
 executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
-or multithread execution. Durability and networking remain planned.
-See the [source-backed inventory](prd-backlog/evidence.md). This guide is included in crate rustdoc. The complete entry example below
-is executed as a doctest; fragments labelled text or ignore omit surrounding
-definitions and remain schematic. The executable, compiler-checked spellings are:
+or multithread execution. Durability and crate-owned remote networking remain
+planned. The optional `remote` feature currently provides `remote::verify` for
+retaining a provider result before its future is disposed; ordinary multi-node
+Application assembly remains pending. Protected Counter transport regressions
+live in Bombay's tests, built by the isolated transport-custody test package.
+The local `examples/counter` and future `examples/remote-counter` applications
+remain separate.
+See the [source-backed inventory](prd-backlog/evidence.md). This guide is included in crate rustdoc. The entry fragments below
+are owning doctests, awaiting the reconciled branch's complete verification; fragments labelled text or ignore omit surrounding
+definitions and remain schematic. The source-bound application spellings are:
 
 Start with an actor, its messages and `Application`. Add a policy to that actor
 through `ActorExt`, or construct a queue, supervisor or pool through its owning
@@ -43,7 +49,12 @@ actor. Actors execute on that selected host; supplied Work executes where its
 execution future is polled. Work and its output may borrow caller values and
 need not be `Send`. Actor tasks keep their actual `Send + 'static` requirements.
 
-A leaf actor uses one Application and returns independent work and cleanup:
+### Advanced receiving custody
+
+The current paired entry returns Work, native retirement and both notification
+results independently. This executable fragment checks that advanced boundary.
+Ordinary actor composition uses the domain client/template path below; the
+simple multi-node application surface remains pending.
 
 ```rust
 # struct Service;
@@ -53,7 +64,7 @@ A leaf actor uses one Application and returns independent work and cleanup:
 #     .enable_all().build().expect("caller-owned host");
 # host.block_on(async {
 let service = bombay::actors::ActorExt::stop_on_shutdown(Service);
-let outcome = bombay::Application::new(service)
+let (outcome, native, notifications) = bombay::Application::new(service)
     .run_with(|application| async move {
         let shutdown = application.request_shutdown();
         assert_eq!(shutdown, Ok(()));
@@ -69,8 +80,12 @@ let (termination, cleanup) = outcome.try_into_completed()
         drop(original);
         panic!("the work must complete");
     });
+cleanup.expect("independent Work cleanup");
+let (_origin, retirement) = native.expect("actual joined native root");
+let notifications = notifications.expect("actual notification transfer");
+assert!(notifications.termination.is_ok());
+assert!(notifications.retirement.is_ok());
 assert_eq!(termination, Ok(bombay::prelude::Exit::Normal));
-let (_origin, retirement) = cleanup.expect("independent joined cleanup");
 assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
 # });
 ```
@@ -101,7 +116,7 @@ let mut announcements = scope.external::<Announcements>().expect("early endpoint
 let root = bombay::actors::ActorExt::stop_on_shutdown(Service {
     ready: announcements.recipient(),
 });
-let outcome = scope.with_root(root).run_with(|application| async move {
+let (outcome, native, notifications) = scope.with_root(root).run_with(|application| async move {
     let announcement = announcements.receive().await.expect("root ready");
     let shutdown = application.request_shutdown();
     assert_eq!(shutdown, Ok(()));
@@ -114,8 +129,12 @@ let (announcement, cleanup) = outcome.try_into_completed().unwrap_or_else(|origi
     drop(original);
     panic!("complete original outcome");
 });
+cleanup.expect("independent Work cleanup");
+let (_, retirement) = native.expect("actual joined native root");
+let notifications = notifications.expect("actual notification transfer");
+assert!(notifications.termination.is_ok());
+assert!(notifications.retirement.is_ok());
 assert_eq!(announcement, 42);
-let (_, retirement) = cleanup.expect("independent joined cleanup");
 assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
 # });
 ```
@@ -202,15 +221,16 @@ executes simultaneous hydration, refusals, reactivation and child retirement.
 Declaring a family class starts no task; `.entity_family(role, definition, directory, capacity)`
 supplies its real policy and owned definition.
 
-The successful outer result owns `ApplicationOutcome`. It does not imply a
-completed actor or erase an initialization refusal. Its closed alternatives
+The successful outer result owns `(work_outcome, root_receiving,
+notification_receiving)`. The work outcome is `ApplicationOutcome`; its presence
+does not imply a completed actor or erase an initialization refusal. Its closed alternatives
 retain the actual phase and values:
 
 - `StagingRejected` returns the actual cold partial product.
 - `Unstarted` returns the untouched application and its actual cold Work. Supplied
   Work is bare; no-work remains `None`; cold HTTP uses unit while its original
   application, Router and address remain in the application-input product.
-- `Prepared` returns the actual prepared Actor/Spaces product, original Work,
+- `Prepared` returns the actual prepared Actor/Spaces/ApplicationScope product, original Work,
   and the actual cleanup result, before actor ownership transfer.
 - `NotInvoked` returns original Work, the startup receiving error when
   present, and the independent cleanup result.
@@ -234,13 +254,18 @@ Work. For supplied Work, `output` is the original bare `WorkFuture::Output`. A u
 `Err(error)` or `None` remains that exact output. The framework adds no `Some`
 layer and cannot fabricate absence when the supplied output type is unit.
 
-For non-family constructors, cleanup is
-`Result<(RootOrigin<Owner>, ActorRetirement<Actor, Terminal, ChildFailures>),
-ApplicationCleanupError>`. `PublicationClosed(RecvError)` retains the original
-cleanup-publication receiving error. `TaskFailed(JoinError)` retains the actual
-cleanup task error. The root's `ActorTaskFailed(JoinError)` variant separately
-owns the native actor failure. Preserve these distinct owners; do not infer
-absent actors or manufacture a `JoinError` from a closed channel. `Terminal` is the descendant destination.
+Work-phase cleanup is `Result<(), ApplicationCleanupError>`.
+`PublicationClosed(RecvError)` retains the original cleanup-publication receiving
+error; `TaskFailed(JoinError)` retains the actual cleanup task error. Alongside
+the work outcome, `root_receiving` is
+`Result<(RootOrigin<Owner>, ActorRetirement<Actor, Terminal, ChildFailures>), RecvError>`
+and `notification_receiving` is `Result<ActorNotificationReceipts, RecvError>`.
+The two named notification fields, `termination` and `retirement`, each retain
+success or their own original `RetirementNotificationError`. Acquired native and
+notification receipts survive a later cleanup-task failure. A closed receipt
+retains its actual receiving error; it cannot establish an absent actor or
+invent a `JoinError`. The native root's `ActorTaskFailed(JoinError)` separately
+owns actor-task failure. `Terminal` is the descendant destination.
 The root stays raw. A derived application sum receives its exact owned pair
 with `(origin, retirement).into()`. `ProjectTerminal<Origin, Actor>`
 is the native interpreter port: its associated `Descendants` selects the child
@@ -318,7 +343,7 @@ let reply = client.receive().await;
 ```
 
 The [counter](../examples/counter/src/main.rs) and
-[FIFO pool](../examples/worker-pool/src/main.rs) execute this root-bound path.
+[FIFO pool](../examples/worker-pool/src/main.rs) use this root-bound path.
 [Client regressions](../crates/bombay/tests/application_clients.rs) preserve
 real sender identity, move-only rejections, accepted replies and both wrapper
 orders; compile denials prevent cloned receiving, forged construction,
@@ -344,6 +369,19 @@ named product for exported capabilities outside the application callable and
 provides the same `client_to`/`sender_to` constructors. Exporting a target never
 exports its lifecycle authority. No universal request/reply convention is inferred
 from arbitrary domain commands.
+
+`ApplicationHandle::root()` projects delivery, and `lifecycle()` projects
+shutdown/termination authority. The lifecycle projection's `retirement()` waits for a runtime-issued
+`ActorRetirementReport` after the actual actor and owned work have joined, while
+application Work can still run. Independent waits and cancellation of one wait
+do not consume this shared fact. The report separately assesses whether
+retirement was established and whether failures were found, none were found
+after complete checking, or checking was incomplete. It preserves known failure
+presence even when retirement is unestablished. Later report-notification or
+application conversion faults cannot rewrite the issued report. The complete
+native result remains with its existing owner; neither ordinary termination
+nor the report replaces it. Final native handoff and Entity family shutdown
+retain their Work-completion barrier.
 
 For cancellation or unwind recovery, use `execute` or `execute_with` to obtain
 separate execution and receiving futures. The paired constructor captures its
@@ -387,6 +425,22 @@ only after activation. Acquired HTTP Work owns the original Router/Listener pair
 exact bare `Result<(), io::Error>` from serving; raw root and cleanup facts coexist with it. Graceful serving
 completion is not proof that the root result is successful. Axum owns HTTP
 extraction/responses; Bombay adds no projected aggregate `AxumRunError`.
+
+## Remote verification
+
+The opt-in `remote` feature exposes `bombay::remote::verify`. It borrows the
+original request and stores a provider's complete `Result` in the caller's
+`Option<Result<Receipt, Error>>` before dropping the completed provider future.
+An existing receipt or error prevents a second provider invocation. The caller
+keeps the result even when the completed provider's destructor panics.
+
+The function returns unit; the retained result describes the provider outcome.
+It does not grant actor access or perform mailbox admission. Keep the operation
+pinned outside a temporary borrowed wait to cancel only that wait. Dropping the
+operation itself drops its provider future; the outside request and slot remain.
+Network connections and the multi-node Application API are still pending.
+The local `examples/counter` and future `examples/remote-counter` are separate
+applications; owning tests retain custody and fault assertions.
 
 ## Application composition
 
@@ -454,7 +508,7 @@ from a named product of runtime-owned local actor spaces:
 
 ```text
 #[derive(Default, ActorSpaces)]
-struct AppActors {
+struct ProtocolHosts {
     #[actor_space(SystemProtocol)]
     system: ActorSpace<SystemProtocol>,
     #[actor_space(GroupProtocol)]
@@ -706,6 +760,16 @@ truthful message origin, clones only its exact reply capability, and keeps the
 receiver affine. `ApplicationLifecycle<P, E>` is the separate shutdown and
 termination authority.
 
+For application service code that must retain a message when capacity is full,
+`caller.try_send(&exact_recipient, message)` returns immediately with respect
+to mailbox capacity. Match `bombay::TrySendError::Full(original)` or
+`Closed(original)` to recover that same owned message. A later retry needs a
+fresh permission check; this call performs no authentication. Closed admission
+does not prove completed actor retirement. Borrowed, move-only and non-Debug
+messages are supported where existing endpoint construction allows them.
+The native error's Debug formatting can reveal its payload; keep private
+payloads out of public diagnostics. Stable Entity admission uses `send`.
+
 The direct interface send is intentionally exact. A logical `Recipient<P>` is
 relative to a selected Address namespace and cannot be made transport-neutral
 by copying its numeric address. Such capabilities remain useful for stable
@@ -731,8 +795,8 @@ The intended ordinary public surface is:
   real typed external actors;
 - `ExternalActor<P>` with cloneable exact reply capability, truthful origin,
   and affine receive ownership;
-- `ApplicationLifecycle<P, E>` as the projection carrying only shutdown and
-  termination authority;
+- `ApplicationLifecycle<P, E>` as the projection carrying shutdown authority,
+  ordinary termination and the independent joined-retirement report;
 - retained terminal facts through `ActorRef::termination`;
 - concrete Behavior Actors templates and their policy types;
 - `bombay::testing::InfallibleResultExt` as an explicit pure-test import for
@@ -786,7 +850,7 @@ impl EntityDefinition for Accounts {
     }
 
     // Consume activation failure, actor-originated refusal, forced-drain,
-    // and exact final-retirement facts here.
+    // and exact native retirement with its read-only subtree assessment here.
     # /* ... */
 }
 
@@ -808,7 +872,7 @@ let application_receiving = application.run_with_entities(
 ```
 
 `application_receiving` is a `Result`: success retains
-`(work_outcome, root_receiving, family_receiving)`; host-entry rejection returns
+`(work_outcome, root_receiving, notification_receiving, family_receiving)`; host-entry rejection returns
 the original application, Work callable, and actual entered-host error.
 
 `EntityRef<Accounts>` retains the logical account ID, not an actor address or
@@ -832,7 +896,12 @@ Successful admission does not claim that the actor processed the command or
 that durable state committed. External rejection returns the exact owned
 command in `AdmissionFailure<Command>`. Hydration failure, resident-capacity
 refusal, host-launch retirement, forced drain, and final actor retirement are
-separate typed facts consumed by the definition.
+separate typed facts consumed by the definition. `EntityActivationError` keeps
+allocation refusal before an incarnation starts distinct from a started native
+retirement, its report and ordinary-notification result. `EntityDefinition::retired`
+receives the original native result and the independently derived read-only
+`ActorRetirementReport`. Family callback/conversion failures stay in family
+failure custody and cannot rewrite that actor-subtree assessment.
 
 The generic `EntityRuntime<I, C, R>`, `EntityId<I>`, directory kernel, and
 `LocalEntityRuntime` remain available under `bombay::entity` for integrations
@@ -849,9 +918,10 @@ Entity.
 Native lowering hydrates before address allocation, uses the application allocator, preserves
 forced-retirement provenance and descendant terminals, and launches the exact
 authored lifecycle stack. `run_with_entities` awaits the same paired owner as
-`execute_with_entities`. The result keeps Work outcome, root receiving, and the
-recursive family receiving product separate. Work cleanup has a unit normal
-result or a distinct `ApplicationCleanupError` for its receiving/task failure. The independent
+`execute_with_entities`. The result keeps Work outcome, root receiving,
+notification receiving, and the recursive family receiving product separate.
+Work cleanup has a unit normal result or a distinct `ApplicationCleanupError`
+for its receiving/task failure. The independent
 root receipt owns its exact origin plus `ActorRetirement`, including an original
 native actor failure in `ActorTaskFailed`; each family receipt owns
 its original role, complete shutdown, metrics, and native disposal cause.
@@ -872,9 +942,9 @@ single-root application assembly. There is no manifest, namespace, runtime
 registry, `TypeId`, `Any`, or endpoint enum.
 
 The ordinary application API contains no manually authored `HList` or positional
-witness. Role-first application assembly is withheld until its exact static
-ownership projection exists; the single-root path and deliberate advanced
-actor-space path remain executable.
+witness. Role-first child declarations use the existing generated topology and
+`.child(role, actor)` composition; explicit actor-space products remain a
+deliberate lower-level host boundary. Multi-node remote assembly remains pending.
 
 The concrete host product is authored independently of Behavior's logical-host
 evidence. Equal logical requirements repeat the same lawful `Hosts<P>` bound;
@@ -924,8 +994,8 @@ Current implementation eligibility and upstream blockers are recorded in
 [`prd-backlog/status.md`](prd-backlog/status.md).
 
 The acceptance application originated as a manually constructed foundational
-composition. Behavior's generated products and Bombay's actor recipes
-now reduce that mechanical spelling while preserving the same action
+composition. Behavior's generated products, `ActorExt` and Bombay's static topology
+reduce that mechanical spelling while preserving the same action
 visibility, lifecycle ownership, shutdown order, typed errors, and compile-time
 capability rejection. Owner differential tests retain the manual constructions
 as independent equivalence evidence.

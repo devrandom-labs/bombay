@@ -8,7 +8,7 @@ use bombay::behavior::{
     ReportToParent, Step, User, UserEvent,
 };
 use bombay::prelude::{Exit, TimerId};
-use bombay::{ActorRetirement, Application, MailAddr};
+use bombay::{ActorNotificationReceipts, ActorRetirement, Application, MailAddr};
 use core::time::Duration;
 use std::collections::BTreeSet;
 
@@ -160,7 +160,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
     .with_one_shot(TimerId(1), Duration::ZERO, |worker| {
         Actions::cont().with_send(ReportToParent::new(worker.base().role))
     });
-    let outcome = Application::with_topology(
+    let (outcome, native, notifications) = Application::with_topology(
         TimedParent::new().stop_on_shutdown(),
         timed_application::Topology::new(),
     )
@@ -181,7 +181,14 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         panic!("work returns only after both real elapsed reports");
     });
     assert_eq!(termination, Ok(Exit::Normal));
-    let (_, retirement) = cleanup.expect("joined root and exact child custody");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (_, retirement) = native.expect("joined root and exact child custody");
     let ActorRetirement::Completed {
         custody:
             ActorCustody {

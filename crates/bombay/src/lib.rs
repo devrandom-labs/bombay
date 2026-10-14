@@ -36,6 +36,7 @@ pub use crate::application::{
 };
 pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor, topology};
+pub use communication::TrySendError;
 mod actor_execution;
 mod actor_outcome;
 mod address;
@@ -48,6 +49,8 @@ mod local;
     reason = "Bombay uses pair publication while this same private source retains the separately verified keyed Observe API"
 )]
 mod observe;
+#[cfg(feature = "remote")]
+pub mod remote;
 mod retirement;
 mod terminal;
 mod termination;
@@ -62,8 +65,9 @@ pub use crate::local::endpoint::{ActorRef, InstalledActor, SendError};
 pub use crate::local::environment::LocalActivationRejection;
 pub(crate) use crate::retirement::Retirement;
 pub use crate::terminal::{
-    ActorCustody, ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RetirementSchema,
-    RootOrigin,
+    ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement,
+    ActorRetirementReport, ChildFailure, ChildOrigin, ProjectTerminal, RetirementAssessment,
+    RetirementNotificationError, RetirementSchema, RootOrigin,
 };
 pub use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
 pub use crate::worker_preparation::{

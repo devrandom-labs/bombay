@@ -55,7 +55,7 @@ fn run_search_pool() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
-    let application_outcome = application_host
+    let (application_outcome, native, notifications) = application_host
         .block_on(
             Application::with_topology(pool, spaces).run_with(|application| async move {
                 let mut customer = application
@@ -107,11 +107,20 @@ fn run_search_pool() {
     drop(application_host);
     let ApplicationOutcome::Completed {
         output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
+        cleanup: Ok(()),
     } = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
+    let notifications = notifications.expect("both original notification receipts survive");
+    notifications
+        .termination
+        .expect("actual ordinary termination notification");
+    notifications
+        .retirement
+        .expect("actual joined retirement notification");
+    let (root_origin, joined_actor) =
+        native.expect("the exact root retirement remains independent");
     assert_eq!(termination, Ok(Exit::Normal));
     let origin = root_origin;
     let terminal = joined_actor;

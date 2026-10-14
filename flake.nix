@@ -61,6 +61,7 @@
               ./.config/nextest.toml
               (pkgs.lib.fileset.maybeMissing ./crates/bombay-engine/tests/driver-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
+              (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/child_preparation_retirement_evidence.py)
               (pkgs.lib.fileset.maybeMissing ./tools/verify-owner-coverage.py)
               ./flake.nix
               (pkgs.lib.fileset.maybeMissing ./mutants-baseline.json)
@@ -110,6 +111,10 @@
           '';
         };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        protectedCounterVendor = craneLib.vendorCargoDeps {
+          inherit src;
+          cargoLock = ./docs/prds/static-remote-actors/transport-custody/Cargo.lock;
+        };
 
         # Miri and fuzzing stay opt-in so the default shell remains stable.
         miriToolchain =
@@ -154,6 +159,25 @@
             // {
               inherit cargoArtifacts;
               buildPhaseCargoCommand = "cargo test --locked -p bombay-rs --all-features --test application_children";
+            }
+          );
+          bombay-remote-debug = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              env.RUSTDOCFLAGS = "--deny warnings";
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-rs --features remote --test remote_verification --test application_clients
+                cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
+                cargo doc --locked -p bombay-rs --features remote --no-deps
+              '';
+            }
+          );
+          bombay-remote-release = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --test remote_verification --test application_clients";
             }
           );
           bombay-fmt = craneLib.cargoFmt commonArgs;
@@ -238,10 +262,12 @@
               nativeBuildInputs = [
                 pkgs.jq
                 pkgs.perl
+                pkgs.python3
               ];
               buildPhaseCargoCommand = ''
                 mkdir -p "$out"
                 bash crates/bombay/tests/actor-execution-law-evidence.sh --output "$out"
+                env -u CARGO_TARGET_DIR python3 crates/bombay/tests/child_preparation_retirement_evidence.py --output "$out/child-preparation"
               '';
               doInstallCargoArtifacts = false;
               doCheck = false;
@@ -276,6 +302,19 @@
               buildPhaseCargoCommand = ''
                 cargo test --locked -p bombay-example-counter
                 cargo run --locked -p bombay-example-counter
+              '';
+            }
+          );
+          bombay-protected-counter = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              cargoArtifacts = null;
+              cargoVendorDir = protectedCounterVendor;
+              buildPhaseCargoCommand = ''
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --release --test protected_counter
+                cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check
+                cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter -- --deny warnings
               '';
             }
           );

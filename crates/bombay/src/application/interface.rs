@@ -4,14 +4,15 @@ use crate::entity::{
 };
 use crate::local::endpoint::{ActorRef, ExtractLocalEndpoint, SendError, request_actor_shutdown};
 use crate::local::ingress::{Admission, AdmissionClosure};
-use crate::observe::{Publisher, pair};
+use crate::observe::{Observation, Publisher, pair};
+use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
 use behavior::{
     AllocationRejection, EstablishedRecipient, Ingress, InjectEvent, MessageProtocol, Never,
     Protocol, User,
 };
 use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
-use communication::{Consumer, ControlSender, Received, mailbox_channel};
+use communication::{Consumer, ControlSender, Received, TrySendError, mailbox_channel};
 use core::fmt;
 use core::future::Future;
 use std::sync::{Arc, Weak};
@@ -35,6 +36,7 @@ impl<P: Protocol, Event, Families: Clone> Clone for ApplicationHandle<P, Event, 
         Self {
             root: self.root.clone(),
             shutdown_control: self.shutdown_control.clone(),
+            retirement: self.retirement.clone(),
             allocations: self.allocations.clone(),
             families: self.families.clone(),
         }
@@ -45,12 +47,14 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     pub(in crate::application) fn new(
         root: ActorRef<P>,
         shutdown_control: Weak<ControlSender<Event>>,
+        retirement: Observation<ActorRetirementReport>,
         allocations: ApplicationAddresses,
         families: Families,
     ) -> Self {
         Self {
             root,
             shutdown_control,
+            retirement,
             allocations,
             families,
         }
@@ -117,6 +121,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         ApplicationLifecycle {
             root: self.root.clone(),
             control: self.shutdown_control.clone(),
+            retirement: self.retirement.clone(),
         }
     }
 
@@ -332,6 +337,7 @@ impl<P: Protocol, Event> Clone for ApplicationLifecycle<P, Event> {
         Self {
             root: self.root.clone(),
             control: self.control.clone(),
+            retirement: self.retirement.clone(),
         }
     }
 }
@@ -360,6 +366,17 @@ impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
             &control,
             Ingress::<ShutdownRequested, ShutdownPath>::new(),
         )
+    }
+
+    /// Observe the exact root's joined-retirement assessment.
+    ///
+    /// The report is available while application work is still running; it
+    /// does not wait for final native-result handoff or Entity family shutdown.
+    /// Independent observers share the fact, and cancelling a borrowed wait
+    /// cannot cancel cleanup or another observer.
+    pub fn retirement(&self) -> impl Future<Output = ActorRetirementReport> + use<P, Event> {
+        let retirement = self.retirement.clone();
+        async move { retirement.await }
     }
 
     /// Observe termination of the exact root incarnation.
@@ -586,6 +603,33 @@ where
         target.send_from(self.address, message)
     }
 
+    /// Attempt delivery to an exact actor without waiting for mailbox capacity.
+    ///
+    /// Uses this external actor's allocated address as `User::from`. The
+    /// recipient never resolves or retargets to a replacement. This operation
+    /// performs no remote authentication; a caller enforcing permission must
+    /// recheck it before each attempt. Existing mailbox synchronization remains.
+    /// Stable Entity resolution and hydration use [`Self::send`] instead.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TrySendError::Full`] or [`TrySendError::Closed`] with the exact
+    /// original message. Closure establishes refused admission, not actor
+    /// termination or joined retirement. Error Debug can reveal the payload;
+    /// non-Debug messages remain supported through exhaustive matching.
+    pub fn try_send<Target>(
+        &self,
+        target: &EstablishedRecipient<Target>,
+        message: Target::Msg,
+    ) -> Result<(), TrySendError<Target::Msg>>
+    where
+        Target: Protocol<Addr = MailAddr>,
+    {
+        let mut interpreter = ExtractLocalEndpoint;
+        let endpoint = target.clone().interpret(&mut interpreter);
+        endpoint.try_send_from(self.address, message)
+    }
+
     /// Receive the next message and its truthful actor origin.
     ///
     /// Returns `None` after admission closes and every accepted message has
@@ -628,6 +672,7 @@ mod target_sealed {
 pub struct ApplicationHandle<P: Protocol, Event, Families = ()> {
     root: ActorRef<P>,
     shutdown_control: Weak<ControlSender<Event>>,
+    retirement: Observation<ActorRetirementReport>,
     allocations: ApplicationAddresses,
     families: Families,
 }
@@ -636,6 +681,7 @@ pub struct ApplicationHandle<P: Protocol, Event, Families = ()> {
 pub struct ApplicationLifecycle<P: Protocol, Event> {
     root: ActorRef<P>,
     control: Weak<ControlSender<Event>>,
+    retirement: Observation<ActorRetirementReport>,
 }
 
 const EXTERNAL_USER_CAPACITY: usize = 1_024;
@@ -689,7 +735,10 @@ mod tests {
         EntityCapacity, EntityDefinition, EntityId, EntityShutdown,
     };
     use crate::local::endpoint::ExtractLocalEndpoint;
-    use crate::{ActorRetirement, ActorSpace, Completion, ShutdownLedger};
+    use crate::{
+        ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ActorSpace, Completion,
+        RetirementAssessment, ShutdownLedger,
+    };
 
     type AccountRetirement =
         Result<ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>, JoinError>;
@@ -702,7 +751,12 @@ mod tests {
         ),
         AdmissionRefused(EntityId<Box<[u64]>>, AdmissionFailure<Vec<u64>>),
         ForcedRetirement(EntityId<Box<[u64]>>, ActivationId, DrainFailure),
-        Retired(EntityId<Box<[u64]>>, ActivationId, AccountRetirement),
+        Retired(
+            EntityId<Box<[u64]>>,
+            ActivationId,
+            AccountRetirement,
+            ActorRetirementReport,
+        ),
     }
 
     struct Accounts {
@@ -767,11 +821,17 @@ mod tests {
             id: &EntityId<Self::Id>,
             activation: ActivationId,
             retirement: AccountRetirement,
+            retirement_report: ActorRetirementReport,
         ) {
             self.reports
                 .lock()
                 .expect("account report custody")
-                .push(AccountReport::Retired(id.clone(), activation, retirement));
+                .push(AccountReport::Retired(
+                    id.clone(),
+                    activation,
+                    retirement,
+                    retirement_report,
+                ));
         }
     }
 
@@ -791,7 +851,7 @@ mod tests {
         );
         let original = Box::<[u64]>::from([79, 83]);
         let allocation = original.as_ptr();
-        let (outcome, root, families) = Application::new(
+        let (outcome, root, notifications, families) = Application::new(
             ShutdownLedger {
                 entries: vec![73],
                 received: Vec::new(),
@@ -845,6 +905,14 @@ mod tests {
             .try_into_completed()
             .unwrap_or_else(|_| panic!("the original caller completes"));
         assert!(matches!(&cleanup, Ok(())));
+        let notifications =
+            notifications.expect("both root notification results remain independent");
+        notifications
+            .termination
+            .expect("actual root termination notification");
+        notifications
+            .retirement
+            .expect("actual joined root report notification");
         let (_, root) = root.expect("independent original root retirement");
         assert_eq!(root.completion(), Some(&Completion::Stopped));
         assert_eq!(root.behavior().expect("root retained").base().entries, [73]);
@@ -866,7 +934,7 @@ mod tests {
         assert_eq!(reports.len(), 1);
         for report in &*reports {
             match report {
-                AccountReport::Retired(id, _activation, retirement) => {
+                AccountReport::Retired(id, _activation, retirement, report) => {
                     assert_eq!(&**id.get(), &[79, 83]);
                     let retirement = retirement.as_ref().expect("exact account task custody");
                     let custody = match retirement {
@@ -887,6 +955,8 @@ mod tests {
                     assert_eq!(custody.user, []);
                     assert_eq!(custody.descendants, []);
                     assert_eq!(custody.child_failures, []);
+                    assert_eq!(report.retirement(), RetirementAssessment::Established);
+                    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
                 }
                 AccountReport::ActivationFailed(id, activation, _failure) => {
                     panic!("unexpected account activation failure: {id:?} {activation:?}");
@@ -905,7 +975,7 @@ mod tests {
 
     #[tokio::test]
     async fn failed_root_client_allocation_preserves_live_application_authority() {
-        let outcome = Application::new(
+        let (outcome, root, notifications) = Application::new(
             ShutdownLedger {
                 entries: vec![13, 17],
                 received: Vec::new(),
@@ -938,7 +1008,15 @@ mod tests {
         let ((), cleanup) = outcome
             .try_into_completed()
             .unwrap_or_else(|_| panic!("work completed"));
-        let (_, retirement) = cleanup.expect("the original root retirement remains available");
+        cleanup.expect("the actual cleanup producer completed independently");
+        let notifications = notifications.expect("both original root notification results survive");
+        notifications
+            .termination
+            .expect("actual ordinary termination notification");
+        notifications
+            .retirement
+            .expect("actual joined retirement notification");
+        let (_, retirement) = root.expect("the original root retirement remains available");
         assert_eq!(retirement.completion(), Some(&Completion::Stopped));
         let custody = retirement
             .custody()
@@ -971,21 +1049,34 @@ mod installed_shutdown_contract {
     use behavior_actors::{Exit, ShutdownRejection, StopOnShutdown};
     use bombay_engine::Completion;
     use communication::Config;
-    use core::future::Future;
+    use core::future::{Future, poll_fn};
     use core::pin::pin;
     use core::task::{Context, Poll, Waker};
+    use std::mem;
+    use std::panic::{panic_any, resume_unwind};
+    use std::ptr;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
+    use std::task::Wake;
 
     use crate::ActorExecutionOutcome;
     use crate::ActorSpace;
 
     use crate::address::{ApplicationAddresses, MailAddr};
-    use crate::application::ActorInterface;
     use crate::application::ApplicationLifecycle;
+    use crate::application::{ActorInterface, Application, ApplicationOutcome};
     use crate::launch::launch_inert;
 
     use crate::local::endpoint::ExtractLocalEndpoint;
     use crate::local::environment::LocalResidual;
+    use crate::observe;
+    use crate::terminal::{
+        ActorCustody, ActorFailureAssessment, ActorRetirement, RetirementAssessment,
+        RetirementNotificationError,
+    };
+    use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
+    use tokio::sync::oneshot;
+    use tokio::time::{Duration, timeout};
 
     use crate::{LedgerProtocol, ShutdownLedger};
     #[tokio::test]
@@ -1018,9 +1109,11 @@ mod installed_shutdown_contract {
         )
         .await
         .unwrap_or_else(|_| panic!("old root launch"));
+        let (_old_report_publication, old_retirement) = observe::pair();
         let lifecycle = ApplicationLifecycle {
             root: old.actor.clone(),
             control: old.shutdown_control.clone(),
+            retirement: old_retirement,
         };
         let repeated_lifecycle = lifecycle.clone();
         let accepted = lifecycle.request_shutdown();
@@ -1029,11 +1122,14 @@ mod installed_shutdown_contract {
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let old_termination = lifecycle.termination().await;
         assert_eq!(old_termination, Ok(Exit::Normal));
-        let old_result = old.task.finish().await;
+        let (old_result, termination_notification) = old.task.finish().await;
+        termination_notification.expect("the actual ordinary termination notification succeeded");
         let Ok(ActorExecutionOutcome::Completed {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    operation_failures,
+                    descendant_report,
                     interpretation,
                     source,
                     settlements,
@@ -1055,6 +1151,15 @@ mod installed_shutdown_contract {
         else {
             panic!("joined old root")
         };
+        assert_eq!(operation_failures, ActorFailureAssessment::Incomplete);
+        assert_eq!(
+            descendant_report.retirement(),
+            RetirementAssessment::NotEstablished
+        );
+        assert_eq!(
+            descendant_report.failures(),
+            ActorFailureAssessment::Incomplete
+        );
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(received_interpretation.is_none());
@@ -1106,9 +1211,11 @@ mod installed_shutdown_contract {
         )
         .await
         .unwrap_or_else(|_| panic!("fresh root claim"));
+        let (_fresh_report_publication, fresh_retirement) = observe::pair();
         let fresh_lifecycle = ApplicationLifecycle {
             root: fresh.actor.clone(),
             control: fresh.shutdown_control.clone(),
+            retirement: fresh_retirement,
         };
         let old_request = lifecycle.request_shutdown();
         let replay = repeated_lifecycle.request_shutdown();
@@ -1126,11 +1233,14 @@ mod installed_shutdown_contract {
         assert_eq!(new_request, Ok(()));
         let stopped = fresh_termination.await;
         assert_eq!(stopped, Ok(Exit::Normal));
-        let retired = fresh.task.finish().await;
+        let (retired, termination_notification) = fresh.task.finish().await;
+        termination_notification.expect("the actual ordinary termination notification succeeded");
         let Ok(ActorExecutionOutcome::Completed {
             behavior,
             residual:
                 LocalResidual::Retired {
+                    operation_failures,
+                    descendant_report,
                     interpretation,
                     source,
                     settlements,
@@ -1152,6 +1262,15 @@ mod installed_shutdown_contract {
         else {
             panic!("whole joined replacement")
         };
+        assert_eq!(operation_failures, ActorFailureAssessment::Incomplete);
+        assert_eq!(
+            descendant_report.retirement(),
+            RetirementAssessment::NotEstablished
+        );
+        assert_eq!(
+            descendant_report.failures(),
+            ActorFailureAssessment::Incomplete
+        );
         assert!(interpretation.is_none());
         assert!(source.is_none());
         assert!(received_interpretation.is_none());
@@ -1198,6 +1317,309 @@ mod installed_shutdown_contract {
         let old_replay = lifecycle.request_shutdown();
         assert_eq!(old_replay, Err(ShutdownRejection::AlreadyStopped));
     }
+    enum LedgerSpaceDisposal {
+        Return,
+        #[expect(
+            clippy::redundant_allocation,
+            reason = "Box is the original panic carrier; Arc separately proves cause lifetime without opening or reboxing the native payload"
+        )]
+        Unwind(Box<Arc<Vec<u64>>>),
+    }
+
+    struct RetiringLedgerSpace {
+        actors: ActorSpace<LedgerProtocol>,
+        disposal: LedgerSpaceDisposal,
+        retired_spaces: Arc<AtomicUsize>,
+    }
+
+    impl Hosts<LedgerProtocol> for RetiringLedgerSpace {
+        fn space(&self) -> &ActorSpace<LedgerProtocol> {
+            &self.actors
+        }
+    }
+
+    impl RootRegistration<LedgerProtocol> for RetiringLedgerSpace {
+        fn root_space(&self) -> &ActorSpace<LedgerProtocol> {
+            &self.actors
+        }
+    }
+
+    impl ApplicationTopology<StopOnShutdown<ShutdownLedger>, ()> for RetiringLedgerSpace {
+        type Descendants = Never;
+    }
+
+    impl Drop for RetiringLedgerSpace {
+        fn drop(&mut self) {
+            self.retired_spaces.fetch_add(1, Ordering::SeqCst);
+            match mem::replace(&mut self.disposal, LedgerSpaceDisposal::Return) {
+                LedgerSpaceDisposal::Return => {}
+                LedgerSpaceDisposal::Unwind(payload) => resume_unwind(payload),
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one public Application controller proves independent report axes, actual space disposal, work barriers and complete native custody"
+    )]
+    async fn root_retirement_report_is_available_before_application_work_finishes() {
+        for disposal in [
+            LedgerSpaceDisposal::Return,
+            LedgerSpaceDisposal::Unwind(Box::new(Arc::new(vec![167, 173]))),
+        ] {
+            let expected_cause = match &disposal {
+                LedgerSpaceDisposal::Return => None,
+                LedgerSpaceDisposal::Unwind(payload) => Some((
+                    Arc::downgrade(payload.as_ref()),
+                    ptr::from_ref(payload.as_ref()).cast::<()>(),
+                )),
+            };
+            let expected_failures = match &expected_cause {
+                None => ActorFailureAssessment::NoFailuresFound,
+                Some(_) => ActorFailureAssessment::FailuresFound,
+            };
+            let actors = ActorSpace::<LedgerProtocol>::new();
+            let retired_spaces = Arc::new(AtomicUsize::new(0));
+            let payload = vec![157, 163];
+            let allocation = payload.as_ptr();
+            let (report_publication, report_received) = oneshot::channel();
+            let (release_work, work_released) = oneshot::channel();
+            let (execution, receiving) = Application::with_topology(
+                StopOnShutdown::new(ShutdownLedger {
+                    entries: payload,
+                    received: Vec::new(),
+                }),
+                RetiringLedgerSpace {
+                    actors: actors.clone(),
+                    disposal,
+                    retired_spaces: Arc::clone(&retired_spaces),
+                },
+            )
+            .execute_with(move |application| async move {
+                let lifecycle = application.lifecycle();
+                {
+                    let mut cancelled = pin!(lifecycle.retirement());
+                    let mut context = Context::from_waker(Waker::noop());
+                    let pending = Future::poll(cancelled.as_mut(), &mut context);
+                    assert!(matches!(pending, Poll::Pending));
+                }
+                let independent = lifecycle.clone();
+                let requested = lifecycle.request_shutdown();
+                requested.expect("the exact root accepts its first stop request");
+                let report = lifecycle.retirement().await;
+                let independently_observed = independent.retirement().await;
+                assert_eq!(independently_observed, report);
+                let published = report_publication.send(report);
+                published.expect("the independent work observer remains present");
+                work_released
+                    .await
+                    .expect("work has its explicit outside release");
+                report
+            })
+            .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
+            let mut execution = pin!(execution);
+            let report = timeout(Duration::from_secs(10), async {
+                tokio::select! {
+                    report = report_received => report.expect("work acquired the actual joined report"),
+                    () = &mut execution => panic!("work cannot finish before its outside release"),
+                }
+            })
+            .await
+            .expect("joined report must be available without the work-completion barrier");
+            assert_eq!(retired_spaces.load(Ordering::SeqCst), 1);
+            assert_eq!(report.retirement(), RetirementAssessment::Established);
+            assert_eq!(report.failures(), expected_failures);
+            let missing = actors.resolve(&MailAddr::APPLICATION_ROOT);
+            assert!(missing.is_none());
+            let mut receiving = pin!(receiving);
+            let mut context = Context::from_waker(Waker::noop());
+            let pending_receiving = Future::poll(receiving.as_mut(), &mut context);
+            assert!(matches!(pending_receiving, Poll::Pending));
+            let released = release_work.send(());
+            released.expect("the report did not finish or cancel application work");
+            execution.await;
+            let (work, native, notifications) = receiving.await;
+            let ApplicationOutcome::Completed {
+                output,
+                cleanup: Ok(()),
+            } = work
+            else {
+                panic!("the actual caller-local work and cleanup finish independently");
+            };
+            assert_eq!(output, report);
+            let notifications =
+                notifications.expect("both original notification results are retained");
+            notifications
+                .termination
+                .expect("ordinary termination succeeded");
+            notifications
+                .retirement
+                .expect("joined-report publication succeeded");
+            let (origin, native) =
+                native.expect("the native root result remains independently retained");
+            assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+            let ActorRetirement::Completed {
+                completion: Completion::Stopped,
+                interpretation: None,
+                source: None,
+                settlements,
+                custody:
+                    ActorCustody {
+                        behavior,
+                        control,
+                        user,
+                        descendants,
+                        child_failures,
+                        capability_failures,
+                        additional_failures,
+                        received_interpretation: None,
+                        received_source: None,
+                        source_index: None,
+                        acquired_ingress: None,
+                        retirement_failures,
+                        terminal_report: None,
+                        unread_owner_cancellation: None,
+                    },
+            } = native
+            else {
+                panic!("the exact stopped native root and all of its lanes survive");
+            };
+            assert_eq!(behavior.base().entries, [157, 163]);
+            assert_eq!(behavior.base().entries.as_ptr(), allocation);
+            assert_eq!(behavior.base().received.len(), 0);
+            assert!(control.is_empty() && user.is_empty());
+            assert_eq!(descendants.len(), 0);
+            assert_eq!(child_failures, []);
+            assert!(capability_failures.is_empty());
+            assert!(additional_failures.is_empty());
+            match expected_cause {
+                None => assert!(retirement_failures.is_empty()),
+                Some((original_cause, allocation)) => {
+                    assert_eq!(original_cause.strong_count(), 1);
+                    assert_eq!(retirement_failures.len(), 1);
+                    let payload = retirement_failures
+                        .into_iter()
+                        .next()
+                        .expect("the exact capability disposal cause remains native");
+                    assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), allocation);
+                    drop(payload);
+                    assert_eq!(original_cause.strong_count(), 0);
+                }
+            }
+            assert_eq!(settlements.len(), 1);
+            let settlement = settlements
+                .into_iter()
+                .next()
+                .expect("one actual stop settlement");
+            assert!(settlement.creations.is_empty());
+            assert!(matches!(settlement.sends.owned, NoSends));
+            assert!(matches!(settlement.sends.inner, NoSends));
+            assert!(matches!(settlement.become_, Step::Stop(Stopped)));
+        }
+    }
+
+    struct RetirementObserver {
+        failure: Mutex<Option<Arc<Vec<u64>>>>,
+        application_work: Waker,
+    }
+
+    impl Wake for RetirementObserver {
+        fn wake(self: Arc<Self>) {
+            self.wake_by_ref();
+        }
+
+        fn wake_by_ref(self: &Arc<Self>) {
+            // Ensure the real work can inspect the already committed fact even
+            // when this independently registered observer panics during wake.
+            self.application_work.wake_by_ref();
+            let failure = self
+                .failure
+                .lock()
+                .expect("the observer owns its original panic")
+                .take();
+            panic_any(failure.expect("the observer panics once with its original allocation"));
+        }
+    }
+
+    #[tokio::test]
+    async fn root_report_notification_fault_retains_native_result_and_committed_report() {
+        let actors = ActorSpace::<LedgerProtocol>::new();
+        let failure = Arc::new(vec![167_u64, 173]);
+        let retained_failure = Arc::downgrade(&failure);
+        let values = vec![179, 181];
+        let allocation = values.as_ptr();
+        let (execution, receiving) = Application::with_topology(
+            StopOnShutdown::new(ShutdownLedger {
+                entries: values,
+                received: Vec::new(),
+            }),
+            actors.clone(),
+        )
+        .execute_with(move |application| async move {
+            let lifecycle = application.lifecycle();
+            let mut observer = pin!(lifecycle.retirement());
+            poll_fn(|context| {
+                let observer_waker = Waker::from(Arc::new(RetirementObserver {
+                    failure: Mutex::new(Some(Arc::clone(&failure))),
+                    application_work: context.waker().clone(),
+                }));
+                let mut observer_context = Context::from_waker(&observer_waker);
+                let pending = Future::poll(observer.as_mut(), &mut observer_context);
+                assert!(matches!(pending, Poll::Pending));
+                Poll::Ready(())
+            })
+            .await;
+            drop(failure);
+            let stopped = lifecycle.request_shutdown();
+            stopped.expect("the actual root accepts shutdown");
+            let report = lifecycle.retirement().await;
+            let independently_observed = observer.await;
+            assert_eq!(report, independently_observed);
+            report
+        })
+        .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
+        let ((), (work, native, notifications)) = timeout(Duration::from_secs(10), async {
+            tokio::join!(execution, receiving)
+        })
+        .await
+        .expect("a report observer panic cannot lose the actor result or stall cleanup");
+        let ApplicationOutcome::Completed {
+            output: report,
+            cleanup: Ok(()),
+        } = work
+        else {
+            panic!("work observes the committed report and actual cleanup finishes");
+        };
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        // The notification fault occurs after this immutable actor snapshot.
+        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+        let notifications = notifications.expect("the complete notification product is retained");
+        notifications
+            .termination
+            .expect("ordinary termination succeeded independently");
+        let Err(RetirementNotificationError::Panicked { payload }) = notifications.retirement
+        else {
+            panic!("the original report observer panic has its own receipt");
+        };
+        assert_eq!(retained_failure.strong_count(), 1);
+        let (_, native) = native.expect("the complete native root survives report notification");
+        let ActorRetirement::Completed {
+            custody: ActorCustody { behavior, .. },
+            completion: Completion::Stopped,
+            ..
+        } = native
+        else {
+            panic!("the native stopped actor retains its original state");
+        };
+        assert_eq!(behavior.base().entries, [179, 181]);
+        assert_eq!(behavior.base().entries.as_ptr(), allocation);
+        let missing = actors.resolve(&MailAddr::APPLICATION_ROOT);
+        assert!(missing.is_none());
+        drop(payload);
+        assert_eq!(retained_failure.strong_count(), 0);
+    }
+
     #[tokio::test]
     async fn external_customer_owns_admission_without_behavior_shutdown() {
         let interface = ActorInterface::new((), ApplicationAddresses::new());

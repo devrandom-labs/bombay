@@ -1,3 +1,4 @@
+use bombay::ActorNotificationReceipts;
 use core::time::Duration;
 
 use bombay::ApplicationScope;
@@ -62,7 +63,7 @@ async fn distinct_timer_ids_preserve_every_wrapper_notice_and_complete_retiremen
         ))
     })
     .stop_on_shutdown();
-    let outcome = scope
+    let (outcome, native, notifications) = scope
         .with_root(session)
         .run_with(|application| async move { application.termination().await })
         .await
@@ -71,7 +72,15 @@ async fn distinct_timer_ids_preserve_every_wrapper_notice_and_complete_retiremen
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the normal timer expiry retains its independent work result"));
     assert_eq!(termination, Ok(Exit::Normal));
-    let terminal = cleanup.expect("the complete session retirement is joined");
+    cleanup.expect("the complete session retirement is joined");
+    let terminal = native.expect("the original native retirement remains available");
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("the independent notification results remain owned");
+    };
     assert_eq!(
         terminal
             .1
@@ -126,7 +135,7 @@ async fn equal_timer_ids_replace_the_inner_schedule_without_fabricating_its_noti
         ))
     })
     .stop_on_shutdown();
-    let outcome = scope
+    let (outcome, native, notifications) = scope
         .with_root(session)
         .run_with(|application| async move { application.termination().await })
         .await
@@ -135,7 +144,15 @@ async fn equal_timer_ids_replace_the_inner_schedule_without_fabricating_its_noti
         .try_into_completed()
         .unwrap_or_else(|_| panic!("timer replacement cannot erase the work result"));
     assert_eq!(termination, Ok(Exit::Normal));
-    let terminal = cleanup.expect("normal expiry joins the original actor and timer custody");
+    cleanup.expect("normal expiry joins the original actor and timer custody");
+    let terminal = native.expect("the original native retirement remains available");
+    let Ok(ActorNotificationReceipts {
+        termination: Ok(()),
+        retirement: Ok(()),
+    }) = notifications
+    else {
+        panic!("the independent notification results remain owned");
+    };
     assert_eq!(
         terminal
             .1

@@ -2,6 +2,7 @@
 //! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
 use bombay::ActorCustody;
+use bombay::ActorNotificationReceipts;
 use bombay::ApplicationOutcome;
 use core::time::Duration;
 use tokio::runtime::Builder;
@@ -253,10 +254,17 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
             panic!("the supervisor runs its recovery policy");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: (termination, failure),
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: (termination, failure),
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
@@ -494,10 +502,17 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
             panic!("the supervisor runs its recovery policy");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };
@@ -715,10 +730,17 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
             panic!("the supervisor runs its recovery policy");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };

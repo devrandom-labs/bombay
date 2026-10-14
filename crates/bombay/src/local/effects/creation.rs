@@ -15,7 +15,8 @@ use crate::local::effects::{
 use crate::local::endpoint::InstalledActor;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
 use crate::local::ingress::DEFAULT_USER_CAPACITY;
-use crate::terminal::{ProjectTerminal, RetirementSchema};
+use crate::observe;
+use crate::terminal::{ActorRetirementReport, ProjectTerminal, RetirementSchema};
 use crate::worker_preparation::{WorkerPreparationSource, settle_worker_preparation};
 use behavior::{
     ActionItem, Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -511,6 +512,7 @@ where
                     custody: StartupRetirementCustody::Raw {
                         task,
                         received: None,
+                        termination_notification: None,
                     },
                 },
             );
@@ -519,16 +521,29 @@ where
                 .get_mut(&id)
                 .expect("raw startup retirement remains outside its waiter");
             let CreationBinding::RetiringStartup {
-                custody: StartupRetirementCustody::Raw { task, received },
+                custody:
+                    StartupRetirementCustody::Raw {
+                        task,
+                        received,
+                        termination_notification,
+                    },
                 ..
             } = row
             else {
                 unreachable!("the creator receives original raw startup retirement");
             };
-            OwnedTask::receive_finish(task, received).await;
+            OwnedTask::receive_finish(task, received, termination_notification).await;
             if matches!(received, Some(Err(_))) {
                 return ItemSettlement::Accepted(ChildCreationOutcome::Unavailable { id, kind });
             }
+            let retirement_report = ActorRetirementReport::from_joined(
+                received
+                    .as_ref()
+                    .expect("raw startup retained its original joined result"),
+                termination_notification
+                    .as_ref()
+                    .expect("raw startup retained its original notification result"),
+            );
             let row = pending
                 .creations
                 .remove(&id)
@@ -537,6 +552,7 @@ where
                 custody:
                     StartupRetirementCustody::Raw {
                         received: Some(Ok(outcome)),
+                        termination_notification: Some(termination_notification),
                         ..
                     },
                 ..
@@ -544,7 +560,11 @@ where
             else {
                 unreachable!("complete raw startup rejection is outside its producer");
             };
-            Err(SpawnError::from_local(outcome))
+            Err(SpawnError::from_local(
+                outcome,
+                termination_notification,
+                retirement_report,
+            ))
         };
         match installed {
             Ok(mut installed) => {
@@ -554,9 +574,11 @@ where
                     .binding
                     .take()
                     .expect("fresh child installation awaits one binding acknowledgement");
+                let (retirement_publisher, retirement) = observe::pair();
                 let task = ProjectedTask::project(
                     installed.task,
                     (pending.origin)(address, route, id, kind),
+                    retirement_publisher,
                 );
                 record_child_creation(
                     pending.creations,
@@ -569,6 +591,8 @@ where
                         control: installed.control,
                         task: Some(task),
                         joined: None,
+                        notifications: None,
+                        retirement: retirement.clone(),
                     },
                 );
                 let acknowledgement = binding.send(());
@@ -576,8 +600,9 @@ where
                     acknowledgement.is_ok(),
                     "the privately committed child awaits its recorded binding"
                 );
-                let actor =
-                    EstablishedActor::<Child>::issued(InstalledActor::new(endpoint, control));
+                let actor = EstablishedActor::<Child>::issued(InstalledActor::new(
+                    endpoint, control, retirement,
+                ));
                 ItemSettlement::Accepted(ChildCreationOutcome::Established(CommittedChild::new(
                     id, kind, actor,
                 )))
@@ -604,6 +629,8 @@ where
                 additional_failures,
                 terminal_report,
                 retirement_failures,
+                termination_notification,
+                retirement_report,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -630,6 +657,8 @@ where
                         additional_failures,
                         terminal_report,
                         retirement_failures,
+                        termination_notification,
+                        retirement_report,
                     },
                 );
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationRejected {
@@ -647,6 +676,8 @@ where
                 additional_failures,
                 terminal_report,
                 retirement_failures,
+                termination_notification,
+                retirement_report,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -673,6 +704,8 @@ where
                         additional_failures,
                         terminal_report,
                         retirement_failures,
+                        termination_notification,
+                        retirement_report,
                     },
                 );
                 ItemSettlement::Accepted(ChildCreationOutcome::InitializationPanicked {
@@ -690,6 +723,8 @@ where
                 additional_failures,
                 terminal_report,
                 retirement_failures,
+                termination_notification,
+                retirement_report,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -724,6 +759,8 @@ where
                         additional_failures,
                         terminal_report,
                         retirement_failures,
+                        termination_notification,
+                        retirement_report,
                     },
                 );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
@@ -742,6 +779,8 @@ where
                 additional_failures,
                 terminal_report,
                 retirement_failures,
+                termination_notification,
+                retirement_report,
                 received_interpretation: None,
                 received_source: None,
                 source_index: None,
@@ -770,6 +809,8 @@ where
                         additional_failures,
                         terminal_report,
                         retirement_failures,
+                        termination_notification,
+                        retirement_report,
                     },
                 );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
@@ -778,26 +819,32 @@ where
                     reason: CreationRejection::EnvironmentFailed,
                 })
             }
-            Err(SpawnError::Unpublished(ActorExecutionOutcome::ActivationPanicked {
-                behavior,
-                residual:
-                    LocalResidual::Uncommitted {
-                        initialization: InterpretationProgress::Original(initialization),
-                        ingress,
-                        activation_tasks,
-                        descendants: (descendants, child_failures),
-                        capability_failures,
-                        terminal_report,
-                        retirement_failures,
-                        received_interpretation: None,
-                        received_source: None,
-                        source_index: None,
-                        acquired_ingress: None,
-                        unread_owner_cancellation,
+            Err(SpawnError::Unpublished {
+                termination_notification,
+                retirement_report,
+                outcome:
+                    ActorExecutionOutcome::ActivationPanicked {
+                        behavior,
+                        residual:
+                            LocalResidual::Uncommitted {
+                                initialization: InterpretationProgress::Original(initialization),
+                                ingress,
+                                activation_tasks,
+                                descendants: (descendants, child_failures),
+                                capability_failures,
+                                terminal_report,
+                                retirement_failures,
+                                received_interpretation: None,
+                                received_source: None,
+                                source_index: None,
+                                acquired_ingress: None,
+                                unread_owner_cancellation,
+                                ..
+                            },
+                        additional_failures,
+                        payload,
                     },
-                additional_failures,
-                payload,
-            })) => {
+            }) => {
                 // This branch is reached only after the real private committed
                 // receiver closed. No ACK or initialization interpreter ran.
                 assert!(activation_tasks.is_empty());
@@ -822,6 +869,8 @@ where
                         additional_failures,
                         terminal_report,
                         retirement_failures,
+                        termination_notification,
+                        retirement_report,
                     },
                 );
                 ItemSettlement::Accepted(ChildCreationOutcome::HostRejected {
@@ -1016,7 +1065,7 @@ mod child_projection_panic {
     use std::pin::pin;
     use std::ptr;
     use std::sync::{Arc, Mutex, PoisonError};
-    use std::task::{Context, Poll, Waker};
+    use std::task::{Context, Poll, Wake, Waker};
 
     use behavior::{
         ActionSettlement, Actions, BehaviorActed, BehaviorBase, Births, ChildCreationOutcome,
@@ -1038,7 +1087,10 @@ mod child_projection_panic {
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::launch::{OwnedTask, spawn_root_with};
     use crate::local::children::StructuralOrigins;
-    use crate::local::children::{ChildBinding, ChildBindings, ChildBindingsIn};
+    use crate::local::children::{
+        ChildBinding, ChildBindings, ChildBindingsIn, ChildCreationAt, CreationBinding,
+        StartupRetirementCustody,
+    };
     use crate::local::effects::ActionInterpreter;
     use crate::local::effects::observation::TerminationObservations;
     use crate::local::effects::reports::LocalTerminalReports;
@@ -1048,16 +1100,37 @@ mod child_projection_panic {
     };
     use crate::local::endpoint::ExtractLocalEndpoint;
     use crate::terminal::{
-        ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RetirementSchema,
+        ActorRetirement, ChildFailure, ChildOrigin, ProjectTerminal, RetirementNotificationError,
+        RetirementSchema,
     };
-    use crate::{ActorSpace, ActorSpaces, LedgerProtocol, ShutdownLedger};
+    use crate::{
+        ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport, ActorSpace,
+        ActorSpaces, LedgerProtocol, RetirementAssessment, ShutdownLedger,
+    };
 
     type ProjectionCustody = (oneshot::Sender<(Id, ChildTerminal)>, Box<dyn Any + Send>);
     static PROJECTION_CUSTODY: Mutex<Option<ProjectionCustody>> = Mutex::new(None);
 
+    struct StartupTerminationWake {
+        panic: Mutex<Option<Box<dyn Any + Send>>>,
+    }
+
+    impl Wake for StartupTerminationWake {
+        fn wake(self: Arc<Self>) {
+            let payload = self
+                .panic
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .take()
+                .expect("the actual termination publication owns one original cause");
+            resume_unwind(payload);
+        }
+    }
+
     enum ChildDisposition {
         Stop,
         Continue,
+        RejectInitialization(Option<Vec<u64>>),
     }
 
     struct ProjectionChild {
@@ -1065,14 +1138,17 @@ mod child_projection_panic {
         entries: Arc<Vec<u64>>,
     }
 
-    #[actor(message = Never)]
+    #[actor(message = Never, error = Vec<u64>)]
     impl ProjectionChild {
         #[allow(
             clippy::unnecessary_wraps,
             reason = "the generated fold retains its exact controlled-error boundary"
         )]
         fn init(&mut self) -> BehaviorActed<Self> {
-            match self.disposition {
+            match &mut self.disposition {
+                ChildDisposition::RejectInitialization(error) => {
+                    Err(error.take().expect("one original initialization rejection"))
+                }
                 ChildDisposition::Stop => Ok(Actions::stop()),
                 ChildDisposition::Continue => Ok(Actions::cont()),
             }
@@ -1081,6 +1157,7 @@ mod child_projection_panic {
 
     struct ProjectionParent {
         first: CreationId,
+        first_disposition: Option<ChildDisposition>,
         later: CreationId,
         first_entries: Option<Arc<Vec<u64>>>,
         later_entries: Option<Arc<Vec<u64>>>,
@@ -1098,7 +1175,10 @@ mod child_projection_panic {
         )]
         fn init(&mut self) -> BehaviorActed<Self> {
             let first = ProjectionChild {
-                disposition: ChildDisposition::Stop,
+                disposition: self
+                    .first_disposition
+                    .take()
+                    .expect("one original first child disposition"),
                 entries: self
                     .first_entries
                     .take()
@@ -1518,6 +1598,13 @@ mod child_projection_panic {
         let entries = Arc::new(vec![71, 73, 79]);
         let original_allocation = entries.as_ptr();
         let original_owner = Arc::downgrade(&entries);
+        let notification_cause = Arc::new(vec![109_u64, 113]);
+        let notification_owner = Arc::downgrade(&notification_cause);
+        let notification_payload: Box<dyn Any + Send> = Box::new(notification_cause);
+        let notification_identity = ptr::from_ref(notification_payload.as_ref()).cast::<()>();
+        let notification_waker = Waker::from(Arc::new(StartupTerminationWake {
+            panic: Mutex::new(Some(notification_payload)),
+        }));
         let mut creations = CreationSequence::new();
         let previous = creations
             .issue()
@@ -1534,7 +1621,7 @@ mod child_projection_panic {
             }
             .stop_on_shutdown(),
         )));
-        let (pending, retirement, progress, route, allocated_address) = runtime.block_on(async {
+        let (pending, retirement, progress, route, allocated_address, registered, report_before_projection, terminated) = runtime.block_on(async {
             let spaces = Arc::new(ProjectionSpaces {
                 parents: ActorSpace::new(),
             });
@@ -1601,25 +1688,80 @@ mod child_projection_panic {
             assert!(matches!(authority, Some(crate::local::children::ChildAuthority::Unavailable(id)) if id == creation_id));
             let binding = <_ as crate::local::children::ChildCreationAt<ChildHead>>::creation_namespace(capabilities.child_bindings.as_mut().expect("actual pending binding owner remains")).0.get_mut(&creation_id)
                 .expect("the actual pending child has its reserved row");
-            let crate::local::children::CreationBinding::Starting { address, .. } = binding else {
+            let crate::local::children::CreationBinding::Starting { address, startup, .. } = binding else {
                 panic!("the pending child retains its actual raw startup allocation");
             };
             let allocated_address = *address;
+            let (endpoint, acknowledgement) = startup.await.expect("actual private startup receipt");
+            let mut termination = pin!(endpoint.termination());
+            let registered = termination.as_mut().poll(&mut Context::from_waker(&notification_waker));
+            // Refuse this original private ACK after registering the observer;
+            // the endpoint remains unavailable as an established child.
+            drop(acknowledgement);
             assert_ne!(creation_id.get(), route, "creator identity and actual reserved route are distinct facts");
-            let retirement = capabilities.retire().await;
-            // Let the detached startup task receive its real owner cancellation
-            // and complete cleanup before making the lifetime observation.
-            for _ in 0..16 {
+            let mut capabilities = Some(capabilities);
+            let mut retirement = None;
+            let mut report_before_projection = None;
+            loop {
+                let polled = {
+                    let mut receiving = pin!(<_ as RetireCapabilities>::receive_retirement(
+                        &mut capabilities, &mut retirement));
+                    receiving.as_mut().poll(&mut Context::from_waker(Waker::noop()))
+                };
+                if let Some(owner) = capabilities.as_mut() {
+                    let namespace = <_ as ChildCreationAt<ChildHead>>::creation_namespace(
+                        owner.child_bindings.as_mut().expect("same original child owner"));
+                    if let Some(CreationBinding::RetiringStartup {
+                        custody: StartupRetirementCustody::Projection {
+                            retirement_report, ..
+                        }, ..
+                    }) = namespace.0.get(&creation_id) {
+                        report_before_projection.get_or_insert(*retirement_report);
+                    }
+                }
+                if matches!(polled, Poll::Ready(())) { break; }
                 tokio::task::yield_now().await;
             }
+            let retirement = retirement.expect("actual native startup and parent capability cleanup");
+            let terminated = termination.await;
+            drop(endpoint);
             drop((
                 source_owner,
                 source_mailbox,
                 source_receiver,
                 terminal_receiver,
             ));
-            (pending, retirement, progress, route, allocated_address)
+            (pending, retirement, progress, route, allocated_address, registered, report_before_projection, terminated)
         });
+        drop(runtime);
+        assert!(matches!(registered, Poll::Pending));
+        assert!(terminated.is_err());
+        let report_before_projection =
+            report_before_projection.expect("joined report precedes raw startup projection");
+        assert_eq!(
+            report_before_projection.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            report_before_projection.failures(),
+            ActorFailureAssessment::FailuresFound,
+            "raw startup report lost its known joined failure assessment"
+        );
+        let [ChildFailure::StartupTerminationNotificationFailed { origin, error }] =
+            retirement.descendants.1.as_slice()
+        else {
+            panic!("raw startup projection lost its original termination notification cause");
+        };
+        assert_eq!(origin.creation_id(), creation_id);
+        assert_eq!(origin.address(), allocated_address);
+        let RetirementNotificationError::Panicked { payload } = error else {
+            panic!("actual notification panic must not become a disappeared-producer cause");
+        };
+        assert!(ptr::eq(
+            ptr::from_ref(payload.as_ref()).cast::<()>(),
+            notification_identity
+        ));
+        assert_eq!(notification_owner.strong_count(), 1);
         assert!(matches!(pending, Poll::Pending));
         let Some(InterpretationProgress::Interpreting(CreationInterpretationCustody::Children(
             mut rows,
@@ -1708,6 +1850,29 @@ mod child_projection_panic {
         };
         assert_eq!(entries.as_ptr(), original_allocation);
         assert_eq!(entries.as_slice(), [71, 73, 79]);
+        let [terminal] = retirement.descendants.0.as_slice() else {
+            panic!("one complete original raw child survives");
+        };
+        let ActorRetirement::BindingAbandoned {
+            custody,
+            initialization,
+        } = &terminal.retirement
+        else {
+            panic!("the real unacknowledged private startup retains its full native disposition");
+        };
+        assert_eq!(
+            custody.behavior.base().entries.as_ptr(),
+            original_allocation
+        );
+        let InterpretationProgress::Original(actions) = initialization else {
+            panic!("uncommitted startup retains the original complete initialization Actions");
+        };
+        assert_eq!(actions.sends, SendLayer::new(NoSends, NoSends));
+        assert!(actions.creates.is_empty());
+        assert_eq!(actions.become_, Step::Continue);
+        drop(retirement);
+        assert_eq!(original_owner.strong_count(), 0);
+        assert_eq!(notification_owner.strong_count(), 0);
     }
 
     #[test]
@@ -1749,12 +1914,13 @@ mod child_projection_panic {
         let roots = spaces.parents.clone();
         let parent = ProjectionParent {
             first,
+            first_disposition: Some(ChildDisposition::Stop),
             later,
             first_entries: Some(first_entries),
             later_entries: Some(later_entries),
         }
         .stop_on_shutdown();
-        let (reported, parent_poll, shutdown, received, remaining_owner) =
+        let (reported, parent_poll, shutdown, received, remaining_owner, termination_notification) =
             runtime.block_on(async move {
                 let actor_spaces = Arc::new(spaces);
                 let root = spawn_root_with(
@@ -1791,11 +1957,16 @@ mod child_projection_panic {
                 .unwrap_or_else(|_| panic!("the actual parent publishes both committed births"));
                 let mut owned = Some(root.task);
                 let mut received = None;
+                let mut termination_notification = None;
                 let reported = projected.await;
                 // The eager synchronous callback transfers then unwinds in the same
                 // task poll. No await separates publication from its native panic.
                 let parent_poll = {
-                    let mut waiting = pin!(OwnedTask::receive_finish(&mut owned, &mut received));
+                    let mut waiting = pin!(OwnedTask::receive_finish(
+                        &mut owned,
+                        &mut received,
+                        &mut termination_notification
+                    ));
                     waiting
                         .as_mut()
                         .poll(&mut Context::from_waker(Waker::noop()))
@@ -1804,9 +1975,17 @@ mod child_projection_panic {
                     Some(control) => control.send(EventLayer::Owned(ShutdownRequested)),
                     None => panic!("the parent remains live until its explicit shutdown"),
                 };
-                OwnedTask::receive_finish(&mut owned, &mut received).await;
+                OwnedTask::receive_finish(&mut owned, &mut received, &mut termination_notification)
+                    .await;
                 drop(root.actor);
-                (reported, parent_poll, shutdown, received, owned)
+                (
+                    reported,
+                    parent_poll,
+                    shutdown,
+                    received,
+                    owned,
+                    termination_notification,
+                )
             });
         drop(runtime);
         let stale_custody = PROJECTION_CUSTODY
@@ -1816,10 +1995,25 @@ mod child_projection_panic {
         drop(stale_custody);
         // Native root join and executor cleanup precede every custody oracle.
         assert!(remaining_owner.is_none());
+        assert!(matches!(termination_notification, Some(Ok(()))));
         assert!(matches!(parent_poll, Poll::Pending));
         assert!(shutdown.is_ok());
         let (projection_task, first_terminal) =
             reported.expect("the actual first child transferred its complete retirement");
+        let parent_report = ActorRetirementReport::from_joined(
+            received.as_ref().expect("actual parent join"),
+            termination_notification
+                .as_ref()
+                .expect("actual first notification"),
+        );
+        assert_eq!(
+            parent_report.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            parent_report.failures(),
+            ActorFailureAssessment::FailuresFound
+        );
         let outcome = received
             .expect("the actual root join was acquired")
             .expect("the projector panic must not substitute for the parent task result");
@@ -1909,6 +2103,11 @@ mod child_projection_panic {
         assert_eq!(failures.len(), 1);
         let failure = failures.remove(0);
         let ChildFailure::ProjectionTaskFailed {
+            notifications:
+                Ok(ActorNotificationReceipts {
+                    termination: Ok(()),
+                    retirement: Ok(()),
+                }),
             origin,
             actor,
             error,
@@ -2062,6 +2261,9 @@ mod child_projection_panic {
             match &behavior.base().disposition {
                 ChildDisposition::Stop => assert_eq!(terminal.origin, origin),
                 ChildDisposition::Continue => assert_ne!(terminal.origin, origin),
+                ChildDisposition::RejectInitialization(_) => {
+                    panic!("this control initializes both child actors successfully");
+                }
             }
             assert_eq!(behavior.base().entries.as_ptr(), allocation);
             assert_eq!(behavior.base().entries.as_slice(), entries);
@@ -2178,6 +2380,204 @@ mod child_projection_panic {
     #[test]
     #[expect(
         clippy::too_many_lines,
+        reason = "one actual quiet startup preserves complete settlement lanes and joined sibling custody"
+    )]
+    fn quiet_startup_keeps_failure_assessment_without_a_native_failure_row() {
+        let runtime = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("local executor");
+        let first_entries = Arc::new(vec![71, 73]);
+        let later_entries = Arc::new(vec![79, 83]);
+        let first_allocation = first_entries.as_ptr();
+        let later_allocation = later_entries.as_ptr();
+        let first_owner = Arc::downgrade(&first_entries);
+        let later_owner = Arc::downgrade(&later_entries);
+        let original_error = vec![89, 97];
+        let error_allocation = original_error.as_ptr();
+        let mut creations = CreationSequence::new();
+        let first = creations.issue().expect("first issued creation");
+        let later = creations.issue().expect("later issued creation");
+        let spaces = ProjectionSpaces {
+            parents: ActorSpace::new(),
+        };
+        let roots = spaces.parents.clone();
+        let parent = ProjectionParent {
+            first,
+            first_disposition: Some(ChildDisposition::RejectInitialization(Some(original_error))),
+            later,
+            first_entries: Some(first_entries),
+            later_entries: Some(later_entries),
+        }
+        .stop_on_shutdown();
+        let (joined, notification) = runtime.block_on(async move {
+            let actor_spaces = Arc::new(spaces);
+            let root = spawn_root_with(
+                roots,
+                Config::new(2),
+                MailAddr::APPLICATION_ROOT,
+                parent,
+                move |control, terminal_reports, timers, observations| {
+                    let bindings = ChildBinding::new_in(actor_spaces.as_ref());
+                    ActionInterpreter::new(ApplicationCapabilities::<
+                        StopOnShutdown<ProjectionParent>,
+                        ProjectionSpaces,
+                        NoParent,
+                        ChildBindings<
+                            StopOnShutdown<ProjectionParent>,
+                            ChildTerminal,
+                            StructuralOrigins<ProjectionParent>,
+                        >,
+                        StructuralOrigins<ProjectionParent>,
+                    >::new_with_bindings(
+                        ApplicationCapabilityInputs {
+                            address: MailAddr::APPLICATION_ROOT,
+                            actor_spaces,
+                            allocations: ApplicationAddresses::new(),
+                            control,
+                            timers,
+                            observations,
+                            terminal_reports,
+                        },
+                        bindings,
+                    ))
+                },
+            )
+            .await
+            .unwrap_or_else(|_| panic!("actual parent admission"));
+            let shutdown = root
+                .shutdown_control
+                .upgrade()
+                .expect("live parent control")
+                .send(EventLayer::Owned(ShutdownRequested));
+            let retirement = root.task.finish().await;
+            assert!(shutdown.is_ok());
+            drop(root.actor);
+            retirement
+        });
+        drop(runtime);
+        let report = ActorRetirementReport::from_joined(&joined, &notification);
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+        assert!(notification.is_ok());
+        let native = ActorRetirement::from_local(joined.expect("actual original actor join"));
+        let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    behavior,
+                    descendants,
+                    child_failures: failures,
+                    capability_failures,
+                    additional_failures,
+                    retirement_failures,
+                    ..
+                },
+            settlements,
+            completion,
+            ..
+        } = native
+        else {
+            panic!("the original parent completes its explicit stop");
+        };
+        assert_eq!(completion, Completion::Stopped);
+        assert!(failures.is_empty());
+        assert!(capability_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(retirement_failures.is_empty());
+        let parent = behavior.into_inner();
+        assert_eq!((parent.first, parent.later), (first, later));
+        assert!(parent.first_disposition.is_none());
+        assert!(parent.first_entries.is_none());
+        assert!(parent.later_entries.is_none());
+        let [stopped, initialized] = settlements
+            .try_into()
+            .unwrap_or_else(|_| panic!("ordered stop and initialization settlements"));
+        assert_eq!(stopped.sends, SendLayer::new(NoSends, NoSends));
+        assert_eq!(stopped.become_, Step::Stop(Stopped));
+        let CreationSettlement::Settled(stopped_creations) = stopped.creations.into_settlement()
+        else {
+            panic!("complete stop creation lane");
+        };
+        assert!(stopped_creations.is_empty());
+        assert_eq!(initialized.sends, SendLayer::new(NoSends, NoSends));
+        assert_eq!(initialized.become_, Step::Continue);
+        let CreationSettlement::Settled(reports) = initialized.creations.into_settlement() else {
+            panic!("complete initialization creation lane");
+        };
+        let reports: Vec<_> = reports.into_iter().collect();
+        let [rejected, established] = reports
+            .try_into()
+            .unwrap_or_else(|_| panic!("both original creation settlements"));
+        let SettledItem::Attempted(ItemSettlement::Accepted(
+            ChildCreationOutcome::InitializationRejected { creation, error },
+        )) = rejected
+        else {
+            panic!("Core retains the original quiet initialization rejection");
+        };
+        assert_eq!(creation.id(), first);
+        assert_eq!(creation.kind(), CreationKind::Birth);
+        let (creation, _) = creation.into_parts();
+        let (_, rejected_child, _) = creation.into_parts();
+        assert_eq!(rejected_child.base().entries.as_ptr(), first_allocation);
+        assert_eq!(rejected_child.base().entries.as_slice(), &[71, 73]);
+        assert!(matches!(
+            rejected_child.base().disposition,
+            ChildDisposition::RejectInitialization(None)
+        ));
+        assert_eq!(error.as_ptr(), error_allocation);
+        assert_eq!(error, vec![89, 97]);
+        let SettledItem::Attempted(ItemSettlement::Accepted(ChildCreationOutcome::Established(
+            established,
+        ))) = established
+        else {
+            panic!("the independent later sibling commits");
+        };
+        assert_eq!(established.id(), later);
+        assert_eq!(established.kind(), CreationKind::Birth);
+        let endpoint = established
+            .actor()
+            .into_recipient()
+            .interpret(&mut ExtractLocalEndpoint);
+        let [later_terminal] = descendants.as_slice() else {
+            panic!("one actual joined later sibling");
+        };
+        assert_eq!(later_terminal.origin.address(), endpoint.address());
+        let ActorRetirement::OwnerCancelled {
+            custody:
+                ActorCustody {
+                    behavior,
+                    child_failures,
+                    descendants,
+                    capability_failures,
+                    additional_failures,
+                    retirement_failures,
+                    ..
+                },
+            settlements,
+            ..
+        } = &later_terminal.retirement
+        else {
+            panic!("parent retirement joins the independent sibling");
+        };
+        assert_eq!(behavior.base().entries.as_ptr(), later_allocation);
+        assert_eq!(behavior.base().entries.as_slice(), &[79, 83]);
+        assert!(matches!(
+            behavior.base().disposition,
+            ChildDisposition::Continue
+        ));
+        assert_eq!(child_failures.as_slice(), []);
+        assert_eq!(settlements.len(), 0);
+        assert_eq!(descendants.as_slice(), []);
+        assert!(capability_failures.is_empty());
+        assert!(additional_failures.is_empty());
+        assert!(retirement_failures.is_empty());
+        assert_eq!(first_owner.strong_count(), 1);
+        assert_eq!(later_owner.strong_count(), 1);
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
         reason = "one native trace proves both interrupted receiving loans and later-child retirement preserve the original affine values"
     )]
     fn pending_startup_projection_failure_preserves_raw_retry_projection_retry_and_later_child() {
@@ -2191,6 +2591,13 @@ mod child_projection_panic {
         let later_allocation = later_entries.as_ptr();
         let payload = Box::new(String::from("original pending startup projector cause"));
         let payload_allocation = ptr::from_ref(payload.as_ref()).addr();
+        let notification_cause = Arc::new(vec![127_u64, 131]);
+        let notification_owner = Arc::downgrade(&notification_cause);
+        let notification_payload: Box<dyn Any + Send> = Box::new(notification_cause);
+        let notification_identity = ptr::from_ref(notification_payload.as_ref()).cast::<()>();
+        let notification_waker = Waker::from(Arc::new(StartupTerminationWake {
+            panic: Mutex::new(Some(notification_payload)),
+        }));
         let (publication, projected) = oneshot::channel();
         let previous_custody = STARTUP_PROJECTION_CUSTODY
             .lock()
@@ -2201,7 +2608,15 @@ mod child_projection_panic {
         let first = sequence.issue().expect("two actual creations fit");
         let later = sequence.issue().expect("two actual creations fit");
         let previous = sequence.issue().expect("explicit predecessor fits");
-        let (retirement, reported, first_route, later_route) = runtime.block_on(async move {
+        let (
+            retirement,
+            reported,
+            first_route,
+            later_route,
+            registered,
+            report_before_projection,
+            terminated,
+        ) = runtime.block_on(async move {
             let spaces = Arc::new(ProjectionSpaces {
                 parents: ActorSpace::new(),
             });
@@ -2287,6 +2702,26 @@ mod child_projection_panic {
                     .poll(&mut Context::from_waker(Waker::noop()))
             };
             assert!(matches!(startup_poll, Poll::Pending));
+            let (first_endpoint, acknowledgement) = {
+                let namespace = <_ as ChildCreationAt<ChildHead>>::creation_namespace(
+                    capabilities
+                        .child_bindings
+                        .as_mut()
+                        .expect("same pending child namespace"),
+                );
+                let Some(CreationBinding::Starting { startup, .. }) = namespace.0.get_mut(&first)
+                else {
+                    panic!("the real unpublished child retains its original private receiver");
+                };
+                startup
+                    .await
+                    .expect("the actual first private startup receipt")
+            };
+            let mut termination = pin!(first_endpoint.termination());
+            let registered = termination
+                .as_mut()
+                .poll(&mut Context::from_waker(&notification_waker));
+            drop(acknowledgement);
             let later_reply = <_ as behavior::EstablishChild<
                 ChildHead,
                 StopOnShutdown<ProjectionChild>,
@@ -2330,17 +2765,9 @@ mod child_projection_panic {
             };
             assert!(matches!(raw_poll, Poll::Pending));
             let mut projection_polls = 0;
+            let report_before_projection;
+            let mut polled = raw_poll;
             loop {
-                tokio::task::yield_now().await;
-                let polled = {
-                    let mut receiving = pin!(<_ as RetireCapabilities>::receive_retirement(
-                        &mut capabilities,
-                        &mut retirement
-                    ));
-                    receiving
-                        .as_mut()
-                        .poll(&mut Context::from_waker(Waker::noop()))
-                };
                 let owner = capabilities
                     .as_mut()
                     .expect("the original parent survives receiving disposal");
@@ -2360,10 +2787,13 @@ mod child_projection_panic {
                             crate::local::children::StartupRetirementCustody::Projection {
                                 task: Some(_),
                                 received: None,
+                                retirement_report,
+                                ..
                             },
                         ..
                     } => {
                         assert!(matches!(polled, Poll::Pending));
+                        report_before_projection = *retirement_report;
                         break;
                     }
                     crate::local::children::CreationBinding::RetiringStartup {
@@ -2378,12 +2808,24 @@ mod child_projection_panic {
                         "startup retirement retains exactly its current original receiving value"
                     ),
                 }
+                tokio::task::yield_now().await;
+                polled = {
+                    let mut receiving = pin!(<_ as RetireCapabilities>::receive_retirement(
+                        &mut capabilities,
+                        &mut retirement
+                    ));
+                    receiving
+                        .as_mut()
+                        .poll(&mut Context::from_waker(Waker::noop()))
+                };
             }
             <_ as RetireCapabilities>::receive_retirement(&mut capabilities, &mut retirement).await;
             assert!(capabilities.is_none());
             let reported = projected
                 .await
                 .expect("one original projected startup retirement");
+            let terminated = termination.await;
+            drop(first_endpoint);
             drop((
                 source_owner,
                 source_mailbox,
@@ -2395,9 +2837,23 @@ mod child_projection_panic {
                 reported,
                 first_route,
                 later_route,
+                registered,
+                report_before_projection,
+                terminated,
             )
         });
         drop(runtime);
+        assert!(matches!(registered, Poll::Pending));
+        assert!(terminated.is_err());
+        assert_eq!(
+            report_before_projection.retirement(),
+            RetirementAssessment::Established
+        );
+        assert_eq!(
+            report_before_projection.failures(),
+            ActorFailureAssessment::FailuresFound,
+            "raw startup report must exist before the actual projector can panic"
+        );
         let (projection_task, first_terminal) = reported;
         assert_eq!(first_terminal.origin.nonce(), first_route);
         assert_eq!(first_terminal.origin.creation_id(), first);
@@ -2410,6 +2866,20 @@ mod child_projection_panic {
             .behavior()
             .expect("original uncommitted child survives total projection");
         assert_eq!(first_child.base().entries.as_ptr(), first_allocation);
+        let ActorRetirement::BindingAbandoned {
+            custody,
+            initialization,
+        } = &first_terminal.retirement
+        else {
+            panic!("projector panic must retain the complete original raw child disposition");
+        };
+        assert_eq!(custody.behavior.base().entries.as_slice(), [83, 89]);
+        let InterpretationProgress::Original(actions) = initialization else {
+            panic!("projector panic must retain original uncommitted initialization Actions");
+        };
+        assert_eq!(actions.sends, SendLayer::new(NoSends, NoSends));
+        assert!(actions.creates.is_empty());
+        assert_eq!(actions.become_, Step::Continue);
         let mut descendants = retirement.descendants.0;
         let later_terminal = descendants
             .pop()
@@ -2433,18 +2903,34 @@ mod child_projection_panic {
             .pop()
             .expect("exact startup projector cause survives");
         assert!(failures.is_empty());
-        let ChildFailure::StartupProjectionTaskFailed { origin, error } = failure else {
+        let ChildFailure::StartupProjectionTaskFailed {
+            origin,
+            error,
+            termination_notification,
+        } = failure
+        else {
             panic!("startup failure grants no invented endpoint authority");
         };
         assert_eq!(origin.creation_id(), first);
         assert_eq!(origin.creation_kind(), CreationKind::replacement(previous));
         assert_eq!(origin.nonce(), first_route);
         assert_eq!(error.id(), projection_task);
+        let Err(RetirementNotificationError::Panicked { payload }) = &termination_notification
+        else {
+            panic!("raw projector panic erased the original termination notification cause");
+        };
+        assert!(ptr::eq(
+            ptr::from_ref(payload.as_ref()).cast::<()>(),
+            notification_identity
+        ));
+        assert_eq!(notification_owner.strong_count(), 1);
         let payload = error.into_panic();
         assert_eq!(
             ptr::from_ref(payload.as_ref()).cast::<()>().addr(),
             payload_allocation
         );
+        drop(termination_notification);
+        assert_eq!(notification_owner.strong_count(), 0);
     }
 
     #[test]
@@ -2540,6 +3026,7 @@ mod child_projection_panic {
                 crate::local::children::StartupRetirementCustody::Raw {
                     task: None,
                     received: Some(Err(error)),
+                    termination_notification: Some(_),
                 },
             ..
         }) = row
@@ -2579,8 +3066,11 @@ mod child_projection_panic {
         let retirement = retirement.expect("parent acquires complete native startup failure");
         assert!(retirement.descendants.0.is_empty());
         let mut failures = retirement.descendants.1;
-        let ChildFailure::StartupActorTaskFailed { origin, error } =
-            failures.pop().expect("exact native child task error")
+        let ChildFailure::StartupActorTaskFailed {
+            origin,
+            error,
+            termination_notification,
+        } = failures.pop().expect("exact native child task error")
         else {
             panic!("native startup failure claims no established actor");
         };
@@ -2597,6 +3087,13 @@ mod child_projection_panic {
             source_receiver,
             terminal_receiver,
         ));
+        assert!(
+            matches!(
+                termination_notification,
+                Err(RetirementNotificationError::ReceiptClosed { .. })
+            ),
+            "native raw JoinError erased its independent original termination receipt"
+        );
     }
 
     #[test]
@@ -2717,26 +3214,31 @@ mod child_rejection_custody {
             )),
         }
         .stop_on_shutdown();
-        let outcome = Application::with_topology(root, worker_application::Topology::new())
-            .run_with(move |application| async move {
-                application
-                    .lifecycle()
-                    .request_shutdown()
-                    .expect("shutdown admitted");
-                work
-            })
-            .await
-            .unwrap_or_else(|original| {
-                drop(original);
-                panic!("entered host");
-            });
+        let (outcome, native, notifications) =
+            Application::with_topology(root, worker_application::Topology::new())
+                .run_with(move |application| async move {
+                    application
+                        .lifecycle()
+                        .request_shutdown()
+                        .expect("shutdown admitted");
+                    work
+                })
+                .await
+                .unwrap_or_else(|original| {
+                    drop(original);
+                    panic!("entered host");
+                });
         let (work, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
             drop(original);
             panic!("work returned independently of cleanup");
         });
         assert_eq!(work.as_ptr(), work_allocation);
         assert_eq!(&*work, "caller work survived");
-        let (_, retirement) = cleanup.expect("parent retirement joined");
+        cleanup.expect("parent cleanup completed");
+        let (_, retirement) = native.expect("parent retirement joined");
+        let notifications = notifications.expect("parent original notifications transferred");
+        assert!(notifications.termination.is_ok());
+        assert!(notifications.retirement.is_ok());
         let ActorRetirement::Completed {
             custody:
                 ActorCustody {

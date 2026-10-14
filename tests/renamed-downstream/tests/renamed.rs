@@ -2,13 +2,13 @@
 
 use core::marker::PhantomData;
 
-use actor_runtime::Hosts;
 use actor_runtime::actors::ActorExt;
 use actor_runtime::behavior::{
     Actions, BehaviorActed, BehaviorBase, CreateChild, CreationSequence, Creations,
     EstablishedDelivery, EstablishedRecipient, Never, NoBirths, NoSends, Step, Stopped,
 };
 use actor_runtime::prelude::{ActorRetirement, Protocol, RootOrigin};
+use actor_runtime::{ActorNotificationReceipts, Hosts};
 
 // These caller-owned names must not capture paths emitted by the macros.
 mod bombay {
@@ -178,11 +178,18 @@ mod tests {
                     drop(original);
                     panic!("the renamed application must retain complete retirement");
                 });
-        let actor_runtime::ApplicationOutcome::NotInvoked {
-            work: None,
-            cleanup: Ok((origin, retirement)),
-            ..
-        } = outcome
+        let (
+            actor_runtime::ApplicationOutcome::NotInvoked {
+                work: None,
+                cleanup: Ok(()),
+                ..
+            },
+            Ok((origin, retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
         else {
             panic!("initialization stops before startup grant and returns complete child custody");
         };
@@ -246,10 +253,19 @@ mod tests {
             })
             .await
             .unwrap_or_else(|_| panic!("the actual caller owns the entered host"));
+        let (outcome, native, notifications) = outcome;
         let ((), cleanup) = outcome
             .try_into_completed()
             .unwrap_or_else(|_| panic!("the caller completes independently of cleanup"));
-        let (_, retirement) = cleanup.expect("the exact original tally is acquired");
+        cleanup.expect("the application's cleanup completes");
+        let Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }) = notifications
+        else {
+            panic!("both original tally notifications succeed");
+        };
+        let (_, retirement) = native.expect("the exact original tally is acquired");
         assert_eq!(
             retirement.completion(),
             Some(&actor_runtime::prelude::Completion::Stopped)

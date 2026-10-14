@@ -619,7 +619,10 @@ where
         Never,
     > {
         let Some(ChildAuthority::Established {
-            endpoint, control, ..
+            endpoint,
+            control,
+            retirement,
+            ..
         }) = self
             .child_bindings
             .as_ref()
@@ -634,6 +637,7 @@ where
         let actor = EstablishedActor::<StableProxy<Worker, Plan>>::issued(InstalledActor::new(
             endpoint.clone(),
             control.clone(),
+            retirement.clone(),
         ));
         let event = <StableProxy<Worker, Plan> as Behavior>::Event::child_input(request);
         match control.send(event) {

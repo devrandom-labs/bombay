@@ -1,3 +1,5 @@
+#[cfg(test)]
+use bombay::ActorNotificationReceipts;
 use std::future::Future;
 
 use axum::{
@@ -268,11 +270,20 @@ mod tests {
             drop(original);
             panic!("the caller's actual runtime is entered");
         });
+        let (rejected, native, notifications) = rejected;
         let (original, cleanup) = rejected.try_into_completed().unwrap_or_else(|original| {
             drop(original);
             panic!("the completed rejection preserves independent actor cleanup");
         });
-        assert_application_stopped(cleanup.expect("the actual closed root joins"));
+        cleanup.expect("the application's cleanup producer completes");
+        let Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }) = notifications
+        else {
+            panic!("both closed-root notification results remain independently acquired");
+        };
+        assert_application_stopped(native.expect("the actual closed root joins"));
         assert_eq!(original.order_id, 127);
     }
 
@@ -331,17 +342,31 @@ mod tests {
             drop(failed);
             panic!("the live caller host is entered");
         });
-        if let ApplicationOutcome::Completed {
-            output: _,
-            cleanup: Ok((_, ActorRetirement::ActorTaskFailed(_))),
-        } = &outcome
+        if let (
+            ApplicationOutcome::Completed {
+                output: _,
+                cleanup: Ok(()),
+            },
+            Ok((_, ActorRetirement::ActorTaskFailed(_))),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = &outcome
         {
             panic!("the original serving result and joined root must both remain acquired");
         }
-        let ApplicationOutcome::Completed {
-            output: Ok(()),
-            cleanup: Ok((origin, retirement)),
-        } = outcome
+        let (
+            ApplicationOutcome::Completed {
+                output: Ok(()),
+                cleanup: Ok(()),
+            },
+            Ok((origin, retirement)),
+            Ok(ActorNotificationReceipts {
+                termination: Ok(()),
+                retirement: Ok(()),
+            }),
+        ) = outcome
         else {
             panic!("the original serving result and joined root must both remain acquired");
         };

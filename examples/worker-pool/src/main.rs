@@ -1,8 +1,8 @@
 //! Run one bounded FIFO pool through Bombay's concrete local application.
 //! The pool owns admission, assignment, completion, and orderly worker drain.
 
-use bombay::ActorCustody;
 use bombay::ApplicationOutcome;
+use bombay::{ActorCustody, ActorNotificationReceipts};
 use tokio::runtime::Builder;
 mod worker;
 
@@ -106,10 +106,17 @@ fn run_search_pool() {
             panic!("the pool runs its worker and shuts down");
         });
     drop(application_host);
-    let ApplicationOutcome::Completed {
-        output: termination,
-        cleanup: Ok((root_origin, joined_actor)),
-    } = application_outcome
+    let (
+        ApplicationOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+    ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
     };

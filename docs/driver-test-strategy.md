@@ -63,6 +63,14 @@ proof. `ObserveEstablishedCreation` and `CancelObservation` are
 public capability contracts with no current public-template emitter and stay
 listed so a later emitter cannot appear outside the inventory.
 
+This identity is source-revalidated at `2bb4510077bfa5aed82e08d25453c146b3184285`.
+The 45 template and 19 capability entries retain their declared boundaries;
+initial-factory preparation and creation-refusal custody changed within Actors.
+Conditional child membership, private-input recovery and composed send routing
+remain Behavior-owned. Revision fields bind the current reproduction contract;
+old execution receipts remain historical. The law and inventory gates must run
+again against this integrated selection before acceptance.
+
 ## Schema-2 manifest
 
 `driver-law-manifest.json` contains exactly one row for every canonical `D-*`

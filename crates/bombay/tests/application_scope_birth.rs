@@ -1,6 +1,5 @@
 //! Early external endpoints and one root share one affine application scope.
 
-use bombay::ApplicationScope;
 use bombay::actors::ActorExt as _;
 use bombay::atomic::{
     ActivationPolicy, ActorDrainPolicy, CancelAuthority, CancellationReceipt,
@@ -14,6 +13,7 @@ use bombay::behavior::{
     MessageProtocol,
 };
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr, StopOnShutdown};
+use bombay::{ActorNotificationReceipts, ApplicationScope};
 use std::collections::BTreeMap;
 use std::ptr;
 use tokio::runtime::Builder;
@@ -103,7 +103,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         .enable_all()
         .build()
         .expect("caller host");
-    let outcome = host
+    let (outcome, native, notifications) = host
         .block_on(
             scope
                 .with_topology(root, service_application::Topology::new())
@@ -318,7 +318,14 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         drop(original);
         panic!("work and independent cleanup retained");
     });
-    let (origin, retirement) = cleanup.expect("joined root cleanup");
+    let () = cleanup.expect("application cleanup completes");
+    let ActorNotificationReceipts {
+        termination,
+        retirement: retirement_notification,
+    } = notifications.expect("independent original notification receipts");
+    assert!(termination.is_ok());
+    assert!(retirement_notification.is_ok());
+    let (origin, retirement) = native.expect("joined root cleanup");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let ActorRetirement::Completed { custody, .. } = retirement else {
