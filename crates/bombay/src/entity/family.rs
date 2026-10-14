@@ -22,6 +22,7 @@ use behavior_actors::ShutdownRequested;
 use tokio::runtime::Handle;
 
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::application::MailboxCapacity;
 use crate::launch::SpawnError;
 use crate::local::endpoint::ActorRef;
 use crate::topology::Hosts as LocalHosts;
@@ -687,6 +688,7 @@ pub(crate) trait InstallEntityFamilies<Hosts>: EntityApplicationFamilies<Hosts> 
         hosts: Arc<Hosts>,
         allocations: ApplicationAddresses,
         executor: Handle,
+        mailbox_capacity: MailboxCapacity,
     ) -> Self::Installed;
 }
 
@@ -696,7 +698,14 @@ where
 {
     type Installed = ();
 
-    fn install(self, _: Arc<Hosts>, _: ApplicationAddresses, _: Handle) -> Self::Installed {}
+    fn install(
+        self,
+        _: Arc<Hosts>,
+        _: ApplicationAddresses,
+        _: Handle,
+        _: MailboxCapacity,
+    ) -> Self::Installed {
+    }
 }
 
 impl<Hosts, Role, D, Tail> InstallEntityFamilies<Hosts>
@@ -715,6 +724,7 @@ where
         hosts: Arc<Hosts>,
         allocations: ApplicationAddresses,
         executor: Handle,
+        mailbox_capacity: MailboxCapacity,
     ) -> Self::Installed {
         let (role, definition, directory, capacity, tail) = self;
         let definition = Arc::new(definition);
@@ -726,6 +736,7 @@ where
             capacity,
             Arc::clone(&metrics),
             executor.clone(),
+            mailbox_capacity,
         );
         let runtime = EntityRuntime::new(directory, runtime);
         let entities = Entities::from_runtime(&runtime, definition);
@@ -734,7 +745,7 @@ where
             entities,
             metrics,
         };
-        let tail = tail.install(hosts, allocations, executor);
+        let tail = tail.install(hosts, allocations, executor, mailbox_capacity);
         (role, family, tail)
     }
 }

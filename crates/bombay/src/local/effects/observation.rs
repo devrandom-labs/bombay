@@ -972,6 +972,7 @@ mod tests {
 #[cfg(test)]
 mod installed_shutdown_contract {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, ChildCreationOutcome,
@@ -1193,6 +1194,7 @@ mod installed_shutdown_contract {
                 address: MailAddr(501),
                 actor_spaces: Arc::new(()),
                 allocations: allocations.clone(),
+                mailbox_capacity: MailboxCapacity::default(),
                 control: direct_control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
@@ -1223,6 +1225,7 @@ mod installed_shutdown_contract {
                 address: MailAddr(503),
                 actor_spaces: Arc::new(()),
                 allocations,
+                mailbox_capacity: MailboxCapacity::default(),
                 control: nested_control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
@@ -1304,6 +1307,7 @@ mod installed_shutdown_contract {
                 address: MailAddr(509),
                 actor_spaces: Arc::new(()),
                 allocations: ApplicationAddresses::new(),
+mailbox_capacity: MailboxCapacity::default(),
                 control: observer_control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),

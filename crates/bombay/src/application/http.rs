@@ -241,6 +241,7 @@ where
                     None => ApplicationScope {
                         allocations,
                         client_capacity: MailboxCapacity::default(),
+                        mailbox_capacity: MailboxCapacity::default(),
                     },
                 };
                 let root = match members.compose(root) {

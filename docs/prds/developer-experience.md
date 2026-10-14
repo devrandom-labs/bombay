@@ -486,3 +486,58 @@ custody. Disposition: pass for feature isolation. Evidence:
 OUTCOME-FEATURE-VERIFIED.json and OUTCOME-FEATURE-ORACLES.json. Full24-gate
 verification remains open; c8f871c failed at861.140 seconds with548 unchanged
 source hashes (ten passed, one failed, thirteen cancelled).
+
+Actor mailbox scope (DX06 retained focused stage): deliberate Bombay runtime
+configuration policy. Application::mailbox_capacity and the matching pre-root
+ApplicationScope method select one validated user-message limit for root,
+fresh births and Entity execution; client reply capacity is independent.
+The pre-edit actor RED fails on missing setters and native Entity RED fails
+on the missing validated launch input. Reuse Communication0.1.5 Config and
+existing scope, child startup/capability and Entity family/runtime owners.
+Two private constants across three allocation sites are deleted; no new
+public type, trait, bound, generic, event, effect, phase or lifecycle authority.
+The selected immutable capacity remains with exactly the owners constructing
+future mailboxes, and startup rejection returns it in the original application.
+Expanded cumulative authorization remains2026-10-09.
+
+Five actor journeys plus one native Entity case pass Rust1.99/1.96 debug/release:
+direct root, early scope, full original rejection/retry/accepted prefix, fresh
+child, native cancellation custody, public Entity family propagation and
+missing-host retry. Existing client_capacity tests4 and application_clients
+tests8 (including both timer/shutdown orders) pass in all four builds:18 tests
+per build total. All550 source hashes stay unchanged. Strict workspace
+all-target/all-feature Clippy/fmt pass; six active rustdoc tests pass and the
+three prior ignored schematic snippets remain ignored. Raw integers and forged
+capacity construction remain denied. Four independent ignored-limit defects
+(root, birth, native Entity, family propagation) each fail for their exact
+saturation law in debug/release; all four restored controls pass and all
+mutated source hashes restore.
+
+Drift/provenance: production+94/-16/net78; tests+804/-0/net804, including existing
+private fixtures preserving their previous1024 default and two wrapper settings.
+Nine owner-source physical lines13851→14030 (including existing tests),
+matches148→148, arrows300→300, enum declarations22→22, structs69→69, modules24→24,
+public methods24→26. ApplicationWorkCustody remains StagingRejected/Unstarted/
+Prepared/NotInvoked/Completed; WorkPresence remains Supplied/Absent. Creation
+and native Entity outcome/retirement sums, transition authority and all
+interpreter ordering are unchanged. Scope, capability inputs/owner, PendingChild
+and Entity runtime each need the current limit for future construction.
+No arrival history, repeated cause, false cardinality, nested transition
+authority, semantic flag or structural user syntax is introduced. Existing
+receiving acquisition order is preserved. Cross-check: DX06/20, Communication
+admission and native creation/retirement laws. Disposition: pass for the tested
+mailbox paths; complete cold-descendant ordinary inference, resource accounting
+and final package/full gates remain open. Artifacts: ACTOR-CAPACITY-VERIFIED.json,
+ACTOR-CAPACITY-CHECKPOINT.json, ACTOR-CAPACITY-LINT.json,
+ACTOR-INVERSES-VERIFIED.json and ACTOR-CAPACITY-DOCTEST.log.
+
+Cold inference falsifier: the first cold Library member creating Archive through
+the ordinary topology DSL fails E0275 in BirthNodeAt projected self-equality,
+independently of mailbox configuration. Preserve actual source/log/hash in
+COLD-MEMBER-CAPACITY-INFERENCE.{rs,log,json}. No caller annotation, recursive
+terminal enum or new bound is retained to hide it. Reopen DX03/11 cold inference;
+the separate codex/devx-topology owner correction and native consumer must pass
+its required composition, denial and final-source checks before integration.
+The user guide explains actor/client limits separately and explicitly retains
+control events, waiting sends, actor state, pool backlogs, Entity resident/
+hydration limits and terminal custody as independent memory resources.

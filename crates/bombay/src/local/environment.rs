@@ -1134,6 +1134,7 @@ use core::pin::pin;
 
 #[cfg(test)]
 mod tests {
+    use crate::MailboxCapacity;
     use core::task::{Context, Waker};
     use std::convert::Infallible;
     use std::mem::size_of;
@@ -2866,6 +2867,7 @@ mod tests {
                 let inputs = ApplicationCapabilityInputs::<ReadyActor, ()> {
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+                    mailbox_capacity: MailboxCapacity::default(),
                     address,
                     control,
                     timers,

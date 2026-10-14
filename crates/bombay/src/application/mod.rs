@@ -51,6 +51,24 @@ impl<Root, Spaces> Application<Root, Spaces> {
 }
 
 impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families> {
+    /// Select the bounded user mailbox size for every actor in this application.
+    /// The root, fresh children, cold members and Entity actors inherit this
+    /// limit; client reply endpoints keep their independent client capacity.
+    /// Admission refusal returns the original message. This limit does not bound
+    /// control events, waiting senders, actor state or retained terminal custody.
+    ///
+    /// Unvalidated integers cannot select an actor mailbox:
+    ///
+    /// ```compile_fail,E0308
+    /// let scope = bombay::ApplicationScope::new().mailbox_capacity(3);
+    /// ```
+    #[must_use]
+    pub fn mailbox_capacity(mut self, capacity: MailboxCapacity) -> Self {
+        let scope = self.scope.get_or_insert_with(ApplicationScope::new);
+        scope.mailbox_capacity = capacity;
+        self
+    }
+
     /// Select the bounded reply mailbox size for clients established during execution.
     /// Existing early endpoints retain their own previously selected capacity.
     ///

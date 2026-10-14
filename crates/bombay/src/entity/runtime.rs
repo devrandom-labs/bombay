@@ -1315,6 +1315,7 @@ mod tests {
     use super::{
         Activated, EntityRetirementError, EntityRuntime, FenceFailure, LocalEntityRuntime,
     };
+    use crate::MailboxCapacity;
     use crate::actors::ActorExt;
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::application::ActorInterface;
@@ -1527,6 +1528,7 @@ mod tests {
             ),
             Arc::new(EntityMetricState::default()),
             Handle::current(),
+            MailboxCapacity::default(),
         );
         let runtime = EntityRuntime::new(
             DirectoryConfig::default(),

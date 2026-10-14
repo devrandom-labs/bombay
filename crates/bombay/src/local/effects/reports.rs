@@ -244,6 +244,7 @@ pub(crate) struct LocalParentReports<Event, Child, Position> {
 #[cfg(test)]
 mod parent_conversion_custody {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use core::ptr;
     use std::panic::resume_unwind;
@@ -686,6 +687,7 @@ mod parent_conversion_custody {
                             address: MailAddr::APPLICATION_ROOT,
                             actor_spaces: actor_spaces.clone(),
                             allocations: addresses,
+mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
@@ -1338,6 +1340,7 @@ mod parent_conversion_custody {
 
 #[cfg(test)]
 mod parent_report_custody {
+    use crate::MailboxCapacity;
     use crate::actor;
     use crate::actors::ActorExt;
     use crate::address::{ApplicationAddresses, MailAddr};
@@ -1505,6 +1508,7 @@ mod parent_report_custody {
                     address: MailAddr::APPLICATION_ROOT,
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+mailbox_capacity: MailboxCapacity::default(),
                     control: control.clone(),
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -1552,6 +1556,7 @@ mod parent_report_custody {
                     address: MailAddr(17),
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+mailbox_capacity: MailboxCapacity::default(),
                     control: child_control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),

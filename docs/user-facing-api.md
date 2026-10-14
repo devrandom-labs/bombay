@@ -377,8 +377,27 @@ existing endpoint. Communication rounds a positive minimum up to a power of two
 with floor2: requesting3 means4 effective slots, available through `get()`.
 Zero or overflowing rounding returns `MailboxCapacityError` with the original
 minimum, before mailbox allocation. Closing admission preserves accepted replies;
-`try_send` returns the original input when full or closed. Actor mailboxes, pool
-backlogs and Entity hydration/resident limits are separate resources.
+`try_send` returns the original input when full or closed.
+
+Select actor mailboxes independently on the same application:
+
+```text
+let messages = bombay::MailboxCapacity::new(32)?;
+let replies = bombay::MailboxCapacity::new(8)?;
+let application = bombay::Application::new(root)
+    .mailbox_capacity(messages)
+    .client_capacity(replies);
+```
+
+The actor limit follows the root, fresh children, cold members and Entity actors,
+including their descendants. `ApplicationScope::mailbox_capacity` selects the
+same limit before root assembly. Configuration survives rejected startup with
+the original application. Existing control events and shutdown remain independent
+of user mailbox saturation. A mailbox bound covers queued user messages; pending
+senders, actor-owned state and retained retirement values can consume additional
+memory. Pool backlogs and Entity hydration/resident limits remain separate choices.
+The [actor capacity witnesses](../crates/bombay/tests/actor_capacity.rs) exercise
+native roots, fresh children, Entity family propagation and complete custody.
 The [capacity witnesses](../crates/bombay/tests/client_capacity.rs) exercise
 saturation, prefix draining, exact rejection, shutdown and missing-host retry.
 

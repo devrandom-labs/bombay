@@ -836,6 +836,7 @@ where
 
 #[cfg(test)]
 mod child_input_custody {
+    use crate::MailboxCapacity;
     use behavior::Never;
     use core::convert::Infallible;
     use core::pin::pin;
@@ -1083,6 +1084,7 @@ mod child_input_custody {
                 address: MailAddr::APPLICATION_ROOT,
                 actor_spaces: Arc::new(()),
                 allocations: ApplicationAddresses::new(),
+                mailbox_capacity: MailboxCapacity::default(),
                 control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
@@ -1153,6 +1155,7 @@ mod child_input_custody {
                 address: MailAddr::APPLICATION_ROOT,
                 actor_spaces: Arc::new(()),
                 allocations: ApplicationAddresses::new(),
+                mailbox_capacity: MailboxCapacity::default(),
                 control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),

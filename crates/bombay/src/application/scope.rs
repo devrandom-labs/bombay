@@ -14,6 +14,7 @@ use core::fmt;
 pub struct ApplicationScope {
     pub(super) allocations: ApplicationAddresses,
     pub(super) client_capacity: MailboxCapacity,
+    pub(super) mailbox_capacity: MailboxCapacity,
 }
 
 impl ApplicationScope {
@@ -23,6 +24,7 @@ impl ApplicationScope {
         Self {
             allocations: ApplicationAddresses::new(),
             client_capacity: MailboxCapacity::default(),
+            mailbox_capacity: MailboxCapacity::default(),
         }
     }
 
@@ -31,6 +33,15 @@ impl ApplicationScope {
     #[must_use]
     pub const fn client_capacity(mut self, capacity: MailboxCapacity) -> Self {
         self.client_capacity = capacity;
+        self
+    }
+
+    /// Select the user mailbox size for this application's actors.
+    /// The root, fresh children, cold members and Entity actors inherit this
+    /// limit. External reply endpoints retain their independent client capacity.
+    #[must_use]
+    pub const fn mailbox_capacity(mut self, capacity: MailboxCapacity) -> Self {
+        self.mailbox_capacity = capacity;
         self
     }
 
@@ -98,6 +109,7 @@ mod tests {
         let scope = ApplicationScope {
             allocations: ApplicationAddresses::from_next(u64::MAX),
             client_capacity: MailboxCapacity::default(),
+            mailbox_capacity: MailboxCapacity::default(),
         };
         for _ in 0..2 {
             let allocation = scope.external::<MessageProtocol<MailAddr, u64>>();

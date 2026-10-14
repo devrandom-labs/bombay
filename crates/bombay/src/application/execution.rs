@@ -11,7 +11,7 @@ use crate::local::effects::{
     ActionInterpreter, ApplicationCapabilities, ApplicationCapabilityInputs, CommitActions,
     NoParent,
 };
-use crate::local::ingress::{DEFAULT_USER_CAPACITY, StandardIngress};
+use crate::local::ingress::StandardIngress;
 use crate::observe;
 use crate::terminal::{
     ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, RetirementNotificationError,
@@ -69,6 +69,7 @@ where
     /// Original borrowed setup or Work causes unwind in the caller; retained receiving remains independent.
     #[expect(
         clippy::type_complexity,
+        clippy::too_many_lines,
         reason = "retain independent work phase, original root reply and role-indexed shutdown receiving results"
     )]
     pub fn execute_with_entities<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
@@ -210,6 +211,7 @@ where
                 let scope = scope.unwrap_or_else(|| ApplicationScope {
                     allocations: allocations.clone(),
                     client_capacity: MailboxCapacity::default(),
+                    mailbox_capacity: MailboxCapacity::default(),
                 });
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
@@ -228,8 +230,12 @@ where
                     }
                 };
                 let spaces = Arc::new(spaces);
-                let installed_families =
-                    families.install(Arc::clone(&spaces), allocations, entity_executor);
+                let installed_families = families.install(
+                    Arc::clone(&spaces),
+                    allocations,
+                    entity_executor,
+                    scope.mailbox_capacity,
+                );
                 let (work, publication) = original_work.into_not_invoked();
                 Ok((
                     ApplicationWorkPublication {
@@ -517,6 +523,7 @@ where
                     None => ApplicationScope {
                         allocations,
                         client_capacity: MailboxCapacity::default(),
+                        mailbox_capacity: MailboxCapacity::default(),
                     },
                 };
                 let root = match members.compose(root) {
@@ -696,6 +703,7 @@ where
                     None => ApplicationScope {
                         allocations,
                         client_capacity: MailboxCapacity::default(),
+                        mailbox_capacity: MailboxCapacity::default(),
                     },
                 };
                 let root = match members.compose(root) {
@@ -1375,9 +1383,15 @@ where
             let roots = <Spaces as RootRegistration<Actor::Protocol>>::root_space(spaces).clone();
             let bindings = ChildBindings::<Actor, Terminal, Origins>::new_in(spaces);
             let receptionists = installed_families.receptionists();
-            (roots, bindings, receptionists, scope.client_capacity)
+            (
+                roots,
+                bindings,
+                receptionists,
+                scope.client_capacity,
+                scope.mailbox_capacity,
+            )
         }));
-        let (roots, bindings, receptionists, client_capacity) = match setup {
+        let (roots, bindings, receptionists, client_capacity, mailbox_capacity) = match setup {
             Ok(setup) => setup,
             Err(cause) => {
                 // The actor is still inside Prepared; no task was handed off at this cut.
@@ -1399,7 +1413,7 @@ where
         let (authority, startup, shutdown_control, actor_join, termination_notification) = {
             let entered_executor = executor.enter();
             let address = MailAddr::APPLICATION_ROOT;
-            let config = communication::Config::new(DEFAULT_USER_CAPACITY);
+            let config = communication::Config::new(mailbox_capacity.get());
             let Some((ApplicationWorkCustody::Prepared((root, spaces, scope), work), publication)) =
                 original_work.publication.take()
             else {
@@ -1426,6 +1440,7 @@ where
                             address,
                             actor_spaces,
                             allocations,
+                            mailbox_capacity,
                             control,
                             timers,
                             observations,

@@ -2876,6 +2876,7 @@ mod ordinary_owner_retirement {
 #[cfg(test)]
 mod transitive_source_cancellation {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use super::ActorExecution;
     use crate::ActorExecutionOutcome;
@@ -3155,6 +3156,7 @@ mod transitive_source_cancellation {
                             address,
                             actor_spaces: Arc::new(()),
                             allocations: ApplicationAddresses::new(),
+                            mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,

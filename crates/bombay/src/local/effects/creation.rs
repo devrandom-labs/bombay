@@ -1,5 +1,6 @@
 use crate::ActorExecutionOutcome;
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::application::MailboxCapacity;
 use crate::launch::{
     ActorSpace, OwnedActor, OwnedTask, ProjectedTask, SpawnError, spawn_owned_execution,
 };
@@ -14,7 +15,6 @@ use crate::local::effects::{
 };
 use crate::local::endpoint::InstalledActor;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
-use crate::local::ingress::DEFAULT_USER_CAPACITY;
 use crate::observe;
 use crate::terminal::{ActorRetirementReport, ProjectTerminal, RetirementSchema};
 use crate::worker_preparation::{WorkerPreparationSource, settle_worker_preparation};
@@ -191,6 +191,7 @@ where
         let PendingChild {
             creations,
             creation_order,
+            mailbox_capacity,
             actors,
             actor_spaces,
             allocations,
@@ -202,6 +203,7 @@ where
         N::establish::<Origin, OriginFn>(PendingChild {
             creations,
             creation_order,
+            mailbox_capacity,
             actors,
             actor_spaces: Arc::clone(actor_spaces.as_ref()),
             allocations,
@@ -238,6 +240,7 @@ where
     actors: ActorSpace<Child::Protocol>,
     actor_spaces: Arc<N>,
     allocations: ApplicationAddresses,
+    mailbox_capacity: MailboxCapacity,
     control: ControlSender<C::Event>,
     creation: RoutedCreation<MailAddr, Child>,
     origin: OriginFn,
@@ -415,13 +418,14 @@ where
                 };
             }
         };
+        let mailbox_capacity = pending.mailbox_capacity;
         let actors = pending.actors;
         let actor_spaces = pending.actor_spaces.clone();
         let allocations = pending.allocations.clone();
         let parent = pending.control.clone();
         let (startup, control, task) = spawn_owned_execution(
             actors,
-            communication::Config::new(DEFAULT_USER_CAPACITY),
+            communication::Config::new(mailbox_capacity.get()),
             address,
             child,
             move |control, terminal_reports, timers, observations| {
@@ -438,6 +442,7 @@ where
                             address,
                             actor_spaces,
                             allocations,
+                            mailbox_capacity,
                             control,
                             timers,
                             observations,
@@ -933,6 +938,7 @@ where
             creation_order,
             actors,
             actor_spaces: self.actor_spaces.clone(),
+            mailbox_capacity: self.mailbox_capacity,
             allocations: self.allocations.clone(),
             control: self.control.clone(),
             creation,
@@ -1058,6 +1064,7 @@ fn routed_creation<Child>(
 #[cfg(test)]
 mod child_projection_panic {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use std::any::Any;
     use std::future::Future;
@@ -1505,6 +1512,7 @@ mod child_projection_panic {
                 address: MailAddr::APPLICATION_ROOT,
                 actor_spaces: spaces.clone(),
                 allocations: ApplicationAddresses::new(), control,
+mailbox_capacity: MailboxCapacity::default(),
                 timers: LocalTimers::new(), observations: TerminationObservations::new(), terminal_reports: LocalTerminalReports::new(terminal_sender),
             }, ChildBinding::new_in(spaces.as_ref()));
             let mut routed = None;
@@ -1646,6 +1654,7 @@ mod child_projection_panic {
                     address: MailAddr::APPLICATION_ROOT,
                     actor_spaces: spaces.clone(),
                     allocations: ApplicationAddresses::new(),
+mailbox_capacity: MailboxCapacity::default(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -1944,6 +1953,7 @@ mod child_projection_panic {
                                 address: MailAddr::APPLICATION_ROOT,
                                 actor_spaces: actor_spaces.clone(),
                                 allocations: ApplicationAddresses::new(),
+                                mailbox_capacity: MailboxCapacity::default(),
                                 control,
                                 timers,
                                 observations,
@@ -2434,6 +2444,7 @@ mod child_projection_panic {
                             address: MailAddr::APPLICATION_ROOT,
                             actor_spaces,
                             allocations: ApplicationAddresses::new(),
+                            mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
@@ -2641,6 +2652,7 @@ mod child_projection_panic {
                     address: MailAddr::APPLICATION_ROOT,
                     actor_spaces: spaces.clone(),
                     allocations: ApplicationAddresses::new(),
+                    mailbox_capacity: MailboxCapacity::default(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -2970,6 +2982,7 @@ mod child_projection_panic {
                 address: MailAddr::APPLICATION_ROOT,
                 actor_spaces: spaces.clone(),
                 allocations: ApplicationAddresses::new(),
+                mailbox_capacity: MailboxCapacity::default(),
                 control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),

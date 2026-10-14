@@ -15,6 +15,7 @@ use tokio::runtime::Handle;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::application::MailboxCapacity;
 use crate::launch::{OwnedActor, SpawnError, spawn_owned_entity_with};
 use crate::local::children::StructuralOrigins;
 use crate::local::children::{
@@ -32,8 +33,6 @@ use super::{
     Activated, ActivationId, EntityActivationError, EntityId, FenceFailure, LocalEntityRuntime,
     RetirementMode,
 };
-
-const USER_CAPACITY: usize = 1_024;
 
 type NativeEntityCapabilities<B, N, Terminal> = ApplicationCapabilities<
     B,
@@ -63,6 +62,7 @@ where
         address: MailAddr,
         allocations: ApplicationAddresses,
         behavior: B,
+        mailbox_capacity: MailboxCapacity,
     ) -> impl Future<
         Output = Result<
             NativeEntityActor<B, Terminal, ChildFailures>,
@@ -103,6 +103,7 @@ where
         address: MailAddr,
         allocations: ApplicationAddresses,
         behavior: B,
+        mailbox_capacity: MailboxCapacity,
     ) -> Result<
         NativeEntityActor<B, Terminal, ChildFailures>,
         SpawnError<B, (Vec<Terminal>, ChildFailures)>,
@@ -110,7 +111,7 @@ where
         let addresses = <N as Hosts<B::Protocol>>::space(&self).clone();
         spawn_owned_entity_with(
             addresses,
-            Config::new(USER_CAPACITY),
+            Config::new(mailbox_capacity.get()),
             address,
             behavior,
             move |control, terminal_reports, timers, observations| {
@@ -124,6 +125,7 @@ where
                         address,
                         actor_spaces: Arc::new(self),
                         allocations,
+                        mailbox_capacity,
                         control,
                         timers,
                         observations,
@@ -173,6 +175,7 @@ where
     residents: Arc<Semaphore>,
     metrics: Arc<EntityMetricState>,
     executor: Handle,
+    mailbox_capacity: MailboxCapacity,
 }
 
 impl<D> Clone for BombayEntityRuntime<D>
@@ -188,6 +191,7 @@ where
             residents: Arc::clone(&self.residents),
             metrics: Arc::clone(&self.metrics),
             executor: self.executor.clone(),
+            mailbox_capacity: self.mailbox_capacity,
         }
     }
 }
@@ -199,6 +203,7 @@ pub(crate) fn bombay_entity_runtime<D>(
     capacity: EntityCapacity,
     metrics: Arc<EntityMetricState>,
     executor: Handle,
+    mailbox_capacity: MailboxCapacity,
 ) -> BombayEntityRuntime<D>
 where
     D: EntityDefinition,
@@ -211,6 +216,7 @@ where
         residents: Arc::new(Semaphore::new(capacity.residents().get())),
         metrics,
         executor,
+        mailbox_capacity,
     }
 }
 
@@ -267,7 +273,12 @@ where
             }
         };
         let mut actor = Arc::clone(&self.actors)
-            .launch_entity(address, self.allocations.clone(), behavior)
+            .launch_entity(
+                address,
+                self.allocations.clone(),
+                behavior,
+                self.mailbox_capacity,
+            )
             .await
             .map_err(|failure| {
                 self.metrics.launch_failed();
@@ -451,6 +462,70 @@ mod tests {
         }
     }
 
+    #[tokio::test(flavor = "current_thread")]
+    async fn native_entity_mailbox_limit_keeps_rejection_and_cancelled_prefix_custody() {
+        let addresses = ApplicationAddresses::new();
+        let origin = MailAddr(97);
+        let address = addresses.allocate().expect("fresh Entity address");
+        let hosts = Arc::new(ActorSpace::<DeliveryLedger>::new());
+        let original = hosts
+            .launch_entity(
+                address,
+                addresses,
+                DeliveryLedger::default().stop_on_shutdown(),
+                MailboxCapacity::new(2).expect("two native Entity slots"),
+            )
+            .await;
+        let Ok(mut original) = original else {
+            panic!("the actual Entity host commits its original actor");
+        };
+        original.acknowledge_binding();
+        let mut identities = Vec::new();
+        for value in 0..2 {
+            let values = vec![value];
+            identities.push(values.as_ptr());
+            let admission = original.actor.try_send_from(origin, values);
+            assert!(admission.is_ok());
+        }
+        let values = vec![2];
+        let identity = values.as_ptr();
+        let admission = original.actor.try_send_from(origin, values);
+        let Err(communication::TrySendError::Full(values)) = admission else {
+            panic!("the native Entity mailbox must return its complete third input");
+        };
+        assert!(ptr::eq(identity, values.as_ptr()));
+        let (joined, notification) = original.task.retire().await;
+        assert!(notification.is_ok());
+        let joined = joined.expect("the original native task returns complete custody");
+        let retirement: ActorRetirement<StopOnShutdown<DeliveryLedger>, Never, Vec<Never>> =
+            ActorRetirement::from_local(joined);
+        let custody = retirement
+            .custody()
+            .expect("the original Entity state remains owned");
+        let accepted: Vec<_> = custody
+            .behavior
+            .base()
+            .received
+            .iter()
+            .chain(custody.user.iter())
+            .collect();
+        assert_eq!(accepted.len(), identities.len());
+        for (index, (delivery, identity)) in accepted.iter().zip(identities).enumerate() {
+            assert_eq!(delivery.from, origin);
+            assert!(ptr::eq(delivery.message.as_ptr(), identity));
+            assert_eq!(
+                delivery.message,
+                [u64::try_from(index).expect("two inputs fit")]
+            );
+        }
+        assert_eq!(custody.descendants.len(), 0);
+        assert_eq!(custody.child_failures.len(), 0);
+        assert!(custody.capability_failures.is_empty());
+        assert!(custody.additional_failures.is_empty());
+        assert!(custody.retirement_failures.is_empty());
+        assert!(ptr::eq(values.as_ptr(), identity));
+    }
+
     struct LedgerDefinition {
         #[expect(
             clippy::type_complexity,
@@ -555,6 +630,7 @@ mod tests {
             ),
             Arc::clone(&metrics),
             Handle::current(),
+            MailboxCapacity::default(),
         );
         let activation = ActivationId::new(NonZeroU64::new(83).expect("activation"));
         let activated = runtime.activate(EntityId::new(73), activation).await;
@@ -754,6 +830,7 @@ mod tests {
                 EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN),
                 Arc::new(EntityMetricState::default()),
                 Handle::current(),
+                MailboxCapacity::default(),
             );
             let activation = ActivationId::new(NonZeroU64::new(83).expect("activation"));
             let activated = runtime.activate(EntityId::new(73), activation).await;
@@ -1003,6 +1080,7 @@ mod tests {
                 ShutdownConversionActor {
                     entries: Arc::clone(&inputs),
                 },
+                MailboxCapacity::default(),
             )
             .await;
         let Ok(mut original) = original else {
@@ -1098,6 +1176,7 @@ mod tests {
             capacity,
             Arc::new(EntityMetricState::default()),
             executor,
+            MailboxCapacity::default(),
         );
         let id = EntityId::new(59);
         let activation = ActivationId::new(NonZeroU64::MIN);
@@ -1268,6 +1347,7 @@ mod tests {
             EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN),
             Arc::clone(&metrics),
             Handle::current(),
+            MailboxCapacity::default(),
         );
         for generation in [1, 2] {
             let activation =
@@ -1402,6 +1482,7 @@ mod tests {
             EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN),
             Arc::new(EntityMetricState::default()),
             executor,
+            MailboxCapacity::default(),
         );
         let (task_host, received_host) = oneshot::channel();
         let mut task = native_runtime.spawn(async move {

@@ -6,6 +6,7 @@ mod reports;
 pub(crate) mod timers;
 
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::application::MailboxCapacity;
 use crate::local::children::{NoChildBindings, RetireChildTasks, StructuralOrigins};
 use crate::local::effects::observation::TerminationObservations;
 use crate::local::effects::timers::LocalTimers;
@@ -44,6 +45,7 @@ where
         Self {
             actor_spaces: inputs.actor_spaces,
             allocations: inputs.allocations,
+            mailbox_capacity: inputs.mailbox_capacity,
             address: inputs.address,
             control: inputs.control,
             timers: inputs.timers,
@@ -71,6 +73,7 @@ where
         ApplicationCapabilities {
             actor_spaces: self.actor_spaces,
             allocations: self.allocations,
+            mailbox_capacity: self.mailbox_capacity,
             address: self.address,
             control: self.control,
             timers: self.timers,
@@ -447,6 +450,7 @@ where
     pub(crate) address: MailAddr,
     pub(crate) actor_spaces: Arc<N>,
     pub(crate) allocations: ApplicationAddresses,
+    pub(crate) mailbox_capacity: MailboxCapacity,
     pub(crate) control: ControlSender<C::Event>,
     pub(crate) timers: LocalTimers<C::Event>,
     pub(crate) observations: TerminationObservations<MailAddr, C::Event>,
@@ -464,6 +468,7 @@ pub(crate) struct ApplicationCapabilities<
 {
     actor_spaces: Arc<N>,
     allocations: ApplicationAddresses,
+    mailbox_capacity: MailboxCapacity,
     address: MailAddr,
     control: ControlSender<C::Event>,
     timers: LocalTimers<C::Event>,
@@ -511,6 +516,7 @@ pub(crate) struct ActionInterpreter<Capabilities> {
 #[cfg(test)]
 mod atomic_interpretation_contract {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use core::convert::Infallible;
     use core::future::Future;
@@ -598,6 +604,10 @@ mod atomic_interpretation_contract {
     }
 
     #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one complete settlement and retirement trace retains every independent owned lane"
+    )]
     async fn retirement_keeps_refusal_assessment_after_exact_settlement_is_discharged() {
         let (control, owner, mailbox, receiver) =
             mailbox_channel::<User<MailAddr, Never>, User<MailAddr, Never>>(Config::new(1));
@@ -608,6 +618,7 @@ mod atomic_interpretation_contract {
                     address: MailAddr(139),
                     actor_spaces: Arc::new(ActorSpace::<LedgerProtocol>::new()),
                     allocations: ApplicationAddresses::new(),
+                    mailbox_capacity: MailboxCapacity::default(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -721,6 +732,7 @@ mod atomic_interpretation_contract {
                 address: origin,
                 actor_spaces: Arc::clone(&application_hosts),
                 allocations: ApplicationAddresses::new(),
+                mailbox_capacity: MailboxCapacity::default(),
                 control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
@@ -1005,6 +1017,7 @@ mod atomic_interpretation_contract {
             address: MailAddr::APPLICATION_ROOT,
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
+            mailbox_capacity: MailboxCapacity::default(),
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -1046,6 +1059,7 @@ mod atomic_interpretation_contract {
             address: MailAddr::APPLICATION_ROOT,
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
+            mailbox_capacity: MailboxCapacity::default(),
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -1141,6 +1155,7 @@ mod atomic_interpretation_contract {
             address: MailAddr::APPLICATION_ROOT,
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
+            mailbox_capacity: MailboxCapacity::default(),
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -1296,6 +1311,7 @@ mod atomic_interpretation_contract {
             address: MailAddr::APPLICATION_ROOT,
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
+            mailbox_capacity: MailboxCapacity::default(),
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -1438,6 +1454,7 @@ mod atomic_interpretation_contract {
             address: MailAddr::APPLICATION_ROOT,
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
+            mailbox_capacity: MailboxCapacity::default(),
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -1566,6 +1583,7 @@ mod atomic_interpretation_contract {
                 address: MailAddr::APPLICATION_ROOT,
                 actor_spaces: Arc::new(()),
                 allocations: ApplicationAddresses::new(),
+                mailbox_capacity: MailboxCapacity::default(),
                 control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
@@ -1727,6 +1745,7 @@ mod atomic_interpretation_contract {
             address: MailAddr::APPLICATION_ROOT,
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
+            mailbox_capacity: MailboxCapacity::default(),
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -1840,6 +1859,7 @@ mod atomic_interpretation_contract {
                         address: MailAddr(173),
                         actor_spaces: Arc::new(()),
                         allocations: ApplicationAddresses::new(),
+                        mailbox_capacity: MailboxCapacity::default(),
                         control,
                         timers,
                         observations,
@@ -1988,6 +2008,7 @@ mod atomic_interpretation_contract {
             address: MailAddr::APPLICATION_ROOT,
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
+            mailbox_capacity: MailboxCapacity::default(),
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -2182,6 +2203,7 @@ mod atomic_interpretation_contract {
                     address,
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+                    mailbox_capacity: MailboxCapacity::default(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -2456,6 +2478,7 @@ mod atomic_interpretation_contract {
                     address: MailAddr(151),
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+                    mailbox_capacity: MailboxCapacity::default(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -2560,6 +2583,7 @@ mod atomic_interpretation_contract {
                             address: MailAddr(161),
                             actor_spaces: Arc::new(()),
                             allocations: ApplicationAddresses::new(),
+                            mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
@@ -2782,6 +2806,7 @@ mod atomic_interpretation_contract {
                     address: MailAddr(151),
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+                    mailbox_capacity: MailboxCapacity::default(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -2886,6 +2911,7 @@ mod atomic_interpretation_contract {
                             address: MailAddr(161),
                             actor_spaces: Arc::new(()),
                             allocations: ApplicationAddresses::new(),
+                            mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
@@ -3051,6 +3077,7 @@ mod atomic_interpretation_contract {
 
 #[cfg(test)]
 mod live_capability_retirement {
+    use crate::MailboxCapacity;
     use std::sync::Arc;
 
     use behavior::{
@@ -3165,6 +3192,7 @@ mod live_capability_retirement {
                             address: MailAddr(81),
                             actor_spaces: Arc::new(()),
                             allocations: ApplicationAddresses::new(),
+                            mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
@@ -3263,6 +3291,7 @@ mod live_capability_retirement {
 #[cfg(test)]
 mod capability_task_retirement {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::launch::{ActorSpace, spawn_local_execution};
@@ -5190,6 +5219,7 @@ mod capability_task_retirement {
                             address: MailAddr::APPLICATION_ROOT,
                             actor_spaces: actor_spaces.clone(),
                             allocations,
+                            mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
