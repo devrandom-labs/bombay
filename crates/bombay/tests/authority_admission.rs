@@ -1,7 +1,7 @@
 //! Private local admission/replay evidence; no production identity or networking contract.
 use bombay::behavior::{BehaviorBase, EstablishedDelivery, MessageProtocol, Protocol};
 use bombay::prelude::*;
-use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
 use core::ops::AsyncFn;
 use std::collections::{TryReserveError, VecDeque};
 use std::future::Future;
@@ -970,10 +970,11 @@ fn record_provider_consumer_uses_exclusive_admission() {
             .unwrap_or_else(|original| {
                 drop(original);
                 panic!("successful Application startup")
-            });
+            })
+            .into_parts();
         drop(host);
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (observations, sender),
                 cleanup: Ok(()),
             },
@@ -982,6 +983,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = received
         else {
             panic!("all actual native and notification receipts")
@@ -1092,10 +1094,11 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
             .unwrap_or_else(|original| {
                 drop(original);
                 panic!("successful Application startup")
-            });
+            })
+            .into_parts();
         drop(host);
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (observations, sender),
                 cleanup: Ok(()),
             },
@@ -1104,6 +1107,7 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = received
         else {
             panic!("all actual native and notification receipts")
@@ -1260,7 +1264,7 @@ mod replay {
     };
     use bombay::behavior::{BehaviorBase, Protocol};
     use bombay::prelude::*;
-    use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+    use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
     use core::ops::AsyncFn;
     use std::collections::TryReserveError;
     use std::env::{self, VarError};
@@ -2945,10 +2949,11 @@ mod replay {
                 .unwrap_or_else(|original| {
                     drop(original);
                     panic!("actual startup");
-                });
+                })
+                .into_parts();
             drop(host);
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (observations, target),
                     cleanup: Ok(()),
                 },
@@ -2957,6 +2962,7 @@ mod replay {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = received
             else {
                 panic!("complete native and notification originals");
@@ -3084,10 +3090,11 @@ mod replay {
                 .unwrap_or_else(|original| {
                     drop(original);
                     panic!("actual startup");
-                });
+                })
+                .into_parts();
             drop(host);
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (observations, target),
                     cleanup: Ok(()),
                 },
@@ -3096,6 +3103,7 @@ mod replay {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = received
             else {
                 panic!("complete native and notification originals");

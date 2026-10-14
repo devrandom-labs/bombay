@@ -20,10 +20,7 @@ use bombay::entity::{
     EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
 };
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown};
-use bombay::{
-    ActorFailureAssessment, ActorRetirementReport, Application, ApplicationOutcome,
-    RetirementAssessment,
-};
+use bombay::{ActorFailureAssessment, ActorRetirementReport, Application, RetirementAssessment};
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
@@ -156,7 +153,7 @@ fn main() {
         .enable_all()
         .build()
         .expect("the synchronous example owns one enabled application host");
-    let (outcome, root_receiving, notification_receiving, shutdowns) = application_host
+    let outcome = application_host
         .block_on(
             application.run_with_entities(move |application| async move {
                 let accounts = application.entities(AccountsRole);
@@ -188,7 +185,11 @@ fn main() {
             drop((application, work));
             panic!("the explicit application host must be entered: {error}");
         });
-    drop(application_host);
+    let ((), retirement) = outcome.try_into_completed().unwrap_or_else(|_| {
+        panic!("the original application work completes beside its joined cleanup");
+    });
+    let (cleanup, root_receiving, notification_receiving, shutdowns) = retirement.into_parts();
+    cleanup.expect("the original application cleanup succeeds");
     let notifications = notification_receiving
         .expect("the existing cleanup owner transferred both original notifications");
     notifications
@@ -197,13 +198,6 @@ fn main() {
     notifications
         .retirement
         .expect("joined root report notification succeeded");
-    let ApplicationOutcome::Completed {
-        output: (),
-        cleanup: Ok(()),
-    } = outcome
-    else {
-        panic!("the original application work completes beside its joined cleanup");
-    };
     let (root_origin, joined_actor) =
         root_receiving.expect("the independent original root retirement is acquired");
     let terminal = (
@@ -216,8 +210,9 @@ fn main() {
         },
     );
     let (head_receiving, ()) = shutdowns;
-    let (AccountsRole, (shutdown, metrics, family_disposal_failure)) =
+    let (AccountsRole, family_retirement) =
         head_receiving.expect("the complete original account family retirement is acquired");
+    let (shutdown, metrics, family_disposal_failure) = family_retirement.into_parts();
 
     assert!(family_disposal_failure.is_none());
     let EntityShutdown::Settled {

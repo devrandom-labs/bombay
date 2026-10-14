@@ -9,7 +9,7 @@ use bombay::behavior::{Behavior, BehaviorSettlements, Here, MessageProtocol, Nev
 use bombay::prelude::*;
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, Application,
-    ApplicationOutcome, RetirementAssessment, RetirementSchema,
+    WorkOutcome, RetirementAssessment, RetirementSchema,
 };
 use futures_util::FutureExt;
 use std::convert::Infallible;
@@ -280,10 +280,10 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                 },
             ),
         )
-        .unwrap_or_else(|_| panic!("the target enters the actual caller-owned host"));
+        .unwrap_or_else(|_| panic!("the target enters the actual caller-owned host")).into_parts()owned host"));
     drop(host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: observations,
             cleanup: Ok(()),
         },
@@ -291,8 +291,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
             retirement: Ok(()),
-        }),
-    ) = target_outcome
+        }), ()) = target_outcome
     else {
         panic!("target Work, native result and both notifications remain owned");
     };
@@ -306,7 +305,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         sibling_outcome,
     ) = observations;
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: progress,
             cleanup: Ok(()),
         },
@@ -314,8 +313,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
             retirement: Ok(()),
-        }),
-    ) = sibling_outcome.unwrap_or_else(|_| panic!("the sibling enters the same caller-owned host"))
+        }), ()) = sibling_outcome.unwrap_or_else(|_| panic!("the sibling enters the same caller-owned host"))
     else {
         panic!("sibling Work, native result and both notifications remain owned");
     };

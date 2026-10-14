@@ -11,7 +11,7 @@ use bombay::behavior::{
 use bombay::prelude::*;
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport,
-    ApplicationLifecycle, ApplicationOutcome, InstalledActor, RetirementAssessment, TrySendError,
+    ApplicationLifecycle, WorkOutcome, InstalledActor, RetirementAssessment, TrySendError,
 };
 use core::ops::AsyncFn;
 use futures_util::FutureExt;
@@ -2275,7 +2275,7 @@ async fn run_counter_profile<R>(
                                 .as_mut()
                                 .take_output()
                                 .expect("acquired execution output");
-                            let product = receiving.await;
+                            let product = receiving.await.into_parts();
                             requester_products.push((
                                 requester_result,
                                 product,
@@ -2359,13 +2359,12 @@ async fn run_counter_profile<R>(
                     | (CounterWorkCase::CounterAfterPublication, Some(Ok(())))
             ));
             let (
-                ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+                WorkOutcome::Interrupted { cleanup: Ok(()) },
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = counter_product
+                }), ()) = counter_product
             else {
                 panic!("original failed Work coexists with native and both notifications");
             };
@@ -2373,7 +2372,7 @@ async fn run_counter_profile<R>(
             for (execution, product, handoff, _) in &requester_products {
                 assert!(execution.is_ok());
                 let (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         cleanup: Ok(()),
                         output: (publication, permission),
                     },
@@ -2381,8 +2380,7 @@ async fn run_counter_profile<R>(
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
                         retirement: Ok(()),
-                    }),
-                ) = product
+                    }), ()) = product
                 else {
                     panic!("outer Work fault retains requester native and notifications");
                 };
@@ -2437,13 +2435,12 @@ async fn run_counter_profile<R>(
                     | (CounterWorkCase::RequesterAfterPublication, Some(Ok(())))
             ));
             let (
-                ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+                WorkOutcome::Interrupted { cleanup: Ok(()) },
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = product
+                }), ()) = product
             else {
                 panic!("failed requester original native and both notifications");
             };
@@ -2463,7 +2460,7 @@ async fn run_counter_profile<R>(
             assert_eq!(pending.original.protected.as_ref(), byte.as_ref());
             assert_eq!(pending.original.proof.as_ref(), &[41]);
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     cleanup: Ok(()),
                     output: counter_work_receipts,
                 },
@@ -2471,8 +2468,7 @@ async fn run_counter_profile<R>(
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = counter_product
+                }), ()) = counter_product
             else {
                 panic!("remaining Counter cleanup conserves all acquired facts");
             };
@@ -2505,7 +2501,7 @@ async fn run_counter_profile<R>(
     // Every native product/full raw+R/native error is outside Work before assertions.
     assert!(counter_execution.is_ok());
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (publication, permission),
             cleanup: Ok(()),
         },
@@ -2513,8 +2509,7 @@ async fn run_counter_profile<R>(
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
             retirement: Ok(()),
-        }),
-    ) = counter_product
+        }), ()) = counter_product
     else {
         panic!("actual Counter Work/native/notification outcomes remain distinct");
     };
@@ -2546,7 +2541,7 @@ async fn run_counter_profile<R>(
         assert!(matches!(handoff, Some(Ok(()))));
         assert!(execution.is_ok());
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -2554,8 +2549,7 @@ async fn run_counter_profile<R>(
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = product
+            }), ()) = product
         else {
             panic!("original requester native and both notifications are required");
         };
@@ -3296,7 +3290,7 @@ async fn run_protected_counter_profile<R>(
                 if requester_receipts.is_empty() {
                     first_requester_repeated_execution = Some(execution.as_mut().take_output());
                 }
-                let native = receiving.await;
+                let native = receiving.await.into_parts();
                 if handoff.is_none() {
                     let _observed = ports.as_mut().now_or_never();
                     handoff = ports.as_mut().take_output();
@@ -3402,19 +3396,18 @@ async fn run_protected_counter_profile<R>(
             counter_fault_pointer
         );
         let (
-            ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+            WorkOutcome::Interrupted { cleanup: Ok(()) },
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = &counter_native
+            }), ()) = &counter_native
         else {
             panic!("original Counter native and both notifications");
         };
         assert_cancelled_actor(*origin, retirement);
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -3422,8 +3415,7 @@ async fn run_protected_counter_profile<R>(
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = sibling_native
+            }), ()) = sibling_native
         else {
             panic!("original sibling native and both notifications");
         };
@@ -3460,13 +3452,12 @@ async fn run_protected_counter_profile<R>(
             .as_ref()
             .expect_err("original Counter Work panic");
         let (
-            ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+            WorkOutcome::Interrupted { cleanup: Ok(()) },
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = &counter_native
+            }), ()) = &counter_native
         else {
             panic!("original Counter native and both notifications");
         };
@@ -3506,7 +3497,7 @@ async fn run_protected_counter_profile<R>(
             panic!("one original requester receiving owner");
         };
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -3514,13 +3505,12 @@ async fn run_protected_counter_profile<R>(
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = native
+            }), ()) = native
         else {
             panic!("original requester Work/native/two notifications");
         };
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (sibling_publication, sibling_permission),
                 cleanup: Ok(()),
             },
@@ -3528,8 +3518,7 @@ async fn run_protected_counter_profile<R>(
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = sibling_native
+            }), ()) = sibling_native
         else {
             panic!("original sibling Work/native/two notifications");
         };
@@ -3684,14 +3673,13 @@ async fn run_protected_counter_profile<R>(
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = native
+            }), ()) = native
         else {
             panic!("original requester native and both notifications");
         };
         if execution_case == CounterWorkCase::RequesterCompletedAfterPublication {
             assert!(execution.is_ok());
-            let ApplicationOutcome::Completed {
+            let WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             } = outcome
@@ -3710,7 +3698,7 @@ async fn run_protected_counter_profile<R>(
             assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), fault_pointer);
             assert!(matches!(
                 outcome,
-                ApplicationOutcome::Interrupted { cleanup: Ok(()) }
+                WorkOutcome::Interrupted { cleanup: Ok(()) }
             ));
         }
         match execution_case {
@@ -3755,7 +3743,7 @@ async fn run_protected_counter_profile<R>(
             .zip([audit_recipient, sibling_audit_recipient])
         {
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
@@ -3763,8 +3751,7 @@ async fn run_protected_counter_profile<R>(
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = native
+                }), ()) = native
             else {
                 panic!("remaining actual actor native and notifications");
             };
@@ -4042,7 +4029,7 @@ async fn run_protected_counter_profile<R>(
     };
     let counters = [counter_native, sibling_native].map(|native| {
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -4050,8 +4037,7 @@ async fn run_protected_counter_profile<R>(
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = native
+            }), ()) = native
         else {
             panic!("full Counter Work/native/two-notification outcomes");
         };
@@ -4083,7 +4069,7 @@ async fn run_protected_counter_profile<R>(
                     acquired, begun, triggered, produced, delivered, stopped, permitted,
                 );
                 let (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         output: (publication, permission),
                         cleanup: Ok(()),
                     },
@@ -4091,8 +4077,7 @@ async fn run_protected_counter_profile<R>(
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
                         retirement: Ok(()),
-                    }),
-                ) = native
+                    }), ()) = native
                 else {
                     panic!("full requester Work/native/two-notification outcomes");
                 };
@@ -4753,9 +4738,9 @@ mod pending_verification {
                     })
                     .unwrap_or_else(|_| panic!("entered host"));
                 let execution = AssertUnwindSafe(execution).catch_unwind().await;
-                let native = receiving.await;
+                let native = receiving.await.into_parts();
                 let (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         output: stopped,
                         cleanup: Ok(()),
                     },
@@ -4763,8 +4748,7 @@ mod pending_verification {
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
                         retirement: Ok(()),
-                    }),
-                ) = native
+                    }), ()) = native
                 else {
                     panic!("actual native and both notification products");
                 };
@@ -5054,9 +5038,9 @@ mod full_retry {
                     panic!("entered explicit host");
                 });
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let acquired = receiving.await;
+            let acquired = receiving.await.into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: stopped,
                     cleanup: Ok(()),
                 },
@@ -5064,8 +5048,7 @@ mod full_retry {
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = acquired
+                }), ()) = acquired
             else {
                 panic!("actual native and both notification products");
             };
@@ -6122,9 +6105,9 @@ mod allocation_profile {
                 })
                 .unwrap_or_else(|_| panic!("entered host"));
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: stopped,
                     cleanup: Ok(()),
                 },
@@ -6132,8 +6115,7 @@ mod allocation_profile {
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = native
+                }), ()) = native
             else {
                 panic!("actual full native and both notification products");
             };
@@ -7067,9 +7049,9 @@ mod proof_rotation {
             };
             let (execution, acquired) =
                 tokio::join!(AssertUnwindSafe(execution).catch_unwind(), rotation);
-            let counter_product = receiving.await;
+            let counter_product = receiving.await.into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
@@ -7077,8 +7059,7 @@ mod proof_rotation {
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = counter_product
+                }), ()) = counter_product
             else {
                 panic!("actual Counter native and both notification products");
             };
@@ -7331,9 +7312,9 @@ mod closed_counter {
                 release = Some(permitted.send(()));
             };
             let (execution, ()) = tokio::join!(AssertUnwindSafe(execution).catch_unwind(), service);
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
@@ -7341,8 +7322,7 @@ mod closed_counter {
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = native
+                }), ()) = native
             else {
                 panic!("full original Work/native/two-notification products");
             };
@@ -7702,7 +7682,7 @@ mod stop_admission {
         ) = service;
         let [target_retired, sibling_retired] = [target_native, sibling_native].map(|product| {
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, continued),
                     cleanup: Ok(()),
                 },
@@ -7710,8 +7690,7 @@ mod stop_admission {
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ) = product
+                }), ()) = product
             else {
                 panic!("complete original Work/native/two-notification product");
             };
@@ -8071,7 +8050,7 @@ mod stop_admission {
             };
             let (execution, observations) =
                 tokio::join!(AssertUnwindSafe(execution).catch_unwind(), service);
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             (execution, native, observations)
         });
         let (execution, native, observations) = acquired;
@@ -8097,7 +8076,7 @@ mod stop_admission {
             values,
         ) = observations;
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, continued),
                 cleanup: Ok(()),
             },
@@ -8105,8 +8084,7 @@ mod stop_admission {
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
-            }),
-        ) = native
+            }), ()) = native
         else {
             panic!("complete parent Work/native/two-notification product");
         };
@@ -8544,13 +8522,11 @@ mod protected_application {
                 })
                 .unwrap_or_else(|_| panic!("actual host entered"));
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             (execution, native)
         });
-        let (
-            execution,
-            (
-                ApplicationOutcome::Completed {
+        let (execution, (
+                WorkOutcome::Completed {
                     output:
                         (receipt, expired_receipt, stale, unavailable, authorization, outcomes, stopped),
                     cleanup: Ok(()),
@@ -8559,9 +8535,7 @@ mod protected_application {
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ),
-        ) = acquired
+                }), ())) = acquired
         else {
             panic!("all original Work/native/two-notification products");
         };
@@ -9172,13 +9146,11 @@ mod protected_application {
                 })
                 .unwrap_or_else(|_| panic!("entered actual host"));
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             (execution, native)
         });
-        let (
-            execution,
-            (
-                ApplicationOutcome::Completed {
+        let (execution, (
+                WorkOutcome::Completed {
                     output:
                         (
                             outcomes,
@@ -9197,9 +9169,7 @@ mod protected_application {
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
-                }),
-            ),
-        ) = acquired
+                }), ())) = acquired
         else {
             panic!("all original Work/native/two-notification products");
         };

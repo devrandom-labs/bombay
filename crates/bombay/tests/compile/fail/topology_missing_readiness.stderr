@@ -16,7 +16,7 @@ help: the trait `EventIngress<RetirementBirths<Reporter>, ChildReport<Readiness>
       but trait `EventIngress<RetirementBirths<Reporter>, ChildReport<Trace>>` is implemented for it
   --> tests/compile/fail/topology_missing_readiness.rs:19:1
    |
-19 | impl<Source: bombay::behavior::BirthMode> EventIngress<Source, ChildReport<Trace>> for RootEvent { fn ingress(report: ChildReport<...
+19 | impl<Source: bombay::behavior::BirthMode> EventIngress<Source, ChildReport<Trace>> for RootEvent { fn ingress(report: ChildReport<T...
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: for that trait implementation, expected `Trace`, found `Readiness`
    = note: required for `EventLayer<behavior_actors::protocol::ShutdownRequested, RootEvent>` to implement `EventIngress<RetirementBirths<Reporter>, ChildReport<Readiness>>`

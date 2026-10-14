@@ -49,10 +49,16 @@ actor. Actors execute on that selected host; supplied Work executes where its
 execution future is polled. Work and its output may borrow caller values and
 need not be `Send`. Actor tasks keep their actual `Send + 'static` requirements.
 
-### Advanced receiving custody
+### Work and retirement
 
-The current paired entry returns Work, native retirement and both notification
-results independently. This executable fragment checks that advanced boundary.
+Execution returns one report containing independent work, root retirement and
+notification results. Borrowing or selecting work keeps every other result.
+For a started application, Bombay awaits cleanup before returning this report; `cleanup()`
+borrows the recorded result. The application still chooses when its root should
+stop, through a domain command, a policy or `request_shutdown()`. Joining does
+not itself request a stop, and dropping a future does not promise completed
+asynchronous cleanup.
+This executable fragment checks that complete handoff.
 Ordinary actor composition uses the domain client/template path below; the
 simple multi-node application surface remains pending.
 
@@ -64,7 +70,7 @@ simple multi-node application surface remains pending.
 #     .enable_all().build().expect("caller-owned host");
 # host.block_on(async {
 let service = bombay::actors::ActorExt::stop_on_shutdown(Service);
-let (outcome, native, notifications) = bombay::Application::new(service)
+let outcome = bombay::Application::new(service)
     .run_with(|application| async move {
         let shutdown = application.request_shutdown();
         assert_eq!(shutdown, Ok(()));
@@ -75,18 +81,18 @@ let (outcome, native, notifications) = bombay::Application::new(service)
         drop(original);
         panic!("the application must start");
     });
-let (termination, cleanup) = outcome.try_into_completed()
+let (termination, retirement) = outcome.try_into_completed()
     .unwrap_or_else(|original| {
         drop(original);
         panic!("the work must complete");
     });
-cleanup.expect("independent Work cleanup");
-let (_origin, retirement) = native.expect("actual joined native root");
-let notifications = notifications.expect("actual notification transfer");
+retirement.cleanup().as_ref().expect("independent work cleanup");
+let (_origin, root) = retirement.retirement().as_ref().expect("actual joined native root");
+let notifications = retirement.notifications().as_ref().expect("actual notification transfer");
 assert!(notifications.termination.is_ok());
 assert!(notifications.retirement.is_ok());
 assert_eq!(termination, Ok(bombay::prelude::Exit::Normal));
-assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
+assert_eq!(root.completion(), Some(&bombay::Completion::Stopped));
 # });
 ```
 
@@ -116,7 +122,7 @@ let mut announcements = scope.external::<Announcements>().expect("early endpoint
 let root = bombay::actors::ActorExt::stop_on_shutdown(Service {
     ready: announcements.recipient(),
 });
-let (outcome, native, notifications) = scope.with_root(root).run_with(|application| async move {
+let outcome = scope.with_root(root).run_with(|application| async move {
     let announcement = announcements.receive().await.expect("root ready");
     let shutdown = application.request_shutdown();
     assert_eq!(shutdown, Ok(()));
@@ -125,17 +131,17 @@ let (outcome, native, notifications) = scope.with_root(root).run_with(|applicati
     drop(original);
     panic!("original application must start");
 });
-let (announcement, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
+let (announcement, retirement) = outcome.try_into_completed().unwrap_or_else(|original| {
     drop(original);
     panic!("complete original outcome");
 });
-cleanup.expect("independent Work cleanup");
-let (_, retirement) = native.expect("actual joined native root");
-let notifications = notifications.expect("actual notification transfer");
+retirement.cleanup().as_ref().expect("independent work cleanup");
+let (_, root) = retirement.retirement().as_ref().expect("actual joined native root");
+let notifications = retirement.notifications().as_ref().expect("actual notification transfer");
 assert!(notifications.termination.is_ok());
 assert!(notifications.retirement.is_ok());
 assert_eq!(announcement, 42);
-assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
+assert_eq!(root.completion(), Some(&bombay::Completion::Stopped));
 # });
 ```
 
@@ -221,10 +227,16 @@ executes simultaneous hydration, refusals, reactivation and child retirement.
 Declaring a family class starts no task; `.entity_family(role, definition, directory, capacity)`
 supplies its real policy and owned definition.
 
-The successful outer result owns `(work_outcome, root_receiving,
-notification_receiving)`. The work outcome is `ApplicationOutcome`; its presence
-does not imply a completed actor or erase an initialization refusal. Its closed alternatives
-retain the actual phase and values:
+The successful outer result owns one `ApplicationOutcome`. Its `work()`,
+`retirement()` and `notifications()` methods borrow the original independent
+results. An Entity application also selects a family with `family(role)`,
+without naming its product position. The borrowed `FamilyRetirement` exposes
+`shutdown()`, `metrics()` and the original `disposal_failure()`. Receiving
+failure is returned as the original `RecvError`, never as an empty family.
+
+The work phase is `WorkOutcome`; its presence does not imply actor completion
+or erase initialization refusal. Its closed alternatives retain the actual
+phase and values:
 
 - `StagingRejected` returns the actual cold partial product.
 - `Unstarted` returns the untouched application and its actual cold Work. Supplied
@@ -241,8 +253,10 @@ retain the actual phase and values:
 
 Use `work_output()` to borrow completed work and `cleanup()` to borrow the
 independent cleanup Result. `try_into_completed()` consumes a completed outcome
-into `(output, cleanup)` even when cleanup failed; another phase returns the
-entire original outcome in `Err`. These operations require no `Clone`, `Debug`
+into `(output, retirement)` even when cleanup failed. The named
+`ApplicationRetirement` retains cleanup, root retirement, notifications and
+families independently. Another phase returns the entire original report in
+`Err`, including every receiving result. These operations require no `Clone`, `Debug`
 or `Send` bound on caller values and do not classify actor success. The
 [counter](../examples/counter/src/main.rs) exercises owned consumption;
 [result tests](../crates/bombay/tests/application_outcome.rs) cover every phase,
@@ -271,7 +285,12 @@ with `(origin, retirement).into()`. `ProjectTerminal<Origin, Actor>`
 is the native interpreter port: its associated `Descendants` selects the child
 retirement tree before launch, independently of the projected report. Explicit
 native policies retain their original task context and failure causes.
-`ApplicationOutcome` is an explicit `bombay` root import, not a prelude export.
+`ApplicationOutcome`, `ApplicationRetirement` and `WorkOutcome` are explicit
+`bombay` root imports, not prelude exports. Ordinary construction infers them.
+For owned inspection of every work phase, `into_parts()` peels the complete
+work/root/notification/family product; root-only applications own `()` for
+families. `WorkOutcome::try_into_completed()` then returns output and cleanup
+only, because the other results have already transferred to the caller.
 
 Advanced custom hosting supplies `RootRegistration` for its physical root
 namespace and `ApplicationTopology` for complete custody. A custom accessor's

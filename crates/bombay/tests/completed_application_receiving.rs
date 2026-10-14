@@ -31,9 +31,8 @@ use bombay::entity::{
 };
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationBehavior,
-    ApplicationCleanupError, ApplicationDefinitionError, ApplicationOutcome,
-    ApplicationStagingError, ChildFailure, ChildOrigin, ProjectTerminal, RetirementAssessment,
-    RootOrigin,
+    ApplicationCleanupError, ApplicationDefinitionError, ApplicationStagingError, ChildFailure,
+    ChildOrigin, ProjectTerminal, RetirementAssessment, RootOrigin, WorkOutcome,
 };
 use bombay::{
     ActorSpace, Application, ApplicationTopology, EstablishNativeChild, Hosts, MailAddr,
@@ -250,9 +249,10 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
             output
         })
         .await
-        .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
+        .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"))
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output,
             cleanup: Ok(()),
         },
@@ -261,6 +261,7 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = outcome
     else {
         panic!("completed original output and both actual cleanup boundaries are acquired");
@@ -388,11 +389,12 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
             drop((application, work));
             panic!("the explicit application host must be entered: {error}");
         })
+        .into_parts()
     else {
         panic!("the joined startup refusal retains both successful notifications");
     };
     drop(application_host);
-    let ApplicationOutcome::NotInvoked {
+    let WorkOutcome::NotInvoked {
         work,
         startup_error: Some(startup_error),
         cleanup: Ok(()),
@@ -411,8 +413,9 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
     let outcome = AccountConclusion::project(origin, retirement);
     assert_rejected_root(&outcome);
     let (head_receiving, ()) = shutdowns;
-    let (returned_role, (shutdown, metrics, family_disposal_failure)) =
+    let (returned_role, family_retirement) =
         head_receiving.expect("the original zero-incarnation family retirement is acquired");
+    let (shutdown, metrics, family_disposal_failure) = family_retirement.into_parts();
     assert!(family_disposal_failure.is_none());
     let EntityShutdown::Settled {
         represented,
@@ -468,10 +471,11 @@ async fn application_startup_refusal_returns_whole_unprojected_root() {
         panic!("actual initialization refusal leaves this work uninvoked");
     })
     .await
-    .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
+    .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"))
+    .into_parts();
     let outcome = match outcome {
         (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work,
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
@@ -481,6 +485,7 @@ async fn application_startup_refusal_returns_whole_unprojected_root() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) => {
             drop((work, startup_error));
             AccountConclusion::project(origin, retirement)
@@ -529,10 +534,11 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
             panic!("the refused root never invokes application work");
         })
         .await
-        .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"));
+        .unwrap_or_else(|_| panic!("the caller's actual runtime is entered"))
+        .into_parts();
     let (origin, retirement) = match outcome {
         (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work,
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
@@ -542,6 +548,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) => {
             drop((work, startup_error));
             (origin, retirement)
@@ -798,9 +805,9 @@ fn borrowed_local_work_returns_non_send_output_after_root_join() {
         });
         let (execution, result) =
             pair.unwrap_or_else(|_| panic!("the original entered executor is available"));
-        let ((), result) = tokio::join!(execution, result);
+        let ((), result) = tokio::join!(execution, async { result.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -809,6 +816,7 @@ fn borrowed_local_work_returns_non_send_output_after_root_join() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = result
         else {
             panic!("the original caller-local work completes");
@@ -850,7 +858,8 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
             })
             .unwrap_or_else(|_| panic!("the original entered executor is available"));
         drop(execution);
-        let (ApplicationOutcome::Unstarted { application, work }, Err(_), Err(_)) = result.await
+        let (WorkOutcome::Unstarted { application, work }, Err(_), Err(_), ()) =
+            result.await.into_parts()
         else {
             panic!("before-first-poll drop returns the whole original inputs");
         };
@@ -858,9 +867,9 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
         let (execution, result) = application
             .execute_with(work)
             .unwrap_or_else(|_| panic!("the exact original inputs retry in the live executor"));
-        let ((), result) = tokio::join!(execution, result);
+        let ((), result) = tokio::join!(execution, async { result.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -869,6 +878,7 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = result
         else {
             panic!("the recovered original callable runs on the recovered original application");
@@ -924,7 +934,7 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
         let first_poll = poll_fn(|context| Poll::Ready(execution.as_mut().poll(context))).await;
         drop(execution);
         let (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work,
                 startup_error,
                 cleanup: Ok(()),
@@ -934,7 +944,8 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
-        ) = result.await
+            (),
+        ) = result.await.into_parts()
         else {
             panic!("the current-thread first poll starts the task but cannot yet acquire startup");
         };
@@ -944,9 +955,9 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
             .execute_with(work)
             .unwrap_or_else(|_| panic!("the original callable runs against a genuine new handle"));
-        let ((), result) = tokio::join!(execution, result);
+        let ((), result) = tokio::join!(execution, async { result.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -955,6 +966,7 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = result
         else {
             panic!("the recovered original callable completes on the new actor");
@@ -1008,13 +1020,14 @@ fn owning_execution_drop_releases_pending_local_work_before_join() {
         }
         let outcome = result.await;
         let (
-            ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+            WorkOutcome::Interrupted { cleanup: Ok(()) },
             root_receipt,
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
-        ) = outcome
+            (),
+        ) = outcome.into_parts()
         else {
             panic!("invoked unfinished work is surrendered, not reconstructed");
         };
@@ -1097,7 +1110,7 @@ fn completed_root_does_not_surrender_pending_application_work() {
         let released = continuation.send(());
         let ((), outcome) = tokio::join!(&mut execution, result);
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -1106,7 +1119,8 @@ fn completed_root_does_not_surrender_pending_application_work() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
-        ) = outcome
+            (),
+        ) = outcome.into_parts()
         else {
             panic!("the original work survives root completion and then completes");
         };
@@ -1156,9 +1170,9 @@ fn missing_executor_returns_original_application_and_callable() {
         let (execution, result) = application.execute_with(work).unwrap_or_else(|_| {
             panic!("the exact original input product retries in the entered executor")
         });
-        let ((), outcome) = tokio::join!(execution, result);
+        let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -1167,6 +1181,7 @@ fn missing_executor_returns_original_application_and_callable() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("the recovered original callable completes");
@@ -1219,9 +1234,9 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 callable
             })
             .unwrap_or_else(|_| panic!("the entered executor is available"));
-        let ((), outcome) = tokio::join!(execution, result);
+        let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
         let (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work,
                 startup_error,
                 cleanup: Ok(()),
@@ -1231,6 +1246,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("actual initialization refusal preserves the uninvoked callable");
@@ -1294,9 +1310,9 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
             .unwrap_or_else(|_| {
                 panic!("the exact recovered callable retries on an actual new root")
             });
-        let ((), outcome) = tokio::join!(execution, result);
+        let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -1305,6 +1321,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("the original callable completes on its real retry");
@@ -1358,7 +1375,7 @@ fn cancelled_borrowed_result_wait_preserves_same_receiver_and_completed_output()
         let requested = lifecycle.request_shutdown();
         let ((), outcome) = tokio::join!(&mut execution, result.as_mut());
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -1367,7 +1384,8 @@ fn cancelled_borrowed_result_wait_preserves_same_receiver_and_completed_output()
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
-        ) = outcome
+            (),
+        ) = outcome.into_parts()
         else {
             panic!("the same original receiver retains completed caller-local output");
         };
@@ -1442,7 +1460,7 @@ fn ready_output_survives_work_destructor_panic_and_actual_root_join() {
         drop(execution);
         let result = result.await;
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -1451,7 +1469,8 @@ fn ready_output_survives_work_destructor_panic_and_actual_root_join() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
-        ) = result
+            (),
+        ) = result.into_parts()
         else {
             panic!(
                 "the already acquired Ready output survives W disposal and real actor root_receipt"
@@ -1616,7 +1635,8 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
             .unwrap_or_else(|(application, work, error)| {
                 drop((application, work));
                 panic!("the explicit application host must be entered: {error}");
-            });
+            })
+            .into_parts();
         drop(application_host);
         returned = Some(products);
     }));
@@ -1631,7 +1651,7 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
     );
     let acquired_products = match returned.as_ref() {
         Some((
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -1666,46 +1686,40 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                 retirement: Ok(()),
             }),
             (
-                Ok((
-                    head,
-                    (
-                        EntityShutdown::Settled {
-                            represented: head_represented,
-                            entities: head_entities,
-                        },
-                        head_metrics,
-                        head_family_disposal_failure,
-                    ),
-                )),
-                (
-                    Ok((
-                        middle,
-                        (
-                            EntityShutdown::Settled {
-                                represented: middle_represented,
-                                entities: middle_entities,
-                            },
-                            middle_metrics,
-                            middle_family_disposal_failure,
-                        ),
-                    )),
-                    (
-                        Ok((
-                            tail,
-                            (
-                                EntityShutdown::Settled {
-                                    represented: tail_represented,
-                                    entities: tail_entities,
-                                },
-                                tail_metrics,
-                                tail_family_disposal_failure,
-                            ),
-                        )),
-                        (),
-                    ),
-                ),
+                Ok((head, head_retirement)),
+                (Ok((middle, middle_retirement)), (Ok((tail, tail_retirement)), ())),
             ),
         )) => {
+            let EntityShutdown::Settled {
+                represented: head_represented,
+                entities: head_entities,
+            } = head_retirement.shutdown()
+            else {
+                panic!("the original family must be settled");
+            };
+            let head_metrics = head_retirement.metrics();
+            let head_family_disposal_failure = head_retirement.disposal_failure();
+
+            let EntityShutdown::Settled {
+                represented: middle_represented,
+                entities: middle_entities,
+            } = middle_retirement.shutdown()
+            else {
+                panic!("the original family must be settled");
+            };
+            let middle_metrics = middle_retirement.metrics();
+            let middle_family_disposal_failure = middle_retirement.disposal_failure();
+
+            let EntityShutdown::Settled {
+                represented: tail_represented,
+                entities: tail_entities,
+            } = tail_retirement.shutdown()
+            else {
+                panic!("the original family must be settled");
+            };
+            let tail_metrics = tail_retirement.metrics();
+            let tail_family_disposal_failure = tail_retirement.disposal_failure();
+
             assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
                 (
@@ -1929,9 +1943,10 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
     let mut cold_metadata = None;
     let mut joined_refusal = None;
     let mut uninvoked_work_retained = None;
+    let mut returned = returned.map(|result| result.map(bombay::ApplicationOutcome::into_parts));
     match returned.take() {
         Some(Ok((
-            ApplicationOutcome::StagingRejected {
+            WorkOutcome::StagingRejected {
                 inputs:
                     (
                         root,
@@ -1948,6 +1963,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
             },
             Err(_),
             Err(_),
+            (),
         ))) => {
             let mut creations = children.into_creates().into_iter();
             let creation = creations
@@ -1976,7 +1992,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
             cold_inputs = Some((root, spaces, work, actor, earlier, cause, scope));
         }
         Some(Ok((
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work,
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
@@ -1986,6 +2002,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ))) => {
             uninvoked_work_retained = Some(original_work.strong_count());
             // This concrete consumer intentionally releases its returned uninvoked work.
@@ -2273,9 +2290,9 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
         let (execution, result) = application
             .execute_with(move |_| async move { (work, borrowed) })
             .unwrap_or_else(|_| panic!("the original executor is entered"));
-        let ((), outcome) = tokio::join!(execution, result);
+        let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
         let (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work,
                 startup_error,
                 cleanup: Ok(()),
@@ -2285,6 +2302,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("the actual refused root never invokes the original callable");
@@ -2437,9 +2455,9 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
         let (execution, result) = application
             .execute_with(move |_| async move { (work, borrowed) })
             .unwrap_or_else(|_| panic!("the original executor is entered"));
-        let ((), outcome) = tokio::join!(execution, result);
+        let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
         let (
-            ApplicationOutcome::StagingRejected {
+            WorkOutcome::StagingRejected {
                 inputs:
                     (
                         root,
@@ -2456,6 +2474,7 @@ fn declared_execution_returns_cold_partial_and_non_send_callable() {
             },
             Err(_),
             Err(_),
+            (),
         ) = outcome
         else {
             panic!(
@@ -2786,7 +2805,8 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             .unwrap_or_else(|(application, work, error)| {
                 drop((application, work));
                 panic!("the explicit application host must be entered: {error}");
-            });
+            })
+            .into_parts();
         drop(application_host);
         returned = Some(products);
     }));
@@ -2938,7 +2958,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     let discharged_account = original_account.strong_count();
     let acquired = match returned.as_ref() {
         Some((
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output:
                     (output, admitted, ready, shutdown, termination, retirements_before_work_completion),
                 cleanup: Ok(()),
@@ -2973,21 +2993,18 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
-            (
-                Ok((
-                    role,
-                    (
-                        EntityShutdown::Settled {
-                            represented,
-                            entities,
-                        },
-                        metrics,
-                        disposal_failure,
-                    ),
-                )),
-                (),
-            ),
+            (Ok((role, retirement)), ()),
         )) => {
+            let EntityShutdown::Settled {
+                represented,
+                entities,
+            } = retirement.shutdown()
+            else {
+                panic!("the original family must be settled");
+            };
+            let metrics = retirement.metrics();
+            let disposal_failure = retirement.disposal_failure();
+
             assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
                 (
@@ -3317,9 +3334,9 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
         pair.unwrap_or_else(|_| panic!("construction selects the entered actor host"));
     let (work_id, projected_id, child_id, root_address, child_address) =
         caller_host.block_on(async {
-            let ((), outcome) = tokio::join!(execution, result);
+            let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (output, borrowed, work_id),
                     cleanup: Ok(()),
                 },
@@ -3328,6 +3345,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = outcome
             else {
                 panic!("the distinct caller receives its original complete work output");
@@ -3615,12 +3633,12 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         original_control_work.strong_count(),
     );
     let (work_id, control_work_id) = caller_host.block_on(async {
-        let ((), outcome) = tokio::join!(execution, result);
-        let (ApplicationOutcome::NotInvoked {
+        let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
+        let (WorkOutcome::NotInvoked {
             work,
             startup_error,
             cleanup: Err(ApplicationCleanupError::TaskFailed(cleanup_failure)),
-        }, Err(root_closed), Err(notification_closed)) = outcome
+        }, Err(root_closed), Err(notification_closed), ()) = outcome
         else {
             panic!(
                 "destroyed selected host returns the uninvoked callable and actual root_receipt failure"
@@ -3637,11 +3655,11 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
             .execute_with(work)
             .unwrap_or_else(|_| panic!("the surviving caller host receives original work"));
-        let ((), outcome) = tokio::join!(execution, result);
-        let (ApplicationOutcome::Completed {
+        let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
+        let (WorkOutcome::Completed {
             output: (output, borrowed, work_id),
             cleanup: Ok(()),
-        }, root_receipt, Ok(ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) })) = outcome
+        }, root_receipt, Ok(ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) }), ()) = outcome
         else {
             panic!("the original callable completes on the explicit new application");
         };
@@ -3653,7 +3671,7 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         drop((output, root_receipt));
         // The second execution has never been polled or staged, even though its selected host is gone.
         drop(control_execution);
-        let (ApplicationOutcome::Unstarted { application, work }, Err(_), Err(_)) = control_result.await else {
+        let (WorkOutcome::Unstarted { application, work }, Err(_), Err(_), ()) = control_result.await.into_parts() else {
             panic!("destroyed host cannot turn untouched input into a begun application");
         };
         assert_eq!(control_invocations.get(), 0);
@@ -3667,11 +3685,11 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         let (execution, result) = application.execute_with(work).unwrap_or_else(|_| {
             panic!("the exact original application and work select the actual surviving host")
         });
-        let ((), outcome) = tokio::join!(execution, result);
-        let (ApplicationOutcome::Completed {
+        let ((), outcome) = tokio::join!(execution, async { result.await.into_parts() });
+        let (WorkOutcome::Completed {
             output: (output, borrowed, control_work_id),
             cleanup: Ok(()),
-        }, root_receipt, Ok(ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) })) = outcome
+        }, root_receipt, Ok(ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) }), ()) = outcome
         else {
             panic!("the original untouched control runs after explicit retry");
         };
@@ -3729,7 +3747,7 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
     assert_eq!(output_owned_before_join, 1);
     let outcome = runtime.block_on(result.take().expect("the original receiver is retained"));
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output,
             cleanup: Ok(()),
         },
@@ -3738,7 +3756,8 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
-    ) = outcome
+        (),
+    ) = outcome.into_parts()
     else {
         panic!("Ready was acquired before disposal of the work future");
     };
@@ -3820,13 +3839,14 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     let work_released_before_join = original_work.strong_count();
     let outcome = runtime.block_on(result);
     let (
-        ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+        WorkOutcome::Interrupted { cleanup: Ok(()) },
         root_receipt,
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
             retirement: Ok(()),
         }),
-    ) = outcome
+        (),
+    ) = outcome.into_parts()
     else {
         panic!("no output or recoverable uninvoked callable was acquired");
     };
@@ -4041,14 +4061,15 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         };
         let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let (
-            ApplicationOutcome::Prepared {
+            WorkOutcome::Prepared {
                 inputs: (prepared_root, prepared_spaces, allocation_scope),
                 work,
                 cleanup: setup_cleanup,
             },
             Err(_),
             Err(_),
-        ) = receiver.await
+            (),
+        ) = receiver.await.into_parts()
         else {
             panic!("setup failure returns the original prepared inputs and uninvoked callable");
         };
@@ -4069,9 +4090,9 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         let (execution, receiver) = paired_account(retry_root)
             .execute_with(work)
             .unwrap_or_else(|_| panic!("the same original host permits a genuine new Application"));
-        let ((), outcome) = tokio::join!(execution, receiver);
+        let ((), outcome) = tokio::join!(execution, async { receiver.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -4080,6 +4101,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("the exact recovered callable completes once on the new App");
@@ -4192,14 +4214,15 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         };
         let received_cause_object = ptr::from_ref(&*cause).cast::<()>();
         let (
-            ApplicationOutcome::Prepared {
+            WorkOutcome::Prepared {
                 inputs: (prepared_root, prepared_spaces, allocation_scope),
                 work,
                 cleanup: setup_cleanup,
             },
             Err(_),
             Err(_),
-        ) = receiver.await
+            (),
+        ) = receiver.await.into_parts()
         else {
             panic!("the receiver retains actual prepared inputs and original uninvoked Work");
         };
@@ -4227,9 +4250,9 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
             .with_topology(prepared_root, prepared_spaces)
             .execute_with(work)
             .unwrap_or_else(|_| panic!("the same original host permits acquired-input retry"));
-        let ((), outcome) = tokio::join!(execution, receiver);
+        let ((), outcome) = tokio::join!(execution, async { receiver.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -4238,6 +4261,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("the exact acquired actor and original Work complete on retry");
@@ -4320,7 +4344,7 @@ mod family_cleanup {
     };
     use bombay::{
         ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, Application,
-        ApplicationCleanupError, ApplicationOutcome, Completion, MailAddr,
+        ApplicationCleanupError, Completion, MailAddr, WorkOutcome,
     };
     use tokio::runtime::{Builder, Handle};
     use tokio::sync::{OwnedSemaphorePermit, Semaphore, oneshot};
@@ -4791,7 +4815,7 @@ mod family_cleanup {
                 retirement: Ok(()),
             }),
             family_receiving,
-        ) = receiving.await
+        ) = receiving.await.into_parts()
         else {
             panic!("both original root notifications survive later cleanup cancellation");
         };
@@ -4799,7 +4823,7 @@ mod family_cleanup {
         assert!(acquired.is_ok());
         assert!(requested.is_ok());
         assert!(matches!(joined, Ok(Ok(()))));
-        let ApplicationOutcome::Completed {
+        let WorkOutcome::Completed {
             output: (output, admission, hydrated, stopped),
             cleanup,
         } = returned
@@ -4846,10 +4870,10 @@ mod family_cleanup {
         assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
         observe_original_root_retirement(&root_report, &original_root);
         let (head_receiving, (tail_receiving, ())) = family_receiving;
-        let (HeadAccounts(head), (head_shutdown, head_metrics, head_disposal_failure)) =
-            head_receiving.unwrap_or_else(|failure| {
-                panic!("the original complete head report must survive: {failure}")
-            });
+        let (HeadAccounts(head), head_retirement) = head_receiving.unwrap_or_else(|failure| {
+            panic!("the original complete head report must survive: {failure}")
+        });
+        let (head_shutdown, head_metrics, head_disposal_failure) = head_retirement.into_parts();
         let head_identity = original_head
             .upgrade()
             .expect("the acquired original head role is alive");
@@ -5146,9 +5170,9 @@ fn supplied_ready_unit_has_its_bare_original_output() {
                 drop(original);
                 panic!("the actual host is entered");
             });
-        let ((), outcome) = tokio::join!(execution, receiving);
+        let ((), outcome) = tokio::join!(execution, async { receiving.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -5157,6 +5181,7 @@ fn supplied_ready_unit_has_its_bare_original_output() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("actual supplied work retains its original acquired output");
@@ -5186,9 +5211,9 @@ fn supplied_ready_work_error_has_its_bare_original_output() {
                 drop(original);
                 panic!("the actual host is entered");
             });
-        let ((), outcome) = tokio::join!(execution, receiving);
+        let ((), outcome) = tokio::join!(execution, async { receiving.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -5197,6 +5222,7 @@ fn supplied_ready_work_error_has_its_bare_original_output() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("actual supplied work retains its original acquired output");
@@ -5228,9 +5254,9 @@ fn supplied_ready_local_rc_has_its_bare_original_output() {
                 drop(original);
                 panic!("the actual host is entered");
             });
-        let ((), outcome) = tokio::join!(execution, receiving);
+        let ((), outcome) = tokio::join!(execution, async { receiving.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -5239,6 +5265,7 @@ fn supplied_ready_local_rc_has_its_bare_original_output() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("actual supplied work retains its original acquired output");
@@ -5272,9 +5299,9 @@ fn supplied_ready_borrowed_has_its_bare_original_output() {
                 drop(original);
                 panic!("the actual host is entered");
             });
-        let ((), outcome) = tokio::join!(execution, receiving);
+        let ((), outcome) = tokio::join!(execution, async { receiving.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -5283,6 +5310,7 @@ fn supplied_ready_borrowed_has_its_bare_original_output() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("actual supplied work retains its original acquired output");
@@ -5312,9 +5340,9 @@ fn supplied_ready_user_none_has_its_bare_original_output() {
                 drop(original);
                 panic!("the actual host is entered");
             });
-        let ((), outcome) = tokio::join!(execution, receiving);
+        let ((), outcome) = tokio::join!(execution, async { receiving.await.into_parts() });
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             },
@@ -5323,6 +5351,7 @@ fn supplied_ready_user_none_has_its_bare_original_output() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("actual supplied work retains its original acquired output");

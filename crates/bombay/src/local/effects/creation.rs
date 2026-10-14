@@ -3214,7 +3214,7 @@ mod child_rejection_custody {
             )),
         }
         .stop_on_shutdown();
-        let (outcome, native, notifications) =
+        let (outcome, native, notifications, ()) =
             Application::with_topology(root, worker_application::Topology::new())
                 .run_with(move |application| async move {
                     application
@@ -3227,7 +3227,8 @@ mod child_rejection_custody {
                 .unwrap_or_else(|original| {
                     drop(original);
                     panic!("entered host");
-                });
+                })
+                .into_parts();
         let (work, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
             drop(original);
             panic!("work returned independently of cleanup");

@@ -63,11 +63,12 @@ async fn distinct_timer_ids_preserve_every_wrapper_notice_and_complete_retiremen
         ))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications) = scope
+    let (outcome, native, notifications, ()) = scope
         .with_root(session)
         .run_with(|application| async move { application.termination().await })
         .await
-        .unwrap_or_else(|_| panic!("the caller hosts the session's real timer interpretation"));
+        .unwrap_or_else(|_| panic!("the caller hosts the session's real timer interpretation"))
+        .into_parts();
     let (termination, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the normal timer expiry retains its independent work result"));
@@ -135,11 +136,12 @@ async fn equal_timer_ids_replace_the_inner_schedule_without_fabricating_its_noti
         ))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications) = scope
+    let (outcome, native, notifications, ()) = scope
         .with_root(session)
         .run_with(|application| async move { application.termination().await })
         .await
-        .unwrap_or_else(|_| panic!("the actual caller host interprets replacement"));
+        .unwrap_or_else(|_| panic!("the actual caller host interprets replacement"))
+        .into_parts();
     let (termination, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("timer replacement cannot erase the work result"));

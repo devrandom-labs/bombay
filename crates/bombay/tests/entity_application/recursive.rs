@@ -262,7 +262,8 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
         .unwrap_or_else(|original| {
             drop(original);
             panic!("entered host");
-        });
+        })
+        .into_parts();
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("complete work");
@@ -274,7 +275,8 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
     let notifications = notifications.expect("independent original root notifications");
     assert!(notifications.termination.is_ok());
     assert!(notifications.retirement.is_ok());
-    let (TreesRole, (shutdown, metrics, disposal)) = family.expect("independent family receiving");
+    let (TreesRole, family_retirement) = family.expect("independent family receiving");
+    let (shutdown, metrics, disposal) = family_retirement.into_parts();
     assert!(disposal.is_none());
     assert!(matches!(
         shutdown,

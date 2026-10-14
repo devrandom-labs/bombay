@@ -33,7 +33,7 @@ use super::bombay::{
 use super::runtime::EntityReceptionist;
 use super::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityId, EntityRuntime,
-    EntityShutdown, Passivation,
+    EntityShutdown, FamilyRetirement, Passivation,
 };
 
 /// One nominal, asynchronously hydrated native Entity family.
@@ -586,17 +586,7 @@ where
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (
-        Result<
-            (
-                Role,
-                (
-                    EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
-                    EntityMetrics,
-                    Option<Box<dyn Any + Send>>,
-                ),
-            ),
-            RecvError,
-        >,
+        Result<(Role, FamilyRetirement<D::Id>), RecvError>,
         Tail::Shutdowns,
     );
 }
@@ -778,29 +768,12 @@ where
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (
-        Result<
-            (
-                Role,
-                (
-                    EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
-                    EntityMetrics,
-                    Option<Box<dyn Any + Send>>,
-                ),
-            ),
-            RecvError,
-        >,
+        Result<(Role, FamilyRetirement<D::Id>), RecvError>,
         Tail::Shutdowns,
     );
 
     type ShutdownPublications = (
-        oneshot::Sender<(
-            Role,
-            (
-                EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
-                EntityMetrics,
-                Option<Box<dyn Any + Send>>,
-            ),
-        )>,
+        oneshot::Sender<(Role, FamilyRetirement<D::Id>)>,
         Tail::ShutdownPublications,
     );
 
@@ -831,7 +804,10 @@ where
         let (head_publication, tail_publications) = publications;
         let (shutdown, metrics) = family.shutdown().await;
         let family_disposal_failure = catch_unwind(AssertUnwindSafe(|| drop(family))).err();
-        match head_publication.send((role, (shutdown, metrics, family_disposal_failure))) {
+        match head_publication.send((
+            role,
+            FamilyRetirement::new(shutdown, metrics, family_disposal_failure),
+        )) {
             Ok(()) => {}
             // Only the final receiver's surrender permits this exact one-time discharge.
             Err(head) => drop(head),

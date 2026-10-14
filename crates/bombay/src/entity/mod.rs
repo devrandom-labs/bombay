@@ -13,6 +13,7 @@ mod bombay;
 mod directory;
 mod family;
 mod lifecycle;
+mod retirement;
 mod runtime;
 
 pub(crate) use bombay::NativeEntityHost;
@@ -30,6 +31,8 @@ pub use lifecycle::{
     ActivationId, DispatchId, DrainFailure, DrainStage, EntitySlot, LifecycleEdge, LifecyclePhase,
     Refusal, RetirementMode, SlotEvent, TransitionEvidence,
 };
+pub(crate) use retirement::FamilyAt;
+pub use retirement::FamilyRetirement;
 pub use runtime::{
     Activated, AdmissionFailure, EntityRuntime, EntityShutdown, FenceFailure, LocalEntityRuntime,
     Passivation,

@@ -48,7 +48,7 @@ async fn exact_observation_survives_outer_shutdown_and_transfers_the_original_te
         Actions::stop().with_send(EstablishedDelivery::new(watcher.recipient.clone(), report))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications) = scope
+    let (outcome, native, notifications, ()) = scope
         .with_root(watcher)
         .run_with(|_| async move {
             drop(target);
@@ -58,7 +58,8 @@ async fn exact_observation_survives_outer_shutdown_and_transfers_the_original_te
             (report, remaining, observer.recipient())
         })
         .await
-        .unwrap_or_else(|_| panic!("the caller hosts actual observation interpretation"));
+        .unwrap_or_else(|_| panic!("the caller hosts actual observation interpretation"))
+        .into_parts();
     let ((report, remaining, recipient), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("work and independent retirement remain owned"));
@@ -117,7 +118,7 @@ async fn exact_observation_survives_inner_shutdown_and_transfers_the_original_te
             report,
         ))
     });
-    let (outcome, native, notifications) = scope
+    let (outcome, native, notifications, ()) = scope
         .with_root(watcher)
         .run_with(|_| async move {
             drop(target);
@@ -127,7 +128,8 @@ async fn exact_observation_survives_inner_shutdown_and_transfers_the_original_te
             (report, remaining, observer.recipient())
         })
         .await
-        .unwrap_or_else(|_| panic!("the caller hosts the exact inner-shutdown observation"));
+        .unwrap_or_else(|_| panic!("the caller hosts the exact inner-shutdown observation"))
+        .into_parts();
     let ((report, remaining, recipient), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("observation cannot erase the independent work result"));
@@ -183,7 +185,7 @@ async fn shutdown_while_observing_preserves_the_live_target_and_complete_retirem
         panic!("shutdown must not fabricate a peer's terminal report")
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications) = scope
+    let (outcome, native, notifications, ()) = scope
         .with_root(watcher)
         .run_with(|application| async move {
             let sender = application
@@ -194,7 +196,8 @@ async fn shutdown_while_observing_preserves_the_live_target_and_complete_retirem
             (shutdown, termination, target, sender)
         })
         .await
-        .unwrap_or_else(|_| panic!("the caller owns typed shutdown and receiving"));
+        .unwrap_or_else(|_| panic!("the caller owns typed shutdown and receiving"))
+        .into_parts();
     let ((shutdown, termination, mut target, sender), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("shutdown retains the complete original external owners"));
@@ -266,14 +269,15 @@ async fn rejected_report_delivery_retains_the_whole_original_report_and_normal_a
     .observe_termination(request, |watcher, report| {
         Actions::stop().with_send(EstablishedDelivery::new(watcher.recipient.clone(), report))
     });
-    let (outcome, native, notifications) = scope
+    let (outcome, native, notifications, ()) = scope
         .with_root(watcher)
         .run_with(|application| async move {
             drop(target);
             application.termination().await
         })
         .await
-        .unwrap_or_else(|_| panic!("the exact observation interpreter runs on the current host"));
+        .unwrap_or_else(|_| panic!("the exact observation interpreter runs on the current host"))
+        .into_parts();
     let (termination, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("failed report delivery preserves the independent work result"));

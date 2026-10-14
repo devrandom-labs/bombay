@@ -14,7 +14,7 @@ use bombay::behavior::{
     SettlementStatus, Step, Stopped, User, UserEvent,
 };
 use bombay::prelude::*;
-use bombay::{Application, ApplicationOutcome, Hosts};
+use bombay::{Application, Hosts, WorkOutcome};
 
 struct Worker;
 
@@ -102,9 +102,10 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             .unwrap_or_else(|(application, error)| {
                 drop(application);
                 panic!("the caller owns the application's live entered host: {error}");
-            });
+            })
+            .into_parts();
     if let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: _,
             startup_error: _,
             cleanup: Ok(()),
@@ -114,13 +115,14 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: None,
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
@@ -130,6 +132,7 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);
@@ -249,9 +252,10 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
     .unwrap_or_else(|(application, error)| {
         drop(application);
         panic!("the caller owns the application's live entered host: {error}");
-    });
+    })
+    .into_parts();
     if let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: _,
             startup_error: _,
             cleanup: Ok(()),
@@ -261,13 +265,14 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: None,
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
@@ -277,6 +282,7 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);
@@ -554,7 +560,7 @@ bombay::topology! {
 )]
 async fn privately_bound_child_reports_its_nested_creation_before_parent_retirement() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -563,6 +569,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::with_topology(
         NestedRoot { birth_report: None }.stop_on_shutdown(),
         nested_children::Topology::new(),
@@ -584,6 +591,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
         drop(failed);
         panic!("the child report must stop the published root");
     })
+    .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -870,9 +878,10 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
         .unwrap_or_else(|(application, error)| {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
-        });
+        })
+        .into_parts();
     if let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: _,
             startup_error: _,
             cleanup: Ok(()),
@@ -882,13 +891,14 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: None,
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
@@ -898,6 +908,7 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);

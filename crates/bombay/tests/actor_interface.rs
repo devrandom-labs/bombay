@@ -1,6 +1,6 @@
 use bombay::ActorNotificationReceipts;
-use bombay::ApplicationOutcome;
 use bombay::TrySendError;
+use bombay::WorkOutcome;
 use core::any::type_name;
 use core::ptr;
 use tokio::runtime::Builder;
@@ -129,10 +129,11 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the application terminates normally");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -141,6 +142,7 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -217,10 +219,11 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the application terminates normally");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -229,6 +232,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -415,10 +419,11 @@ fn external_actor_try_send_keeps_full_and_closed_originals_and_truthful_origin()
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the application completes its actual native retirement");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -427,6 +432,7 @@ fn external_actor_try_send_keeps_full_and_closed_originals_and_truthful_origin()
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the Work, native actor and two actual notifications remain independent");

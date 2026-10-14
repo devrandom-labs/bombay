@@ -381,7 +381,7 @@ fn inspect_node(
 #[tokio::test(flavor = "current_thread")]
 async fn recursive_reports_return_full_native_retirement() {
     pure_alias_definitions();
-    let (outcome, native, notifications) = Application::with_topology(
+    let (outcome, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Grow { remaining: 3 }),
             trace: None,
@@ -407,7 +407,8 @@ async fn recursive_reports_return_full_native_retirement() {
     .unwrap_or_else(|original| {
         drop(original);
         panic!("native host entered")
-    });
+    })
+    .into_parts();
     let (_, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("caller work completed")
@@ -467,7 +468,7 @@ async fn recursive_reports_return_full_native_retirement() {
 #[tokio::test(flavor = "current_thread")]
 async fn recursive_reports_keep_custody_with_outer_timer() {
     pure_alias_definitions();
-    let (outcome, native, notifications) = Application::with_topology(
+    let (outcome, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Grow { remaining: 3 }),
             trace: None,
@@ -493,7 +494,8 @@ async fn recursive_reports_keep_custody_with_outer_timer() {
     .unwrap_or_else(|original| {
         drop(original);
         panic!("native host entered")
-    });
+    })
+    .into_parts();
     let (_, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("caller work completed")
@@ -569,7 +571,7 @@ async fn recursive_scope_returns_original_initialization_refusal() {
         }
         .stop_on_shutdown(),
     );
-    let (outcome, native, notifications) = Application::with_topology(
+    let (outcome, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Refuse { creation }),
             trace: None,
@@ -583,8 +585,9 @@ async fn recursive_scope_returns_original_initialization_refusal() {
     .unwrap_or_else(|original| {
         drop(original);
         panic!("native host entered")
-    });
-    let bombay::ApplicationOutcome::NotInvoked {
+    })
+    .into_parts();
+    let bombay::WorkOutcome::NotInvoked {
         cleanup: Ok(()), ..
     } = outcome
     else {

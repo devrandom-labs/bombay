@@ -1,4 +1,4 @@
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::convert::Infallible;
 use core::future::Future;
@@ -220,6 +220,10 @@ fn prepared_supervisor(
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete two-role recovery journey proves declaration order and preserves all original retirement and notification values"
+)]
 fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
     let prepared = Arc::new(Mutex::new(Vec::new()));
     let (activated, mut activations) = mpsc::unbounded_channel();
@@ -294,10 +298,11 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the two-role supervisor runs its policy");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -306,6 +311,7 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -475,10 +481,10 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the second-role rejection is interpreted");
-        });
+        }).into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -487,6 +493,7 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -781,9 +788,10 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
                 },
             ),
         )
-        .unwrap_or_else(|_| panic!("the target Application enters its caller-owned host"));
+        .unwrap_or_else(|_| panic!("the target Application enters its caller-owned host"))
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: sibling_outcome,
             cleanup: Ok(()),
         },
@@ -792,12 +800,13 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = outcome
     else {
         panic!("the original target native and both notification stages remain independently owned")
     };
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (target_report, sibling_report),
             cleanup: Ok(()),
         },
@@ -806,7 +815,8 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
             termination: Ok(()),
             retirement: Ok(()),
         }),
-    ) = sibling_outcome
+        (),
+    ) = sibling_outcome.into_parts()
     else {
         panic!(
             "the original sibling native and both notification stages remain independently owned"
@@ -1245,9 +1255,10 @@ fn joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_
                 },
             ),
         )
-        .unwrap_or_else(|_| panic!("the actual public Application starts"));
+        .unwrap_or_else(|_| panic!("the actual public Application starts"))
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output,
             cleanup: Ok(()),
         },
@@ -1256,6 +1267,7 @@ fn joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = originals
     else {
         panic!("all original native and notification products remain independently owned")

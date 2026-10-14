@@ -3,16 +3,20 @@ mod execution;
 #[cfg(feature = "axum")]
 mod http;
 mod interface;
+mod outcome;
 mod scope;
+mod work;
 
 pub use scope::ApplicationScope;
 
 pub use composition::{ApplicationBehavior, ApplicationDefinitionError, ApplicationStagingError};
-pub use execution::{ApplicationCleanupError, ApplicationOutcome, RunError};
+pub use execution::{ApplicationCleanupError, RunError};
 pub use interface::{
     ActorInterface, ApplicationClient, ApplicationHandle, ApplicationLifecycle, ApplicationSender,
     ExternalActor, ExternalActorError, ExternalTarget,
 };
+pub use outcome::{ApplicationOutcome, ApplicationRetirement};
+pub use work::WorkOutcome;
 
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::entity::EntityDefinition;

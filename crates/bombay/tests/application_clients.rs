@@ -107,8 +107,9 @@ async fn explicit_targets_and_one_shared_caller_preserve_protocols_origins_and_r
             original
         })
         .await
-        .unwrap_or_else(|_| panic!("the actual caller owns the entered host"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("the actual caller owns the entered host"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -182,8 +183,9 @@ async fn exported_targets_use_the_same_client_and_sender_authority() {
             assert_eq!(shutdown, Ok(()));
         })
         .await
-        .unwrap_or_else(|_| panic!("the actual caller host is entered"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("the actual caller host is entered"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -226,8 +228,9 @@ async fn inferred_root_client_reads_counter_without_an_interface_product() {
             reply.message
         })
         .await
-        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -316,8 +319,9 @@ async fn sender_and_client_keep_distinct_origins_and_exact_closed_root_rejection
         origins
     })
     .await
-    .unwrap_or_else(|_| panic!("the caller owns the entered host"));
-    let (outcome, native, notifications) = outcome;
+    .unwrap_or_else(|_| panic!("the caller owns the entered host"))
+    .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -365,8 +369,9 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
             reply.message
         })
         .await
-        .unwrap_or_else(|_| panic!("the actual caller owns the entered host"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("the actual caller owns the entered host"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -403,8 +408,9 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
             reply.message
         })
         .await
-        .unwrap_or_else(|_| panic!("the actual caller owns the entered host"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("the actual caller owns the entered host"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -473,8 +479,9 @@ async fn closing_root_client_preserves_accepted_reply_and_then_exhausts() {
         assert_eq!(received, Poll::Ready(None));
     })
     .await
-    .unwrap_or_else(|_| panic!("the actual host is entered"));
-    let (outcome, native, notifications) = outcome;
+    .unwrap_or_else(|_| panic!("the actual host is entered"))
+    .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),

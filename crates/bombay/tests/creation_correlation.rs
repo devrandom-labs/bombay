@@ -7,7 +7,7 @@ use bombay::behavior::{
 };
 use bombay::prelude::StopOnShutdown;
 use bombay::{
-    ActorCustody, ActorRetirement, Application, ApplicationOutcome, MailAddr, SettlementFailure,
+    ActorCustody, ActorRetirement, Application, MailAddr, SettlementFailure, WorkOutcome,
 };
 
 struct Worker {
@@ -102,9 +102,10 @@ async fn recorded_creation_correlation_rejects_the_original_child_and_keeps_late
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the native host is entered");
-        });
+        })
+        .into_parts();
         let (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work: None,
                 startup_error: Some(_),
                 cleanup: Ok(()),
@@ -114,6 +115,7 @@ async fn recorded_creation_correlation_rejects_the_original_child_and_keeps_late
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             drop(outcome);

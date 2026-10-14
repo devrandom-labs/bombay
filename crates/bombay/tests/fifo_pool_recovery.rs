@@ -1,4 +1,4 @@
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::convert::Infallible;
 use core::time::Duration;
@@ -261,10 +261,11 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the pool runs both workers and shuts down");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -273,6 +274,7 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -354,10 +356,11 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the interrupted job completes after replacement");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -366,6 +369,7 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -480,10 +484,11 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the pool returns the failed job and drains");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -492,6 +497,7 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -595,10 +601,11 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the pool drains after held preparation");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -607,6 +614,7 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -708,10 +716,11 @@ fn source_task_failure_terminates_the_active_pool() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the pool reports source task failure");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -720,6 +729,7 @@ fn source_task_failure_terminates_the_active_pool() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -1003,10 +1013,11 @@ fn fifo_factory_replaces_workers_and_drains_the_complete_graph() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the pool runs both workers and shuts down");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -1015,6 +1026,7 @@ fn fifo_factory_replaces_workers_and_drains_the_complete_graph() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");

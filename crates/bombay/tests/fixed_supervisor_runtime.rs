@@ -1,4 +1,4 @@
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::convert::Infallible;
 use core::time::Duration;
@@ -162,10 +162,11 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the supervisor runs its worker and shuts down");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -174,6 +175,7 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");

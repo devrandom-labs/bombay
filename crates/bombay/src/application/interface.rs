@@ -146,6 +146,16 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         self.lifecycle().termination()
     }
 
+    /// Observe the exact root's joined-retirement assessment through its lifecycle owner.
+    /// The report can arrive while application work remains active; complete root
+    /// custody and family shutdown remain in the application result.
+    /// Cancelling this wait cannot cancel cleanup or another observer.
+    pub fn retirement(
+        &self,
+    ) -> impl Future<Output = ActorRetirementReport> + use<P, Event, Families> {
+        self.lifecycle().retirement()
+    }
+
     /// Select one statically declared native Entity family by semantic role.
     #[must_use]
     pub fn entities<Role, Position>(
@@ -900,7 +910,8 @@ mod tests {
             sender.address()
         })
         .await
-        .unwrap_or_else(|_| panic!("the actual caller host is entered"));
+        .unwrap_or_else(|_| panic!("the actual caller host is entered"))
+        .into_parts();
         let (sender, cleanup) = outcome
             .try_into_completed()
             .unwrap_or_else(|_| panic!("the original caller completes"));
@@ -917,7 +928,8 @@ mod tests {
         assert_eq!(root.completion(), Some(&Completion::Stopped));
         assert_eq!(root.behavior().expect("root retained").base().entries, [73]);
         let (family, ()) = families;
-        let (AccountsRole, (shutdown, metrics, disposal)) = family.expect("family received");
+        let (AccountsRole, family_retirement) = family.expect("family received");
+        let (shutdown, metrics, disposal) = family_retirement.into_parts();
         assert!(disposal.is_none());
         assert_eq!(metrics.activations, 1);
         assert_eq!(metrics.residents, 0);
@@ -975,7 +987,7 @@ mod tests {
 
     #[tokio::test]
     async fn failed_root_client_allocation_preserves_live_application_authority() {
-        let (outcome, root, notifications) = Application::new(
+        let (outcome, root, notifications, ()) = Application::new(
             ShutdownLedger {
                 entries: vec![13, 17],
                 received: Vec::new(),
@@ -1004,7 +1016,8 @@ mod tests {
             assert_eq!(shutdown, Ok(()));
         })
         .await
-        .unwrap_or_else(|_| panic!("the actual caller host is entered"));
+        .unwrap_or_else(|_| panic!("the actual caller host is entered"))
+        .into_parts();
         let ((), cleanup) = outcome
             .try_into_completed()
             .unwrap_or_else(|_| panic!("work completed"));
@@ -1064,7 +1077,7 @@ mod installed_shutdown_contract {
 
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::application::ApplicationLifecycle;
-    use crate::application::{ActorInterface, Application, ApplicationOutcome};
+    use crate::application::{ActorInterface, Application, WorkOutcome};
     use crate::launch::launch_inert;
 
     use crate::local::endpoint::ExtractLocalEndpoint;
@@ -1399,7 +1412,7 @@ mod installed_shutdown_contract {
             .execute_with(move |application| async move {
                 let lifecycle = application.lifecycle();
                 {
-                    let mut cancelled = pin!(lifecycle.retirement());
+                    let mut cancelled = pin!(application.retirement());
                     let mut context = Context::from_waker(Waker::noop());
                     let pending = Future::poll(cancelled.as_mut(), &mut context);
                     assert!(matches!(pending, Poll::Pending));
@@ -1407,7 +1420,7 @@ mod installed_shutdown_contract {
                 let independent = lifecycle.clone();
                 let requested = lifecycle.request_shutdown();
                 requested.expect("the exact root accepts its first stop request");
-                let report = lifecycle.retirement().await;
+                let report = application.retirement().await;
                 let independently_observed = independent.retirement().await;
                 assert_eq!(independently_observed, report);
                 let published = report_publication.send(report);
@@ -1439,8 +1452,8 @@ mod installed_shutdown_contract {
             let released = release_work.send(());
             released.expect("the report did not finish or cancel application work");
             execution.await;
-            let (work, native, notifications) = receiving.await;
-            let ApplicationOutcome::Completed {
+            let (work, native, notifications, ()) = receiving.await.into_parts();
+            let WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
             } = work
@@ -1558,7 +1571,7 @@ mod installed_shutdown_contract {
         )
         .execute_with(move |application| async move {
             let lifecycle = application.lifecycle();
-            let mut observer = pin!(lifecycle.retirement());
+            let mut observer = pin!(application.retirement());
             poll_fn(|context| {
                 let observer_waker = Waker::from(Arc::new(RetirementObserver {
                     failure: Mutex::new(Some(Arc::clone(&failure))),
@@ -1573,18 +1586,18 @@ mod installed_shutdown_contract {
             drop(failure);
             let stopped = lifecycle.request_shutdown();
             stopped.expect("the actual root accepts shutdown");
-            let report = lifecycle.retirement().await;
+            let report = application.retirement().await;
             let independently_observed = observer.await;
             assert_eq!(report, independently_observed);
             report
         })
         .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
-        let ((), (work, native, notifications)) = timeout(Duration::from_secs(10), async {
-            tokio::join!(execution, receiving)
+        let ((), (work, native, notifications, ())) = timeout(Duration::from_secs(10), async {
+            tokio::join!(execution, async { receiving.await.into_parts() })
         })
         .await
         .expect("a report observer panic cannot lose the actor result or stall cleanup");
-        let ApplicationOutcome::Completed {
+        let WorkOutcome::Completed {
             output: report,
             cleanup: Ok(()),
         } = work

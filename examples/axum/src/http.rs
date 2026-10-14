@@ -104,7 +104,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bombay::ApplicationOutcome;
+    use bombay::WorkOutcome;
     use std::io::{Read, Write};
     use std::net::{SocketAddr, TcpListener, TcpStream};
     use std::sync::{Arc, Mutex, mpsc};
@@ -269,8 +269,9 @@ mod tests {
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the caller's actual runtime is entered");
-        });
-        let (rejected, native, notifications) = rejected;
+        })
+        .into_parts();
+        let (rejected, native, notifications, ()) = rejected;
         let (original, cleanup) = rejected.try_into_completed().unwrap_or_else(|original| {
             drop(original);
             panic!("the completed rejection preserves independent actor cleanup");
@@ -342,8 +343,9 @@ mod tests {
             drop(failed);
             panic!("the live caller host is entered");
         });
+        let outcome = outcome.into_parts();
         if let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: _,
                 cleanup: Ok(()),
             },
@@ -352,12 +354,13 @@ mod tests {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = &outcome
         {
             panic!("the original serving result and joined root must both remain acquired");
         }
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: Ok(()),
                 cleanup: Ok(()),
             },
@@ -366,6 +369,7 @@ mod tests {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("the original serving result and joined root must both remain acquired");

@@ -12,9 +12,9 @@ use bombay::behavior::{
 use bombay::lifecycle::StopOnShutdown;
 use bombay::prelude::{Exit, TimerId};
 use bombay::{
-    ActorCustody, ActorRetirement, ActorSpace, Application, ApplicationOutcome,
-    ApplicationTopology, ChildFailure, ChildOrigin, Completion, EstablishNativeChild, MailAddr,
-    NativeChild, PendingChild, ProjectTerminal, RetirementSchema, RootRegistration,
+    ActorCustody, ActorRetirement, ActorSpace, Application, ApplicationTopology, ChildFailure,
+    ChildOrigin, Completion, EstablishNativeChild, MailAddr, NativeChild, PendingChild,
+    ProjectTerminal, RetirementSchema, RootRegistration, WorkOutcome,
 };
 use core::future::Future;
 use core::ops::ControlFlow;
@@ -446,15 +446,18 @@ async fn generated_recursive_garden_matches_manual_native_custody() {
     )
     .run_with(|application| async move { application.termination().await })
     .await;
-    let (generated_work, generated_native, generated_notifications) =
-        generated.unwrap_or_else(|original| {
+    let (generated_work, generated_native, generated_notifications, ()) = generated
+        .unwrap_or_else(|original| {
             drop(original);
             panic!("the existing generated garden starts");
-        });
-    let (manual_work, manual_native, manual_notifications) = manual.unwrap_or_else(|original| {
-        drop(original);
-        panic!("the handwritten public garden starts");
-    });
+        })
+        .into_parts();
+    let (manual_work, manual_native, manual_notifications, ()) = manual
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("the handwritten public garden starts");
+        })
+        .into_parts();
     let (generated_termination, generated_cleanup) = generated_work
         .try_into_completed()
         .unwrap_or_else(|original| {
@@ -554,15 +557,18 @@ async fn generated_outer_timer_matches_manual_native_custody() {
     )
     .run_with(|application| async move { application.termination().await })
     .await;
-    let (generated_work, generated_native, generated_notifications) =
-        generated.unwrap_or_else(|original| {
+    let (generated_work, generated_native, generated_notifications, ()) = generated
+        .unwrap_or_else(|original| {
             drop(original);
             panic!("the generated outer timer starts");
-        });
-    let (manual_work, manual_native, manual_notifications) = manual.unwrap_or_else(|original| {
-        drop(original);
-        panic!("the handwritten outer timer starts");
-    });
+        })
+        .into_parts();
+    let (manual_work, manual_native, manual_notifications, ()) = manual
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("the handwritten outer timer starts");
+        })
+        .into_parts();
     let (generated_termination, generated_cleanup) = generated_work
         .try_into_completed()
         .unwrap_or_else(|original| {
@@ -688,23 +694,26 @@ async fn generated_singleton_matches_manual_original_initialization_refusal() {
     )
     .run()
     .await;
-    let (generated_work, generated_native, generated_notifications) =
-        generated.unwrap_or_else(|original| {
+    let (generated_work, generated_native, generated_notifications, ()) = generated
+        .unwrap_or_else(|original| {
             drop(original);
             panic!("the generated singleton owns startup refusal");
-        });
-    let (manual_work, manual_native, manual_notifications) = manual.unwrap_or_else(|original| {
-        drop(original);
-        panic!("the manual singleton owns startup refusal");
-    });
-    let ApplicationOutcome::NotInvoked {
+        })
+        .into_parts();
+    let (manual_work, manual_native, manual_notifications, ()) = manual
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("the manual singleton owns startup refusal");
+        })
+        .into_parts();
+    let WorkOutcome::NotInvoked {
         cleanup: generated_cleanup,
         ..
     } = generated_work
     else {
         panic!("the generated root must not fabricate caller invocation");
     };
-    let ApplicationOutcome::NotInvoked {
+    let WorkOutcome::NotInvoked {
         cleanup: manual_cleanup,
         ..
     } = manual_work

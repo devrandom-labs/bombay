@@ -10,7 +10,7 @@ use bombay::behavior::{
     NoSends, SettlementStatus, Step,
 };
 use bombay::prelude::*;
-use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, WorkOutcome, TrySendError};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::VecDeque,
@@ -823,7 +823,7 @@ async fn recipient(
             (&receiving, &session_close),
             (
                 (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         cleanup: Ok(()),
                         ..
                     },
@@ -839,7 +839,7 @@ async fn recipient(
         "complete original Application/native/notification/close products required"
     );
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output:
                 (
                     work,
@@ -1194,7 +1194,7 @@ async fn caller(
             (&receiving, &session_close),
             (
                 (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         cleanup: Ok(()),
                         ..
                     },
@@ -1210,7 +1210,7 @@ async fn caller(
         "complete original Application/native/notification/close products required"
     );
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output:
                 (
                     work,

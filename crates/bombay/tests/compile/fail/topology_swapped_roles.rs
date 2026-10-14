@@ -73,7 +73,7 @@ fn main() {
         assert_eq!(termination, Ok(Exit::Normal));
     })).unwrap_or_else(|original| { drop(original); panic!("original declaration retained on missing host"); });
     drop(host);
-    let (outcome, native, notifications) = outcome;
+    let (outcome, native, notifications, ()) = outcome.into_parts();
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| { drop(original); panic!("complete original outcome"); });
     cleanup.expect("the cleanup producer completes");
     let bombay::ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) } = notifications.expect("both notification receipts are acquired") else { panic!("both notifications succeed"); };

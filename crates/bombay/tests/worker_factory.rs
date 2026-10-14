@@ -3,7 +3,7 @@
 
 use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use core::time::Duration;
 use tokio::runtime::Builder;
 
@@ -252,10 +252,11 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the supervisor runs its recovery policy");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (termination, failure),
             cleanup: Ok(()),
         },
@@ -264,6 +265,7 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -500,10 +502,11 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the supervisor runs its recovery policy");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -512,6 +515,7 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -728,10 +732,11 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the supervisor runs its recovery policy");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -740,6 +745,7 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");

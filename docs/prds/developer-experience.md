@@ -379,3 +379,39 @@ formatting; no disk/signing failure is waived. Other platforms remain locally
 unexecuted. The new result comparison remains outside repository production
 until named family selection, complete native/HTTP failure and static denials
 close the ordinary API design; its evidence stays in the owning PRD.
+
+The isolated joined-result change is locally implemented:
+ApplicationOutcome owns all acquired results; completed selection yields value
+and ApplicationRetirement, retaining independent failures. FamilyRetirement
+supports inferred role selection. Nine native cases pass both compilers and
+profiles; the migrated seven-suite corpus passes101 tests, one existing ignore,
+strict all-target/all-feature lint and three active guide doctests. Three
+independent native inversions fail in both profiles; six restored controls pass.
+Counter verification is owned by runtime tests. Current entry measurements are
+recorded below; final MSRV/archive/full native gates remain required. The owning
+DX checklist remains the requirement authority.
+
+Counter and pool entry distillation is locally verified: counter main51→36
+lines, pool source191→90, with all original counter/pool oracles retained in
+runtime tests. Both execute on Rust1.99/1.96 in debug/release (8 binaries),
+and their three owning suites pass68 test executions. Direct application
+retirement observation delegates the existing lifecycle fact and passes8
+native report/observer-failure executions. Cleanup runs inside Bombay; report
+inspection is optional. Strict workspace lint and3 active doctests pass again.
+The remaining example corpus, package/full Nix gates and commits remain open.
+
+Supervision and heterogeneous document entries now use named application
+results and automatic joining. Their complete original oracles live in runtime
+tests against shared domain source:16 test executions and8 binaries pass on
+Rust1.99/1.96 debug/release; strict workspace lint passes. Supervisor main
+332→99 plus61 worker-domain lines; document main383→34 plus95 domain lines.
+No public crate type, bound, actor state or dependency identity is added.
+The other entries, package/full native gates and commits remain open.
+
+Machine/timer entry188→56 lines, with its21 original assertion expressions
+retained identically and in order in runtime tests against actual processor
+source. Both native tests and the real binary pass current/MSRV debug/release
+(8 test executions,4 binaries); strict workspace lint passes. Timer policy,
+deferred-work replay, shutdown, Machine Clone bounds and dependency identities
+are unchanged. Cleanup is automatic; reading its result is optional inspection.
+HTTP/Entity entries and final full checks remain open.

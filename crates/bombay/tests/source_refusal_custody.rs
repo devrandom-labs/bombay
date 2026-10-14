@@ -1,5 +1,5 @@
 use bombay::ActorNotificationReceipts;
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use core::convert::Infallible;
 use core::time::Duration;
 use std::sync::Arc;
@@ -215,9 +215,10 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
         .unwrap_or_else(|original| {
             drop(original);
             panic!("live entered application");
-        });
+        })
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (work, termination),
             cleanup: Ok(()),
         },
@@ -226,6 +227,7 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = outcome
     else {
         panic!("caller work and full independent cleanup return");

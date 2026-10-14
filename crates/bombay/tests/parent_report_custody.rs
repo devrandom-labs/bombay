@@ -5,7 +5,7 @@ use bombay::behavior::{
     SettledItem, SettlementStatus, Stopped, User, UserEvent,
 };
 use bombay::prelude::*;
-use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome};
+use bombay::{ActorCustody, ActorNotificationReceipts, WorkOutcome};
 
 struct ReportChild {
     report: Option<Box<[u8]>>,
@@ -123,7 +123,7 @@ async fn early_parent_stop_retains_the_original_refused_child_report() {
         .execute_with(|application| async move { application.lifecycle().termination().await })
         .unwrap_or_else(|original| panic!("the entered host owns startup: {}", original.2));
     execution.await;
-    let (work, native, notifications) = receiving.await;
+    let (work, native, notifications, ()) = receiving.await.into_parts();
     let Ok((root_origin, root_retirement)) = &native else {
         panic!("the parent retains its original native result")
     };
@@ -215,13 +215,13 @@ async fn early_parent_stop_retains_the_original_refused_child_report() {
         })
     ));
     match &work {
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output,
             cleanup: Ok(()),
         } => {
             assert_eq!(*output, Ok(Exit::Normal));
         }
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             cleanup: Ok(()), ..
         } => {}
         _ => panic!("actual Work retains its complete phase and successful cleanup"),

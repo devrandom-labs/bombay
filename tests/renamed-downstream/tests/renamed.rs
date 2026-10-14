@@ -177,9 +177,10 @@ mod tests {
                 .unwrap_or_else(|original| {
                     drop(original);
                     panic!("the renamed application must retain complete retirement");
-                });
+                })
+                .into_parts();
         let (
-            actor_runtime::ApplicationOutcome::NotInvoked {
+            actor_runtime::WorkOutcome::NotInvoked {
                 work: None,
                 cleanup: Ok(()),
                 ..
@@ -189,6 +190,7 @@ mod tests {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("initialization stops before startup grant and returns complete child custody");
@@ -252,8 +254,9 @@ mod tests {
                 assert_eq!(termination, Ok(actor_runtime::prelude::Exit::Normal));
             })
             .await
-            .unwrap_or_else(|_| panic!("the actual caller owns the entered host"));
-        let (outcome, native, notifications) = outcome;
+            .unwrap_or_else(|_| panic!("the actual caller owns the entered host"))
+            .into_parts();
+        let (outcome, native, notifications, ()) = outcome;
         let ((), cleanup) = outcome
             .try_into_completed()
             .unwrap_or_else(|_| panic!("the caller completes independently of cleanup"));

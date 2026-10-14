@@ -2,7 +2,7 @@
 //! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
 use bombay::ActorCustody;
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use bombay::atomic::{FixedSupervisor, StableProxy};
 use bombay::behavior::{Behavior, BirthMode, ChildHead, CreationKind};
 use bombay::{
@@ -175,7 +175,7 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
-    let (application_outcome, native, notifications) = application_host
+    let (application_outcome, native, notifications, ()) = application_host
         .block_on(
             Application::with_topology(supervisor.stop_on_shutdown(), spaces).run_with(
                 move |application| async move {
@@ -228,9 +228,10 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the supervisor runs its recovery policy");
-        });
+        })
+        .into_parts();
     drop(application_host);
-    let ApplicationOutcome::Completed {
+    let WorkOutcome::Completed {
         output: termination,
         cleanup: Ok(()),
     } = application_outcome
