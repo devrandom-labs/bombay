@@ -567,3 +567,65 @@ files: 10
 The audit adds one public-API integration test and extends defect replay; it
 does not add further production code. Broadcaster overload and latency policy,
 HTTP lifecycle repair and native transport investigation remain separate work.
+
+## Delivery integration — 2026-10-14
+
+The user explicitly retains this fairness contribution as important delivery
+work. Coordinator isolated branch fix/event-fairness-sdk-adoption starts from
+submitted6f272ec7; the author worktree remains untouched. It integrates actual
+mainc1d5b2bd through91efeb9, inheriting only release versions/locks/changelogs and
+the release record. No fairness source/test policy is changed by integration.
+
+The existing native debug failure still selects SDK1.10.8/TLS1.10.2. Controlled
+TLS correction PR12 merged1ea4bd16 after reviewed passing CI; exact-main
+run38631426153 and independent auditd7e7365a pass. Guarded five-package publication
+run38638728105 succeeded; independent allnine registry archive review passes. Neither source-path probes nor publication intent are
+registry-only SDK adoption proof.
+
+Before edits, under standing recommendation delegation select the same narrow
+SDK adoption as the static-remote coordinator: change only the two SDK manifest
+pins to published1.10.9 and replace five controlled package records in each lock;
+conserve all394/319 unrelated complete records. Retain Config1.10.2/protocol1.10.1,
+features, all fairness code and original tests. The private publish=false fixture
+uses the separately reviewed path-only Bombay dependency to survive future local
+version bumps; its other pins stay exact. Four additional existing manifest/lock
+paths bring this contribution from ten to fourteen paths, production Rust/API0
+added by the coordinator. No scheduling/default-resource policy is reopened.
+Combined local verification, exact-head CI and final independent review precede
+normal guarded PR366 merge. Historical failures and all full remote obligations
+remain visible; no PR is marked delivered from this integration or an open run.
+
+Independent source review finds one observational-assertion violation in the
+public actor-loop witness: termination.unwrap() consumes an acquired result
+inside assert_eq before cleanup/native receipts are acquired. Before editing
+select the minimal test-only correction: bind that actual result outside the
+assertion, then compare it by borrow after cleanup/notifications/native result
+acquisition. No scheduler policy, expectation or producer changes. Expected
+one existing test path, at most+2 net test lines, production/API0. This retains
+the native trace law and avoids an early assertion skipping known cleanup.
+
+Current-document reconciliation before adoption: acceptance.md still calls the
+old1.10.8 checkpoint current and the corrected owning minimum pending. Update
+that document to identify the old checkpoint as historical and retain actual
+SDK publication/registry proof beside open combined-PR gates. One additional
+document path brings hosting/adoption to eleven paths and fairness/adoption to
+fifteen; production Rust/public types remain0. This documentation scope is
+selected under standing recommendation delegation before editing.
+
+Fresh registry adoption prerequisite passes independent consumer and all-four
+owning audits: twelve actual consumer runs plus112 exact Query/Config cases.
+Review556699b5 retains source/archive/lock/profile/corpus custody and limitations.
+Both branches now have the same four shared manifest/lock edits; five selected
+package records per lock and all394/319 unrelated records conserved. Cargo
+locked/offline metadata validates the four restored original Windows edges in
+the root lock. Combined focused/build/lint/native gates remain unexecuted here;
+no feature or PR is marked merged by this dependency adoption.
+
+Fresh adoption controls pass through pinned Nix in both debug and optimized:
+13 owning fairness tests, one actual public actor, five FIFO recovery cases and
+one source-refusal custody case perprofile. Logs and actual commands are retained
+in fairness-delivery-review/adopted-focused-receipt.json. Existing34 source-cut
+executions remain earlier evidence; no new cuts or copied test binaries claimed.
+Final ownership/lock reviewaa427163 passes. Full combined checks and CI remain
+required before merge. The coordinator will include this reviewed contribution
+in hosting for parallel CI; native fairness delivery stays owned by PR366.

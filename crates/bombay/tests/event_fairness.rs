@@ -146,12 +146,13 @@ async fn actual_actor_bounds_both_sources_and_returns_every_original_payload() {
         let (termination, cleanup) = work
             .try_into_completed()
             .unwrap_or_else(|_| panic!("the finite workload completes"));
-        assert_eq!(termination.unwrap(), Ok(Exit::Normal));
         cleanup.unwrap();
         let notifications = notifications.unwrap();
         notifications.termination.unwrap();
         notifications.retirement.unwrap();
         let (_, retirement) = native.unwrap();
+        let termination = termination.unwrap();
+        assert_eq!(&termination, &Ok(Exit::Normal));
         let ActorRetirement::Completed { custody, .. } = retirement else {
             panic!("the actual actor returns its complete trace and original messages");
         };
