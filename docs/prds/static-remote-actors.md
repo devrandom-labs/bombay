@@ -1,5 +1,36 @@
 # Static remote actors and typed admission
 
+## Controlled security successor — actual delivery checkpoint
+
+Controlled source23676e6c is committed and pushed; draft [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
+starts required run38607157519/job116000876607 on that exact source. Both owning
+locks were ordinarily resolved and independently qualified. The unchanged source-
+release prefix passes pinned-Nix debug/optimized72 nonzero owning tests/profile,
+strict Clippy and six normal/maintainer consumer runs; zero-case library/doc
+harnesses earn no semantic credit. Source files are byte-equal to reviewed source
+before committing; the original command ran at dirty5b, not final published VCS.
+
+Actual clean-head five-package dry-run and nine-archive/29-checksum-edge checks
+pass, including immutable/archive and lock/source/feature inversions with restored
+controls. The archive cohort fixes SDK1.10.9, link commons1.10.2 and TLS/link/
+transport1.10.3; unchanged Config/plugin1.10.2 and generators2.2.0 remain pinned.
+Packaged native consumer verification is still live; exact floor/full required CI,
+final review/merge, publication and registry-only adoption remain unproved.
+The ignored target is a symlink to the existing active coordinator cache; no
+second source/build tree or publication credentials are introduced.
+
+The larger public network-read study remains unadopted after independent source
+review157a4a23 reopens notification equality, mandatory study input and get-refusal
+cleanup. Its test-owned replay/unprotected SessionLocal packets prove no shipping
+mechanism. JSON proposalbd8bddc8 instead identifies the private lexical-before-
+Serde receiving gap and exact optional edges; no helper/API/dependency is adopted.
+
+Root recovered about1.6GiB by deleting only2060 independently revalidated unused
+compiler objects, with before/after receiptsa9312757/a0cb9ad7 and independent
+storage review9eebb4ac. No worktree, source, log, fixture or proof executable was
+removed; active target and user DevX are preserved. This is resource recovery,
+not evidence that the source-incomplete research worktree was merged.
+
 ## Hosting source ready for review — final local record
 
 Independent execution review7c741a3b and receipt38a55d42 qualify the captured
