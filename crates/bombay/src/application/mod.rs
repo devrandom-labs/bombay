@@ -3,6 +3,8 @@ mod execution;
 #[cfg(feature = "axum")]
 mod http;
 mod interface;
+#[cfg(feature = "remote")]
+pub(crate) mod node;
 mod scope;
 
 pub use scope::ApplicationScope;

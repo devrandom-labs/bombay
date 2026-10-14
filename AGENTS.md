@@ -396,6 +396,14 @@ inside `assert!`, `debug_assert!`, or their equality variants. Treat
 denied. For lifecycle and generation laws, explicitly replay the same fact in
 an optimized test and prove that it cannot be accepted twice.
 
+Review every new or changed test twice before accepting it. The first review
+maps the test to the documented invariant and independent observable outcome.
+The second review checks counterexamples, vacuous assertions, missing outcomes,
+and whether it can pass while the invariant is broken; use an independent
+reviewer when available. Record both reviews and resolve their findings.
+Debug and optimized execution do not replace these reviews. Establish intended
+failing regressions or owning-source inversions before crediting a new law.
+
 A regression is not accepted merely because it passes after the fix. Restore
 or simulate the original defect and establish that the test fails for the
 intended law. Tests must assert complete typed effect lanes or an independent

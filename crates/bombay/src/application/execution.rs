@@ -480,6 +480,106 @@ where
         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
     {
+        self.execute_with_invocation(work, |work: Work, application| work(application))
+    }
+
+    // Keep original Work separate from its invocation so Node can lend its Session.
+    #[expect(
+        clippy::type_complexity,
+        reason = "preserve the independent original work, native root and both notification receiving products"
+    )]
+    pub(crate) fn execute_with_invocation<
+        Actor,
+        StagingFailure,
+        ChildFailures,
+        Work,
+        Invoke,
+        WorkFuture,
+    >(
+        self,
+        work: Work,
+        invoke: Invoke,
+    ) -> Result<
+        (
+            impl Future<Output = ()>,
+            impl Future<
+                Output = (
+                    ApplicationOutcome<
+                        Self,
+                        Work,
+                        <WorkFuture as Future>::Output,
+                        (),
+                        (Root, Spaces, Work, StagingFailure, ApplicationScope),
+                        (Actor, Spaces, ApplicationScope),
+                    >,
+                    Result<
+                        (
+                            RootOrigin<Root>,
+                            ActorRetirement<
+                                Actor,
+                                <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                                ChildFailures,
+                            >,
+                        ),
+                        RecvError,
+                    >,
+                    Result<ActorNotificationReceipts, RecvError>,
+                ),
+            >,
+        ),
+        (Self, Work, TryCurrentError),
+    >
+    where
+        Spaces: ApplicationTopology<Root, Members>,
+        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
+            + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
+        ChildFailures: Send + 'static,
+        Invoke: FnOnce(Work, ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
+        WorkFuture: Future,
+    {
         let executor = match Handle::try_current() {
             Ok(executor) => executor,
             Err(error) => return Err((self, work, error)),
@@ -505,7 +605,7 @@ where
         >(
             executor,
             self,
-            (work, |work: Work, application| work(application)),
+            (work, invoke),
             async |application: &Self| ((), application.allocations()),
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,

@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-13. This is the implementation index for the
+Updated: 2026-10-14. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
@@ -26,11 +26,33 @@ merged `fb533b5bddb1ba20d6514f590167faef60b028d0` at
 2026-10-14T01:22:54Z after exact-head review and all six passing checks.
 The separate remote-counter application remains required.
 
-The current ingress candidate adds public `remote::try_retain` and `IngressError`
-for an intact original/count-permit transfer. Its inputs and native rejection
-causes are explicit; it establishes no authentication, actor admission, byte or
-whole-service bound. Delivery and final CI remain pending; AUTH1/NET1 and every
-full R01–R25 obligation remain open. See the PRD's crate-ingress change record.
+Public `remote::try_retain` and `IngressError` are delivered through reviewed
+[PR363](https://github.com/devrandom-labs/bombay/pull/363), merged1320dfa9 at
+2026-10-14T03:07:08Z after all six checks pass. Required Nix executes20 public
+remote tests and three SessionLocal native-count tests in each profile; scoped
+source/native/required-log reviews are recorded. The intact original/count-permit
+transfer preserves exact capacity/channel causes, not authentication, actor
+admission, bytes or whole-service bounds. AUTH1/NET1 and every full R01–R25
+obligation remain open. Node and common message declarations exist on the
+implementation branch; their reviewed PR delivery remains pending.
+
+The research branch now implements the shared fifteen-field raw `remote::Metadata`
+with an optional existing Serde edge. Seven structural schema tests and twenty
+other affected public tests pass in both profiles; strict checks and scoped
+minimization pass. The isolated lock adds only its existing Serde edge, preserving
+all324 packages. Object-shape, bounded decoding and all policy/admission remain
+pending. Actual Node/Application code now exists behind remote and is under
+verified startup and root/child composition. Six public Node controls, intended
+owner cuts/restorations, combined local checks and scoped minimization pass;
+submitted-head CI and reviewed PR delivery remain pending. Authentication,
+admission and multi-node integration remain open. This contribution is not
+yet merged; [PR364](https://github.com/devrandom-labs/bombay/pull/364) is submitted.
+Its first Nix failure exposed omitted certificate fixtures, now corrected and
+verified from the actual filtered source. Fresh Rustls advisories require0.23.46:
+both selected locks now preserve every unrelated graph choice, and protected66/0/1
+plus affected public35/0/0 pass per profile. Replacement exact-head CI/review and
+the separate controlled-package published minimum correction remain pending.
+No full requirement changes state.
 
 Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
 merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at
