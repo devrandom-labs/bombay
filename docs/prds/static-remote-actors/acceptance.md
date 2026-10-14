@@ -49,9 +49,13 @@ Required Nix38596070399/job115963560778 executes six Node cases and35 public
 remote/Application tests per profile. Fresh native evidence retains its separate
 transport scope; primitive fuzz passes and conditional Miri is skipped. Missing
 certificate packaging and selected Rustls0.23.46 are verified in that actual
-source. The published owner-minimum correction remains separate in controlled
-PR12. Bounded decoding, shipping exports/admission/replay and all full rows remain
-open. The new local foreign-child isolation test and its real owner inversions
+source. Controlled Zenoh PR12 merged1ea4bd16 with passing exact-main CI; its
+guarded publication38638728105 succeeded. Fresh registry consumer runs pass on
+Rust1.99 and1.88, and independent review556699b5 verifies112 exact owning Query/
+Config executions. Both candidate PRs now select SDK1.10.9 with five package
+updates per lock;394/319 unrelated complete records remain unchanged. Combined
+verification and exact-head CI remain required before their merges. Bounded
+decoding, shipping exports/admission/replay and all full rows remain open. The new local foreign-child isolation test and its real owner inversions
 are a subsequent prerequisite, not delivery of Node-owned export association.
 
 The selected count-before-copy comparison covers accepted queued, active and
@@ -367,9 +371,9 @@ distinguishing Stop acceptance from joined retirement; they do not prove a runti
 early-publication defect. This local evidence is included in the scoped PR356 prerequisite merge; it earns
 no remote held-target Stop, global identity or full R11 acceptance credit.
 
-### Adopted dependency and combined verification checkpoint
+### Historical 1.10.8 dependency and combined verification checkpoint
 
-The isolated stage now selects published Zenoh1.10.8 and its corrected owning
+That earlier isolated stage selected published Zenoh1.10.8 and its corrected owning
 closure. Independent adoption review84e556cb verifies both complete graphs,
 402/324 nodes and394/316 preserved records, all nine registered pins and unchanged
 TLS-only features. Registered consumer/owning evidence passes on Rust1.99 and1.88;

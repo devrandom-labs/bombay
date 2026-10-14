@@ -1,5 +1,70 @@
 # Static remote actors and typed admission
 
+## Current delivery repair — 2026-10-14
+
+External-state change: release PR360 was merged outside this coordinator at
+20:44:33Z as `c1d5b2bde866aeee28e8c83d57b9c05198e50f5c`, while native
+debug remained FAILURE. Its submitted/merged tree isd16a2076; required Nix
+passed, but all-checks-passing delivery is not claimed. Actual publication
+run38634627383 reports Engine0.2.3, Macros0.1.3 and Bombay0.1.1 published;
+registry artifact verification is separate. The known TLS1.10.2 exposure remains
+in that release. This coordinator did not merge or publish it.
+
+Hosting branch integrates that actual main throughc636837, preserving its tests
+and all saved coordinator records. Both adoption baselines are refreshed only
+for the inherited Engine/Macros versions; all other complete records match the
+original baseline. The five-package SDK adoption and full remote gates remain
+open. Earlier release-unmerged statements retain their pre-merge checkpoint scope.
+
+Controlled [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12) actually
+merged `1ea4bd160b98f5ef994064378066cd2efd081e26` at20:21:50Z by normal
+head-guarded squash merge. Reviewed9db78eb, actual CI checkoutece27d and merged
+main all have tree9660888b. Fresh required run38622160689/job116052126765 passes:
+17 exact TLS tests/profile;56 named packaged cases/compiler on1.99 and1.88;
+actual configuration Miri2/0/0. Independent review3bb9b8b1/receiptf8117d30
+qualifies nine archives/267 exact Rust files, three exact TLS fixtures,29 checksum
+edges and831 unchanged floor-source paths. TLS-Miri and packaged TLS17 execution
+are not credited. Source-only/native-path controls remain separately qualified.
+Merged-main run38631426153 is now live; its required pass/audit precedes guarded
+five-package publication. The correction is merged, but not yet published or
+adopted by Bombay. All full remote requirements remain open.
+
+PR365 native debug fails during second router/client exchanges; passing local
+controls do not discharge that failed CI. Actual native traces and an original-
+source replay identify an unsafe TLS stream owner in the selected TLS1.10.2.
+Controlled PR12 head9db78eb replaces simultaneous mutable stream aliases with
+Tokio's existing split halves, removes its blocking destructor and preserves
+original I/O causes. All17 owning tests pass locally in debug/optimized, as do
+final30-case/84-role native controls per profile. Four late-exit uncertainty
+groups retain ten killed roles per profile; complete cleanup is not claimed
+for those groups. Original-owner replay and the
+read-cause cut retain their qualified failure evidence; neither is a TLS Miri
+memory-safety proof. Fresh exact-head controlled CI is still running.
+
+Under the standing recommendation delegation, select normal registry adoption
+after reviewed PR12 merge, guarded publication and archive/checksum verification:
+SDK1.10.9, commons1.10.2, TLS/link/transport1.10.3. Change only the two existing
+SDK manifest pins and their two locks; preserve every unrelated complete package
+record, fixed Rustls0.23.46, Config/plugin1.10.2 and generators2.2.0. This adds
+four paths to the six-path hosting contribution (ten total), no production code,
+tests or public types. PRD/backlog evidence stays with this contribution.
+Required fresh combined CI and final review precede the PR365 merge.
+
+Release PR360 independently omits three local path-version updates in its two
+isolated locks; its original CI failures occur before transport execution. The
+narrow correction e887a80 now resolves root/fixture/fuzz with locked Cargo and
+preserves322/30 unrelated isolated records. Fresh debug job116065287821 reaches
+runtime and fails two record-provider overlap cases on the second reply; all8
+Counter cases pass. Recipients process the request, but caller streams close;
+complete recipient/router cleanup is unproved. The artifact lacks TLS tracing,
+so the close cause remains unproved for that run. Optimized native CI passes;
+required Nix remains live. Adopt the fixed SDK before merging the release PR,
+since that merge can publish Bombay. PR366 is
+another session's fairness change: its debug failure corroborates the same TLS
+exposure/symptoms, but its own logs do not independently prove the same cause.
+All full R01–R25/AUTH1/NET1 and the separate remote-counter remain open. The
+following historical checkpoints retain their original source and gate scope.
+
 ## Delivered Node prerequisite — recorded merge
 
 [PR364](https://github.com/devrandom-labs/bombay/pull/364) merged
@@ -22462,3 +22527,226 @@ remain byte-unchanged. No source tests were added for this dependency-only chang
 fresh required CI supplies combined-source builds and both native profiles.
 Complete stage delta: production+0/-0/net0; tests+0/-0/net0; public API+0/-0
 types; two locks each replace only the selected version lines, plus this record.
+
+Storage checkpoint: the verified unused old trust-correction incremental cache
+was removed after immediate process/open-file checks. Eligibility376930fa and
+removal receipt record525 derived files/348008448 allocated bytes. Actual free
+space changed724529152→839749632 bytes amid concurrent builds; do not call that
+332MiB of recovered free space. Source, logs, fixtures, proof binaries and all
+worktrees remain preserved. This does not close any feature or delivery gate.
+
+A second immediate recheck permits removal of only867 inventoried regular,
+single-link Mach-O object files from that old target's debug/deps directory.
+Inventory31bdef91 and the removal receipt preserve exact file identity. No
+old-target open files were found; binaries/rlibs/rmeta and every other path are
+excluded. Actual free space changes817836032→1601617920 bytes (about747MiB),
+separate from the783294464 allocated-byte inventory. No worktree was removed.
+
+Read-only next-prerequisite review5b629ca6 locates the remaining shipping
+association gap after dependency adoption. Public Work owns the exact root
+endpoint/lifecycle and Session; local identity requires no new primitive. Child
+spaces and committed occurrence rows remain with their existing private owners.
+The foreign-child test uses an explicit host cloned before topology transfer;
+it does not prove Node-owned export association or unhosted births. An arbitrary
+InstalledActor cannot certify Node membership. Ordinary root composition is
+source-viable; child-row connection still needs a measured Rust/public-Application
+probe before choosing an API. This selects no abstraction and closes no full row.
+
+Independent integration reviewee3fffa1/receipt63c70cd9 confirms no source/test/CI
+loss throughc636837. All prior PRD lines are conserved, with the new external-
+merge paragraph splitting the leading record; the old backlog sentence is
+intentionally replaced and remains saved in custody. Both refreshed locks retain
+399/324 records; only inherited Engine/Macros versions change before SDK adoption.
+
+Required release Nix auditb1100723/receipt6099cbab qualifies exacte887 and
+synthetic6abfa339 tree equivalence:55 plain Counter/profile,6 Node/profile,
+3 native-count/profile,35 public remote/profile, optimized workspace and debug
+coverage691/0/1 each. Coverage floors and Driver2048/four Observe1024 fuzz runs
+pass;451 payload hashes match their two ZIP/API digests. Conditional Miri is
+skipped. These source/primitive gates do not discharge the failed native debug
+transport gate or establish all-checks-passing external release delivery.
+
+Live publication review5318097d/receipt63150851 confirms all three externally
+published versions and registry archive checksums. Their VCS isc1d5b2b;388
+nongenerated payloads match committed source. Bombay0.1.1's optional remote
+feature remains exactly SDK1.10.8; later SDK publication cannot change that pin.
+The packaged lock's Rustls0.23.46 does not enforce a downstream minimum while
+the selected TLS1.10.2 manifest still permits0.23.45. Corrected SDK adoption and
+a subsequent Bombay release remain necessary. Published rust-version1.96 is
+metadata, not a newly executed compiler-floor proof. No yank or release-policy
+change is selected; full remote acceptance and native debug remain open.
+
+### Private fixture version constraint — selection before edit
+
+Actual Bombay0.1.1 publication makes a later release necessary for SDK adoption.
+The isolated publish=false fixture pins its local path dependency to=0.1.1;
+Cargo rejects a local0.1.2 even with an unlocked refresh. Selected release-plz
+only visits root workspace members, so it cannot rewrite this external field.
+
+Under standing recommendation delegation, select path-only for this checkout
+fixture, matching the existing Driver fuzz composition. A compatible range still
+adds a version policy; an exact pin requires extra release rewriting. Retain
+all registry SDK/Config/protocol pins and both isolated graphs. Expected edit:
+one existing fixture manifest line, no production Rust/public type/dependency
+addition. It shares the already-budgeted SDK manifest path, so ten-path hosting/
+adoption scope is unchanged. Prove the original local version-bump refusal and
+path-only control in isolated Cargo resolution before retaining the edit;
+current locked graph must remain byte-identical. No release version is selected
+by this fixture policy, and no generated release branch is modified here.
+
+The minimal pinned-Cargo resolver probe reproduces the exact requirement failure
+(exit101) for local0.1.2; path-only selects that same local package (exit0).
+This is a Cargo contract proof, not a full hypothetical next-release build.
+The actual current fixture then resolves locked/offline with local0.1.1 (exit0);
+both complete399/324 locks stay byte-identical to integrated baselines. An initial
+reader wrongly expected banner-free stdout; its inspection failure is retained
+and actual JSON-line parsing supplies the resolution facts. Retained edit is
+one manifest line+1/-1, production Rust/tests/API0; other exact pins are unchanged.
+
+Independent fixture-policy review2b047909/receipt84e49ebd passes complete TOML
+equality except the selected version-field removal, actual resolver diagnostics,
+current locked metadata and both complete lock hashes. The reconstructed negative
+manifest is not a pre-execution seal. No full future-release/native proof or
+shipping API change is claimed. This correction joins the already-scoped SDK
+adoption; combined checks and exact-head CI remain required before PR365 merge.
+
+### Registered TLS successor — actual publication and consumer selection
+
+Controlled PR12 merged as1ea4bd with passing exact-main CI38631426153.
+Guarded publish38638728105 succeeded; live registry archive reviewe0e2b1d6
+verifies allnine archives,267 Rust members,three TLS fixtures and29 controlled
+edges against that main source. Five successors are published; four supports
+remain immutable. Exact-main archives and registry downloads are byte-identical.
+This does not update Bombay0.1.1, whose remote SDK pin remains1.10.8.
+
+Reuse the unchanged1108 registry consumer in a separate1109 directory. Change
+only two exact SDK/link pins, narrowly resolve its lock, and require complete
+unrelated-record equality. Reuse its existing default/floor campaign and owning
+archive verifiers with updated paths/checksum expectations; no new runtime API,
+resource policy or production Rust. Account controller substitutions separately,
+within the previously selected100-line evidence allowance. Run the actual three
+consumer profiles through pinned Nix and retain exact binaries/source/locks.
+Pure registry runs and extracted owning archive tests remain distinct evidence.
+Combined hosting/fairness adoption and exact-head CI remain unexecuted here.
+
+The fresh1109 consumer lock has302 complete package records. Exactly five
+controlled nodes plus Rustls0.23.45→0.23.46 change;296 complete records remain
+unchanged. Both Rust sources retain their prior hashes. Initial inspection
+incorrectly keyed every dependency by name, collapsing parallel versions; the
+retained full-record comparison corrects that audit error before any credit.
+Allnine controlled checksums equal the independently downloaded registry ledger.
+Default consumer executions are still running; no floor/owning-test credit yet.
+
+Historical PR322 and PR323 are closed after source audit e1fd0ba1. PR322's
+blanket logical-delivery denial is superseded by the current explicit advanced
+Hosts/ActorSpace contracts; its original denial is not delivered. PR323's old
+Behavior0.16 integration repairs are superseded by current0.25 owning integration;
+no claim equates every old race witness with current tests. Neither closure is a
+merge, and neither authorizes deleting unmerged worktrees.
+
+Fresh1109 registry-only default campaign completes successfully: three profiles,
+six actual debug/optimized executions, six strict Clippy checks, three metadata
+graphs and formatting. Its18 command receipts retain unchanged source/lock hashes
+and allsix exact Cargo-selected executable copies. Actual compiler is1.99.0.
+Floor execution is active; archive-owner and combined PR gates remain open.
+
+Floor consumer command was deliberately interrupted by the coordinator (SIGINT,
+exit−2) before its first check finished because free storage fell below500MiB.
+Its compiler1.88 banners and metadata passed; no check/run/floor credit follows.
+Retain the interrupted receipts and restart only after safe derived-object
+cleanup. Default campaign remains complete; source/lock edits are unchanged.
+
+Storage correction before resuming floor: reuse the already-existing1108 floor
+target for pinned1.88, with unchanged1109 consumer sources/lock and a fresh
+evidence directory. This avoids constructing a duplicate compiler dependency
+graph in the default target. Builds remain serialized under one coordinator;
+old proof executable copies and receipts stay preserved. Reclaim only independently
+inventoried unused incremental compiler cache after process/open-file checks.
+No worktree/source/proof deletion or compiler policy change is selected.
+
+The resumed floor check passes, but its first run-build exits101 with actual
+OS28 (No space left on device) while writing Serde compiler metadata; no consumer
+execution credit. Select cleanup of independently inventoried inactive oldtrust
+debug/deps single-link compiled metadata (.rmeta) and Rust library archives
+(.rlib), under the user's unused temporary/build-cache cleanup authorization.
+These are regenerable build outputs; preserve sources, published archives, logs,
+research receipts and proof executables. No worktree is deleted. Verify exact
+file identities, archive magic, process/open-file absence and proof hashes
+immediately before deletion; record actual free-space recovery, not nominal totals.
+Restart in a new evidence directory, retaining both earlier failed attempts.
+
+Cleanup removes only495 inventoried oldtrust metadata files and292 compiled
+library archives after immediate independent hash/stat/open-file checks. Actual
+separate observed free-space gains total1107357696bytes; eight sealed proof
+executables remain byte-identical and zero worktrees are removed. Nominal881MiB
+incremental inventory is not used as recovery credit:769 files had surviving
+hardlinks. Incremental caches and all source/log/proof records remain intact.
+Fresh floor campaign uses its prior target and a pinned-Nix shell profile link
+to avoid repeated garbage-collection/refetch; no toolchain pin is changed.
+
+Further storage selection: remove only184 inventoried older compiled objects and
+161 single-link files from the inactive default incremental cache. Retain769
+hardlinked files; no nominal881MiB recovery claim. The active floor build uses
+a separate existing target. Root rechecks process/open-file absence, file
+identities and proof hashes before each selection; source/worktrees stay intact.
+
+Fresh final floor campaign passes17commands through pinned1.88: six actual
+debug/optimized runs, six checks and three registry-only metadata graphs; all
+source/lock hashes stay unchanged and six selected executables are retained.
+Both earlier interrupted/storage-failed attempts remain visible. Default and
+floor total twelve actual consumer executions; owning-query/config checks and
+both updated-PR combined gates remain outstanding.
+
+Continue the same authorized unused compiler-cache cleanup in oldtrust release:
+736 inventoried single-link Rust archives/metadata,779640832 allocated bytes.
+Exclude the empty metadata file. Verify actual process/open-file absence, full
+file identities and proof hashes before removal; no source/worktree/exec deletion.
+
+Independent owning Query reader verifies36 exact named cases percompiler
+(default reviewe0d8bd35, floor5d501eaa); original normalized archive manifest/lock
+and registry-only dependency graphs are preserved. No Query executable-copy
+claim. Before final Config audit, select at most35 additional standard-library
+reader lines beside the41-line reused Query reader, within the existing100-line
+new evidence-controller allowance. Reuse unchanged Config custody/name/profile
+checks; no Cargo or source edits by reviewers and no test credit from filenames.
+
+Current-document reconciliation before adoption: acceptance.md still calls the
+old1.10.8 checkpoint current and the corrected owning minimum pending. Update
+that document to identify the old checkpoint as historical and retain actual
+SDK publication/registry proof beside open combined-PR gates. One additional
+document path brings hosting/adoption to eleven paths and fairness/adoption to
+fifteen; production Rust/public types remain0. This documentation scope is
+selected under standing recommendation delegation before editing.
+
+Narrow Cargo update audit catches four unrelated dependency-edge rewrites:
+errno, rustix, tempfile and winapi-util now choose already-present windows-sys
+0.61.2 in place of0.52.0. No new package was added, but complete-record equality
+fails, so the candidate is not adopted. Preserve the raw Cargo result, restore
+only those four original records and require Cargo locked/offline metadata to
+validate the restored resolution before transfer. This is lock preservation,
+not a new Windows compatibility policy; allfive SDK records stay Cargo-selected.
+
+Fresh registry adoption prerequisite passes independent consumer and all-four
+owning audits: twelve actual consumer runs plus112 exact Query/Config cases.
+Review556699b5 retains source/archive/lock/profile/corpus custody and limitations.
+Both branches now have the same four shared manifest/lock edits; five selected
+package records per lock and all394/319 unrelated records conserved. Cargo
+locked/offline metadata validates the four restored original Windows edges in
+the root lock. Combined focused/build/lint/native gates remain unexecuted here;
+no feature or PR is marked merged by this dependency adoption.
+
+### Combined CI selection before branch integration
+
+To avoid a serial second CI campaign, select including the reviewed fairness
+branch in hosting after its focused debug/optimized controls pass. Both PRs
+then verify compatible combined source; fairness still merges through PR366
+first, followed by hosting through PR365. Preserve author worktrees and shared
+contracts; no new scheduling or remote API design is selected.
+
+Union scope is19 paths versus current main, including the existing four fairness
+source owners and hosting tests. Existing fairness production is+192/-44/net148;
+this integration adds0 production Rust and0 public types. Under the user's
+standing recommendation delegation, authorize this19-path combined checkpoint
+before importing changes; original contributions and new lock/document edits
+remain separately reviewable in their PRDs. Required CI on the combined source
+and ordinary guarded merges are mandatory; no direct main push or bypass.
