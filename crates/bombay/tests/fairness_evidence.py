@@ -14,6 +14,8 @@ import tempfile
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--profile", choices=("debug", "release"), default="debug")
 parser.add_argument("--output", type=Path, required=True)
+parser.add_argument("--suite", choices=("all", "public"), default="all")
+parser.add_argument("--baseline-revision", help="Original revision to replay against the public witness.")
 arguments = parser.parse_args()
 if "IN_NIX_SHELL" not in os.environ:
     raise SystemExit("Run through nix develop -c python3.")
@@ -37,14 +39,15 @@ cargo_environment = os.environ.copy()
 cargo_environment.setdefault("CARGO_TARGET_DIR", str(root / "target"))
 originals = {path: path.read_bytes() for path in (environment, capabilities, observation)}
 arguments.output.mkdir(parents=True, exist_ok=True)
-command = ["cargo", "test", "--locked", "-p", "bombay-rs", "--lib"]
+command = ["cargo", "test", "--locked", "-p", "bombay-rs"]
 if arguments.profile == "release":
     command.append("--release")
 records = []
 
 
-def execute(name, test, expectation):
-    invocation = command + [test]
+def execute(name, test, expectation, target=None):
+    selection = ["--lib"] if target is None else ["--test", target]
+    invocation = command + selection + [test]
     completed = subprocess.run(invocation, cwd=checkout, env=cargo_environment, capture_output=True, text=True, timeout=600)
     transcript = completed.stdout + completed.stderr
     (arguments.output / f"{name}.log").write_text(transcript)
@@ -93,23 +96,46 @@ mutations = [
      "local::environment::tests::fairness_source_settlement_rotates_without_admitting_users_or_timers"),
 ]
 try:
-    execute("baseline", "fairness_", "pass")
-    for name, path, anchor, before, after, test in mutations:
-        source = originals[path].decode()
-        start = source.index(anchor)
-        position = source.index(before, start)
-        changed = source[:position] + after + source[position + len(before):]
-        path.write_text(changed)
+    if arguments.suite == "all":
+        execute("baseline", "fairness_", "pass")
+        for name, path, anchor, before, after, test in mutations:
+            source = originals[path].decode()
+            start = source.index(anchor)
+            position = source.index(before, start)
+            changed = source[:position] + after + source[position + len(before):]
+            path.write_text(changed)
+            try:
+                execute(name, test, "fail")
+            finally:
+                path.write_bytes(originals[path])
+        execute("restored", "fairness_", "pass")
+    public_test = "actual_actor_bounds_both_sources_and_returns_every_original_payload"
+    execute("public_baseline", public_test, "pass", "event_fairness")
+    for priority in ("Mailbox", "Timer"):
+        source = originals[environment].decode()
+        start = source.index("async fn next(&mut self)")
+        position = source.index("self.next_event_source.order()", start)
+        environment.write_text(source[:position] + f"EventSource::{priority}.order()" + source[position + len("self.next_event_source.order()"):])
         try:
-            execute(name, test, "fail")
+            execute(f"public_{priority.lower()}_priority", public_test, "fail", "event_fairness")
         finally:
-            path.write_bytes(originals[path])
-    execute("restored", "fairness_", "pass")
+            environment.write_bytes(originals[environment])
+    if arguments.baseline_revision:
+        for path in originals:
+            relative = str(path.relative_to(checkout))
+            path.write_bytes(subprocess.check_output(["git", "show", f"{arguments.baseline_revision}:{relative}"], cwd=root))
+        try:
+            execute("public_original_revision", public_test, "fail", "event_fairness")
+        finally:
+            for path, original in originals.items():
+                path.write_bytes(original)
+    execute("public_restored", public_test, "pass", "event_fairness")
 finally:
     for path, original in originals.items():
         path.write_bytes(original)
     receipt = {
         "profile": arguments.profile,
+        "baseline_revision": arguments.baseline_revision,
         "sources": {str(path.relative_to(checkout)): hashlib.sha256(original).hexdigest()
                     for path, original in originals.items()},
         "records": records,

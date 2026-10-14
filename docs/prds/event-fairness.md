@@ -26,7 +26,10 @@ control mailbox and local results, excluding user input and timers as required
 by D-SETTLE-1. Ordinary and settlement service retain separate cursors, so settlement cannot
 reset an ordinary entitlement. Cursor state survives cancellation of a pending
 receiving future.
-No losing branch may consume an event. Original startup tasks remain owned by
+Selection loss cannot discard an acquired fact. A child observation may be
+transferred exactly once into the existing control FIFO before local receiving
+returns Pending; cancellation then leaves that exact queued event intact.
+Original startup tasks remain owned by
 ActivationTasks across selection loss; an error retains the original JoinError.
 
 Communication owns control-first priority with optional aging. Bombay selects
@@ -448,3 +451,119 @@ temporary checkout, verifies a passing control, restores one concrete defect
 at a time, requires the named test to fail (a compilation failure is rejected),
 and verifies the restored suite. JSON receipts retain source hashes, exact
 commands and exits. It never mutates the live checkout.
+
+## Adversarial test audit requested by the user
+
+The user challenged whether the tests were being tailored to the implementation.
+The audit identified a material gap: direct ActiveLocalEnvironment and capability
+receiving tests establish source contracts but do not alone prove execution
+through the actual Driver/actor loop. The pool ordering failures demonstrate
+why that distinction matters. No existing pool or result-custody expectation
+was changed to accommodate those failures.
+
+Added public-API event_fairness integration evidence. A current-thread host
+synchronously admits Arm followed by every original mailbox payload before
+yielding to the actor. The pure Arm fold requests already-due timers through
+typed Actions; it performs no I/O or clock read. After complete action
+settlement, both finite backlogs remain continuously ready until depleted.
+The actual returned actor retains the full observable service trace, every
+original move-only allocation, and every exact timer identity/generation.
+
+The independent oracle measures positions and gaps in that completed trace,
+not the selector's cursor or an expected rotation string. It checks both
+mailbox and timer bounds for balanced load, mailbox flood, and timer flood,
+and exact complete payload traces after retirement. Timeouts only guard test
+hangs; eventual completion alone cannot satisfy the bound.
+
+Debug and optimized replay against the exact original production revision
+406df116dd081593e1099a1f3301d2fb91bfc4fc fails because the ready timer misses its
+first service bound. Independently restoring mailbox-first and timer-first
+priority each fails the corresponding source bound; restoring the candidate
+passes. The original three changed production files are restored together, so
+this is not merely a hand-picked approximation of the old implementation.
+
+The direct-source tests retain narrower claims: all three outer sources and
+both local sources, settlement eligibility, pending cancellation, exact task
+custody and cooperative yielding. They complement the public actor trace; no
+single test is presented as proving all runtime or elapsed-time fairness.
+Finite backlogs assert the bound while ready, not after depletion. The two
+old mailbox-priority characterization tests changed because their former
+assertions described the defect explicitly requested for removal. Their
+original production failures were recorded before the fix.
+
+Reproduce the independent public witness and original-source replay:
+
+```sh
+nix develop -c env CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 python3 crates/bombay/tests/fairness_evidence.py --suite public --profile debug --baseline-revision 406df116dd081593e1099a1f3301d2fb91bfc4fc --output /tmp/bombay-fairness-public-debug
+nix develop -c env CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 python3 crates/bombay/tests/fairness_evidence.py --suite public --profile release --baseline-revision 406df116dd081593e1099a1f3301d2fb91bfc4fc --output /tmp/bombay-fairness-public-release
+```
+
+Both reviews of the public witness are complete. The first checked the causal
+setup: synchronous admissions on a current-thread host precede the first actor
+turn, and typed timer actions settle before the measured trace starts. The
+second checked counterexamples: the oracle accepts any schedule satisfying the
+bound, demands all original payloads and generations, and fails on the actual
+old production sources and on either fixed priority. It does not infer fairness
+from a timeout or require a particular rotation string. These were manual
+reviews; no independent reviewer is claimed.
+
+## Verification after the test audit
+
+All commands use `nix develop -c`, with `CARGO_PROFILE_DEV_DEBUG=0`,
+`CARGO_PROFILE_TEST_DEBUG=0` and `CARGO_INCREMENTAL=0` for local storage limits.
+Debug assertions remain enabled. Results below cover the causal correction and
+the public actor witness, rather than the rejected initial implementation.
+
+| Verification | Result |
+| --- | --- |
+| Focused library fairness suite | 13 passed in debug and optimized builds. |
+| Ten owning-source defect inversions | Each named regression fails in both profiles; restored controls pass. Compilation failure is not accepted as a killed inversion. |
+| Public actor integration | Balanced readiness, mailbox flood and timer flood pass in both profiles with complete original payload custody. |
+| Public original-source replay | Exact original three production files fail the timer bound in both profiles; mailbox-first and timer-first inversions also fail the intended source bound. Restored controls pass. |
+| Existing fifo_pool_recovery and source_refusal_custody | All six pass in both profiles, with their original assertions unchanged. |
+| `cargo build --locked --workspace` | Passed. |
+| `cargo nextest run --locked --workspace` | 703 passed, one skipped; Nextest additionally flags the unchanged Engine cancellation witness as leaky. This is not a clean leak report. |
+| `cargo clippy --locked --workspace --all-targets -- -D warnings` | Passed. |
+| `cargo fmt --all -- --check` | Passed. |
+| Additional required mutation/unused-result lints | The additional unused-result denial rejects unchanged application/execution.rs:222; earlier HTTP findings are also retained above. Standard Clippy passing does not waive those findings. |
+| `cargo test --locked --workspace` | Two full runs stop at the unchanged HTTP staging witness. Passing Nextest does not erase either failure. |
+| `cargo test --locked --workspace --no-fail-fast` | Passed all targets and documentation tests. This run was requested to execute targets after the earlier HTTP failure; its pass does not erase the intermittent failures. |
+
+The HTTP failure was investigated with the complete seven-test Axum suite,
+using `cargo test --locked -p bombay-rs --features axum --test axum` for 20 runs
+on each revision. The exact original revision fails twice and the candidate
+once, each at `HTTP work and original cleanup return together`. An earlier
+20-per-revision campaign running only that test did not reproduce it. This
+establishes a pre-existing intermittent failure; it does not establish that the
+patch leaves its probability unchanged. No assertion, timeout or retry policy
+was weakened. Comparison logs and receipts are in
+`/tmp/bombay-http-suite-comparison/` and `/tmp/bombay-http-comparison/`.
+
+Submission is [draft PR #366](https://github.com/devrandom-labs/bombay/pull/366).
+At production revision `73f53ed`, native TLS release, CodeQL and cargo-deny pass;
+Nix flake verification is still running. Native TLS debug fails on a scheduled
+query with closed reply receiving and a recorded publication timeout. The
+[original-revision CI](https://github.com/devrandom-labs/bombay/actions/runs/38609035631)
+also fails native TLS on closed reply receiving, but in different campaign
+cases. That is evidence of an existing failure family, not proof that every
+new failure is unrelated. The late-exit `-9` records are expected negative
+controls, not CI failures. These gates remain unresolved; the PR is not ready
+to merge and FAIR1 remains active.
+
+Detailed local receipts are in `/tmp/bombay-fairness-causal-{debug,release}/`
+and `/tmp/bombay-fairness-public-{debug,release}/`. They retain exact commands,
+source hashes, exits and individual failure transcripts. The reproducible
+runner remains in `crates/bombay/tests/fairness_evidence.py`.
+
+Complete tracked and untracked scope relative to `406df116` after this audit:
+
+```text
+production: +192 / -44 / net +148
+tests:      +1086 / -52 / net +1034
+public API: +0 types / -0 types
+files: 10
+```
+
+The audit adds one public-API integration test and extends defect replay; it
+does not add further production code. Broadcaster overload and latency policy,
+HTTP lifecycle repair and native transport investigation remain separate work.

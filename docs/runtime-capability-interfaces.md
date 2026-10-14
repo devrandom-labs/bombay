@@ -81,7 +81,8 @@ These are acquisition bounds, not elapsed-time guarantees. Every acquisition
 path participates in Tokio's cooperative budget so an always-ready custom
 receiver cannot monopolize the host while budget-aware timers/tasks yield.
 When nothing is ready the receiving futures register notifications and park.
-Losing selection retains the original mailbox entries, observations and tasks.
+Selection loss preserves the original facts and tasks. A child fact already
+transferred out of observation remains owned by the existing control FIFO.
 Complete action settlement and retirement keep their existing causal order.
 
 Communication owns control priority and user aging. The standard local
