@@ -11,8 +11,12 @@ external interface, timer, Entity, supervisor, and worker-pool paths have
 executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
 or multithread execution. Durability and crate-owned remote networking remain
-planned. Ordinary multi-node Application assembly and a public `remote` feature have not been implemented;
-the existing protected transport examples are scoped verification fixtures.
+planned. The optional `remote` feature currently provides `remote::verify` for
+retaining a provider result before its future is disposed; ordinary multi-node
+Application assembly remains pending. Protected Counter transport regressions
+live in Bombay's tests, built by the isolated transport-custody test package.
+The local `examples/counter` and future `examples/remote-counter` applications
+remain separate.
 See the [source-backed inventory](prd-backlog/evidence.md). This guide is included in crate rustdoc. The entry fragments below
 are owning doctests, awaiting the reconciled branch's complete verification; fragments labelled text or ignore omit surrounding
 definitions and remain schematic. The source-bound application spellings are:

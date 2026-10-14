@@ -65,34 +65,16 @@ src/counter.rs    state, protocol, messages, receive logic, and invariant
 
 ## Remote Counter prerequisites
 
-The user-selected layout separates the local Counter from a remote Counter
-example under `examples/remote-counter/`. Remote runtime capabilities belong in
-`crates/bombay` behind the optional `remote` feature. That package and feature
-remain pending; the existing sources below are verification fixtures awaiting
-migration, not the ordinary remote entrypoint.
+The local application lives in `examples/counter`. A separate
+`examples/remote-counter` application will consume Bombay's crate-owned
+network/export/admission APIs behind `remote`. It remains pending; the existing
+`remote::verify` acquisition function alone does not provide multi-node hosting.
 
-The current `authorized` binary under `examples/counter/` runs an explicit local
-test profile using the same Counter and typed requester Applications. Its application-owned service
-verifies two finite providers, checks current permission at nonwaiting mailbox
-admission, retains replay protection, and preserves original request/evidence
-and native retirement results. A Read is a snapshot, not an Increment receipt.
-The configured receipt identifies its deployment, caller, controller, actor,
-host, protocol and runtime/actor generations. The service checks that complete
-identity and its current grant before replay lookup and on every mailbox retry.
-Assignments remain tied to the borrowed live Tokio runtime. These checks prove
-the explicit finite test profile; they do not establish production identity.
-Running this binary without `--explicit-test` refuses startup before any export.
-Production identity and remote-network acceptance remain open.
-The local service round-trips seven bounded JSON meanings: request, refusal,
-mailbox admission, increment processing, Read reply, stop acceptance and joined
-retirement. Actor messages remain typed Rust values after decoding. Cancelling
-a requester's borrowed exchange preserves its acquired Begin result, original
-reply/proof, provider receipt and completion result beside native retirement.
-Cancellation of the Counter's outer service remains unverified.
-
-```text
-nix develop -c cargo run --locked -p bombay-example-counter --bin authorized -- --explicit-test
-```
+Protected Counter fault and transport regressions live under
+`crates/bombay/tests/protected_counter`, built by the isolated transport-custody
+test package. They use explicit finite test providers and are verification
+fixtures. Their commands and evidence belong in the
+[remote PRD](../docs/prds/static-remote-actors.md), rather than application setup.
 
 ## `entity`
 

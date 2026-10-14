@@ -19,7 +19,9 @@ With the opt-in `remote` feature, `remote::verify` owns storing the provider's
 returned result before its future is disposed. Its private verification module
 uses an outside standard result slot and owns no authentication policy. Network
 entry points and ordinary multi-node Application composition remain pending;
-transport fixtures do not establish that public surface.
+transport fixtures do not establish that public surface. Protected Counter
+regressions belong to `crates/bombay/tests/protected_counter`, executed by the
+isolated transport-custody package rather than an example binary.
 
 ## Workspace boundary
 

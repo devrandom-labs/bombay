@@ -25,9 +25,8 @@ dhat = "=0.3.3"
 [features]
 protected-transport = ["zenoh/transport_tls"]
 
-[[bin]]
+[[test]]
 name = "protected_counter"
-path = "../../../../examples/counter/src/bin/authorized.rs"
-required-features = ["protected-transport"]
+path = "../../../../crates/bombay/tests/protected_counter/mod.rs"
 
 [workspace]

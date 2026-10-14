@@ -16,9 +16,14 @@ that formerly awaited replacement CI. Historical failures remain unexplained.
 The selected main now uses Behavior/Actors0.25.0 and registry Timers0.2.0.
 The following older checkpoints retain their original source/CI provenance.
 AUTH1/NET1, every full remote witness, network entry points and the separate
-remote-counter application remain open. The current unmerged acquisition stage
-adds only opt-in `remote::verify`; full multi-node Application integration is
-still outstanding. Its verification and delivery evidence belong in the PRD.
+remote-counter application remain open. [PR361](https://github.com/devrandom-labs/bombay/pull/361) delivers opt-in
+`remote::verify` through actual mergeb2beaa9 at2026-10-14T00:02:44Z after all six
+checks pass. Required Nix executes16 remote tests per profile and746/0/1 default
+optimized tests; exact-head review and artifacts are recorded in the PRD.
+Full multi-node Application integration is still outstanding. The separate
+Counter test-relocation stage passes local combined and native checks; its
+submitted-head CI, review and merge remain pending. A remote-counter application
+is still required and is not delivered by moving the harness.
 
 Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
 merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at

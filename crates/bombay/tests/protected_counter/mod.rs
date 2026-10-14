@@ -40,13 +40,13 @@ use tokio::{
 };
 
 #[cfg(all(test, feature = "protected-transport"))]
-#[path = "authorized/remote_counter.rs"]
+#[path = "transport.rs"]
 mod remote_counter;
 
-#[path = "authorized/protected/mod.rs"]
+#[path = "protected/mod.rs"]
 mod protected;
 
-#[path = "../counter.rs"]
+#[path = "../../../../examples/counter/src/counter.rs"]
 mod counter;
 use counter::{Counter, CounterMessage, CounterProcessed, CounterSends, CounterValue};
 
@@ -4355,72 +4355,6 @@ fn configured_protected_counter(
         .collect()
 }
 
-fn main() -> Result<(), StartupRefusal> {
-    let mode = match env::args().nth(1).as_deref() {
-        Some("--explicit-test") => StartupMode::ExplicitTest,
-        _ => StartupMode::ProductionRequired,
-    };
-    if let StartupMode::ProductionRequired = mode {
-        return Err(StartupRefusal::TestProvider);
-    }
-    let host = Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .expect("caller-owned explicit host");
-    let mut authority = AssignmentAuthority {
-        host: &host,
-        runtime_generation: 23,
-        grant_issuer: "grant-controller",
-        authority_generation: 7,
-        permitted_operations: &[
-            CounterOperation::Increment,
-            CounterOperation::Read,
-            CounterOperation::Stop,
-        ],
-        next: Some(29),
-    };
-    let (binding, deadline) = host.block_on(async { authority.issue() })?;
-    let configured = configured_protected_counter(
-        binding,
-        authority.grant_issuer,
-        authority.authority_generation,
-        CounterProofProfile::RecordedTest,
-    );
-    host.block_on(run_protected_counter_profile(
-        #[cfg(test)]
-        CounterWorkCase::Healthy,
-        &authority,
-        binding,
-        deadline,
-        CounterProofProfile::RecordedTest,
-        &configured,
-        &record_provider::verify,
-        record_provider::projection,
-        record_provider::meaning,
-        record_provider::endpoints,
-    ))?;
-    let (binding, deadline) = host.block_on(async { authority.issue() })?;
-    let configured = configured_protected_counter(
-        binding,
-        authority.grant_issuer,
-        authority.authority_generation,
-        CounterProofProfile::ScheduledTest,
-    );
-    host.block_on(run_protected_counter_profile(
-        #[cfg(test)]
-        CounterWorkCase::Healthy,
-        &authority,
-        binding,
-        deadline,
-        CounterProofProfile::ScheduledTest,
-        &configured,
-        &scheduled_provider::verify,
-        scheduled_provider::projection,
-        scheduled_provider::meaning,
-        scheduled_provider::endpoints,
-    ))?;
-    Ok(())
-}
 // Owning execution-fault and startup-refusal tests for this executable.
 #[cfg(test)]
 mod tests {
@@ -9650,7 +9584,7 @@ mod protected_application {
 }
 
 #[cfg(test)]
-#[path = "authorized/held_counter_retirement.rs"]
+#[path = "retirement.rs"]
 mod held_counter_retirement;
 
 #[cfg(test)]

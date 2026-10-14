@@ -13,22 +13,8 @@ workspace = true
 bombay-rs = { path = "../../crates/bombay" }
 tokio.workspace = true
 thiserror.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-json-event-parser = { version = "=0.2.3", default-features = false }
+
+[dev-dependencies]
 futures-util = { version = "0.3.34", default-features = false, features = [
   "std",
 ] }
-
-[dev-dependencies]
-dhat = "0.3.3"
-
-[features]
-protected-transport = ["dep:zenoh"]
-
-[dependencies.zenoh]
-package = "bombay-zenoh"
-version = "=1.10.8"
-optional = true
-default-features = false
-features = ["transport_tls"]
