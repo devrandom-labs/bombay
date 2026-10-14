@@ -1,5 +1,55 @@
 # Static remote actors and typed admission
 
+## PR364 packaged-source correction — local verification
+
+The corrected immutable source53qd1xs4h9748pv2b6b4458y0sbh8vy0-source is
+realized with `nix build --no-link
+.#checks.aarch64-darwin.bombay-protected-counter.src.outPath`. Root directly
+rehashes all seven fixture files and verifies byte equality with checkout
+(9991 bytes), then verifies exact Node/startup/execution/test and both lock bytes.
+The independent source-composition review confirms the fileset reaches the
+owning check; its reader cannot access this store path, so direct store rehash
+credit belongs only to the coordinator. That limitation remains disclosed.
+
+Pinned-Nix Cargo runs use the actual immutable-source manifest, `--locked
+--features protected-transport --test protected_counter public_node_`, separately
+in debug and with `--release`. Both exit0 and execute the six source-named cases
+exactly once:6 passed/0 failed/0 ignored per profile. External
+filtered-node-results.json retains command results, named outcomes and log
+hashes. Pinned-Nix `nixfmt --check flake.nix` also exits0. This packages unchanged
+verified tests; it does not add a semantic law or replace their two source
+reviews and prior intended source inversions.
+
+Correction delta: two existing paths, Nix +1 line, Rust production/test/API0.
+The complete endpoint remains24 tracked paths and no untracked paths, production
++722/-2/net720, tests+1387/-4/net1383, public API+4/-0. Existing approved
+29-path/800-production/four-type limits remain. Failed old CI38525751833 is
+retained; replacement exact-head CI and review are required before any merge.
+All full R01–R25 remain open.
+
+## PR364 required-CI source packaging correction — before edit
+
+Actual CI38525751833 fails its required Nix job at the six-name debug Node gate:
+two refusal-only cases pass, four native openings fail setup. Both separate native
+TLS jobs pass. These setup failures are not invariant inversion kills or passing
+acceptance. No merge is authorized from this failed head.
+
+Targeted Nix evaluation of checks.aarch64-darwin.bombay-protected-counter.src
+succeeds independently of the stale full-evaluation nightly derivation. Its exact
+source g8yxaspg6w6lf9dpgf7rbdz473jgx2a3 excludes the entire certificate fixture
+directory; all seven PEMs exist in checkout and none in that source. Existing
+commonCargoSources/additional extension filters do not include PEM. The literal
+CARGO_MANIFEST_DIR fixture path therefore points at missing inputs in CI.
+
+Under recommended-choice delegation add the one existing controlled certificate
+fixture directory to the existing Nix fileset. Keep Rust tests/oracles, manifests,
+locks, toolchain, resource choices and public types unchanged. Expected edit:
+flake.nix +1 line and PRD evidence, within the29-path/800-production/four-type cap.
+Require actual filtered-source file hashes to match all seven checkout fixtures,
+then run all six actual Node cases in debug/optimized from that immutable filtered
+source through pinned Nix. Full replacement exact-head CI/native artifact review
+remains required. No network privilege workaround or test weakening is selected.
+
 ## Final scoped review and local Nix evaluation limitation
 
 Independent review47b62463 / structured receipt57d3e1bc qualifies focused PR

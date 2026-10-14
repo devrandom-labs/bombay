@@ -59,6 +59,7 @@
               ) ./.)
               ./.cargo/mutants.toml
               ./.config/nextest.toml
+              ./docs/prds/static-remote-actors/transport-custody/certificates
               (pkgs.lib.fileset.maybeMissing ./crates/bombay-engine/tests/driver-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/child_preparation_retirement_evidence.py)
