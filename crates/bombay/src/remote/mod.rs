@@ -5,8 +5,12 @@
 
 mod ingress;
 mod metadata;
+pub(crate) mod startup;
 mod verification;
 
 pub use ingress::{IngressError, try_retain};
 pub use metadata::Metadata;
+pub use startup::NodeStartupRefusal;
 pub use verification::verify;
+
+pub use crate::application::node::{Node, NodeExecutionRefusal};

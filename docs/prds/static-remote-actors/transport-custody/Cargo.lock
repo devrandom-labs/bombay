@@ -263,6 +263,9 @@ dependencies = [
 name = "bombay-rs"
 version = "0.1.1"
 dependencies = [
+ "zenoh-protocol",
+ "bombay-zenoh-config",
+ "bombay-zenoh",
  "bombay-address",
  "bombay-behavior",
  "bombay-behavior-actors",
@@ -514,6 +517,7 @@ version = "0.1.0"
 dependencies = [
  "bombay-rs",
  "bombay-zenoh",
+ "bombay-zenoh-config",
  "dhat",
  "futures-util",
  "json-event-parser",

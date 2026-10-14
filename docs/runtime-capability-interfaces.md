@@ -22,6 +22,11 @@ The new opt-in `remote::Metadata` is a shared untrusted fifteen-field Serde
 declaration for concrete protocols. It does not issue authority or select a
 target. Its raw decoding accepts positional structs as well as objects; the
 pending bounded receiver must enforce the chosen object layout and all policy.
+The implementation branch adds Application::open_node and remote::Node as a
+transport owner, reusing ordinary Application execution with a borrowed native
+Session. It owns no new actor trait, mailbox, lifetime authority or permission
+policy. Startup profile checks preserve original declarations on refusal;
+actual SDK and root/child integration remain separate verification gates.
 Native transport fixtures remain scoped verification consumers.
 
 The [developer experience coordination](prds/developer-experience.md) records

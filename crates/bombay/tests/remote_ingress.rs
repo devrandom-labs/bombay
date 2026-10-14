@@ -60,7 +60,7 @@ fn count_covers_active_and_unread_originals() {
     assert_eq!(refused_pointer, pointer);
     assert_eq!(refused_bytes, [2, 2, 2]);
     assert_eq!((charged, after_active, after_unread), (0, 1, 2));
-    assert_eq!(before_disposal, []);
+    assert_eq!(before_disposal, [] as [u8; 0]);
     assert_eq!(after_disposal, [2, 1, 0]);
 }
 
@@ -96,7 +96,7 @@ fn closed_capacity_preserves_the_unqueued_original() {
     );
     assert_eq!(refused_pointer, pointer);
     assert!(queued.is_err());
-    assert_eq!(before_disposal, []);
+    assert_eq!(before_disposal, [] as [u8; 0]);
     assert_eq!(after_disposal, [3]);
 }
 
@@ -146,7 +146,7 @@ fn full_channel_preserves_its_original_and_charge() {
     assert!(source_keeps_cause);
     assert_eq!(source_message, "no available capacity");
     assert!(diagnostic.contains("Full(..)"));
-    assert_eq!(before_disposal, []);
+    assert_eq!(before_disposal, [] as [u8; 0]);
     assert_eq!(after_disposal, [5, 4]);
 }
 
@@ -175,6 +175,6 @@ fn closed_channel_preserves_its_original_and_charge() {
 
     assert_eq!(refused_pointer, pointer);
     assert_eq!((charged, charge, released), (0, 1, 1));
-    assert_eq!(before_disposal, []);
+    assert_eq!(before_disposal, [] as [u8; 0]);
     assert_eq!(after_disposal, [6]);
 }

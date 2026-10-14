@@ -16,7 +16,7 @@ workspace = true
 
 [features]
 default = []
-remote = ["dep:serde"]
+remote = ["dep:serde", "dep:zenoh", "dep:zenoh_config", "dep:zenoh_protocol"]
 axum = ["dep:axum", "tokio/net"]
 
 [dependencies]
@@ -33,6 +33,9 @@ timers = { workspace = true }
 triomphe = { workspace = true }
 axum = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
+zenoh = { package = "bombay-zenoh", version = "=1.10.8", default-features = false, features = ["transport_tls"], optional = true }
+zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-features = false, optional = true }
+zenoh_protocol = { package = "zenoh-protocol", version = "=1.10.1", default-features = false, optional = true }
 
 [dev-dependencies]
 serde = { workspace = true }

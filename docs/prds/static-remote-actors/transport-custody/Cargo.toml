@@ -14,6 +14,8 @@ zenoh = { package = "bombay-zenoh", version = "=1.10.8", default-features = fals
   "transport_tls",
 ] }
 
+zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-features = false }
+
 futures-util = { version = "=0.3.34", default-features = false, features = [
   "std",
 ] }

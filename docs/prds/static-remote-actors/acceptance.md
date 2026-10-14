@@ -41,8 +41,16 @@ Counter/Ledger fixed vectors. Seven structural schema tests pass in both profile
 and the intended unknown-field inverse fails before exact restoration. Its Serde
 array control exposes a receiving-boundary prerequisite: shipping input must have
 the selected object shape. No authentication, zero-admission, full bound or full
-R02 acceptance is credited from raw decoding. Node/profile construction and the
-bounded receiving decoder still need actual implementation and proofs.
+R02 acceptance is credited from raw decoding. Node/profile construction now
+has actual feature-gated crate code and is under public startup/root/child
+verification. The bounded receiving decoder remains
+unimplemented. Initial debug and optimized startup regressions fail exactly for
+empty-group credential classification and native diagnostic disclosure; final
+corrected startup controls pass in debug and optimized after independent
+review. Six actual public Node cases pass both profiles after real-owner
+falsifiers and byte-exact restoration. Combined local workspace/remote/protected
+checks and scoped minimization pass; reviewed PR, required CI and actual merge
+remain pending. No full row closes from this contribution.
 
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in

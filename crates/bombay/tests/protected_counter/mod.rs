@@ -9707,3 +9707,6 @@ mod provider_receipt_custody {
         assert_eq!(drops.load(Ordering::SeqCst), 1);
     }
 }
+
+#[cfg(all(test, feature = "protected-transport"))]
+mod public_node;
