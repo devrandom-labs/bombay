@@ -486,3 +486,78 @@ custody. Disposition: pass for feature isolation. Evidence:
 OUTCOME-FEATURE-VERIFIED.json and OUTCOME-FEATURE-ORACLES.json. Full24-gate
 verification remains open; c8f871c failed at861.140 seconds with548 unchanged
 source hashes (ten passed, one failed, thirteen cancelled).
+
+Cold-descendant topology pre-edit law (DX03): derived static metadata, no
+actor-model or runtime semantic change. A child inferred directly from one
+creator's BirthNodeAt projection already has that exact associated child type;
+generated bounds must require the projection to exist without asking Rust to
+prove the projection equals itself. Other parents, explicit target actors and
+wrong roles still require the existing equality/role checks. Desired caller:
+one topology declaration with an ordinary cold Branch creating Worker, plus
+Application::with_topology(root, topology).child(role, branch). No structural
+alias, recursive terminal enum or extra bound in the application.
+
+Current source already avoids this self-equality in ordinary actor_bounds, but
+cold terminal and native eligibility generation unconditionally emits it. Reuse
+the existing selected-edge map and exact BirthNodeAt/ChildPosition contracts;
+no new trait, constructor, public type, erased protocol or default generic.
+Write the failing native compile/custody consumer first on unchanged9c7e37a.
+It must execute actual fresh child creation, same-action typed read/reply, full
+retirement and retained Box identity after correction. Preserve all existing
+wrong-role/host/birth/authority denials and wrapper/cold/recursive consumers.
+Expected files: owning topology generator, focused consumer, existing compile
+consumer corpus and owning evidence. Expected production net below20 lines;
+public types0; aggregate/control sums, states and runtime interpreters unchanged.
+Expanded cumulative authorization remains2026-10-09.
+
+Cold topology RED retained: unchanged owner9c7e37a fails the native Branch/Worker
+consumer with exactly E0275, the same self-equality as the capacity falsifier.
+No mailbox API appears in this independent witness. Before lowering, topology
+parser/generator has {'lines': 1428, 'matches': 2, 'branches': 9, 'structs': 7, 'enums': 0, 'modules': 0}. Runtime control-state sums and every
+subordinate native outcome remain unchanged. Retain projection-existence and
+ChildPosition proof; omit equality only when the selected edge defines that
+exact projection. Cold native ExecutedRoot is a distinct composition, so its
+equality must remain. Native cold member creators use their own selected
+projection and need the same omission already implemented by actor_bounds.
+No new production symbol, public type, trait or source bound is selected.
+
+Denial baseline audit (before snapshot edit): all24 topology inputs still fail
+for their required laws;22 stored diagnostics match. Missing Trace/Readiness
+have one-character rustc source-snippet truncation differences on1.99. Restore
+unchanged9c7e37a macro source and rerun the exact six-case test: the identical
+two snapshots mismatch, and complete actual diagnostics match the candidate
+byte-for-byte. Restore candidate hash afterwards. Correct only these two
+truncated display lines; no fixture, bound, expected error, omission or static
+denial changes. COLD-TOPOLOGY-DIAGNOSTIC-BASELINE.json records the exact delta.
+
+Cold topology retained checkpoint: parameter/cold-native generation now uses the
+ordinary selected-edge rule. Runtime work control states remain
+StagingRejected/Unstarted/Prepared/NotInvoked/Completed; work presence remains
+Supplied/Absent. Every native creation/retirement sum, independent failure and
+transition authority is unchanged. The selected-edge map retains exactly the
+creator/child relation needed to derive each associated child; existing actor
+and custody parameter sets retain their substitution dependencies. No new
+subordinate state or result is added. Generator matches2→2, arms9→9, structs7→7,
+enums0→0, modules0→0; two static equality-selection branches added. No arrival
+history, duplicate cause, semantic flag, cardinality inference, nested actor
+engine, caller structural path or new placeholder. Cross-check DX03, existing
+BirthNodeAt/ChildPosition proofs, native creation/retirement and driver-law;
+normalized atomic-actor architecture/features/verification/DevX laws unchanged.
+Disposition: pass for this inference correction; programme completion remains open.
+
+Production+21/-3/net18 including rustdoc; executable generator+19/-2/net17.
+Tests+140/-2/net138 including two proven display-only snapshot lines; new native
+consumer138 lines. Public types/traits/generics/bounds/constructors0; new test
+module1, production modules0. Actual Branch→Worker creation and same-action reply
+retain the full original Box through joined retirement. Frozen549-file matrix:
+27 native/composition cases on Rust1.99/1.96 debug/release,108 executions pass.
+Both original self-equality defects independently fail E0275 in debug/release,
+and restored controls pass. Owner and actual consumer strict lint/fmt pass.
+Renamed downstream tests and macro rustdoc pass. All24 topology compile denials
+pass on1.99. MSRV rejects all24 too, but its snapshot harness returns101: eight
+stored diagnostics differ from1.99. Unchanged9c7e37a reproduces exactly the same
+eight complete diagnostic outputs; candidate is restored byte-for-byte. This
+records preserved denials, not a passing MSRV snapshot gate. No snapshot weakening
+or overwrite. Final full Nix gates and integrated actor-capacity cold journey
+remain required. Evidence: COLD-MATRIX-VERIFIED.json, COLD-TOPOLOGY-INVERSES.json,
+COLD-FINAL-VERIFIED.json, COLD-MSRV-DENIAL-BASELINE.json and existing denial logs.

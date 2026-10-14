@@ -856,7 +856,15 @@ impl TopologyDeclaration {
                         };
                         bounds.push(quote!(#base: #bombay::behavior::Behavior, #role: #bombay::behavior::ChildRole<#base #equality>,));
                     }
-                    bounds.push(quote!(<<#creator as #bombay::behavior::Behavior>::Birth as #bombay::behavior::BirthMode>::Child: #bombay::behavior::BirthNodeAt<#position, Child = #child_actor>,));
+                    let equality = if child.role.is_none()
+                        && selected.get(&child.actor.to_string())
+                            == Some(&(actor.name.to_string(), child.name.to_string()))
+                    {
+                        TokenStream::new()
+                    } else {
+                        quote!(, Child = #child_actor)
+                    };
+                    bounds.push(quote!(<<#creator as #bombay::behavior::Behavior>::Birth as #bombay::behavior::BirthMode>::Child: #bombay::behavior::BirthNodeAt<#position #equality>,));
                 }
             }
             quote!(#(#bounds)*)
@@ -961,9 +969,18 @@ impl TopologyDeclaration {
                 } else {
                     quote!(Self: #bombay::EstablishNativeChild<#creator, #child_actor, #descendants>,)
                 };
+                let equality = if actor.name != "root"
+                    && child.role.is_none()
+                    && selected.get(&child.actor.to_string())
+                        == Some(&(actor.name.to_string(), child.name.to_string()))
+                {
+                    TokenStream::new()
+                } else {
+                    quote!(, Child = #child_actor)
+                };
                 let eligible = quote!(#native_bounds
                     #creator: #bombay::behavior::Behavior<Protocol: #bombay::behavior::Protocol<Addr = #bombay::MailAddr>>,
-                    <<#creator as #bombay::behavior::Behavior>::Birth as #bombay::behavior::BirthMode>::Child: #bombay::behavior::BirthNodeAt<#position, Child = #child_actor>,
+                    <<#creator as #bombay::behavior::Behavior>::Birth as #bombay::behavior::BirthMode>::Child: #bombay::behavior::BirthNodeAt<#position #equality>,
                     #position: #bombay::behavior::ChildPosition<<<#creator as #bombay::behavior::Behavior>::Birth as #bombay::behavior::BirthMode>::Child, #child_actor> + 'static,
                     #proof
                 );

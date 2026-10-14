@@ -202,6 +202,10 @@ with this declaration. [Cold-member tests](../crates/bombay/tests/cold_member_re
 cover equal actor types with distinct logical hosting, nested descendants,
 recursive creation and original initialization-refusal custody. Recursive cold
 classes use the same nominal role-owner rule; their wrapped types stay inferred.
+Finite descendants of cold members are inferred from their actual birth types too.
+The [cold-descendant journey](../crates/bombay/tests/inferred_cold_descendants.rs)
+executes creation, its same-action reply and complete retained actor state without
+a wrapped child alias or application-written retirement enum.
 
 Entity families are independent hydrated roots in that same declaration:
 
