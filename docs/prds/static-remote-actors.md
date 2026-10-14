@@ -5,7 +5,8 @@
 Controlled source23676e6c is committed and pushed; draft [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 starts required run38607157519/job116000876607 on that exact source. Both owning
 locks were ordinarily resolved and independently qualified. The unchanged source-
-release prefix passes pinned-Nix debug/optimized72 nonzero owning tests/profile,
+release prefix passes pinned-Nix debug/optimized72 reported nonzero test passes/profile
+(including nested declaration-test invocations),
 strict Clippy and six normal/maintainer consumer runs; zero-case library/doc
 harnesses earn no semantic credit. Source files are byte-equal to reviewed source
 before committing; the original command ran at dirty5b, not final published VCS.
