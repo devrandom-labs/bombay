@@ -793,3 +793,38 @@ No semantic bound/type added from lint. Both test reviews remain satisfied.
 Record NODE-CURRENT-VERIFIED freezes source and qualified results; final main
 81dc144/MSRV/optimized inverse/package/full gates remain open. This scoped model
 checkpoint passes; it does not close the programme or raw SDK inference work.
+
+
+Latest-main81dc144 reconciliation, pre-edit: frozen commits fairness366,
+capability-isolation365 and release367. Preserve current Behavior/Actors0.26.0,
+Application mailbox/client limits, complete custody and joined/raw node ports.
+SDK1.10.9 is present in the registry cache (vcs1ea4bd1); inspect its actual
+Session/open/close/zid/is_closed and opening IntoFuture contracts before merging.
+No new SDK API or project dependency is proposed; inherit upstream's paired SDK
+and transitive lock updates and package0.1.2. Original research and driver-law
+classify cyclic source selection as deliberate scheduling policy, not an Agha
+latency guarantee. Cancellation stays first; ordinary lane aging may admit one
+waiting user before later control; control-only source settlement preserves the
+causal barrier. Existing validated mailbox capacity must survive config aging
+and flow unchanged to fresh/Entity descendants.
+
+Expected imported files21; custom production delta0/types0/bounds0/dependencies0.
+Expected mechanical test changes: existing complete-outcome consumption in new
+fairness and hosting consumers; new private fairness fixtures reuse their actual
+mailbox Config's validated capacity. Strengthen fairness terminal inspection,
+keeping exact Box/order/timer service traces and both notifications. Prefer the
+proven Application.sender path over newly imported interface/external setup;
+no new facade or protocol. First build must expose original merge fallout before
+adaptation. Run actor-capacity/cold, node/refusal/lending, event service and real
+hosted-child consumers on the combined source, plus all required gates.
+
+Independent new-test review: sustained service-gap oracle distinguishes broken
+fixed priority, and queued report/ChildStopped order and original closed-FIFO
+payload checks are meaningful. Hosting's local association check is application
+permission, not automatic runtime rejection of all foreign capabilities. Preserve
+its A=1/B=2 independent observations and strengthen origin correlation only from
+actual retained birth commitments; never predict IDs/nonces/addresses. No public
+scheduling parameter or new caller structural bound is added. Control selectors
+are private service entitlements needed by the policy; no actor lifecycle state
+or transition authority is duplicated. Review found the fairness terminal oracle
+partial; resolve that during consumption migration, with a second review.
