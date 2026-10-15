@@ -166,7 +166,9 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              env.RUSTDOCFLAGS = "--deny warnings";
+              env = commonArgs.env // {
+                RUSTDOCFLAGS = "--deny warnings";
+              };
               buildPhaseCargoCommand = ''
                 cargo test --locked -p bombay-rs --features remote --test remote_verification --test remote_ingress --test remote_metadata --test remote_node --test application_clients --test node_outcome --test node_borrowing
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
@@ -193,7 +195,9 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              env.RUSTDOCFLAGS = "--deny warnings";
+              env = commonArgs.env // {
+                RUSTDOCFLAGS = "--deny warnings";
+              };
               cargoDocExtraArgs = "--workspace --no-deps";
             }
           );

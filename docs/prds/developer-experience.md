@@ -1053,3 +1053,29 @@ traits/bounds/dependencies/modules or spellings. This reduces sender storage;
 reply clients and all actor/control phases stay unchanged. Disposition: pass for
 the focused sender law and consumer stage. Full new-source Nix/archive gates and
 remaining DX06/20 obligations stay open; frozen2e21756 gates test their own source.
+
+Nix resource inheritance, pre-edit (DX06/27): build configuration policy only.
+The remote-debug and documentation gates add env.RUSTDOCFLAGS through a shallow
+commonArgs // override, replacing all common env entries. Actual remote-debug
+derivation exposes only RUSTDOCFLAGS; active native logs confirm unoptimized +
+debuginfo and duplicate dependency builds. Desired contract: every check retains
+CARGO_PROFILE_DEV_DEBUG=0, CARGO_PROFILE_TEST_DEBUG=0 and CARGO_INCREMENTAL=0;
+these two also retain RUSTDOCFLAGS=--deny warnings. This removes debugger/cache
+artifacts while preserving debug assertions and every test/warning gate.
+
+Before editing, evaluate all24 real check derivations and assert those actual
+attributes; expect exactly these two gates to fail the shared-env requirement.
+Fix only their env merge using commonArgs.env, without changing source, compiler,
+features, test list, assertion configuration or gate scope. Expected flake.nix
++2/-2 statements and documentation only; production Rust/public surface0.
+Control states, branches, ownership and interpreter composition unchanged.
+The frozen2e21756 full check remains separate and is never converted to passing
+by this correction. Re-evaluate all24 checks and the preserved rustdoc flags.
+Both independent reviews approve the exact two env merges. Actual all24 gate
+derivations now preserve all three resource attributes, with identical names
+and both warning denials; exactly two gates change null→0 for those settings
+(NIX-ENV-RED/GREEN). Nix formatting and full flake evaluation pass. Physical
+flake delta +6/-2, Rust/public types/modules/control states/branches0. No source,
+feature, test list, compiler or assertion setting changes. Native builds for
+the corrected configuration still require verification; the frozen original
+full check keeps its own pending result.
