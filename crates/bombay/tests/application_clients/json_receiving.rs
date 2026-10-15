@@ -1,4 +1,4 @@
-//! Actual Node consumers of JSON checks; SessionLocal and recorded proof fixtures only.
+//! Actual Node consumers of JSON checks; `SessionLocal` and recorded proof fixtures only.
 use super::{Counter, CounterMessage, LedgerCommand, MailLedger, Receipts};
 use bombay::actors::ActorExt;
 use bombay::behavior::BehaviorBase;
@@ -78,6 +78,10 @@ const METADATA_ARRAY: &[u8] = br#"{"bombay":[1,1,"counter-record-test-v1","compa
 const PROOF: &[u8] = &[9, 255];
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep original Query custody, complete cleanup and the independent actor oracle together"
+)]
 fn node_counter_checks_original_json_before_its_exact_root_effect() {
     let host = Builder::new_multi_thread()
         .worker_threads(1)
@@ -171,12 +175,12 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
                                     admitted = Some(client.send(CounterMessage::Increment).await);
                                 }
                             }
-                            let replied = if admitted.as_ref().is_some_and(Result::is_ok) {
+                            let publication = if admitted.as_ref().is_some_and(Result::is_ok) {
                                 original.0.reply("bombay/json/counter", "accepted").await
                             } else {
                                 original.0.reply_err("refused").await
                             };
-                            let reply = if replied.is_ok() {
+                            let reply = if publication.is_ok() {
                                 Some(replies.recv_async().await)
                             } else {
                                 None
@@ -186,7 +190,7 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
                                 declaration,
                                 verification,
                                 admitted,
-                                replied,
+                                publication,
                                 reply,
                                 protected.to_vec(),
                                 proof.to_vec(),
@@ -315,6 +319,10 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep original Query custody, complete cleanup and the independent actor oracle together"
+)]
 fn node_ledger_checks_metadata_object_before_its_terminating_read() {
     let host = Builder::new_multi_thread()
         .worker_threads(1)
@@ -429,7 +437,7 @@ fn node_ledger_checks_metadata_object_before_its_terminating_read() {
                                     }
                                 }
                             }
-                            let replied = if admitted.as_ref().is_some_and(Result::is_ok)
+                            let publication = if admitted.as_ref().is_some_and(Result::is_ok)
                                 && receipt.is_some()
                             {
                                 original
@@ -439,7 +447,7 @@ fn node_ledger_checks_metadata_object_before_its_terminating_read() {
                             } else {
                                 original.0.reply_err("refused").await
                             };
-                            let reply = if replied.is_ok() {
+                            let reply = if publication.is_ok() {
                                 Some(replies.recv_async().await)
                             } else {
                                 None
@@ -449,7 +457,7 @@ fn node_ledger_checks_metadata_object_before_its_terminating_read() {
                                 declaration,
                                 verification,
                                 admitted,
-                                replied,
+                                publication,
                                 reply,
                                 protected.to_vec(),
                                 proof.to_vec(),
@@ -546,7 +554,7 @@ fn node_ledger_checks_metadata_object_before_its_terminating_read() {
         assert!(
             matches!(&accepted.3, Some(Ok(()))),
             "the second permitted Ledger Read remains admitted after the positional refusal: {:?}",
-            &accepted.3
+            accepted.3
         );
         assert!(appends.0.is_ok() && appends.1.is_ok());
         assert!(matches!(&termination, Ok(Exit::Normal)));

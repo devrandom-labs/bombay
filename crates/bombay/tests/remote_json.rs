@@ -65,6 +65,10 @@ const ESCAPED_KEY: &[u8] = br#"{"bom\u0062ay":{"wire_version":1,"schema_version"
 const LEDGER_REPLY: &[u8] = br#"{"bombay":{"wire_version":1,"schema_version":1,"provider_profile":"counter-record-test-v1","deployment":"comparison","caller":"caller","caller_session":"fedcba9876543210fedcba9876543210","controller":"owner","actor":"ledger","host":"host","protocol":"ledger","grant_issuer":"issuer","runtime_generation":"123456789abcdef0123456789abcdef0","actor_generation":31,"authority_generation":19,"request_sequence":29},"kind":"read_reply","operation":"read","origins":[17,23]}"#;
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "compare the independent shape vectors, native causes and original buffers together"
+)]
 fn fixed_shape_vectors_preserve_originals_and_protocol_arrays() {
     // Explicit test inputs only; no production default or peak-allocation claim.
     let limits = Limits {

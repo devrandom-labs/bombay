@@ -23161,3 +23161,47 @@ publication observation while retaining the original external PR360 failure.
 Cargo root and fixture merge the local version0.1.2 and JSON edge independently;
 no Behavior update or foreign worktree is imported. Combined locked validation
 and strict checks must run on this integrated source before PR preparation.
+
+Integrated strict Clippy stops on six test-only findings: two similar local
+names, one documentation spelling, two long causal tests and one redundant
+formatting borrow. Preserve its exact log and source before correction. Rename
+reply publication results to `publication`, mark SessionLocal as code, and use
+formatting's existing implicit borrow. Under recommendation delegation add one
+narrow test-function expect(too_many_lines) to each complete Node causal witness:
+splitting their custody/cleanup into new forwarding structures would obscure the
+independent actor effect oracle without reducing production complexity. No broad
+lint allowance or production/API change is selected; retained tests stay below
+1000 lines. Fresh strict checks and both controls remain mandatory.
+
+The next strict run reaches the remaining pure shape witness and reports only
+its111-line length. Keep its independent fixed-vector/control comparison intact
+with the same narrow function-level expectation, rather than adding a forwarding
+fixture abstraction. Preserve the second lint log separately. This adds four
+test attribute lines, no assertions or production changes; retained tests976/1000.
+
+Final scoped minimization review0417bc75 confirms15 retained paths, no untracked
+files, production148/0, tests976/0 and two public types. Graph/style review
+7454310b verifies all test changes preserve body/order/ownership and complete
+unrelated lock records. Execution review40dc8d0d independently rehashes all20
+logs/eight source cuts and verifies intended failures plus exact restoration.
+No immutable negative-executable copies or peak-heap/identity/TLS claim is made.
+
+Repository audit retains one explicit migration obligation: the existing private
+protected_counter/protected/mod.rs lexical receiver serves the older flat
+seven-meaning transport research protocol and its six-field policy. It is not a
+shipping competitor or the new Metadata object receiver; replacing it blindly
+would change established error classifications and transport evidence. Keep its
+source/proof provenance intact in this stage. A measured migration to shared
+owning primitives remains required during full remote integration/minimization;
+do not claim repository-wide receiver consolidation or full PRD distillation.
+
+Combined remote checks pass42/0/0 per profile, strict remote/default workspace
+Clippy and formatting pass. The subsequent workspace run suffers ENOSPC during
+compile-contract checking, producing invalid compile-fail observations; the
+runner's receipt write also fails. Preserve raw logs and incomplete receipt,
+and credit no workspace completion. No production change follows. After the
+terminal process is confirmed stopped, remove only coordinator .rmeta compiler
+metadata older than24h (4057 files,3923283529 bytes), with exact path/size receipt.
+Sources, worktrees, logs, lockfiles and proof executables remain intact. Retry
+failed workspace checks after actual free-space verification; earlier focused
+source-cut evidence is unchanged.

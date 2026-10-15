@@ -91,8 +91,10 @@ queries with deterministic proof records: they do not establish TLS handshake
 or production identity. Counter observes its exact final value; terminating
 Ledger retains original appended allocations and rejects the later closed send.
 All cleanup, native results, notifications and Node close are acquired before
-those domain oracles. Intended production-guard inversions and final combined
-review/checks remain pending. No full R02/R14 or other acceptance row closes.
+those domain oracles. Eight intended production cuts each fail their exact assertion in both profiles,
+and byte-exact restored controls pass. Independent source and execution review
+retain the native Counter2-versus1 and LedgerClosed oracles. Final combined
+checks and reviewed delivery remain pending. No full R02/R14 or other row closes.
 
 The user requires crate-owned remote capability behind Cargo feature `remote`.
 Examples consume its public API; example-only implementations cannot pass R01.

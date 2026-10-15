@@ -19,8 +19,9 @@ merged source, with exact SDK1.10.9 selection. Downstream Cargo still resolves i
 own graph; no fresh downstream build is claimed. The immutable0.1.1 release uses
 the older SDK1.10.8. Original native failures and HTTP uncertainty remain recorded.
 The next implementation branch adds crate-owned JSON object/limit checks and
-real Counter/Ledger Node consumers; focused controls pass both profiles, while
-intended inversions, final integration, required checks and delivery remain open.
+real Counter/Ledger Node consumers; focused controls and all eight intended
+inversions pass their stated oracles in both profiles. Main is integrated;
+combined required checks and reviewed delivery remain open.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;
