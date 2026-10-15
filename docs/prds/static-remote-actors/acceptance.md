@@ -109,7 +109,8 @@ a remote-only nonwaiting attempt with exact native Full/Closed originals and
 allocated sender identity. Two complementary consumer controls and five admission
 cuts pass in both profiles; both consumers pass after exact restoration. The
 independent test/source/execution reviews and uncredited disk/lint failures remain
-in the PRD. Combined-source checks and reviewed delivery remain pending. This is
+in the PRD. Combined-source local checks pass; required CI and reviewed delivery
+remain pending. This is
 local target/admission evidence, not protected publication, replay, permission
 coherence, real remote Stop or closure of a full R01–R25 row.
 

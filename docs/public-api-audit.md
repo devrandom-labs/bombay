@@ -116,7 +116,8 @@ foreign-Application test in protected_counter/hosting.rs. The original hosted
 test remains intact. The owning interface test checks refusal before allocation,
 one remaining usable reply endpoint, exact exhaustion and original error custody.
 Focused controls and six intended ownership inversions pass in both profiles;
-fresh restored controls pass. Combined checks remain pending. These checks do
+fresh restored controls and local combined checks pass. Required CI and reviewed
+delivery remain pending. These checks do
 not establish the full remote flow.
 
 The nonwaiting method's actor_interface test retains exact Box allocations and
@@ -126,8 +127,8 @@ before closing/draining replies; false retry success cannot leave it waiting for
 an absent reply. Both controls pass in debug and optimized. The source reviews
 retain two rejected hanging drafts. Five intended cuts reach their failures in
 both profiles, then both consumers pass on byte-exact restored source; independent
-execution review8a97b4a6 qualifies these results. Combined checks and reviewed
-delivery remain separate gates.
+execution review8a97b4a6 qualifies these results. Local combined checks pass;
+required CI and reviewed delivery remain separate gates.
 
 The remote foundation's concrete caller checks are
 [public Node composition](../crates/bombay/tests/protected_counter/public_node.rs),

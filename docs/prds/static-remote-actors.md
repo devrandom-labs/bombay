@@ -7,8 +7,8 @@ CI and scoped reviews passed. PR367 merged81dc1448; bombay-rs0.1.2 publication
 is verified against the registry archive and merged source. Both source locks
 select corrected SDK1.10.9. JSON PR368 merged792529ea after all six CI checks
 and final source/execution reviews passed. The dependent client
-contribution passes focused ownership/admission controls and intended inversions
-in both profiles; its remaining combined checks and reviewed delivery are pending.
+contribution passes focused ownership/admission controls, intended inversions
+and local combined checks in both profiles; its reviewed PR delivery is pending.
 All full R01–R25, AUTH1 and NET1 gates, protected Node-owned exports and the
 separate remote-counter application remain open.
 See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
@@ -23734,3 +23734,39 @@ prove production identity or a complete protected remote operation. All full
 R01–R25/AUTH1/NET1 and the separate remote-counter remain open. The scoped JSON
 prerequisite alone is merged; the dependent client contribution awaits its own
 combined gates, reviewed PR and passing required CI.
+
+
+### Certified-client contribution — combined local verification
+
+The original combined runner reaches terminal exit0 after all twelve commands.
+Workspace debug and optimized each execute707/0/4 across91 result sections;
+zero-case sections and ignored tests earn no feature credit. Selected remote
+suites each execute386/0/0 across nine targets; isolated protected Counter each
+executes68/0/1. Nextest runs703 passing tests with one skipped. Workspace build,
+formatting, strict default and remote all-target Clippy, and warning-denied
+remote rustdoc pass. Earlier style/disk failures retain their separate uncredited
+records. No copied-executable custody or compiler-floor claim follows.
+
+Actual delivered main792529ea is integrated through e4560597 without source
+changes. Its squash tree is byte-identical to already incorporated d727b860;
+the guarded merge preserves the complete predecessor tree060ab2e8. This resolves
+squash ancestry without dropping an independent main change. Documentation-only
+6587e83 records delivery; all Rust still matches reviewed99932d12. Commands
+started on matching working-tree content rather than one immutable VCS checkout;
+the final source reconciliation supplies that qualification. No dependency or
+production edits follow the verification. Required CI and reviewed PR delivery
+of this contribution remain pending.
+
+
+Final endpoint checkpoint against delivered main792529ea:23 changed paths, zero
+untracked files. Production+158/-1/net157; tests+1230/-4/net1226; public API
++1/-0 types and two inherent methods. Documentation/CI+608/-16
+are recorded separately from Rust. The earlier JSON parent and restored research
+paths remain in the cumulative checkpoint; neither is reset by its merge.
+
+
+Independent combined review892ea90a / ordered evidence83c82a93 / custodybdc770f5
+passes all twelve terminal commands and their twice-checked raw hashes. It
+confirms all four new remote ownership/client names and both isolated hosted/
+unhosted names execute once per profile. Source/VCS, authorship, ignored cases
+and executable-custody limits above remain explicit; required CI is still pending.

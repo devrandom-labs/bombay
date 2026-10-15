@@ -26,14 +26,15 @@ consumers and separate native TLS campaigns retain their distinct proof scopes.
 The dependent export-client branch adds remote-only Application certification
 for actual root, sibling and nested-child recipients before reply allocation.
 Focused ownership, closure and native-error controls, six intended inversions
-and fresh restored controls pass in both profiles; combined checks and its
-reviewed PR remain pending. This
+and fresh restored controls pass in both profiles; local combined checks pass,
+while its required CI and reviewed PR delivery remain pending. This
 does not supply remote publication or close any full acceptance row.
 Its existing fixed-target client now has a remote-only nonwaiting attempt;
 the two actual pressure/origin/closure consumers pass in both profiles. False
 success/classification cuts fail in both profiles (ten intended failures total);
 both consumer tests pass after exact restoration. Independent execution review
-8a97b4a6 qualifies those results. Combined-source delivery checks remain pending.
+8a97b4a6 qualifies those results. Combined-source local checks pass; actual
+required CI and reviewed delivery remain pending.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;
