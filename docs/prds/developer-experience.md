@@ -1682,10 +1682,10 @@ Rust public spellings plus one DSL clause are added. No new actor transition
 branch or terminal alternative. These are new capabilities, not code reduction.
 Cross-check DX15/16, Driver D-INIT/D-TURN/D-RETIRE, execution-ownership, native
 creation/ACK and normal atomic-actor contracts. Two independent source/test
-reviews identify and correct the custody/oracle faults above. Overall candidate
-disposition remains reopen: child/Entity constructor panic, manual hosting,
-pure init panic, dropped/recreated activation, layout/costs, final package/full
-gates and catalogue remain unproved. The second wrapper order now uses the
+reviews identify and correct the custody/oracle faults above. Overall candidate acceptance remains open: Entity constructor panic,
+dropped/recreated activation, layout/costs, final package/full gates and catalogue
+remain unproved. Manual hosting, child constructor panic and pure init panic now
+have the focused evidence below; they do not close those remaining obligations. The second wrapper order now uses the
 existing pure timer-stop policy: File/env receipts remain complete, while the
 unemitted second requests stay with the actor at their original allocations.
 An initial base_mut accessor assumption was false and is removed without any
@@ -1698,3 +1698,84 @@ wrong interpreter owner is denied E0271; both restored native controls pass
 hashes conserved (GUARDED-NATIVE-EXTENDED-MATRIX); one deliberate ignored child
 runs through its checked parent. Exact command durations are7.395/12.652/4.087/
 13.752 seconds. This remains focused native evidence, not full repository gates. No migration, publication or whole-programme acceptance follows.
+
+Manual-host proof obligation: the configured runtime remains a field of one
+local namespace owner, so generic NativeChild implementations keep local Self
+and the same configuration through grandchildren. The concrete witness reuses
+Root/Document actors and generated terminal custody, but writes the existing
+manual registration/edge ports explicitly. Execute two genuine creator types:
+ordinary Root with owner cancellation and StopOnShutdown<Root> with requested
+normal stop. Each must acquire three real File receipts, preserve original actor
+allocations and correlate actual ready sender addresses with creation receipts
+and complete joined retirement. Factory identity/use counts remain distinct.
+This is test-only proof of the pre-edit extension law: zero new production
+symbols, bounds, phases, states or protocols. Cold-member/generated-host proofs
+remain separate. A compiler failure requiring another owner wrapper or widened
+capability falsifies the candidate rather than authorizing such a repair.
+
+Remaining startup witnesses use the existing native equations: pure init panic
+must return InitializationPanicked and its original actor/request/cause without
+constructing a service, including during retirement. Missing native host must
+return the original Application and callable untouched; retry under an entered
+host must use the same constructor inputs and actor/work allocations exactly
+once. Notice's test startup input becomes one exhaustive Ready/Rejected/Panicking
+sum instead of coordinating optional refusal and panic fields. The production
+control-state model and public API remain unchanged. Pre-edit request/retirement
+laws already require these cases; test-only additions supply their native oracles.
+
+Child constructor failure proof, pre-edit DX15: a real root File/ready lane must
+settle even when its requested child's service constructor panics after that
+child has produced pure initialization. Use existing Root/Document actors and a
+separate named fault configuration with two explicit constructor outcomes. The
+first owns real root IO; the second owns the original boxed panic cause. The
+child's emitted File/ready/recursive creation stay in HostRejected, while its
+original actor and unopened grandchild remain owned without binding ACK. Exact
+CreationId/CreationKind/route must agree with the independent startup failure
+origin; complete retirement and both notification results retain their facts.
+No Restarted/Established receipt is permitted. This tests existing guarded
+creation and StartupRetirementFailed equations; no new production symbol, bound,
+state, public spelling or transition is authorized. Overall candidate remains
+reopen until this and the other named proofs pass.
+
+Child startup oracle correction: the first test wrongly assumed an accepted
+HostRejected outcome was an ItemSettlement rejection and waited for an unrequested
+root stop. The test process was terminated after59.717 seconds; raw transcript
+GUARDED-CHILD-CONSTRUCTOR-OWNER-DEBUG is retained without passing credit. Selected
+Behavior classifies ItemSettlement::Accepted independently of its owned creation
+outcome. Native creation.rs returns Accepted(HostRejected), so the creator
+continues and receives startup readiness; its separate child failure retains
+the original cause. Correct the test to await actual root ready, request shutdown
+and require normal root completion plus exact failed-child custody. Do not alter
+production or collapse these independent facts.
+
+Manual cancellation oracle correction: current debug/release each passed all17
+focused tests, but the frozen MSRV debug replay exposed an unsupported assumption
+that receiving all three actor-ready messages proves caller work has started.
+Those separate facts can race; cancelling before work entry legitimately retains
+NotInvoked rather than Interrupted. Preserve raw GUARDED-NATIVE-STARTUP transcripts
+without four-configuration credit. Add an outside-work oneshot entry signal, keep
+driving execution until that actual callback signal is received, then end the
+execution owner's scope. No channel is used inside a pure Behavior transition and
+no production scheduling or cancellation rule changes. The two native phases
+remain distinct rather than broadening the expected result to either phase.
+
+Final startup/manual witness evidence: GUARDED-NATIVE-WATCHDOG-MATRIX passes
+all17 exact named tests on1.99/1.96 debug/release, with all595 tracked/untracked
+source hashes conserved in every run (6.532/22.851/7.177/25.439 seconds).
+One deliberate ignored subprocess fixture is actually executed by its checked
+parent. Both independent review passes accept the corrected child and manual
+oracles; work-entry observation has a five-second watchdog. Final strict lint
+passes all six focused test targets in2.688 seconds; pinned formatting passes.
+
+This test-only batch is +1034/-6/net1028 test lines and zero production/API
+changes. The full candidate remains +520/-127/net393 production lines in15
+files, with four public types and one production module added. ActorRetirement
+has24 alternatives before/after and zero production transition branches added.
+Notice's test-only Ready/Rejected/Panicking input replaces optional refusal; the
+fault constructor uses a direct ordered queue of explicit Result outcomes. Both
+own current test inputs, never production arrival history or transition authority.
+Residue scan finds no production semantic boolean, repeated cause, inferred
+provenance, widened capability or structural caller path. Cross-check Driver
+D-INIT/D-TURN/D-RETIRE, creation/ACK, execution-ownership and normalized actor
+contracts. Disposition: pass for this bounded test batch; the extension itself
+remains uncommitted pending Entity, activation retry, costs and final gates.

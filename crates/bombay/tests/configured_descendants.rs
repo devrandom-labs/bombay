@@ -525,3 +525,9 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
     assert_eq!(first.load(Ordering::SeqCst), 4);
     assert_eq!(second.load(Ordering::SeqCst), 4);
 }
+
+#[path = "configured_descendants/manual.rs"]
+mod manual;
+
+#[path = "configured_descendants/startup.rs"]
+mod startup;
