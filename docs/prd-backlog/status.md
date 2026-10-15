@@ -92,8 +92,13 @@ the session-free two-Application witness and all other open remote obligations.
 
 The active private connection stage now integrates explicit connection ownership
 with the existing Application cleanup kernel. Focused lifecycle controls,
-intended causal defects and346 library tests pass their stated oracles in each
-profile. Strict lint still fails on eight unused private declarations awaiting
+intended causal defects and348 library tests pass their stated oracles in each
+profile. The actual missing-host and executor-loss cases retain original inputs,
+cancelled producer and missing close result separately from later cleanup.
+Both concrete reply-provider families now protect generated Counter/Ledger
+replies; six focused controls, three intended cuts and restored38 application
+cases pass their stated oracles in both profiles. Strict lint still fails on
+eight unused private declarations awaiting
 the shipping service. No shipping service, transport handshake, full callback
 retirement or complete remote acceptance is credited by this internal stage.
 
@@ -114,15 +119,16 @@ The public transport privacy gate now has three compiler counterexamples:
 all compile through Bombay inference, so its expected-denial test intentionally
 fails. Passing scoped CI on PR373/PR374 cannot waive that current defect.
 
-The capacity-only prerequisite is being verified in Communication's owning
-repository at24ad2b9. Its four focused native controls pass in both profiles;
-six intended source cuts fail in both, followed by exact-restored full12/0/0
-mailbox controls per profile. Independent source/artifact review passes;
-four bounded actual-probe models and their intended omission comparisons now
-also pass their stated oracles in both profiles. Independent review retains
-their scheduling/model limits and secondary negative-run SIGABRT. Native
-notification-panic custody, costs and broader gates remain required.
-No new release/version or Bombay
+The capacity-only prerequisite is in owning Communication PR13, based on24ad2b9.
+Twenty-one native controls and four bounded models pass in both profiles;
+the removed-original custody and pinning compatibility regressions retain their
+actual intended failures. The supported normal-waker contract keeps arbitrary
+foreign-callback sibling progress explicitly unsupported, with the original
+failed broader tests preserved. Measured workload regressions are accepted and
+recorded, not a speedup. Updated owning CI remains required: an earlier Linux
+allocation failure exposed process-wide counter isolation, and the existing
+Nextest runner plus separate doctests is being verified without weakening the
+zero-allocation bound. No new release/version or Bombay
 adoption is selected. Existing Full-only caller-triggered retries retain their
 narrower scope; the automatic capacity-wait/fresh-permission witness is open.
 

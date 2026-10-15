@@ -787,6 +787,173 @@ replacement remain required. All full R01–R25/AUTH1/NET1 rows remain open and
 PR373/374 holds remain. Do not mark this contribution or the full feature merged
 from these local checks; reviewed PR and required CI delivery are still required.
 
+### Connection refusal and producer cancellation — selected verification
+
+Complete the already recorded private host-refusal branch before designing its
+public receiving projection. Add an actual missing-host call after opening on
+an independently retained Tokio host: preserve original Application, boxed Work,
+non-Send Rc and real TryCurrentError; prove invocation did not occur, acquire
+the independent actual close result, then run the returned Application/Work on
+the retained host and observe the actual Counter value and full retirement.
+No public retry policy or default is added by this private witness.
+
+Also destroy the actual owning Tokio runtime while its close producer is
+waiting. An independently polled receiving future must retain actual cancelled
+JoinError and closed original-result receipt, never synthetic successful close.
+Keep a real strong Session through that cut so worker disposal cannot itself
+finish the connection; explicitly close the surviving native connection on a
+second actual host before final assertions. This tests executor-loss uncertainty,
+not a promise of cleanup after an application destroys its executor. Standard
+Tokio runtime shutdown supplies the real fault; reject test-only production
+hooks, a replacement task abstraction or a fabricated error.
+
+These are test-only additions to existing connection/tests.rs, at most160
+retained introductions within the already selected600 retained/1400 authored
+connection verification allowance, carrying437 retained and all earlier versions.
+No production/API/manifest/lock changes. Source-review each test twice, run
+debug and optimized controls, then independently review actual outcomes. Native
+close Err, producer panic after result transfer and Entity-family runtime proof
+remain distinct open cases; these two cases cannot substitute for them.
+
+### Concrete provider port — selected test prerequisite
+
+Previous turn made progress: commits6081d78/18ac366 preserve real outbound
+protection and private Application connection custody. Fresh selected locks
+remain56661c60/0b512104, with Behavior/Actors0.25.0 unchanged. The public service
+is still absent. Source inspection of application_clients/network_replay.rs
+confirms its Counter/Ledger comparison currently pre-registers the expected
+reply bytes and publishes a literal proof; that cannot demonstrate protecting
+the actual generated native reply through either provider family.
+
+Under standing recommendation delegation, select the already executed Counter
+pattern for these concrete generic families: each provider has a lending reply
+protector taking exact encoded bytes, its own opaque Receipt<Operation> and the
+finite test registry. Use ordinary AsyncFn arguments through the existing
+read_study/counter_case/ledger_case functions, not a new provider trait, wrapper,
+macro or production API. Preserve the original protector Result through verify's
+outside slot before disposing its future. The existing positive test profile
+and JSON DTOs stay comparison inputs, not a shipping schema or crypto format.
+
+Remove precomputed expected replies from that registry. Start with the existing
+actual request record; protection registers the exact bytes generated from the
+actual native reply. The already finite two-record fixture accepts repeated
+protection of the same exact reply without adding a third record, but refuses
+different bytes at its bound with a distinct private cause. A RefCell around
+that existing table permits actual protection without changing verification's
+borrowed-slice contract; hold its real Ref outside the verification future until
+it is disposed. Keep both actual receipt representations and scheduled proof
+evidence intact. This is finite test-provider policy, not production replay,
+cryptography, default capacity or an approved public callback surface.
+
+Before implementation, the focused test comparison must fail to name the absent
+provider protectors for both actual protocols/families. Then run the four actual
+Counter/Ledger consumers in debug/optimized builds. Deliberately bypassing the
+protector must fail after cleanup; wrong protected bytes must not be accepted
+merely because the expected reply was preprogrammed. Inspect test source twice
+and independently review the retained original Result and real native meaning.
+Existing template/Driver, target ownership, request replay, permission and
+retirement laws remain unchanged. No broad protocol consumer migration may
+invent a new semantic type or placeholder operation from a compiler error.
+
+Root draft review initially misidentified four same-named permissions calls.
+Fresh scope inspection establishes that permissions.rs owns its own distinct
+counter_case/ledger_case functions; those callers do not use the edited parent
+functions. Preserve that file byte-exact and add no unused protector port.
+The correction follows source ownership, not name matching or compiler fallout.
+A known protector refusal must use the existing native error-reply operation
+while retaining its original typed Error in the acquisition; leaving that
+request silent and waiting for a transport timeout is not evidence. This finite
+test reply uses the existing native error path, not a selected public error
+schema or a recovery policy. Preserve older resend-inversion attribution if
+actual protected-output bounds change its observable failure location.
+
+The user now explicitly requires delivery of each finished slice immediately
+after its own review and required CI, without waiting for the entire PRD. Keep
+that standing delivery policy. Do not call a slice finished while its own
+correctness gate is unresolved or publish the disallowed native API to avoid
+the gate. Fresh PR373/374 checks all pass but their recorded public-privacy
+prerequisite remains unresolved; Communication PR13 is submitted independently
+and still has its own new closure-wake proof outstanding.
+
+Expected scope: existing network_replay.rs and its actual test callers only,
+at most350 retained/1000 authored verification lines, no production/public API,
+dependency, manifest or lock edits. Coordinator retains shared files. Carry all
+existing historical counts; select20000 cumulative verification/tooling lines
+in place of18000 before this port and bounded owning PR preparation. Net1600
+production,14 public additions and115 software slots remain. Exact older
+historical extents remain unproved rather than reset.
+
+### Communication candidate — selected draft delivery stage
+
+Fresh origin/main and local base both equal24ad2b9; capacity-observation has no
+remote branch or existing PR. The reviewed candidate remains productionf07fda17,
+tests8d0b9f06, benchmarkf415df2d and allocation6e649e38. Select the prepared
+14-line current verification note in existing mailbox-admission.md, retaining
+the old preparation explicitly as historical. Then commit the five-path scoped
+change and open a draft PR to main, allowing actual Linux Nix, Cargo Deny and
+CodeQL checks to run while Bombay integration proceeds independently.
+
+The draft must retain performance timing and close/teardown notification-panic
+proof as open, with no merge, publication or Bombay dependency adoption yet.
+An independent source audit must determine whether those new notification paths
+preserve closure, wake obligations and cleanup before any delivery eligibility.
+No new panic-discharge policy is selected by the draft. Required local checks
+already pass; actual PR CI must be reviewed on its exact submitted source.
+
+Known measurement/research carry is conservatively345 before draft delivery.
+Select an additional120 introduced document/tooling lines for this bounded
+delivery, and2400 owner verification introductions in place of2200, carrying
+the earlier1738 and all measurement history. Retained750 and production220
+allowances remain. This authorizes no Rust/source/manifest/lock edit; expected
+endpoint stays production+122/-25/net97, verification+698/-4/net694 and one
+existing documentation path, with exactly one added public Capacity type.
+
+### Communication draft — actual submission and closure-wake counterexample
+
+Draft [PR13](https://github.com/devrandom-labs/bombay-communication/pull/13)
+is open at76318141 against unchanged main24ad2b9. Actual commit/push/create
+commands return0 and its worktree is clean. Nine source/manifest/lock/flake
+guards match; five-path endpoint is production+122/-25/net97, verification
++698/-4/net694 and documentation+129/-0. The replacement heading was already
+introduced by this task, so it is not an additional base deletion. Delivery
+receipt7845989b binds seven artifacts, all checksum-verified. Conservative414
+measurement/research/delivery introductions include69 of the selected120 stage
+allowance. No merge, release or Bombay adoption follows. Four observed Linux
+jobs were actually running; terminal results remain to inspect.
+
+Independent source review finds a concrete unresolved closure-progress edge:
+locked Tokio Notify marks/unlinks remaining broadcast waiters during a Waker
+panic without waking them. A healthy capacity observer can therefore remain
+unscheduled even though a later manual poll sees Closed. The current Loom model
+has no panicking native Wakers and cannot establish this property. Do not select
+a catch/discharge policy or replacement mechanism from source speculation.
+
+Select the smallest actual native counterexample first: full physical two-slot
+mailbox; panicking capacity Waker registered before a healthy independent
+counting Waker, both Pending. Move the actual mailbox owner into a standard
+thread that closes admission; retain the real opaque thread failure, save the
+healthy wake count before any manual repoll, then acquire Closed/refused payload
+and complete native prefix/terminal/EOF cleanup before asserting wake progress.
+Repeat the same seam for actual Consumer disposal with whole-owner surrender
+kept distinct from borrowed receive custody. No sleeps, invented errors,
+synthetic Notify model or timeout credit. Intended failure must be observed in
+debug and optimized profiles before choosing a remedy.
+
+Lease only existing mailbox_retirement.rs for these tests; no production,
+manifest, lock or new dependency/API change. Forecast120 retained/300 authored
+test lines carrying existing698. Select900 retained/2800 authored owning
+verification in place of750/2400 before authoring; production220 and global
+1600/14/20000/115 carry. This funds two distinct actual closure cuts without
+weakening final cleanup oracles. Source finding does not yet prove a regression
+or authorize a production repair; draft merge remains held.
+
+Root two-pass source review of closure draft37255ed6 accepts its actual Pending
+registrations, saved pre-repoll healthy wake count and finite cleanup. Whole
+Consumer disposal correctly claims surrender/drop multiplicity instead of EOF.
+Before formatting, allow200 retained/350 authored closure-test introductions
+in place of120/300;900/2800 owning allowances already contain that revision.
+Formatting must preserve the complete original/closed/terminal/drop oracles.
+
 ### Capacity cost and layout — selected owning measurements
 
 The Consumer correctionf07fda17 now passes complete native15/0/0 and four
@@ -27458,3 +27625,372 @@ software slots, including five unresolved-history slots. Earlier unbounded
 historical extents are still unproved. This is new capability, not a reduction.
 Required CI on the submitted combined source, final execution review and actual
 PR delivery remain required; every full remote acceptance row remains open.
+
+### Connection cancellation — actual controls and selected inversions
+
+Connection tests ed827294 complete five actual cases in each debug and optimized
+profile: exit0,5 passed/0 failed/0 ignored,343 filtered. This includes the actual
+missing-host refusal with original inputs reused and actual producer cancellation
+with independent native cleanup. Production f73d2865/55735de2 and both selected
+locks remain unchanged. Added tests are+124/-0, bringing this retained allowance
+to561 within600; no production/public API changes. Root twice and independent
+wire source reviews find no source blocker.
+
+Before accepting cancellation conservation, select two separate temporary
+one-line inversions in private retirement.rs: replace the actual joined result
+with success via Result::or(Ok(())); independently replace the actual received
+close-result receipt with success via Result::or(Ok(Ok(()))). Each must fail the
+new actual cancellation case after its surviving Session has explicitly closed,
+in both profiles. These cuts simulate erasing authoritative failures, not an
+implementation or a new recovery policy. Restore byte-exact between cuts and
+afterward. Two introductions carry within the existing20 temporary-cut limit.
+
+### Communication closure — actual failing controls and crate comparison
+
+PR13 head76318141 now has actual terminal successful Nix, Cargo Deny and CodeQL
+Linux jobs. The uncommitted closure tests ba015b8d are outside that submitted
+head. Debug and optimized each exit101 with0 passed/2 failed/0 ignored,15
+filtered, precisely the final healthy-sibling wake assertions after closure,
+payload and cleanup checks. Receipt2e80677f binds exact logs and55 checked
+tracked inputs before/between/after; production f07fda17 stays unchanged.
+Owner verification is+823/-4/net819 within900; this stage+126/-1 with at most229
+authored introductions within350. The initial wrong-package setup refusal ran
+no tests and receives no semantic credit. No merge eligibility follows green CI
+for an earlier head that lacks these failing controls.
+
+Read-only crate comparison inspected locked Tokio1.53.1 Notify, watch and
+broadcast, and current event-listener5.4.2 sources and owning tests. Notify
+unlinks its broadcast cohort; WakeList stops on the first panicking Waker,
+leaving healthy siblings unscheduled. Watch/broadcast reuse this path. The
+event-listener loop likewise invokes a Waker before continuing the cohort; it
+does not prove completion after panic. Its borrowed listener form avoids one
+per-listener allocation, but its Event still allocates shared state and adds
+dependencies. Existing ordinary fanout tests do not establish panic progress.
+These observations establish gaps in the inspected candidates, not authorization
+for a handwritten replacement or panic-discharge policy. Check current owning
+Tokio source before selecting a remedy. Source research adds45 direct inputs
+to414 prior conservative measurement/research/delivery introductions; carry459
+and all older counts. All full acceptance rows and public-privacy holds remain.
+
+### Capacity wake contract — explicit reconciliation before delivery
+
+Independent owning-contract audit finds no inherited actor or Communication law
+that promises healthy-sibling scheduling after an arbitrary foreign Waker itself
+panics. The new stronger hypothesis was introduced by this research stage, not
+by R08/R09 or an existing mailbox guarantee. Actual closure publication, exact
+queued/dequeued originals, ordinary independent wake progress and cancellation
+remain required. They must not be weakened.
+
+Latest official Tokio1.53.3 and master52ac7816 retain the selected1.53.1
+unlink-without-wake unwind behavior; updating the crate does not repair that
+stronger hypothesis. A controlled Tokio correction adds maintained distribution
+and whole-cohort panic custody across batches. A private waiter replacement
+adds membership, cancellation, reentrancy, reuse and multiple-panic policy,
+forecast100–180 production lines plus150–250 tests and a new actual Loom model.
+Neither is justified by a required actor law merely because the new hypothesis
+failed. Existing event-listener/watch/broadcast alternatives likewise do not
+prove it. Preserve all exact ba015b8d red source/logs as failed broader-law
+evidence; never call those original assertions passing or a repaired bug.
+
+Under the user's standing recommended-choice delegation, explicitly select the
+reviewed normal nonpanicking executor-waker contract. Native callback panic may
+propagate; exact message custody and committed closure must survive. Progress
+of other observers after an arbitrary callback panic is unsupported and retained
+as deferred hardening, not a full acceptance success. This reopens and replaces
+the self-selected stronger merge gate, with both independent reviewers' source
+findings retained. The full PRD's required actor failures, retirement uncertainty,
+revocation and resource bounds remain untouched. Do not claim every Tokio task
+or callback is infallible.
+
+Before owning delivery, add actual Tokio-hosted capacity-wait tasks with
+registration rendezvous and complete native dequeue/closure/consumer-retirement
+traces. A finite test watchdog may detect stuck tasks but gives no success or
+refusal credit; abort/join every remaining fixture task and finish native cleanup
+before assertions. Positive results must be actual Capacity values from the
+registered tasks, not manual repoll or timing alone. Preserve the existing
+foreign-panic closure/payload facts as explicit characterization tests with their
+scheduling limit named; retain the original failed stronger tests separately.
+Bombay's actual Application service must still demonstrate this owner through
+its own integration after adoption; no full row closes from foundation tests.
+
+Expected edits: existing Communication lib rustdoc only (at most4 production
+comment lines), existing mailbox_retirement tests and owner admission document;
+no production mechanism, dependency, public type, manifest or lock changes.
+Select1050 retained/3300 authored owner verification in place of900/2800 before
+the additional native-host controls, carrying823 retained introductions and all
+prior history. Normal race/custody/debug/optimized and required exact-head CI
+still gate delivery; original failed arbitrary-callback progress is not waived
+into a passing result. Source/alternative investigation adds31 inputs to459,
+carrying490 conservative research/delivery introductions.
+
+### Connection cancellation — actual conservation cuts
+
+Both separate one-line erasure cuts execute the real producer-cancellation case
+in debug and optimized. All four commands exit101 with0 passed/1 failed/0
+ignored and347 filtered, without compilation errors. Joined-result erasure
+ce2c8496 fails exactly1063 (the actual producer cancellation was rewritten to
+success); receipt erasure71aff761 fails exactly1065 (missing close result was
+rewritten to success). Both failures occur after independent surviving native
+Session cleanup. Production restores byte-exact f73d2865 after each cut and at
+terminal completion. Tests ed827294, execution55735de2 and both locks retain
+their selected hashes. Final focused rustfmt check returns0. Receiptdd47daf1
+binds prior positive5/0/0 controls and all four negative logs; final restored
+controls and independent execution review remain required before crediting this
+stage complete. These are private lifecycle tests, not a finished public service.
+
+### Concrete provider protection — selected conservation cuts
+
+Formatted source7d5c9afc retains+293/-22 verification lines within350 and preserves
+reviewed raw07449 semantics; independent token-context review confirms only
+rustfmt punctuation/braces. Actual debug exits0 with precisely six selected
+cases6/0/0,32 filtered. Source/locks unchanged. Optimized control remains live.
+After it passes, select three isolated source cuts: bypass the real consumer
+protection operation with the former literal proof (four native verification
+oracles must fail after cleanup, two finite controls pass); omit only complete
+Metadata equality (the two fixed-receipt changed-authority controls must fail
+their exact Invalid cause, four native controls pass); change capacity>=2 to>2
+(the two finite controls must fail exact ProofCapacity, four native controls
+pass). Each runs in debug and optimized with exact restoration between cuts,
+then fresh restored six controls in both. No oracle or selected policy changes
+are allowed to make a cut pass. All original provider Results remain preserved.
+
+### Independent finished verification delivery — selected preparation
+
+User requests finished slices commit/merge without waiting for whole-PRD
+completion. Inspect current main and prepare a separate branch from that head
+for the already completed live_requester provider-conservation contribution
+80e5163/6081d78. Both commits change only the existing test owner and records;
+the sole Rust file differs+702/-12 from current main and uses only existing
+main APIs. Reuse its exact verified source; do not cherry-pick unrelated
+private Connection, new public-native receive, intentional-red privacy tests or
+future service design. This supplies no new public API or production mechanism
+and cannot close a full remote requirement or lift PR373/374's privacy holds.
+
+Before PR, compile/run the actual isolated consumer on main's selected graph,
+review complete affected tests/debug/optimized/strict checks and required CI
+on the submitted source. Preserve old source/cut evidence with its provenance;
+main-source integration is new verification, not a claim old binaries ran on
+main. Expected existing test path plus scoped PRD/status/acceptance record
+updates only, no production/public types/manifests/locks. Repeated source in
+an isolated worktree is evidence custody, not a new semantic owner or reset of
+cumulative test introductions. Coordinator retains manifests/shared records
+and merge authority. This is a scoped verification delivery, not remote service
+completion. If source inspection finds a dependency on unmerged production,
+stop this independent delivery instead of importing that production implicitly.
+
+Independent-delivery source inspection confirms exact6081 live_requester e090227f
+uses only main's existing Node, certified-client and Export retention/native
+methods; it does not require unmerged receive or Connection production. The
+main selected dependency identities remain the same. Existing required Nix
+filters, however, do not execute the feature-gated live_requester module: the
+plain full target disables it and the protected filters select other modules.
+Before shipping the test contribution, select an explicit live_requester::
+command in each existing debug/release loop with a6-passed/0-failed/0-ignored
+log assertion. This adds three verification-tooling lines in existing flake.nix,
+no production or new dependency. CI must run all six actual provider cases on
+the submitted main-based source; old branch execution cannot replace that gate.
+
+### Capacity normal-waker contract — actual owning controls
+
+Independent precompile review caught a consumed-owner error in the new task
+fixture; Option<MailboxOwner> now retains the sole owner until its actual close
+or final cleanup. No compiler-driven API or mechanism was added. Corrected
+tests242a5986, production1bbd79fc (rustdoc only beyond f07) and docf51e0f06
+pass root twice plus independent two-pass source review. Exactly4 production
+comment additions/1 removal describe the supported limit; no mechanism changed.
+
+Actual new Tokio-hosted cases each acquire Pending registration using the real
+task Context and then acquire Available/Closed after dequeue/owner close/consumer
+disposal. All3 pass in both profiles. Focused8 and complete20 mailbox-retirement
+cases pass in both profiles; four bounded models pass in both (one other model
+filtered). Failure-only watchdogs abort and join leftovers before cleanup and
+assertions; none fire on these passing controls. Normal strict all-target lint
+returns0. All seven owning Darwin Nix checks return0, including actual100/100
+Nextest across19 binaries. These replace earlier95 counts for this source.
+
+Receipt59190897 binds14 artifacts and exact before/after input guards, with
+independent raw-output/hash review. Original red ba015 and receipt2e80677f are
+unchanged. Foreign-panic characterization preserves actual opaque panic,
+committed Closed, original allocations/FIFO/terminal or surrender; sibling wake
+count is observation only, neither a progress nor a zero-wake guarantee.
+Actual Bombay Application capacity integration remains required after adoption.
+No timing or current-source Linux/merge/publication success is credited here.
+The independent benchmark interval is now running with original workloads and
+defaults; preserve its actual limits before determining delivery eligibility.
+
+Independent delivery minimization found the live requester repeated one immutable
+delivery-success assertion after its earlier finite intended-failure oracle.
+Remove only that later duplicate in the main-based copy: e090227f becomes
+07e3a096, exact test delta+702/-13/net689. The early checked-delivery and complete
+final actor/native/notification oracles stay unchanged. Prior source evidence
+retains e090 identity; new integration/CI must qualify07e3 separately. The six
+feature-gated cases include two finite request-refusal, two native requester and
+two local pending-protector cases; do not call all six network consumers.
+
+### Capacity cost — measured results and explicit disposition
+
+Four actual pinned Criterion commands finish0 in baseline/candidate/baseline/
+candidate order with unchanged defaults and exact source guards. No foreign
+compiler appears in captured snapshots; normal GUI/OS activity and single-host
+order remain qualifications. Sixteen group measurements and64 statistics files
+are preserved in receiptc2fc64fe, not a cross-thread or Application latency proof.
+Owner-reference1024 rounds: baseline12.990/13.074 microseconds versus candidate
+18.848/18.952 (about45% slower). Raw1024 rounds:8.931/9.018 versus14.527/14.514
+(about61–63%). Drain20k:66.528/66.808 versus123.77/124.70 (about86–87%). The
+candidate-only complete observer round is43.494/43.530 ns without registration
+and131.09/131.72 ns registered. These whole-workload differences cannot be
+attributed solely to one Notify operation or extrapolated to Applications.
+
+Under standing recommendation delegation, explicitly accept this measured cost
+for the correctness-first owning capacity contribution. This is a regression,
+not a speedup or a met numerical SLO. The retained primitive supplies actual
+nonwaiting-admission readiness without holding a sender or reservation and
+conserves removed originals across native wake failure. Reverting it would leave
+that prerequisite absent. An extra observer-count fast path or optional feature
+would introduce new registration/lost-wake or graph contracts; no measured
+Application need justifies that additional mechanism in this stage. Keep the
+actual percentages and raw results visible in owner docs and PR review. Later
+optimization must preserve these exact laws and obtain its own failing proof.
+
+This explicit reviewed trade-off closes only the self-selected cost-disposition
+gate. Source minimization, exact updated-head Linux CI/review and actual merge/
+publication/adoption remain distinct. Foreign callback panic fanout hardening
+and Application-level performance/integration remain open. No full remote row
+closes, and no new dependency, default limit, production mechanism or public
+type is selected. Existing owner production-introduction allowance carries
+199+4 rustdoc additions within220; do not reset historical extents.
+
+### Main-based provider contribution — actual draft submission
+
+Commitfc85ec10 on test/remote-provider-conservation starts at actual latest main
+e2a4e7f3; push and draft PR376 creation return0. Five paths: production+0/-0,
+public API+0/-0, test source+702/-13/net689, verification tooling+3/-0, and scoped
+records+65/-1. Nix parse/diff checks return0. Actual Nix run38807714831 and native
+profile checks are running on that submitted head; no pass/merge is credited.
+No manifest/lock or unrelated production change is included. This is independent
+verification delivery, not the unfinished Application service or removal of
+the PR373/374 privacy holds. Earlier source/cut evidence retains its provenance;
+local main-source controls remain queued after the actual live provider cuts.
+
+### Consumer pinning compatibility — selected missing-contract regression
+
+Final owning review finds that the new retained Option<U> changes Consumer's
+automatically derived Unpin bound. Earlier Arc/raw-pointer storage allowed the
+Consumer itself to move even when either payload type used PhantomPinned.
+Consumer never offers a structurally pinned projection or stores a pointer into
+itself; its methods already move messages through normal ownership. Pinning
+the container therefore must not accidentally pin its payloads. This is a real
+release-compatibility question, distinct from the accepted measured layout and
+cost changes; current reviewed head0248 cannot yet be called release-ready.
+
+Before production, add an actual owning test in existing mailbox_retirement.rs
+using PhantomPinned in both lanes, pin the Consumer, recover its mutable borrow
+through standard Pin::get_mut and observe complete control/user/terminal/EOF
+after native sends. Verify the exact compile denial on current0248 and its
+absence on the original24ad owner. If the existing source confirms nonstructural
+pinning, recommend a documented explicit Unpin implementation for Consumer with
+no payload bounds, preserving the original contract. Use standard Rust Pin
+semantics; no boxing per message, unsafe projection, wrapper, new trait or API.
+This fix remains conditional on that prior-design evidence.
+
+Expected existing lib/test/doc paths only, at most4 production/comment lines,
+30 verification lines within1050 retained/3300 authored; no public type,
+manifest, dependency or lock. Carry the current owner203 production
+introductions within220 and all historical counts. Source review twice, actual
+missing-contract compiler failure, debug/optimized native controls and exact
+replay of the removal after fix must qualify the retained line before updated
+head CI/review. This opens a concrete compatibility gate, not a broader refactor.
+
+### Allocation CI failure — selected existing-runner correction
+
+Updated0248 PR Nix passes, but push Nix38808160943 fails the original anchor
+zero-allocation assertion with1 versus0. Preserve that actual failure; no retry
+is a repair. The test and owning alloc_guard macro are byte-identical24ad.
+Their counter is process-wide while SERIAL covers only test bodies. Pinned
+Rust1.95 libtest allocates capture/thread/reporting state outside that lock;
+two cases in one process therefore lack isolation. The exact observed allocation
+site remains unattributed. Unchanged send-path source and successful isolated
+measurements are not proof of where that particular allocation occurred.
+
+Compare a new thread-local custom counter/dependency with the already selected
+Nextest runner, which runs each test in its own process. Recommend the existing
+runner for the package check as well as the existing workspace check: it retains
+the exact zero-allocation assertions and test bodies and excludes another test's
+setup from their process. Preserve doc-test coverage with a separate cargo test
+--doc command, because Nextest does not run doc tests. Do not weaken the bound,
+ignore a case, remove package checking or disable concurrent correctness tests
+inside a test body. New handwritten accounting is unnecessary for this gap.
+
+Under standing recommendation delegation, select this bounded verification-only
+change in existing Communication flake.nix: add the already pinned Nix
+cargo-nextest tool to package check inputs; execute release package tests with
+Nextest and actual locked graph, then release doc tests. All seven checks,
+actual native counts and current-head Linux must still pass. This is standard
+per-test process isolation, not attribution of the old1-allocation event or
+a claim that every process-wide allocation source is impossible. Keep original
+failure and exact assertion unchanged in the evidence.
+
+Expected one existing verification-tooling path (at most8 added lines), no
+Rust production/test changes or new Cargo dependency/manifest/lock/type. Carry
+all existing counts. Independently review exact pinned Crane options and
+coverage before applying; run the complete owning checks and inspect actual
+Nextest case inventory/doc results before committing the combined marker/runner
+correction. The one-line Unpin marker remains its separate already proved
+compatibility law, not an allocation fix.
+
+### Concrete provider port and connection controls — restored checkpoint
+
+Final provider source7d5c9afc passes fresh focused6/0/0 in each profile after
+all three isolated cuts. Each literal cut run returns101 with four native
+refusal oracles and two passing finite controls; each metadata/bound cut run
+returns101 with two specific finite expected-variant failures and four passing
+native controls. The assertion output does not print the alternate variants,
+so only the directly observed expected-variant failures receive runtime credit.
+No compilation failure, timeout or zero-match run substitutes for these laws.
+Scheduled send-before-await still does not prove Pending.
+
+Both restored combined commands return0 with separate library348/0/0 and
+application_clients38/0/0. All five connection_custody cases execute once in
+each profile, supplying the required post-cut restored Connection controls.
+Scoped strict Clippy returns101 for the eight known unused private connection
+items and stops before checking the test target; it proves no test-lint pass
+or absence of a RefCell-await diagnostic. No allowance or source edit follows.
+Execution5ea650f0 and inventoryc6dde890 bind the complete port source/cut/log
+record; coordinator standard checksum verification returns0. Stage source is
+test+293/-22 with no production/API/dependency/lock changes.
+
+Complete coordinator endpoint against81dc1448 has54 tracked paths and zero
+untracked paths: production+1342/-6/net1336; verification Rust+10685/-14/net10671,
+classifying connection/tests.rs wholly as tests and the established178/3 inline
+verification once. Owning Communication's separately staged Unpin correction
+raises its expected production endpoint to129/-25/net104, for a known combined
+window1440 within1600. Tooling/docs and independent delivery copies retain
+their distinct counts; older cumulative extents remain unproved, not reset.
+No public type is added by these two private test stages. Goal remains active;
+strict shipping integration, all full acceptance, reviewed CI delivery and
+actual merges remain required.
+
+Independent execution reviewd69231d3 checks all32 provider artifacts against
+inventoryc6dde890 and the actual cut source/patch/log pairs. It confirms both
+restored348/38 binaries per profile and the five Connection custody cases once
+each, without granting missing test lint or broader identity/service evidence.
+This closes the earlier post-cut restoration/review prerequisite for the private
+test checkpoint; shipping strict lint and the actual service remain open.
+
+Communication marker proofa499aa1c records candidate E0277 in both profiles,
+identical baseline1/0/0 in both, corrected1/0/0 and complete21 native/four models
+in both. Its explicit Unpin sourcec888 preserves the prior movable consumer
+without pinned payload projection. The separate runner correctiond96684b1
+executes all seven Nix checks: package78/78 across13 binaries, workspace101/101
+across19 binaries, both unchanged zero-allocation cases, actual doc0. Counter,
+assertions and Cargo graph are unchanged. The original failed allocation site
+remains unattributed. Six-path source0c193c28 is committed/pushed to PR13; its
+new exact-head CI is running and no merge/publication/adoption is credited.
+
+This coordinator checkpoint changes five paths: production+0/-0; test Rust
++417/-22/net395; public types+0/-0; current records are updated with the explicit
+open lint/privacy/service gates. Existing complete54-path baseline census and
+older historical qualifications carry. The independent main-based PR376 remains
+its own five-path contribution; duplicating source in its worktree does not
+reset this record or establish a second delivery. Its debug/release transport
+jobs, CodeQL and Cargo Deny now pass, required Nix remains live.

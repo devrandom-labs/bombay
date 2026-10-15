@@ -9,6 +9,17 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
+Current private composition adds actual missing-host and executor-loss controls
+and generated reply protection for both Counter/Ledger provider families.
+Restored combined library348 and application38 cases pass in both profiles;
+the intended failure-erasure, literal-proof, metadata and bound cuts fail their
+specific oracles after cleanup. Strict lint remains blocked by eight unused
+private connection declarations; the scoped command does not reach test lint.
+The public Application service and SDK privacy replacement remain absent, so
+these facts close no full row. Owning Communication PR13 separately verifies
+capacity readiness and exact custody; actual release/adoption and Application
+integration remain required.
+
 The final pending-protection comparison32c534a5 executes both finite providers
 in debug and optimized builds; restored complete Counter targets pass72/0/1
 per profile. Borrowing instead of sharing is statically denied; substituting an

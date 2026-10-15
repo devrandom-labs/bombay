@@ -940,3 +940,127 @@ fn connection_custody_closes_after_unpolled_execution_without_consuming_cold_wor
             assert_stopped_counter(retirement);
         });
 }
+
+#[test]
+fn connection_custody_refuses_missing_host_and_keeps_original_application_work() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let network = listening_counter_network();
+    let (connection, closing) = host.block_on(Connection::open(&network)).unwrap();
+    drop(network);
+    let session = connection.session().clone();
+    let calls = Rc::new(Cell::new(0));
+    let increments = Box::new(8_u64);
+    let allocation = ptr::from_ref(increments.as_ref());
+    let refused = Application::new(Counter::new().stop_on_shutdown()).execute_with_invocation(
+        (increments, Rc::clone(&calls)),
+        |(increments, calls), application| {
+            calls.set(calls.get() + 1);
+            async move {
+                let stopped = application.request_shutdown();
+                (increments, calls, stopped)
+            }
+        },
+        Some(connection),
+    );
+    let Err((application, (increments, original_calls), cause)) = refused else {
+        panic!("an actual missing entered host must refuse before invoking Work");
+    };
+    let recovered_allocation = ptr::from_ref(increments.as_ref());
+    let calls_before_retry = original_calls.get();
+    let ((joined, closed), outcome, native, notifications) = host.block_on(async move {
+        let closed = closing.await;
+        let (execution, receiving) = application
+            .execute_with(move |application| async move {
+                original_calls.set(original_calls.get() + 1);
+                let mut client = application
+                    .export_client::<_, CounterValue>(application.root().established_recipient())
+                    .unwrap_or_else(|_| panic!("returned actual root"));
+                let mut admissions = Vec::new();
+                for _ in 0..*increments {
+                    admissions.push(client.try_send(CounterMessage::Increment));
+                }
+                let read = client.try_send(CounterMessage::Read(client.recipient()));
+                let value = client.receive().await;
+                let stopped = application.request_shutdown();
+                let report = application.lifecycle().retirement().await;
+                client.close_admission();
+                let mut tail = Vec::new();
+                while let Some(original) = client.receive().await {
+                    tail.push(original);
+                }
+                (
+                    increments,
+                    original_calls,
+                    admissions,
+                    read,
+                    value,
+                    stopped,
+                    report,
+                    tail,
+                )
+            })
+            .unwrap_or_else(|_| {
+                panic!("the actual original inputs can execute on the retained host")
+            });
+        let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+        (closed, outcome, native, notifications)
+    });
+    let (output, cleanup) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("returned original Work finishes"));
+    let (increments, original_calls, admissions, read, value, stopped, report, tail) = output;
+    assert!(cause.is_missing_context());
+    assert!(joined.is_ok() && matches!(closed, Ok(Ok(()))) && cleanup.is_ok());
+    assert!(session.is_closed());
+    assert_eq!(calls_before_retry, 0);
+    assert_eq!(calls.get(), 1);
+    assert!(Rc::ptr_eq(&calls, &original_calls));
+    assert_eq!(allocation, recovered_allocation);
+    assert_eq!(ptr::from_ref(increments.as_ref()), allocation);
+    assert_eq!(*increments, 8);
+    assert!(admissions.iter().all(Result::is_ok) && read.is_ok() && stopped.is_ok());
+    assert_eq!(admissions.len(), 8);
+    let value = value.unwrap();
+    assert_eq!((value.from, value.message), (MailAddr::APPLICATION_ROOT, 8));
+    assert!(tail.is_empty());
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    let notifications = notifications.unwrap();
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    let (origin, retirement) = native.unwrap();
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert_stopped_counter(retirement);
+}
+
+#[test]
+fn connection_custody_keeps_actual_producer_cancellation_and_missing_result() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let network = listening_counter_network();
+    let (connection, closing) = host.block_on(Connection::open(&network)).unwrap();
+    drop(network);
+    let session = connection.session().clone();
+    host.shutdown_background();
+    let receiver_host = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let ((joined, original_close), cleanup) = receiver_host.block_on(async {
+        let received = closing.await;
+        let cleanup = session.close().await;
+        connection.retire();
+        (received, cleanup)
+    });
+    assert!(cleanup.is_ok() && session.is_closed());
+    let failure = joined.expect_err("the actual close producer loses its executor");
+    assert!(failure.is_cancelled());
+    assert!(original_close.is_err());
+}
