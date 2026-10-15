@@ -114,6 +114,15 @@ remain pending. This is
 local target/admission evidence, not protected publication, replay, permission
 coherence, real remote Stop or closure of a full R01–R25 row.
 
+A dependent test-only composition now carries an actual protected Counter Read
+through two public Nodes to the existing live requester actor. Both finite
+provider families pass in debug and optimized; four deliberately altered
+forwarding values fail the independent native final-state oracle after cleanup,
+and four fresh byte-exact restored controls pass. Actual typed Actions trigger
+the query and acknowledge consuming its reply. This supplies the narrow live
+consumer evidence; it does not supply production replay ownership, dynamic
+reply protection, adverse identity cases or a complete R01 witness.
+
 Examples consume its public API; example-only implementations cannot pass R01.
 Keep the local counter in `examples/counter` and the remote counter in
 `examples/remote-counter`. Each teaches one complete application through public

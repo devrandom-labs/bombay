@@ -9710,3 +9710,7 @@ mod provider_receipt_custody {
 
 #[cfg(all(test, feature = "protected-transport"))]
 mod public_node;
+
+#[cfg(all(test, feature = "protected-transport"))]
+#[path = "live_requester.rs"]
+mod live_requester;

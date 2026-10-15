@@ -39,7 +39,11 @@ An isolated test-only composition now runs two actual Nodes with both protocols
 and positive provider families: all eight retained-Read controls pass, while
 eight stateless comparisons fail their intended oracle after native cleanup.
 This proves the fixed-key research distinction, not production replay policy or
-a full witness. The protected reply still needs a live requester actor consumer.
+a full witness. A dependent live-requester comparison now passes both finite
+providers in both profiles; four forwarded-value corruptions reach the intended
+final actor-state failure and fresh byte-exact restored controls pass. The actual
+actor emits its typed completion acknowledgement before shutdown. Shipping
+request/reply protection and the shared export/replay owner remain required.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;

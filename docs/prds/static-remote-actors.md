@@ -23896,3 +23896,110 @@ net3219, public types+3/-0,30 retained plus three restored research paths. The
 records are carried without reset. No manifest, lock or production source changed
 in this research stage. Keep it on the dependent research branch while the
 actual client PR370 required CI and complete remote implementation remain open.
+
+
+### Live requester — next test-only public composition obligation
+
+Local research checkpoint a88afd2 preserves the verified fixed-key Read
+comparison; it opens no helper PR and supplies no production replay owner.
+Next prove a live requesting actor consumes the checked protected reply. The
+existing genuine CounterRequester already emits Verify in typed Actions and,
+after consuming ProtectedReply, emits ProtectedConsumed in Actions. Use that
+actual acknowledgement as the causal fence before shutdown and require the
+original native final state to contain ReadReply(1). No replacement actor, event
+lane, runtime attachment or result callback is needed.
+
+The smallest falsifier changes only the projected native value to declared.value
+plus one. Native Counter and protected DTO remain1; after all original native/
+notification/Session cleanup, the genuine requester must expose2 and fail the
+independent final-state oracle. A setup/timeout/absent-trigger failure is not this
+law. Original Query/Reply/permit, bytes/proof and opaque receipts remain owned.
+
+Source inspection confirms the current private actor, its exact Actions lanes,
+closed message/state products and completed_actor checker. Mount the comparison
+in the existing isolated protected_counter target to reuse those owners without
+copying them. Port only the positive provider equations to an explicit configured
+pair of legacy logical Scope and current Metadata15; no ID cast/hash, new issuer
+or transport-ID replay namespace is selected. Scope/DTO projections are test-only
+and cannot close the production identity/replay requirements.
+
+Expected source is protected_counter/live_requester.rs plus its existing parent's
+registration; raw candidate487 lines is uncompiled/unformatted. Remove single-
+substitution DTO/proof generics and reuse the verified Rust idioms before the
+second source review. Forecast700–950 formatted test lines. Under standing
+recommendation delegation accept35 cumulative paths,368 net production lines,
+4400 test lines and three public types in the measured post81dc window, carrying
+older complete-goal records unchanged. The two prospective source paths account
+for this expansion; production/API/dependency delta remains zero. Measure before
+adoption and retain compilation/authority/cleanup faults truthfully. Child Stop,
+all other complete witnesses and the crate-owned ordinary multi-node API/examples
+remain required.
+
+
+Live-requester initial sourcebd95 compiles, but its first actual debug run fails
+the query-publication count0-versus1 after native cleanup. Preserve raw
+initial-debug.log8f94198b and source; no forwarding-law credit. The receiver
+Queryable was declared only after the caller connected. Select the existing
+verified replay-composition ordering: declare the receiver Queryable before
+opening the caller Node. This changes only test setup order, with no readiness
+guarantee inferred for shipping operation and no delay/retry/default added.
+Root workspace formatting did not reach the isolated target; run formatting
+through that target's own manifest before runtime qualification.
+
+
+Corrected setup plus isolated-manifest rustfmt produces source738ca967,691
+module lines plus four declaration lines. Both actual provider substitutions
+pass the exact live-requester test in debug and optimized builds (four named
+executions, each1/0/0). The actual receiver reads1; the native requester retains
+ReadReply(1) after its real ProtectedConsumed Actions acknowledgement. Original
+Query/Reply permits, provider results, native actor outcomes, both notification
+stages and both Session closes remain acquired before final assertions.
+
+Stage production+0/-0/net0, tests+695/-0/net695, public types+0/-0. Current
+measured JSON/client/research window is production+306/-1/net305, tests+3918/-4/
+net3914, public types+3/-0,35 cumulative paths including prior restored research
+paths. This remains within the selected35/368/4400/three checkpoint and does not
+reset earlier whole-goal or controlled-dependency accounting. The selected
+forwarding+1 inversion/restoration and strict checks remain pending. A positive
+finite-provider trace does not close full R01 or production identity/replay.
+
+
+All four selected forwarding+1 comparisons execute the intended post-cleanup
+final native state assertion: left[ReadReply(2)] versus right[ReadReply(1)],
+for both providers in debug and optimized. Cut source47b93d6b changes exactly
+one service projection from healthy738ca967; original wire/native values remain1.
+The byte-exact original is restored, and fresh matching controls are running.
+This is a tested service-forwarding distinction, not a production receiver
+defect or completed remote acceptance row. Initial uncredited setup failure
+remains preserved separately.
+
+
+Four fresh restored controls all pass on byte-exact738ca967 after the selected
+mutation. The complete matrix retains twelve named executions: eight healthy
+controls and four intended2-versus1 failures, never compiler/setup/timeout credit.
+Pinned isolated strict Clippy and manifest-local formatting pass on the same
+source. Correct the obsolete uncompiled-proposal module doc line only; all
+remaining source lines stay identical. Final full isolated-target debug and
+optimized checks now run on those final bytes. Complete matrix records retain
+actual argv, source and log hashes, without immutable copied executable or
+per-command full-graph claims.
+
+
+Final sourcef16df850 changes only the obsolete module doc comment from738; all
+other source bytes are identical. The complete isolated protected_counter target
+now passes70/0/1 in debug and optimized, including both exact live-requester
+cases once per profile. The ignored subprocess entrypoint supplies no native
+transport campaign credit. Raw full-debug2213cf1c and full-release4ed81825 and
+complete argv/source guards remain in execution/full-records.json. Independent
+executed source/matrix reviewe853bc4e checks all twelve positive/mutation/restored
+rows and scoped strict/fmt outcomes; its complete-target supplement is separate.
+
+Final stage endpoint: five paths (including the previously untracked module),
+production+0/-0/net0, tests+695/-0/net695, public types+0/-0; no manifest, lock,
+production runtime or public export changed. Retain this verified composition
+with replay checkpointa88 on the dependent branch, without another helper PR.
+The actual next shipping gap is a Node-associated export owner retaining the
+verified request/native outcome across separate queries and a provider operation
+protecting the actual generated reply bytes. Current predeclared proof records
+cannot establish that producer contract. Plain Rust/provider-owned alternatives
+are being compared before that production API is selected.
