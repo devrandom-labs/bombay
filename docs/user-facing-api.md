@@ -11,9 +11,11 @@ external interface, timer, Entity, supervisor, and worker-pool paths have
 executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
 or multithread execution. Durability and crate-owned remote networking remain
-planned. The optional `remote` feature currently provides `remote::verify` for
-retaining a provider result before its future is disposed; ordinary multi-node
-Application assembly remains pending. Protected Counter transport regressions
+planned. The merged optional `remote` feature provides `remote::verify` for
+provider-result custody. The merged ingress primitive adds `remote::try_retain`
+for nonwaiting count retention (PR363). Neither supplies
+authentication, actor admission or multi-node Application assembly.
+Protected Counter transport regressions
 live in Bombay's tests, built by the isolated transport-custody test package.
 The local `examples/counter` and future `examples/remote-counter` applications
 remain separate.
@@ -489,7 +491,7 @@ exact bare `Result<(), io::Error>` from serving; raw root and cleanup facts coex
 completion is not proof that the root result is successful. Axum owns HTTP
 extraction/responses; Bombay adds no projected aggregate `AxumRunError`.
 
-## Remote verification
+## Remote declarations, verification and ingress retention
 
 The opt-in `remote` feature exposes `bombay::remote::verify`. It borrows the
 original request and stores a provider's complete `Result` in the caller's
@@ -501,7 +503,64 @@ The function returns unit; the retained result describes the provider outcome.
 It does not grant actor access or perform mailbox admission. Keep the operation
 pinned outside a temporary borrowed wait to cancel only that wait. Dropping the
 operation itself drops its provider future; the outside request and slot remain.
-Network connections and the multi-node Application API are still pending.
+
+The merged ingress primitive adds `remote::try_retain`, transferring one static
+original and an `OwnedSemaphorePermit` into a caller-owned Tokio channel without
+waiting or copying. The caller supplies an `Arc<Semaphore>` and keeps each
+`(original, permit)` intact across queueing, active work and unread output. Dispose
+the original before releasing its permit; dequeue and provider completion do not
+release that charge.
+
+`IngressError::Capacity` returns the original and native `NoPermits` or `Closed`
+cause. `IngressError::Queue` returns native channel `Full` or `Closed` with the
+original and its acquired permit. Diagnostics omit the payload; no original
+`Clone` or `Debug` bound is required. The operation selects no numeric default
+and establishes no byte, producer-task, native-allocation or provider-heap bound.
+Unpacking early or cloning originals can defeat the caller's count discipline.
+It performs no authentication, actor admission or network setup; delivery of
+this primitive is recorded in PR363.
+
+The new `remote::Metadata` provides fifteen required raw declarations for the
+concrete protocol's `bombay` field. Its Serde traits reject unknown/duplicate
+object fields, but decoding alone accepts positional structs too. The pending
+bounded receiving boundary must establish the selected JSON object shape and
+check versions, profiles, SDK identities, replay and permission. Metadata neither
+authenticates input nor grants actor access. Providers protect the exact original
+transmitted bytes; deserializing and reserializing is not proof verification.
+
+The `remote` feature provides `application.open_node(config).await`. Its input is the configuration owner's `Config` from
+`bombay-zenoh-config` 1.10.2 (aliased as `zenoh_config` in Cargo). Build
+root/child topology with ordinary Application first. Its returned
+`remote::Node` owns that declaration and one fresh native Session. Await the
+complete application with
+`node.run_with(async |application, session: &zenoh::Session| { ... }).await`.
+The application argument stays inferred; this advanced SDK argument may name
+`Session`. Work can borrow the Session across awaits and return caller-local,
+non-`Send` values. The joined result is the ordinary `ApplicationOutcome`,
+including independent native retirement and both notification results. Its
+business result is independent of the temporary Session loan.
+
+Use `node.execute_with(|application, session| async move { ... })` when the
+result itself borrows the Session, or when execution and receiving must remain
+separate owned operations. Finish receiving before `node.close().await`,
+retaining the independent native close result. Rust prevents mutable close while
+a result still borrows the Session. Both entry points preserve the original
+callable on refusal. Missing-host refusal also restores the original declaration;
+a second execution returns `NodeExecutionRefusal::ExecutionIssued`, including
+when that already-issued Node's Session is closed.
+
+Startup returns the original Application/configuration on profile, host or
+native refusal. The selected profile requires configured TLS addresses, disabled
+discovery, mutual TLS, configured private roots, verified names and explicit
+native query capacity. No default capacity is selected. Per-endpoint overrides
+and `OneOf` fallback are rejected. SDK parsing verifies actual credentials; policy
+checks alone prove no handshake. Opening requires an entered multithreaded Tokio
+host. Trusted work can clone or close the native Session and must honor the SDK
+host/custody contract; exposing that advanced API does not enforce all remote
+policy. Whole operation disposal is surrender, not proof of joined retirement.
+
+Typed remote exports, authentication/admission and the ordinary multi-node API
+remain pending. The developer experience coordination record tracks joined-node verification.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 

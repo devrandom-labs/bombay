@@ -22,8 +22,40 @@ to their original checkpoints. No full R01–R25 row closes from this integratio
 Its required Nix executes16 public remote tests in each profile; fixture native
 evidence remains separate. The relocated protected Counter target executes55
 plain tests per profile through its isolated package, with native campaigns
-verified separately. Relocation delivery is pending. Neither acquisition nor
+verified separately. [PR362](https://github.com/devrandom-labs/bombay/pull/362)
+merged `fb533b5bddb1ba20d6514f590167faef60b028d0` at
+2026-10-14T01:22:54Z with all six checks passing. Neither acquisition nor
 relocation closes any full remote witness or delivers remote-counter hosting.
+
+[PR363](https://github.com/devrandom-labs/bombay/pull/363) delivers public ingress
+retention, merged1320dfa9 at2026-10-14T03:07:08Z after all six checks and recorded
+source/native/required-Nix reviews pass. It retains an original/count-permit through
+queueing, active use and unread output, with exact distinct native refusal causes.
+Required CI executes four ingress tests in each profile; native SessionLocal counts
+are separate from TLS campaigns. The Reply pool remains an explicit per-query
+fixture input, not a caller-wide default or byte/heap bound. This prerequisite does
+not authenticate/admit an actor command or close any full R01–R25 row.
+
+Current raw metadata composition uses the actual public fifteen-field owner with
+Counter/Ledger fixed vectors. Seven structural schema tests pass in both profiles,
+and the intended unknown-field inverse fails before exact restoration. Its Serde
+array control exposes a receiving-boundary prerequisite: shipping input must have
+the selected object shape. No authentication, zero-admission, full bound or full
+R02 acceptance is credited from raw decoding. Node/profile construction now
+has actual feature-gated crate code and is under public startup/root/child
+verification. The bounded receiving decoder remains
+unimplemented. Initial debug and optimized startup regressions fail exactly for
+empty-group credential classification and native diagnostic disclosure; final
+corrected startup controls pass in debug and optimized after independent
+review. Six actual public Node cases pass both profiles after real-owner
+falsifiers and byte-exact restoration. Combined local workspace/remote/protected
+checks and scoped minimization pass; reviewed PR, required CI and actual merge
+remain pending in [PR364](https://github.com/devrandom-labs/bombay/pull/364).
+The missing certificate fixtures are now included and the six unchanged cases
+pass from actual filtered Nix source in both profiles. New Rustls advisories
+require0.23.46; selected locks and affected controls pass locally on that graph,
+while fresh required CI and the published owner-minimum correction remain
+separate gates. No full row closes from this contribution.
 
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in

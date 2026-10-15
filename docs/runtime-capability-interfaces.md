@@ -14,8 +14,22 @@ networking substrate; a deterministic network test host is a verification seam.
 Selo builds on Bombay, Mnesis and `mnesis-bombay`; Bombay does not depend on
 Selo or Mnesis. The new document's proposed distributed contracts are not
 implemented capabilities or additions to the current Engine port. The ordinary
-multi-node Application API and crate-owned `remote` feature remain pending;
-current native transport fixtures are scoped verification consumers.
+multi-node Application API remains pending. The merged opt-in `remote` feature
+provides provider-result acquisition through `remote::verify`; the
+merged ingress primitive adds `remote::try_retain` for count retention (PR363).
+Neither establishes authentication, actor admission or a networking runtime.
+The new opt-in `remote::Metadata` is a shared untrusted fifteen-field Serde
+declaration for concrete protocols. It does not issue authority or select a
+target. Its raw decoding accepts positional structs as well as objects; the
+pending bounded receiver must enforce the chosen object layout and all policy.
+The optional remote feature provides Application::open_node and remote::Node as a
+transport owner, reusing ordinary Application execution with a borrowed native
+Session. Node::run_with awaits its complete outcome; execute_with keeps separate
+operations and permits a Session-borrowing business result. Both preserve original
+Work on refusal through the existing invocation spine. It owns no new actor trait,
+mailbox, lifetime authority or permission policy. Startup profile checks preserve original declarations on refusal;
+actual SDK and root/child integration remain separate verification gates.
+Native transport fixtures remain scoped verification consumers.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The

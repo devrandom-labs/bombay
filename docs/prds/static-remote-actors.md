@@ -1,5 +1,1506 @@
 # Static remote actors and typed admission
 
+## Rustls0.23.46 selected-build qualification
+
+Both narrow locks now select the exact upstream archive checksum48e13bd8.
+Parsed comparison preserves all other full package records/normalized edges:
+399 root packages and324 isolated packages. Four unrelated resolver Windows-edge
+rewrites were restored from captured original package records; locked Cargo
+metadata accepts that graph. Separate locked `--features remote` metadata proves
+the actual Rustls union: log/logging/ring/std/tls12, with Brotli/AWS/PQ absent.
+This qualifies selected feature exposure, not every possible consumer profile.
+
+Fresh pinned-Nix protected tests pass66/0/1 in each profile, including every
+actual Node name. Five public Application/remote targets pass35/0/0 per profile.
+Strict remote all-target and protected Clippy pass; warnings-denied remote
+documentation passes. affected-execution.json records five exact commands;
+build-results.json retains all four runtime log hashes, inventories and original
+terminal outcomes. The Node/startup/metadata/execution/tests remain unchanged.
+These are compatibility regressions on the new dependency graph, not new
+Rustls vulnerability witnesses or repetitions of the two invariant reviews.
+
+Old CI4cfab6e selects0.23.45 and its dependency gate fails for four new advisories;
+its native jobs pass but cannot qualify0.23.46. Require fresh exact-head full
+Nix/dependency/native checks and review after committing this narrow correction.
+The independent published-owner proposal remains a separate pending stage;
+no0.23.46 published minimum or full remote acceptance is claimed from locks.
+
+## Published Rustls minimum successor — prepared stage checkpoint
+
+The selected-build lock correction cannot prevent a fresh published consumer
+from choosing Rustls0.23.45. Independent exact-source research6a39d08d identifies
+the two owning minima and five exact-version successors; its raw graph/source
+receipt9a06dcbc preserves existing archive provenance and the stale checkout.
+Under delegated recommended choices adopt the prepared finite release profile,
+not a new release framework: commons1.10.2; TLS/link/transport1.10.3; SDK1.10.9.
+Both existing owning Rustls declarations require0.23.46. Config/plugin1.10.2 and
+the two generator2.2.0 archives remain immutable. The new commons header states
+1.88, matching its already selected time dependency; require actual floor proof.
+
+Before source edits reserve the17 prepared core paths plus at most eight records
+or owning tests. Root controls shared manifests/locks/release integration. Use a
+fresh controlled repository worktree from latest main5bebbcb0; preserve the stale
+checkout and its existing deletions. Candidate Rust production/test/API delta is
+zero; manifest/floor/version edits remain separate. Reused release scripts add
+an explicit five-package profile, with forecast60–140 lines added/15–45 removed
+and20–60 Python test lines. Reserve at most250 introduced script lines and120
+introduced Python test lines before a further checkpoint. No new dependency or
+runtime abstraction is selected; this is upstream patch adoption and existing
+package-release graph repair.
+
+Cumulative cross-repository checkpoint: current24-path Bombay endpoint,
+production+722/-2/net720 and four added public types, plus17 forecast core
+controlled-source paths. Retain temporary-cut/preparation accounting and reserve
+55 cumulative changed paths,1000 net production lines including release scripts,
+four new public types, and the above bounded stage-test budget. This is expanded
+source/release scope selected under the user's automatic recommendation
+instruction, not code reduction. Record the complete actual tracked/untracked
+census and chronology at each retained checkpoint rather than attributing raw
+worktree copies as new patches.
+
+Required tests receive coordinator invariant review and independent counterexample
+review, exact owner-minimum/candidate-set/edge/archive negatives and intended
+source inversions. Prepublication execution uses four real candidate archive
+patches with unchanged Config tested from its actual immutable archive. Preserve
+all existing profiles and tests. Require full exact-head CI, scoped review,
+actual PR merge, guarded publication, nine immutable archive/API receipts and
+registry-only default/floor consumer proof before claiming the published floor
+fixed. This stage may proceed alongside Node delivery and admission research;
+no premature publication or full R01–R25 completion is credited.
+
+## PR364 fresh Rustls advisories — before narrow lock correction
+
+Replacement cargo-deny38593250909 fails against unchanged Rustls0.23.45 for
+four actual new advisories RUSTSEC-2026-0346 through0349. Upstream releases
+0.23.46 on2026-10-14 and declares the fixes in
+https://github.com/rustls/rustls/releases. The failure is neither a test inversion
+nor a reason to suppress advisory policy. Old filtered-source controls retain
+their exact dependency graph and are not reassigned to an updated graph.
+
+Under the user's recommended-choice delegation select the owning upstream
+patch release0.23.46, updating only Rustls in both existing root and isolated
+transport locks. Retain every other package identity/checksum and edge unless
+resolution proves an independently required change, which must be recorded
+before further adoption. Expected paths are the two existing locks and PRD,
+zero Bombay production/test/public API delta, within29 paths/800 production/
+four types. Snapshot both original locks before pinned-Nix Cargo resolution.
+Alternatives: broad lock refresh changes unrelated packages; ignoring advisories
+weakens the required gate. Neither is selected.
+
+Actual narrow Cargo resolution also rewrites four unchanged root-package Windows
+edges: errno, rustix, tempfile and winapi-util now select the already-present
+windows-sys0.61.2 instead of their original0.52.0. Package versions/checksums
+and declared constraints are unchanged. Preserve their previously verified exact
+choices from the captured original package records, then require locked Cargo
+metadata/build to validate that graph. This is restoration of unrelated edges,
+not a new dependency selection. The isolated lock only sorts Bombay edges and
+updates Rustls. Raw resolver diff is retained separately before minimization.
+
+Required evidence: actual package graph comparison, upstream source/fix review,
+affected Node/protected native controls in debug and optimized, strict affected
+lint, replacement full required CI and exact-head review. The source correction
+also needs a fresh published Rustls minimum in its existing owner; a lock-only
+update qualifies this selected build, not the published consumer floor. Parallel
+read-only owning-package research is authorized, not premature publication.
+Do not claim every advisory is exploitable in the selected profile: Brotli is
+feature-conditional, other conditions need exact source/feature inspection.
+The complete remote PRD remains active and every R01–R25 stays open.
+
+## PR364 packaged-source correction — local verification
+
+The corrected immutable source53qd1xs4h9748pv2b6b4458y0sbh8vy0-source is
+realized with `nix build --no-link
+.#checks.aarch64-darwin.bombay-protected-counter.src.outPath`. Root directly
+rehashes all seven fixture files and verifies byte equality with checkout
+(9991 bytes), then verifies exact Node/startup/execution/test and both lock bytes.
+The independent source-composition review confirms the fileset reaches the
+owning check; its reader cannot access this store path, so direct store rehash
+credit belongs only to the coordinator. That limitation remains disclosed.
+
+Pinned-Nix Cargo runs use the actual immutable-source manifest, `--locked
+--features protected-transport --test protected_counter public_node_`, separately
+in debug and with `--release`. Both exit0 and execute the six source-named cases
+exactly once:6 passed/0 failed/0 ignored per profile. External
+filtered-node-results.json retains command results, named outcomes and log
+hashes. Pinned-Nix `nixfmt --check flake.nix` also exits0. This packages unchanged
+verified tests; it does not add a semantic law or replace their two source
+reviews and prior intended source inversions.
+
+Correction delta: two existing paths, Nix +1 line, Rust production/test/API0.
+The complete endpoint remains24 tracked paths and no untracked paths, production
++722/-2/net720, tests+1387/-4/net1383, public API+4/-0. Existing approved
+29-path/800-production/four-type limits remain. Failed old CI38525751833 is
+retained; replacement exact-head CI and review are required before any merge.
+All full R01–R25 remain open.
+
+## PR364 required-CI source packaging correction — before edit
+
+Actual CI38525751833 fails its required Nix job at the six-name debug Node gate:
+two refusal-only cases pass, four native openings fail setup. Both separate native
+TLS jobs pass. These setup failures are not invariant inversion kills or passing
+acceptance. No merge is authorized from this failed head.
+
+Targeted Nix evaluation of checks.aarch64-darwin.bombay-protected-counter.src
+succeeds independently of the stale full-evaluation nightly derivation. Its exact
+source g8yxaspg6w6lf9dpgf7rbdz473jgx2a3 excludes the entire certificate fixture
+directory; all seven PEMs exist in checkout and none in that source. Existing
+commonCargoSources/additional extension filters do not include PEM. The literal
+CARGO_MANIFEST_DIR fixture path therefore points at missing inputs in CI.
+
+Under recommended-choice delegation add the one existing controlled certificate
+fixture directory to the existing Nix fileset. Keep Rust tests/oracles, manifests,
+locks, toolchain, resource choices and public types unchanged. Expected edit:
+flake.nix +1 line and PRD evidence, within the29-path/800-production/four-type cap.
+Require actual filtered-source file hashes to match all seven checkout fixtures,
+then run all six actual Node cases in debug/optimized from that immutable filtered
+source through pinned Nix. Full replacement exact-head CI/native artifact review
+remains required. No network privilege workaround or test weakening is selected.
+
+## Final scoped review and local Nix evaluation limitation
+
+Independent review47b62463 / structured receipt57d3e1bc qualifies focused PR
+preparation after rehashing37 referenced logs and all24 endpoint source files.
+It verifies13 combined commands plus separately executed isolated Clippy, twelve
+runtime assertion kills in both profiles, one default-profile E0382 check, eleven
+positive/restored records and exact original-owner restoration. Both test reviews
+and artifact/model limitations stay explicit. No full feature or delivery is claimed.
+
+Local nix flake check --no-build --show-trace fails before checks execute because
+this machine lacks the pinned nightly channel derivation4c5593l3lcadd8k84dm5q0s5p34zgr89.
+Retry with --option eval-cache false fails for the same invalid local-store path.
+These are failed evaluations, not passing full Nix checks. Existing pinned-Nix
+Rust commands pass; do not change toolchain/source or suppress the full gate to
+hide this environmental failure. The submitted PR's clean Linux nix flake check
+must execute and pass, with exact-head logs/artifact review before merge.
+
+## Independent raw-result qualification
+
+Final independent reconciliation rehashes37 manifest-referenced logs:13 combined
+records plus24 source-cut/control records. It confirms12 intended runtime
+assertion failures (six actual owner cuts, each profile), the separate E0382
+static denial, every final six-test name once per protected profile, the stated
+suite counts and byte-exact current original-owner restoration. Source stages
+fa5c952b/f23d68c1/3c2ea70e remain distinct rather than reassigned to one head.
+
+Some initial untracked Node .patch artifacts are empty because git diff omitted
+untracked node.rs. Do not call them captured patches. Actual substitutions are
+present in their frozen runner literals; later refusal cuts also retain nonempty
+independent owner diffs. No preserved mutant-source snapshot or immutable
+negative executable is claimed without that artifact. Raw intended-failure
+observations and restoration remain valid, with those custody limits explicit.
+Submitted-head CI and review/delivery are still required.
+
+## Node foundation — combined local verification
+
+Combined manifestbf73fcb2 contains13 successful pinned-Nix command records,
+plus the separately executed strict isolated Clippy pass on unchanged source.
+Workspace build/all-target tests pass691/0/1; doctests4/0/3; Nextest691 passed and
+one skipped. Remote verification/ingress/metadata/startup/Application consumers
+pass35/0/0 per profile. The complete protected-transport target passes66/0/1
+per profile, including the six actual public Node names. Root/isolated formatting,
+strict workspace/remote/isolated Clippy and warnings-denied remote rustdoc pass.
+Three real-source campaigns qualify and byte-exact restore all owners; final
+six controls pass both profiles. Source and first/second review evidence remain
+qualified by their exact witnesses, rather than a whole-platform certificate.
+
+The retained composition owns only the finalized declaration plus native Session
+and critical configured startup validation. Application's private invocation seam
+has two real consumers and preserves the exact existing kernel and receiving
+products; no second actor trait, task owner, lifecycle, registry, protocol macro,
+provider interface or default resource policy is added. Four new nominal types
+remain, including raw Metadata. This is new capability code: production net720,
+not code reduction. Scoped source/API minimization passes; full PRD distillation
+is incomplete. Current canonical public API inventory is reconciled and source
+reviewed, including its corrected callback-versus-receiving wording.
+
+The child case proves actual captured-address multiset and complete error/custody
+observations, not creation-role/nonce association or every retirement timing law.
+Unchanged lower-owner evidence remains separate. Native source pointer checks are
+held-error projection consistency; Config serialization omits secret-only fields.
+Session continuity is not global ID freshness or transport/authentication proof.
+Actual CI must show all six names; a filtered Cargo success with zero tests would
+not qualify. Production KERI/Selo, SHM, durability, coherent current authority,
+bounded receiver/gateway/replay, outgoing Actions and both full network layouts
+retain their own pending or deferred obligations. Every full R01–R25 stays open.
+
+The focused reviewed PR and its required CI/actual merge remain pending. Local
+combined verification and scoped minimization do not establish merged delivery.
+
+## Public API inventory reconciliation — documentation checkpoint
+
+The final public-surface audit finds four missing candidate rows in the existing
+public-api-audit.md and stale ingress delivery wording. Under recommended-choice
+delegation authorize this one additional documentation path:29 cumulative stage
+paths, unchanged800-production/four-type cap (healthy endpoint becomes24 paths).
+Before retention add Metadata, Node/open_node/execute_with/close and both refusal
+sums, including their owning constructors, explicit native config owner, traits,
+original-value custody, host requirements and proof limits. Correct ingress to
+actual reviewed PR363 delivery. Reuse the existing inventory; no production/API,
+wrapping type, test or architectural change accompanies this reconciliation.
+
+## Six-case source review and measured checkpoint
+
+The appended absent-startup-host case is formatted with the existing five tests
+at3c2ea70e,822 lines within the850-line allowance. Independent second review
+accepts that actual integrated source; root first review and the source review
+retain all actual poll, original-input, native-result and notification outcomes.
+The preceding709-line source is a disclosed reconstruction: remove only the
+new test and restore the Builder import, then its SHA exactly matches the
+frozen-run f23d68c1. No prior stored copy is claimed. A no-op checksum guard in
+an external integration script was caught and disclosed; actual checks against
+the sealed preparation JSON verify the proposal, falsifier and healthy owner.
+No retained invariant test used that guard. The six-case source is now stored
+with its matching campaign hash as well.
+
+All six controls pass in debug and optimized, and strict protected-transport
+Clippy passes. The actual Host-to-Unsupported source return cut fails its final
+typed oracle after complete local cleanup in both profiles. Restored debug and optimized six
+controls pass; every original owner is restored byte-exact. Compilation or unexpected
+startup failure is not counted as an inversion kill. Full combined checks and
+submitted-head CI remain separate gates.
+
+Git numstat against1320dfa9 plus all untracked source measures the healthy
+23-path endpoint (snapshot substituted only for the temporary Node cut):
+
+```text
+production: +722 / -2 / net720
+tests:      +1387 / -4 / net1383
+public API: +4 types / -0 types
+other:      +4111 / -709 / net3402
+```
+
+The already authorized28 cumulative-path/800-production/four-type stage cap
+remains; temporary launch/terminal cuts are not retained source edits. Current
+root lock158988a0 selects399 packages, preserving all original179 IDs/checksums;
+isolated lockac995fef preserves all324 package IDs/checksums while adding only
+four direct existing edges. Historical scope beyond this stage is not remeasured
+by this endpoint receipt. No full remote requirement is marked complete.
+
+## Absent startup host — reviewed test integration
+
+Both root first review and independent second source review accept external
+proposal97368970 for actual absent-host startup. Integrate only after the frozen
+five-case campaign has qualified and byte-exact restored controls pass both
+profiles. Use existing module-scope Handle/TryCurrentError imports. Keep the
+unexpected native-success branch's acquired close Result in its local binding
+and use a fixed payload-free panic, as second review recommends. Public Config
+serialization covers its public view, not secret-only fields; pointer equality
+is an independent supplied credential allocation check. Source error equality
+remains projection consistency, not independent producer allocation provenance.
+No new production, type, wrapper, dependency, or default is introduced. Run the
+actual Host-to-Unsupported return cut in both profiles and restore original
+source before final six-case controls. Existing850 test-line cap applies.
+
+## Node invariant checks — qualified source cuts
+
+First root contract review and two source reviews qualify the current five-case
+public_node source f23d68c1. The second five-case report e4e0eba0 discloses earlier
+refusal-draft authorship; the advanced review90b7e15a independently checks the
+ordinary-Rust factory and native-source projection. Debug/optimized are separate
+execution profiles, not the two reviews. The healthy Node/execution/startup source
+hashes are b2bf290b/5ae60e62/9eb4953f; API minimization review f0c2284a finds no
+scoped blocker and documents host/native-access/readiness limitations.
+
+Actual first source campaign qualifies three runtime cuts in both profiles:
+wrong already-issued refusal, false joined-child report, and wrong child-origin
+address. Each fails its named post-cleanup oracle; original sources are restored
+byte-exact and all five controls pass in both profiles. Actual FnOnce invocation
+followed by returning that same Work receives E0382; that is static custody
+rejection, not a runtime inversion.
+
+The second campaign qualifies original configuration allocation and closed-Session
+refusal in both profiles. The first substitutes config.clone() only in the real
+native-Open error return, failing the original-pointer oracle after the returned
+Application retires. The second removes only the actual closed-session guard,
+failing the final SessionClosed assertion with preserved unexpected outcomes.
+Neither is a compiler/setup failure or synthetic native actor. Final restored
+debug controls pass; final optimized controls remain running at this checkpoint.
+
+Commands for both campaigns use pinned Nix with one build job, incremental/debug
+symbols disabled and the shared target, executing the actual protected_counter
+integration target through transport-custody/Cargo.toml with protected-transport.
+Each named test runs normally and with --release, always --locked. Immutable
+manifest/logs are /tmp/bombay-node-invariant-cuts/execution.json and
+/tmp/bombay-node-refusal-cuts/execution.json. These local artifacts are evidence
+with machine-local retention; submitted-head CI and durable delivery are pending.
+No full R01–R25 acceptance is inferred from these scoped controls.
+
+## Independent Node review — startup host gap and documentation
+
+Root's first contract review and independent second review of public_node
+f23d68c1 accept the five current invariant oracles with qualified SDK source
+projection and no private-declaration proof from the zero-entry counter alone.
+The review finds one missing public outcome: polling a valid open_node without
+an entered host. Under recommended-choice delegation prepare one additional
+owning test, at most110 lines within the850-line module cap, that retains the
+actual Host cause, original Config allocation and usable returned Application.
+Do not edit the frozen refusal campaign's tests before its byte-exact restore.
+Require a second source review before acceptance and a real host-classification
+source cut failing the final typed oracle in both profiles. No production/API,
+dependency, limit or topology change is selected.
+
+Independent healthy-owner API review finds no scoped blocker: Node retains one
+Application declaration and native Session; the private invocation seam delegates
+the exact existing execution kernel and full receiving products. Correct current
+guidance to name the actual bombay-zenoh-config1.10.2 Config input and to record
+already passing corrected startup controls. Session acquisition is not universal
+listener readiness, whole-service bounds or application authority. Trusted native
+access and later host requirements remain explicit; full remote rows remain open.
+
+## Remaining refusal falsifiers — pre-edit test refinement
+
+The first three runtime source cuts fail their intended post-cleanup oracles in
+both profiles; the actual FnOnce invocation/return attempt receives E0382. All
+original Node/launch/terminal bytes are restored; restored five controls pass
+both profiles. No weakened assertion or fake actor was used.
+
+Two remaining actual source laws need direct falsifiers: failed native open must
+return the original configuration allocation rather than a cloned reconstruction;
+closed Session must return a refusal rather than issuing an unpolled operation.
+First root review refines the closed-session test to preserve every actual refusal
+variant/cause with existing NodeExecutionRefusal<()> and explicitly surrender the
+callable, or record None for actual success; payload observations stay optional
+until final assertions. This removes setup panics/expect from the selected negative
+path. Native close is acquired before that attempt and every oracle. Independent
+second review is required. No production signature or interface change.
+
+Temporarily substitute config.clone() only in the actual native-Open error return,
+and suppress the real closed-session guard while retaining the original owner.
+Run both exact tests in debug/optimized, require their final pointer/variant oracle
+to fail, restore byte-exact source and run final combined controls. Existing
+28-path/800-production/four-type and850-test-line caps cover this stage.
+
+## Actual Node cases in required CI — pre-edit record
+
+Current CI's protected-transport commands filter remote_counter::native_;
+plain protected_counter runs do not enable the public_node module. Therefore
+passing existing CI would omit these five actual Node cases. Add explicit
+public_node_ filtered commands through the existing isolated target and protected
+transport feature in debug and optimized. This reuses the exact source/manifest
+and adds no test model, dependency or production surface. Both first contract
+review and second independent command review must establish that all five run.
+
+All five integrated controls now pass in debug and optimized after independently
+constructing the original typed factory. The inline inference attempts are
+preserved as compiler failures with no runtime credit. The independent advanced
+source review90b7e15a qualifies this ordinary-Rust retry spelling; no production
+signature changed. Existing full R01–R25 gates remain open.
+
+## Original-factory retry inference — test correction
+
+The first five-case command fails compilation, not an invariant: the inferred
+ignored Session argument ties the recovered callable to its first mutable Node
+borrow. First root review retains the exact same Work and retry law, annotating
+its ordinary borrowed Session input explicitly so a non-borrowing factory can
+accept independent loans. No production lifetime, API, trait or adapter is added
+from the diagnostic; if that ordinary spelling fails the underlying API remains
+unproven. Preserve the failed command and ask independent second review again.
+
+Use std::ptr::addr_eq for the actual SDK dyn Error allocation observation; wide
+vtable identity is not the claimed law. Official Rust1.99 documentation says it
+ignores fat-pointer metadata (https://doc.rust-lang.org/std/ptr/fn.addr_eq.html).
+Original concrete source/SDK causes remain held and are not replaced.
+
+## Additional refusal tests — first review before application
+
+Apply the corrected94-line external proposal65c938b6 to the already owning
+public_node module within its850 formatted-line allowance. First root review
+checks original configuration allocation and actual SDK Open error projection,
+usable returned Application, genuinely non-cloneable closed-session Work with
+zero closure entry, and actual missing-host refusal followed by the original
+Work's one successful retry. All successful Node outputs are scoped before close;
+no generic wrapper or new test type is introduced. Native failed-open source
+projection is qualified as consistency with the held SDK cause, not an independent
+filesystem/native allocation provenance proof. Explicit timeout0/exit_on_failure
+true are fixture inputs, not new defaults. Independent second review must inspect
+the actual integrated source before crediting those cases.
+
+## Real-owner falsification plan — before temporary mutations
+
+Both reviews accept the revised root/child observation laws; debug controls
+pass2/0, optimized controls are running. Test-only facts retain original native
+and notification products and acquire SDK close before the actual oracles.
+Select three independent source cuts on their real owners, each restored byte
+exactly before the next cut: wrong already-issued refusal classification in
+application/node.rs; corrupt joined-child report in launch.rs while preserving
+actual joined/notification/native products; corrupt only the stored child-origin
+address in terminal.rs. Require intended test assertion failures in both profiles,
+not compilation failures or hangs. Re-run restored controls afterward.
+
+Separately, try invoking the actual FnOnce Work at Node's real invocation seam
+and then returning that same Work. Its moved-value compiler denial is static
+custody evidence, not a runtime inverse, and requires no fake actor or callback.
+Keep this distinction explicit. Under recommended-choice delegation allow28
+cumulative paths including these temporary owner cuts (current endpoint23;
+launch/terminal were otherwise untouched), retain800 production/four new types,
+and retain the850-line owning test allowance. No mutation is a retained semantic
+implementation or a new API. Preserve original dirty source byte-for-byte.
+
+The SDK readiness audit corrects its earlier broad implication: native listener
+defaults are already zero timeout and exit_on_failure=true, so the unchanged
+success fixture avoids masking. Explicit background/ignore/nonzero configurations
+can weaken readiness. Node currently promises native Session acquisition, not
+listener or transport-ready proof. A stronger startup promise requires its own
+failing native law and reviewed profile or owning correction. No new patch or
+new ready interface is selected from that source finding alone.
+
+## Borrowed Session observation — test refinement
+
+Independent second review of corrected public_node0be51f18 accepts the scoped
+root/child laws, with explicit limitations: Session was unused, no fresh-ID or
+handshake claim, and settlement loops inspect every received result without
+inventing a promised count. First root review chooses one real loan observation:
+Work publishes the actual passed Session ID before its capacity gate, reads
+that same Session after cancellation/resumption, and compares the typed IDs.
+This proves continuity of the supplied loan, not association with a private
+Node field or unique runtime generation. Retain the publication Result and
+outside received fact; obtain second review of this refinement before acceptance.
+No production API or type change follows from this test.
+
+## Root and child invariant corrections — before test edits
+
+Fresh inspection preserves all23 current endpoint paths and independently dirty
+main-2/active DevX worktrees. Root lock158988a0 still selects Behavior/Actors0.25.0,
+SDK1.10.8 and Config1.10.2 without patches; the selected760-line instructions hash
+is unchanged. Previous turn is progress: actual startup fixes, intended failures,
+controls and two test reviews are recorded. No full acceptance row closes.
+
+First contract review and independent review select the following corrections.
+Root observes actual Work-entry publication while driving the borrowed execution,
+then records Pending behind an unreleased oneshot, cancels only that borrow,
+releases and resumes the same owner. Retain the publication and receiving facts.
+Second Work owns a non-cloneable receiver, its original Arc allocation and an
+independent closure-entry counter; entry must remain zero on refusal. Explicitly
+surrender only the returned callable after observing its payload, carrying the
+actual variant and Host cause through existing NodeExecutionRefusal<()>; preserve
+native root and both notifications unchanged. This test-only discharge lets close
+be acquired before final semantic assertions without changing production borrowing.
+
+Child must Read the sibling after the target's joined report, capture each actual
+exported recipient's address, and compare the exact native descendant origin set
+with both addresses. Inspect parent and child completion, settlement status, all
+control/user/interpretation/source/cancellation/retirement failure slots; preserve
+original native products until those post-close oracles. Delete nonempty-ID
+assertions; they establish neither association nor freshness. Two real fresh-Node
+scopes need their own meaningful witness, not a replacement string assertion.
+
+Forecast existing public_node test module at most850 formatted lines including
+three prepared native-open/closed-session/missing-host cases; only the already
+owning test file changes. Retain24-path/800-production/four-type budgets and no
+production edits or default changes. Both reviews must examine the final source,
+and applicable real owning-source cuts must fail before proof is credited.
+Listener readiness remains separate from mere Session open.
+
+## Node startup correction checkpoint — 2026-10-14 UTC
+
+Current endpoint measurement against merged main1320dfa9, including untracked
+source:18 paths; production+705/-2/net703; tests+255/-0/net255; public API
++4/-0 nominal types including Metadata. Formatting and extracted existing
+execution bounds exceed the preceding700 forecast by three lines. Before
+further production edits, under the standing automatic recommended-choice
+instruction, authorize at most800 combined net production lines,22 paths and
+unchanged four nominal types. This is new capability code, not code reduction;
+no semantic scope, default or dependency version expansion follows.
+
+The actual configured-ID public Node test passes; two additional imported
+Counter fold tests pass separately. Successful root/child execution remains
+unproven. Strict Clippy identifies six issues. Apply ordinary borrowed Option
+arguments and map_or; retain original input errors rather than boxing them
+solely to silence size diagnostics, using narrow justified expectations. Keep
+one coherent startup policy check with a narrow line-count expectation rather
+than inventing a second validation owner from a lint. No wrapper or public
+signature shape is selected by a compiler error.
+
+Independent source review identifies a real used-direction defect: an empty
+AllOf connection group must not require outgoing credentials when only a
+listener is configured. Establish its intended failing public regression in
+both profiles before changing the direction predicate; count actual locators.
+Choose payload-free startup Display/Debug while preserving the original native
+cause through Error::source; arbitrary SDK text can contain caller configuration.
+Test the diagnostic policy with an independently supplied marked native error.
+Native parsing and TLS handshakes remain separate required evidence.
+
+The prepared public startup matrix has32 actual open_node calls across four
+new tests, plus configured-ID and independent native diagnostic cases. Counter
+fold tests are counted separately. Initial debug reproduces exactly the empty
+group false refusal and native diagnostic disclosure; six other tests pass.
+The first compiler attempt failed on pointer method qualification and earns no
+semantic evidence. Correct test borrows use Option::as_deref and str::as_ptr.
+
+Root/child success tests belong beside their existing native Counter owners,
+in the isolated transport-custody target. Add only a direct alias to already
+selected bombay-zenoh-config=1.10.2 with defaults disabled, preserve all lock
+package versions, and mount the prepared public_node module under its existing
+protected-transport feature. Forecast at most400 formatted test lines, one
+source/module mount and two manifest/lock changes; cumulative22-path checkpoint
+includes these. Root must actually execute the new public Node, cancel only a
+borrowed pending wait, resume the same operation, conserve the original second
+Work on refusal, receive native root and both notification receipts, and close
+the SDK. Child must use the existing installed target and sibling, observe
+both joined reports and preserve their complete parent-owned results. Listener
+startup proves no TLS handshake and earns no remote authorization acceptance.
+
+## Current Node implementation checkpoint — incomplete
+
+Final typed ingress equality receives second-review PASS at source8f36b140;
+merged startup-test paired patterns receive second-review PASS at5523adeb.
+Rustfmt afterward changes layout only (current remote_nodeb0288d50); the paired
+variant correspondence and original-source pointer observations remain intact.
+Final startup/ingress controls pass8+4 in both profiles. Strict remote all-target
+Clippy passes on the corrected source; root formatting completes and diff check
+passes. Existing affected receiving/client commands retain their separate source
+and profile records in /tmp/bombay-node-startup-compiler/verification-checkpoint.json.
+
+The complete endpoint measurement against main1320dfa9 includes23 paths:
+production+722/-2/net720; tests+862/-4/net858; public API+4/-0 nominal types.
+Record both source fixes and all intermediate nonpass compiler/lint/setup evidence.
+These results do not establish combined full-workspace verification or a PR merge.
+Node remains uncommitted while root/child test-review findings are resolved.
+Every full R01–R25/AUTH1/NET1 remains open, as do actual listener readiness,
+identity, bounded decoding, typed network exports/admission/replay and remote-counter.
+Prepared additional native-open/closed-session/missing-host tests are external
+uncompiled candidates only. Next tests must preserve actual original receipts,
+acquire close before semantic inversions can bypass it, observe actual Work entry
+and the exact child provenance, and receive both required reviews before credit.
+
+## Exact empty-trace spelling — second lint correction
+
+The reviewed predicate passes actual four ingress tests, but repository
+assert_is_empty requires equality so a failure prints the actual trace. Retain
+the original equality with an explicitly typed empty [u8;0] expectation, avoiding
+the original ambiguous element type. First root review verifies the same four
+complete empty observations; independent second review is required again.
+No production or semantic change is selected. Preserve the predicate-stage
+execution and review as intermediate evidence, not final-source proof.
+
+## Test review and affected-owner execution checkpoint
+
+The independently reviewed diagnostic test now observes the original boxed
+io::Error pointer before transfer and the concrete source pointer afterward,
+plus fixed Display and payload suppression. It passes in debug and optimized.
+First and second reviews are satisfied for that diagnostic law; its synthetic
+cause is not an actual failed SDK-open witness.
+
+Existing affected receiving tests pass4+38 in debug and optimized; the13 public
+Application-client tests pass in both profiles. Startup suite passes8 in each
+profile (six Node cases, two imported Counter folds), with32 adverse/control
+open_node calls inside the policy matrix. Original empty-group and diagnostic
+failures were executed in both profiles before correction. Final root/child Node
+semantic review remains open despite2 debug passes. Do not treat it as complete
+custody, freshness or TLS evidence.
+
+The four ingress empty-trace assertion changes receive independent second review
+PASS in /tmp/bombay-remote-ingress-second-review.md (d1808f24); the existing
+queued.is_err distinction remains a noted precision limit. Execution still
+needs the final combined source. Current Clippy next identifies two repeated
+startup-test match bodies; merge their complete paired patterns, preserving
+same-variant correspondence and expected field equality. First root review
+checks every paired alternative; obtain independent second review after editing.
+No semantic production edit follows from these test-only lint fixes.
+
+## Existing ingress test inference — pre-edit correction
+
+The new SDK feature graph makes four existing Vec<u8>-versus-untyped-empty
+assertions ambiguous because Serde JSON also supplies PartialEq<Value>.
+The observations already have a unique law: no original was disposed before
+explicit owner disposal, followed by the exact disposal trace. Use the ordinary
+Vec::is_empty predicate for those four empty observations, retaining every
+original pointer/permit/typed refusal/ordered trace assertion. First root review
+checks that equivalence against all four tests; independent second review is
+required. No production type, bound or semantic edit follows from this compiler
+friction. Under delegated recommendations allow24 cumulative paths (previous22;
+current23 with this owning test file), keep800 net production and four nominal
+types. Root/child test-review findings remain open, not hidden by this correction.
+
+## Two test reviews required — user instruction, 2026-10-14 UTC
+
+The user now requires every new or changed test to be checked twice for actual
+invariants rather than pass count. Record this in coordinator AGENTS only;
+the independently dirty main-2 instructions and active DevX worktree remain
+untouched. First review maps observations to the accepted law; second independent
+review searches counterexamples, vacuity and missing outcomes. Both must be
+resolved before acceptance; debug/optimized runs and intended inversions remain
+additional evidence. This22nd cumulative path fits the recorded22-path cap.
+
+The corrected startup suite and existing Application clients pass8+13 in debug.
+Public root/child Node cases now execute2/0 in debug, after preserving failed
+lock/setup/constructor/borrow attempts as non-semantic evidence. Actual original
+outputs are consumed before mutable close, as the public borrowing law requires;
+no production type/lifetime change is inferred from test diagnostics. No readiness
+or handshake claim follows from native Session open. Source inspection found
+native listener-error masking with certain timeout/retry settings, which remains
+an explicit startup/readiness prerequisite for final remote delivery.
+
+First review against the explicit Node law finds:
+- Startup refusal matrix observes the actual original configuration allocations
+  and exact refusal, with host refusal as the no-SDK-open control. It proves no
+  successful certificate parsing or listener readiness.
+- Diagnostic test must additionally preserve the original error allocation;
+  source text equality alone does not rule out a replacement cause.
+- Root borrowed cancellation uses an unreleased oneshot, an actual Pending poll,
+  resumed actual Work, real Read response and independent native receipts.
+  Second-Work allocation survival alone does not rule out unwanted invocation;
+  add a separate call observation before crediting execution refusal.
+- Root/child nonempty Session-ID assertions are vacuous for freshness. Remove
+  them or replace them with two actual Node scopes; no uniqueness credit yet.
+- Child test must correlate actual target/sibling addresses to the original
+  native descendants and test the sibling after target stop. It must inspect
+  every recorded native failure channel before claiming clean joined custody.
+
+First test review flags diagnostic allocation identity, vacuous nonempty runtime
+scope assertions, and exact child native provenance/failure slots for improvement.
+An independent second review is active. The two debug passes are execution
+observations, not yet accepted proof of their complete invariants.
+
+## Node corrected-source measurement — 2026-10-14 UTC
+
+Both original startup regressions fail for their intended laws in debug and
+optimized (6 passed/2 failed, including two unrelated Counter fold tests).
+Corrected source counts actual locators for outgoing credential requirements;
+manual startup diagnostics omit arbitrary SDK text and retain Error::source.
+Narrow expectations retain original-input custody and one policy owner; borrowed
+Options and map_or use ordinary Rust. No new type, helper owner or dependency
+version was inferred from lint output. The independent source review asks for
+native host documentation; close now documents that startup does not pin later
+SDK operations to its checked host. Trusted work may clone or close Session.
+
+After formatting and mounting the prepared root/child tests, endpoint delta
+against1320dfa9 includes21 paths: production+722/-2/net720; tests+840/-0/net840;
+public API+4/-0 nominal types. The root/child module is286 formatted lines,
+within its recorded400 allowance. Root startup module tests are324 formatted
+lines; no test is an example. All324 isolated lock package identities remain
+unchanged; only the existing config owner's direct consumer edge is added.
+No finalized Node verification, distillation, PR or merge is claimed yet.
+
+## Node owner implementation decisions — 2026-10-14 UTC
+
+Fresh coordinator inspection: clean44d10d4 on feat/static-remote-exports, root
+locke896b8c0, isolated33ce0616, no patches. Selected Behavior/Actors0.25.0 at
+2bb4510 and the complete760-line owning instructions are re-read. Original
+main-2 now has a separately changed/patched lock and dirty AGENTS; preserve it
+without import. The active DevX worktree is untouched. Node reuses the exact
+current Application, Work/Invoke, child topology, native receiving, Observe
+reports, Communication admission, Address claims and Timers; no primitive owner
+or actor fold changes. Prior schema verification passed before this expansion.
+
+Under standing recommendation delegation select these prepared choices before
+production edits. The sole ordinary opener is `application.open_node(config)`;
+the returned Node owns that finalized Application and one freshly opened SDK
+runtime. Application builders configure all root/child topology first. Node
+adds no forwarding child builders, new actor trait or macro. Existing lending
+comparison passes in both profiles. A focused compiling consumer must first
+fail because this exact entrypoint is absent; compilation alone cannot qualify
+the resulting Node. Root and child integration remain mandatory.
+
+Use the selected controlled lower `bombay-zenoh-config=1.10.2` owned Config and
+its unconditional borrowed getters, followed by the SDK's consuming public From
+conversion. Alternative stable SDK get_json inspection copies and parses each
+leaf, including secrets; enabling unstable Deref widens feature support. The
+lower crate calls itself internal and the conversion is doc-hidden, so qualify
+this exact pinned controlled API explicitly, with compiler/graph tests, rather
+than promising arbitrary upstream compatibility. Keep SDK1.10.8/defaults off/TLS
+only. Any protocol-owner edge needed for grouped-endpoint policy is separately
+measured; no runtime-extra feature or new crate implementation is authorized.
+
+Preserve the caller's actual original configuration on native open failure:
+clone through its existing owning SDK Clone implementation, open the clone, and
+return the original Application/configuration/native cause on failure. This is
+an explicit copy policy for trusted startup input; it makes no remote byte/heap
+claim. The no-copy alternative surrenders consumed input, so it cannot provide
+this chosen original-input refusal. Whole opening-owner drop explicitly surrenders
+its inputs as already approved; borrowing a pending wait does not.
+
+Use direct `Option<Application>` for one still-owned declaration or its absence,
+not a second NodeApplication enum that merely renames that cardinality. Issuance
+consumes it exactly once; host refusal restores the actual original declaration.
+Refusal precedence is absent declaration, closed native Session, then existing
+entered-host failure. No refused Work is cloned/debugged or lost. This represents
+current custody, not actor-started/retired history. SDK close reports only its
+native result; independently received actor/native/notification facts remain
+separate and must be retained. Borrowed execution prevents concurrent mutable
+close; whole execution-owner surrender proves no joined cleanup.
+
+Reuse the existing private `(Work, Invoke)` owner via one private Application
+entrypoint; ordinary execution invokes Work(handle), Node invokes Work(handle,
+borrowed Session). This deletes caller-side pairing/adapter glue while preserving
+bare Work on cold rejection. Generic changes have two meaningful consumers;
+no registry, type erasure, runtime attachment or duplicate lifecycle is introduced.
+Full startup/credential/endpoint/resource profile checks and their real TLS tests
+are prerequisite gates, not selected merely by accepting this owner direction.
+Missing/fake required identity refusal remains before production host/export
+effects; transport ownership alone cannot close R10.
+
+Expanded surface checkpoint under recommendation delegation: metadata stage
+has12 paths, production+54/-1/net53, tests+227/-0, one new public type. Node
+forecast adds four owning source paths plus checker/tests/optional manifest/lock
+and current-contract records: allow20 cumulative paths, at most550 combined net
+production lines and four new nominal public types including Metadata. Expected
+Node increment305–400 before formatting; source must be measured after actual
+imports/minimization. This crosses normal15-path/three-type checkpoints and is
+recorded under the user's explicit recommended-choice delegation before edits.
+No extra durability/SHM/developer-experience scope, public provider framework,
+resource default or completed full acceptance row is selected. Historical task
+unions remain separately recorded; this does not hide their outstanding audit.
+
+## Typed startup profile comparison — before compilation
+
+Select a narrow external compiler consumer of the exact controlled Config1.10.2,
+SDK1.10.8 and already-transitive protocol1.10.1. No source package version or
+extra feature changes: the direct protocol edge names the existing AllOf/OneOf
+owner; SDK currently substitutes AllOf for OneOf, so that unsupported request
+must not silently fall back. Support native single and AllOf grouped addresses,
+mode-dependent connect/listen lists, and native global file or base64 credentials.
+Choose global TLS settings for this first Node profile and reject per-endpoint
+configuration overrides: the alternative needs independently proven effective
+credential/trust/name selection at every endpoint, not three guessed key names.
+Configured address metadata remains native. Both required TLS layouts remain.
+
+This is a documented first-profile policy, not generic SDK option support.
+Endpoint-only credentials and per-endpoint policy are retained as deferred
+profile expansions; unrelated SDK options still need their owning support audit.
+Credentials are required only for used directions; native TLS owns actual
+certificate parsing, empty/missing roots and handshake errors. Require explicit
+mode, disabled discovery, TLS-only protocols, mTLS/name verification/private PKI
+and finite native query capacity. No numeric limit is selected. Profile checks
+cannot establish production identity, admission, replay or whole-service bounds.
+
+Before library SDK edges, compile the117-line prepared checker with its actual
+borrowed typed getters and ordinary configuration fixture; keep exact package
+versions from the isolated locked graph. Forecast one external manifest/lock and
+at most250 formatted temporary Rust lines; only an SDK-option policy checker,
+no new actor model, SDK patch or public validation API. Independent Node/API
+source remains unapplied until these selected contracts compile and the desired
+public opener's missing-method regression is established. This does not replace
+real public root/child/TLS and original-custody tests after implementation.
+
+Typed source consumer passes its actual configuration/ID fixture in debug;
+optimized is running on its existing handle. Before the opener implementation,
+add a public caller regression using the real Counter Application and the actual
+lower Config with a configured SDK ID. The intended existing-source diagnostic
+is missing open_node (E0599); after implementation the same test must retain
+original Application/configuration and typed ID refusal without SDK effects.
+Its configured numeric capacity is a fixture input only. Normal state is
+Declaring one owned Application or absence; no private wrapper is needed.
+
+Before manifest edits select optional root edges to the exact already exercised
+published SDK=1.10.8/TLS-only, lower configuration=1.10.2/defaults off and existing
+protocol=1.10.1/defaults off. Activate these only with remote. Reuse the selected
+isolated lock as a package seed to retain existing package versions; fresh graph
+comparison must preserve every surviving root package/source and match selected
+native owners. No handwritten replacement or new source package implementation
+is selected. Root config has no patch; publishing users receive the maintained
+copies normally. The original main-2 lock remains separately owned and unmodified.
+
+The typed configuration fixture passes1/0/0 in both profiles. The actual public
+opener consumer fails with the intended sole E0599 missing open_node diagnostic.
+Initial root graph resolution from the native seed selects nine older compatible
+shared package versions; preserve that failed graph audit instead of crediting
+version conservation. Before any Node Rust edit, narrowly restore those exact
+already selected root versions offline, then recheck every surviving identity/
+checksum and the new native owners. No whole dependency refresh is authorized.
+The source API absence remains proven; the combined graph is not yet verified.
+
+The qualified narrow update restores all179 original root package identities
+and checksums;220 new packages come only from the previously selected native
+graph. No source owner version changes. Root lock158988a0 records the resulting
+399-package graph; the sole missing-opener E0599 reproduces through locked Nix
+on that restored graph. This repairs the actual prerequisite before Node Rust.
+
+The earlier native comparison demonstrates SDK current-thread panic. Select a
+typed entered-multithread host refusal at Node opening before SDK invocation;
+profile refusal comes first and retains original inputs. The normal local
+Application's current-thread support is unaffected. Native close and advanced
+Session work retain their SDK host contract and documented SDK panics; do not
+invent another executor or claim universal panic containment. Node open borrows
+no shared supplied runtime. Both supported connection layouts remain required.
+
+Retain payload-free manual execution diagnostics/source like the merged ingress
+owner: existing thiserror2.0.20 source-bearing expansion inserts an inline import
+already rejected by the owning instructions. This is a narrow reuse of that
+verified source constraint, not a general thiserror ban. Original Work has no
+Debug/Clone bound and actual host/Open causes remain source-inspectable.
+
+Revise forecast before production: manual precise diagnostics plus typed startup
+and explicit SDK host refusal can exceed the previous550 combined cap. Select
+700 combined net production lines,20 paths and four new nominal public types
+(including Metadata) under the standing recommended-choice delegation. Measure
+actual retained source after formatting; no extra semantic capability, dependency
+version, default, provider framework or deferred feature follows from this budget.
+The original two-protocol, root/child, cancellation and exact-input obligations
+remain required. Any unsupported startup option/profile gap stays explicitly open.
+
+## Ingress delivered through reviewed PR363 — 2026-10-14 UTC
+
+[PR363](https://github.com/devrandom-labs/bombay/pull/363) merged at
+2026-10-14T03:07:08Z as1320dfa9b39037bbc435b837ba74aa5198adc644.
+Submitted4aa2e54, synthetic testedbf097d5 and actual main share tree
+374845e3f9c51d579da4508228ab465c57d50a01. All six checks pass. Source,
+minimization, paired native TLS and actual required-job reviews are posted.
+Required Nix115635530486 actually finishes02:52:13Z: public ingress4,
+verification3 and Application13 each profile; isolated plain55 and SessionLocal
+Query2/Reply1 each profile; optimized default workspace691/0/1 across82 summaries.
+All strict checks and four coverage floors pass; fresh fuzz108 Driver/331 Observe
+files rehash, Driver2048/four Observe1024 campaigns complete. Both Miri steps are
+explicitly skipped. CI does not retain copied executable bytes. Reviewc4c117f5,
+receipt799cab0a and rawlog23e38e5b retain exact-head custody. The reused reader's
+initial81-row inspection error is preserved without test-law credit.
+
+Only this scoped ingress prerequisite is delivered: actor authentication,
+admission/replay, ordinary Node frontend and full R01–R25/AUTH1/NET1 remain open.
+The research branch now starts at actual main with identical committed trees;
+its dirty patch/status and untracked Node comparison remain byte-equal.
+Older pending paragraphs below describe their original checkpoints.
+
+## Ingress submitted; static export comparison next — 2026-10-14 UTC
+
+[PR363](https://github.com/devrandom-labs/bombay/pull/363) submits immutable
+head4aa2e541969c7cdf755b3bdb7e1bd408b4ddf999, tree
+374845e3f9c51d579da4508228ab465c57d50a01. Its local verification and minimization
+are recorded below; actual required CI and final delivery remain pending.
+No feature is recorded merged from that submission.
+
+Independent research continues on research/static-remote-exports while PR363
+runs. Before selecting a shipping export interface, execute the prepared
+ordinary-Rust consumer comparison using two real public Counter Applications.
+Keep A's checked proof/binding unchanged and deliberately attempt B's established
+recipient; compare independently fenced values1 and2 after both applications
+fully retire. The negative comparison must fail its target oracle; changing only
+the selected recipient back to A must pass in both profiles and for both providers.
+This tests consumer target substitution, not a defect in the general local
+mailbox, numeric address inequality, production identity or a write to B.
+
+Test-only forecast: one298-line formatted child module, one parent declaration and this
+PRD (three paths, zero production/dependency/public API changes). Existing
+Counter actors, public Application clients, opaque provider receipts and scope
+checker own the evidence. No new export wrapper, topology, schema or limit is
+selected from a missing symbol. Do not retain an always-failing test in CI;
+keep negative/control records before deciding which association the shipping
+frontend must preserve. All full acceptance rows remain open.
+
+The prepared209 raw lines format to298. The first compile cannot find the child
+because the existing parent's explicit path changes Rust's child lookup base;
+an explicit child path preserves the intended owning folder. This is a setup
+error with no target-law credit, not an argument for new runtime machinery.
+
+The next setup compile requires move captures for the existing nested work
+closures; no lifetime, trait or runtime wrapper is added. After those ordinary
+Rust setup corrections, both actual providers fail the target oracle in debug
+and optimized builds: a checked A-bound Read returns B's independently fenced2
+instead of A's1. Both providers pass2/0/0 in both profiles when only the selected
+recipient changes to A. The negative/control sources, complete logs and byte
+digests remain external in target-comparison.json. The always-failing research
+module is removed and its parent is restored byte-equal to the submitted source
+before any delivery change. This proves the consumer association obligation;
+it does not select a new public wrapper or claim a local mailbox defect.
+
+Before the next test edit, select the ordinary per-request closure comparison
+under recommended-choice delegation. Capture the configured hosting binding,
+actual A recipient and this request's opaque receipt; accept the existing five
+current authority fields on each nonwaiting check-and-send attempt. Changing
+the authority revision between attempts must refuse the second one before any
+mailbox send. Existing endpoint equality must distinguish the actual A/B
+recipients after both owners finish. No new endpoint identity primitive is
+needed: selected EstablishedRecipient equality delegates to Bombay's exact
+admission-anchor equality, rather than the numeric address.
+
+Forecast: the same three test/document paths, a326-line raw child candidate
+before formatting (net28 over the prior formatted comparison), zero production
+or public API changes. Fresh lock/source inspection retains Behavior/Actors
+0.25.0 at2bb4510, Address0.3.0, Communication0.1.5, Timers0.2.0 and no patches;
+the complete selected Behavior instructions are re-read. No actor aggregate,
+state alternatives, transition authority or wrappers change; drift disposition
+is pass for this ordinary external consumer comparison.
+
+This fixture owns no expiry or revocation fields: its fresh revision inputs
+cannot prove production permission/time coherence. The closure is per request
+because it captures one receipt. A shipping export must instead accept each
+request's new verified receipt, while retaining only its configured binding
+and actual recipient. Macro, trait and public wrapper selection remain open.
+
+The closure comparison now passes both providers in both profiles2/0/0. Adding
+an independent B target argument is statically refused with the intended E0057
+(five parameters versus six); restored compiling controls pass both profiles.
+Freezing the original authority revision inside the closure instead of using
+its current input fails both providers in both profiles (actual Ok instead of
+the required Grant refusal). Restored styled controls pass2/0/0 per profile.
+The final341-line fixture, including the two real application cleanup traces,
+is retained externally in final-closure.rs; its parent is restored byte-equal
+to the submitted source. Production/public API delta remains zero.
+
+Strict test Clippy first rejects the equality assertion spelling and long
+single trace. Use assert_ne for the exact endpoint comparison and one precise
+test-only too_many_lines expectation to keep both owners' complete receipts
+together. Strict Clippy then passes; no production lint exception, wrapper,
+new bounds or abstraction follows. The prior and final source/control digests
+remain distinct in closure-target-denial.json and revision-inversion.json.
+This proves the ordinary-Rust association and existing revision check, not
+permission expiry, coherent production snapshot acquisition, authenticated
+binding construction, readiness, encoding or a finished export API.
+
+## Shipping metadata composition decision — before implementation
+
+Under recommended-choice delegation, choose one strict nested `bombay` metadata
+object shared by concrete protocol-owned JSON declarations. The alternative
+repeats the common declarations in every flat message; it preserves the private
+Counter fixture's old vectors but duplicates validation and makes evolution
+harder. Nested composition uses ordinary Serde structs and the selected
+serde_json1.0.151; it needs no bespoke codec, protocol registry or actor trait.
+Serde flatten cannot supply the already approved deny_unknown_fields contract.
+
+Preserve the fourteen compared scope declarations, exact protected/proof byte
+ownership and the previously selected first-publication version pair1/1. Accept
+one nested shipping layout only. Equal version numbers on old flat fixtures do
+not create a compatibility promise, alias or downgrade path. Metadata fields
+remain mandatory and reject unknown/duplicate entries. Protocol payload and
+provider-proof schemas retain their own explicitly declared profile rules;
+this choice does not silently impose metadata rules on their internals.
+
+The source proposal3502a746 is preparation, not a shipping vector or passing
+witness. Final field inventory still needs a distinct caller-session declaration
+decision; receiving runtime_generation cannot stand for it. Ledger's native
+local-address vector also needs a truthful protocol reply projection, retaining
+the original vector without claiming global address identity. These unresolved
+contracts block dependent production DTOs, not independent investigation.
+
+Candidate crate preflight is existing json-event-parser0.2.3 followed by full
+Serde decoding. Its escaped token allocation occurs before the token-cap check;
+bounded initial input is required and full allocation witnesses remain open.
+It exists only in the nested lock, so adopting that root dependency still needs
+its exact feature/graph change record. No dependency, public API, resource
+default, session generator, provider framework or production edit follows from
+this metadata-shape choice.
+
+## Node lifetime and existing identity sources — selected comparison profile
+
+Under recommended-choice delegation, select one Node owning one fresh ordinary
+Application lifetime and one freshly opened Zenoh runtime. Root/Application
+replacement starts a new Node runtime; child replacement within that Application
+uses its existing never-wrapping address allocator. The same stable configured
+node/actor names may survive replacement, while the exact receiving scope changes.
+Both approved TLS layouts and root/child exports remain required.
+
+This gives the Node frontend one concrete lifetime to own, using existing
+primitives. The broader alternative supports multiple/replaced Applications
+under a shared runtime through an Address-owned established-generation projection
+and an additional portable namespace contract. Address0.3 already owns exact
+local registration generations, but exposes neither a numeric generation nor
+a portable scope through ActorRef. Weak/pointer identity, Debug and predicting
+the counter cannot supply the missing wire fact. Do not introduce that broader
+projection or a duplicate Bombay generator without a demonstrated required gap.
+Source reviews92347591 andb100e1fa retain the exact owning revisions and limits.
+
+For this profile, investigate the actual SDK runtime ZID as the caller-session
+namespace and receiving runtime scope, and the actual allocated MailAddr as the
+actor component. No numeric address alone is global identity or authority. The
+actual bound capability still selects the recipient. Profile eligibility requires
+enforcing the one-Application association and fresh owned runtime in the frontend;
+the source review alone does not establish that enforcement.
+
+Native ZID persists through reconnect. Multiple native Sessions can share a
+runtime/ZID; therefore do not claim each Session handle is unique. Require a
+fresh unexpanded configuration with ID unset for the owned profile, refusing
+configured/reused IDs and shared-runtime construction rather than silently
+overwriting them. Handles sharing that Node must share request issuance state.
+The unstable Session::id has an unchecked32-bit counter and is not selected.
+SDK ZIDs use its existing OS-random128-bit source: randomized freshness, not
+deterministic collision-free issuance or durable replay proof.
+
+The explicit caller-session declaration is protected by the provider with the
+original JSON and survives forwarding unchanged. Raw ZID supplies no identity,
+delegation or permission. Unknown/retired sessions cannot become new replay
+eligibility, and opening a new session cannot silently resend uncertain work.
+Issuance exhaustion, replay retirement/eviction, resource limits and complete
+correlation still need their own concrete witnesses and decisions.
+
+Do not truncate ZID into the comparison's u64 runtime_generation. Final wire
+representation and field inventory remain dependent decisions before DTO edits.
+No new crate, public identity type, SDK fork, default or production edit is
+selected here. Next proof must pair actual public Application/capability values
+with actual fresh SDK runtime values and test configured-ID refusal; a schema
+fixture or construction-only example cannot establish this profile.
+
+## Runtime-scope representation decision — before shipping DTOs
+
+Under recommended-choice delegation, add a distinct mandatory caller_session
+declaration and represent both it and receiving runtime_generation using the
+complete native ZID text produced/parsed by the selected SDK. Use ordinary JSON
+strings with the selected Serde codec. The alternative keeps an independently
+issued numeric epoch and requires another issuer/lifecycle contract; truncating
+the existing128-bit value to the comparison's64 bits would lose identity and is
+rejected. No handwritten encoding, new generator or dependency is selected.
+
+For the selected owned Node profile, derive actor_generation from the actual
+recipient's allocated MailAddr, scoped by that Node's unique Application/runtime
+lifetime. Derive it from the real capability, not a caller-supplied guessed
+counter. Never treat this number as authority or a globally unique address.
+The captured capability remains the only delivery target. Broader shared-runtime
+or Application replacement profiles remain unsupported until their owning
+namespace/projection contract is proven; this is a stated new Node lifetime
+contract, not a restriction on ordinary local Application composition.
+
+All request and reply meanings carry this caller-session declaration and retain
+the exact target, operation, principal/deployment and request-sequence correlation.
+The final metadata inventory therefore has the fourteen preserved declarations
+plus caller_session; runtime_generation's shipping representation is a string,
+where the earlier research fixture used u64. Neither private layout had a shipping
+compatibility promise. First-publication versions remain1/1 with no fallback.
+
+SDK parsing, complete field/profile validation, explicit configured limits,
+independent correlation/replay/freshness witnesses and actual Node ownership
+enforcement remain required before accepting these declarations. The standard
+representation is not authentication, deterministic global uniqueness or durable
+deduplication. No DTO, public API, parser edge or production edit is implemented
+by this recorded selection.
+
+## Shipping metadata owner — implementation checkpoint
+
+Under recommendation delegation, retain the shared fifteen-field declaration as
+one ordinary `remote::Metadata` Serde product. It owns only caller-supplied
+claims, never verified authority, a target capability, a provider receipt or an
+admission decision. Concrete protocol request/reply products own their fields.
+Two independent protocols must compose this exact owner; no Protocol trait,
+registry, wrapper, generated codec or actor abstraction is selected. Derive
+strict unknown/duplicate metadata rejection through existing Serde behavior.
+
+Compare runtime/caller-session text using the selected SDK's actual parser and
+emit it with SDK Display. Preserve original protected bytes and raw declarations
+for provider verification; neither parsing nor reserialization authenticates
+anything. SDK-accepted alternate text is eligible only with its own valid proof
+and complete scope/replay checks. Do not add a handwritten fixed-width encoding
+or normalize bytes before authenticating them. Parser compatibility still needs
+executed vectors; no production identity claim follows.
+
+Smallest pending regression: two concrete public protocol products sharing this
+owner must decode the selected nested fixed vectors and refuse an unknown or
+duplicate common declaration with the original input still caller-owned.
+Forecast: remote/metadata.rs, remote/mod.rs, bombay/Cargo.toml, root Cargo.lock,
+one owning public metadata test and three current contract records (eight paths).
+At most150 production lines,350 test lines, one new public type; no default.
+Activate the already selected Serde1.0.229 only with `remote`, preserving local
+builds. Root lock may gain only the Bombay-to-Serde edge; no selected package
+version/source may change. SDK and lexical parser root edges require their own
+later record; validation source using those candidates stays research until then.
+Existing common duplicated declarations are replaced as consumers are ported,
+not described as deleted before that port. The actual Node/profile owner remains
+subject to its ordinary-Rust API comparison and required lifetime witnesses.
+
+Naming/traits are checked against official Rust API Guidelines naming and
+interoperability chapters, plus Serde's container-attribute contract inspected
+2026-10-14. Preserve normal constructors/conversions and payload privacy; serde
+traits do not confer authority. Full R01–R25/AUTH1/NET1 remain open.
+
+The exact ordinary candidate compiles with two concrete protocol products:
+five independent tests pass against four literal nested vectors, each mandatory
+metadata declaration, unknown/duplicate fields and numeric scalar boundaries.
+The raw product also preserves unsupported version2 as a claim; shipping policy
+must refuse it before admission. This is deliberate separation of decoding from
+authorization, not a compatibility fallback. The candidate supplies no provider,
+transport or zero-admission proof. Retain that same owner in the crate and switch
+the tests to the actual public import; no forwarding abstraction is added.
+
+Public common metadata now passes the same five tests in debug and optimized
+builds through the actual crate import. Root and isolated locks remain unchanged:
+Serde was already in the graph; only its optional production feature edge changes.
+Select the intended strict-schema inversion before execution: remove only the
+common owner's deny_unknown_fields attribute, require the unknown-field oracle
+to fail in both profiles, restore exact source, and rerun the focused controls.
+Keep the actual errors/logs and byte digests, with at most80 orchestration lines.
+This cut proves common schema rejection only, never authentication or admission.
+
+Current-contract audit adds module-boundaries, runtime-capability-interfaces and
+user-facing-api to the eight-path forecast (eleven paths maximum). This updates
+merged ingress delivery and the raw metadata owner alongside the actual source;
+no extra runtime/public type/default or production allowance is selected.
+
+The common unknown-field cut fails its intended expect_err oracle in both
+profiles; byte-exact restored controls pass in both. strict-inversion.json retains
+all four actual commands, exits, source and log hashes. Independent review finds
+Serde's derived visit_seq path also accepts positional arrays. Under delegation,
+keep this raw Serde product format-neutral and require the future bounded JSON
+decoder to establish outer and bombay object shapes using the existing lexical
+parser, before eligibility/admission. Do not invent another Deserialize/parser
+implementation merely to move that boundary into a raw declaration product.
+Add an actual array control documenting this limitation and exact large-u64
+positives. These are not permission, proof or zero-admission witnesses; final
+shipping object-only denial remains open until its owning decoder executes.
+
+The retained common owner now has seven schema tests plus four ingress, three
+verification and thirteen public Application tests:27/0/0 in each profile.
+Strict remote all-target Clippy, formatting and warning-denied rustdoc pass.
+Independent source minimizationd8218eb2 qualifies raw claims only. Current complete
+working tree relative to actual merged main1320: ten paths, production+54/-1/net53,
+tests+227/-0/net227, one public type added; config+2/-1. No lock changes. This is
+new capability code, not a code reduction. Historical task union remains separate.
+
+Next ordinary Node API comparison reuses a real Session borrowed into the existing
+public paired Application work. Outside receiving retains native and both
+notification results, and a borrowed Pending execution wait is cancelled without
+surrendering the owned operation. Actual SDK close remains independently acquired.
+Forecast one69-line raw temporary child and one parent declaration, at most180
+formatted and350 chronological temporary lines; permanent schema tests retain
+their separate350 allowance. No production/API/SDK/parser edge is added by this
+comparison. Existing-owner test must compile before retaining a lending Node API;
+no placeholder frontend or duplicate actor trait is accepted. One Node must own
+its one finalized Application and fresh Session, not forward builder calls.
+The exact API state/close owner still needs evidence; a probe is not delivery.
+
+The isolated consumer's first locked Node-composition command stops before
+compilation: its lock does not yet list the new optional Bombay-to-Serde edge.
+The unchanged root lock does not prove isolated compatibility. Under delegation,
+update only that isolated graph offline, preserving every package/version/source;
+forecast one extra lock path (fourteen maximum including temporary comparisons).
+Verify the resulting diff and exact selected contracts before more production
+edits. This is a prerequisite correction, not a semantic regression or new crate.
+The earlier unchanged-lock statements describe observations before this consumer
+was checked; they do not assert a combined graph was already verified.
+
+The isolated offline resolution adds exactly one existing Serde dependency edge
+to Bombay, with all package/version/source entries unchanged; lock-resolution.json
+verifies the full graph. The ordinary borrowed Session/Application operation then
+executes1/0/0 in debug. Its first-observation branch permits immediate Ready, so
+that run alone cannot assert actual cancellation. Before adding cancellation
+credit, add one existing Tokio oneshot gate to Work: keep it unreleased through
+the first borrowed poll, release outside assertions, then acquire all native and
+notification results and SDK close before asserting the first poll was Pending.
+Reuse completed_actor's full native checking, retaining its returned actor in
+an ordinary scope rather than unnecessary explicit drop. Forecast fewer than20
+new temporary lines within the prior180/350 allowance; no production design.
+
+The gated existing-owner comparison executes1/0/0 in debug and optimized on
+76 lines. The unreleased Work gate makes the first borrowed execution poll
+Pending; releasing it later permits the original execution and independent
+receiving to finish. Full native custody passes completed_actor checking; both
+notification outcomes and SDK close are acquired and checked. Session remains
+borrowed from the outside owner instead of being hidden in disposable Work.
+The temporary source is removed; parent is byte-equal actual main. execution.json
+retains exact source and both actual logs. This validates ordinary lending into
+existing Application execution, not a public Node, secure connection, profile
+refusal, child export, complete transport retirement or whole-service cancellation.
+
+The direct configured-ID check and proposed critical profile inspector remain
+source-only candidates. Stable SDK get_json copies inspected leaves; the selected
+lower configuration owner's unconditional borrowed getters and SDK's unconditional
+public From conversion are an alternative under investigation. No unstable flag,
+new SDK dependency edge, unsupported configuration restriction or public Node type
+has been selected from these proposals. Evaluate actual owning APIs before retaining
+configuration plumbing. Metadata and required lifetime profile remain unchanged.
+
+Required CI currently names verification, ingress and Application test targets,
+so compiling the new metadata target would not prove its tests executed. Before
+CI edits select adding `--test remote_metadata` to both existing remote debug
+and optimized commands in flake.nix. No command/gate is removed or weakened;
+no new job or runtime limit is added. Forecast one extra configuration path,
+staying within fourteen while temporary comparisons are removed. Public build,
+27 affected tests in both profiles, remote strict lint and rustdoc already pass;
+submitted-head CI must still execute these seven names before delivery credit.
+
+## Metadata combined verification checkpoint — 2026-10-14 UTC
+
+Actual pinned-Nix locked workspace build/test/strict Clippy pass on the restored
+source. Cargo workspace reports88 summary rows,695 passed/0 failed/4 ignored;
+this local debug inventory is distinct from prior Linux optimized CI691/0/1.
+Public remote tests27/0/0 in both profiles, strict all-target remote Clippy,
+warning-denied remote rustdoc and workspace formatting pass. Required CI now
+explicitly names the new seven-test target in both profiles; its actual submitted
+execution and merge remain pending. Source reviewd8218eb2 qualifies the retained
+raw owner, not full wire/admission policy or final Node integration.
+
+Every temporary target/lifetime/lending test is removed after external sealing;
+protected Counter parent is byte-equal actual main. Root locke896b8c0 is unchanged;
+isolated lock33ce0616 changes only Bombay's optional existing Serde edge and
+preserves all324 package/version/source entries. Final retained Rust capability
+is production+54/-1/net53, tests+227/-0/net227, public+1type/-0. No new codec crate,
+SDK/parser root edge, authority framework, example or default has been added.
+Full R01–R25/AUTH1/NET1 remain open. Node's ordinary lifetime/Work lending baseline
+now has actual debug/optimized evidence; a171-line Node owner and167-line extracted
+existing invocation body are prepared externally, still unimplemented. Next stage
+must settle full startup profile/SDK graph, then compile actual Node/App composition.
+
+Before checkpoint commit, current remote main is independently observed1320dfa9.
+Create delivery branch feat/static-remote-exports from that exact base without
+changing source or touching the active DevX worktree. Record the complete tracked
+and untracked endpoint below; this is a reviewed local schema contribution, not
+submission/merge or completion of the larger static-export section. The next
+Node stage must retain every current required CI command and this schema owner.
+
+Final metadata checkpoint (relative to actual main1320):
+production: +54 / -1 / net53
+tests: +227 / -0 / net227
+public API: +1 types / -0 types
+Configuration: +5 / -3 / net2 (optional feature, isolated edge, CI test selection).
+Twelve paths including both previously untracked Rust files; no temporary Rust
+source remains. Historical cumulative task path union is not relabelled as this
+stage count. Required Rust commands and actual logs live in
+/tmp/bombay-shipping-schema-proposal: workspace-build33a7190e,
+workspace-test046beb15, workspace-clippy, combined-debug/release, public-clippy,
+public-doc and final-combined-fmt. All observed commands exit0. Source and
+receipt hashes remain independent of report-only executable paths.
+
+## Actual Node lifetime comparison — before execution
+
+Select the prepared ordinary-Rust comparison under recommendation delegation:
+two concurrently executing public Counter Applications, two fresh native SDK
+runtimes with discovery and all endpoints explicitly empty, and their actual
+issued recipients. Acquire complete work/native/two-notification results and
+both SDK close results before asserting distinct runtime-scoped targets despite
+equal root addresses. A separate control demonstrates that bare SDK configuration
+permits ID reuse; it earns no Node refusal or TLS security credit. This comparison
+must inform the real frontend constructor rather than ship as a test-only feature.
+
+Forecast three temporary test/document paths, 134 raw test lines (including the
+parent declaration), at most350 formatted test lines and500 chronological test
+introductions including style corrections. Production/API/dependency delta0.
+Candidate156c395e and parentceb8c84e are sealed externally. Existing Counter,
+Application, allocated MailAddr and actual SDK own the facts; no new issuer,
+wrapper or owning contract is implemented. Keep negative limitations explicit.
+
+The first actual debug run fails before either law: Zenoh runtime rejects Tokio's
+current-thread scheduler. Preserve that uncredited setup failure. Reuse the
+existing native fixture's multithreaded host with one explicit worker for this
+comparison; no Bombay runtime, executor dependency or production default changes.
+Then format the external-path test explicitly with pinned rustfmt, since Cargo's
+isolated-package formatting did not traverse that external test path. Measure
+formatter additions against the recorded500 chronological allowance before reuse.
+
+The actual corrected native/Application comparison executes2/0/0 in debug and
+optimized builds on138 formatted test lines. Both roots really have address0;
+actual recipients differ, SDK clones retain their runtime IDs through complete
+application retirement, and bare SDK runtimes really accept equal configured IDs.
+Full original work/native/two-notification and SDK close outcomes precede oracles.
+Strict test Clippy rejects an unnecessary explicit drop of the final non-Drop
+actors; do not add an exception or retain that spelling. The sealed external
+comparison is removed and its parent restored byte-equal to actual main. Preserve
+all setup/lint logs and execution.json; passing controls are not shipping Node
+policy enforcement, deterministic uniqueness, secure transport or replay proof.
+When transferring this law to the actual Node tests, ordinary scoped bindings
+must retain the final actors without the unnecessary explicit drop.
+
+Before retaining the common declaration, choose owned Box<str> for fixed text
+claims: metadata performs no append/mutation, so spare String growth capacity
+adds no purpose. Public construction still uses ordinary string conversions.
+This affects only the new raw claim product, not proof bytes or verification.
+Compile the ordinary two-protocol Serde composition with this exact candidate
+before exposing it; no SDK/parser edge or validation API is selected from a
+successful structural roundtrip. The eight-path/150-production/350-test allowance
+above includes this comparison's permanent public tests; temporary Node records
+remain separately attributed rather than hidden in the retained delta.
+
+## Counter test separation delivered — 2026-10-14 UTC
+
+[PR362](https://github.com/devrandom-labs/bombay/pull/362) merged at
+2026-10-14T01:22:54Z as `fb533b5bddb1ba20d6514f590167faef60b028d0`.
+Reviewed headf7a2272 and actual main have identical tree
+abba40d8c3ada0a58771b6797b92b66e31207596. All six checks passed.
+The final required [Nix job115606698398](https://github.com/devrandom-labs/bombay/actions/runs/38488151263/job/115606698398)
+executes the isolated Counter55 in both profiles, public verification3 and
+Application13 in both profiles, and optimized default workspace691/0/1.
+These inventories remain separate. Strict checks and four coverage floors pass;
+fresh fuzz archives retain108 Driver and344 Observe files, with Driver2048 and
+four Observe1024 campaigns completed. Both Miri steps are explicitly skipped.
+The exact-head source/native reviews and final required-job review are posted
+on the PR; required review8eae97a9 and raw log58b702f1 retain provenance.
+CI executable bytes were not copied; report hashes do not establish that custody.
+Local Counter remains an application in examples/counter. The separate
+examples/remote-counter application and all full remote acceptance rows remain
+open pending the crate networking/export/admission interface.
+
+## Ingress documentation checkpoint — before further production edits
+
+Under the user's standing recommended-choice delegation, select the complete
+current-contract documentation audit: seven guidance/index/acceptance documents
+in addition to the nine existing ingress source/test/configuration/PRD paths.
+Raise this stage's path forecast from12 to16. This crosses the ordinary15-path
+checkpoint; the recorded delegated recommendation authorizes that documentation
+surface, not extra runtime scope. Retain the existing at-most100 production-line
+forecast, one public error type and one function; no new dependencies, numeric
+defaults, or example package are selected. Final cumulative measurement remains
+required. The new function is still uncommitted and unmerged.
+
+## Ingress verification and minimization checkpoint — 2026-10-14 UTC
+
+The coordinator branch now starts at actual PR362 mainfb533b5; its source tree
+equals the reviewed f7 tree. Moving the branch base preserved the complete
+working-tree patch and staged/unstaged status byte-for-byte.
+
+Pinned-Nix commands pass: locked workspace build, workspace tests695/0/4 and
+feature-enabled strict Clippy, formatting and warning-denied rustdoc. Public
+remote verification/Application/ingress targets execute20/0/0 in each profile;
+isolated plain Counter55/0/0 and actual native Query/Reply count3/0/0 execute in
+each profile. Exact child-stop selection executes2/0/0 in each profile.
+
+Both actual TLS campaign groups pass64 cases/160 role executions total across
+the five matrices, two profiles, approved peer/router layouts and root/child
+targets. Their executables are retained byte-equal copies resolved from actual
+Cargo test-artifact JSON. All declared16 source inputs, the additional controller,
+seven certificates and two retained executables remain unchanged through the
+paired executions. The input guard starts before TLS execution while a preceding
+native count command is active; it is not a before-compilation-start or whole-tree
+guard. The initial receipt reader had a Python syntax error before making any
+receipt change; the corrected reader rehashes every actual role log and seals
+final-native-input-guard.json. No policy/provider stand-in becomes production
+identity, whole-service pressure or full acceptance evidence.
+
+Independent ownership/API review9d20df22 and strengthened-source supplement
+80d7350c retain exact source provenance. One function/error sum owns only the
+existing acquire-and-transfer equation; actual Query and Reply callers replace
+the duplicate fixture equation. No extra queue, wrapper, provider or lifecycle
+owner survives. The final test formatting adds only three line breaks to the
+supplement's observed source; final owning source14d16a0e executes4/0/0 in each
+profile and strict remote Clippy passes afterward.
+
+The strengthened tests downcast standard Error::source and compare its address
+to the actual native cause still owned by each error branch. Removing both
+native sources fails exactly the capacity and channel witnesses in both profiles
+(2 pass/2 fail, exit101); restored controls pass4/0/0. Control/restored05919fb6
+and source-loss cutced8c59a preserve byte-exact production custody. The earlier
+shared-count Query and Reply bypasses also retain their intended failures and
+restored controls. This is observed law failure, not a missing symbol or build
+failure. An initial formatting check precedes the source cut and changes no
+production source; its output is retained separately.
+
+Scoped ingress ownership/interface minimization is complete; submitted-head
+review, required CI and actual PR delivery remain pending. Full PRD state stays
+active and all R01–R25/AUTH1/NET1 remain open. This lower layer still does not
+supply the network/export/admission frontend or separate remote-counter app.
+
+Final stage census includes all staged, unstaged and untracked changes:
+16 paths, zero untracked; production +88/-1/net87, tests +329/-67/net262,
+public API +1 type/-0 types and one function. Configuration +18/-3/net15 and
+controller +2/-0/net2; documentation +279/-15/net264.
+No lock, dependency version or numeric default changes.
+This is positive retained capability code, not production code reduction.
+
+## Crate ingress retention — pre-edit decision, 2026-10-14 UTC
+
+Under recommended-choice delegation select an ordinary `remote::try_retain`
+function over the already selected Tokio Sender, shared Semaphore and owned
+permit. It transfers an original and its count charge together without waiting.
+One `IngressError<Original>` distinguishes capacity refusal (original plus the
+actual NoPermits/Closed cause) from channel refusal (the native Full/Closed
+error containing original plus permit). Diagnostics omit the original payload.
+No new channel, queue owner, task, trait, wrapper, default limit or dependency
+is selected. This lower layer is retention, not authentication or actor admission.
+
+The blocker is the already observed A-unread/B-provider-held/C third-owner
+violation: counting only channel slots permits three accepted originals under
+a declared two-original limit. The native public Application regression remains
+the end-to-end oracle. Plain Tokio composition with no retained permit is the
+failing alternative; explicit acquire-and-transfer implements the proven law.
+Prototype with non-Clone originals and both actual Query/Reply callers
+before retaining generic surface. A missing-symbol compile failure is not a law.
+Repeat a count-bypass inversion and restored control in both profiles.
+
+Expected stage: remote/ingress.rs and its public export; owning retention tests;
+native Counter callback migration; isolated manifest feature selection and PRD
+records (at most12 paths including verification and current guidance). Production forecast +45–100/-0; one public error type
+and one function. Tests forecast +200–350 plus native migration, bounded at450
+introduced lines. Complete fixture/CI checks remain required. This is a separate
+review stage on feat/static-remote-ingress, based on immutable PR362 headf7a2272;
+reconcile its actual delivered main before final combined review and PR.
+
+Fresh root/isolated lock inspection retains Behavior/Actors0.25.0 at2bb4510,
+macros0.14.1, Address0.3.0, Communication0.1.5, Timers0.2.0, Tokio1.53.1 and no
+patches; complete selected Behavior instructions remain SHA2b7a9195. Current
+Tokio try_acquire_owned, permit Drop, try_send and native error source/tests
+confirm nonwaiting transfer and exact original recovery. Existing Behavior,
+Address, Communication, Observe and Timers keep their respective folds, lease,
+mailbox, observation and timer ownership; this function introduces none of them.
+
+The Query and Reply proposal uses the actual native callbacks; the Reply count
+pool belongs to each existing query and matches its explicit fixture channel
+capacity2. Retain the intact Reply/permit product inside native_records and any
+completed pending receive. This changes no production limit and claims no
+caller-wide or Session-wide bound; reusing a Session-wide capacity2 would block
+later required results while earlier originals remain unread. The two original
+types must execute through the public function before generic retention.
+
+The caller must retain the intact original/permit product through active and
+unread custody and dispose the original before releasing its charge. The function
+cannot prevent a power user from unpacking it early or cloning native originals;
+it does not bound native allocations, proof bytes or provider/task resources.
+Reply retention must preserve acquired originals before any later producer Drop.
+A first compile rejects deriving Error on the unconstrained original because
+Error::source requires its returned native cause to be static. Do not impose
+a type-wide static requirement merely to appease that expansion. Select ordinary
+Debug/Display implementations for all originals and Error only for static
+originals; the actual native causes remain public and intact for borrowed callers.
+Independent native-API review recommends restricting this ingress boundary
+to static originals: both genuine callback types already require that lifetime,
+while a borrowed-array probe adds flexibility with no demonstrated native
+consumer. Select that narrower domain before publication. Keep all native
+sources and remove the artificial borrowed-transfer claim; no Clone or Debug
+bound is added. This makes every returned error a standard Error rather than
+weakening Queue source inspection. The Error-source requirements and
+[Rust API Guidelines](https://rust-lang.github.io/api-guidelines/interoperability.html#c-good-err)
+are checked against the actual callback owners, not used to invent a wrapper.
+The prior conditional Error implementation is a rejected pre-publication probe.
+No extra wrapper, conversion or architecture is introduced. The production
+forecast is at most100 lines under the delegated recommendation.
+
+A fresh source-only comparison revisits locked thiserror2.0.20 after selecting
+static originals. The lifetime obstacle is gone, and retaining manual Debug
+would avoid imposing Original:Debug. The candidate saves13 lines, but its
+source-bearing Error expansion inserts a function-local AsDynError import
+(thiserror-impl/src/expand.rs267–268), contrary to the selected generated-code
+import rule. Retain explicit Display/Error implementations and exact native
+sources; do not remove source attributes, fork the dependency or add a wrapper.
+The rejected patchd5d01fd3 and source-only reviewcfd11950 are external comparison
+evidence, not a compiled alternative or a repository-wide thiserror audit.
+
+Delete the fixture's duplicate transfer equation and rejection type, keeping its
+separate metric observations. No remote-counter application or full row closes.
+
+The initial generic probe passes5 owning tests in both profiles, including an
+extra borrowed-array case. Native Query count tests pass2/0/0 in each profile.
+The shared-capacity bypass then fails both providers after cleanup with actual
+count3 versus limit2 in debug and optimized; byte-exact restored controls pass
+2/0/0 in each. Control5a2d7ad3/cutcb80d353 and raw logs retain that pre-publication
+model's provenance. No missing-symbol failure is credited. The subsequently
+selected static-native interface passes4 owning debug tests; the borrowed-array
+probe is retained externally as rejected scope, not current public support.
+The selected static-native interface passes4 owning tests in both profiles.
+Strict remote all-target Clippy first rejects five match spellings and a
+truncating test-marker cast; idiomatic let-else and an actual byte marker
+resolve those test-only findings, and strict Clippy passes. The initial census
+includes all staged/unstaged/untracked paths:7 changed paths, production
++88/-1/net87, tests +208/-67/net141, public API +1 type/-0 types and one
+function. Configuration +3/-3/net0; documentation +92/-0/net92.
+No dependency version or numeric production default changes. This is retained
+capability code with a positive production delta, not production reduction.
+At that checkpoint same-query Reply pressure, final native TLS campaigns,
+combined checks and submitted-head delivery remained pending; subsequent Reply
+results below supersede only its pressure-test status.
+PR362 source remained immutable through review and its actual recorded merge.
+
+The native Reply witness now passes actual SessionLocal debug and optimized
+execution. A is held through a borrowed Pending wait, B remains an unread owned
+Reply/permit product, and C retains the actual NoPermits refusal. Producer join,
+Queryable undeclare and Session close precede the assertion; neither profile
+proves TLS connectivity. The broad native_ release selector also executes seven
+existing ownership/scope witnesses:10/0/0 total, not merely the three count tests.
+Source-only author minimization finds no retained-sender deadlock and preserves
+its applied-snapshot provenance. The redundant Option<()> Pending projection
+is removed; the distinct Option<&Reply> observation still proves that the
+actual retained reply participated in the Pending borrowed wait.
+
+The dedicated Nix check and native CI will explicitly execute all three Query/
+Reply count witnesses in both profiles, with exact test-name/result checks.
+Native source guards add the public remote modules and owning crate manifest
+(16 declared source paths); this remains a declared-input guard, not whole-tree
+or complete compiled-source custody. No numerical production limit or dependency
+version changes. The actual TLS reruns and new same-query bypass inversions
+remain required before retention/delivery; the function cannot bound uncharged
+capacity-refusal originals retained separately by its caller.
+
+The actual same-query Reply shared-quota bypass fails for the intended third-
+Reply refusal in both debug and optimized builds (exit101); both restored
+controls pass1/0/0. Control05919fb6, cutaa9353c7 and restored05919fb6 retain
+byte-exact provenance in reply-inversion.json. Its external process guards do
+not supply actor or transport outcomes. Final combined checks and actual TLS
+reruns remain in progress; no submitted-head or merge credit is claimed.
+
+
+
 ## Crate verification prerequisite delivered — 2026-10-14 UTC
 
 [PR361](https://github.com/devrandom-labs/bombay/pull/361) merged at
@@ -20637,3 +22138,37 @@ Counter aggregate and native runtime phases are unchanged. The full PRD remains
 active with no full witness closure. Final stage has five paths/untracked0:
 Rust tests+552/-16, CI+12/-0, backlog+17/-3, acceptance+15/-4; production/API0.
 PRD prose additions are recorded by the final committed diff, not a stale forecast.
+
+
+### Release fixture lock correction — 2026-10-14
+
+PR360 bumps the local Engine to0.2.3 and Macros to0.1.3, but omits their
+records in the isolated transport-custody lock. Its required Nix and both native
+jobs stop at locked dependency resolution before running their tests. Local
+`nix develop -c cargo metadata --manifest-path
+docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked
+--format-version 1` reproduces exit101 on the exact release head7c181a0.
+
+Under the standing recommendation delegation, select the narrow correction:
+update only those two existing path-package versions through Cargo; retain every
+other package record and all manifests. No architecture, production code, public
+type, new dependency or resource policy changes. This stage touches the
+nested lock and this record only. Verify locked resolution afterwards and compare
+all package records independently; the original stale lock must still refuse.
+Required combined-source CI remains mandatory before merging the release PR.
+The independent TLS correction and full remote acceptance remain open.
+
+Independent source review also finds the Driver fuzz lock still selecting the
+old local Engine0.2.2. Select that third path-version correction before editing;
+the stage now touches two locks and this record. Preserve all30 unrelated fuzz
+records,322 unrelated fixture records and the complete root lock. The fuzz
+command was skipped after the earlier Nix failure; this is source evidence of
+a stale record, not a claim that a fuzz failure executed.
+
+Cargo performs exactly the selected updates: fixture324 records with322 unchanged;
+fuzz31 records with30 unchanged. The original locked fixture resolution exits101;
+the corrected fixture and fuzz locked resolutions exit0. Root lock and manifests
+remain byte-unchanged. No source tests were added for this dependency-only change;
+fresh required CI supplies combined-source builds and both native profiles.
+Complete stage delta: production+0/-0/net0; tests+0/-0/net0; public API+0/-0
+types; two locks each replace only the selected version lines, plus this record.

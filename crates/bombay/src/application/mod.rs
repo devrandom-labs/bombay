@@ -4,6 +4,8 @@ mod execution;
 mod http;
 mod interface;
 mod mailbox;
+#[cfg(feature = "remote")]
+pub(crate) mod node;
 mod outcome;
 mod scope;
 mod work;

@@ -685,3 +685,111 @@ expected custom production delta below30 lines beyond imported upstream changes.
 Cumulative expanded authorization remains2026-10-09. Require normal/refusal/
 cancellation custody, exact source restoration, all relevant downstream tests,
 strict lint, archive and full pinned-Nix gates before crediting integration.
+
+Imported-owner RED: pinned existing application_outcome consumer fails E0107
+and E0271 before adaptation; execute_with_invocation declares obsolete tuple
+receiving while execute_work already returns the established complete product.
+Focused native Node witness must first refuse absent host without invoking Work,
+then retry that exact move-only callable, process real counter commands, return
+its original Box, check the borrowed Session is live, and inspect normal root retirement plus
+both independent notification results through try_into_completed. Configuration
+uses upstream's supported listening TLS profile and existing fixture PEM files;
+no new network responsibility. Existing borrowed-wait and late Session lifetime
+witnesses remain required after this focused proof. Keep original assertions.
+
+Native callback decision and rejected alternatives: the user allows the advanced
+SDK parameter `session: &Session`; ordinary local applications remain inferred.
+The original raw FnOnce port still fails same-Node Host retry with only that
+annotation (regular and async closures: E0499). Do not claim that gap solved or
+remove its real lifetime capture. The following isolated comparisons were vetoed
+and removed; production retains no added dependency, trait or metadata bridge:
+
+| Comparison | Falsifier |
+| --- | --- |
+| Fixed-loan AsyncFnOnce, ordinary closure | E0282 |
+| Fixed-loan AsyncFnOnce, async closure | same E0499 retry/close |
+| Private loan-indexed result family, selected + universal proofs | non-general callable/E0499/E0597; universal variant E0283 |
+| Private result-family forwarding/supertrait | E0282 and private-interface leakage |
+| Published async_fn_traits0.1.1 | same E0282; optional dependency/lock probe removed |
+
+Exact source, diagnostics, restoration and original pre-edit records remain in
+NODE-CALLBACK-COMPARISON, NODE-OUTPUT-FAMILY-RESTORED, NODE-REGISTRY-CALLBACK,
+NODE-SDK-TYPE-DEBUG, NODE-SDK-ASYNC-DEBUG and NODE-DESIGN-PROVENANCE artifacts.
+Local signature-only carrier reconciliation separately passes19 current debug
+journeys; those passes do not prove raw callback inference.
+
+Selected joined-execution law (recorded before production): deliberate Bombay
+ownership policy mirroring Application.run_with. `node.run_with(async
+|application, session: &Session| { ... }).await` owns the existing execution and
+receiving join. One business result type is independent of the temporary SDK
+loan; the future may use Session across awaits. Raw execute_with remains the
+lending-result/separate-operation port. Both pass original Work separately from
+Invoke into the SAME Application.execute_with_invocation. Host refusal restores
+the original declaration and returns uncalled Work; Issued precedes Closed.
+No Send/static restriction on caller-local Work or its result. Canceling a
+borrowed wait preserves the same operation; surrendering the whole future does
+not establish joined retirement.
+
+Pre-edit scope/budget: node.rs, focused tests and current guidance; expected
+production net140–180, public types/traits/dependencies0. Reuse existing
+ApplicationOutcome, WorkOutcome, NodeExecutionRefusal, Session and invocation
+custody; extract declaration checks into an owned-only take_application. The
+focused absent-method RED is E0599 (NODE-JOIN-RED). No second actor engine,
+interpreter, cleanup policy, output-family bridge or caller structural annotation.
+Independent model review accepted this responsibility before lowering.
+
+Verification so far: final four native joined/raw tests pass current debug and
+optimized. They prove actual outside-Tokio polling and exact original Box Work
+retry, typed counter reply, Session after awaits, caller-local Cell/non-Send Rc,
+same-operation borrowed-wait resume, raw Session-borrowing result, complete normal
+root custody plus both notifications, and original Work on Closed/Issued with
+Issued-before-Closed precedence. Two compile denials prove join output cannot
+borrow the temporary Session and mutable close cannot overlap a raw borrowed
+result; generation and normal snapshot replay pass with the intended lifetime
+diagnostics. Independent two-pass review found and closed partial-retirement
+oracle gaps; no outstanding focused test finding.
+
+Separate mechanical consumer stage: five public_node receivers use into_parts
+and WorkOutcome::Completed. Imported transport adds four actual receiving
+operations in three sites requiring the same product decomposition. Reverse
+transformations reproduce every other original byte; assertions and operations
+are unchanged (NODE-UPSTREAM-MIGRATION, NODE-TRANSPORT-MIGRATION). Actual upstream
+native target passes64 tests in each current profile, with one unchanged TLS
+subprocess-only ignored case; all six public_node cases execute. Full TLS
+subprocess verification remains its existing gate. New focused tests are included
+in the existing remote debug/release Nix target lists, with borrowing denials in
+debug; default-feature skipping cannot silently omit them.
+
+Post-edit drift: node288→404 physical lines, matches8→10, arms18→22,
+if-selections3→3, enum1→1, struct1→1, public functions3→4; execution1722→1719,
+matches33/arms63/enums4/struct1 unchanged. Custom library production+155/-42/net113;
+public types0, traits0, dependencies0, methods+1 public/+1 private. Control remains
+Option<Application> (declared/transferred), original SDK Session and the same
+three refusal alternatives; all Work/root/notification custody axes are reused.
+No arrival history, duplicated cause, semantic boolean, false cardinality,
+structural caller syntax or subordinate transition authority added. Cross-check
+original Node/refusal/Session law, Application.run_with/execute_with_invocation,
+current driver-law and selected Behavior ownership/actor-model checkpoint.
+Disposition remains pending final MSRV, inversions, strict lint, package and full
+Nix gates; no programme requirement is closed by this focused result.
+
+Strict lint initially fails new documentation wording, a misplaced type-complexity
+expectation, and an imported startup-only Counter fixture's unused message
+variants. Use ordinary prose, scope the existing representation expectation to
+the private complete-owned-product signature, and expect dead code only on that
+startup fixture module. No new semantic type, bound, callback or visibility.
+Original strict failures remain preserved; rerun the exact workspace gate.
+Fresh upstream check now finds81dc144 after c1d5b2b (fairness366, child isolation365,
+release367/SDK1.10.9). Complete this focused merge record before integrating that
+new frozen head; final MSRV/package/full gates must cover the final combined source.
+
+Current-compiler node checkpoint: expanded remote-debug gate passes36 tests in
+seven targets (including both borrowing denials); final workspace all-target/
+all-feature strict Clippy and isolated native-fixture strict Clippy pass.
+Host-restoration inverse fails at the intended original-Work retry, then the
+exact restored source passes. Explicit type-complexity expectation names the
+complete private owned product; tests use ordinary let-else refusal extraction.
+No semantic bound/type added from lint. Both test reviews remain satisfied.
+Record NODE-CURRENT-VERIFIED freezes source and qualified results; final main
+81dc144/MSRV/optimized inverse/package/full gates remain open. This scoped model
+checkpoint passes; it does not close the programme or raw SDK inference work.

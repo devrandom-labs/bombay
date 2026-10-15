@@ -17,8 +17,24 @@ there is no reverse Bombay dependency. These are planned ownership boundaries,
 not additional source modules or currently implemented public APIs.
 With the opt-in `remote` feature, `remote::verify` owns storing the provider's
 returned result before its future is disposed. Its private verification module
-uses an outside standard result slot and owns no authentication policy. Network
-entry points and ordinary multi-node Application composition remain pending;
+uses an outside standard result slot and owns no authentication policy.
+The merged ingress primitive's private `remote/ingress.rs` owns the nonwaiting
+acquire-and-transfer operation exported as `remote::try_retain` and its two native
+refusal causes in `IngressError`; reviewed PR363 records delivery. The caller
+owns the Tokio channel, count capacity and intact original/permit products. This module
+adds no mailbox, actor authority or transport runtime. The new private
+`remote/metadata.rs` owns the shared raw fifteen-field `Metadata` declaration
+exported with `remote`. Existing optional Serde owns its structural codec;
+protocol products own their fields. Metadata is untrusted and format-neutral:
+object-shape, resource, profile/version, SDK, replay and permission acceptance
+remain the pending receiving boundary. The optional remote graph now names the pinned controlled SDK and configuration
+owners. Private application/node.rs owns one finalized Application and one fresh
+Session; Application::open_node checks private remote/startup.rs policy first.
+Node::run_with joins the existing Application execution and receiving operations;
+Node::execute_with retains separate operations and Session-borrowing results.
+Both lend the original Session to trusted work through the same invocation owner. No remote command is authenticated or admitted by this
+transport foundation. Typed network exports and multi-node composition remain
+pending;
 transport fixtures do not establish that public surface. Protected Counter
 regressions belong to `crates/bombay/tests/protected_counter`, executed by the
 isolated transport-custody package rather than an example binary.
@@ -101,6 +117,8 @@ tree:
 | `application/composition.rs` | static declaration-to-Behavior composition and exact origin selection | canonical `ApplicationBehavior`, `ApplicationDefinitionError` and `ApplicationStagingError`; implementation traits remain private |
 | `application/execution.rs` | one paired execution/result owner, supplied Work, cleanup custody and configured blocking entry | `ApplicationOutcome`, `ApplicationCleanupError` and `RunError`; async, owned blocking and Entity execution share this owner |
 | `application/interface.rs` | application capability construction, root-bound communication and explicit lifecycle projection | ApplicationHandle is the entry; ApplicationClient owns root-bound replies and ApplicationSender owns one-way sending. Both reuse ExternalActor. ApplicationLifecycle owns shutdown/termination/joined-report observation; handle methods delegate. ActorInterface exports named capabilities without lifecycle authority. ExternalTarget and ExternalActor remain the typed exported-target port; no receiving is cloned. |
+| `application/node.rs` | opt-in fresh native Session and one finalized Application declaration; reuse the existing execution/receiving owner | `remote::Node`, `NodeExecutionRefusal`; no replacement actor lifecycle or forwarding topology builders |
+| `remote/startup.rs` | selected configured TLS profile and exact original-input startup refusal | `remote::NodeStartupRefusal`; native certificate parsing and TLS remain SDK-owned |
 | `application/http.rs` | opt-in HTTP preparation, binding and serving over the common execution owner | existing application methods; retains bind, serving and actor failures. The feature-gated outcome mapper remains in `application/execution.rs`. |
 | `local/children.rs` | closed occurrence product, exact creation status, endpoint/control and descendant task retirement | crate-private; creation-order native custody and independent descendant retirement assessments stay with the local actor |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |

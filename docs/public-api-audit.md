@@ -4,8 +4,8 @@ This retains ARC-020's owner inventory and reconciles the EXEC application
 surface against published Behavior Core/Actors 0.25.0 at archive revision
 `2bb4510077bfa5aed82e08d25453c146b3184285`, Macros 0.14.1, Address 0.3.0,
 Communication 0.1.5, private Observe, and published Timers 0.2.0 in `Cargo.lock`. It covers Bombay-owned
-items reachable from the `bombay`, `bombay::entity`, `bombay::actors`, and
-`bombay_engine` roots. Re-exported Behavior and Behavior Actors families retain
+items reachable from the `bombay`, `bombay::entity`, `bombay::actors`,
+`bombay::remote`, and `bombay_engine` roots. Re-exported Behavior and Behavior Actors families retain
 their upstream ownership. The [Rust API Guidelines checklist](https://rust-lang.github.io/api-guidelines/checklist.html)
 informs names, traits, error behavior, and examples; exact ownership follows
 the selected Behavior instructions and [module map](module-boundaries.md).
@@ -30,12 +30,19 @@ The root entry checks are owned by the [application topology](../examples/applic
 positive and negative boundaries. These references identify the owning checks;
 the combined integration still requires its final full verification. No ordinary
 multi-node remote API is implemented by this reconciliation. The subsequent
-opt-in `remote` feature adds only `remote::verify`: one ordinary function over
+merged opt-in `remote` feature provides `remote::verify`: one ordinary function over
 a borrowed request, a caller-owned standard result slot and a concrete provider
 future. It adds no public type, trait or bound beyond `FnOnce` and `Future`.
 Its owning verification and protected Application tests cover result custody,
 borrowed-wait cancellation and occupied-slot suppression; network composition
-remains pending.
+remains pending. Reviewed [PR363](https://github.com/devrandom-labs/bombay/pull/363)
+delivers `remote::try_retain` and `IngressError<Original>`, reusing existing Tokio
+ownership products without a new dependency or actor protocol. The current
+implementation branch adds four candidate types: raw Metadata, one Node and two
+original-bearing refusal sums. Their focused controls, owning-source inversions
+and source minimization have scoped evidence in the [remote PRD](prds/static-remote-actors.md);
+combined checks, reviewed PR delivery and full remote acceptance remain separate.
+Native Session acquisition is not endpoint readiness or application authority.
 The Engine surface is exercised by its
 [Driver law tests](../crates/bombay-engine/tests/driver_law.rs) and
 [terminal custody tests](../crates/bombay-engine/tests/terminal_custody.rs).
@@ -45,6 +52,12 @@ The Engine surface is exercised by its
 | Item and operations | Owner, caller, construction invariant | Traits and custody / failure |
 | --- | --- | --- |
 | `MailAddr`, `APPLICATION_ROOT`, `From<u64>` | Bombay local address; runtime allocates a non-wrapping address, while advanced hosts/tests may name one explicitly. The number is identity, never endpoint authority. | `Debug`, `Copy`, `Clone`, equality, order, hash; no error payload. |
+| `remote::try_retain` | Opt-in nonwaiting ingress transfer into a caller-owned Tokio channel using its explicit shared Semaphore. | `Original: 'static`, no original Clone/Debug bound; accepted `(original, OwnedSemaphorePermit)` remains caller-owned across active/unread custody. No authentication, actor admission, numeric default or byte/heap bound. |
+| `remote::IngressError` | Exact capacity refusal or native channel refusal. | Payload-free Debug/Display and standard Error source; Capacity retains original + TryAcquireError, Queue retains TrySendError<(Original, OwnedSemaphorePermit)>. No Clone; channel refusal keeps the charge beside the original. |
+| `remote::Metadata` (candidate) | Concrete protected protocols place fifteen untrusted declarations in their `bombay` field. Deserialization does not issue authority. | Serde Serialize/Deserialize, Debug, equality; all object fields required and unknown/duplicate fields rejected. Derived decoding also accepts arrays, so the bounded receiver must enforce object shape. Debug shows declared identifiers; original bytes/proof, version/profile/permission/replay validation remain separate. |
+| `Application::open_node`, `remote::Node::run_with`, `execute_with`, `close` | Finalized ordinary root/child Application plus one newly opened native Session; opening uses `bombay-zenoh-config` 1.10.2 Config and the selected TLS profile. | Redacted unconditional Debug, no Clone/Default. Startup returns original Application/config plus typed refusal. One declaration transfer; run_with joins the complete ApplicationOutcome with a Session-independent business result. execute_with lends the actual Session to Work, permitting a borrowed result and separately owned execution/receiving. Both use the existing invocation spine and preserve original Work on refusal. Borrowed waits preserve outside owners; whole-operation disposal is surrender. SDK close retains its own Result after actor receiving. |
+| `remote::NodeStartupRefusal` (candidate) | Original-input startup refusal for configured runtime ID, unsupported profile, credential conflict/absence, explicit query capacity, missing/wrong host, or actual SDK open failure. | Payload-free Debug/Display and Error with original SDK/TryCurrentError source. Opening requires an entered multithreaded Tokio host; native credential parsing remains SDK-owned. No readiness, authentication or whole-service quota promise. |
+| `remote::NodeExecutionRefusal<Work>` (candidate) | Already-transferred declaration, closed Session, or actual missing execution host; each variant owns original Work. Only host refusal restores the original declaration for retry. | Unconditional payload-free Debug/Display/Error, no Work Clone/Debug/Send requirement. Actual host source retained. Trusted Work may clone/close native Session; later work/close are not bound to the opening host. Borrowed output must end before mutable close. |
 | `Application::new`, `child`, `root` | Bombay root-first declaration; app author supplies each concrete Behavior and semantic role before launch. | Conditional `Debug`; affine declaration. `child` consumes the old declaration and retains its root, selected scope, existing actors and families. |
 | `Application::with_topology`, `entity_family`, inherent async `run`, `run_with`, `run_with_entities`, `run_axum` | The same Application owns caller-selected static hosting and explicit Entity policies. Cold actors and families coexist, staged before root initialization. | Conditional `Debug`; affine application inputs. `entity_family` consumes validated `DirectoryConfig` and has no configuration-error branch; async calls return original inputs with `TryCurrentError` or complete phase/Work/cleanup/root/family custody. |
 | `Application::execute`, `execute_with`, `execute_axum`, `execute_with_entities` | Paired constructor captures a live entered host, retains cold inputs, and separates execution from result receiving. | No erased future or extra wrapper; receiving can outlive dropped execution. Work/output need no `Send` or `'static` bound. Actual actor tasks preserve their owning bounds. |
@@ -83,6 +96,12 @@ The Engine surface is exercised by its
 | `#[bombay::actor]` | Bombay's one accepted application syntax facade; author supplies state and fold. | Delegates to the locked Behavior expansion and preserves its complete typed Actions. |
 | `Completion`, `SettlementFailure` | Engine's exact Driver disposition and settlement failure sums, re-exported for terminal matching. | `Debug`, `Copy`, `Clone`, equality; `SettlementFailure` implements `Error`. |
 | `testing::InfallibleResultExt::infallible` | Deliberate test-only helper for `Result<T, Never>` or `Result<T, Infallible>`; a pure test caller extracts an inhabited success. | No panic branch; adding an inhabited error makes the call fail compilation. Absent from the ordinary prelude. |
+
+The remote foundation's concrete caller checks are
+[public Node composition](../crates/bombay/tests/protected_counter/public_node.rs),
+[startup refusals](../crates/bombay/tests/remote_node.rs), and
+[raw metadata](../crates/bombay/tests/remote_metadata.rs). Native TLS/fault campaigns
+remain separately qualified transport evidence, rather than full remote API proof.
 
 The Entity root and advanced directory are compiled by the
 [Entity example](../examples/entity/src/main.rs),

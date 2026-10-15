@@ -203,6 +203,18 @@ jobs:
           if len(executed) != 2 or set(executed) != expected or summaries != [("2", "0", "0")]:
               raise SystemExit("exact native Query count witnesses did not execute successfully")
           PYTHON
+          nix develop -c "$executable" --exact remote_counter::native_reply_count_keeps_active_and_unread_originals \
+            --nocapture > "$evidence/protected-reply-count.log" 2>&1
+          python3 - "$evidence/protected-reply-count.log" <<'PYTHON'
+          import re, sys
+          from pathlib import Path
+          observed = Path(sys.argv[1]).read_text()
+          expected = ["remote_counter::native_reply_count_keeps_active_and_unread_originals"]
+          executed = re.findall(r"^test (\S+) \.\.\. ok$", observed, re.MULTILINE)
+          summaries = re.findall(r"^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;", observed, re.MULTILINE)
+          if executed != expected or summaries != [("1", "0", "0")]:
+              raise SystemExit("exact native Reply count witness did not execute successfully")
+          PYTHON
       - name: Retain native transport observations
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
