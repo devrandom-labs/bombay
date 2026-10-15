@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.1...bombay-rs-v0.1.2) - 2026-10-15
+
+### Fixed
+
+- *(local)* bound event service without reordering child results ([#366](https://github.com/devrandom-labs/bombay/pull/366))
+
+### Other
+
+- prove hosted child capability isolation ([#365](https://github.com/devrandom-labs/bombay/pull/365))
+
 ## [0.1.1](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.0...bombay-rs-v0.1.1) - 2026-09-15
 
 ### Other
