@@ -1,6 +1,17 @@
 # Static remote actors and typed admission
 
-## Current delivery repair — 2026-10-14
+## Current delivery (2026-10-15 UTC)
+
+Fairness PR366 and hosting PR365 have merged after all required CI and scoped
+reviews passed. Both source locks now select corrected SDK 1.10.9. Release
+PR367 carries the fixture lock correction and delivery records; its fresh CI,
+merge and publication remain pending. All full R01–R25, AUTH1 and NET1 gates,
+Node-owned exports and the separate remote-counter application remain open.
+See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
+for exact commits, tests, scope and limitations. The following earlier
+checkpoints preserve their historical source and gate states.
+
+## Historical delivery repair — 2026-10-14
 
 External-state change: release PR360 was merged outside this coordinator at
 20:44:33Z as `c1d5b2bde866aeee28e8c83d57b9c05198e50f5c`, while native
@@ -312,9 +323,10 @@ source acceptance. Full native-owner/fault laws remain separate requirements.
 The initial integrated debug build fails E0277 before executing any test:
 existing counter_children_application::Topology does not implement Hosts<Counter>.
 This is a compiler/setup veto, not the promised foreign-delivery inverse. Source
-inspection shows why: existing unhosted child declarations deliberately create
-one fresh ActorSpace per birth; only explicit existing `hosts`/`in` declarations
-share a logical protocol table. The earlier uncompiled source map overclaimed
+inspection shows why: unhosted child declarations create a fresh ActorSpace
+per structural child occurrence when its runtime bindings are constructed.
+The binding owner retains that space across births at the occurrence. Explicit
+existing `hosts`/`in` declarations share a logical protocol table. The earlier uncompiled source map overclaimed
 that every generated child topology provides Hosts; preserve the failed source
 and correct that qualification.
 
@@ -895,7 +907,7 @@ the SDK. Child must use the existing installed target and sibling, observe
 both joined reports and preserve their complete parent-owned results. Listener
 startup proves no TLS handshake and earns no remote authorization acceptance.
 
-## Current Node implementation checkpoint — incomplete
+## Historical Node implementation checkpoint — incomplete
 
 Final typed ingress equality receives second-review PASS at source8f36b140;
 merged startup-test paired patterns receive second-review PASS at5523adeb.
@@ -1903,7 +1915,7 @@ removed under the user's cleanup instruction: about8.7MiB. Other old trees
 retain local changes or lack merge proof. No shared target or evidence archive
 was deleted.
 
-## Current integration contract — 2026-10-13
+## Historical integration contract — 2026-10-13
 
 Merged mainb2beaa9 and the coordinator's current feature branch select
 Behavior/Actors0.25.0 at2bb4510, macros0.14.1, registry Timers0.2.0 at9369d1f
@@ -22786,3 +22798,87 @@ failed full run remains recorded, not converted to a pass. New submitted heads
 must rerun required CI; prior26b/24c native pairs pass independently but do not
 qualify the changed head. Current retained HTTP delta is test+5/-3/net2;
 production/API0 added, combined20paths/fairness16.
+
+### Reviewed prerequisite delivery (2026-10-15 UTC)
+
+Fairness PR366 merged `b652cd703f5e06b72d0b535d9e0c531081fda8c8` at
+00:00:40Z; hosting PR365 merged
+`ed2299587c63d792a625a5a5ec6948d615a4e4c2` at 00:18:39Z. Both normal,
+head-guarded squash merges followed all six passing checks and source, native
+artifact and required-Nix reviews. Neither used a direct main push or bypass.
+Their actual merged trees equal the reviewed submitted trees: `52364b37`
+and `26a26b3b`, respectively. The combined tree already includes fairness.
+
+[CI38650631535](https://github.com/devrandom-labs/bombay/actions/runs/38650631535)
+and [CI38650631964](https://github.com/devrandom-labs/bombay/actions/runs/38650631964)
+execute 703 passing tests with one ignored in each optimized workspace and
+debug coverage campaign. The fairness campaign includes all 13 owning tests
+and the public actor witness. The hosting campaign additionally executes its
+exact same-address foreign-child test once in each profile, with 1/0/0.
+Both execute 35 public remote tests, 55 isolated Counter tests, six Node tests
+and three native count tests per profile, plus Driver 2048 and four Observe
+1024 fuzz campaigns. Conditional Miri is skipped and receives no credit.
+
+Final source review `a4d780a3`, native reviews `d7f0a83b`/`b621bdb7` and Nix
+reviews `df31b358`/`8f281e64` retain exact source/lock/artifact custody and
+limitations. Native late-exit uncertainty, original failures, zero-match
+diagnostics and superseded cancelled runs remain explicitly uncredited.
+The final local remote workspace run passes 732 tests with four ignored;
+strict Clippy with and without remote and formatting pass. The earlier failed
+full run is retained; its uncontrolled HTTP phase remains unclassified.
+
+Complete combined contribution against `c1d5b2b`: 20 paths; production Rust
++192/-44/net148, test source +1475/-55/net1420, CI configuration +8/-0/net8,
+manifests +3/-3/net0, locks +20/-20/net0, documents +1368/-36/net1332 and
+public types +0/-0. Shipping ownership and API minimization pass for these
+prerequisites. These measurements precede the documentation-only delivery record.
+
+This delivers local service fairness, explicitly hosted child isolation and
+corrected SDK 1.10.9 adoption. All full R01–R25, AUTH1 and NET1 gates remain
+open; Node-owned exports, authentication, admission, replay and the separate
+remote-counter application are still required. Published Bombay 0.1.1 still
+pins SDK 1.10.8; release PR367 requires its fixture lock correction, fresh CI
+and actual publication before consumers receive the corrected dependency.
+
+Fresh source inventory `9ed9deea` corrects the earlier per-birth description:
+public NativeChild::registration creates a new space when recalled for an
+unhosted occurrence; it cannot recover the runtime-held canonical space.
+Public Work has root and explicitly hosted paths but no loan of that unhosted
+occurrence row. This is source evidence for the next prerequisite, not a new
+API choice or an executed ownership proof.
+
+### Release correction and delivery records — selected integration
+
+The generated release PR367 has refreshed onto merged hosting source as
+`e641077b`. Its stale fixture lock is the same package-resolution blocker
+independently reviewed at `dffcc422`: local Bombay 0.1.1 versus release 0.1.2.
+The isolated Cargo correction preserves all 323 other fixture records and the
+complete root/fuzz locks; pinned metadata controls return 0/101/0 for corrected,
+stale and restored sources. Review `2c73e1b1` grants package-resolution credit
+only. Transfer onto the refreshed release head still requires fresh verification.
+
+Under standing recommendation delegation, include these contemporaneous merge
+records in PR367 rather than a separate documentation PR with duplicate CI.
+Expected combined scope is eight paths: the three generated release edits,
+one fixture lock and four delivery documents. Production Rust, tests and public
+types remain +0/-0; no API, dependency choice or resource limit changes.
+Cargo owns the narrow lock update. Preserve complete unaffected lock records,
+run the locked control on the integrated head, review the final source and run
+all required CI before any release merge or publication. No gate is waived.
+
+The integrated `c4496e3` source preserves all three graphs from refreshed
+`e641077b` before correction. Its original locked metadata command exits 101.
+Cargo's offline update changes only the local fixture version to 0.1.2; the
+resulting lock is byte-identical to the independently reviewed isolated fix.
+All 323 other fixture records and complete root/fuzz locks remain unchanged.
+Fresh corrected/stale/restored metadata controls again return 0/101/0;
+the stale failure is the intended lock refusal, and source restoration is
+verified. Root and fixture formatting checks pass through pinned Nix.
+These are package-resolution and source checks, not runtime execution credit.
+Final combined source review, updated-head CI, release merge and publication
+remain mandatory. Earlier generated-head failures are retained.
+
+Final integrated release record against `ed22995`: eight paths, production
+Rust +0/-0/net0, tests +0/-0/net0 and public types +0/-0. Documents/changelog
++164/-17/net147, manifest +1/-1/net0 and locks +2/-2/net0 account for the whole
+delta. The release worktree has no untracked files; required CI remains pending.

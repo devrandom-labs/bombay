@@ -127,7 +127,7 @@ ownership boundaries or repository change limits.
 | Durable external effects | OUT, REM | DUR; crash between commit and publication, then recover without silently losing committed work. |
 | Automatic placement and recovery | PLACE, FAIL | Remote delivery and identity, plus resource fencing for durable ownership; partitioned old owner cannot commit new writes. |
 | Distributed verification | SIM | Begin alongside WIRE/ID/PLACE design, not after implementation; same scenario families exercise fake and real networking. |
-| [Local event fairness](../prds/event-fairness.md) | FAIR1, scoped PERF-07 prerequisite | Locked local owners verified; bounded acquisitions under sustained readiness. Full capacity and latency work stays open. |
+| [Local event fairness](../prds/event-fairness.md) | FAIR1, scoped PERF-07 prerequisite | Reviewed PR366 merged after required CI passed; bounded acquisitions under sustained readiness. Full capacity and latency work stays open. |
 | Deployment and operability | OBS, K8S, RELEASE, PERF | Gates grow with each product stage; Kubernetes is a deployment target, not the actor ownership authority. |
 | Production Selo integration | SELO | Bombay foundation and downstream Selo services; identity bootstrap has no circular startup dependency. |
 | Additional product commitments | OPT | Explicit selection and independent PRDs; not silently part of the initial completion claim. |

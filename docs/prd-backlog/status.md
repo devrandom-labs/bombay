@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-14. This is the implementation index for the
+Updated: 2026-10-15 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
@@ -9,15 +9,25 @@ Historical inventory marks and research snapshots are not current eligibility.
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 after reviewed passing PR CI and exact-main CI38631426153.
 Guarded publication38638728105 succeeded; independent registry review verifies
-allnine archives against the exact source. Fresh SDK1.10.9 registry consumers
-are running; narrow adoption and combined exact-head CI remain required for
-hosting PR365 and fairness PR366. Both retain their original native debug failures.
+all nine archives against the exact source. Fresh SDK1.10.9 registry consumers
+and 112 owning Query/Config cases pass with exact source and lock review.
+[Fairness PR366](https://github.com/devrandom-labs/bombay/pull/366) merged `b652cd7`
+and [hosting PR365](https://github.com/devrandom-labs/bombay/pull/365) merged `ed22995`
+after all six checks and independent source/native/Nix reviews passed. Their
+merged trees match the reviewed trees. The corrected SDK is adopted in both
+locks; local fairness and explicitly hosted child isolation are delivered.
+All full R01–R25, AUTH1 and NET1 obligations remain open. Release PR367 carries
+the fixture lock correction; fresh CI, merge and publication remain required
+before Bombay0.1.2 delivery.
+Original native failures, HTTP uncertainty and cancelled runs remain recorded.
 PR360 was externally mergedc1d5b2bd at2026-10-14T20:44:33Z with native debug
 still failing; its three crates were published. Bombay0.1.1 still pins SDK1.10.8,
 so dependency publication alone does not correct that released remote profile.
 A later Bombay release and all full remote witnesses remain open.
 Historical PR322 and PR323 were closed as superseded after source review;
 closure is not merge or credit for their original acceptance requirements.
+
+## Historical prerequisite checkpoints
 
 DevX integration prerequisite [PR359](https://github.com/devrandom-labs/bombay/pull/359)
 merged `7fccf08b120dc468de6e5aa2ed9719724814c375` at2026-10-13T22:17:06Z.
@@ -367,7 +377,7 @@ it does not remove the inventory's finer requirements or optional decisions.
 
 | Item | State | Blocked by | Unblocks | Evidence |
 | --- | --- | --- | --- | --- |
-| FAIR1: PERF-07 local selection prerequisite | active | none | none | [Event fairness](../prds/event-fairness.md); deterministic source service only, full overload/latency work remains open. |
+| FAIR1: PERF-07 local selection prerequisite | merged | none | none | [Event fairness](../prds/event-fairness.md); reviewed PR366 merged `b652cd7` after all required CI passed. Deterministic source service only; full overload/latency work remains open. |
 
 ## Retained local evidence
 
