@@ -1358,6 +1358,21 @@ The merge changes no crates/bombay/src production relative to ac1375c, preserves
 the DevX outcome migrations and configured client-capacity correction, and adds
 no ordinary caller ceremony or public API. Owner dependency selection remains
 Behavior/Actors0.26.0. No custom-interpreter candidate is included.
-Fresh native gates are required for this exact combined source; the120cc2d
-full-gate pass is not transferred to the release integration. Delivery remains
-ac1375c until exact-source verification and independent review pass.
+Exact combined source790fa08 passes all24 native aarch64-Darwin Nix checks
+in5404.589 seconds with all586 tracked hashes, HEAD and clean Git conserved.
+Workspace verification has104 summaries:749 passed, zero failed and one
+intentional parent-invoked subprocess fixture ignored. Both independent reviews
+reconcile exact gate names, derivations, source inventories and the unchanged
+production contract. Delivery advances ff-only from ac1375c after this record.
+RELEASE-INTEGRATED-FULL-NIX and RELEASE-INTEGRATED-COMPLETION-AUDIT retain the
+complete command, raw24 successes and source evidence. Other systems, new
+archive checks, publication and the separate interpreter candidate stay open.
+
+Current store availability is separate: two successful outputs were absent,
+were rebuilt from their exact recorded derivations, then four other successful
+outputs were absent. A concurrent store-GC process was observed. Both strict
+cache-audit failures and exact restoration receipts remain; the final completion
+audit records20 available outputs with exact derivations and four absent outputs.
+No continued-cache claim, failed-gate waiver or further restoration loop is made.
+The first audit parser also missed literal terminal fragments in summary lines;
+the reviewed finite parser and independent104-summary count agree.
