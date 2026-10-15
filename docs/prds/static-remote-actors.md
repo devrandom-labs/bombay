@@ -1,5 +1,41 @@
 # Static remote actors and typed admission
 
+## Communication capacity dependency (2026-10-15 UTC)
+
+Select the recommended narrow registry adoption under the user's standing
+delegation: raise the existing Communication minimum to0.1.6 and update only
+its version/checksum in both locks. A lock-only change would still let consumers
+select0.1.5, which lacks the verified capacity operation. A broad dependency
+refresh is unnecessary. Every other dependency, frozen Behavior/Actors0.25.0
+and the absence of repository patches remain unchanged.
+
+Owning [PR13](https://github.com/devrandom-labs/bombay-communication/pull/13)
+merged39fd717e after all five checks and independent source/actual-log reviews
+passed. Release [PR14](https://github.com/devrandom-labs/bombay-communication/pull/14)
+merged963067e0 after all five checks passed; its reviewed and merged trees
+equalb33455208db74cf25245cda40175269d15033434. Automatic release38811968998
+succeeded. The published un-yanked0.1.6 archive has checksum
+e5d5a581c47408d64234b7e89a229b63a333584cfe5c10b6fe656daa2c1e4853;
+all15 packaged Rust files match reviewed source, and VCS/tag resolve963067e0.
+
+Communication owns no-payload capacity observation and exact payload custody
+through notification failure. Available observes capacity; it reserves no slot
+and grants no permission. Bombay must recheck current authority before each
+nonwaiting attempt. Progress assumes normal executor wakers: arbitrary foreign
+waker-panic sibling progress is unsupported, with failed broader research
+retained. The owning change accepts measured workload cost increases; it claims
+no speedup. Existing final admission, retry and uncertainty laws remain intact.
+
+This independent branch starts from latest main e2a4e7f3. Planned surface is
+three existing dependency files and eight current documentation records:
+production Rust+0/-0; tests+0/-0; public types+0/-0. It reuses existing controls
+without adding implementation-mirroring tests. All earlier cumulative scope
+and unknown historical extents carry. Compare every locked package record;
+execute affected debug/optimized tests, strict checks and required CI on the
+actual main-based source before review/merge. Those checks are pending here.
+This delivers dependency adoption only: full R01–R25/AUTH1/NET1, Application
+networking and the required private transport boundary remain open.
+
 ## Current delivery (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required

@@ -9,6 +9,12 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
+Communication0.1.6 publication is verified after reviewed owning PR13 and release
+PR14 merges with passing CI. Narrow Bombay adoption is selected; its main-based
+tests and PR delivery remain pending. Capacity observation neither reserves a
+slot nor substitutes for fresh permission checks. Arbitrary foreign-waker-panic
+sibling progress is unsupported. This prerequisite closes no full row.
+
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
 2026-10-13T22:17:06Z after all six checks pass ondf6144f. Source trees match.

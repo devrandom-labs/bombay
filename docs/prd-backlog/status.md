@@ -6,6 +6,15 @@ locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
 
+Communication0.1.6 is selected for narrow adoption after owning PR13 and release
+PR14 merged with all checks passing and actual registry/archive verification.
+The minimum and both locks change only the existing package. Capacity readiness
+is an observation, not reserved capacity or admission authority. Main-based
+integration verification and PR delivery remain pending; fresh-authority retries
+and the complete remote Application service remain required. Full remote rows
+stay open; [the PRD](../prds/static-remote-actors.md#communication-capacity-dependency-2026-10-15-utc)
+records source, scope and exact completion gates.
+
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.
 All nine archives and fresh SDK1.10.9 consumer/owning Query/Config cases are
