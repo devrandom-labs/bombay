@@ -93,6 +93,8 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
             .open_node(listening_configuration())
             .await
             .unwrap_or_else(|_| panic!("Node opens"));
+        let connection = node.session.clone();
+        let session = &connection;
         let (
             observations,
             publications,
@@ -106,7 +108,7 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
             notifications,
         ) = {
             let (execution, receiving) = node
-                .execute_with(|application, session| async move {
+                .execute_with(|application| async move {
                     let limits = Limits {
                         input_bytes: NonZeroUsize::new(2048).unwrap(),
                         proof_bytes: NonZeroUsize::new(2).unwrap(),
@@ -245,6 +247,7 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
             )
         };
         let closed = node.close().await;
+        assert!(connection.is_closed());
         let (_, retirement) = native.expect("actual root joined");
         let custody = retirement.custody().unwrap();
         let transfer_results = publications.0.lock().unwrap();
@@ -342,6 +345,8 @@ fn node_ledger_checks_metadata_object_before_its_terminating_read() {
         .open_node(listening_configuration())
         .await
         .unwrap_or_else(|_| panic!("Node opens"));
+        let connection = node.session.clone();
+        let session = &connection;
         let (
             observations,
             publications,
@@ -358,7 +363,7 @@ fn node_ledger_checks_metadata_object_before_its_terminating_read() {
             notifications,
         ) = {
             let (execution, receiving) = node
-                .execute_with(|application, session| async move {
+                .execute_with(|application| async move {
                     let limits = Limits {
                         input_bytes: NonZeroUsize::new(2048).unwrap(),
                         proof_bytes: NonZeroUsize::new(2).unwrap(),
@@ -527,6 +532,7 @@ fn node_ledger_checks_metadata_object_before_its_terminating_read() {
             )
         };
         let closed = node.close().await;
+        assert!(connection.is_closed());
         let (_, retirement) = native.expect("actual ledger joined");
         let custody = retirement.custody().unwrap();
         let ledger = custody.behavior.base();

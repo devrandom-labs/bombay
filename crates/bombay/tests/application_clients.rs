@@ -609,10 +609,6 @@ async fn bound_sender_preserves_nonwaiting_full_retry_prefix_and_closed_commands
 }
 
 #[cfg(feature = "remote")]
-#[path = "application_clients/json_receiving.rs"]
-mod json_receiving;
-
-#[cfg(feature = "remote")]
 #[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::too_many_lines,

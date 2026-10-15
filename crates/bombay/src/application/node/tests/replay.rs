@@ -386,6 +386,7 @@ where
     let sender_closed = sender.close().await;
     assert!(connection.is_closed());
     let (undeclared, session, mut incoming, retained) = export.undeclare().await;
+    assert_eq!(session.zid(), receiver_session.zid());
     let mut requests = Vec::new();
     for (key, protected, proof, receipt, admission, native, mut client) in retained {
         client.close_admission();
@@ -982,3 +983,12 @@ fn scheduled_ledger_node_reuses_first_read_outcome() {
             same_scheduled_ledger,
         ));
 }
+
+#[path = "replay/association.rs"]
+mod association;
+
+#[path = "replay/cancellation.rs"]
+mod cancellation;
+
+#[path = "replay/permissions.rs"]
+mod permissions;

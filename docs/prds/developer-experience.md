@@ -2511,3 +2511,80 @@ The external no-default-feature consumer also passes its seven runtime cases;
 its two static harnesses are explicitly excluded from that command. Its only
 follow-up is gating the moved Receipts import to its actual remote consumers;
 the private native test bodies and owning runtime remain unchanged.
+
+Native catalogue adoption, pre-edit DX01/20/23/25: reuse the proved private Node
+ownership for JSON delivery, cancelled receives, A/B reply association and
+same/foreign-export permission tests. Move their original bodies and finite
+sources without adding a port, callback, bound, state, SDK opening or fixture.
+Each real Node supplies its existing shared connection before actor-only Work;
+each original close still owns shutdown. Preserve all originals, native causes,
+accepted prefixes, replay and terminal lanes. The pre-edit16-E0593 public-client
+failure is the caller witness; four actual private journeys are now proven at
+48c730d before this broader move.
+
+Public constructors, pressure and refusal cases stay external. Delete unused
+SDK callback parameters. Move the Ledger constructor's exact original-Node vs
+Export-returned connection-ID observation to existing private read_study:
+compare Export's returned session to receiver_session, never the sender's
+connection. That shared real query journey covers both provider modes for
+Counter and Ledger. The external Ledger constructor gains the same independent
+open-before/closed-after observation as Counter; retain every other constructor
+value, action and assertion. Record this explicit oracle relocation rather than
+claiming a lifecycle predicate proves connection identity. Expected runtime/API
+delta0, no new state/type/fixture, existing native test module count unchanged.
+Driver7/settlement3/action2/terminal24 and their owned values remain unchanged;
+cross-check actual Node/Export association, ApplicationOutcome and the retained
+request-key, cancellation and permission laws before retaining this batch.
+
+Adoption matrix finding: current debug/optimized and minimum debug pass all353
+library plus21 external cases and nine denials. Minimum optimized passes353
+library cases and20 external cases, but scheduled Counter construction fails at
+native opening before Work. The initial panic discarded its cause. A diagnostic
+amendment preserves the native cause in the panic; the exact single-case retry
+passes, which does not explain or waive the earlier failure.
+
+Test-resource law, pre-edit: constructor-only cases have no connecting peer and
+need no known port. The shared reserved_address releases its TCP listener before
+SDK opening, so it cannot reserve authority over that address. Exercise the
+actual constructor with that released address occupied on both loopbacks; it
+must expose the native bind refusal. Then let these two constructor fixtures
+request TLS port0, retaining all existing lifecycle, original-value and complete
+retirement checks. Native opening must succeed while the unrelated claimed port
+remains occupied. Reuse existing configuration and Node opening; add no runtime
+API, retry, sleep, dependency, arbitrary port or relaxed assertion. This proves
+the fixture's port-allocation weakness, not the unavailable cause of the initial
+failure. The catalogue batch still requires final verification and two reviews.
+
+Final catalogue proof after that bounded fixture change: each supported compiler
+passes353 library plus21 external cases and all nine compile denials, in debug
+and optimized profiles. Each configuration lists and runs the same374 names;
+all615 initial/final source hashes match. This includes14 actual private native
+cases and one pure diagnostic case per configuration, not15 network journeys.
+NODE-PRIVATE-CATALOGUE-FINAL-{CURRENT,MINIMUM}-ROWS and FINAL-VERIFIED bind all
+eight log hashes and1496 outer/36 denial executions. Preserve the original
+failed minimum optimized receipt; its historical startup cause is unknown.
+All-feature/all-target bombay-rs strict lint passes7.758 seconds. Isolated protected
+transport consumers remain separate, unported callers; no whole-repository,
+all-features-runtime or complete SDK-hiding result is inferred.
+
+Both source reviews recover all four moved files byte-for-byte after reversing
+only the nine actual connection captures, callback arity and additional close
+observations. Existing external refusal/pressure actions remain exact; the
+constructor's connection-ID observation now belongs to the private receiver
+journey, with external lifecycle observations retained. The port probe's actual
+bind failure/automatic success and final source also pass both reviews.
+
+Aggregate checkpoint: Node fields and Driver7/settlement3/action2/terminal24,
+their current owned values, runtime transition branches/modules and public
+spellings are unchanged. No new state, type, bound, fixture, dependency, history,
+repeated cause, false cardinality, nested authority, semantic boolean or caller
+structural path appears. Four native modules move to their owner, net module0.
+Runtime production/public API +0/-0; Rust tests +76/-38/net38 with four detected
+renames (+3487/-3449 without rename detection). Cross-check actual Node/Export,
+Driver, ApplicationOutcome, request-key/receive cancellation and DX01/20/23/25.
+Disposition: pass this catalogue adoption; remaining SDK surfaces and final
+programme gates stay open.
+Both independent final evidence reviews accept all eight raw log hashes, exact
+test/denial selections and615 frozen sources. Only this requirement evidence
+prose is added afterward; the tested Rust is unchanged. Existing generic
+retirement/receiver-state and first-sender inverse limits remain as recorded.

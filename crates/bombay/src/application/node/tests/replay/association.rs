@@ -42,8 +42,10 @@ mod counter {
                     .open_node(configuration(&address, &EndpointRole::Receiver))
                     .await
                     .unwrap_or_else(|_| panic!("actual configured receiver Node"));
+                let connection = node.session.clone();
+                let session = &connection;
                 let (execution, receiving) = node
-                    .execute_with(|application, session| async move {
+                    .execute_with(|application| async move {
                         let target = application.root().established_recipient();
                         let target_origin = application.root().address();
                         let mut export = application
@@ -279,6 +281,7 @@ mod counter {
                 }
                 drop(session);
                 let closed = node.close().await;
+                assert!(connection.is_closed());
                 let native = native.expect("actual full native root");
                 assert_completed(native, None);
                 assert_notifications(&notifications);
@@ -414,8 +417,10 @@ mod ledger {
                 .open_node(configuration(&address, &EndpointRole::Receiver))
                 .await
                 .unwrap_or_else(|_| panic!("actual configured Ledger Node"));
+                let connection = node.session.clone();
+                let session = &connection;
                 let (execution, receiving) = node
-                    .execute_with(|application, session| async move {
+                    .execute_with(|application| async move {
                         let target_origin = application.root().address();
                         let mut export = application
                             .export::<_, Receipts, recorded::Receipt<LedgerOperation>>(
@@ -636,6 +641,7 @@ mod ledger {
                 };
                 drop(session);
                 let closed = node.close().await;
+                assert!(connection.is_closed());
                 let native = native.expect("complete Ledger native tree");
                 assert_notifications(&notifications);
                 assert!(

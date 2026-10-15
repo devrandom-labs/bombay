@@ -52,8 +52,10 @@ async fn cancelled_ledger_read<Receipt>(
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("configured local export Session"));
+    let connection = node.session.clone();
+    let session = &connection;
     let (execution, receiving) = node
-        .execute_with(|application, session| async move {
+        .execute_with(|application| async move {
             let target = application.root().established_recipient();
             let origin = application.root().address();
             let publications = Arc::new(Mutex::new(Vec::<IngressError<Query>>::new()));
@@ -306,6 +308,7 @@ async fn cancelled_ledger_read<Receipt>(
     };
     drop(session);
     let closed = node.close().await;
+    assert!(connection.is_closed());
     // Observe both independent admissions and A cancellation only after full cleanup.
     let (Ok((a, None)), Ok((b, None))) = (&retained_a, &retained_b) else {
         panic!("two independent actual issued keys");

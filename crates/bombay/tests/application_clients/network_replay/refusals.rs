@@ -74,7 +74,7 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                 .unwrap_or_else(|_| panic!("configured owning Node starts"));
             let node_refusals = Arc::clone(&refusals);
             let (execution, receiving) = node
-                .execute_with(|application, _session| async move {
+                .execute_with(|application| async move {
                     let target = application.root().established_recipient();
                     let foreign = Application::new(Counter::new().stop_on_shutdown())
                         .run_with(|foreign_application| async move {

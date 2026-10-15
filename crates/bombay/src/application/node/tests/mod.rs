@@ -9,3 +9,5 @@ use counter::{Counter, CounterMessage};
 use ledger::{LedgerCommand, MailLedger, Receipts};
 
 mod replay;
+
+mod json;
