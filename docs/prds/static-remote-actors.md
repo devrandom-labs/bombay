@@ -444,6 +444,64 @@ introductions136/160. No repair, unwind policy, release or adoption is selected
 from that counterexample. These two measured source windows total1302 net
 ordinary production and10334 net test/model lines; all older extents carry.
 
+### Native dequeue custody — selected repair after actual failing traces
+
+The completed native counterexample proves an acquired original is lost during
+wake unwinding. Under standing recommendation delegation, select ownership in
+the existing Consumer: one private Option<U> holds its dequeued original before
+ticket publication or any wake. Only after wake operations return may it move
+to caller Ready. A later borrowed receive uses this same original before a new
+user dequeue or terminal marker, at the existing user-priority sites. A control
+only receive leaves it intact. Consuming drain returns it first, followed by
+the remaining FIFO; whole Consumer abandonment surrenders it exactly once.
+
+No second queue, task, Arc, public type, catch/discharge or notification error
+policy is selected. A future-local original is lost when that borrow unwinds;
+moving it into the shared lane adds synchronization/ownership machinery;
+waking before publishing capacity can lose progress. The existing single
+consumer is the precise owner between acquisition and caller transfer.
+
+If a previous wake panicked, retry its wake hints before taking the retained
+original. The existing single-consumer head identifies the previous ticket;
+derive it with wrapping subtraction rather than adding another phase field.
+An unwind retry may issue an additional wake hint, never another dequeue,
+enqueue, admission permit or message. The original panic still unwinds with
+its actual cause; retaining the message does not silently convert that failure
+to success. Owner-close and teardown wake failures remain separate unproved
+boundaries. Ordinary native producer and capacity race laws must remain intact.
+
+Before production, revise the current characterization's incompatible drain
+expectation: retaining the first message requires the complete [59,61] FIFO,
+not its current known-bad [61] prefix. Add a separate receive-after-unwind
+trace with the same original pointers, borrowed-future disposal, next-user and
+terminal order; distinguish whole-owner surrender. Run intended failing
+regressions in both profiles before changing the owner. Then implement only
+the existing Consumer/UserLane pop, receive/drain and constructor changes.
+Reproduce removal/late ownership as an intended custody inversion, restore
+exact source and rerun affected native/model controls in both profiles.
+
+Forecast40–60 introduced production lines/net15–25 across the existing owning
+lib and mailbox tests/docs. Select220 cumulative owner production introductions
+(replacing160),700 retained/2000 authored verification (replacing500/1600),
+carrying136 production and858 authored/494 retained test additions and all
+earlier source copies. Global1400 net production/14 public additions/18000
+verification/115 software slots remain unchanged. No manifest/lock/version,
+publication or Bombay adoption. The independently reproduced failing law,
+not compiler diagnostics, authorizes this exact additional private custody.
+
+Before production, extend the native tests with the selected retry-wake law:
+after the caught wake failure, refill the released ring slot, register a fresh
+counting capacity observer, then retry the retained original. Prove the hint
+is delivered while actual ring capacity remains Full, without another pop,
+and preserve the complete originals/FIFO through cleanup. This distinguishes
+repeatable wake hints from a fictitious capacity reservation. Forecast25–40
+additional test introductions within700/2000. Keep the actual caught Err opaque
+and owned through cleanup; observer counts and raw panic logs identify its
+source. No downcast projection or reconstructed panic cause is needed. The
+new Option<U> also changes Consumer storage by at most one owned message;
+record its layout/cost before retention. Ring capacity never counts an already
+dequeued message as still queued, and this is not a whole-service memory proof.
+
 ### Outbound request protection — selected before the first consumer
 
 The user's renewed requirement is absolute: Application owns connection,
@@ -486,6 +544,26 @@ its await demonstrates Pending; do not claim that result. Real pending request
 protection, final Application ownership, generic typed commands, fresh reply
 permission, replay and full resource bounds remain required. Root coordinates
 shared contracts/manifests/locks; this comparison author changes no such file.
+
+Independent source review of the first request protector finds one omitted
+consistency check before controls: configured actor_generation and the trusted
+logical binding's actor_generation are the same u64 axis. Add that comparison
+and a sixth adverse case that changes only the logical actor generation.
+Runtime-generation SDK text and logical u64 remain independently assigned;
+this selects no cast, hash or identity authority from transport IDs.
+
+The pre-implementation command actually fails101 for exactly the two absent
+recorded/scheduled protect_request operations. Healthy sourcee090227f then
+passes four focused tests per profile: both actual live requester/provider
+compositions and both six-case refusal sets. The selected old-constant bypass
+must leave the registration table empty and reach finite peer error/no-ACK
+cleanup before the two intended delivery failures; refusal controls remain
+unchanged. Before further cuts, select one additional omission of only the
+new actor-generation comparison. Both refusal tests must fail the actual sixth
+Invalid-result oracle in both profiles. Other five adverse cases remain
+positive observations, not separately mutation-qualified clauses. Restore
+exacte090 after each cut and finish the complete affected Counter target in
+both profiles. No test result is credited as production identity/authentication.
 
 ### Pending protection — ordinary Rust comparison before implementation
 
