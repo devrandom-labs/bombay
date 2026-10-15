@@ -233,7 +233,8 @@ mod counter {
                         )
                     })
                     .unwrap_or_else(|_| panic!("actual receiver Work enters the host"));
-                let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+                let ((), outcome) = tokio::join!(execution, receiving);
+                let (outcome, native, notifications, ()) = outcome.into_parts();
                 let (
                     (
                         export,
@@ -593,7 +594,8 @@ mod ledger {
                         )
                     })
                     .unwrap_or_else(|_| panic!("actual Ledger host enters"));
-                let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+                let ((), outcome) = tokio::join!(execution, receiving);
+                let (outcome, native, notifications, ()) = outcome.into_parts();
                 let (
                     (
                         export,

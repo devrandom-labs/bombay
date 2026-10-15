@@ -154,7 +154,8 @@ fn counter_retries_only_its_original_full_request_with_current_permission() {
                 rows, queries, query_end, replies, ordinary, ordinary_tail, processing,
                 processing_tail, stopped, report)
         }).unwrap_or_else(|_| panic!("actual Counter host entry"));
-        let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+        let ((), outcome) = tokio::join!(execution, receiving);
+        let (outcome, native, notifications, ()) = outcome.into_parts();
         let (output, cleanup) = outcome.try_into_completed()
             .unwrap_or_else(|_| panic!("original Counter Work"));
         let closed = node.close().await;
@@ -383,7 +384,8 @@ fn ledger_full_retry_returns_the_same_allocation_when_the_exact_actor_has_retire
                     )
                 })
                 .unwrap_or_else(|_| panic!("actual Ledger host entry"));
-            let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+            let ((), outcome) = tokio::join!(execution, receiving);
+            let (outcome, native, notifications, ()) = outcome.into_parts();
             let (output, cleanup) = outcome
                 .try_into_completed()
                 .unwrap_or_else(|_| panic!("original Ledger Work"));

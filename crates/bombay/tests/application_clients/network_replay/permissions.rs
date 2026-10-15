@@ -401,8 +401,9 @@ async fn counter_case<Receipt>(
                     (export, retained, original, verified, stopped, report)
                 })
                 .unwrap_or_else(|_| panic!("foreign Counter execution"));
-            let ((), (foreign_outcome, foreign_native, foreign_notifications)) =
-                tokio::join!(foreign_execution, foreign_receiving);
+            let ((), foreign_outcome) = tokio::join!(foreign_execution, foreign_receiving);
+            let (foreign_outcome, foreign_native, foreign_notifications, ()) =
+                foreign_outcome.into_parts();
             let (
                 (
                     foreign_export,
@@ -675,7 +676,8 @@ async fn counter_case<Receipt>(
             )
         })
         .unwrap_or_else(|_| panic!("first Counter execution"));
-    let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+    let ((), outcome) = tokio::join!(execution, receiving);
+    let (outcome, native, notifications, ()) = outcome.into_parts();
     let (
         (
             first,
@@ -1052,8 +1054,9 @@ async fn ledger_case<Receipt>(
                     (export, retained, original, verified, stopped, report)
                 })
                 .unwrap_or_else(|_| panic!("foreign Ledger execution"));
-            let ((), (foreign_outcome, foreign_native, foreign_notifications)) =
-                tokio::join!(foreign_execution, foreign_receiving);
+            let ((), foreign_outcome) = tokio::join!(foreign_execution, foreign_receiving);
+            let (foreign_outcome, foreign_native, foreign_notifications, ()) =
+                foreign_outcome.into_parts();
             let (
                 (
                     foreign_export,
@@ -1337,7 +1340,8 @@ async fn ledger_case<Receipt>(
             )
         })
         .unwrap_or_else(|_| panic!("first Ledger execution"));
-    let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+    let ((), outcome) = tokio::join!(execution, receiving);
+    let (outcome, native, notifications, ()) = outcome.into_parts();
     let (
         (
             first,

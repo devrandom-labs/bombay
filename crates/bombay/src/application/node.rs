@@ -284,9 +284,13 @@ where
     {
         let (application, work) = self.take_application(work)?;
         let session = &self.session;
-        match application.execute_with_invocation(work, move |work: Work, application| async move {
-            work(application, session).await
-        }) {
+        match application.execute_with_invocation(
+            work,
+            move |work: Work, mut application| async move {
+                application.session = Some(session.clone());
+                work(application, session).await
+            },
+        ) {
             Ok((execution, receiving)) => {
                 execution.await;
                 Ok(receiving.await)

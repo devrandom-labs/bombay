@@ -10,6 +10,7 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Builder;
 use tokio::sync::mpsc;
+use zenoh::Session;
 use zenoh::query::Query;
 
 async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bool) {
@@ -20,8 +21,8 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("actual configured Counter Node"));
-    let (execution, receiving) = node
-        .execute_with(|application, session| async move {
+    let outcome = node
+        .run_with(async move |application, session: &Session| {
             let actual_zid = session.zid();
             let target = application.root().established_recipient();
             let declaration = application
@@ -41,8 +42,9 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
             let report = application.lifecycle().retirement().await;
             (declaration, actual_zid, stopped, report)
         })
+        .await
         .unwrap_or_else(|_| panic!("actual Counter execution host"));
-    let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+    let (outcome, native, notifications, ()) = outcome.into_parts();
     let ((declaration, actual_zid, stopped, report), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Counter Work acquired"));
@@ -77,8 +79,8 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
     assert_completed(native, None);
     assert_notifications(&notifications);
     assert!(cleanup.is_ok() && closed.is_ok() && stopped.is_ok());
-    let (undeclared, session, rows, queries, end, diagnostic) =
-        declaration.unwrap_or_else(|_| panic!("actual Node must issue its public export"));
+    let (undeclared, session, rows, queries, end, diagnostic) = declaration
+        .unwrap_or_else(|(_, cause)| panic!("actual Node must issue its public export: {cause:?}"));
     assert_eq!(diagnostic, "Export { .. }");
     assert!(undeclared.is_ok());
     assert_eq!(session.zid(), actual_zid);
@@ -125,7 +127,8 @@ async fn ledger_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> boo
             (declaration, actual_zid, stopped, report)
         })
         .unwrap_or_else(|_| panic!("actual Ledger execution host"));
-    let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+    let ((), outcome) = tokio::join!(execution, receiving);
+    let (outcome, native, notifications, ()) = outcome.into_parts();
     let ((declaration, actual_zid, stopped, report), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Ledger Work acquired"));
@@ -174,7 +177,7 @@ async fn ledger_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> boo
 }
 
 #[test]
-fn recorded_counter_public_node_issues_export() {
+fn recorded_counter_joined_node_issues_export() {
     Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
@@ -185,7 +188,7 @@ fn recorded_counter_public_node_issues_export() {
         ));
 }
 #[test]
-fn scheduled_counter_public_node_issues_export() {
+fn scheduled_counter_joined_node_issues_export() {
     Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()

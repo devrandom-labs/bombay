@@ -2156,3 +2156,70 @@ audit records20 available outputs with exact derivations and four absent outputs
 No continued-cache claim, failed-gate waiver or further restoration loop is made.
 The first audit parser also missed literal terminal fragments in summary lines;
 the reviewed finite parser and independent104-summary count agree.
+
+Latest-main conservation, pre-edit DX01/15/20/25: merge42ba1dc includes PR372
+without new production conflict resolution; source retains native constructor
+selection at all three launch cuts and main's exact application association.
+Fresh all-feature/all-target checking fails15 incoming remote tests still peeling
+the former three-part receiving tuple, plus the owning ACK test's native prepare
+call missing main's optional application association. Mechanically peel the same
+complete ApplicationOutcome with into_parts, preserving all original values and
+assertions. The isolated native ACK test has no Application-associated endpoint,
+so its explicit optional association remains None, matching other direct native
+hosts. No production interface or capability changes are justified by this check.
+
+Joined Node export law, pre-edit DX01/20/25: the existing Node::run_with must
+supply the same actual Node Session to its ApplicationHandle as execute_with.
+Both are public entries to one Application invocation. Main currently adds this
+association only to execute_with, so a real joined export must fail NodeAbsent.
+Use the incoming Counter export-construction journey with its two genuine
+receipt profiles as the focused witness: replace only paired execution with
+run_with(async move |application, session: &Session| ...).await, retain every
+native Session identity, actual declaration/undeclare, shutdown, retirement,
+notification, empty request/ingress and refusal assertion. The incoming Ledger
+journeys continue exercising paired execution. Expected correction after RED:
+reuse the same Session clone assignment at the existing invocation cut; zero
+new types, bounds, states, dispatchers or policies. Ownership equation is one
+borrowed original Session plus its existing handle clone, with full work/root/
+notification custody unchanged. Cross-check native Node invocation, exact actor
+association, DX01/20 and D-RETIRE. Broader remote protocol semantics remain owned
+by PR372 and its separate PRD.
+
+Receiving migration correction: the initial single-line script matched13 sites,
+not its predicted15, and stopped before the joined witness or owning ACK change.
+The next attempted command failed only remaining old tuple consumers and receives
+no joined-law credit. Two multiline paired sites and two local completed results
+make17 actual consumers. All use the already proven complete into_parts product;
+no compiler-suggested reference adjustment is accepted for a cascading inference
+error. Preserve both failed checks and require the actual joined runtime RED.
+
+Joined export RED: NATIVE-JOINED-NODE-EXPORT-RUNTIME-RED compiles the real
+combined consumer and fails both receipt-profile tests with exact NodeAbsent,
+zero passing and no other failure. No production correction existed during that
+run. Reuse the existing Session association assignment from paired invocation
+in joined invocation. Aggregate checkpoint before/after: no new state/result,
+branch, type, module, public spelling, actor authority or protocol alternative;
+the existing optional Session retains exactly native Node association or its
+absence on a local-only handle. This is an existing capability value, not an
+arrival-history label. Original work, Session identity and complete application
+custody remain independently observable. Expected production delta: two physical
+lines in the existing Node method, plus formatting; test migration remains
+separate. Residue scan: no structural syntax, inferred ownership/provenance,
+semantic flag, repeated cause or nested dispatcher. Disposition requires both
+runtime profiles, original paired cases and independent review.
+
+Joined export correction checkpoint: all four actual construction cases pass
+on1.99/1.96 debug/release (27.209/145.918 and40.700/165.227 seconds). Counter
+uses joined execution in both receipt profiles; Ledger retains paired execution.
+The complete workspace/all-target/all-feature check passes15.202 seconds. Both
+independent source reviews preserve all369 original assertion calls across the
+seven migrated files, with no original effect or input dropped. The optimized
+original-defect replay also fails exactly both joined cases with NodeAbsent;
+its restored control is still running. Production+7/-3/net4 in the one existing
+Node method; tests+44/-25/net19 including two cfg lines in the owning ACK fixture;
+no public types/spellings/modules/states/results/branches/authorities added.
+All existing optional association alternatives retain the actual Session or its
+meaningful local absence. Disposition: pass this focused correction; the fresh
+combined runtime, supported diagnostics, strict lint, full24 native Nix checks
+and archives remain separate acceptance gates. The upcoming source freeze must
+include the complete merged main and this correction.

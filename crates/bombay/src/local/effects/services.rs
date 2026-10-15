@@ -332,6 +332,8 @@ mod tests {
             Config::new(mailbox_capacity.get()),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |control, timers, observations| {
                 let inputs = ApplicationCapabilityInputs {
                     actor_spaces: hosts,
