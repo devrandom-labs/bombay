@@ -25917,3 +25917,92 @@ feature, dependency, default, service API or abstraction is selected here.
 Final CI/artifact review and a normal exact-head guarded merge remain required.
 Record their actual results and merge in the next delivery checkpoint; no full
 R01–R25, AUTH1 or NET1 gate closes from this prerequisite.
+
+
+### Application startup custody — isolated delivery stage (2026-10-15)
+
+A real startup producer can return an acquired affine value and then panic in
+Drop before the execution kernel binds that returned value. The unchanged main
+kernel then retains that value after execution is dropped. This violates the
+existing execution owner's custody; it is a Bombay ownership correction, not
+a new actor-model law or remote public API.
+
+The main-based regression reuses ShutdownLedger, StopOnShutdown, the actual
+execute_application_with kernel and native Tokio oneshot. A real Ready returns
+the original Sender while its original Receiver is independently transferred.
+After the original producer panic and execution/runtime disposal, the receiver
+must observe Closed. It also checks the original boxed panic allocation/value,
+cold Application and Work allocations, unchanged Ledger state, exactly one
+startup/Ready/disposal, no preparation/Work and absent native/notification
+receipts. No Zenoh, timeout, copied model or fabricated cleanup result is used.
+Two author and two independent source reviews pass on formatted88a64e0a.
+
+The actual debug old-source command executes one test and fails exactly at
+Empty-versus-Closed(332 filtered,0 ignored), after the original disposal panic.
+Optimized negative remains pending at this pre-production record. Preserve
+raw logs and source hashes in /tmp/bombay-startup-publication; compilation or a
+setup failure receives no executed-regression credit.
+
+Selected correction: store the complete actual Ready tuple in one local Option
+owned outside the startup producer's lexical scope, before executor-guard or
+producer disposal. Return unit from that poll; only after producer disposal
+move the same tuple into existing preparation. No new owner, type, API, bound,
+dependency, cloned cause or replacement runtime. Expected production change:
+execution.rs at most20 net lines; existing owning inline test at most250 lines.
+Update this PRD, its acceptance record and backlog status in the same delivery.
+
+This work uses branch fix/application-startup-custody created from latest main
+c249044a; the user's original working tree and DevX worktree remain untouched.
+Selected graph is locke058fe21, no patch: Behavior/Actors0.25.0@2bb4510077bfa5ae,
+Communication0.1.5@24ad2b9, Address0.3.0@9f058dc, Timers0.2.0@9369d1f, private
+Observe and Tokio1.53.1. Complete selected Behavior instructions2b7a9195 apply.
+Communication0.1.6 adoption remains the separate PR377; this stage does not
+refresh a dependency or presume that PR merged.
+
+The standing recommended-choice delegation selects this isolated delivery.
+Cumulative approved windows1600 net production,14 public types,20000 verification/
+tooling lines and115 software slots carry, including unresolved historical
+reservations. Known combined source1520 already includes this same six-line
+correction in remote research; integration never counts it as a second semantic
+implementation. The current stage allocation is800 retained/1800 authored
+verification lines plus100 inverse lines; this independent witness currently
+adds193 retained lines. No broader API/privacy/identity/default decision follows.
+All full R01–R25/AUTH1/NET1 obligations and the unfinished remote service remain
+open. Delivery still requires actual optimized negative, restored controls,
+affected combined checks, minimization, independent review, required CI and
+a normal exact-head guarded PR merge.
+
+
+The exact-main optimized negative now also returns101 for the one intended
+Empty-vs-Closed assertion(332 filtered,0 ignored,0.00s). Both negative profiles
+compiled and ran; original disposal panic precedes the custody failure. Fresh
+selected-owner source/tests/docs inspection confirms no prerequisite blocker.
+Private Observe deliberately leaves dropped publications pending; actual Tokio
+oneshot therefore remains the exact native closure oracle. Address leases,
+Communication closure/payload ownership, actor shutdown Actions and Timers
+generations remain with their owners. Entity's actual joined-family result
+and tail shutdown barrier must not move. Existing HTTP listener acquisition is
+an affected consumer and receives focused coverage. D-RETIRE-1 supplies the
+existing acquired-result law; this correction adds no Engine/Behavior semantics.
+Source audits: transitiona0d96f10, shutdown81bfd2eb, Addressd611f548, selected
+Communication122097c8, Timers08f56248, Observe40fb7d44, Entity3d6d0bb7. Normative
+runtime/module/Driver/strategy741b3dac/b8718ff7/ca687b0b/28942963.
+
+
+The unchanged193-line regression now passes on fixed sourced6cb7886 in debug
+and optimized builds(1/0/0,332 filtered,0.00s each). Original old-source88a64e0a
+D/R failures and actual fixed D/R controls qualify this exact custody law;
+no repeated artificial panic or compilation-only failure substitutes. Both
+source/minimization reviews pass independently. Aggregate control states and
+ApplicationWorkCustody alternatives are unchanged; one local Option stores
+exactly the absent-or-acquired startup tuple across producer disposal. Existing
+poll Pending/Ready alternatives, pinned producer, preparation and all existing
+lifecycle owners remain unchanged. Modules+0, public spellings+0, types+0/-0.
+No arrival history, repeated cause, semantic bool or new transition authority.
+Disposition: pass for scoped ownership minimization; combined gates remain.
+
+Complete delivery working-tree checkpoint:4 tracked paths,0 untracked paths;
+production+10/-4/net6; tests+193/-0/net193; public API+0/-0 types. PRD/acceptance/
+status are the other three paths. This is new ownership protection, not net
+code reduction. Required CI, broad affected-source checks and actual merge are
+still pending when this focused contribution is submitted.

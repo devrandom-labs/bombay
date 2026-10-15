@@ -502,3 +502,12 @@ explicit Full-only retry. Its20 focused tests and combined406 tests pass in
 debug and optimized builds before release-main integration. Current-source
 inversions, post-integration combined gates, final review and PR delivery remain
 required. No full R01–R25, AUTH1 or NET1 obligation closes from these results.
+
+
+Application startup-custody regression: prior main fails exactly the acquired
+affine-owner release oracle in debug and optimized builds after real Ready and
+original producer-disposal panic. The six-line existing-kernel correction and
+193-line owning test preserve cold Application/Work and original panic, without
+Zenoh or a new API. Fixed debug/optimized controls each pass the actual test; affected combined
+checks, required CI and actual PR delivery remain pending in the PRD. No full
+remote row closes.

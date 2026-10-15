@@ -6,14 +6,24 @@ locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
 
-A separate main-based test contribution is preparing the reviewed provider
-conservation source e090227f (one duplicate assertion removed as 07e3a096),
-with no production/API/dependency changes. Its six actual feature-gated cases
-have explicit debug/optimized required-Nix
-execution and a nonzero result assertion. Main-source execution and reviewed
-PR delivery remain pending; no full remote obligation changes state. The user
-requires private transport ownership inside Application at every public layer.
-PR373 release and PR374 API delivery remain held for that correction.
+A focused main-based Application startup-custody correction is under
+verification: a completed startup producer must not lose its original acquired
+value when its Drop panics. The actual regression fails its ownership oracle
+on prior source in both profiles; fixed controls, combined verification and
+PR delivery remain tracked in the
+[PRD](../prds/static-remote-actors.md#application-startup-custody--isolated-delivery-stage-2026-10-15).
+This is a local ownership prerequisite; full remote gates remain open.
+
+[Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
+mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks passed onfc85ec10, including required Nix38807714831;
+reviewed, tested and merged trees equal54451654. Independent required/native
+reviews9ce15cf1/ba0e2a35 and merge receipt095a3c42 retain actual execution and
+source attribution. Six provider cases execute per profile: two finite refusals,
+two actual two-Node TLS requester flows and two local pending-protection cases.
+Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
+adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
+privacy remain open. PR373 release and PR374 API delivery remain held.
 
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.
