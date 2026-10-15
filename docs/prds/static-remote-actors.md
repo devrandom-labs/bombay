@@ -28104,3 +28104,49 @@ production window with the separate owning contribution remains1440; historical
 unproved extents are not reset. Both actual coordinator command exits are0,
 and coordinator.sha256 seals the source, graph and raw logs separately from
 the forthcoming main-based verification.
+
+### Cold connection acquisition — ordinary Rust comparison
+
+The shipping Application operation must return its execution/result pair before
+polling network startup. Opening first loses independently observable cold-input
+custody if that preliminary operation is abandoned. The existing kernel already
+borrows cold inputs through startup acquisition, but accepts its optional
+Connection before that acquisition. It therefore cannot transfer a connection
+actually acquired during startup into the existing root/family cleanup owner.
+This is a concrete composition gap; existing pre-opened tests do not prove it.
+
+Compare ordinary preparation returns first: an owned product of the existing
+work publication, installed families and optional Connection; tuple spelling
+with conditional remote member versus one private named product. Acquisition
+and preparation remain the existing callbacks, with no provider/runtime trait,
+shared mutable slot, new public type or additional lifecycle authority. Local
+and HTTP execution own no connection. If a named product is needed, it must
+replace the premature kernel argument and transfer these same three owners,
+not forward a public transport object or add a new runtime.
+
+Before production, qualify syntax in both feature states, then author the
+focused cold-acquisition ownership regression against existing composition.
+It must observe an actual connection acquired during startup and retained until
+root/work/family cleanup, plus original cold inputs on unstarted cancellation.
+No intended compiler failure may substitute for that runtime law. Public API,
+protocol envelope, service limits and final error shape remain unselected.
+This bounded comparison permits at most20 temporary Rust lines and two pinned
+compiler invocations, no repository production/test edits. All current counts
+and limits carry; the main-based checks retain their independent source lease.
+
+The seven-line tuple spelling is actually rejected by pinned Rust1.99: tuple
+type members accept no cfg attribute, and the matching tuple pattern likewise
+rejects it. This vetoes that syntax, not the ownership law. Before the named
+comparison, allow40 total temporary Rust introductions and four compiler
+invocations for both representations/features; no repository production/test
+edits or new API follows. The named alternative was identified before the
+compiler failure and must still earn retention through a real ownership test.
+
+All four compiler commands are terminal: tuple local/remote each exit1 at the
+same forbidden type-member attribute and tuple pattern; named-field local/remote
+each exit0. The two temporary sources contain7+23 lines, within40; six source/log
+hashes are retained in /tmp/bombay-connection-startup.sha256. This establishes
+only language syntax. No actor, network or provider law executes, and the named
+generic example has no independent production eligibility. Real acquired-result
+custody through startup-producer disposal, staging failure and final cleanup
+must remain in the focused ownership regression before retaining production.
