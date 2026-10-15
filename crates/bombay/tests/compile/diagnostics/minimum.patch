@@ -1,0 +1,743 @@
+--- a/crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr
++++ b/crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr
+@@ -10,8 +10,8 @@
+ 30 |         wrong_router,
+    |         ^^^^^^^^^^^^ expected due to this
+    |
+-   = note: expected function signature `fn(ApplicationHandle<Root, EventLayer<ShutdownRequested, User<MailAddr, Never>>>) -> _`
+-              found function signature `fn(ApplicationHandle<Other, EventLayer<ShutdownRequested, User<MailAddr, Never>>>) -> _`
++   = note: expected function signature `fn(bombay::ApplicationHandle<Root, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>) -> _`
++              found function signature `fn(bombay::ApplicationHandle<Other, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, behavior::Never>>>) -> _`
+ note: required by a bound in `bombay::application::http::<impl bombay::Application<Root, Spaces, Members>>::run_axum`
+   --> src/application/http.rs
+    |
+--- a/crates/bombay/tests/compile/fail/topology_duplicate_roles.stderr
++++ b/crates/bombay/tests/compile/fail/topology_duplicate_roles.stderr
+@@ -5,37 +5,8 @@
+    |                                             ^^^^^^^^ unsatisfied trait bound
+    |
+    = note: match each owned .child role and actor with the selected topology declaration
+-help: the trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (BackgroundWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
+-      but trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (AuditWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is implemented for it
+-  --> tests/compile/fail/topology_duplicate_roles.rs:37:1
+-   |
+-37 | / bombay::topology! {
+-38 | |     workshop {
+-39 | |         root: Root { Born(RootChildrenBorn) => worker; }
+-40 | |         members {
+-...  |
+-46 | | }
+-   | |_^
+-   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
+-note: required by a bound in `bombay::application::execution::<impl bombay::Application<Root, Spaces, Members>>::run_with`
+-  --> src/application/execution.rs
+-   |
+-   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+-   |                  -------- required by a bound in this associated function
+-...
+-   |         Spaces: ApplicationTopology<Root, Members>,
+-   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+-   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+-
+-error[E0277]: the declared topology does not match root `bombay::prelude::StopOnShutdown<OneShot<Root>>` and cold members `(BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))`
+-  --> tests/compile/fail/topology_duplicate_roles.rs:69:24
+-   |
+-69 |     let outcome = host.block_on(application.run_with(|application| async move {
+-   |                        ^^^^^^^^ unsatisfied trait bound
+-   |
+-   = note: match each owned .child role and actor with the selected topology declaration
+-help: the trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (BackgroundWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
+-      but trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (AuditWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is implemented for it
++help: the trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
++      but trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is implemented for it
+   --> tests/compile/fail/topology_duplicate_roles.rs:37:1
+    |
+ 37 | / bombay::topology! {
+@@ -47,3 +18,24 @@
+    | |_^
+    = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
++
++error[E0277]: the declared topology does not match root `bombay::prelude::StopOnShutdown<OneShot<Root>>` and cold members `(BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))`
++  --> tests/compile/fail/topology_duplicate_roles.rs:69:24
++   |
++69 |     let outcome = host.block_on(application.run_with(|application| async move {
++   |                        ^^^^^^^^ unsatisfied trait bound
++   |
++   = note: match each owned .child role and actor with the selected topology declaration
++help: the trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
++      but trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is implemented for it
++  --> tests/compile/fail/topology_duplicate_roles.rs:37:1
++   |
++37 | / bombay::topology! {
++38 | |     workshop {
++39 | |         root: Root { Born(RootChildrenBorn) => worker; }
++40 | |         members {
++...  |
++46 | | }
++   | |_^
++   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
++   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+--- a/crates/bombay/tests/compile/fail/topology_erased_cold_origin.stderr
++++ b/crates/bombay/tests/compile/fail/topology_erased_cold_origin.stderr
+@@ -1,13 +1,13 @@
+ error[E0308]: mismatched types
+   --> tests/compile/fail/topology_erased_cold_origin.rs:92:129
+    |
+-92 | ...nd", cold_child_origin(&custody.behavior, origin), retirement),
+-   |         -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<_>, _>`
+-   |         |
+-   |         arguments to this function are incorrect
++92 | ...", cold_child_origin(&custody.behavior, origin), retirement),
++   |       -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<...>, ...>`
++   |       |
++   |       arguments to this function are incorrect
+    |
+-   = note: expected struct `ChildOrigin<Root, _>`
+-              found struct `ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, BackgroundWorker>`
++   = note: expected struct `bombay::ChildOrigin<Root, _>`
++              found struct `bombay::ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, BackgroundWorker>`
+ note: function defined here
+   --> tests/compile/fail/topology_erased_cold_origin.rs:48:4
+    |
+@@ -20,13 +20,13 @@
+ error[E0308]: mismatched types
+   --> tests/compile/fail/topology_erased_cold_origin.rs:93:119
+    |
+-93 | ...it", cold_child_origin(&custody.behavior, origin), retirement),
+-   |         -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<_>, _>`
+-   |         |
+-   |         arguments to this function are incorrect
++93 | ...", cold_child_origin(&custody.behavior, origin), retirement),
++   |       -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<...>, ...>`
++   |       |
++   |       arguments to this function are incorrect
+    |
+-   = note: expected struct `ChildOrigin<Root, _>`
+-              found struct `ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, AuditWorker>`
++   = note: expected struct `bombay::ChildOrigin<Root, _>`
++              found struct `bombay::ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, AuditWorker>`
+ note: function defined here
+   --> tests/compile/fail/topology_erased_cold_origin.rs:48:4
+    |
+--- a/crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr
++++ b/crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr
+@@ -1,29 +1,3 @@
+-error[E0271]: type mismatch resolving `<RetirementBirths<ExtraWorker> as BirthMode>::Child == Never`
+-   --> tests/compile/fail/topology_inferred_extra_birth.rs:90:19
+-    |
+- 90 |       let outcome = bombay::Application::with_topology(
+-    |  ___________________^
+- 91 | |         Root {
+- 92 | |             visits: 0,
+- 93 | |             originals: Vec::new(),
+-...   |
+-102 | |             .expect("real shutdown operation");
+-103 | |     })
+-    | |______^ expected `Never`, found `ExtraWorker`
+-    |
+-note: required for `Topology<StopOnShutdown<Root>>` to implement `ApplicationTopology<StopOnShutdown<Root>, ()>`
+-   --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
+-    |
+- 87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
+-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+-    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+-    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+-    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+-    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+-    = note: associated types for the current `impl` cannot be restricted in `where` clauses
+-    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+-
+ error[E0271]: type mismatch resolving `<RetirementBirths<ExtraWorker> as BirthMode>::Child == Never`
+   --> tests/compile/fail/topology_inferred_extra_birth.rs:98:6
+    |
+@@ -87,7 +61,7 @@
+ 98 |     .run_with(|application| async move {
+    |      ^^^^^^^^ the trait `From<ChildFailure<ChildOrigin<Reporter, ChildHead>, ExtraWorker>>` is not implemented for `Never`
+    |
+-help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is conditionally implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
++help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
+   --> src/local/children.rs
+    |
+    | / impl<Creator, Scope, Position, Child, Root, Origins, Tail, Descendants>
+@@ -96,13 +70,6 @@
+    | | where
+ ...  |
+    | |     Scope: NativeChild<Creator, Position, Child, Root, Descendants>,
+-   | |            --------------------------------------------------------
+-   | |            |
+-   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+-   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+-   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+-   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+-   | |            unsatisfied requirement introduced here: `Topology<StopOnShutdown<Root>>: NativeChild<StopOnShutdown<Root>, ChildHead, Reporter, RootRetirements<StopOnShutdown<Root>>, Never>`
+    | |     Tail: ChildBindingsIn<Creator, Scope>,
+    | |__________________________________________^
+    = note: required for `bombay::local::children::ChildBinding<ChildHead, ExtraWorker, Never, bombay::local::children::StructuralOrigins<Reporter>, bombay::local::children::NoChildBindings, _>` to implement `bombay::local::children::RetireChildTasks`
+@@ -158,6 +125,25 @@
+ ...
+    |         >: ChildBindingsIn<Actor, Spaces>
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
++   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
++
++error[E0271]: type mismatch resolving `<RetirementBirths<ExtraWorker> as BirthMode>::Child == Never`
++  --> tests/compile/fail/topology_inferred_extra_birth.rs:98:6
++   |
++98 |     .run_with(|application| async move {
++   |      ^^^^^^^^ expected `Never`, found `ExtraWorker`
++   |
++note: required for `Topology<StopOnShutdown<Root>>` to implement `ApplicationTopology<StopOnShutdown<Root>, ()>`
++  --> tests/compile/fail/topology_inferred_extra_birth.rs:87:1
++   |
++87 | bombay::topology! { reports { root { Reporter => reporter; } reporter {} } }
++   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++   = note: associated types for the current `impl` cannot be restricted in `where` clauses
++   = note: associated types for the current `impl` cannot be restricted in `where` clauses
++   = note: associated types for the current `impl` cannot be restricted in `where` clauses
++   = note: associated types for the current `impl` cannot be restricted in `where` clauses
++   = note: associated types for the current `impl` cannot be restricted in `where` clauses
++   = note: associated types for the current `impl` cannot be restricted in `where` clauses
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+ 
+ error[E0277]: the trait bound `Topology<StopOnShutdown<Root>>: NativeChild<Reporter, ChildHead, ExtraWorker, Never, _>` is not satisfied
+--- a/crates/bombay/tests/compile/fail/topology_inferred_forged_position.stderr
++++ b/crates/bombay/tests/compile/fail/topology_inferred_forged_position.stderr
+@@ -18,7 +18,7 @@
+    |              ^^^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -28,12 +28,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+@@ -104,7 +99,7 @@
+    |              ^^^ unsatisfied trait bound
+    |
+    = help: the trait `From<ChildFailure<ChildOrigin<RightBranch, ChildHead>, SecondWorker>>` is not implemented for `ChildFailure<ChildOrigin<RightBranch, ChildHead>, FirstWorker>`
+-help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is conditionally implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
++help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
+   --> src/local/children.rs
+    |
+    | / impl<Creator, Scope, Position, Child, Root, Origins, Tail, Descendants>
+@@ -113,12 +108,6 @@
+    | | where
+ ...  |
+    | |     Scope: NativeChild<Creator, Position, Child, Root, Descendants>,
+-   | |            --------------------------------------------------------
+-   | |            |
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+    | |     Tail: ChildBindingsIn<Creator, Scope>,
+    | |__________________________________________^
+    = note: required for `bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>` to implement `bombay::local::children::RetireChildTasks`
+@@ -209,7 +198,7 @@
+    | |__________________^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -219,12 +208,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+@@ -303,67 +287,6 @@
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+ 
+-error[E0277]: the trait bound `Topology: NativeChild<RightBranch, ChildHead, SecondWorker, RightRetirements, _>` is not satisfied
+-  --> tests/compile/fail/topology_inferred_forged_position.rs:31:14
+-   |
+-31 |             .run()
+-   |              ^^^ unsatisfied trait bound
+-   |
+-help: the trait `NativeChild<RightBranch, ChildHead, SecondWorker, RightRetirements, _>` is not implemented for `Topology`
+-  --> tests/compile/fail/topology_inferred_forged_position.rs:19:1
+-   |
+-19 | / bombay::topology! {
+-20 | |     application {
+-21 | |         root: Root { Left(RootChildrenLeft) => left; Right(RootChildrenRight) => right; }
+-22 | |         left { Worker => worker; }
+-...  |
+-26 | | }
+-   | |_^
+-help: `Topology` implements trait `NativeChild<C, Position, Child, Terminal, Descendants>`
+-  --> tests/compile/fail/topology_inferred_forged_position.rs:19:1
+-   |
+-19 | / bombay::topology! {
+-20 | |     application {
+-21 | |         root: Root { Left(RootChildrenLeft) => left; Right(RootChildrenRight) => right; }
+-22 | |         left { Worker => worker; }
+-...  |
+-26 | | }
+-   | | ^
+-   | | |
+-   | | `NativeChild<ExecutedRoot, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | | `NativeChild<ExecutedRoot, ChildTail<ChildHead>, LeftBranch, RootRetirements, LeftRetirements>`
+-   | |_`NativeChild<LeftBranch, ChildHead, FirstWorker, LeftRetirements, Never>`
+-   |   `NativeChild<RightBranch, ChildHead, FirstWorker, RightRetirements, Never>`
+-   = note: required for `bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>` to implement `EstablishChild<ChildHead, SecondWorker>`
+-   = note: required for `SecondWorker` to implement `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>>`
+-   = note: required for `SecondWorker` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>>`
+-   = note: required for `Births<SecondWorker>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>, behavior::User<bombay::MailAddr, Never>, Here>`
+-   = note: 1 redundant requirement hidden
+-   = note: required for `RetirementBirths<SecondWorker>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>, behavior::User<bombay::MailAddr, Never>, Here>`
+-   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>>` to implement `bombay::local::effects::CommitActions<RightBranch>`
+-   = note: required for `Topology` to implement `bombay::local::effects::creation::NativeChildStartup<StopOnShutdown<Root>, RightBranch, RightRetirements>`
+-   = note: required for `Topology` to implement `EstablishNativeChild<StopOnShutdown<Root>, RightBranch, RightRetirements>`
+-note: required for `Topology` to implement `NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-  --> tests/compile/fail/topology_inferred_forged_position.rs:19:1
+-   |
+-19 | / bombay::topology! {
+-20 | |     application {
+-21 | |         root: Root { Left(RootChildrenLeft) => left; Right(RootChildrenRight) => right; }
+-22 | |         left { Worker => worker; }
+-...  |
+-26 | | }
+-   | |_^
+-   = note: required for `bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>` to implement `bombay::local::children::ChildBindingsIn<StopOnShutdown<Root>, Topology>`
+-note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+-  --> src/application/execution.rs
+-   |
+-   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+-   |                  --- required by a bound in this associated function
+-...
+-   |         >: ChildBindingsIn<Actor, Spaces>
+-   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+-   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+-
+ error[E0277]: the trait bound `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>: behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not satisfied
+   --> tests/compile/fail/topology_inferred_forged_position.rs:32:14
+    |
+@@ -371,7 +294,7 @@
+    |              ^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -381,12 +304,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+--- a/crates/bombay/tests/compile/fail/topology_inferred_forged_role.stderr
++++ b/crates/bombay/tests/compile/fail/topology_inferred_forged_role.stderr
+@@ -23,7 +23,7 @@
+    |              ^^^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -33,9 +33,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+@@ -104,7 +102,7 @@
+    | |__________________^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -114,9 +112,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+@@ -185,7 +181,7 @@
+    |              ^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -195,9 +191,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+--- a/crates/bombay/tests/compile/fail/topology_inferred_inconsistent_child.stderr
++++ b/crates/bombay/tests/compile/fail/topology_inferred_inconsistent_child.stderr
+@@ -39,7 +39,7 @@
+    |              ^^^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -49,12 +49,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+@@ -125,7 +120,7 @@
+    |              ^^^ unsatisfied trait bound
+    |
+    = help: the trait `From<ChildFailure<ChildOrigin<RightBranch, ChildHead>, SecondWorker>>` is not implemented for `ChildFailure<ChildOrigin<RightBranch, ChildHead>, FirstWorker>`
+-help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is conditionally implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
++help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
+   --> src/local/children.rs
+    |
+    | / impl<Creator, Scope, Position, Child, Root, Origins, Tail, Descendants>
+@@ -134,12 +129,6 @@
+    | | where
+ ...  |
+    | |     Scope: NativeChild<Creator, Position, Child, Root, Descendants>,
+-   | |            --------------------------------------------------------
+-   | |            |
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+    | |     Tail: ChildBindingsIn<Creator, Scope>,
+    | |__________________________________________^
+    = note: required for `bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>` to implement `bombay::local::children::RetireChildTasks`
+@@ -230,7 +219,7 @@
+    | |__________________^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -240,12 +229,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+@@ -324,67 +308,6 @@
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+ 
+-error[E0277]: the trait bound `Topology: NativeChild<RightBranch, ChildHead, SecondWorker, RightRetirements, _>` is not satisfied
+-  --> tests/compile/fail/topology_inferred_inconsistent_child.rs:30:14
+-   |
+-30 |             .run()
+-   |              ^^^ unsatisfied trait bound
+-   |
+-help: the trait `NativeChild<RightBranch, ChildHead, SecondWorker, RightRetirements, _>` is not implemented for `Topology`
+-  --> tests/compile/fail/topology_inferred_inconsistent_child.rs:18:1
+-   |
+-18 | / bombay::topology! {
+-19 | |     application {
+-20 | |         root: Root { Left(RootChildrenLeft) => left; Right(RootChildrenRight) => right; }
+-21 | |         left { Worker => worker; }
+-...  |
+-25 | | }
+-   | |_^
+-help: `Topology` implements trait `NativeChild<C, Position, Child, Terminal, Descendants>`
+-  --> tests/compile/fail/topology_inferred_inconsistent_child.rs:18:1
+-   |
+-18 | / bombay::topology! {
+-19 | |     application {
+-20 | |         root: Root { Left(RootChildrenLeft) => left; Right(RootChildrenRight) => right; }
+-21 | |         left { Worker => worker; }
+-...  |
+-25 | | }
+-   | | ^
+-   | | |
+-   | | `NativeChild<ExecutedRoot, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | | `NativeChild<ExecutedRoot, ChildTail<ChildHead>, LeftBranch, RootRetirements, LeftRetirements>`
+-   | |_`NativeChild<LeftBranch, ChildHead, FirstWorker, LeftRetirements, Never>`
+-   |   `NativeChild<RightBranch, ChildHead, FirstWorker, RightRetirements, Never>`
+-   = note: required for `bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>` to implement `EstablishChild<ChildHead, SecondWorker>`
+-   = note: required for `SecondWorker` to implement `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>>`
+-   = note: required for `SecondWorker` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>>`
+-   = note: required for `Births<SecondWorker>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>, behavior::User<bombay::MailAddr, Never>, Here>`
+-   = note: 1 redundant requirement hidden
+-   = note: required for `RetirementBirths<SecondWorker>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>, behavior::User<bombay::MailAddr, Never>, Here>`
+-   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<RightBranch, Topology, bombay::local::effects::reports::LocalParentReports<EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, RightBranch, RetirementBirths<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>>, bombay::local::children::ChildBinding<ChildHead, SecondWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, _>>>` to implement `bombay::local::effects::CommitActions<RightBranch>`
+-   = note: required for `Topology` to implement `bombay::local::effects::creation::NativeChildStartup<StopOnShutdown<Root>, RightBranch, RightRetirements>`
+-   = note: required for `Topology` to implement `EstablishNativeChild<StopOnShutdown<Root>, RightBranch, RightRetirements>`
+-note: required for `Topology` to implement `NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-  --> tests/compile/fail/topology_inferred_inconsistent_child.rs:18:1
+-   |
+-18 | / bombay::topology! {
+-19 | |     application {
+-20 | |         root: Root { Left(RootChildrenLeft) => left; Right(RootChildrenRight) => right; }
+-21 | |         left { Worker => worker; }
+-...  |
+-25 | | }
+-   | |_^
+-   = note: required for `bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>` to implement `bombay::local::children::ChildBindingsIn<StopOnShutdown<Root>, Topology>`
+-note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+-  --> src/application/execution.rs
+-   |
+-   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+-   |                  --- required by a bound in this associated function
+-...
+-   |         >: ChildBindingsIn<Actor, Spaces>
+-   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+-   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+-
+ error[E0277]: the trait bound `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>: behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not satisfied
+   --> tests/compile/fail/topology_inferred_inconsistent_child.rs:31:14
+    |
+@@ -392,7 +315,7 @@
+    |              ^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -402,12 +325,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+--- a/crates/bombay/tests/compile/fail/topology_inferred_wrong_role_parent.stderr
++++ b/crates/bombay/tests/compile/fail/topology_inferred_wrong_role_parent.stderr
+@@ -23,7 +23,7 @@
+    |              ^^^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -33,11 +33,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+@@ -108,7 +104,7 @@
+    |              ^^^ unsatisfied trait bound
+    |
+    = help: the trait `From<ChildFailure<ChildOrigin<RightBranch, ChildHead>, FirstWorker>>` is not implemented for `ChildFailure<ChildOrigin<LeftBranch, ChildHead>, FirstWorker>`
+-help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is conditionally implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
++help: the trait `bombay::local::children::ChildBindingsIn<Creator, Scope>` is implemented for `bombay::local::children::ChildBinding<Position, Child, Root, Origins, Tail, Descendants>`
+   --> src/local/children.rs
+    |
+    | / impl<Creator, Scope, Position, Child, Root, Origins, Tail, Descendants>
+@@ -117,11 +113,6 @@
+    | | where
+ ...  |
+    | |     Scope: NativeChild<Creator, Position, Child, Root, Descendants>,
+-   | |            --------------------------------------------------------
+-   | |            |
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+-   | |            unsatisfied requirement introduced here: `Topology: NativeChild<StopOnShutdown<Root>, ChildHead, RightBranch, RootRetirements, RightRetirements>`
+    | |     Tail: ChildBindingsIn<Creator, Scope>,
+    | |__________________________________________^
+    = note: required for `bombay::local::children::ChildBinding<ChildHead, FirstWorker, RightRetirements, bombay::local::children::StructuralOrigins<RightBranch>, bombay::local::children::NoChildBindings<RightRetirements>, Never>` to implement `bombay::local::children::RetireChildTasks`
+@@ -196,7 +187,7 @@
+    | |__________________^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -206,11 +197,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+@@ -280,7 +267,7 @@
+    |              ^^^^^ unsatisfied trait bound
+    |
+    = help: the trait `behavior::actor::creation::CreateSelectedChild<bombay::MailAddr, ChildHead, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>` is not implemented for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>`
+-help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is conditionally implemented for `ChildChoice<Head, Tail>`
++help: the trait `behavior::actor::creation::CreateSelectedChild<A, Occurrence, Host>` is implemented for `ChildChoice<Head, Tail>`
+   --> $CARGO/bombay-behavior-$VERSION/src/actor/creation.rs
+    |
+    | / impl<A, Occurrence, Head, Tail, Host> CreateSelectedChild<A, Occurrence, Host>
+@@ -290,11 +277,7 @@
+ ...  |
+    | |     Tail: CreateSelectedChild<A, ChildTail<Occurrence>, Host> + Send,
+    | |     Host: EstablishChild<Occurrence, Head> + Send,
+-   | |___________--------------------------------_______^
+-   |             |
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
+-   |             unsatisfied requirement introduced here: `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>: EstablishChild<ChildHead, RightBranch>`
++   | |__________________________________________________^
+    = note: required for `ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>` to implement `DispatchBirth<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>>`
+    = note: required for `Births<ChildChoice<RightBranch, ChildChoice<LeftBranch, Never>>>` to implement `InterpretCreations<bombay::MailAddr, bombay::local::effects::ApplicationCapabilities<StopOnShutdown<Root>, Topology, bombay::local::effects::NoParent, bombay::local::children::ChildBinding<ChildHead, RightBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::ChildBinding<ChildTail<ChildHead>, LeftBranch, RootRetirements, bombay::local::children::StructuralOrigins<Root>, bombay::local::children::NoChildBindings<RootRetirements>, LeftRetirements>, RightRetirements>, bombay::local::children::StructuralOrigins<Root>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Never>>, Here>`
+    = note: 1 redundant requirement hidden
+--- a/crates/bombay/tests/compile/fail/topology_swapped_roles.stderr
++++ b/crates/bombay/tests/compile/fail/topology_swapped_roles.stderr
+@@ -5,37 +5,8 @@
+    |                                             ^^^^^^^^ unsatisfied trait bound
+    |
+    = note: match each owned .child role and actor with the selected topology declaration
+-help: the trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (BackgroundWorker, StopOnShutdown<Worker>, (AuditWorker, StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
+-      but trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (AuditWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is implemented for it
+-  --> tests/compile/fail/topology_swapped_roles.rs:37:1
+-   |
+-37 | / bombay::topology! {
+-38 | |     workshop {
+-39 | |         root: Root { Born(RootChildrenBorn) => worker; }
+-40 | |         members {
+-...  |
+-46 | | }
+-   | |_^
+-   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
+-note: required by a bound in `bombay::application::execution::<impl bombay::Application<Root, Spaces, Members>>::run_with`
+-  --> src/application/execution.rs
+-   |
+-   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+-   |                  -------- required by a bound in this associated function
+-...
+-   |         Spaces: ApplicationTopology<Root, Members>,
+-   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
+-   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+-
+-error[E0277]: the declared topology does not match root `bombay::prelude::StopOnShutdown<OneShot<Root>>` and cold members `(BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, ()))`
+-  --> tests/compile/fail/topology_swapped_roles.rs:69:24
+-   |
+-69 |     let outcome = host.block_on(application.run_with(|application| async move {
+-   |                        ^^^^^^^^ unsatisfied trait bound
+-   |
+-   = note: match each owned .child role and actor with the selected topology declaration
+-help: the trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (BackgroundWorker, StopOnShutdown<Worker>, (AuditWorker, StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
+-      but trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (AuditWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is implemented for it
++help: the trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
++      but trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is implemented for it
+   --> tests/compile/fail/topology_swapped_roles.rs:37:1
+    |
+ 37 | / bombay::topology! {
+@@ -47,3 +18,24 @@
+    | |_^
+    = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
+    = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
++
++error[E0277]: the declared topology does not match root `bombay::prelude::StopOnShutdown<OneShot<Root>>` and cold members `(BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, ()))`
++  --> tests/compile/fail/topology_swapped_roles.rs:69:24
++   |
++69 |     let outcome = host.block_on(application.run_with(|application| async move {
++   |                        ^^^^^^^^ unsatisfied trait bound
++   |
++   = note: match each owned .child role and actor with the selected topology declaration
++help: the trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
++      but trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is implemented for it
++  --> tests/compile/fail/topology_swapped_roles.rs:37:1
++   |
++37 | / bombay::topology! {
++38 | |     workshop {
++39 | |         root: Root { Born(RootChildrenBorn) => worker; }
++40 | |         members {
++...  |
++46 | | }
++   | |_^
++   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
++   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)

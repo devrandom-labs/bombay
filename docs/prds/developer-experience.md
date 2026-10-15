@@ -1079,3 +1079,66 @@ flake delta +6/-2, Rust/public types/modules/control states/branches0. No source
 feature, test list, compiler or assertion setting changes. Native builds for
 the corrected configuration still require verification; the frozen original
 full check keeps its own pending result.
+
+Compiler diagnostic evidence, pre-edit (DX19/25): deliberate verification policy.
+The same invalid Rust programs must remain rejected on pinned1.99 and supported
+1.96. Exact diagnostic snapshots may differ by compiler; accepting an arbitrary
+error, skipping fixtures or modifying their type equations is not evidence.
+Current raw MSRV runs fail one HTTP snapshot and eight topology snapshots while
+rejecting every affected program. The failed qualified-path hypothesis above is
+removed. Reuse strict trybuild, its existing fixtures and disposable source copies.
+
+Compare reviewed minimum-compiler snapshots with canonical snapshots using a
+finite versioned patch and exact before/after hashes. A maintainer verification
+command may apply only those expected diagnostic changes in a disposable copy,
+then execute the unchanged tests with overwrite forbidden. Preserve raw status,
+compiler identity, logs and source/lock hashes; reject unknown compilers, altered
+inputs and any unrelated snapshot change. Canonical source and1.99 snapshots stay
+unchanged. Generate expected output separately, review its actual denial causes,
+and freeze it before verification. No Rust production/API/dependency change;
+expected files: one maintainer command, compiler snapshot patch/manifest and this
+record. Aggregate states, alternatives, branches, modules and public spellings
+unchanged; exact diagnostic expectations are the sole additional owned evidence.
+Require healthy runs on both compilers plus a deliberately damaged expectation
+that fails, and verify caller/snapshot source conservation. This closes only the
+reviewed diagnostic portability obligation, not the remaining DX19 corpus.
+
+Diagnostic result: exactly nine differing expectations are frozen in
+crates/bombay/tests/compile/diagnostics/{compilers.json,minimum.patch}. Independent
+two-pass review confirms each original rejection cause; two shorter diagnostics
+remove duplicate NativeChild reports only. All other567 generation files are
+byte-identical. Canonical .rs/.stderr files and every Cargo lock remain unchanged.
+The first verifier was rejected for accepting exit0 without named coverage and
+for allowing a receipt0 before final caller conservation; neither preliminary
+run receives final verifier acceptance. The retained command requires all25
+fixture successes, all four named harnesses, both18/7 test summaries without
+ignored/filtered tests, exact compiler identity, immutable expectations and full
+snapshot/caller source inventory plus hash conservation. A fresh private build
+directory prevents artifact sharing between source copies.
+
+Pinned1.99 and1.96 final commands each pass all25 tests, including24 topology
+compile denials and one HTTP protocol denial; all25 denial records and four
+harnesses are present. Both full caller receipts preserve all579 owned files.
+Three independent controls pass: rawCargo0 with no tests yields verifier1;
+rawCargo0 plus an added source file yields verifier1; a deliberately damaged
+HTTP expectation produces its named mismatch/E0631 and verifier101. Raw command
+statuses are retained separately. Two independent final code reviews pass.
+
+Reproduce from the workspace root (choose a new empty output directory):
+
+```sh
+nix develop -c python3 tools/diagnostics.py --output /tmp/bombay-diagnostics-current
+nix develop -c env RUSTC="$MSRV_BIN/rustc" RUSTDOC="$MSRV_BIN/rustdoc" \
+  python3 tools/diagnostics.py --cargo "$MSRV_BIN/cargo" \
+  --output /tmp/bombay-diagnostics-minimum
+```
+
+MSRV_BIN names the separately installed pinned1.96 toolchain; the command checks
+its exact compiler/Cargo identity and rejects unknown versions. Expected-output
+generation is a separate reviewed operation, forbidden in this command. This
+maintainer check complements the ordinary unchanged1.99 Nix gates; it does not
+turn earlier failed raw MSRV runs into passes or waive final package gates.
+Checkpoint: Rust production/tests+0/-0, public types/traits/bounds/modules/states/
+branches+0/-0; tooling+143, frozen diagnostic evidence+838, coordination+record.
+No actor state, runtime authority, fixture type equation or dependency changes.
+Disposition: pass for these compiler snapshots; complete DX19 support stays open.
