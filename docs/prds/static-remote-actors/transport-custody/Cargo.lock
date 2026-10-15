@@ -51,6 +51,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloc_count"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51fe56e86b038b77a66d2da32c558cbc8f220b68c4e2e5add34232157defbd36"
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -261,7 +267,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-rs"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "bombay-address",
  "bombay-behavior",
@@ -516,6 +522,7 @@ dependencies = [
 name = "bombay-zenoh-transport-custody"
 version = "0.1.0"
 dependencies = [
+ "alloc_count",
  "bombay-rs",
  "bombay-zenoh",
  "bombay-zenoh-config",

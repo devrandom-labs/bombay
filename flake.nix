@@ -316,8 +316,8 @@
               cargoArtifacts = null;
               cargoVendorDir = protectedCounterVendor;
               buildPhaseCargoCommand = ''
-                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter
-                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --release --test protected_counter
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter -- --nocapture
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --release --test protected_counter -- --nocapture
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter public_node_
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter public_node_
                 for profile in debug release; do
