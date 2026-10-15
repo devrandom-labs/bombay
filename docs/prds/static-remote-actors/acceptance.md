@@ -120,8 +120,12 @@ provider families pass in debug and optimized; four deliberately altered
 forwarding values fail the independent native final-state oracle after cleanup,
 and four fresh byte-exact restored controls pass. Actual typed Actions trigger
 the query and acknowledge consuming its reply. This supplies the narrow live
-consumer evidence; it does not supply production replay ownership, dynamic
-reply protection, adverse identity cases or a complete R01 witness.
+consumer evidence. A subsequent comparison now protects the actual generated
+reply bytes using each finite provider's original Future and the existing
+result-preservation operation; it removes preregistered expected replies.
+Both profiles and the same four forwarding corruptions/restored controls pass.
+This does not supply production replay ownership, secure reply protection,
+adverse identity cases or a complete R01 witness.
 
 Examples consume its public API; example-only implementations cannot pass R01.
 Keep the local counter in `examples/counter` and the remote counter in

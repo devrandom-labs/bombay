@@ -42,8 +42,11 @@ This proves the fixed-key research distinction, not production replay policy or
 a full witness. A dependent live-requester comparison now passes both finite
 providers in both profiles; four forwarded-value corruptions reach the intended
 final actor-state failure and fresh byte-exact restored controls pass. The actual
-actor emits its typed completion acknowledgement before shutdown. Shipping
-request/reply protection and the shared export/replay owner remain required.
+actor emits its typed completion acknowledgement before shutdown. Both finite
+providers now protect actual generated reply bytes, retaining their original
+results before producer disposal; scoped strict checks and the whole70/0/1
+target pass in both profiles. Shipping authenticated request/reply protection
+and the shared export/replay owner remain required.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;

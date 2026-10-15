@@ -14,6 +14,7 @@ use bombay::remote::{Metadata, json, try_retain, verify};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use core::ops::AsyncFn;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::future::{Ready, ready};
 use std::net::TcpListener;
 use std::num::NonZeroUsize;
@@ -94,16 +95,18 @@ struct ProofScope {
 #[derive(Debug)]
 enum VerificationError {
     Invalid,
+    ProofCapacity,
     Declaration(serde_json::Error),
     Unavailable(oneshot::error::RecvError),
 }
 fn registered(
     original: &ProtectedMessage,
-    records: &[(Scope, ProtectedMessage)],
+    records: &RefCell<Vec<(Scope, ProtectedMessage)>>,
     profile: ProviderProfile,
 ) -> Result<(ProofScope, Scope), VerificationError> {
     let claims: ProofScope =
         serde_json::from_slice(&original.protected).map_err(VerificationError::Declaration)?;
+    let records = records.borrow();
     let Some((scope, _)) = records.iter().find(|(_, record)| {
         record.protected == original.protected && record.proof == original.proof
     }) else {
@@ -123,9 +126,30 @@ mod recorded {
     pub(super) fn projection(receipt: &Receipt) -> (&ProofScope, Scope) {
         (&receipt.claims, receipt.logical)
     }
+    pub(super) fn protect(
+        bytes: &[u8],
+        request: &Receipt,
+        records: &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    ) -> Ready<Result<Box<[u8]>, VerificationError>> {
+        let mut records = records.borrow_mut();
+        let result = if records.len() < 2 {
+            let proof = Box::<[u8]>::from([13, 17]);
+            records.push((
+                request.logical,
+                ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.clone(),
+                },
+            ));
+            Ok(proof)
+        } else {
+            Err(VerificationError::ProofCapacity)
+        };
+        ready(result)
+    }
     pub(super) fn verify(
         original: &ProtectedMessage,
-        records: &[(Scope, ProtectedMessage)],
+        records: &RefCell<Vec<(Scope, ProtectedMessage)>>,
     ) -> Ready<Result<Receipt, VerificationError>> {
         ready(
             registered(original, records, ProviderProfile::Recorded)
@@ -146,9 +170,37 @@ mod scheduled {
     pub(super) fn proof(receipt: &Receipt) -> &[u8] {
         &receipt.original_proof
     }
+    pub(super) async fn protect(
+        bytes: &[u8],
+        request: &Receipt,
+        records: &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    ) -> Result<Box<[u8]>, VerificationError> {
+        let (published, received) = oneshot::channel();
+        let result = {
+            let mut records = records.borrow_mut();
+            if records.len() < 2 {
+                let proof = Box::<[u8]>::from([13, 17]);
+                records.push((
+                    request.logical,
+                    ProtectedMessage {
+                        protected: bytes.into(),
+                        proof: proof.clone(),
+                    },
+                ));
+                Ok(proof)
+            } else {
+                Err(VerificationError::ProofCapacity)
+            }
+        };
+        let transfer = published.send(result);
+        match transfer {
+            Ok(()) => received.await.map_err(VerificationError::Unavailable)?,
+            Err(original) => original,
+        }
+    }
     pub(super) async fn verify(
         original: &ProtectedMessage,
-        records: &[(Scope, ProtectedMessage)],
+        records: &RefCell<Vec<(Scope, ProtectedMessage)>>,
     ) -> Result<Receipt, VerificationError> {
         let (published, received) = oneshot::channel();
         let original =
@@ -286,8 +338,13 @@ async fn live_read<Receipt>(
     profile: ProviderProfile,
     provider: impl AsyncFn(
         &ProtectedMessage,
-        &[(Scope, ProtectedMessage)],
+        &RefCell<Vec<(Scope, ProtectedMessage)>>,
     ) -> Result<Receipt, VerificationError>,
+    protector: impl AsyncFn(
+        &[u8],
+        &Receipt,
+        &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    ) -> Result<Box<[u8]>, VerificationError>,
     projection: fn(&Receipt) -> (&ProofScope, Scope),
     evidence: fn(&Receipt) -> Option<&[u8]>,
 ) {
@@ -337,12 +394,9 @@ async fn live_read<Receipt>(
             // and transport identity is not the logical binding/replay namespace.
             let request_bytes = serde_json::to_vec(&ReadRequestRef { bombay: &current,
                 kind: Purpose::Request, operation: CounterOperation::Read }).unwrap();
-            let reply_bytes = serde_json::to_vec(&ReadReplyRef { bombay: &current,
-                kind: Purpose::ReadReply, operation: CounterOperation::Read, value: &1u64 }).unwrap();
-            let records = vec![
-                (scope, ProtectedMessage { protected: request_bytes.clone().into_boxed_slice(), proof: Box::from([7, 11]) }),
-                (scope, ProtectedMessage { protected: reply_bytes.into_boxed_slice(), proof: Box::from([13, 17]) }),
-            ];
+            let mut records = Vec::with_capacity(2);
+            records.push((scope, ProtectedMessage { protected: request_bytes.clone().into_boxed_slice(), proof: Box::from([7, 11]) }));
+            let records = RefCell::new(records);
             let original = ProtectedMessage { protected: request_bytes.into_boxed_slice(), proof: Box::from([7, 11]) };
             let original_allocations = (original.protected.as_ptr(), original.proof.as_ptr());
             let begun = command.try_send(CounterRequesterMessage::BeginProtected { correlation: 23, scope });
@@ -375,6 +429,8 @@ async fn live_read<Receipt>(
             let mut admitted = None;
             let mut native_reply = None;
             let mut reply_publication = None;
+            let mut produced_reply = None;
+            let mut protection = None;
             if let (Some(Ok(Some(User { message: CounterServiceInput::Verify(23), .. }))), Some((query, _))) = (&trigger, &query) {
                 if let (Some(bytes), Some(proof)) = (query.payload(), query.attachment()) {
                     received_request = Some(ProtectedMessage { protected: bytes.to_bytes().into_owned().into_boxed_slice(),
@@ -401,7 +457,12 @@ async fn live_read<Receipt>(
                             if let Some(reply) = &native_reply {
                                 let bytes = serde_json::to_vec(&ReadReplyRef { bombay: &current, kind: Purpose::ReadReply,
                                     operation: CounterOperation::Read, value: &reply.message }).unwrap();
-                                reply_publication = Some(query.reply("bombay/live/read", bytes).attachment(vec![13, 17]).await);
+                                produced_reply = Some(bytes);
+                                let inputs = (produced_reply.as_ref().unwrap().as_slice(), receipt, &records);
+                                verify(&inputs, &mut protection, |(bytes, request, records)| protector(bytes, request, records)).await;
+                                if let Some(Ok(proof)) = &protection {
+                                    reply_publication = Some(query.reply("bombay/live/read", produced_reply.as_ref().unwrap().as_slice()).attachment(proof.as_ref()).await);
+                                }
                             }
                         }
                     }
@@ -444,7 +505,7 @@ async fn live_read<Receipt>(
             let report = caller.lifecycle().retirement().await;
             (current, original, original_allocations, begun, trigger, issued, query,
                 received_request, request_shape, request_declaration, request_verification, request_scope,
-                admitted, native_reply, reply_publication, wire_reply, received_reply, reply_shape,
+                admitted, native_reply, produced_reply, protection, reply_publication, wire_reply, received_reply, reply_shape,
                 reply_declaration, reply_verification, reply_scope, delivered, acknowledged, additional_reply,
                 reply_publications, stopped, report, command, requester_address, caller_id, receiver_id)
         }).unwrap_or_else(|_| panic!("caller Work host entry"));
@@ -497,6 +558,8 @@ async fn live_read<Receipt>(
         request_scope,
         admitted,
         native_reply,
+        produced_reply,
+        protection,
         reply_publication,
         wire_reply,
         received_reply,
@@ -600,6 +663,14 @@ async fn live_read<Receipt>(
     let sample = wire.result().unwrap();
     assert_eq!(sample.key_expr().as_str(), "bombay/live/read");
     let raw_reply = received_reply.as_ref().unwrap();
+    assert_eq!(
+        produced_reply.as_ref().unwrap().as_slice(),
+        raw_reply.protected.as_ref()
+    );
+    match &protection {
+        Some(Ok(proof)) => assert_eq!(proof.as_ref(), raw_reply.proof.as_ref()),
+        _ => panic!("actual reply proof must be retained after producer completion"),
+    }
     let native_reply_bytes = sample.payload().to_bytes();
     let native_reply_proof = sample.attachment().unwrap().to_bytes();
     assert_eq!(raw_reply.protected.as_ref(), native_reply_bytes.as_ref());
@@ -656,6 +727,9 @@ fn assert_receipt<Receipt>(
         Some(Err(VerificationError::Unavailable(original))) => {
             panic!("original publication cause: {original}")
         }
+        Some(Err(VerificationError::ProofCapacity)) => {
+            panic!("finite proof record capacity exhausted")
+        }
         Some(Err(VerificationError::Invalid)) => panic!("registered bytes/profile refused"),
         None => panic!("the original verification result was not acquired"),
     }
@@ -671,6 +745,7 @@ fn recorded_live_requester_stores_checked_read_reply() {
         .block_on(live_read(
             ProviderProfile::Recorded,
             recorded::verify,
+            recorded::protect,
             recorded::projection,
             |_| None,
         ));
@@ -685,6 +760,7 @@ fn scheduled_live_requester_stores_checked_read_reply() {
         .block_on(live_read(
             ProviderProfile::Scheduled,
             scheduled::verify,
+            scheduled::protect,
             scheduled::projection,
             |receipt| Some(scheduled::proof(receipt)),
         ));
