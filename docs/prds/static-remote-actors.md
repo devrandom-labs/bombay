@@ -1,5 +1,67 @@
 # Static remote actors and typed admission
 
+## Ordinary remote composition boundary
+
+The user reaffirmed on 2026-10-15 that Zenoh sessions are Bombay's concern.
+Ordinary users configure networking and compose a Bombay Application; they must
+not import Zenoh, open/close its Session, declare queryables or write transport
+request/reply loops. Bombay must own that plumbing and its lifecycle. Retain
+deliberate lower-layer access for advanced uses only where its contract is
+independently justified. The separate public remote-counter application must
+demonstrate the ordinary boundary; tests carry assertions and fault campaigns.
+
+Current source `9747c90e` does not satisfy this requirement: Node owns and opens
+the Session, but `Node::execute` passes `&Session` to work, startup accepts the
+raw SDK Config, and the low-level Export exposes native query custody. These
+are prerequisite interfaces, not proof of the finished Application experience.
+Audit and minimize the complete public surface before declaring full delivery;
+do not retain an extra forwarding facade solely to conceal unfinished plumbing.
+No replacement API or production design is selected by this clarification.
+
+### Pending protection — ordinary Rust comparison before implementation
+
+The next law is concurrent immutable consumption of one authenticated receipt:
+while its actual protection operation is pending, another request may be
+retained/admitted/acquired and the first identity remains visible to duplicate
+and conflicting-byte checks. After all consumers end, recover the original
+non-Clone provider receipt and complete native cleanup. This is a composition
+comparison, not a selected public service API or full acceptance witness.
+
+Source review `495e66ec` compares disjoint borrowing, moving an owned request
+into a future, and standard `Rc<Receipt>` inside the existing generic Export.
+Disjoint borrowing prevents Vec insertion during protection. Moving the row
+hides its receipt from replay comparison and changes key/count custody. The
+recommended first executable candidate shares immutable ownership with Rc:
+Export keeps the existing row and an outside protector owns a second reference
+to that same allocation. Both current provider functions accept the unchanged
+borrowed receipt; local WorkFuture has no Send requirement. There is no clone
+of receipt contents, repeated verification, new task or provider trait. Rc is
+an internal comparison candidate, not something ordinary users must plumb.
+Arc has no demonstrated cross-thread consumer in this comparison.
+
+Under standing recommendation delegation, authorize a test-only comparison in
+the existing protected Counter live-requester owner. Use both opaque provider
+families, a genuinely pending operation with a causal release, independent
+second-request progress, first-request duplicate/conflict checks and exact
+original recovery. Preserve refused Rc ownership if try_unwrap cannot recover
+the original. Measure the extra allocation and maximum live references; do not
+claim whole-service byte bounds. Run debug and optimized controls, intended
+causal/static inversions, and independently review the tests twice. No production
+edit, dependency, public type, resource default, retry policy or network schema
+is authorized by this experiment. Startup, transport and Application integration
+remain separate missing shipping laws, including the session-free boundary.
+
+Expected source delta: at most 300 retained test Rust lines in one existing test
+owner, production +0/-0/net0 and public API +0/-0 types, plus this PRD/acceptance
+clarification. Allow at most 700 cumulative authored test lines including
+discarded revisions. Carry the prior 972 net production Rust, 8439 net tests,
+eight public types, release correction and all unresolved historical extents.
+Before the experiment, select 17000 cumulative verification/tooling lines and
+115 software slots, replacing 16000/110; retain production 1100 and public-type
+10 limits. The previous 110 allocated slots, including five unresolved-history
+slots, carry without reset. This funds one comparison lineage and its review;
+neither the allowance nor passing prerequisite tests closes a full remote row.
+
 ## Current delivery (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required

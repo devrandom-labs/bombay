@@ -132,6 +132,11 @@ Keep the local counter in `examples/counter` and the remote counter in
 `examples/remote-counter`. Each teaches one complete application through public
 composition. Assertions and transport/fault campaigns stay in owning tests or
 isolated research; relocating a fixture does not prove shipping remote support.
+Ordinary remote composition must use Bombay APIs without importing Zenoh,
+opening or closing its Session, declaring queryables, or writing transport
+request/reply loops. Bombay owns those operations and their cleanup. The public
+remote-counter application must demonstrate this boundary. Explicit advanced
+access may expose lower layers, but cannot be required for the ordinary path.
 First reconcile the committed DevX Application APIs with the proven admission
 and retirement laws, preserving the active worktree's uncommitted changes.
 

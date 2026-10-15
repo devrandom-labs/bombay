@@ -45,6 +45,10 @@ pending;
 transport fixtures do not establish that public surface. Protected Counter
 regressions belong to `crates/bombay/tests/protected_counter`, executed by the
 isolated transport-custody package rather than an example binary.
+Ordinary remote Application composition must hide Session ownership, native
+configuration translation, declarations and transport request/reply loops inside
+Bombay. The current low-level Node interface does not establish that finished
+surface. Deliberate advanced access cannot be required by the public example.
 
 ## Workspace boundary
 
