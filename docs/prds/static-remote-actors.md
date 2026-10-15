@@ -212,6 +212,100 @@ change raises the complete current endpoint to44 tracked paths, no untracked
 paths; production/test/API counts above are unchanged. It does not itself
 remove the known public leaks or establish a passing public consumer.
 
+### Private connection construction — selected owning-API check
+
+The next concrete prerequisite is whether the existing selected Config can be
+built entirely through its typed setters, including all five base64 credentials,
+without serializing Config or exposing it publicly. Before production edits,
+select a bounded owning-API comparison in existing tests/remote_node.rs: use
+standard Serde string deserialization for the SDK's private-constructor secret
+value, native setters for fixed security/profile fields and actual EndPoint
+construction for plain DNS/IPv6 addresses. Observe getters directly. Include
+the concrete `?`/`#` injection counterexamples rather than writing a hostname
+parser or claiming grammar establishes connectivity.
+
+This is a test-only source-eligibility experiment, not a selected public
+configuration/service API, new dependency or new resource default. It introduces
+no named product, trait, wrapper, callback or controller. Expect at most180
+retained/newly authored test lines in that existing owner, plus this record;
+production and public API+0/-0. Run pinned focused debug/optimized commands,
+review twice and retain exact native observations before implementing the
+private conversion. Current cumulative production972, tests8936, public types8,
+44 tracked paths,115 software slots and18000 verification/tooling allowance
+carry. The complete historical upper bound remains unproved.
+
+The source recommendation3691c39f compares four semantic connection inputs,
+ordinary fields against a builder/validated wrapper, File/base64 source forms,
+separate incoming/outgoing identities and an explicit query quota. Its concrete
+names and public error representation remain unselected. Config1.10.2 and
+SDK1.10.9, Behavior/Actors0.25.0 and all other owning selections are unchanged;
+the complete selected Behavior instructions remain2b7a9195. Native secret
+construction and setters must compile before this candidate can be promoted.
+This comparison has26 direct inspection inputs and no executable/controller;
+carry that research cost separately. Public native APIs and the release hold
+remain unchanged until real Application orchestration replaces them atomically.
+
+The first owning check880363ea actually compiles, then returns101: nine tests
+pass and the new secret-construction case fails because BorrowedStrDeserializer
+cannot deserialize the native SecretString tuple structure. This falsifies that
+specific adapter candidate; it is not a shipping regression kill. Before editing,
+select the already approved serde_json1.0.151 Value::String deserializer, whose
+owning newtype implementation delegates to visit_newtype_struct. Preserve exact
+string contents; no Config JSON roundtrip, parser, dependency edit or public
+type is introduced by this test. Add independent transferred-endpoint getters,
+the previously unobserved multicast-listen/protocol flags and exact injected
+metadata/config values. Expected retained tests remain within180; historical
+versions and the actual failed command carry rather than being relabeled.
+
+Correctedd6eb3834 runs all10 owning cases successfully in debug. Strict Clippy
+then refuses only the108-line test body. Keep one coherent construction/getter
+comparison and select a test-scoped expect(too_many_lines) with that ownership
+reason, matching existing repository tests; do not add a forwarding function
+or reshape the domain to satisfy a style limit. Add the two complementary
+injection-component emptiness assertions. Before these edits, retain180 endpoint
+test lines and select350 cumulative authored lines for this small comparison,
+including formatter revisions and future deliberate cuts/restorations. This
+corrects the original180-introduction forecast; no production edit or additional
+software owner is authorized. Preserve prior source-qualified results, then
+require fresh controls/strict checks on the final test bytes.
+
+Final7f1e1160 passes10/0/0 in both profiles, strict Clippy and pinned formatting.
+The repeated borrowed-adapter source51336e7d fails the intended native tuple
+construction in both profiles (0/1/9); exact restoration then passes10/0/0
+again in both profiles. This is adapter comparison evidence, not a production
+security/mapping inversion. All four final source/manifest/lock inputs match.
+Independent review4b327670 completes two source passes and qualifies the exact
+native getter/parser observations; no DNS, certificate validity, readiness,
+public mapping, transport cleanup or full remote witness is credited.
+Execution recorde7b39be7 is under `/tmp/bombay-network-declaration/`, with raw
+logs and source snapshots. The review adds20 direct inputs and14 chronological
+prose introductions, no controller. Existing target10 includes two Counter
+tests and six prior Node tests; exactly two tests are newly added.
+
+This stage retains tests+154/-1/net153, production/API+0/-0. Complete current
+endpoint against81dc1448 is45 tracked paths, no untracked paths;
+production+974/-2/net972, tests+9106/-17/net9089, public API+8/-0 types.
+Prior historical/other-repository scope and every unresolved extent carry;
+no complete historical upper-bound or full-scope reduction is claimed.
+
+Actual Application-source comparison70fc9bc6 identifies the existing HTTP
+startup/Work hooks as the private integration location and two concrete gaps
+in the old live-read fixture: it bypasses retained Export, and publishes after
+protection without the selected fresh permission check. Reuse ordinary lending
+AsyncFn/function composition; no trait/GAT/job framework is justified by that
+inventory. An owned async-job tuple cannot by itself prove original/result
+custody through unwind. This read-only comparison costs56 research lines and15
+direct inputs; it is not a selected API or implemented service.
+
+Private error comparison3a96d30e recommends first reusing the existing flat
+Bombay error owner with the SDK's already acquired standard-library error Box,
+without reboxing or stringification. Existing ApplicationOutcome, native and
+notification products retain their independent facts; transport retirement
+cannot overwrite either explicit undeclare or close result. A second opaque
+error/kind pair has no demonstrated need. This costs15 direct inputs and adds
+no code, dependency, public type or selected final error signature. All shipping
+private integration and complete acceptance gates remain outstanding.
+
 ## Current delivery (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
