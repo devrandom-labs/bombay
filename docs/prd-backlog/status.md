@@ -6,6 +6,15 @@ locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
 
+A separate main-based test contribution is preparing the reviewed provider
+conservation source e090227f (one duplicate assertion removed as 07e3a096),
+with no production/API/dependency changes. Its six actual feature-gated cases
+have explicit debug/optimized required-Nix
+execution and a nonzero result assertion. Main-source execution and reviewed
+PR delivery remain pending; no full remote obligation changes state. The user
+requires private transport ownership inside Application at every public layer.
+PR373 release and PR374 API delivery remain held for that correction.
+
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.
 All nine archives and fresh SDK1.10.9 consumer/owning Query/Config cases are

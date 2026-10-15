@@ -9,6 +9,16 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
+The main-based provider-test contribution reuses reviewed source e090227f,
+removing one duplicate assertion as 07e3a096, and existing main APIs without
+production, dependency or public API
+changes. Six finite-provider cases now have an explicit required-Nix command
+and nonzero 6/0/0 assertion in each profile. Integration execution and actual PR
+delivery remain pending. These tests preserve original protection results and
+non-Clone receipts through real native requester/replay work; they do not prove
+production authentication or the complete private Application service. Native
+SDK exposure remains a defect; PR373/374 remain held for its replacement.
+
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
 2026-10-13T22:17:06Z after all six checks pass ondf6144f. Source trees match.
