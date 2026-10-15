@@ -1330,3 +1330,19 @@ snapshot payload remain unchanged. Only three reviewed E0277 heading articles
 are appended to the minimum-compiler patch. Rust production/API+0/-0; tool+26/-13,
 expectation records+55/-4. No actor state, effect, queue, branch or ownership law
 changes. Final integrated Nix/archive gates and owner publication remain open.
+
+Integrated delivery verification: exact120cc2d passes
+`nix flake check --keep-going --max-jobs 1 --cores 2 --no-update-lock-file -L`
+in4663.558 seconds. All24 expected aarch64-Darwin checks succeed; all586 tracked
+hashes, HEAD and clean Git remain unchanged. Optimized workspace summaries
+contain749 passed, zero failed and one intentional parent-invoked subprocess
+fixture ignored. Expected Driver-law defect runs fail independently inside
+their successful evidence gates. Independent review reconciles the full gate
+set, source inventory, four363-test compiler/profile runs, four two-test Node
+hosting runs and both capacity inversions/restored controls. Delivery advances
+ff-only ea2b5b4→120cc2d. Receipts CLIENT-INTEGRATED-FULL-NIX and
+CLIENT-INTEGRATED-GATE-AUDIT retain raw commands, hashes and exact check names.
+This proves the integrated baseline only: the separate configured-interpreter
+candidate, Linux/x86_64-Darwin, new archive checks and publication receive no
+credit. Earlier signing/disk failures remain failures. This record is a
+documentation-only successor to the frozen verified source.
