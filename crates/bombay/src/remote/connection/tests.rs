@@ -596,9 +596,9 @@ fn connection_custody_waits_for_work_after_root_retirement() {
         .unwrap()
         .block_on(async {
             let network = listening_counter_network();
-            let (connection, closing) = Connection::open(&network)
-                .await
-                .unwrap_or_else(|_| panic!("explicit private TLS connection"));
+            let (acquire, closing) = Connection::startup();
+            let (connection, startup_publication) = acquire(&network).await;
+            let connection = connection.expect("explicit private TLS connection");
             drop(network);
             let session = connection.session().clone();
             let mut closing = pin!(closing);
@@ -684,7 +684,10 @@ fn connection_custody_waits_for_work_after_root_retirement() {
                 .unwrap_or_else(|_| panic!("original Work completion"));
             let (increments, original_calls, published, released) = output;
             let (admissions, read, value, stopped, report, _client) = parked.unwrap();
-            let (joined, original_close) = closed;
+            let (joined, original_close) = closed
+                .expect("the actual startup report was published")
+                .unwrap_or_else(|_| panic!("the configured native connection opened"));
+            assert!(startup_publication.is_ok());
             assert!(cleanup.is_ok() && joined.is_ok());
             assert!(matches!(original_close, Ok(Ok(()))));
             assert_eq!(close_poll, Poll::Pending);
@@ -719,9 +722,9 @@ fn connection_custody_survives_whole_parked_execution_disposal() {
         .unwrap()
         .block_on(async {
             let network = listening_counter_network();
-            let (connection, closing) = Connection::open(&network)
-                .await
-                .unwrap_or_else(|_| panic!("explicit private TLS connection"));
+            let (acquire, closing) = Connection::startup();
+            let (connection, startup_publication) = acquire(&network).await;
+            let connection = connection.expect("explicit private TLS connection");
             drop(network);
             let session = connection.session().clone();
             let closing = pin!(closing);
@@ -770,8 +773,7 @@ fn connection_custody_survives_whole_parked_execution_disposal() {
             .await;
             drop(execution);
             let abandoned_release = release.send(());
-            let ((outcome, native, notifications), (joined, original_close)) =
-                tokio::join!(receiving, closing);
+            let ((outcome, native, notifications), close_report) = tokio::join!(receiving, closing);
             let mut tail = Vec::new();
             if let Ok((_, _, _, _, _, client)) = &mut parked {
                 client.close_admission();
@@ -784,6 +786,10 @@ fn connection_custody_survives_whole_parked_execution_disposal() {
             let ApplicationOutcome::Interrupted { cleanup } = outcome else {
                 panic!("dropping the actual parked execution must retain Interrupted");
             };
+            let (joined, original_close) = close_report
+                .expect("the actual startup report was published")
+                .unwrap_or_else(|_| panic!("the configured native connection opened"));
+            assert!(startup_publication.is_ok());
             assert!(cleanup.is_ok() && joined.is_ok());
             assert!(matches!(original_close, Ok(Ok(()))));
             assert!(native_closed && abandoned_release.is_err());
@@ -817,9 +823,9 @@ fn connection_custody_closes_after_unpolled_execution_without_consuming_cold_wor
         .unwrap()
         .block_on(async {
             let network = listening_counter_network();
-            let (connection, closing) = Connection::open(&network)
-                .await
-                .unwrap_or_else(|_| panic!("explicit private TLS connection"));
+            let (acquire, closing) = Connection::startup();
+            let (connection, startup_publication) = acquire(&network).await;
+            let connection = connection.expect("explicit private TLS connection");
             drop(network);
             let session = connection.session().clone();
             let closing = pin!(closing);
@@ -863,7 +869,7 @@ fn connection_custody_closes_after_unpolled_execution_without_consuming_cold_wor
                 )
                 .unwrap_or_else(|_| panic!("entered Application host"));
             drop(execution);
-            let ((outcome, unstarted_native, unstarted_notifications), (joined, original_close)) =
+            let ((outcome, unstarted_native, unstarted_notifications), close_report) =
                 tokio::join!(receiving, closing);
             let native_closed = session.is_closed();
             let ApplicationOutcome::Unstarted {
@@ -926,6 +932,10 @@ fn connection_custody_closes_after_unpolled_execution_without_consuming_cold_wor
                 _client,
                 tail,
             ) = output;
+            let (joined, original_close) = close_report
+                .expect("the actual preopened startup report was published")
+                .unwrap_or_else(|_| panic!("the configured native connection opened"));
+            assert!(startup_publication.is_ok());
             assert!(joined.is_ok() && cleanup.is_ok());
             assert!(matches!(original_close, Ok(Ok(()))));
             assert!(native_closed && unstarted_native.is_err() && unstarted_notifications.is_err());
@@ -958,7 +968,9 @@ fn connection_custody_refuses_missing_host_and_keeps_original_application_work()
         .build()
         .unwrap();
     let network = listening_counter_network();
-    let (connection, closing) = host.block_on(Connection::open(&network)).unwrap();
+    let (acquire, closing) = Connection::startup();
+    let (connection, startup_publication) = host.block_on(acquire(&network));
+    let connection = connection.expect("actual preopened connection");
     drop(network);
     let session = connection.session().clone();
     let calls = Rc::new(Cell::new(0));
@@ -980,7 +992,7 @@ fn connection_custody_refuses_missing_host_and_keeps_original_application_work()
     };
     let recovered_allocation = ptr::from_ref(increments.as_ref());
     let calls_before_retry = original_calls.get();
-    let ((joined, closed), outcome, native, notifications) = host.block_on(async move {
+    let (close_report, outcome, native, notifications) = host.block_on(async move {
         let closed = closing.await;
         let (execution, receiving) = application
             .execute_with(move |application| async move {
@@ -1022,6 +1034,10 @@ fn connection_custody_refuses_missing_host_and_keeps_original_application_work()
         .try_into_completed()
         .unwrap_or_else(|_| panic!("returned original Work finishes"));
     let (increments, original_calls, admissions, read, value, stopped, report, tail) = output;
+    let (joined, closed) = close_report
+        .expect("the actual preopened startup report was published")
+        .unwrap_or_else(|_| panic!("the configured native connection opened"));
+    assert!(startup_publication.is_ok());
     assert!(cause.is_missing_context());
     assert!(joined.is_ok() && matches!(closed, Ok(Ok(()))) && cleanup.is_ok());
     assert!(session.is_closed());
@@ -1053,7 +1069,9 @@ fn connection_custody_keeps_actual_producer_cancellation_and_missing_result() {
         .build()
         .unwrap();
     let network = listening_counter_network();
-    let (connection, closing) = host.block_on(Connection::open(&network)).unwrap();
+    let (acquire, closing) = Connection::startup();
+    let (connection, startup_publication) = host.block_on(acquire(&network));
+    let connection = connection.expect("actual preopened connection");
     drop(network);
     let session = connection.session().clone();
     host.shutdown_background();
@@ -1062,12 +1080,16 @@ fn connection_custody_keeps_actual_producer_cancellation_and_missing_result() {
         .enable_all()
         .build()
         .unwrap();
-    let ((joined, original_close), cleanup) = receiver_host.block_on(async {
+    let (close_report, cleanup) = receiver_host.block_on(async {
         let received = closing.await;
         let cleanup = session.close().await;
         connection.retire();
         (received, cleanup)
     });
+    let (joined, original_close) = close_report
+        .expect("the actual preopened startup report was published")
+        .unwrap_or_else(|_| panic!("the configured native connection opened"));
+    assert!(startup_publication.is_ok());
     assert!(cleanup.is_ok() && session.is_closed());
     let failure = joined.expect_err("the actual close producer loses its executor");
     assert!(failure.is_cancelled());

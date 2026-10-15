@@ -140,11 +140,18 @@ protected-counter per profile, distinct from coordinator348/38.
 Existing Full-only caller-triggered retries retain their
 narrower scope; the automatic capacity-wait/fresh-permission witness is open.
 
-Provider-test [PR376](https://github.com/devrandom-labs/bombay/pull/376) is ready
-for review atfc85ec10 after all eight main-based pinned checks and independent
-review pass. Focused6/0/0 and full74/0/1 pass in both profiles; the ignored
-controlled-TLS fixture case is uncredited. Required Nix is still running, so no
-merge or full requirement is recorded from this test-only contribution.
+Provider-test [PR376](https://github.com/devrandom-labs/bombay/pull/376) merged
+c249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z after all six
+checks and scoped source/required-Nix/native reviews passed. Reviewed/tested/
+merged trees equal54451654; merge receipt095a3c42 binds reviews9ce15cf1 and
+ba0e2a35. Required Nix38807714831 executes six requester cases per profile;
+primitive fuzz passes and conditional Miri is skipped. Full local74/0/1 stays
+separate from controlled native transport campaigns. No full row closes.
+PR377 now integrates that main through3299340, resolving three documentation
+conflicts without changing its narrow dependency adoption. Both actual main
+locks remain44b9daf8/8090a793 and every399/324 neighbor record is unchanged.
+Fresh combined checks and exact-head CI38820049280 run; oldd9b CI was cancelled
+by the genuine integration push and supplies no combined-source credit.
 
 The private cold-startup handoff now transfers its actual acquired Connection
 through the existing Application preparation and cleanup owners. Two new laws

@@ -1772,7 +1772,8 @@ where
     let (notification_publication, received_notification) = oneshot::channel();
     let execution = async move {
         let mut original_work = original_work;
-        let (startup_inputs, allocations) = {
+        let mut acquired_startup = None;
+        {
             let Some((ApplicationWorkCustody::Unstarted(application, _), _)) =
                 original_work.publication.as_ref()
             else {
@@ -1781,12 +1782,17 @@ where
             let mut startup_acquisition = pin!(acquire_startup_inputs(application));
             poll_fn(|context| {
                 let entered_executor = executor.enter();
-                let acquired = startup_acquisition.as_mut().poll(context);
+                let acquired = startup_acquisition.as_mut().poll(context).map(|original| {
+                    acquired_startup = Some(original);
+                });
                 drop(entered_executor);
                 acquired
             })
-            .await
-        };
+            .await;
+        }
+        let (startup_inputs, allocations) = acquired_startup
+            .take()
+            .expect("completed startup retains its original acquired inputs");
         let PreparedApplication {
             work: prepared_work,
             families: installed_families,

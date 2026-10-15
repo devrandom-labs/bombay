@@ -1,5 +1,7 @@
 //! Cold connection handoff through the existing Application execution owner.
 
+mod startup;
+
 use super::execution::{
     ApplicationWorkCustody, ApplicationWorkPresence, ApplicationWorkPublication,
     PreparedApplication, execute_application_with,
@@ -46,6 +48,7 @@ fn acquired_connection_reaches_work_and_waits_for_its_retirement_barrier() {
             let (resume, resumed) = oneshot::channel();
             let (entered, mut parked) = oneshot::channel();
             let (release, released) = oneshot::channel();
+            let (acquire, closing) = Connection::startup();
             let (execution, receiving) = execute_application_with::<
                 _,
                 StopOnShutdown<Counter>,
@@ -70,16 +73,18 @@ fn acquired_connection_reaches_work_and_waits_for_its_retirement_barrier() {
                 (increments, Rc::clone(&calls), entered, released),
                 async move |(application, network)| {
                     startup_calls.set(startup_calls.get() + 1);
-                    let (connection, closing) = Connection::open(network)
-                        .await
-                        .unwrap_or_else(|_| panic!("actual configured TLS startup"));
+                    let (connection, startup_publication) = acquire(network).await;
+                    let connection = connection.expect("actual configured TLS startup");
                     // The independent receiver owns these facts before this producer can drop.
                     let published = acquired.send((closing, connection.session().clone()));
                     let resumed = resumed.await;
-                    ((connection, published, resumed), application.allocations())
+                    (
+                        (connection, startup_publication, published, resumed),
+                        application.allocations(),
+                    )
                 },
                 |original: ApplicationWorkPublication<_, _, _, _, Never, _>,
-                 (connection, published, resumed),
+                 (connection, startup_publication, published, resumed),
                  allocations| {
                     let ((application, network), work, publication) = original.into_unstarted();
                     let (root, spaces, (), (), scope) = application.into_parts();
@@ -113,7 +118,14 @@ fn acquired_connection_reaches_work_and_waits_for_its_retirement_barrier() {
                             .send((runtime, admissions, read, value, stopped, report, client));
                         let released = released.await;
                         (
-                            increments, calls, parked, released, network, published, resumed,
+                            increments,
+                            calls,
+                            parked,
+                            released,
+                            network,
+                            startup_publication,
+                            published,
+                            resumed,
                         )
                     };
                     Ok(PreparedApplication {
@@ -175,7 +187,7 @@ fn acquired_connection_reaches_work_and_waits_for_its_retirement_barrier() {
                 },
                 receiving
             );
-            let (close_before_release, (joined, original_close)) = match before_release {
+            let (close_before_release, close_report) = match before_release {
                 Poll::Pending => (Poll::Pending, closing.await),
                 Poll::Ready(original) => (Poll::Ready(()), original),
             };
@@ -196,10 +208,15 @@ fn acquired_connection_reaches_work_and_waits_for_its_retirement_barrier() {
                 parked_publication,
                 released,
                 _network,
+                startup_publication,
                 published,
                 resumed,
             ) = output.into_supplied();
             let (runtime, admissions, read, value, stopped, report, _client) = parked.unwrap();
+            let (joined, original_close) = close_report
+                .expect("the actual startup report was published")
+                .unwrap_or_else(|_| panic!("the configured native connection opened"));
+            assert!(startup_publication.is_ok());
             assert!(cleanup.is_ok() && joined.is_ok());
             assert!(matches!(original_close, Ok(Ok(()))));
             assert_eq!(
@@ -282,6 +299,7 @@ fn unpolled_connection_acquisition_returns_original_application_network_and_work
             let starts = Rc::new(Cell::new(0));
             let startup_calls = Rc::clone(&starts);
             let calls = Rc::new(Cell::new(0));
+            let (acquire, closing) = Connection::startup();
             let (execution, receiving) = execute_application_with::<
                 _,
                 StopOnShutdown<Counter>,
@@ -306,15 +324,15 @@ fn unpolled_connection_acquisition_returns_original_application_network_and_work
                 (increments, Rc::clone(&calls)),
                 async move |(application, network)| {
                     startup_calls.set(startup_calls.get() + 1);
-                    let acquired = Connection::open(network).await;
+                    let acquired = acquire(network).await;
                     (acquired, application.allocations())
                 },
                 |original: ApplicationWorkPublication<_, _, _, _, Never, _>,
                  acquired,
                  allocations| {
                     let ((application, network), work, publication) = original.into_unstarted();
-                    let (connection, closing) =
-                        acquired.unwrap_or_else(|_| panic!("actual cold TLS acquisition"));
+                    let (connection, startup_publication) = acquired;
+                    let connection = connection.expect("actual cold TLS acquisition");
                     let (root, spaces, (), (), scope) = (*application).into_parts();
                     let scope = scope.unwrap_or(ApplicationScope { allocations });
                     let invoke = move |(increments, calls): (Box<u64>, Rc<Cell<usize>>),
@@ -338,8 +356,16 @@ fn unpolled_connection_acquisition_returns_original_application_network_and_work
                             tail.push(original);
                         }
                         (
-                            increments, calls, network, closing, read, value, stopped, report,
-                            client, tail,
+                            increments,
+                            calls,
+                            network,
+                            startup_publication,
+                            read,
+                            value,
+                            stopped,
+                            report,
+                            client,
+                            tail,
                         )
                     };
                     Ok(PreparedApplication {
@@ -360,6 +386,7 @@ fn unpolled_connection_acquisition_returns_original_application_network_and_work
             );
             drop(execution);
             let (outcome, native, notifications) = receiving.await;
+            let startup_report = closing.await;
             let ApplicationOutcome::Unstarted {
                 application: (application, network),
                 work: (increments, original_calls),
@@ -367,6 +394,7 @@ fn unpolled_connection_acquisition_returns_original_application_network_and_work
             else {
                 panic!("unpolled startup returns original cold owners");
             };
+            assert!(startup_report.is_err());
             assert_eq!(starts.get(), 0);
             assert_eq!(calls.get(), 0);
             assert!(Rc::ptr_eq(&calls, &original_calls));

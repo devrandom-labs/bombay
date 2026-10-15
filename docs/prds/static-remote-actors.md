@@ -28408,3 +28408,241 @@ Expected fixture/public visibility changes0. Known combined production1451 plus
 carry, with historical unknowns retained. This is private capability growth and
 necessary custody evidence for the whole Application service; it is not delivery
 of that service, relaxation of either release hold, or closure of a full row.
+
+
+The native-address-refusal regression needs the existing NetworkLayout name to
+mutate its actual listening address. Before test edits, revise the expected
+fixture surface by one cfg(test)-only re-export of that existing enum from the
+private connection module. This changes one existing verification line(+1/-1), adding no type, public
+production visibility or fixture behavior; the Application test still owns the
+kernel/cold-input witness. Reuse the existing native oversized-address refusal
+input, rather than substituting a host/quota failure or adding a constructor.
+
+
+### Independent provider contribution delivered
+
+[PR376](https://github.com/devrandom-labs/bombay/pull/376) merged normally with
+exact-head guard as c249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks pass onfc85ec10. Reviewed, actual tested synthetic4cf7aa3 and
+merged main trees equal54451654c9c3a6b17658184852931102a3f4bfae. Required
+Nix38807714831/job116672778968 passes703/0/1 workspace, explicit remote406 per
+profile and the six exact requester cases per profile. Native reviews retain
+32 protected cases/80roles per profile, ordinary uncertainty and smaller count/
+stop campaigns separately. Primitive Driver/Observe fuzz passes; Miri is skipped.
+Scoped independent required/native reviews9ce15cf1/ba0e2a35 and actual merge
+receipt095a3c42 are in /tmp/bombay-pr376-ci-review. Finite providers do not supply
+production identity, and no full R01–R25/AUTH1/NET1 row or privacy hold closes.
+
+Main advancement causes three real documentation conflicts in PR377; normal
+merge3299340 resolves them and retains provider source/flake byte-exact to
+c249044a. All three adoption dependency files remain byte-exact to earlierd9b,
+with complete399/324 other package records unchanged. Independent resolution
+review5d11f6ac passes. Fresh combined-source local checks and CI38820049280 run;
+the actual earlier cancelled job is neither failure nor new-head proof. No
+force push, main push, admin merge or manual CI restart was used.
+
+### Independent startup — pre-production observations
+
+New tests98928732 are352 formatted lines after two author and independent
+source-review passes. Root review found and corrected the original draft's
+missing actual panic-payload oracle: the caught Box allocation and value are
+now inspected after runtime cleanup, independently of the fault's counter.
+The three named cases are two actual Application disposal witnesses and one
+direct factory receiving-surrender case with two configurations, not three
+Application round trips. Counter Work remains intentionally uninvoked at this
+startup fault; no five-increment or shipping-service claim follows.
+
+The actual old-source pinned command returns101 for two missing startup methods
+and two secondary str-comparison inference diagnostics. It proves the absent
+contract only, not a runtime failure. No signature or architecture is derived
+from those secondary diagnostics. Production now replaces old open with the
+recorded factory (+104/-43/net61 before formatting), and the seven existing
+controls migrate to that exact operation/report syntax, without a compatibility
+wrapper. Runtime, lint, source inversion and restored controls remain pending.
+
+
+The first implemented-source compile returns101 for eight repeated E0631
+reports of one test annotation: Rc<_> inferred Rc<Network> although the selected
+cold input is Rc<Box<Network>>. The factory itself introduces no diagnostic;
+the two earlier str-comparison recovery errors disappear once it exists.
+Before correction, retain the exact preselected boxed ownership law: name the
+existing Network in that test parameter and extend the existing cfg(test)
+re-export by this same already-owning type. This is one concrete input-type
+annotation and one verification import-line extension, no new type/bound,
+production visibility, wrapper or input migration. Do not change Rc<Box<_>>
+to satisfy inference or invent another callback abstraction.
+
+
+### Startup custody — observed stall and finite regression
+
+The concrete input annotation restores compilation. In actual debug52666,
+four cases pass but listening Ready-producer disposal remains live beyond60s,
+waiting for the actual close producer. The exact confirmed test-harness process
+is terminated after diagnostic observation; this run is not a passing control
+or accepted intended failure. Preserve its raw typed-input-debug.log. The
+factory's independent report alone is insufficient evidence of token retirement.
+
+Before further production, make that regression finite using actual existing
+owners. Include one original Tokio oneshot Sender in the returned acquisition
+product; its receiver outside the producer observes whether dropping execution
+released that acquired affine owner. Before returning real Ready, independently
+publish a clone of the actual acquired private Session for test cleanup and an
+independent closed-state observation. Preserve that publication's actual return.
+If the acquired sender remains live, refuse to wait for cleanup whose custody
+has already failed: retain absent original report, explicitly close the observed
+native Session, drop the unfinished report wait and retire the test runtime,
+then fail the acquired-owner oracle. This forced-close result is a separate
+failure-cleanup fact and never substitutes for the original joined-close result.
+Healthy execution must need no forced close. Native refusal has no Session.
+No timeout or scheduling-count oracle; all operations remain outside assertions.
+These test-only channels observe real ownership and native cleanup, not policy
+inputs or production adapters. Keep600/1400 test and100 inversion ceilings.
+
+The minimal production direction to qualify is the existing acquired-result
+pattern: store the actual startup tuple in an outside Option before returning
+unit Ready, then dispose its producer, then take the same tuple for preparation.
+The slot belongs to the existing execution owner; this adds no lifecycle owner,
+interface, shared state or result reconstruction. It prevents a producer's Drop
+from standing between acquisition and the slot. The actual missing-release
+regression must fail finitely on current source before retaining this change.
+Expected additional execution.rs+20 net lines at most; retirement63+20 remains
+within the selected120 stage ceiling and known combined1451+83 below1600.
+Pre-spawn/earlier construction failures and complete shipping service remain
+separate unproved obligations; no broader cleanup guarantee follows.
+
+
+### Startup custody — isolate delivery before further feature work
+
+The independently reviewed finite regression3455abc5 executes against unchanged
+kernel12587902 and fails exactly twice with the original acquired owner still
+live(Empty rather than Closed); the actual receiving-surrender case passes.
+The first attempted command selected the library name instead of package
+bombay-rs and executed no tests; preserve it as setup failure, separately from
+the corrected debug negative. Optimized negative remains pending.
+
+Under the standing recommended-choice delegation, prepare a focused main-based
+PR for this generic Application bug, independently of unfinished remote APIs.
+Reuse the existing ShutdownLedger and LedgerProtocol fixtures, actual private
+kernel and native Tokio oneshot. Put its owning inline cfg(test) startup
+module in execution.rs rather than the unrelated interface contract. A startup
+producer returns an original affine Sender then its Drop throws the original
+boxed cause; independently published Receiver proves release after execution
+disposal. Preserve original cold Application/Work and absent native/notification
+receipts. This regression owns no transport or joined-retirement claim.
+
+Expected delivery files: execution.rs and PRD/acceptance/status records. The same kernel correction is one semantic
+contribution, not two different fixes when integrated back into research.
+No additional production design, dependencies, public types or macro changes.
+Allocate up to250 additional verification lines for this independent generic
+witness. Raise this stage from600 retained/1400 authored verification lines
+to800/1800, retaining100 inversion lines; the1600/14/20000/115 cumulative
+limits, known combined production1451 and unresolved historical reservations
+remain unchanged. This records additional test capability, not code reduction.
+Only this complete verified slice may merge; private factory, public service
+and all full acceptance rows remain independently open.
+
+
+The frozen finite startup source3455abc5 with factory62de9679 and old kernel
+12587902 now executes in both profiles. Corrected debug and optimized commands
+return101 with exactly the two intended Empty-vs-Closed custody failures; the
+surrender case passes(3 executed,350 filtered,0 ignored,0.03s/0.02s). Both
+original disposal panic and later custody assertion appear, and the finite
+cleanup branch completes. This qualifies the previously recorded outside-slot
+correction; it adds no alternative cleanup or inferred native result. Preserve
+exact old kernel/factory snapshots and raw logs in bombay-startup-publication.
+
+
+Kernel correctiond872df25 is+10/-4/net6 and passes the independent source
+review twice. Fixed debug executes all five Application cases successfully
+(348 filtered), retaining both existing cold/barrier controls; optimized and
+independent-publication inversion remain pending. The stage currently measures
+production+116/-47/net69; verification+490/-30/net460, including all410 new
+untracked startup lines and cfg(test) exports exactly once. Public types+0/-0.
+Known combined production1451+69=1520 within1600. The separate generic main
+witness remains under its recorded250-line allocation and the800-line retained
+stage ceiling; it contributes no second production implementation. Historical
+reservations, public12/14 and software115-slot ceiling remain carried.
+
+Before the independent-publication inverse, strengthen only finite failure
+cleanup: if the actual report returns its original RecvError, retain that error
+and separately close any observed actual Session. After runtime retirement,
+assert actual report availability before the no-forced-cleanup predicate.
+This prevents source-inversion cleanup from substituting for original joined
+close evidence. It adds no production policy, deadline or fabricated cause.
+The inverse drops the actual startup publisher and returns Err(original report)
+to the acquired tuple instead of publishing; the public receiver must observe
+closure and the test must fail the independent-report law. Restore exact
+factory source before any passing control or retained commit.
+
+
+Fixed optimized Application control51221 also passes5/0/0(348filtered,0.02s),
+with exact unchanged startup source3455abc5, factory62de and kerneld872. The
+main-based193-line generic witness88a64e0a now has two independent source-review
+passes; original production prefix is unchanged and its first actual negative
+is running. This separates generic custody delivery from private networking.
+
+
+The first independent-publication cut927142f6 executes in debug and optimized:
+exactly the listening case fails the report-availability oracle, while early
+configuration refusal and deliberate receiver surrender pass(3 executed,350
+filtered,0 ignored,0.01s each,exit101). The initial two-failure forecast was
+incorrect: the refusal is published directly from configuration before the
+cut SDK-Ready branch. These are separate publication paths, not missing test
+execution or a reason to change the test. Native-close fallback is used only
+as failure cleanup and never credited as joined original cleanup.
+
+Before another source edit, restore exact62de9679 then independently cut only
+the early configuration-refusal publication: drop that actual publisher and
+return Err(the same original refusal report) to the acquired tuple. The
+unchanged refusal test must fail independent report availability; the listening
+and surrendered-receiver cases remain controls. This is a test-only simulated
+conservation defect, adds no retained production design, and remains within
+the100-line inverse allowance. Preserve each cut separately, then restore62de
+before fresh passing controls or any retained commit.
+
+
+### Independent startup — restored private checkpoint
+
+Early-refusal cut4c0ac577 fails the unchanged refusal report-availability oracle
+in both profiles; listening and receiver-surrender remain controls(3 executed,
+350 filtered,0 ignored,0.02s each,exit101). Together with the separate Ready
+publication cut, four actual intended report failures are proved; the initial
+two-failures-per-cut forecast is not retained. Factory source restores exactly
+62de9679, kerneld872df25 and tests4cfff10a. All353 owning library tests now pass
+in debug and optimized(0 failed/ignored/filtered,5.57s/5.46s). This includes all
+seven migrated existing controls and actual Application startup/barrier cases.
+
+Raw command logs, exact kernel/factory/cut snapshots and review are retained in
+/tmp/bombay-startup-publication. Earlier finite startup source3455abc5 is
+reconstructed from exactly the two known oracle edits and matches its recorded
+pre-command SHA; do not call it a contemporaneous snapshot. The earlier stalled
+8649 source remains unsealed. Wrong-package setup failure ran no tests.
+Neither actual configuration refusal nor SDK-Ready publication tests establish
+universal pre-Ready construction/poll-panic recovery or nonblocking SDK open.
+
+A fresh independent complete-source census corrects one earlier classification:
+there are ten nonblank cfg(test) mount/re-export lines, not nine(app2,
+connection6,remote2). Existing inline verification178/3 is independently
+confirmed(interface113,launch29/3,environment22,effects10,endpoint2,reports2).
+Apply188/3 once, not187/3. Against81dc1448, complete retained endpoint including
+the untracked421-line startup file is61paths: production+1455/-40/net1415;
+verification Rust+11554/-14/net11540; public types remain the carried8+4
+selection with this stage+0/-0. Stage vsd2f27e0 remains production+116/-47/net69,
+verification+501/-30/net471. Endpoint additions/deletions are measured from
+the baseline, not summed across overlapping edits. Known combined production
+with the separately owned104 is1519, correcting1520; historical/external
+controller/source ledgers and their unresolved upper bounds remain separate.
+The separately delivered main-based193-line witness is additional verification
+within this stage's800 retained-line allowance, not a second production fix.
+All1600/14/20000/115 windows and historical reservations remain carried.
+
+PR379 commits the isolated generic kernel correction at0542801, then normally
+integrates reviewed PR377 as69925d6c/tree5ef02253 to verify both source changes
+in parallel. It must merge after actual PR377 delivery; old054/0.1.5 CI receives
+no credit for699/0.1.6. Fresh combined local checks and CI38824168426 run. Both
+new native jobs pass, with artifact review still separate from required Nix.
+PR377 fresh native review98d0443b passes; its required Nix38820049280 remains
+live. Neither PR is recorded merged here. Existing PR373/374 privacy holds
+remain, and complete public Application inbound/outbound service, strict
+remote lint, public minimization and every full R01–R25/AUTH1/NET1 gate remain
+open. Private startup progress is not remote-feature delivery.

@@ -26,10 +26,12 @@ independent main-based adoption PR377 is ready after its eight actual checks
 and independent source/execution reviews pass. Main controls are333 library,
 36 Application and70/0/1 protected-counter per profile. Required CI/merge remain.
 Actual Application integration remains required.
-Main-based provider PR376 now passes all eight local pinned commands and
-independent review atfc85ec10, with focused6 and full74/0/1 in both profiles.
-Its required Nix remains running. Neither local passing tests nor PR readiness
-closes any full acceptance row.
+Provider PR376 mergedc249044a after all six exact-head checks and required-Nix/
+native/source reviews passed; tested/reviewed/main trees match54451654.
+Actual six requester cases execute once per profile, with primitive fuzz passing
+and conditional Miri skipped. Actual merge receipt095a3c42 retains provenance.
+PR377 integrates that main as3299340; fresh combined checks/CI remain required.
+Neither prerequisite closes any full acceptance row.
 
 The private acquired-Connection preparation handoff adds two focused ownership
 laws (plus two inherited Counter cases), passing debug and optimized builds.
@@ -559,3 +561,11 @@ their intended assertions in both profiles. Restored affected406 passes in both
 profiles before lint-only corrections; final source passes fresh focused controls,
 strict workspace Clippy and formatting. Its own CI and delivery remain required.
 No full R01–R25, AUTH1 or NET1 obligation closes from these results.
+
+
+Private startup checkpoint: original owner loss fails deterministically in
+both profiles; separate success/refusal publication omissions each fail their
+report oracle in both profiles. Exact restored source passes353 owning library
+tests per profile. Generic Application correction is submitted separately as
+PR379, with reviewed capacity dependency integrated early; actual required CI
+and merges remain pending. This closes no full remote acceptance or privacy gate.
