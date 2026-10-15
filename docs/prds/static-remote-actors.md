@@ -1,5 +1,360 @@
 # Static remote actors and typed admission
 
+## Current delivery repair — 2026-10-14
+
+External-state change: release PR360 was merged outside this coordinator at
+20:44:33Z as `c1d5b2bde866aeee28e8c83d57b9c05198e50f5c`, while native
+debug remained FAILURE. Its submitted/merged tree isd16a2076; required Nix
+passed, but all-checks-passing delivery is not claimed. Actual publication
+run38634627383 reports Engine0.2.3, Macros0.1.3 and Bombay0.1.1 published;
+registry artifact verification is separate. The known TLS1.10.2 exposure remains
+in that release. This coordinator did not merge or publish it.
+
+Hosting branch integrates that actual main throughc636837, preserving its tests
+and all saved coordinator records. Both adoption baselines are refreshed only
+for the inherited Engine/Macros versions; all other complete records match the
+original baseline. The five-package SDK adoption and full remote gates remain
+open. Earlier release-unmerged statements retain their pre-merge checkpoint scope.
+
+Controlled [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12) actually
+merged `1ea4bd160b98f5ef994064378066cd2efd081e26` at20:21:50Z by normal
+head-guarded squash merge. Reviewed9db78eb, actual CI checkoutece27d and merged
+main all have tree9660888b. Fresh required run38622160689/job116052126765 passes:
+17 exact TLS tests/profile;56 named packaged cases/compiler on1.99 and1.88;
+actual configuration Miri2/0/0. Independent review3bb9b8b1/receiptf8117d30
+qualifies nine archives/267 exact Rust files, three exact TLS fixtures,29 checksum
+edges and831 unchanged floor-source paths. TLS-Miri and packaged TLS17 execution
+are not credited. Source-only/native-path controls remain separately qualified.
+Merged-main run38631426153 is now live; its required pass/audit precedes guarded
+five-package publication. The correction is merged, but not yet published or
+adopted by Bombay. All full remote requirements remain open.
+
+PR365 native debug fails during second router/client exchanges; passing local
+controls do not discharge that failed CI. Actual native traces and an original-
+source replay identify an unsafe TLS stream owner in the selected TLS1.10.2.
+Controlled PR12 head9db78eb replaces simultaneous mutable stream aliases with
+Tokio's existing split halves, removes its blocking destructor and preserves
+original I/O causes. All17 owning tests pass locally in debug/optimized, as do
+final30-case/84-role native controls per profile. Four late-exit uncertainty
+groups retain ten killed roles per profile; complete cleanup is not claimed
+for those groups. Original-owner replay and the
+read-cause cut retain their qualified failure evidence; neither is a TLS Miri
+memory-safety proof. Fresh exact-head controlled CI is still running.
+
+Under the standing recommendation delegation, select normal registry adoption
+after reviewed PR12 merge, guarded publication and archive/checksum verification:
+SDK1.10.9, commons1.10.2, TLS/link/transport1.10.3. Change only the two existing
+SDK manifest pins and their two locks; preserve every unrelated complete package
+record, fixed Rustls0.23.46, Config/plugin1.10.2 and generators2.2.0. This adds
+four paths to the six-path hosting contribution (ten total), no production code,
+tests or public types. PRD/backlog evidence stays with this contribution.
+Required fresh combined CI and final review precede the PR365 merge.
+
+Release PR360 independently omits three local path-version updates in its two
+isolated locks; its original CI failures occur before transport execution. The
+narrow correction e887a80 now resolves root/fixture/fuzz with locked Cargo and
+preserves322/30 unrelated isolated records. Fresh debug job116065287821 reaches
+runtime and fails two record-provider overlap cases on the second reply; all8
+Counter cases pass. Recipients process the request, but caller streams close;
+complete recipient/router cleanup is unproved. The artifact lacks TLS tracing,
+so the close cause remains unproved for that run. Optimized native CI passes;
+required Nix remains live. Adopt the fixed SDK before merging the release PR,
+since that merge can publish Bombay. PR366 is
+another session's fairness change: its debug failure corroborates the same TLS
+exposure/symptoms, but its own logs do not independently prove the same cause.
+All full R01–R25/AUTH1/NET1 and the separate remote-counter remain open. The
+following historical checkpoints retain their original source and gate scope.
+
+## Delivered Node prerequisite — recorded merge
+
+[PR364](https://github.com/devrandom-labs/bombay/pull/364) merged
+`406df116dd081593e1099a1f3301d2fb91bfc4fc` at2026-10-14T17:43:09Z through the
+normal guarded PR operation, with exact head04c47413 and all six checks SUCCESS.
+Final review991ef1cd/receipt0203db7f independently qualifies actual source,
+required Nix38596070399/job115963560778, both native campaigns and retained
+primitive fuzz artifacts. Required log398bd296 executes each six Node names once
+per actual debug/optimized command, plus35 public tests/profile. Actual optimized
+workspace is691/0/1; Miri is skipped. Merge and submitted trees both23b55c1a.
+No direct main push or review bypass occurred. Published SDK minimum, complete
+shipping operations, remote-counter and all full R01–R25/AUTH1/NET1 remain open.
+
+The hosting branch incorporates actual delivered main through2648f32. Squash
+history produced three textual conflicts; exact submitted/merged tree equality
+proved its already reviewed source had no new competing changes. Preserving the
+branch's three deliberate successors resolves them without changing Node code.
+Actual local execution of the new exact CI loop on d609 passes one named test
+per debug/release, including the explicit name/count guards; receipt
+hosting-ci-gate-results.json binds source2a6d56c1, scriptcd0fd4ca and both logs.
+Cloud CI/focused PR/merge of this subsequent test remain pending.
+
+Controlled source23676e6 archive suffix also exits0. Independent final review
+16145d65/receipt48ca3e05 verifies56 exact1/0/0 packaged cases (36 SDK,20 Config),
+two metadata-only records, normalized source/lock profiles and all nine archive
+hashes/29 edges. Candidate path overlays are explicit; no registry-only successor
+claim. Actual1.88 floor and controlled required CI are running separately; merge,
+publication and clean registry-only adoption remain pending.
+
+## Controlled security successor — actual delivery checkpoint
+
+Controlled source23676e6c is committed and pushed; draft [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
+starts required run38607157519/job116000876607 on that exact source. Both owning
+locks were ordinarily resolved and independently qualified. The unchanged source-
+release prefix passes pinned-Nix debug/optimized72 reported nonzero test passes/profile
+(including nested declaration-test invocations),
+strict Clippy and six normal/maintainer consumer runs; zero-case library/doc
+harnesses earn no semantic credit. Source files are byte-equal to reviewed source
+before committing; the original command ran at dirty5b, not final published VCS.
+
+Actual clean-head five-package dry-run and nine-archive/29-checksum-edge checks
+pass, including immutable/archive and lock/source/feature inversions with restored
+controls. The archive cohort fixes SDK1.10.9, link commons1.10.2 and TLS/link/
+transport1.10.3; unchanged Config/plugin1.10.2 and generators2.2.0 remain pinned.
+Packaged native consumer verification is still live; exact floor/full required CI,
+final review/merge, publication and registry-only adoption remain unproved.
+The ignored target is a symlink to the existing active coordinator cache; no
+second source/build tree or publication credentials are introduced.
+
+The larger public network-read study remains unadopted after independent source
+review157a4a23 reopens notification equality, mandatory study input and get-refusal
+cleanup. Its test-owned replay/unprotected SessionLocal packets prove no shipping
+mechanism. JSON proposalbd8bddc8 instead identifies the private lexical-before-
+Serde receiving gap and exact optional edges; no helper/API/dependency is adopted.
+
+Root recovered about1.6GiB by deleting only2060 independently revalidated unused
+compiler objects, with before/after receiptsa9312757/a0cb9ad7 and independent
+storage review9eebb4ac. No worktree, source, log, fixture or proof executable was
+removed; active target and user DevX are preserved. This is resource recovery,
+not evidence that the source-incomplete research worktree was merged.
+
+## Hosting source ready for review — final local record
+
+Independent execution review7c741a3b and receipt38a55d42 qualify the captured
+lower-owner inversions and restored controls. Reviewer authored earlier fixture
+source; this is independent execution/source review, not independent invention
+of the model. Both intended B3-versus2 failures occur after native acquisitions;
+later native-tree assertions are reached in healthy controls only. Missing
+combined command/executable custody remains explicitly qualified.
+
+Canonical Nix formatting, targeted source evaluation/realization and Bash syntax
+all pass. The actual filtered sourcefzlk8k17 includes the staged new hosting
+module, its owning parent and both unchanged locks byte-exact; receipt
+hosting-gate-source-custody.json records full hashes. This proves source packaging,
+not actual execution of the added gate or required CI. Current retained scope is
+four paths, production +0/-0/net0; Rust tests +383/-0/net383; CI +8/-0/net8;
+public API +0 types/-0 types. PRD prose is additional and measured separately.
+The complete source remains a local primitive prerequisite; shipping association,
+full remote witnesses, actual focused PR delivery and merge remain pending.
+
+## Two-review test qualification — current local checkpoint
+
+The adopted security tests have final source review one (coordinator) and source/
+counterexample review two f0e08cf8 with receiptcdf60477. Independent literals
+survive the five pre-observer bindings. Captured actual version owner cutde6cd5ed
+fails the unchanged expected dependency-version oracle; restored ownerd820cd24
+passes. Six pure controls pass. Both actual Cargo-resolved graphs preserve every
+unrelated record/edge. Current controlled19-path diff is297/-95/net202, not the
+prepared patch's hunk totals; no Rust/public API/new dependency identity. Affected
+source-release commands are still running, so this record grants no release,
+archive/floor/CI/publication credit.
+
+Hosting introduced-line replay reconstructs199 prior external plus272 formatter,
+14 explicit-host and13 disposition/custody correction introductions:498. Add one
+comment correction, three module-mount lines and one disposable endpoint-owner
+cut line for conservative503/550. Retained tests are383 additions (380 new module,
+three mount), production +0/-0/net0, public API +0/-0. Added owning Nix gate is
+8 lines before canonical formatting. Its exact-name/1-passed checks prevent a
+missing-filter zero-test result from succeeding. The current comment-only test
+successor2a6d56c1 preserves executable code from the inverse's2d6dcc94 snapshot.
+The four captured inverse/restored runs retain exact source/command custody;
+combined67/0/1 raw-log outcomes do not acquire a retrospectively invented argv.
+No feature acceptance requirement or PR merge is inferred from these local facts.
+
+## Hosting delivery gate — selection before CI edit
+
+Actual endpoint-owner inverse execution records four commands: debug/optimized
+both fail at B3-versus2, byte-exact restored controls both pass1/0/0. Combined raw
+logs show67/0/1 per profile and strict Clippy completion; their original command
+manifest was not retained, so do not claim the same independently sealed command
+custody as the four inversion runs. No stored executable custody is invented.
+
+Before delivery add an explicit hosting invocation to the existing owning Nix
+protected-counter check in each profile. Require the exact test's successful
+name and1/0/0 count, so a missing filter cannot pass vacuously. Forecast nine Nix
+lines and one test-module comment correction (the test is now compiled). Record
+four retained paths including flake.nix; no production/API/dependency additions.
+Select cumulative orchestration ceiling320 from300 before these new gate/receipt
+lines, under standing recommendation delegation. Hosting550 test introductions
+and55-path/1000-production/four-type limits remain. Actual source2d6dcc94 inversion
+credit stays attached to that snapshot; a comment-only successor needs a source
+comparison and review, not a claim that the captured source was different.
+
+## Published-minimum integration — resolved graph and captured inverse checkpoint
+
+Pinned Cargo resolved both actual controlled locks normally: 368 root and302
+consumer packages. Full-record/edge comparison permits only the five selected
+local successors and Rustls0.23.46; no unrelated drift. Root/consumer SHA-256
+starts a25fedaa/d85076e4. Positive selector/version producers now precede their
+observers (five extra test lines); independent second final-source review is
+pending. The six pure controls pass; this is not release/floor proof.
+
+Before capturing the previously missing version-owner negative, select a300
+cumulative orchestration/script introduction ceiling from275 under the standing
+recommendation delegation. Prior272 plus a forecast25 local capture/receipt
+lines fits297. The positive binding test allowance remains120 and all cumulative
+55-path/1000-production/four-public-type ceilings remain. Capture the actual
+version owner's altered source, require the independent literal dependency
+version oracle to fail, then restore byte-exact and rerun. No negative from a
+setup failure, synthesized log or duplicated version computation is credited.
+
+For local affected release checks, reuse the coordinator's existing target with
+explicit environment settings instead of another build tree. Commands requiring
+repository-local package archives will be run separately with their actual
+archive paths recorded. No existing required gate is waived; whole release
+verification, compiler floor, archived consumers, exact-head CI, reviewed merge,
+publication and registry-only consumption remain pending.
+
+## Published-minimum revised source — reviewed adoption checkpoint
+
+Coordinator first source review and independent second9132a075 qualify the
+81b0e1d nineteen-path revision: all three source reopens resolved,296/-99/net197,
+no Rust production/test/API/dependency additions. External script chronology
+272/275 and Python104/120 stay qualified. Literal-version inverse negative
+source was not captured; its intended log is not a substitute for root's fresh
+captured helper cut. Profile and reader cuts retain actual mutated source.
+Actual immutable Config None-denial/restored payload controls are separate from
+unexecuted new SDK archive gates.
+
+Before adoption apply only the seventeen non-lock files to the clean controlled
+5b worktree. Snapshot both original locks, then let pinned Cargo resolve the
+five already selected local versions and Rustls0.23.46 normally. Preserve every
+unrelated package/source/checksum/edge; record any real prerequisite before
+broadening. Root owns edits and source integration. Bind positive Python
+selector/version calls before observers as a test-only refinement, within120
+introductions, and recheck both reviews on final source. Existing55-path/1000-
+production/four-type and275-script budgets remain. No new SDK release/floor,
+registry availability or full remote completion is credited by source adoption.
+
+## Published-minimum revision — second-review checkpoint before edit
+
+First source review and independent second review8307feb9 reopen the prepared
+19-path31349e5b proposal. Its pure candidate versions repeat the production
+version helper, registry mode defaults to the old profile, contradictory profile/
+kind choices are accepted, and a candidate ledger checksum None can disable the
+existing archive reader's checksum comparison. Preserve that sealed source;
+pure passes are not enough to retain these weaknesses.
+
+Under delegated recommended selection adopt independent literal four-dependency
+and top-version oracles; one owning finite query/release-kind selection with
+explicit supported pairs and a source-version guard; require an actual string
+checksum in the existing owning archive reader before tar decoding. Its initial
+candidate verifier explicitly computes and passes the fresh candidate hash;
+immutable expected hashes remain pinned. Keep original archives and require
+actual None refusal/restored-checksum controls. Also guard selected historical
+release kind/current top source before Cargo dry-run and credential discharge,
+reusing the existing version owner rather than a second release framework.
+
+Before revision authoring raise the script chronological-introduction ceiling
+from250 to275: conservative prior240 plus forecast18 selection/checksum lines
+and8 early-source-guard lines gives266. Python-test forecast106 remains within
+120; no Rust production/test, public type or dependency addition. Cumulative
+55-path/1000-production/four-type ceiling remains. Recheck exact final delta and
+both test reviews before integration. Source guards, real archive inversions,
+Cargo/floor/full CI, reviewed merge, publication and registry-only adoption all
+remain required. This records a prepared correction, not delivered security or
+whole-platform acceptance.
+
+## Hosting comparison — actual endpoint-owner inverse selection
+
+The corrected control executes its one exact named test successfully in both
+profiles, source2d6dcc94,380 lines. Independent second review5361d896 qualifies
+that actual corrected source and offered-B custody; runtime credit remains in
+root logs. The earlier E0277 and false Completed expectation remain separate
+non-inverse failures.
+
+Select an actual owning-source inverse instead of weakening only the local test
+lambda: change only ActorRef::PartialEq's Standard mailbox arm so equal numeric
+addresses also compare equal despite distinct admission anchors. Preserve its
+Entity/mixed-arm behavior and both actual ActorRef inputs. The real topology
+lookup should then admit B, and B's independent audited domain value must be3
+instead of2 after complete owner cleanup. This precise predicate defect adds
+no semantic flag, dependency or public type and is never retained production.
+Snapshot the owner and healthy test before mutation; run debug/optimized and
+require the actual existing B-value assertion to fail, then restore byte-exact
+and reacquire both positives. Compilation/setup/retirement assertion failures
+are not inverse kills. One temporary existing-owner path remains within55-path/
+1000-production/four-type budget; retained production delta stays zero for this
+primitive stage. Preserve exact source/log/command and both review records.
+
+## Hosting comparison — native disposition and second-review corrections
+
+The positive reaches its independent A Read1/B Read2 oracles but fails the later
+assumption that every child native result is Completed. No mutation was applied;
+this is a false test expectation, not an inversion. Existing parent cleanup
+requests child retirement (local/children.rs request_retirement); terminal.rs
+preserves its distinct OwnerCancelled result. The test sends no child-domain
+shutdown, unlike the older explicit-stop case. Preserve that original owner
+cancellation classification and inspect all its custody/error/settlement lanes;
+require no fabricated normal completion. The parent still must be Completed/
+Stopped. This change follows the owning documented transition, not a blanket
+unhappy-outcome allowance.
+
+Independent second review also finds that refusal presence and inequality to A
+do not prove exact offered B capability recovery. Before editing add an exact
+comparison to B's retained offered capability, with the borrowing projection
+outside assertions. This requires no new constructor, wrapper or public API.
+Preserve the failed positive/source and recheck both corrected branches and the
+intended B2-versus3 guard omission after valid controls. Existing550 test-line
+introductions and cumulative budgets remain; measure changes before further
+source acceptance. Full native-owner/fault laws remain separate requirements.
+
+## Hosting comparison — verified source prerequisite correction
+
+The initial integrated debug build fails E0277 before executing any test:
+existing counter_children_application::Topology does not implement Hosts<Counter>.
+This is a compiler/setup veto, not the promised foreign-delivery inverse. Source
+inspection shows why: existing unhosted child declarations deliberately create
+one fresh ActorSpace per birth; only explicit existing `hosts`/`in` declarations
+share a logical protocol table. The earlier uncompiled source map overclaimed
+that every generated child topology provides Hosts; preserve the failed source
+and correct that qualification.
+
+The hosting law requires the exact registration space actually consumed by A.
+Use the already owning explicit logical-host declaration in this isolated test
+for both otherwise unchanged Applications, reusing CounterParent and existing
+Counter/exports. This creates no new macro, blanket Hosts implementation, runtime
+registry or public constructor. Adopt that explicit existing test topology
+before editing; no compiler diagnostic originates new production architecture.
+The existing550-introduction test and55-path/1000-production/four-type budgets
+cover its at most15 additional formatted lines. Recheck both test reviews on the
+actual final source. Unhosted-child export support remains a shipping ownership
+prerequisite; do not narrow the accepted root-and-child scope without evidence.
+
+## Initial hosting capability comparison — before integration
+
+Existing recipient equality distinguishes exact mailbox admission anchors, while
+same numeric addresses can be issued in separate Applications. Prepare the
+smallest actual two-Application comparison from selected existing Counter,
+creator, Hosts/ActorSpace and Node owners: capture the exact topology consumed
+by A, challenge it with B's actual child, and observe permitted A Read1 and
+unmodified B Read2 after both complete native cleanup products and native close.
+The guard-omission baseline must expose B Read3 at that independent domain oracle.
+This establishes a primitive distinction; shipping Node-owned association and
+full R03/R04 remain unimplemented.
+
+Author source/law review and coordinator counterexample review qualify the189
+raw-line f035978c candidate before integration; no runtime credit. Integrate in
+an isolated test branch from04c47413 while its Node PR CI remains frozen.
+Expected paths: one new owning hosting test module, one existing child-module
+mount and this PRD. Rust production/API/dependency0. Canonical formatting is
+forecast350–500 retained test lines; reserve550 test introductions after the
+known199 external source introductions, with a fresh checkpoint if exceeded.
+This fits the existing55 cumulative cross-repository paths/1000 production/four
+public types envelope; measure exact formatted/current source and all untracked
+paths. Run pinned-Nix debug/optimized controls, owning test guard omission,
+intended restored controls and strict affected lint. Preserve native/session
+setup errors as setup failures, and first/second review findings through fixes.
+No new API, namespace, transport/security profile or macro is selected.
+
 ## Rustls0.23.46 selected-build qualification
 
 Both narrow locks now select the exact upstream archive checksum48e13bd8.
@@ -22172,3 +22527,262 @@ remain byte-unchanged. No source tests were added for this dependency-only chang
 fresh required CI supplies combined-source builds and both native profiles.
 Complete stage delta: production+0/-0/net0; tests+0/-0/net0; public API+0/-0
 types; two locks each replace only the selected version lines, plus this record.
+
+Storage checkpoint: the verified unused old trust-correction incremental cache
+was removed after immediate process/open-file checks. Eligibility376930fa and
+removal receipt record525 derived files/348008448 allocated bytes. Actual free
+space changed724529152→839749632 bytes amid concurrent builds; do not call that
+332MiB of recovered free space. Source, logs, fixtures, proof binaries and all
+worktrees remain preserved. This does not close any feature or delivery gate.
+
+A second immediate recheck permits removal of only867 inventoried regular,
+single-link Mach-O object files from that old target's debug/deps directory.
+Inventory31bdef91 and the removal receipt preserve exact file identity. No
+old-target open files were found; binaries/rlibs/rmeta and every other path are
+excluded. Actual free space changes817836032→1601617920 bytes (about747MiB),
+separate from the783294464 allocated-byte inventory. No worktree was removed.
+
+Read-only next-prerequisite review5b629ca6 locates the remaining shipping
+association gap after dependency adoption. Public Work owns the exact root
+endpoint/lifecycle and Session; local identity requires no new primitive. Child
+spaces and committed occurrence rows remain with their existing private owners.
+The foreign-child test uses an explicit host cloned before topology transfer;
+it does not prove Node-owned export association or unhosted births. An arbitrary
+InstalledActor cannot certify Node membership. Ordinary root composition is
+source-viable; child-row connection still needs a measured Rust/public-Application
+probe before choosing an API. This selects no abstraction and closes no full row.
+
+Independent integration reviewee3fffa1/receipt63c70cd9 confirms no source/test/CI
+loss throughc636837. All prior PRD lines are conserved, with the new external-
+merge paragraph splitting the leading record; the old backlog sentence is
+intentionally replaced and remains saved in custody. Both refreshed locks retain
+399/324 records; only inherited Engine/Macros versions change before SDK adoption.
+
+Required release Nix auditb1100723/receipt6099cbab qualifies exacte887 and
+synthetic6abfa339 tree equivalence:55 plain Counter/profile,6 Node/profile,
+3 native-count/profile,35 public remote/profile, optimized workspace and debug
+coverage691/0/1 each. Coverage floors and Driver2048/four Observe1024 fuzz runs
+pass;451 payload hashes match their two ZIP/API digests. Conditional Miri is
+skipped. These source/primitive gates do not discharge the failed native debug
+transport gate or establish all-checks-passing external release delivery.
+
+Live publication review5318097d/receipt63150851 confirms all three externally
+published versions and registry archive checksums. Their VCS isc1d5b2b;388
+nongenerated payloads match committed source. Bombay0.1.1's optional remote
+feature remains exactly SDK1.10.8; later SDK publication cannot change that pin.
+The packaged lock's Rustls0.23.46 does not enforce a downstream minimum while
+the selected TLS1.10.2 manifest still permits0.23.45. Corrected SDK adoption and
+a subsequent Bombay release remain necessary. Published rust-version1.96 is
+metadata, not a newly executed compiler-floor proof. No yank or release-policy
+change is selected; full remote acceptance and native debug remain open.
+
+### Private fixture version constraint — selection before edit
+
+Actual Bombay0.1.1 publication makes a later release necessary for SDK adoption.
+The isolated publish=false fixture pins its local path dependency to=0.1.1;
+Cargo rejects a local0.1.2 even with an unlocked refresh. Selected release-plz
+only visits root workspace members, so it cannot rewrite this external field.
+
+Under standing recommendation delegation, select path-only for this checkout
+fixture, matching the existing Driver fuzz composition. A compatible range still
+adds a version policy; an exact pin requires extra release rewriting. Retain
+all registry SDK/Config/protocol pins and both isolated graphs. Expected edit:
+one existing fixture manifest line, no production Rust/public type/dependency
+addition. It shares the already-budgeted SDK manifest path, so ten-path hosting/
+adoption scope is unchanged. Prove the original local version-bump refusal and
+path-only control in isolated Cargo resolution before retaining the edit;
+current locked graph must remain byte-identical. No release version is selected
+by this fixture policy, and no generated release branch is modified here.
+
+The minimal pinned-Cargo resolver probe reproduces the exact requirement failure
+(exit101) for local0.1.2; path-only selects that same local package (exit0).
+This is a Cargo contract proof, not a full hypothetical next-release build.
+The actual current fixture then resolves locked/offline with local0.1.1 (exit0);
+both complete399/324 locks stay byte-identical to integrated baselines. An initial
+reader wrongly expected banner-free stdout; its inspection failure is retained
+and actual JSON-line parsing supplies the resolution facts. Retained edit is
+one manifest line+1/-1, production Rust/tests/API0; other exact pins are unchanged.
+
+Independent fixture-policy review2b047909/receipt84e49ebd passes complete TOML
+equality except the selected version-field removal, actual resolver diagnostics,
+current locked metadata and both complete lock hashes. The reconstructed negative
+manifest is not a pre-execution seal. No full future-release/native proof or
+shipping API change is claimed. This correction joins the already-scoped SDK
+adoption; combined checks and exact-head CI remain required before PR365 merge.
+
+### Registered TLS successor — actual publication and consumer selection
+
+Controlled PR12 merged as1ea4bd with passing exact-main CI38631426153.
+Guarded publish38638728105 succeeded; live registry archive reviewe0e2b1d6
+verifies allnine archives,267 Rust members,three TLS fixtures and29 controlled
+edges against that main source. Five successors are published; four supports
+remain immutable. Exact-main archives and registry downloads are byte-identical.
+This does not update Bombay0.1.1, whose remote SDK pin remains1.10.8.
+
+Reuse the unchanged1108 registry consumer in a separate1109 directory. Change
+only two exact SDK/link pins, narrowly resolve its lock, and require complete
+unrelated-record equality. Reuse its existing default/floor campaign and owning
+archive verifiers with updated paths/checksum expectations; no new runtime API,
+resource policy or production Rust. Account controller substitutions separately,
+within the previously selected100-line evidence allowance. Run the actual three
+consumer profiles through pinned Nix and retain exact binaries/source/locks.
+Pure registry runs and extracted owning archive tests remain distinct evidence.
+Combined hosting/fairness adoption and exact-head CI remain unexecuted here.
+
+The fresh1109 consumer lock has302 complete package records. Exactly five
+controlled nodes plus Rustls0.23.45→0.23.46 change;296 complete records remain
+unchanged. Both Rust sources retain their prior hashes. Initial inspection
+incorrectly keyed every dependency by name, collapsing parallel versions; the
+retained full-record comparison corrects that audit error before any credit.
+Allnine controlled checksums equal the independently downloaded registry ledger.
+Default consumer executions are still running; no floor/owning-test credit yet.
+
+Historical PR322 and PR323 are closed after source audit e1fd0ba1. PR322's
+blanket logical-delivery denial is superseded by the current explicit advanced
+Hosts/ActorSpace contracts; its original denial is not delivered. PR323's old
+Behavior0.16 integration repairs are superseded by current0.25 owning integration;
+no claim equates every old race witness with current tests. Neither closure is a
+merge, and neither authorizes deleting unmerged worktrees.
+
+Fresh1109 registry-only default campaign completes successfully: three profiles,
+six actual debug/optimized executions, six strict Clippy checks, three metadata
+graphs and formatting. Its18 command receipts retain unchanged source/lock hashes
+and allsix exact Cargo-selected executable copies. Actual compiler is1.99.0.
+Floor execution is active; archive-owner and combined PR gates remain open.
+
+Floor consumer command was deliberately interrupted by the coordinator (SIGINT,
+exit−2) before its first check finished because free storage fell below500MiB.
+Its compiler1.88 banners and metadata passed; no check/run/floor credit follows.
+Retain the interrupted receipts and restart only after safe derived-object
+cleanup. Default campaign remains complete; source/lock edits are unchanged.
+
+Storage correction before resuming floor: reuse the already-existing1108 floor
+target for pinned1.88, with unchanged1109 consumer sources/lock and a fresh
+evidence directory. This avoids constructing a duplicate compiler dependency
+graph in the default target. Builds remain serialized under one coordinator;
+old proof executable copies and receipts stay preserved. Reclaim only independently
+inventoried unused incremental compiler cache after process/open-file checks.
+No worktree/source/proof deletion or compiler policy change is selected.
+
+The resumed floor check passes, but its first run-build exits101 with actual
+OS28 (No space left on device) while writing Serde compiler metadata; no consumer
+execution credit. Select cleanup of independently inventoried inactive oldtrust
+debug/deps single-link compiled metadata (.rmeta) and Rust library archives
+(.rlib), under the user's unused temporary/build-cache cleanup authorization.
+These are regenerable build outputs; preserve sources, published archives, logs,
+research receipts and proof executables. No worktree is deleted. Verify exact
+file identities, archive magic, process/open-file absence and proof hashes
+immediately before deletion; record actual free-space recovery, not nominal totals.
+Restart in a new evidence directory, retaining both earlier failed attempts.
+
+Cleanup removes only495 inventoried oldtrust metadata files and292 compiled
+library archives after immediate independent hash/stat/open-file checks. Actual
+separate observed free-space gains total1107357696bytes; eight sealed proof
+executables remain byte-identical and zero worktrees are removed. Nominal881MiB
+incremental inventory is not used as recovery credit:769 files had surviving
+hardlinks. Incremental caches and all source/log/proof records remain intact.
+Fresh floor campaign uses its prior target and a pinned-Nix shell profile link
+to avoid repeated garbage-collection/refetch; no toolchain pin is changed.
+
+Further storage selection: remove only184 inventoried older compiled objects and
+161 single-link files from the inactive default incremental cache. Retain769
+hardlinked files; no nominal881MiB recovery claim. The active floor build uses
+a separate existing target. Root rechecks process/open-file absence, file
+identities and proof hashes before each selection; source/worktrees stay intact.
+
+Fresh final floor campaign passes17commands through pinned1.88: six actual
+debug/optimized runs, six checks and three registry-only metadata graphs; all
+source/lock hashes stay unchanged and six selected executables are retained.
+Both earlier interrupted/storage-failed attempts remain visible. Default and
+floor total twelve actual consumer executions; owning-query/config checks and
+both updated-PR combined gates remain outstanding.
+
+Continue the same authorized unused compiler-cache cleanup in oldtrust release:
+736 inventoried single-link Rust archives/metadata,779640832 allocated bytes.
+Exclude the empty metadata file. Verify actual process/open-file absence, full
+file identities and proof hashes before removal; no source/worktree/exec deletion.
+
+Independent owning Query reader verifies36 exact named cases percompiler
+(default reviewe0d8bd35, floor5d501eaa); original normalized archive manifest/lock
+and registry-only dependency graphs are preserved. No Query executable-copy
+claim. Before final Config audit, select at most35 additional standard-library
+reader lines beside the41-line reused Query reader, within the existing100-line
+new evidence-controller allowance. Reuse unchanged Config custody/name/profile
+checks; no Cargo or source edits by reviewers and no test credit from filenames.
+
+Current-document reconciliation before adoption: acceptance.md still calls the
+old1.10.8 checkpoint current and the corrected owning minimum pending. Update
+that document to identify the old checkpoint as historical and retain actual
+SDK publication/registry proof beside open combined-PR gates. One additional
+document path brings hosting/adoption to eleven paths and fairness/adoption to
+fifteen; production Rust/public types remain0. This documentation scope is
+selected under standing recommendation delegation before editing.
+
+Narrow Cargo update audit catches four unrelated dependency-edge rewrites:
+errno, rustix, tempfile and winapi-util now choose already-present windows-sys
+0.61.2 in place of0.52.0. No new package was added, but complete-record equality
+fails, so the candidate is not adopted. Preserve the raw Cargo result, restore
+only those four original records and require Cargo locked/offline metadata to
+validate the restored resolution before transfer. This is lock preservation,
+not a new Windows compatibility policy; allfive SDK records stay Cargo-selected.
+
+Fresh registry adoption prerequisite passes independent consumer and all-four
+owning audits: twelve actual consumer runs plus112 exact Query/Config cases.
+Review556699b5 retains source/archive/lock/profile/corpus custody and limitations.
+Both branches now have the same four shared manifest/lock edits; five selected
+package records per lock and all394/319 unrelated records conserved. Cargo
+locked/offline metadata validates the four restored original Windows edges in
+the root lock. Combined focused/build/lint/native gates remain unexecuted here;
+no feature or PR is marked merged by this dependency adoption.
+
+### Combined CI selection before branch integration
+
+To avoid a serial second CI campaign, select including the reviewed fairness
+branch in hosting after its focused debug/optimized controls pass. Both PRs
+then verify compatible combined source; fairness still merges through PR366
+first, followed by hosting through PR365. Preserve author worktrees and shared
+contracts; no new scheduling or remote API design is selected.
+
+Union scope is19 paths versus current main, including the existing four fairness
+source owners and hosting tests. Existing fairness production is+192/-44/net148;
+this integration adds0 production Rust and0 public types. Under the user's
+standing recommendation delegation, authorize this19-path combined checkpoint
+before importing changes; original contributions and new lock/document edits
+remain separately reviewable in their PRDs. Required CI on the combined source
+and ordinary guarded merges are mandatory; no direct main push or bypass.
+
+### HTTP fixture binding correction — selection before retained edit
+
+Combined remote workspace run exits101 at the existing HTTP staging/retry
+witness; retain its raw failure. Source review proves the fixture discards its
+listener, then treats the derived ephemeral port as reserved. Current API
+promises original request/input custody, not reservation after disposal.
+
+Smallest concrete failing witness retains an actual bound listener and reverts
+only the retry argument to its occupied address: exact named test fails in debug
+and optimized. Separate diagnostics observe native StagingRejected/AddrInUse.
+The retained candidate reuses original requested127.0.0.1:0 and keeps the returned
+listener through retry. All original actor/router/scope/native/notification
+assertions remain byte-identical; no additional bind, retry loop or deadline.
+Existing ApplicationScope, HTTP execution and Tokio listener ownership suffice.
+
+Expected retained edit: axum.rs+5/-3/net2 testlines; production Rust0/API0. One
+additional path gives fairness16 and combined20, authorized under standing
+recommendation delegation before this edit. Paired inversions/controls and
+full seven-test Axum suites pass both profiles with explicitremote,axum. Two
+source/semantic and execution/vacuity reviews7db05f1e/63eb940a pass.
+
+Earlier20 diagnostics plus first occupied-port invocation ran ZERO tests due
+to missingaxum; they receive no runtime credit. All raw failures are preserved.
+The initial uncontrolled full-workspace failure's phase remains unclassified;
+this corrects a separately proven fixture race, not all HTTP lifecycle behavior.
+Combined source checks and fresh updated-head CI remain required before merge.
+
+Retained sourceceed8bd1 passes exact paired controls and both seven-test Axum
+suites. Minimal inverse0bac14b7 changes only the retry argument and fails the
+intended completion oracle in both profiles; source reversal restores every
+original assertion. Combined no-fail-fast remote run is in progress; earlier
+failed full run remains recorded, not converted to a pass. New submitted heads
+must rerun required CI; prior26b/24c native pairs pass independently but do not
+qualify the changed head. Current retained HTTP delta is test+5/-3/net2;
+production/API0 added, combined20paths/fairness16.
