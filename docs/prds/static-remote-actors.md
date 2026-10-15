@@ -23205,3 +23205,69 @@ metadata older than24h (4057 files,3923283529 bytes), with exact path/size recei
 Sources, worktrees, logs, lockfiles and proof executables remain intact. Retry
 failed workspace checks after actual free-space verification; earlier focused
 source-cut evidence is unchanged.
+
+### Application-certified export clients — decision before production
+
+This branch starts at actual latest main81dc and fast-forwards the still-open
+JSON parentf4a; this is isolated dependent work, not merge/delivery credit.
+User standing recommendation delegation selects the ordinary inherent method
+`ApplicationHandle::export_client::<TargetProtocol, Replies>(recipient)`, gated
+by `remote`. It consumes one actual EstablishedRecipient, compares its native
+actor issuance with this Application's existing address source, then constructs
+the existing ApplicationClient. Root, sibling and nested child recipients use
+one operation; public arbitrary serialization cannot supply that capability.
+It does not declare networking, prove readiness or authenticate/admit a command.
+Existing local client_to retains its deliberately unrestricted target contract.
+
+Return the existing client on success or `(original_recipient, ExportError)`
+on refusal. Choose canonical `remote::ExportError` with `UnownedTarget` and
+`Endpoint { cause: ExternalActorError }`; the original target is always retained,
+and native endpoint failure is not relabeled as membership failure. The public
+UnownedTarget classification intentionally discharges foreign-versus-unassociated
+identity detail, while returning the complete original capability. Check this
+before allocating a reply endpoint. Preserve the actual native error as source;
+use the already proven manual Display/Error realization to avoid generated inline
+imports. No new wrapper, trait, registry, Session input or default is selected.
+
+The unique new retained information is an optional weak reference on ActorRef to
+the EXISTING ApplicationAddresses allocation. Actual actor issuance carries it;
+external reply endpoints do not. Compare allocation identity, never numeric
+address/counter value, strong counts or upgrade success. Closure does not rewrite
+membership; closed owned targets still produce the exact native Closed(original)
+on send. InstalledActor retains its existing recipient rather than another stamp.
+Reuse existing allocations carried by Scope, root runtime inputs, PendingChild
+and Entity inputs. No new Arc allocation, Scope field, PendingChild owner or
+lifecycle model is justified. If a future public API shares one source across
+Applications, this accepted source-invariant policy must be reopened.
+
+Smallest pre-edit witness: public syntax initially fails only the missing-method
+interface check. The existing client_to permissive baseline is valid behavior,
+not an old defect; it demonstrates the absent certified construction. The actual
+new causal witness exports genuine root/siblings/nested descendants and refuses
+another live Application's exact same-protocol capability and a genuine external
+endpoint before allocation, returning both originals. Acquire complete native,
+descendant and two-stage notification results before actual target-effect
+oracles. Deliberately remove membership enforcement to expose foreign Counter3
+instead of2; omit child inheritance to refuse a genuine child; stamp external
+issuance to admit a non-actor endpoint. Run controls and intended inversions in
+both profiles, with exact restoration and two independent test reviews.
+
+Source authority c998277f and witness37c5b590 record the affine Scope/restore
+paths. They reject the unnecessary independent-origin allocation. The new method
+owns a real certification decision, not unchanged forwarding; current concrete
+client construction cannot identify arbitrary nested child ownership. It replaces
+caller-supplied fixed-recipient equality/foreign-target checks when constructing
+those service clients; the future network publication layer will consume the
+same exact client. No full remote-export, nonwaiting-admission or R01 claim is
+made. Ordinary Rust methods and existing products suffice; no macro is eligible.
+
+Pre-edit forecast: stage production Rust+220/-0 maximum, tests+900/-0 maximum,
+one public error type and no removal; source changes address.rs, local endpoint/
+environment, root launch/execution, child creation, Entity issuance, application
+interface, remote module/error owner and owning tests. Existing owners' contracts
+must be freshly verified before production. Under standing delegated approval,
+raise the cumulative checkpoint to30 paths including prior restored research,
+production+368 maximum and retained tests2000 maximum, public types+3/-0. Current
+JSON parent is15 retained paths, production+148, tests+976 and two public types.
+Count all introduced/untracked changes honestly; no reset by branch or PR. Full
+PRD distillation still includes legacy receiving migration and all open rows.
