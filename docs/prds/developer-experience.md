@@ -1485,3 +1485,23 @@ remain unchanged; native projection, constructor ordering/panic, root/child/
 cold/Entity installation, cancellation and full retirement remain open. Do not
 require existing manual hosts to provide a no-op service policy to lower this
 probe. Disposition: pass only for the isolated constructor/dispatch law.
+
+Native construction review narrows the remaining responsibility to three actual
+assembly sites: root (`application/execution.rs`), child
+(`local/effects/creation.rs`) and Entity (`entity/bombay.rs`). Cold members use
+root/child startup. Each site must preserve native inputs, exact child bindings
+and the parent-report port. The existing CommitActions owner remains the sole
+dispatcher and retirement authority. A complete-capabilities constructor would
+own real work, but does not itself solve selection: the existing universal
+NativeChildStartup/NativeEntityHost implementations cannot be overridden for a
+configured topology, and Entity runtime retains only Arc<D::Hosts>. Requiring
+every manual host to supply an empty service policy remains rejected.
+
+Constructor panic is a separate unproved custody cut. The current native
+constructor closure runs synchronously in LocalEnvironment::prepare; child
+Starting custody is recorded only after spawn_owned_execution returns, and root
+handoff has already removed its actor from Prepared. Existing operation-panic
+tests do not prove custody here. Before retaining a native factory design, its
+first complete journey must inject a real constructor panic and inspect original
+actor/configuration and acquired native values. This review establishes source
+constraints, not an executed native failure or a retained production design.
