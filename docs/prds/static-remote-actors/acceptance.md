@@ -31,6 +31,17 @@ independent review atfc85ec10, with focused6 and full74/0/1 in both profiles.
 Its required Nix remains running. Neither local passing tests nor PR readiness
 closes any full acceptance row.
 
+The private acquired-Connection preparation handoff adds two focused ownership
+laws (plus two inherited Counter cases), passing debug and optimized builds.
+Dropping only the prepared Connection fails the intended None-versus-actual-ID
+oracle in both profiles after cleanup; exact restoration passes. Combined
+Application/HTTP/Entity coverage passes421 cases per profile on the original
+test source. Sharing Counter removes two duplicate inherited cases; fresh350
+library controls pass in both profiles. Formatting and local strict lint pass.
+Remote strict lint returns101 for eight unused private production declarations
+only, with no test diagnostics. This remains an explicit delivery gate; this does not solve startup-producer disposal,
+pre-spawn unwind, the public service or SDK privacy. No full row closes.
+
 The final pending-protection comparison32c534a5 executes both finite providers
 in debug and optimized builds; restored complete Counter targets pass72/0/1
 per profile. Borrowing instead of sharing is statically denied; substituting an

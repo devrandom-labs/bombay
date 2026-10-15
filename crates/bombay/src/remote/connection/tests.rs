@@ -29,7 +29,7 @@ use zenoh_config::{EndPoints, ModeDependent, WhatAmI};
 use zenoh_protocol::core::LocatorsStrategy;
 
 #[path = "../../../../../examples/counter/src/counter.rs"]
-mod counter;
+pub(crate) mod counter;
 use counter::{Counter, CounterMessage, CounterValue};
 
 fn connecting() -> ConnectionEndpoints {
@@ -525,7 +525,7 @@ fn non_utf8_credential_paths_preserve_all_five_original_allocations() {
     }
 }
 
-fn listening_counter_network() -> Network {
+pub(crate) fn listening_counter_network() -> Network {
     let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
     Network {
@@ -584,6 +584,10 @@ fn assert_stopped_counter(retirement: ActorRetirement<StopOnShutdown<Counter>, N
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "preserve the complete native and connection retirement trace in one ownership test"
+)]
 fn connection_custody_waits_for_work_after_root_retirement() {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -643,11 +647,12 @@ fn connection_custody_waits_for_work_after_root_retirement() {
                 pin!(&mut parked).poll(context)
             })
             .await;
-            let mut borrowed_close = closing.as_mut();
-            let before_release = borrowed_close
-                .as_mut()
-                .poll(&mut Context::from_waker(Waker::noop()));
-            drop(borrowed_close);
+            let before_release = {
+                let mut borrowed_close = closing.as_mut();
+                borrowed_close
+                    .as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+            };
             let close_poll = match &before_release {
                 Poll::Pending => Poll::Pending,
                 Poll::Ready(_) => Poll::Ready(()),
@@ -690,7 +695,7 @@ fn connection_custody_waits_for_work_after_root_retirement() {
             assert_eq!(admissions.len(), 2);
             let value = value.unwrap();
             assert_eq!((value.from, value.message), (MailAddr::APPLICATION_ROOT, 2));
-            assert!(tail.is_empty());
+            assert_eq!(tail.len(), 0);
             assert_eq!(ptr::from_ref(increments.as_ref()), allocation);
             assert_eq!(*increments, 2);
             assert_eq!(calls.get(), 1);
@@ -788,7 +793,7 @@ fn connection_custody_survives_whole_parked_execution_disposal() {
             assert_eq!(admissions.len(), 3);
             let value = value.unwrap();
             assert_eq!((value.from, value.message), (MailAddr::APPLICATION_ROOT, 3));
-            assert!(tail.is_empty());
+            assert_eq!(tail.len(), 0);
             assert_eq!(report.retirement(), RetirementAssessment::Established);
             assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             let notifications = notifications.unwrap();
@@ -800,6 +805,10 @@ fn connection_custody_survives_whole_parked_execution_disposal() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "preserve the complete native and connection retirement trace in one ownership test"
+)]
 fn connection_custody_closes_after_unpolled_execution_without_consuming_cold_work() {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -930,7 +939,7 @@ fn connection_custody_closes_after_unpolled_execution_without_consuming_cold_wor
             assert_eq!(admissions.len(), 5);
             let value = value.unwrap();
             assert_eq!((value.from, value.message), (MailAddr::APPLICATION_ROOT, 5));
-            assert!(tail.is_empty());
+            assert_eq!(tail.len(), 0);
             assert_eq!(report.retirement(), RetirementAssessment::Established);
             assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             let notifications = notifications.unwrap();
@@ -1026,7 +1035,7 @@ fn connection_custody_refuses_missing_host_and_keeps_original_application_work()
     assert_eq!(admissions.len(), 8);
     let value = value.unwrap();
     assert_eq!((value.from, value.message), (MailAddr::APPLICATION_ROOT, 8));
-    assert!(tail.is_empty());
+    assert_eq!(tail.len(), 0);
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     let notifications = notifications.unwrap();

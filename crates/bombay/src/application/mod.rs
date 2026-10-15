@@ -6,6 +6,8 @@ mod interface;
 #[cfg(feature = "remote")]
 pub(crate) mod node;
 mod scope;
+#[cfg(all(test, feature = "remote"))]
+mod tests;
 
 pub use scope::ApplicationScope;
 

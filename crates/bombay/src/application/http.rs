@@ -2,8 +2,8 @@ use super::ApplicationScope;
 use crate::address::MailAddr;
 use crate::application::composition::ComposeApplication;
 use crate::application::execution::{
-    ApplicationWorkCustody, ApplicationWorkPresence, ApplicationWorkPublication, RootInterpreter,
-    execute_application_with,
+    ApplicationWorkCustody, ApplicationWorkPresence, ApplicationWorkPublication,
+    PreparedApplication, RootInterpreter, execute_application_with,
 };
 use crate::application::{Application, ApplicationHandle, ApplicationOutcome};
 use crate::local::children::{
@@ -261,19 +261,19 @@ where
                 };
                 let installed_families = ();
                 let (work, publication) = original_work.into_not_invoked();
-                Ok((
-                    ApplicationWorkPublication {
+                Ok(PreparedApplication {
+                    work: ApplicationWorkPublication {
                         publication: Some((
                             ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
-                    installed_families,
-                ))
+                    families: installed_families,
+                    #[cfg(feature = "remote")]
+                    connection: None,
+                })
             },
             ((), |_executor, (), ()| None),
-            #[cfg(feature = "remote")]
-            None,
         );
         let receiving = async move {
             let (work, root, termination_notification) = receiving.await;

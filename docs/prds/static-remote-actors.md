@@ -28212,3 +28212,119 @@ hashes is corrected explicitly: every actual command used the proper main tree.
 Independent execution review90e732bd and source/graph reviewff344969 both pass.
 The clean main-based source contains no private coordinator changes. Required
 current-head CI is still running, so no merge/full remote credit is given.
+
+### Acquired connection — controls before source inversion
+
+The initial new test fails statically on the old signature (missing prepared
+product and premature seventh argument), with two additional tuple-inference
+diagnostics. The selected product resolves the contract diagnostics; annotating
+only the actual existing Box/Rc/oneshot tuple types resolves the remaining two.
+No architecture or public bound is introduced from those diagnostics.
+
+Current testca933d95 is378 formatted lines, production execution12587902 and
+HTTPd97df419 are+51/-40/net11. Independent two-pass production and test reviews
+pass. Work now retains the actual optional native runtime identifier, rather
+than reducing association to a boolean. Debug and optimized controls each
+return0 with four cases: two new ownership laws and two inherited Counter unit
+tests, not four new laws. Complete native, notification, work and close results
+are acquired before assertions; the original cold owners retain their pointers.
+
+Select the exact real-kernel omission cut before editing: immediately after
+prepared-resource destructuring, drop its actual Connection and substitute
+None::<Connection>. Leave test source and all other owners untouched. The same
+real Counter should complete and cleanup should finish, but Work must record
+no attached runtime and fail its final expected-Some oracle in both profiles.
+This supplies runtime falsification distinct from the old static failure; it
+cannot establish the remaining producer-disposal/unwind or full service laws.
+
+
+### Acquired connection — actual omission and restored custody
+
+The exact five-line kernel omission changes execution12587902 to c9a52ea6
+without changing testca933d95. Both actual pinned debug and optimized commands
+return101: the sole selected ownership case observes None instead of the
+independently acquired connection's Some identifier. Execution, receiving,
+actual close and client-drain acquisition finish before that assertion; the
+preceding cleanup and close assertions pass. Later native-field assertions do
+not execute in the negative cases and receive healthy-control credit only.
+This is an intended runtime failure, distinct from earlier compiler failures.
+
+Exact restoration to12587902 passes four focused cases in each profile; the
+six source/manifest/lock guards remain unchanged. The omission patchf71d2227,
+raw command logs and good/mutant snapshots are retained in
+/tmp/bombay-acquired-connection. Independent two-pass source/test and execution
+reviews pass for those completed commands. The broader remote+HTTP debug run
+passes352 library,38 client,15 outcome,7 shutdown,7 Entity and2 HTTP cases
+(421 total, zero ignored/filtered); optimized combined verification is pending.
+No source-disposal, pre-spawn unwind, complete close-error, public service or
+full acceptance claim follows from this handoff.
+
+
+The restored combined optimized run also returns0:352/38/15/7/7/2 cases,
+421 total with zero ignored/filtered. Local workspace all-target strict Clippy
+with HTTP returns0. Remote strict Clippy returns101 and, unlike the earlier
+scoped command, reaches test compilation: eight known unused production
+connection declarations and13 test diagnostics are reported. Do not describe
+that result as only the eight known errors or infer a test-lint pass.
+
+Before the mechanical test correction, select single ownership of the existing
+Counter fixture in connection tests, test-only re-exported to Application tests;
+this removes duplicate module loading and its duplicate two inherited cases.
+Use ordinary lexical scopes to end borrowed Pin waits, direct Session::zid,
+and length equality for empty-drain diagnostics. Preserve every runtime action,
+result and assertion meaning. Two existing long ownership traces retain narrow
+truthful line-count expectations; both new tests retain a narrow large-error
+expectation because the owning preparation API returns complete original cold
+inputs, with no boxing or erased error introduced. No dead-code allowance.
+Expected additional production0, public API0; test-only sharing adds at most4
+re-export lines beyond the earlier fixture ceiling. Re-review twice, rerun both
+owners' debug/optimized controls and strict remote lint. Prior controls/cuts
+remain source-bound historical evidence; new hashes/counts are recorded afresh.
+
+
+At this checkpoint all59 tracked differences and the one untracked Application
+test are included against81dc1448: production+1384/-37/net1347; verification
+Rust+11082/-14/net11068. The187/3 verification adjustment includes established
+178/3 inline tests exactly once and nine new cfg(test) mount/re-export lines.
+The separate owning contribution remains104 net production, giving the known
+combined1451 under1600. Public additions remain the carried8+4 selection;
+this stage adds zero public types and one private preparation product. No
+historically unproved extent is reset. Stage production is+51/-40/net11;
+379 new Application test lines, existing fixture edits and nine test-only mount
+lines remain within450 retained/1000 authored plus80 inversion lines. All
+current1600/14/20000/115 limits carry. Positive production growth is reported
+as capability work, not cleanup.
+
+
+### Acquired connection — final private checkpoint
+
+Mechanical correction6ca18a81/7b551f5e has two independent two-pass source
+reviews. Its actual pinned library commands with remote,axum pass350 cases in
+each profile, zero ignored/filtered; Counter's two inherited cases now execute
+once in their existing owner. The prior421-per-profile six-target runs and
+omission inversions remain bound to ca933; the correction preserves their
+runtime operations and final association oracle, and receives fresh healthy
+controls rather than claiming new inverted runs. No production byte changed.
+
+The actual commands are `nix develop --profile
+/tmp/bombay-pr365-ci-review/pinned-bombay-shell -c cargo test --offline --locked
+-p bombay-rs --features remote,axum --lib`, repeated with `--release`, plus
+`cargo fmt --all -- --check` through that same pinned shell. All return0.
+The same shell's `cargo clippy --offline --locked --workspace --all-targets
+--features axum -- -D warnings` returns0. With `--features remote,axum`, it
+returns101: only the eight known unused private production connection items
+remain; all13 earlier test diagnostics are removed. This is not a strict remote
+lint pass. Full argv, command exits, environment and ten unchanged input hashes
+are recorded by corrected-execution5e7497f5; raw logs and original/cut snapshots
+remain in /tmp/bombay-acquired-connection. Public service/privacy, startup result
+custody through producer disposal/unwind and all full R01–R25 remain open.
+This private implementation may be committed but cannot be delivered as a
+finished public networking feature or waive either PR373/PR374 hold.
+
+
+Final independent correction review2b2a8ef2 and artifact manifestec57ea4c verify
+all four actual command outcomes and ten unchanged inputs. Final staged scope:
+production+51/-40/net11; tests+408/-11/net397; public API+0/-0 types.
+The cumulative endpoint includes60 tracked paths and zero untracked paths,
+with production+1384/-37/net1347 and tests+11082/-14/net11068 as above.
+Independent delivery PR376/PR377 still await required CI; no merge is inferred.

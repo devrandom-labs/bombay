@@ -12,6 +12,8 @@ pub(crate) mod startup;
 mod verification;
 
 pub(crate) use connection::Connection;
+#[cfg(test)]
+pub(crate) use connection::{counter, listening_counter_network};
 
 pub use export::{Admission, Export, ExportError, ExportLimits, RequestKey, RequestRefusal};
 pub use ingress::{IngressError, try_retain};

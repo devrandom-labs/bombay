@@ -146,6 +146,20 @@ review pass. Focused6/0/0 and full74/0/1 pass in both profiles; the ignored
 controlled-TLS fixture case is uncredited. Required Nix is still running, so no
 merge or full requirement is recorded from this test-only contribution.
 
+The private cold-startup handoff now transfers its actual acquired Connection
+through the existing Application preparation and cleanup owners. Two new laws
+and two inherited Counter cases pass in both profiles; an exact real-kernel
+omission fails the intended post-cleanup association assertion in both, with
+exact-restored controls passing. Broader local/remote/HTTP/Entity coverage
+passes421 cases in each profile on the original test source. The mechanical
+test correction shares one Counter fixture, removing two duplicate inherited
+cases. Fresh library controls pass350 cases per profile; formatting and local
+strict lint pass. Remote strict lint returns101 for the eight unused private
+production declarations only; test diagnostics are corrected without suppressing
+that gate. This adds no public API,
+dependency or lifecycle owner. Startup-producer disposal/unwind custody and the
+actual public Application service/privacy replacement remain open.
+
 ## Historical prerequisite checkpoints
 
 DevX integration prerequisite [PR359](https://github.com/devrandom-labs/bombay/pull/359)

@@ -236,15 +236,17 @@ where
                 let installed_families =
                     families.install(Arc::clone(&spaces), allocations, entity_executor);
                 let (work, publication) = original_work.into_not_invoked();
-                Ok((
-                    ApplicationWorkPublication {
+                Ok(PreparedApplication {
+                    work: ApplicationWorkPublication {
                         publication: Some((
                             ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
-                    installed_families,
-                ))
+                    families: installed_families,
+                    #[cfg(feature = "remote")]
+                    connection: None,
+                })
             },
             (
                 family_publications,
@@ -252,8 +254,6 @@ where
                     Some(executor.spawn(installed_families.shutdown(publications)))
                 },
             ),
-            #[cfg(feature = "remote")]
-            None,
         );
         let receiving = async move {
             let (work, root_retirement, termination_notification) = receiving.await;
@@ -617,9 +617,9 @@ where
             self,
             (work, invoke),
             async |application: &Self| ((), application.allocations()),
-            |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
-             startup_inputs,
-             allocations| {
+            move |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
+                  startup_inputs,
+                  allocations| {
                 let (application, cold_work, publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
@@ -653,19 +653,19 @@ where
                 };
                 let installed_families = ();
                 let (work, publication) = original_work.into_not_invoked();
-                Ok((
-                    ApplicationWorkPublication {
+                Ok(PreparedApplication {
+                    work: ApplicationWorkPublication {
                         publication: Some((
                             ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
-                    installed_families,
-                ))
+                    families: installed_families,
+                    #[cfg(feature = "remote")]
+                    connection,
+                })
             },
             ((), |_executor, (), ()| None),
-            #[cfg(feature = "remote")]
-            connection,
         );
         let receiving = async move {
             let (work, root, termination_notification) = receiving.await;
@@ -836,19 +836,19 @@ where
                 };
                 let installed_families = ();
                 let (work, publication) = original_work.into_not_invoked();
-                Ok((
-                    ApplicationWorkPublication {
+                Ok(PreparedApplication {
+                    work: ApplicationWorkPublication {
                         publication: Some((
                             ApplicationWorkCustody::Prepared((root, spaces, scope), work),
                             publication,
                         )),
                     },
-                    installed_families,
-                ))
+                    families: installed_families,
+                    #[cfg(feature = "remote")]
+                    connection: None,
+                })
             },
             ((), |_executor, (), ()| None),
-            #[cfg(feature = "remote")]
-            None,
         );
         let receiving = async move {
             let (work, root, termination_notification) = receiving.await;
@@ -1618,6 +1618,14 @@ pub(in crate::application) struct ApplicationWorkPublication<
     )>,
 }
 
+/// Transfer prepared work and its runtime resources through one startup handoff.
+pub(in crate::application) struct PreparedApplication<Work, Families> {
+    pub(in crate::application) work: Work,
+    pub(in crate::application) families: Families,
+    #[cfg(feature = "remote")]
+    pub(in crate::application) connection: Option<Connection>,
+}
+
 #[expect(
     clippy::type_complexity,
     clippy::too_many_lines,
@@ -1651,7 +1659,6 @@ pub(in crate::application) fn execute_application_with<
         InstalledFamilies::ShutdownPublications,
         RetireUnstartedFamilies,
     ),
-    #[cfg(feature = "remote")] connection: Option<Connection>,
 ) -> (
     impl Future<Output = ()>,
     impl Future<
@@ -1722,7 +1729,7 @@ where
         StartupInputs,
         ApplicationAddresses,
     ) -> Result<
-        (
+        PreparedApplication<
             ApplicationWorkPublication<
                 Inputs,
                 ColdWork,
@@ -1732,7 +1739,7 @@ where
                 (Actor, Spaces, ApplicationScope),
             >,
             InstalledFamilies,
-        ),
+        >,
         ApplicationWorkPublication<
             Inputs,
             ColdWork,
@@ -1780,14 +1787,18 @@ where
             })
             .await
         };
-        let (prepared_work, installed_families) =
-            match prepare(original_work, startup_inputs, allocations.clone()) {
-                Ok(prepared) => prepared,
-                Err(rejected) => {
-                    drop(rejected);
-                    return;
-                }
-            };
+        let PreparedApplication {
+            work: prepared_work,
+            families: installed_families,
+            #[cfg(feature = "remote")]
+            connection,
+        } = match prepare(original_work, startup_inputs, allocations.clone()) {
+            Ok(prepared) => prepared,
+            Err(rejected) => {
+                drop(rejected);
+                return;
+            }
+        };
         original_work = prepared_work;
         let setup = catch_unwind(AssertUnwindSafe(|| {
             let Some((ApplicationWorkCustody::Prepared((_, spaces, _), _), _)) =

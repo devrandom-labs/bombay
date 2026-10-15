@@ -222,3 +222,8 @@ impl CredentialSource {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(crate) use tests::listening_counter_network;
+
+#[cfg(test)]
+pub(crate) use tests::counter;
