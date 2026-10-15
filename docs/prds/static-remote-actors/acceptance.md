@@ -437,3 +437,9 @@ PR369 checks do not qualify the successor. All full remote acceptance stays open
 The successor lock correction now passes fresh pinned locked metadata, the
 intended stale-lock failure and exact restored control, plus protected Counter
 68/0/1 in each profile. Exact-head CI/review/merge/publication remain pending.
+
+Fresh PR371 corrected-head required CI reaches the optimized allocation test
+and fails its exact comparison-byte equality (925 versus781), despite debug
+passing55 cases. Preserve that failure; release delivery remains blocked.
+Owning DHAT stack/window diagnostics are selected before any assertion, bound
+or measurement-owner change. No passing retry can substitute for diagnosis.

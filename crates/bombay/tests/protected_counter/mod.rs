@@ -5197,7 +5197,7 @@ mod allocation_profile {
     use super::*;
     use std::env::VarError;
     use std::pin::pin;
-    use std::process::Command;
+    use std::process::{self, Command};
     use tokio::runtime::Runtime;
 
     // Provider-only calibration inside the already isolated owning test process.
@@ -5395,7 +5395,13 @@ mod allocation_profile {
             counter_requested_fixture(b'Y', configured),
         ];
         let (release, released) = oneshot::channel();
-        let profiler = dhat::Profiler::builder().testing().build();
+        let profiler = dhat::Profiler::builder()
+            .file_name(
+                env::temp_dir().join(format!("bombay-counter-allocations-{}.json", process::id())),
+            )
+            .trim_backtraces(None)
+            .eprint_json()
+            .build();
         let (authorization, header_requests) = requested_allocations(|| {
             CounterAuthorization::new(
                 StartupMode::ExplicitTest,
@@ -5708,6 +5714,10 @@ mod allocation_profile {
             .iter()
             .map(|requested| requested.1)
             .sum();
+        eprintln!(
+            "Counter comparison allocation windows {:?}; protected bytes {protected_bytes}",
+            measured.comparison_requests
+        );
         assert_eq!(comparison_requested, protected_bytes as u64);
         assert_eq!(
             measured

@@ -23816,3 +23816,74 @@ Final correction delta against d6: four paths; production0, test source0, public
 API0; fixture lock+1/-1, documentation+66/-0. Independent two-pass source review
 confirms all323 unrelated records unchanged. Required exact-head CI, review,
 merge and publication remain pending.
+
+
+### Release successor allocation failure — owning diagnostic before correction
+
+Fresh corrected-head Nix run38693250590/job116283812551 passes the plain
+protected55-case debug suite, then optimized fails54/1. Actual comparison
+allocation windows sum925 requested bytes versus781 protected bytes at mod.rs5711.
+The requester-refusal Box is separately correct at one176-byte allocation.
+Unknown-role child refusal is an intended control. This is a real executed
+regression failure, not the prior lock mismatch; local68/0/1 controls do not
+discharge it. Source is unchanged from merged370 and this command has no remote
+feature, so no source basis identifies the new remote client as its cause.
+
+The selected DHAT0.3.3 source documents global statistics and test-runner
+interference. That is an investigation lead, not a proven cause of this run.
+Before changing a bound, allocator, harness or production design, expose the
+actual two block/byte window pairs and retain DHAT's owning stack profile.
+Select diagnostic-only use of its existing non-testing eprint_json and complete
+backtraces for measure_counter_custody's profiler; HeapStats works in that mode.
+All exact allocation/count/custody assertions and limits remain unchanged.
+Print the actual pair inventory immediately before its existing equality after
+original actor/notification cleanup. No new crate, custom allocator, private
+payload print, retry policy or public API.
+
+Expected source: existing protected_counter/mod.rs plus this record, acceptance
+and backlog status; under15 source lines, production0/public API0. Existing
+whole-goal budgets carry forward. Run focused debug/optimized tests and strict
+lint, preserve exact source/logs, then obtain fresh exact-head CI diagnostics.
+A passing diagnostic run alone will not explain or discharge the original
+failure. Release merge remains blocked on a source-backed correction or a
+verified owning measurement contract, never a relaxed equality or green retry.
+
+
+Diagnostic eligibility passes the focused named allocation test in both profiles,
+strict isolated-target Clippy and formatting, without changing the failing
+equality. Those passes do not identify the original excess. DHAT also writes its
+default JSON file; preserve the initial last-profile file outside the source
+tree, with all four profiles retained in raw stderr. Select an explicit temporary
+process-named output path using standard env/process APIs before subsequent
+runs. The file holds only the last snapshot; complete stderr remains the owning
+all-profile record. This is diagnostic output ownership, not a new allocator or
+resource policy. Repeat affected checks on that exact final spelling.
+
+
+Final temporary-file spelling passes both focused runtime profiles and retains
+all four exact window inventories. Clippy then finds the child's explicit env
+import shadows the existing parent-owned env import, leaving that parent import
+unused. Remove only the redundant child import of the module, preserving its
+VarError import and the existing module-level owner. This is import hygiene,
+not a model/bound or executable-policy change; preserve the initial lint result.
+Recheck lint/format and bind the final source before submitting diagnostics.
+
+
+Retain all diagnostic snapshots in CI even when their test passes: add only
+libtest --nocapture to the two existing plain protected-suite commands in the
+owning Nix check. Keep every selected test/profile and assertion intact. No
+extra campaign, retry, timeout, concurrency or budget change. Existing callback
+and semantic evidence remain separate. Final lint accepts the import correction;
+format-check requests only the standard layout of the temporary filename call.
+Apply pinned rustfmt and recheck before the diagnostic commit.
+
+
+Final diagnostic eligibility: both focused allocation executions pass with all
+four exact one-block comparison pairs (393/388,388/393,396/391,391/396 bytes),
+before import-only/standard-format reconciliation. Final formatted source passes
+strict isolated-target Clippy and format-check. Complete runtime profiles and
+per-case/log/source receipts are retained; no failure cause or fixed allocation
+law is claimed. Diagnostic stage: five paths, production+0/-0/net0, tests
++12/-2/net10, public API+0/-0; two Nix command lines gain output capture only.
+All assertions/limits remain byte-for-byte unchanged. Actual exact-head CI must
+execute this final source and preserve its native and allocation proof scopes.
