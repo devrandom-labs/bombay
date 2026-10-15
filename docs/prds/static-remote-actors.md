@@ -106,6 +106,22 @@ composition, startup refusal/readiness, retry triggers, service failure and comp
 network retirement remain required contracts. This source inventory adds twenty
 direct read inputs and 26 research lines; it executes no new feature witness.
 
+The first healthy pending-protection source `0b2e118b` passes two actual cases
+in both debug and optimized profiles. Its synchronous thread-local Rc measures
+one allocation per receipt (376 bytes Recorded, 392 Scheduled) and none for the
+extra reader reference. These observations are not a whole-service heap bound.
+Two earlier compile failures exposed only observer Debug and error-inference
+issues; no Receipt bound or production design was added to repair them.
+
+Independent review found a source blocker despite those passes: a unit-valued
+RefCell loan guards no authoritative fact and is dummy generic plumbing. Before
+editing, select the existing immutable-fixture spelling: after the real scope
+check, return the checked `&current` or `&second` through the native attempt.
+Remove the unit cell and its loans. This preserves the actual checked input
+without claiming current mutable/revocable permission. Keep prior executions
+qualified to their source bytes, then rerun final controls and intended cuts.
+No private/provisional transport API gains final public approval from this test.
+
 ## Current delivery (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
