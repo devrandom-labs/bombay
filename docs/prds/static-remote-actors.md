@@ -28022,3 +28022,31 @@ no Cargo dependency/lock changes. This marks only that owning prerequisite
 merged. Publication, Bombay graph adoption, actual fresh-permission capacity
 integration and every full R01–R25/AUTH1/NET1 witness remain open. The entire
 goal stays active, and PR376's separate required Nix job is still running.
+
+### Immediate delivery of reviewed contributions
+
+Under the user's instruction to merge finished slices promptly, provider-test
+[PR376](https://github.com/devrandom-labs/bombay/pull/376) is ready for review at
+fc85ec10e2b77571b60b35b54399b3eac9d23cf5. All eight main-based pinned commands
+pass: focused6/0/0 and full74/0/1 in each profile, fixture/workspace formatting
+and strict Clippy. The sole ignored case requires its separate controlled TLS
+fixture; it receives no passing credit. Independent review578e821e verifies
+executionc8b08f25, inventory25c7f023 and all17 before/after input guards. These
+checks change no source. The PR body now reflects actual local results; required
+Nix38807714831 remains running. Readiness is not merge or full acceptance.
+
+Communication release [PR14](https://github.com/devrandom-labs/bombay-communication/pull/14)
+merged at2026-10-15T21:43:01Z as963067e0e6bdef15549088966cde354fd820be7e,
+using normal squash with exact-head matchd2935269. Independent review confirms
+only the version, workspace lock versions and changelog change. All five checks
+pass; both actual Linux Nix runs pass package78 and workspace101 with zero
+skipped cases and both unchanged allocation checks. The reviewed and merged
+trees equalb33455208db74cf25245cda40175269d15033434. Automatic registry publication
+is still pending. Bombay still selects Communication0.1.5; adoption requires
+verified0.1.6 archive/provenance followed by a declared minimum and narrow locks.
+
+This record-only checkpoint changes three documents, with production+0/-0,
+verification Rust+0/-0 and public types+0/-0. All existing cumulative counts,
+unsupported foreign-waker qualification, PR373/374 privacy holds and full remote
+acceptance obligations carry unchanged. Finished contributions proceed through
+review and required CI independently of the remaining Application service.

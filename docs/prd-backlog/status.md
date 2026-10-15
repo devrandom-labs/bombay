@@ -130,9 +130,15 @@ failed broader tests preserved. Measured workload regressions are accepted and
 recorded, not a speedup. Updated Linux CI passes package78/workspace101 with
 the unchanged zero-allocation assertions, using existing Nextest process
 isolation and separate doctests. The earlier allocation failure's exact source
-remains unattributed. Publication and Bombay
-adoption remain required. Existing Full-only caller-triggered retries retain their
+remains unattributed. Release PR14 merged963067e0 with all five checks passing;
+actual registry publication and Bombay adoption remain required. Existing Full-only caller-triggered retries retain their
 narrower scope; the automatic capacity-wait/fresh-permission witness is open.
+
+Provider-test [PR376](https://github.com/devrandom-labs/bombay/pull/376) is ready
+for review atfc85ec10 after all eight main-based pinned checks and independent
+review pass. Focused6/0/0 and full74/0/1 pass in both profiles; the ignored
+controlled-TLS fixture case is uncredited. Required Nix is still running, so no
+merge or full requirement is recorded from this test-only contribution.
 
 ## Historical prerequisite checkpoints
 

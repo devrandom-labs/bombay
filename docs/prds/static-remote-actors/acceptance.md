@@ -18,8 +18,13 @@ private connection declarations; the scoped command does not reach test lint.
 The public Application service and SDK privacy replacement remain absent, so
 these facts close no full row. Owning Communication PR13 merged as39fd717e
 with all five checks passing and exact reviewed/tested/main tree agreement.
-It separately verifies capacity readiness and exact custody; actual release/adoption and Application
-integration remain required.
+It separately verifies capacity readiness and exact custody. Its version-only
+release PR14 merged963067e0 after all five checks passed; actual registry
+publication, Bombay adoption and Application integration remain required.
+Main-based provider PR376 now passes all eight local pinned commands and
+independent review atfc85ec10, with focused6 and full74/0/1 in both profiles.
+Its required Nix remains running. Neither local passing tests nor PR readiness
+closes any full acceptance row.
 
 The final pending-protection comparison32c534a5 executes both finite providers
 in debug and optimized builds; restored complete Counter targets pass72/0/1
