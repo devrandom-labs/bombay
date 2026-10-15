@@ -3,6 +3,12 @@ use bombay::TrySendError;
 use bombay::WorkOutcome;
 use core::any::type_name;
 use core::ptr;
+#[cfg(feature = "remote")]
+use core::{
+    future::Future,
+    pin::pin,
+    task::{Context, Poll, Waker},
+};
 use tokio::runtime::Builder;
 
 use bombay::behavior::{EstablishedDelivery, MessageProtocol};
@@ -459,4 +465,204 @@ fn interface_denies_lifecycle_and_receive_authority_duplication() {
     cases.compile_fail("tests/compile/fail/external_actor_receiver_is_affine.rs");
     cases.compile_fail("tests/compile/fail/retirement_report_is_runtime_issued.rs");
     cases.compile_fail("tests/compile/fail/retirement_report_constructor_is_private.rs");
+}
+
+#[cfg(feature = "remote")]
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "retain the exact pressure, retry and closure originals until native cleanup"
+)]
+fn fixed_target_client_try_send_preserves_originals_and_origin() {
+    let host = Builder::new_current_thread().enable_all().build().unwrap();
+    let receipts = host
+        .block_on(
+            Application::new(WaitsForShutdown.stop_on_shutdown()).run_with(
+                |application| async move {
+                    let mut receiver = application
+                        .external::<MessageProtocol<MailAddr, DeliveryCommand>>()
+                        .expect("the actual target owns receiving");
+                    let client = application
+                        .client_to::<_, MessageProtocol<MailAddr, DeliveryCommand>>(
+                            receiver.recipient(),
+                        )
+                        .unwrap_or_else(|_| {
+                            panic!("the fixed target client owns its allocated origin")
+                        });
+                    let origin = client.address();
+                    let target = receiver.address();
+                    let mut allocations = Vec::new();
+                    let mut admissions = Vec::new();
+                    // The existing external mailbox has 1024 slots. Its sole consumer
+                    // remains unpolled until every synchronous attempt returns.
+                    for sequence in 0..1_024 {
+                        let payload = vec![17, 19].into_boxed_slice();
+                        allocations.push(payload.as_ptr());
+                        let admitted = client.try_send(DeliveryCommand { sequence, payload });
+                        admissions.push(admitted);
+                    }
+                    let payload = vec![23, 29].into_boxed_slice();
+                    let retry_allocation = payload.as_ptr();
+                    let mut full = Some(client.try_send(DeliveryCommand {
+                        sequence: 1_024,
+                        payload,
+                    }));
+                    let first = {
+                        let mut receiving = pin!(receiver.receive());
+                        let mut context = Context::from_waker(Waker::noop());
+                        receiving.as_mut().poll(&mut context)
+                    };
+                    let (full_observation, retried) = match full.take() {
+                        Some(Err(TrySendError::Full(original))) => {
+                            let observed = (
+                                original.sequence,
+                                original.payload.as_ptr(),
+                                original.payload.to_vec(),
+                            );
+                            let retried = client.try_send(original);
+                            (Some(observed), Some(retried))
+                        }
+                        other => {
+                            full = other;
+                            (None, None)
+                        }
+                    };
+                    receiver.close_admission();
+                    let payload = vec![31, 37].into_boxed_slice();
+                    let closed_allocation = payload.as_ptr();
+                    let mut closed = Some(client.try_send(DeliveryCommand {
+                        sequence: 1_025,
+                        payload,
+                    }));
+                    let (closed_observation, replayed) = match closed.take() {
+                        Some(Err(TrySendError::Closed(original))) => {
+                            let observed = (
+                                original.sequence,
+                                original.payload.as_ptr(),
+                                original.payload.to_vec(),
+                            );
+                            let replayed = client.try_send(original);
+                            (Some(observed), Some(replayed))
+                        }
+                        other => {
+                            closed = other;
+                            (None, None)
+                        }
+                    };
+                    let mut delivered = Vec::new();
+                    while let Some(message) = receiver.receive().await {
+                        delivered.push(message);
+                    }
+                    let stopped = application.request_shutdown();
+                    (
+                        client,
+                        receiver,
+                        origin,
+                        target,
+                        allocations,
+                        admissions,
+                        retry_allocation,
+                        full,
+                        full_observation,
+                        retried,
+                        closed_allocation,
+                        closed,
+                        closed_observation,
+                        replayed,
+                        first,
+                        delivered,
+                        stopped,
+                    )
+                },
+            ),
+        )
+        .unwrap_or_else(|_| panic!("the real Application starts"));
+    let (outcome, native, notifications, ()) = receipts.into_parts();
+    let (output, cleanup) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("Work retains each actual result"));
+    let (root_origin, retirement) = native.expect("the original root joins");
+    let notifications = notifications.expect("the independent notification pair is acquired");
+    let (
+        client,
+        receiver,
+        origin,
+        target,
+        allocations,
+        admissions,
+        retry_allocation,
+        full,
+        full_observation,
+        retried,
+        closed_allocation,
+        closed,
+        closed_observation,
+        replayed,
+        first,
+        mut delivered,
+        stopped,
+    ) = output;
+    assert_completed((root_origin, retirement), None);
+    assert!(cleanup.is_ok());
+    assert!(matches!(&notifications.termination, Ok(())));
+    assert!(matches!(&notifications.retirement, Ok(())));
+    assert!(stopped.is_ok());
+    let Poll::Ready(Some(first)) = first else {
+        panic!("the actual accepted prefix must be available without waiting");
+    };
+    delivered.insert(0, first);
+    assert_ne!(origin, target);
+    assert_eq!(admissions.len(), 1_024);
+    for admission in &admissions {
+        assert!(admission.is_ok());
+    }
+    assert!(full.is_none());
+    assert_eq!(
+        full_observation
+            .as_ref()
+            .map(|(sequence, allocation, payload)| (*sequence, *allocation, payload.as_slice())),
+        Some((1_024, retry_allocation, &[23, 29][..]))
+    );
+    assert!(matches!(&retried, Some(Ok(()))));
+    assert!(closed.is_none());
+    assert_eq!(
+        closed_observation
+            .as_ref()
+            .map(|(sequence, allocation, payload)| (*sequence, *allocation, payload.as_slice())),
+        Some((1_025, closed_allocation, &[31, 37][..]))
+    );
+    let Some(Err(TrySendError::Closed(original))) = &replayed else {
+        panic!("replaying the returned original preserves the actual closed refusal");
+    };
+    assert_eq!(original.sequence, 1_025);
+    assert_eq!(original.payload.as_ptr(), closed_allocation);
+    assert_eq!(original.payload.as_ref(), [31, 37]);
+    assert_eq!(delivered.len(), 1_025);
+    for (sequence, message) in delivered.iter().enumerate() {
+        assert_eq!(message.from, origin);
+        assert_eq!(message.message.sequence, sequence);
+        let expected = if sequence == 1_024 {
+            retry_allocation
+        } else {
+            allocations[sequence]
+        };
+        assert_eq!(message.message.payload.as_ptr(), expected);
+        let expected: &[u8] = if sequence == 1_024 {
+            &[23, 29]
+        } else {
+            &[17, 19]
+        };
+        assert_eq!(message.message.payload.as_ref(), expected);
+    }
+    drop((
+        client,
+        receiver,
+        admissions,
+        full,
+        retried,
+        closed,
+        replayed,
+        delivered,
+        notifications,
+    ));
 }

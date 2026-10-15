@@ -118,6 +118,8 @@ where
             Config::new(mailbox_capacity.get()),
             address,
             behavior,
+            #[cfg(feature = "remote")]
+            Some(allocations.downgrade()),
             move |control, terminal_reports, timers, observations| {
                 let bindings = ChildBindings::<
                     B,

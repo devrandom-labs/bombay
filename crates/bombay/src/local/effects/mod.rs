@@ -1966,6 +1966,8 @@ mod atomic_interpretation_contract {
             Config::new(2),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |control, timers, observations| {
                 ActionInterpreter::new(ApplicationCapabilities::<Root, ()>::new_with_bindings(
                     ApplicationCapabilityInputs {
@@ -2690,6 +2692,8 @@ mod atomic_interpretation_contract {
                 Config::new(2),
                 termination,
                 cancellation,
+                #[cfg(feature = "remote")]
+                None,
                 move |control, timers, observations| {
                     ActionInterpreter::new(ApplicationCapabilities::<Root, ()>::new_with_bindings(
                         ApplicationCapabilityInputs {
@@ -3018,6 +3022,8 @@ mod atomic_interpretation_contract {
                 Config::new(2),
                 termination,
                 cancellation,
+                #[cfg(feature = "remote")]
+                None,
                 move |control, timers, observations| {
                     ActionInterpreter::new(ApplicationCapabilities::<Root, ()>::new_with_bindings(
                         ApplicationCapabilityInputs {
@@ -3298,6 +3304,8 @@ mod live_capability_retirement {
             Config::new(2),
             observation,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |control, timers, observations| {
                 let mut capabilities =
                     ApplicationCapabilities::<ObservingActor, ()>::new_with_bindings(
@@ -5316,6 +5324,8 @@ mod capability_task_retirement {
                 Config::new(2),
                 MailAddr::APPLICATION_ROOT,
                 parent,
+                #[cfg(feature = "remote")]
+                None,
                 move |control, terminal_reports, timers, observations| {
                     let capabilities = ApplicationCapabilities::<
                         CapabilityParent,

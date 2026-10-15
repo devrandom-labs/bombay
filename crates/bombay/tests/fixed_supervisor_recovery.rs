@@ -1,4 +1,8 @@
+#[cfg(feature = "remote")]
+use bombay::SendError;
 use bombay::WorkOutcome;
+#[cfg(feature = "remote")]
+use bombay::remote::ExportError;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::convert::Infallible;
 use core::future::Future;
@@ -1424,4 +1428,291 @@ fn joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_
     drop(source);
     drop(parent);
     assert_eq!(original_source.strong_count(), 0);
+}
+
+#[cfg(feature = "remote")]
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "retain the actual root, sibling, nested and closed-recipient clients until complete native tree cleanup"
+)]
+fn export_clients_preserve_root_sibling_nested_and_closed_actor_ownership() {
+    let (target_activated, mut target_activations) = mpsc::unbounded_channel();
+    let (sibling_activated, mut sibling_activations) = mpsc::unbounded_channel();
+    let target = prepared_supervisor(
+        Arc::new(Mutex::new(Vec::new())),
+        target_activated,
+        PreparationPolicy::SubmitBoth,
+        None,
+    )
+    .stop_on_shutdown();
+    let sibling = prepared_supervisor(
+        Arc::new(Mutex::new(Vec::new())),
+        sibling_activated,
+        PreparationPolicy::SubmitBoth,
+        None,
+    )
+    .stop_on_shutdown();
+    let owner = PreparationOwner {
+        supervisors: vec![target, sibling],
+        creations: Vec::new(),
+        established: Vec::new(),
+    };
+    let host = Builder::new_current_thread().enable_all().build().unwrap();
+    let (outcome, native, notifications, ()) = host
+        .block_on(
+            Application::with_topology(
+                owner.stop_on_shutdown(),
+                preparation_application::Topology::new(),
+            )
+            .run_with(move |application| async move {
+                let activations = (
+                    target_activations.recv().await,
+                    target_activations.recv().await,
+                    sibling_activations.recv().await,
+                    sibling_activations.recv().await,
+                );
+                let parent = application.root().established_recipient();
+                let parent_address = application.root().address();
+                let root_client =
+                    application.export_client::<_, PreparationExports>(parent.clone());
+                // Existing domain exports obtain actual capabilities independently of the new result.
+                let mut exports = application.external::<PreparationExports>().unwrap();
+                let exported = match &root_client {
+                    Ok(client) => {
+                        client
+                            .send(PreparationCommand::Export(exports.recipient()))
+                            .await
+                    }
+                    Err(_) => {
+                        exports
+                            .send(&parent, PreparationCommand::Export(exports.recipient()))
+                            .await
+                    }
+                };
+                let published = exports
+                    .receive()
+                    .await
+                    .expect("actual committed sibling capabilities");
+                let [target, sibling] = &published.message;
+                let target_recipient = target.recipient();
+                let sibling_recipient = sibling.recipient();
+                let target_client =
+                    application.export_client::<_, Capability>(target_recipient.clone());
+                let sibling_client =
+                    application.export_client::<_, Capability>(sibling_recipient.clone());
+                let mut caller = application.external::<Capability>().unwrap();
+                let requested = match &target_client {
+                    Ok(client) => {
+                        client
+                            .send(FixedCommand::capability(
+                                WorkerRole::Primary,
+                                caller.recipient(),
+                            ))
+                            .await
+                    }
+                    Err(_) => {
+                        caller
+                            .send(
+                                &target_recipient,
+                                FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
+                            )
+                            .await
+                    }
+                };
+                let capability = caller
+                    .receive()
+                    .await
+                    .expect("actual nested proxy capability");
+                let CapabilityResult::Ready { proxy, .. } = &capability.message else {
+                    panic!("the activated target supplies its genuine nested actor");
+                };
+                let nested_client = application.export_client::<_, Capability>(proxy.clone());
+                let external = application.external::<Worker>().unwrap();
+                let external_recipient = external.recipient();
+                let before_refusal = application.external::<Capability>().unwrap();
+                let unowned =
+                    application.export_client::<_, Capability>(external_recipient.clone());
+                let after_refusal = application.external::<Capability>().unwrap();
+                let allocation_observation = (before_refusal.address(), after_refusal.address());
+                let mut service = SupervisorService::default();
+                let previous_endpoint = target_recipient.clone().interpret(&mut service);
+                let previous_target = target.clone().interpret_actor(&mut service);
+                let endpoint = service.endpoint.as_ref().expect("actual target endpoint");
+                let target_address = endpoint.address();
+                let installed = service.target.as_ref().expect("actual target lifecycle");
+                let shutdown = caller
+                    .send(&target_recipient, FixedCommand::shutdown())
+                    .await;
+                let termination = endpoint.termination().await;
+                let report = installed.retirement().await;
+                let closed_client =
+                    application.export_client::<_, Capability>(target_recipient.clone());
+                let closed_attempt = match &closed_client {
+                    Ok(client) => Some(client.send(FixedCommand::shutdown()).await),
+                    Err(_) => None,
+                };
+                let parent_shutdown = application.request_shutdown();
+                (
+                    activations,
+                    parent_address,
+                    target_address,
+                    exported,
+                    published,
+                    requested,
+                    capability,
+                    root_client,
+                    target_client,
+                    sibling_client,
+                    nested_client,
+                    external_recipient,
+                    unowned,
+                    allocation_observation,
+                    previous_endpoint,
+                    previous_target,
+                    shutdown,
+                    termination,
+                    report,
+                    closed_client,
+                    closed_attempt,
+                    parent_shutdown,
+                    exports,
+                    caller,
+                    external,
+                    before_refusal,
+                    after_refusal,
+                )
+            }),
+        )
+        .unwrap_or_else(|_| panic!("the actual public Application starts"))
+        .into_parts();
+    let (output, cleanup) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("actual Work output acquired"));
+    let (origin, native) = native.expect("original root and complete descendants acquired");
+    let notifications = notifications.expect("original independent notification pair acquired");
+    let (
+        activations,
+        parent_address,
+        target_address,
+        exported,
+        published,
+        requested,
+        capability,
+        root_client,
+        target_client,
+        sibling_client,
+        nested_client,
+        external_recipient,
+        unowned,
+        allocation_observation,
+        previous_endpoint,
+        previous_target,
+        shutdown,
+        termination,
+        report,
+        closed_client,
+        closed_attempt,
+        parent_shutdown,
+        exports,
+        caller,
+        external,
+        before_refusal,
+        after_refusal,
+    ) = output;
+    assert!(cleanup.is_ok());
+    assert!(matches!(&notifications.termination, Ok(())));
+    assert!(matches!(&notifications.retirement, Ok(())));
+    assert_eq!(origin.address(), parent_address);
+    let (children, failures) = assert_joined_native(&native);
+    assert!(failures.is_empty());
+    assert_eq!(children.len(), 2);
+    let mut observed_target = 0;
+    for child in children {
+        if child.origin.address() == target_address {
+            observed_target += 1;
+        }
+        let (proxies, failures) = assert_joined_native(child.retirement.as_ref());
+        assert!(failures.is_empty());
+        assert_eq!(proxies.len(), 2);
+        for proxy in proxies {
+            let (workers, failures) = assert_joined_native(proxy.retirement.as_ref());
+            assert!(failures.is_empty());
+            assert_eq!(workers.len(), 1);
+            for worker in workers {
+                let (descendants, failures) = assert_joined_native(worker.retirement.as_ref());
+                assert_eq!(descendants, []);
+                assert_eq!(failures, []);
+            }
+        }
+    }
+    assert_eq!(observed_target, 1);
+    let (target_first, target_second, sibling_first, sibling_second) = activations;
+    assert!(target_first.is_some() && target_second.is_some());
+    assert!(sibling_first.is_some() && sibling_second.is_some());
+    assert_ne!(target_first, target_second);
+    assert_ne!(sibling_first, sibling_second);
+    assert!(exported.is_ok() && requested.is_ok() && shutdown.is_ok() && parent_shutdown.is_ok());
+    assert_eq!(published.from, parent_address);
+    assert_eq!(capability.from, target_address);
+    assert!(matches!(
+        &capability.message,
+        CapabilityResult::Ready {
+            role: WorkerRole::Primary,
+            ..
+        }
+    ));
+    assert!(previous_endpoint.is_none() && previous_target.is_none());
+    assert!(matches!(&termination, Ok(Exit::Normal)));
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(
+        root_client.is_ok(),
+        "the genuine owning root must construct an export client"
+    );
+    assert!(
+        target_client.is_ok(),
+        "the genuine target child must construct an export client"
+    );
+    assert!(
+        sibling_client.is_ok(),
+        "the genuine sibling must construct an export client"
+    );
+    assert!(
+        nested_client.is_ok(),
+        "the genuine nested proxy must construct an export client"
+    );
+    assert!(
+        matches!(&unowned, Err((target, ExportError::UnownedTarget)) if target == &external_recipient)
+    );
+    let (before_address, after_address) = allocation_observation;
+    // This observes the existing documented allocation sequence, not provenance.
+    assert_eq!(after_address.0, before_address.0 + 1);
+    assert!(
+        closed_client.is_ok(),
+        "known ownership survives exact target retirement"
+    );
+    let closed_original = closed_attempt
+        .and_then(Result::err)
+        .map(SendError::into_message);
+    assert!(matches!(&closed_original, Some(FixedCommand::Shutdown)));
+    drop((
+        native,
+        notifications,
+        published,
+        capability,
+        root_client,
+        target_client,
+        sibling_client,
+        nested_client,
+        external_recipient,
+        unowned,
+        closed_client,
+        closed_original,
+        exports,
+        caller,
+        external,
+        before_refusal,
+        after_refusal,
+    ));
 }

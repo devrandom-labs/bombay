@@ -170,7 +170,7 @@
                 RUSTDOCFLAGS = "--deny warnings";
               };
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing
+                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';
@@ -180,7 +180,7 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing";
+              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery";
             }
           );
           bombay-fmt = craneLib.cargoFmt commonArgs;
@@ -316,8 +316,8 @@
               cargoArtifacts = null;
               cargoVendorDir = protectedCounterVendor;
               buildPhaseCargoCommand = ''
-                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter
-                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --release --test protected_counter
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter -- --nocapture
+                cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --release --test protected_counter -- --nocapture
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter public_node_
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter public_node_
                 for profile in debug release; do
@@ -327,6 +327,10 @@
                   cat "hosting-$profile.log"
                   grep -F 'test public_node::hosting::same_address_foreign_child_keeps_its_owning_application ... ok' "hosting-$profile.log"
                   grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "hosting-$profile.log"
+                  cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter "''${profile_arguments[@]}" public_node::hosting::unhosted_export_clients_preserve_exact_application_ownership -- --exact > "unhosted-$profile.log" 2>&1
+                  cat "unhosted-$profile.log"
+                  grep -F 'test public_node::hosting::unhosted_export_clients_preserve_exact_application_ownership ... ok' "unhosted-$profile.log"
+                  grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "unhosted-$profile.log"
                 done
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter remote_counter::native_ -- --test-threads=1
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter remote_counter::native_ -- --test-threads=1

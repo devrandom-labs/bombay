@@ -3,12 +3,14 @@
 //! The provider owns authentication policy. Network connections, authorization
 //! and actor-mailbox admission retain their separate contracts.
 
+mod clients;
 mod ingress;
 pub mod json;
 mod metadata;
 pub(crate) mod startup;
 mod verification;
 
+pub use clients::ExportError;
 pub use ingress::{IngressError, try_retain};
 pub use metadata::Metadata;
 pub use startup::NodeStartupRefusal;

@@ -84,7 +84,7 @@ owning cuts fail as intended and their restored controls pass both profiles;
 final protected59/0/1 and strict checks pass on5f929068/5cdbce9c. Integration,
 replacement exact-head CI and delivery remain pending, separately from full rows.
 
-The next implementation stage adds crate-owned `remote::json::check` with the
+PR368 delivers crate-owned `remote::json::check` with the
 existing selected event-parser crate. Five pure public tests and two actual
 Node consumers pass in debug and optimized builds. The latter are SessionLocal
 queries with deterministic proof records: they do not establish TLS handshake
@@ -94,9 +94,26 @@ All cleanup, native results, notifications and Node close are acquired before
 those domain oracles. Eight intended production cuts each fail their exact assertion in both profiles,
 and byte-exact restored controls pass. Independent source and execution review
 retain the native Counter2-versus1 and LedgerClosed oracles. Final combined
-checks and reviewed delivery remain pending. No full R02/R14 or other row closes.
+checks and reviewed delivery are now recorded: PR368 merged792529ea after all
+six CI checks and scoped final reviews passed. Required Nix executes the five
+JSON cases and both Node consumers once in each profile. No full R02/R14 or
+other row closes.
 
 The user requires crate-owned remote capability behind Cargo feature `remote`.
+The dependent export-client implementation branch now certifies actual root,
+sibling and nested-child recipients against their Application's existing source
+before reply allocation. It preserves closed-target membership and native
+allocation refusals. Six ownership cuts reach their intended failures in both
+profiles, followed by six fresh restored controls. The same existing client gains
+a remote-only nonwaiting attempt with exact native Full/Closed originals and
+allocated sender identity. Two complementary consumer controls and five admission
+cuts pass in both profiles; both consumers pass after exact restoration. The
+independent test/source/execution reviews and uncredited disk/lint failures remain
+in the PRD. Combined-source local checks pass; required CI and reviewed delivery
+remain pending. This is
+local target/admission evidence, not protected publication, replay, permission
+coherence, real remote Stop or closure of a full R01–R25 row.
+
 Examples consume its public API; example-only implementations cannot pass R01.
 Keep the local counter in `examples/counter` and the remote counter in
 `examples/remote-counter`. Each teaches one complete application through public
@@ -410,3 +427,38 @@ Actual Linux optimized workspace643/0/1 remains distinct from local644/0/1;
 Counter54 executes plain/coverage debug and release, owner floors pass, and
 Driver2048/Observe4×1024 finish. Miri is skipped. Native64cases/160roles pass
 separately; held controls retain local inversion provenance. All fullR01–R25 stay open.
+
+Release0.1.3 now tracks successor PR371 on merged main8d809b3d; PR369 was
+closed without merging by the release bot. Its initial required check stopped
+on the isolated fixture path-package version mismatch before protected Counter tests.
+The one-record correction and fresh combined checks are pending delivery; old
+PR369 checks do not qualify the successor. All full remote acceptance stays open.
+
+The successor lock correction now passes fresh pinned locked metadata, the
+intended stale-lock failure and exact restored control, plus protected Counter
+68/0/1 in each profile. Exact-head CI/review/merge/publication remain pending.
+
+Fresh PR371 corrected-head required CI reaches the optimized allocation test
+and fails its exact comparison-byte equality (925 versus781), despite debug
+passing55 cases. Preserve that failure; release delivery remains blocked.
+Owning DHAT stack/window diagnostics are selected before any assertion, bound
+or measurement-owner change. No passing retry can substitute for diagnosis.
+
+
+PR371 diagnostic headbfa passes its actual Nix flake check, but required job
+116290114414 is cancelled by the configured90-minute timeout. Driver's cancelled
+step and absent artifacts, skipped Observe and Miri receive no completion credit.
+The original925-versus781 allocation failure remains unattributed. A separately
+calibrated caller-thread measurement correction now applies locally, with one
+isolated test dependency and323 unchanged existing package records. Only the
+required job's time allowance is selected to increase90→120; campaign scope and
+all original test assertions remain intact. Corrected-head execution, review,
+CI, merge and publication remain pending; all full remote rows remain open.
+
+
+The selected local correction passes all eight actual pinned commands: focused
+allocation1 per profile, plain55 per profile, protected68/0/1 per profile, strict
+isolated all-target/all-feature Clippy and format. Independent source5474865f /
+execution6dcc69da reviews pass twice. This qualifies submission of a corrected
+PR371 head, not required CI, TLS campaigns, merge or publication. The earlier
+144-byte excess remains unattributed and all full remote acceptance stays open.

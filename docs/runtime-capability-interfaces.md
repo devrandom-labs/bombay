@@ -38,6 +38,21 @@ mailbox, lifetime authority or permission policy. Startup profile checks preserv
 actual SDK and root/child integration remain separate verification gates.
 Native transport fixtures remain scoped verification consumers.
 
+The export-client implementation branch adds remote-only
+`ApplicationHandle::export_client` over an existing EstablishedRecipient. Actual
+native actor issuance retains a weak association with its Application's existing
+allocation source; external reply endpoints retain none. The constructor checks
+that association before allocating its existing reply client, returning the
+original target on either ownership or native allocation refusal. Root and
+descendant actors share this rule; target closure does not change association.
+This adds no address registry, actor lifecycle, network declaration, readiness or
+authorization policy. Existing local `client_to` remains unrestricted.
+The same branch adds remote-only `ApplicationClient::try_send` for an exact
+EstablishedRecipient target. It reuses the existing caller/target and native
+Full/Closed originals without awaiting capacity. The local service retains its
+permission/time snapshot and retry policy; client construction and attempted
+mailbox admission remain separate facts. Stable Entity resolution still awaits.
+
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The
 workspace lockfile selects the executable contract.

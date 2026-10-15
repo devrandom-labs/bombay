@@ -7,6 +7,59 @@ Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 Behavior/Actors0.26.0, macros0.14.2, Communication0.1.5 and Timers0.2.0
 without repository patches.
 
+Latest-main integration, pre-edit (2026-10-15): isolate upstream8d809b3 on
+`codex/devx-client-integration` from fully gated ea2b5b4; keep the unfinished
+DX15 interpreter work separate. The selected registry owners remain
+Behavior/Actors0.26.0, macros0.14.2, Communication0.1.5 and Timers0.2.0.
+Upstream's Application-owned export client derives exact association from the
+existing allocation owner, preserves the complete original recipient on refusal,
+and keeps native nonwaiting Full/Closed command custody. This is deliberate
+Bombay authority policy, not a new actor-model law. Preserve its original root,
+child, foreign-application, closed-target and supervisor recovery witnesses;
+no new interpretation engine, actor state, policy default or public type is
+proposed. Reuse the existing Application client and sender owners and audit
+ordinary syntax after merging. Expected integration edits are limited to
+overlapping interface, startup and verification contracts, with no additional
+production capability. Upstream test hashes and exact inputs are frozen in
+`CLIENT-INTEGRATION-INPUTS.json`. A clean merge alone proves no acceptance row;
+focused debug/release tests, static denials and combined repository gates remain
+required before delivery advancement.
+
+The first combined compile fails E0061 at the imported export-client allocation:
+the verified DevX owner already requires its configured reply capacity. Reuse
+`ApplicationHandle::client_capacity` exactly as `client_to` does; do not invent
+a default, new limit or allocation path. Before correcting that call, add a
+two-slot certified reply-client journey with three owned boxed commands: two
+accepted messages retain their origin/allocation, Full returns the exact third,
+and ordinary shutdown returns complete retirement. This is the same DX06
+resource-owner law through the newly imported client, not a new abstraction.
+An explicit default-capacity inversion must fail that black-box witness.
+
+Current integration evidence: all363 selected native/library tests pass on
+Rust1.99 in debug and release (337 library,5 interface,16 client,5 supervisor),
+including the existing static denials. Both actual Node hosting journeys pass
+in both profiles. Focused strict Clippy, Rust formatting and Nix formatting pass;
+all385 frozen Rust/configuration hashes remain unchanged. The separate-source,
+separate-target capacity inversion fails at the intended third-command check
+in both profiles; exact restoration passes both controls. Two independent
+review passes confirm all five imported test bodies retain their original
+assertions/effects after only complete-product acquisition changes. Their
+admission traces are bounded evidence; they do not independently prove every
+retirement lane. The new capacity witness checks normal retirement lanes too.
+
+Integration checkpoint: the allocation correction reuses an existing validated
+capacity and changes one production call argument (+1/-1); no state alternative,
+transition branch, module, public type, bound or lifecycle authority is added.
+Existing scope capacities and WorkOutcome/ApplicationOutcome custody are reused,
+with no history, repeated cause, semantic boolean or structural caller alias.
+The upstream association feature retains its own new remote-only owner reference
+and ExportError; those are imported source, not further DevX abstractions.
+Cross-check DX04/06/20/25/27, the selected Behavior receiving laws, Driver law and
+execution ownership. Disposition: pass for this bounded reconciliation. MSRV,
+layout costs and all combined-source Nix gates remain pending; delivery stays
+at fully gated ea2b5b4. Evidence: `CLIENT-INTEGRATION-*`, `CLIENT-HOSTING-*` and
+`CLIENT-CAPACITY-*` under the existing evidence root.
+
 The frozen committed c3b74ab is being integrated on
 feat/remote-devx-integration; its active authoring worktree is untouched.
 Records below retain their original source and verification provenance.
@@ -2057,3 +2110,49 @@ semantic flags, false cardinality, structural user syntax or second authority.
 Cross-check DX15/19/25, D-INIT/D-RETIRE, execution ownership and native creation.
 Disposition: pass for focused integration retention; final combined repository,
 archive, configured-service cost and delivery requirements remain open.
+
+Integrated delivery verification: exact120cc2d passes
+`nix flake check --keep-going --max-jobs 1 --cores 2 --no-update-lock-file -L`
+in4663.558 seconds. All24 expected aarch64-Darwin checks succeed; all586 tracked
+hashes, HEAD and clean Git remain unchanged. Optimized workspace summaries
+contain749 passed, zero failed and one intentional parent-invoked subprocess
+fixture ignored. Expected Driver-law defect runs fail independently inside
+their successful evidence gates. Independent review reconciles the full gate
+set, source inventory, four363-test compiler/profile runs, four two-test Node
+hosting runs and both capacity inversions/restored controls. Delivery advances
+ff-only ea2b5b4→120cc2d. Receipts CLIENT-INTEGRATED-FULL-NIX and
+CLIENT-INTEGRATED-GATE-AUDIT retain raw commands, hashes and exact check names.
+This proves the integrated baseline only: the separate configured-interpreter
+candidate, Linux/x86_64-Darwin, new archive checks and publication receive no
+credit. Earlier signing/disk failures remain failures. This record is a
+documentation-only successor to the frozen verified source.
+
+Latest-main integration: fresh fetch at2026-10-15T10:42Z selects75c8db4/PR371.
+An isolated release-integration worktree merges it into delivery ac1375c as
+cf6c5ef. All11 incoming paths merge without conflict. Root and isolated fixture
+versions advance0.1.2→0.1.3; the fixture adds alloc_count0.4.0 only as a pinned
+verification dependency. Main changes synchronous allocation measurements and
+retains Dhat stack diagnostics; remote/protected policies and every original
+assertion remain. Required commands add nocapture, CI timeout becomes120 minutes.
+The merge changes no crates/bombay/src production relative to ac1375c, preserves
+the DevX outcome migrations and configured client-capacity correction, and adds
+no ordinary caller ceremony or public API. Owner dependency selection remains
+Behavior/Actors0.26.0. No custom-interpreter candidate is included.
+Exact combined source790fa08 passes all24 native aarch64-Darwin Nix checks
+in5404.589 seconds with all586 tracked hashes, HEAD and clean Git conserved.
+Workspace verification has104 summaries:749 passed, zero failed and one
+intentional parent-invoked subprocess fixture ignored. Both independent reviews
+reconcile exact gate names, derivations, source inventories and the unchanged
+production contract. Delivery advances ff-only from ac1375c after this record.
+RELEASE-INTEGRATED-FULL-NIX and RELEASE-INTEGRATED-COMPLETION-AUDIT retain the
+complete command, raw24 successes and source evidence. Other systems, new
+archive checks, publication and the separate interpreter candidate stay open.
+
+Current store availability is separate: two successful outputs were absent,
+were rebuilt from their exact recorded derivations, then four other successful
+outputs were absent. A concurrent store-GC process was observed. Both strict
+cache-audit failures and exact restoration receipts remain; the final completion
+audit records20 available outputs with exact derivations and four absent outputs.
+No continued-cache claim, failed-gate waiver or further restoration loop is made.
+The first audit parser also missed literal terminal fragments in summary lines;
+the reviewed finite parser and independent104-summary count agree.

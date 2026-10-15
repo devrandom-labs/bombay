@@ -29,6 +29,8 @@ use core::future::{pending, poll_fn};
 use core::hash::Hash;
 use core::ops::ControlFlow;
 use core::pin::{Pin, pin};
+#[cfg(feature = "remote")]
+use core::sync::atomic::AtomicU64;
 use core::task::Poll;
 use std::any::Any;
 use std::sync::{Arc, Weak};
@@ -93,6 +95,7 @@ where
         config: Config,
         termination: Observation<Termination<BehaviorAddr<B>>>,
         owner_cancellation: oneshot::Receiver<OwnerCancellation>,
+        #[cfg(feature = "remote")] application: Option<Weak<AtomicU64>>,
         make_interpreter: impl FnOnce(
             ControlSender<B::Event>,
             LocalTimers<B::Event>,
@@ -109,6 +112,8 @@ where
             address,
             M::endpoint(mailbox, Arc::downgrade(&admission)),
             termination,
+            #[cfg(feature = "remote")]
+            application,
         );
         let timers = LocalTimers::new();
         let observations = TerminationObservations::new();
@@ -1615,6 +1620,8 @@ mod tests {
             Config::new(2),
             termination,
             owner_cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |_, _, _| GatedInitializationInterpreter {
                 disposition,
                 entered: Some(entered),
@@ -1912,6 +1919,8 @@ mod tests {
             Config::new(2),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |_, _, _| GatedInitializationInterpreter {
                 disposition: InitializationDisposition::Accepted,
                 entered: Some(entered),
@@ -2029,6 +2038,8 @@ mod tests {
             Config::new(2),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |_, _, _| GatedInitializationInterpreter {
                 disposition: InitializationDisposition::Accepted,
                 entered: Some(entered),
@@ -2149,6 +2160,8 @@ mod tests {
             Config::new(2),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |_, _, _| GatedInitializationInterpreter {
                 disposition: InitializationDisposition::Accepted,
                 entered: Some(entered),
@@ -2277,6 +2290,8 @@ mod tests {
             Config::new(2),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |_, _, _| GatedInitializationInterpreter {
                 disposition: InitializationDisposition::Accepted,
                 entered: Some(entered),
@@ -2710,6 +2725,8 @@ mod tests {
                 admission: Arc::downgrade(&admission),
             },
             termination,
+            #[cfg(feature = "remote")]
+            None,
         );
 
         let accepted = request_actor_shutdown(&actor, &control, Ingress::new());
@@ -2942,6 +2959,8 @@ mod tests {
             Config::new(mailbox_capacity.get()),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |control, mut timers, mut pending| {
                 for (index, observation) in observations.into_iter().enumerate() {
                     pending
@@ -3347,6 +3366,8 @@ mod tests {
             Config::new(mailbox_inputs.len() + 2),
             termination,
             owner_cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |control, mut timers, mut observations| {
                 observations.insert_peer::<Here>(peer, peer_termination);
                 timers
@@ -3693,6 +3714,8 @@ mod source_acquisition_custody {
             Config::new(2),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |_, _, _| SourceCapabilityCustody { activation_tasks },
         );
         let control = environment.control();
@@ -3894,6 +3917,8 @@ mod source_acquisition_custody {
                 Config::new(2),
                 termination,
                 cancellation,
+                #[cfg(feature = "remote")]
+                None,
                 move |_, _, _| SourceCapabilityCustody { activation_tasks },
             );
             let Ok((mut active, initialization)) = ({
@@ -4026,6 +4051,8 @@ mod source_acquisition_custody {
                 Config::new(2),
                 termination,
                 cancellation,
+                #[cfg(feature = "remote")]
+                None,
                 move |_, _, _| SourceCapabilityCustody { activation_tasks },
             );
             let Ok((mut active, initialization)) = ({

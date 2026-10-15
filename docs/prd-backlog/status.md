@@ -18,10 +18,23 @@ registry/archive checksum, annotated tag and all363 source payloads match the
 merged source, with exact SDK1.10.9 selection. Downstream Cargo still resolves its
 own graph; no fresh downstream build is claimed. The immutable0.1.1 release uses
 the older SDK1.10.8. Original native failures and HTTP uncertainty remain recorded.
-The next implementation branch adds crate-owned JSON object/limit checks and
-real Counter/Ledger Node consumers; focused controls and all eight intended
-inversions pass their stated oracles in both profiles. Main is integrated;
-combined required checks and reviewed delivery remain open.
+[JSON PR368](https://github.com/devrandom-labs/bombay/pull/368) merged792529ea
+after all six checks and scoped source/native/Nix reviews passed. It delivers
+crate-owned JSON object/limit checks and real Counter/Ledger Node consumers;
+eight intended inversions pass their stated oracles in both profiles. SessionLocal
+consumers and separate native TLS campaigns retain their distinct proof scopes.
+The dependent export-client branch adds remote-only Application certification
+for actual root, sibling and nested-child recipients before reply allocation.
+Focused ownership, closure and native-error controls, six intended inversions
+and fresh restored controls pass in both profiles; local combined checks pass,
+while its required CI and reviewed PR delivery remain pending. This
+does not supply remote publication or close any full acceptance row.
+Its existing fixed-target client now has a remote-only nonwaiting attempt;
+the two actual pressure/origin/closure consumers pass in both profiles. False
+success/classification cuts fail in both profiles (ten intended failures total);
+both consumer tests pass after exact restoration. Independent execution review
+8a97b4a6 qualifies those results. Combined-source local checks pass; actual
+required CI and reviewed delivery remain pending.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;
@@ -431,3 +444,38 @@ CI38153406874 and publication38158907672 passed; full registry-consumer proof
 and Bombay adoption remain open.
 Protected JSON Application integration and genuine child-owned preparation
 verification run independently under the PRD's selected contracts. All full R01–R25, AUTH1/NET1 states and reciprocal dependencies stay open.
+
+Release0.1.3 now tracks successor PR371 on merged main8d809b3d; PR369 was
+closed without merging by the release bot. Its initial required check stopped
+on the isolated fixture path-package version mismatch before protected Counter tests.
+The one-record correction and fresh combined checks are pending delivery; old
+PR369 checks do not qualify the successor. All full remote acceptance stays open.
+
+The successor lock correction now passes fresh pinned locked metadata, the
+intended stale-lock failure and exact restored control, plus protected Counter
+68/0/1 in each profile. Exact-head CI/review/merge/publication remain pending.
+
+Fresh PR371 corrected-head required CI reaches the optimized allocation test
+and fails its exact comparison-byte equality (925 versus781), despite debug
+passing55 cases. Preserve that failure; release delivery remains blocked.
+Owning DHAT stack/window diagnostics are selected before any assertion, bound
+or measurement-owner change. No passing retry can substitute for diagnosis.
+
+
+PR371 diagnostic headbfa passes its actual Nix flake check, but required job
+116290114414 is cancelled by the configured90-minute timeout. Driver's cancelled
+step and absent artifacts, skipped Observe and Miri receive no completion credit.
+The original925-versus781 allocation failure remains unattributed. A separately
+calibrated caller-thread measurement correction now applies locally, with one
+isolated test dependency and323 unchanged existing package records. Only the
+required job's time allowance is selected to increase90→120; campaign scope and
+all original test assertions remain intact. Corrected-head execution, review,
+CI, merge and publication remain pending; all full remote rows remain open.
+
+
+The selected local correction passes all eight actual pinned commands: focused
+allocation1 per profile, plain55 per profile, protected68/0/1 per profile, strict
+isolated all-target/all-feature Clippy and format. Independent source5474865f /
+execution6dcc69da reviews pass twice. This qualifies submission of a corrected
+PR371 head, not required CI, TLS campaigns, merge or publication. The earlier
+144-byte excess remains unattributed and all full remote acceptance stays open.

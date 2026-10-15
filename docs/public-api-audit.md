@@ -68,9 +68,12 @@ The Engine surface is exercised by its
 | `ApplicationOutcome` | Complete coexisting work/root/notification/family product, explicitly imported from the Bombay root; WorkOutcome owns the work phase. | `#[must_use]`, no affine Clone; exact cold/partial/prepared/Work/Ready output and actual cleanup errors retained. No-work uses `Option<Never>`; supplied Work and output are bare original values. HTTP cold Work is unit before binding; acquired Work owns Router/Listener. Root remains raw; Terminal selects descendants. |
 | `ApplicationScope::new`, `external`, `with_root`, `with_topology` | Affine application address source establishes exact external recipients needed before pure root construction; consumption declares one root. | `Default`, redacted `Debug`, no `Clone`; receiving stays separately owned. Actual staging/prepared scope returns with original inputs for retry. |
 | `ApplicationClient::address`, `recipient`, `send`, `receive`, `close_admission` | Root-bound or explicitly selected destination and sole typed reply consumer reuse the existing ExternalActor. | Affine receive ownership; destination-specific original refusal and truthful sender identity, no lifecycle authority. |
+| `ApplicationClient::try_send` (implementation branch, `remote`) | Existing client specialized for an exact EstablishedRecipient; attempt the retained target with its existing allocated caller, without waiting for capacity. | Native Full/Closed originals, no message Clone/Debug bound, no new target input or retry. Permission must be rechecked by the owning service before each attempt. Stable Entity resolution retains awaited send. |
 | `ApplicationSender::address`, `send`, `try_send` | Root-bound or explicitly selected one-way delivery owns its exact target and fresh address, without a reply endpoint. | No receiving or lifecycle capability; immutable producers can share a sender when its target is Sync. Exact target and async rejection semantics remain those of ExternalTarget. Only exact EstablishedRecipient targets expose try_send, delegating native Full/Closed original-command return without waiting; Entity hydration remains async. |
 | `ApplicationBehavior` | Bombay's statically composed root and declared child birth product; only `Application` materializes it. | Implements the exact Behavior algebra; no independent actor contract or exposed constructor. Exact root error is retained by `ApplicationDefinitionError` in its associated Behavior contract. |
 | `ApplicationHandle::root`, `interface`, `client`, `sender`, `client_to`, `sender_to`, `external`, `lifecycle`, `entities`, `passivate_entity` | Live Bombay application; external boundary receives this handle only after activation. Each method projects an existing endpoint, family, or lifecycle authority. | Conditional `Clone`, redacted `Debug`; no equality for live capability identity. Passivation yields closed `Passivation` disposition. |
+| `ApplicationHandle::export_client` (implementation branch, `remote`) | Certify one actual root or descendant recipient against this Application's existing allocation source before constructing the existing reply client. | Foreign actors and external reply endpoints return their original recipient before reply allocation. Closed owned actors remain associated. No network publication, readiness, authentication, permission or lifecycle authority is issued. |
+| `remote::ExportError` (implementation branch) | `UnownedTarget` or `Endpoint { cause: ExternalActorError }`; construction separately returns the complete original target. | Debug/Display/Error; the actual native allocation cause remains the source. No Clone, new provider trait or target registry. |
 | `ApplicationLifecycle::request_shutdown`, `termination`, `retirement` | Bombay lifecycle projection; caller holds root control separately from message delivery. | `Clone`, redacted `Debug`; shutdown returns exact `ShutdownRejection`, termination awaits the exact root generation; retirement independently observes the runtime-issued joined-subtree report while Work remains live. |
 | `ApplicationCleanupError` | Application result receiving owns actual cleanup-publication or cleanup-task failure. | Flat `PublicationClosed(RecvError)` and `TaskFailed(JoinError)` retain the original source; actor native failure remains `ActorRetirement::ActorTaskFailed`. No actor absence is inferred from channel closure. |
 | `RunError` | Existing owner of the two actual owned-executor failures. | Flat `BlockingInEnteredRuntime` and `Runtime(io::Error)` variants; Debug/Display/Error and truthful native source. No generic root/staging/terminal aggregate; originals coexist beside it. |
@@ -100,12 +103,32 @@ The Engine surface is exercised by its
 | `Completion`, `SettlementFailure` | Engine's exact Driver disposition and settlement failure sums, re-exported for terminal matching. | `Debug`, `Copy`, `Clone`, equality; `SettlementFailure` implements `Error`. |
 | `testing::InfallibleResultExt::infallible` | Deliberate test-only helper for `Result<T, Never>` or `Result<T, Infallible>`; a pure test caller extracts an inhabited success. | No panic branch; adding an inhabited error makes the call fail compilation. Absent from the ordinary prelude. |
 
-The implementation branch's JSON callers are the five public shape/limit tests
+The JSON prerequisite delivered by PR368 has five public shape/limit tests
 in remote_json.rs and two actual Node Counter/MailLedger consumers in
 application_clients/json_receiving.rs. They reuse the existing actor definitions
 and receiving owners. SessionLocal deterministic records establish neither a
 network handshake nor production authentication. Full remote export/admission
 composition remains pending.
+
+The export-client branch adds public root/sibling/nested-child and closed-target
+checks in fixed_supervisor_recovery.rs, plus a separate unhosted same-address
+foreign-Application test in protected_counter/hosting.rs. The original hosted
+test remains intact. The owning interface test checks refusal before allocation,
+one remaining usable reply endpoint, exact exhaustion and original error custody.
+Focused controls and six intended ownership inversions pass in both profiles;
+fresh restored controls and local combined checks pass. Required CI and reviewed
+delivery remain pending. These checks do
+not establish the full remote flow.
+
+The nonwaiting method's actor_interface test retains exact Box allocations and
+sender origins through pressure, one retry and repeated closure. Its certified
+Counter consumer uses an independent existing processing receipt as a FIFO fence
+before closing/draining replies; false retry success cannot leave it waiting for
+an absent reply. Both controls pass in debug and optimized. The source reviews
+retain two rejected hanging drafts. Five intended cuts reach their failures in
+both profiles, then both consumers pass on byte-exact restored source; independent
+execution review8a97b4a6 qualifies these results. Local combined checks pass;
+required CI and reviewed delivery remain separate gates.
 
 The remote foundation's concrete caller checks are
 [public Node composition](../crates/bombay/tests/protected_counter/public_node.rs),

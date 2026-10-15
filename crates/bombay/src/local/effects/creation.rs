@@ -431,6 +431,8 @@ where
             communication::Config::new(mailbox_capacity.get()),
             address,
             child,
+            #[cfg(feature = "remote")]
+            Some(allocations.downgrade()),
             move |control, terminal_reports, timers, observations| {
                 let bindings = NestedBindings::<Child, Descendants>::new_in(actor_spaces.as_ref());
                 ActionInterpreter::new(
