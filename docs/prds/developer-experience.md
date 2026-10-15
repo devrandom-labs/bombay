@@ -1682,9 +1682,9 @@ Rust public spellings plus one DSL clause are added. No new actor transition
 branch or terminal alternative. These are new capabilities, not code reduction.
 Cross-check DX15/16, Driver D-INIT/D-TURN/D-RETIRE, execution-ownership, native
 creation/ACK and normal atomic-actor contracts. Two independent source/test
-reviews identify and correct the custody/oracle faults above. Overall candidate acceptance remains open: Entity constructor panic,
-dropped/recreated activation, layout/costs, final package/full gates and catalogue
-remain unproved. Manual hosting, child constructor panic and pure init panic now
+reviews identify and correct the custody/oracle faults above. Overall candidate acceptance remains open: dropped/recreated activation,
+layout/costs, final package/full gates and catalogue remain unproved. Entity
+constructor panic now has the focused current-thread evidence below. Manual hosting, child constructor panic and pure init panic now
 have the focused evidence below; they do not close those remaining obligations. The second wrapper order now uses the
 existing pure timer-stop policy: File/env receipts remain complete, while the
 unemitted second requests stay with the actor at their original allocations.
@@ -1779,3 +1779,64 @@ provenance, widened capability or structural caller path. Cross-check Driver
 D-INIT/D-TURN/D-RETIRE, creation/ACK, execution-ownership and normalized actor
 contracts. Disposition: pass for this bounded test batch; the extension itself
 remains uncommitted pending Entity, activation retry, costs and final gates.
+
+Entity interpreter witness, pre-edit DX15/22: the same nominal configured
+Topology is D::Hosts for two independently owned configuration values. In each
+application, hydrate a command-owning Ledger with real File/ready effects and
+existing recursive ManagedDocument children; await actual command/child reports
+before graceful retire_entity. Then hydrate another original Ledger whose
+explicit constructor outcome panics before binding ACK. Return its original
+command as Refused/Unavailable, retain original actor/initialization/cause in
+EntityActivationError::Launch, and inspect callback custody after joined family
+shutdown (a rejected send alone precedes activation_failed). Preserve every
+callback value, native report, provenance and resident/launch metric separately.
+Reuse EntityDefinition, NativeEntityHost/NativeConstruction, existing Actions
+and generated terminal schemas; no new production symbol, bound, lifecycle
+protocol, dispatcher or wrapper. This is a test-only proof of the already
+recorded derived native-construction law. The original Document Msg=Never stays
+unchanged; a real Ledger command triggers hydration. No caller placeholder or
+no-op callback supplies the missing semantic journey.
+
+Entity witness oracle correction: the first native run expected a historical
+shutdown roster containing both EntityIds. Actual shutdown correctly reports
+zero currently represented slots: directory::remove_matching removes both
+retired and failed inactive slots. Original identities remain in their separate
+retired/activation_failed callbacks. Preserve GUARDED-ENTITY-FIRST-DEBUG (the
+intended roster assertion fails) without passing credit; require Settled with
+represented=0 and an empty roster, retaining complete callback identities and
+values independently. No directory retention or production change follows.
+
+Entity retirement oracle correction: GUARDED-ENTITY-ROSTER-DEBUG reaches
+original actor inspection but falsifies Completed-only retirement. Graceful
+reports the successful processing fence. Native retirement queues typed shutdown
+then requests owner cancellation before awaiting join. On this current-thread
+host both requests are ready before the actor can resume, and cancellation
+precedes ingress (environment.rs::next). Require OwnerCancelled with the exact
+one queued ShutdownRequested, complete work/IO/command custody and no acquired
+ingress; recursive Never children are also owner-cancelled, with empty controls.
+This preserves the stricter concrete transition without changing scheduling or
+treating Graceful as normal actor completion. Broader executor alternatives
+remain covered by existing native Entity witnesses. Raw failures remain.
+
+Entity proof evidence: GUARDED-NATIVE-ENTITY-MATRIX requires18 exact passing
+names in each1.99/1.96 debug/release run and conserves all596 source hashes.
+Durations:7.263/29.185/8.196/32.678 seconds. The one deliberate ignored child
+executes through its checked subprocess parent. Strict configured-descendants
+lint passes in1.940 seconds; pinned formatting passes. Both independent review
+passes accept the final current-thread control/retirement oracle. Each Entity
+case runs twice with independently owned LedgerConfig values and the same
+nominal D::Hosts; all callback products, constructor counters, Files, original
+commands/actors/actions/cause and birth provenance are inspected after joins.
+
+Aggregate checkpoint: this batch adds745 test lines and zero production/API
+lines or symbols. Candidate production remains +520/-127/net393 in15 files,
+four public contracts and one module; all production hashes match the prior
+checkpoint. ActorRetirement stays24 alternatives and adds zero production
+transition branches. Ledger is one ordinary actor authority with independent
+request/birth custody and owned commands; test fault inputs use a direct queue
+of Result outcomes. No repeated production cause, arrival-history state,
+semantic boolean, widened bound, structural user path or second dispatcher.
+Cross-check DX15/22, Driver D-INIT/D-RETIRE, native Entity launch/ACK, directory
+slot removal and normalized actor contracts. Disposition: pass for this bounded
+Entity proof; candidate production remains uncommitted pending activation retry,
+costs, final package/full gates and migration.

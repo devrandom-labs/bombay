@@ -531,3 +531,6 @@ mod manual;
 
 #[path = "configured_descendants/startup.rs"]
 mod startup;
+
+#[path = "configured_descendants/entity.rs"]
+mod entity;
