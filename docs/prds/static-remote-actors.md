@@ -2,6 +2,18 @@
 
 ## Current delivery (2026-10-15 UTC)
 
+Release prerequisite update: PR372 actually mergede2a4e7f3 after all six CI
+checks and final scoped source/execution reviews passed. Its reviewed663ac970
+and merged trees match9f3c528d. The request-isolation API is delivered on main;
+the earlier unmerged statements below retain their pre-merge checkpoint scope.
+Separate PR374 at9747c90 contains the concurrent-input candidate and its current
+scope/verification records. No full remote acceptance row is closed.
+
+Release-bot PR373 at1accb89a bumps Bombay0.1.3 to0.2.0 but leaves its private
+transport fixture lock at0.1.3. Required Nix and both native jobs fail101 during
+locked setup, before transport execution. The bounded correction below changes
+only that local lock record; fresh corrected-head CI and review remain required.
+
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
 CI and scoped reviews passed. PR367 merged81dc1448; bombay-rs0.1.2 publication
 is verified against the registry archive and merged source. Both source locks
@@ -25872,3 +25884,83 @@ feature, dependency, default, service API or abstraction is selected here.
 Final CI/artifact review and a normal exact-head guarded merge remain required.
 Record their actual results and merge in the next delivery checkpoint; no full
 R01–R25, AUTH1 or NET1 gate closes from this prerequisite.
+
+### Release0.2.0 — isolated lock prerequisite before correction
+
+Fresh inspection of PR373 exact1accb89a/basee2a4e7f3 confirms only the release
+version/changelog changes. Root metadata through pinned Nix succeeds with local
+Bombay0.2.0. The actual isolated locked metadata command fails101 with its
+specific lock-update refusal; the three failed CI logs show that same setup
+cause. No TLS/runtime failure or transport-test execution is inferred.
+
+The selected Behavior/Actors remain0.25.0, registry checksums22943da8/fa37fb8e,
+VCS2bb4510077bfa5aed82e08d25453c146b3184285. That exact revision's complete
+AGENTS is fetched/read again; SHA2b7a9195 matches the earlier selected source.
+Root/fixture manifests have no patches. Address0.3.0, Communication0.1.5,
+private Observe, Timers0.2.0 and existing primitive/API ownership remain unchanged;
+release-head source/test diff against actual main returns0. SDK1.10.9,
+TLS1.10.3 and Rustls0.23.46 remain selected. Source reviewfd8fba36 verifies400
+root records and325 fixture records; the31-record Engine fuzz graph has no
+Bombay dependency and must remain unchanged.
+
+Under standing recommendation delegation, select Cargo's offline metadata
+resolution to correct only the fixture's local Bombay0.1.3 record to0.2.0.
+Compare complete parsed lock records/top fields, not only package names: preserve
+the other324 fixture records, every root/fuzz record and all manifests exactly.
+Use original failure, corrected success, exact Git restoration to original
+failure, and corrected restored success before pushing the fixed release head.
+Required CI and actual native campaigns must run afterward on that head.
+
+Expected correction: one fixture lock line replaced, PRD/status records; together
+with the bot's three files, six existing tracked paths. Production Rust+0/-0/net0;
+tests+0/-0/net0; public API+0/-0 types. No serializer, upstream dependency version,
+topology, public API, default, transport policy or actor model is selected here.
+The sole owning mechanism is Cargo's existing local package-version relationship.
+No new Rust test is needed for a metadata-only change with direct locked refusal.
+
+Reuse the clean coordinator-owned release worktree after its prior Nix process
+actually ended0, preserving the oldedfeec branch/ref; create a separate local
+fix branch from exact PR373. No user/DevX worktree or source is removed. The
+initial guessed fuzz path and package-root AGENTS path were inspection errors:
+the real fuzz manifest is crates/bombay-engine/fuzz/Cargo.toml and the selected
+instructions live at the repository root. Those failures receive no gate credit.
+
+Carry the complete coordinator record from9747c90:16000 verification/tooling,
+1100 net production Rust,10 public types. The cross-branch code envelope remains
+972 net Rust/8439 net tests/eight public types, including the unmerged concurrent
+candidate; do not add that candidate twice or reset historical dependency work.
+Allocate one conservative software slot for this release's inline metadata
+inspection lineage:105 identified plus five unresolved-history slots gives110/110.
+Older historical extents remain unproved. Keep new release inspection/verification
+inputs within100 authored lines; this adds no retained controller or Rust source.
+
+### Release 0.2.0 — corrected lock verification
+
+Cargo generated exactly one changed fixture package record: local `bombay-rs`
+`0.1.3` becomes `0.2.0`. Complete TOML comparison preserves the other 324
+records and all top-level fields. Root and fuzz locks and all four relevant
+manifests remain byte-identical to release head `1accb89a`.
+
+Through pinned Nix, `cargo metadata --manifest-path
+docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --offline
+--format-version 1` returns 101 on the original lock, 0 after correction, 101
+after exact Git restoration, and 0 after reapplying Cargo's generated patch.
+Both failures report the intended locked-update refusal. Corrected lock SHA-256
+is `1608ab8f0b5b7cb79e3e1d5dde94ddd7a3671700ac910d7dd2ae8f6b841e9295`;
+the saved patch is `1aa24109b622b9ffe68217875d3bf4c1fa79436cce0b6d696bab014412e8f9fb`.
+Raw metadata/stderr and source review remain in `/tmp/bombay-pr373-ci-review`.
+These are resolution proofs, not Rust compilation or transport execution.
+
+Final correction scope: three existing tracked paths, no untracked paths;
+combined with the release bot, six existing paths. Production Rust +0/-0/net0;
+tests +0/-0/net0; public API +0/-0 types. The fixture lock is +1/-1/net0;
+the other correction changes record evidence. Cumulative allowances above
+carry without reset. Fresh exact-head required and native CI, review, actual
+merge and publication remain outstanding; no full remote gate closes here.
+
+Independent second review `d6f7bca1` (receipt `829dadcb`) confirms the exact
+patch, complete package-record comparison, preserved manifests/locks, both
+corrected metadata payloads and both intended refusal messages. Command exit
+codes remain attributed to the coordinator's observed sessions. Its ten direct
+inspection lines fit the release's 100-line allowance; no new controller,
+dependency, source test or semantic surface is introduced.

@@ -75,6 +75,14 @@ closure is not merge or credit for their original acceptance requirements.
 
 ## Historical prerequisite checkpoints
 
+Current release repair: PR372 merged `e2a4e7f3` with all six checks and final
+scoped reviews passing. Release PR373 bumps Bombay to 0.2.0; its original CI
+fails during setup because the private transport fixture locks local 0.1.3.
+The one-record correction has original/restored failure and corrected/restored
+success through pinned locked metadata. Fresh corrected-head CI, review, merge
+and publication remain required. PR374 separately tracks concurrent receiving;
+all full remote rows stay open.
+
 DevX integration prerequisite [PR359](https://github.com/devrandom-labs/bombay/pull/359)
 merged `7fccf08b120dc468de6e5aa2ed9719724814c375` at2026-10-13T22:17:06Z.
 Its tree matches revieweddf6144f; all six checks pass with recorded source,
