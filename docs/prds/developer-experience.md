@@ -1318,6 +1318,17 @@ and source products. No service-instance-return API is promised by this policy.
 Constructor panic and instance-destructor panic must follow the existing native
 failure/retirement paths without losing independently acquired lanes.
 
+Entity reference constraint, inspected before lowering: the actual consumer
+protocol contains Admit(EntityRef<Profiles>, u64). That domain reference cannot
+acquire an anonymous application-constructor parameter merely because Entity
+incarnations receive services. Current Entities/EntityRef own ReceptionistFor<D>,
+which fixes BombayEntityRuntime<D>; its concrete port is retained throughout
+EntityRuntime. Threading a new Factory through every one of those types is not
+an accepted model by itself. Preserve the same concrete domain reference under
+different constructors, or establish and review a necessary capability distinction
+before editing. No erased factory, second directory engine or root-only exception
+may repair this constraint. The standalone factory proof does not cover it.
+
 Reuse Fn()->Service and the existing native receiving-loan traits. A compiler-only
 probe confirms a local factory equation for ordinary absence () can coexist with
 the Fn()->Service implementation. The external route must additionally require
