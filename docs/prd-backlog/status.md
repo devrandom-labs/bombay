@@ -7,23 +7,25 @@ in `docs/prds/`. Recheck the current lock and affected owners when selecting wor
 Historical inventory marks and research snapshots are not current eligibility.
 
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
-merged1ea4bd16 after reviewed passing PR CI and exact-main CI38631426153.
-Guarded publication38638728105 succeeded; independent registry review verifies
-all nine archives against the exact source. Fresh SDK1.10.9 registry consumers
-and 112 owning Query/Config cases pass with exact source and lock review.
-[Fairness PR366](https://github.com/devrandom-labs/bombay/pull/366) merged `b652cd7`
-and [hosting PR365](https://github.com/devrandom-labs/bombay/pull/365) merged `ed22995`
-after all six checks and independent source/native/Nix reviews passed. Their
-merged trees match the reviewed trees. The corrected SDK is adopted in both
-locks; local fairness and explicitly hosted child isolation are delivered.
-All full R01–R25, AUTH1 and NET1 obligations remain open. Release PR367 carries
-the fixture lock correction; fresh CI, merge and publication remain required
-before Bombay0.1.2 delivery.
-Original native failures, HTTP uncertainty and cancelled runs remain recorded.
-PR360 was externally mergedc1d5b2bd at2026-10-14T20:44:33Z with native debug
-still failing; its three crates were published. Bombay0.1.1 still pins SDK1.10.8,
-so dependency publication alone does not correct that released remote profile.
-A later Bombay release and all full remote witnesses remain open.
+merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.
+All nine archives and fresh SDK1.10.9 consumer/owning Query/Config cases are
+reviewed. [Fairness PR366](https://github.com/devrandom-labs/bombay/pull/366)
+merged b652cd7 and [hosting PR365](https://github.com/devrandom-labs/bombay/pull/365)
+merged ed22995 after all six checks and scoped source/native/Nix reviews passed.
+[Release PR367](https://github.com/devrandom-labs/bombay/pull/367) merged81dc1448
+normally after all six checks passed. Actual bombay-rs0.1.2 publication is verified:
+registry/archive checksum, annotated tag and all363 source payloads match the
+merged source, with exact SDK1.10.9 selection. Downstream Cargo still resolves its
+own graph; no fresh downstream build is claimed. The immutable0.1.1 release uses
+the older SDK1.10.8. Original native failures and HTTP uncertainty remain recorded.
+The next implementation branch adds crate-owned JSON object/limit checks and
+real Counter/Ledger Node consumers; focused controls and all eight intended
+inversions pass their stated oracles in both profiles. Main is integrated;
+combined required checks and reviewed delivery remain open.
+All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
+is not arbitrary Node-owned child association, authentication or replay proof.
+PR360 was externally merged c1d5b2bd with native debug still failing;
+its original failure remains uncredited.
 Historical PR322 and PR323 were closed as superseded after source review;
 closure is not merge or credit for their original acceptance requirements.
 

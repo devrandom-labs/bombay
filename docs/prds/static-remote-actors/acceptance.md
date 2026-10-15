@@ -84,6 +84,18 @@ owning cuts fail as intended and their restored controls pass both profiles;
 final protected59/0/1 and strict checks pass on5f929068/5cdbce9c. Integration,
 replacement exact-head CI and delivery remain pending, separately from full rows.
 
+The next implementation stage adds crate-owned `remote::json::check` with the
+existing selected event-parser crate. Five pure public tests and two actual
+Node consumers pass in debug and optimized builds. The latter are SessionLocal
+queries with deterministic proof records: they do not establish TLS handshake
+or production identity. Counter observes its exact final value; terminating
+Ledger retains original appended allocations and rejects the later closed send.
+All cleanup, native results, notifications and Node close are acquired before
+those domain oracles. Eight intended production cuts each fail their exact assertion in both profiles,
+and byte-exact restored controls pass. Independent source and execution review
+retain the native Counter2-versus1 and LedgerClosed oracles. Final combined
+checks and reviewed delivery remain pending. No full R02/R14 or other row closes.
+
 The user requires crate-owned remote capability behind Cargo feature `remote`.
 Examples consume its public API; example-only implementations cannot pass R01.
 Keep the local counter in `examples/counter` and the remote counter in

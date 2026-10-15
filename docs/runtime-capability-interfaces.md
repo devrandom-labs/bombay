@@ -21,10 +21,17 @@ Neither establishes authentication, actor admission or a networking runtime.
 The new opt-in `remote::Metadata` is a shared untrusted fifteen-field Serde
 declaration for concrete protocols. It does not issue authority or select a
 target. Its raw decoding accepts positional structs as well as objects; the
-pending bounded receiver must enforce the chosen object layout and all policy.
-The implementation branch adds Application::open_node and remote::Node as a
-transport owner, reusing ordinary Application execution with a borrowed native
-Session. It owns no new actor trait, mailbox, lifetime authority or permission
+receiving boundary must enforce the chosen object layout and all policy.
+The implementation branch supplies `remote::json::check` for borrowed protected
+JSON and separate proof bytes. Its explicit Limits select input/proof bytes,
+decoded token bytes, logical nesting and native parser states, without defaults.
+Bombay's check uses the selected parser to enforce the outer object and decoded
+top-level metadata object; concrete Serde schemas retain field presence, uniqueness and protocol
+meaning. Native syntax causes remain available. This checks acceptance after
+token materialization and proves neither a peak-heap bound nor authentication.
+Application::open_node and remote::Node are delivered transport owners. Node
+reuses ordinary Application execution and lends its fresh native Session to Work.
+It owns no new actor trait, mailbox, lifetime authority or permission
 policy. Startup profile checks preserve original declarations on refusal;
 actual SDK and root/child integration remain separate verification gates.
 Native transport fixtures remain scoped verification consumers.

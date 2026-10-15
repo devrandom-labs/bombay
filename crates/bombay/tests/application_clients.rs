@@ -493,3 +493,7 @@ async fn closing_root_client_preserves_accepted_reply_and_then_exhausts() {
 #[cfg(feature = "remote")]
 #[path = "application_clients/protected_requests.rs"]
 mod protected_requests;
+
+#[cfg(feature = "remote")]
+#[path = "application_clients/json_receiving.rs"]
+mod json_receiving;
