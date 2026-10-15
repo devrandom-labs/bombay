@@ -27,7 +27,15 @@ adds no mailbox, actor authority or transport runtime. The new private
 exported with `remote`. Existing optional Serde owns its structural codec;
 protocol products own their fields. Metadata is untrusted and format-neutral:
 object-shape, resource, profile/version, SDK, replay and permission acceptance
-remain the pending receiving boundary. The optional remote graph now names the pinned controlled SDK and configuration
+remain distinct receiving obligations. The implementation branch adds public
+`remote/json.rs`: its borrowed `check` uses selected json-event-parser0.2.3
+for complete outer/metadata object checks and five explicit acceptance maxima.
+It preserves native syntax causes and leaves original protected/proof buffers
+with the caller. Concrete Serde protocols still own required/unique fields;
+provider, replay and permission policy remain separate. Token materialization
+precedes its token check, so no peak-heap bound is claimed. Actual Node consumers
+reuse Counter and terminating MailLedger in application_clients/json_receiving.rs;
+they are tests rather than a second production receiver. The optional remote graph now names the pinned controlled SDK and configuration
 owners. Private application/node.rs owns one finalized Application and one fresh
 Session; Application::open_node checks private remote/startup.rs policy first.
 Node::run_with joins the existing Application execution and receiving operations;

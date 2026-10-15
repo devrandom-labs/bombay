@@ -170,7 +170,7 @@
                 RUSTDOCFLAGS = "--deny warnings";
               };
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --test remote_verification --test remote_ingress --test remote_metadata --test remote_node --test application_clients --test node_outcome --test node_borrowing
+                cargo test --locked -p bombay-rs --features remote --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';
@@ -180,7 +180,7 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --test remote_verification --test remote_ingress --test remote_metadata --test remote_node --test application_clients --test node_outcome";
+              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing";
             }
           );
           bombay-fmt = craneLib.cargoFmt commonArgs;

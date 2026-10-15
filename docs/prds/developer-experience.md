@@ -1163,3 +1163,28 @@ consumers and full integrated gates. The frozen2e21756 run is independent and
 stays frozen. Source delta/public surface below distinguishes upstream capability
 from DevX edits. Local/remote ownership and existing control-state sums unchanged
 by the merge; new parsing alternatives belong to the imported checker alone.
+
+The first actual imported JSON consumer fails E0308 at exactly two receiving
+triple destructures: the established Node contract returns ApplicationOutcome.
+This is the existing DX04 terminal-product migration, not an owner gap. Before
+editing those callers, retain JSON-INTEGRATION-current-debug exit101. Consume
+receiving.await.into_parts() into work/root/notifications/unit families, then
+leave every original work selection, cleanup, native custody, query allocation,
+accepted-prefix and rejection assertion unchanged. Expected test delta2/-2;
+production/API/bounds0. Both actual JSON journeys must pass before retaining the
+merge, with two reviews checking the complete original assertion bodies.
+
+Protected JSON merge result: current debug passes all26 tests across
+application_clients, node_borrowing, node_outcome, remote_json, sender_allocations
+and sender_sharing. All nine client/shutdown denials and all three Session-loan
+fixtures pass; both actual JSON receivers preserve their original custody oracles.
+Workspace fmt passes; two independent merge and caller reviews pass. Locked graph
+adds only remote-optional json-event-parser0.2.3 (MSRV1.74), with no parser runtime
+dependencies selected. Inspect its exact event/complete-input/max-stack contracts;
+all prior package versions/metadata/dependencies remain unchanged. Relative to the
+pre-merge head: upstream production+148/-0, DevX production+0/-0; tests+976/-0
+with exactly+2/-2 caller-line substitutions relative to upstream; public JSON
+Limits/Error are upstream additions, no DevX types. Both original-source counters,
+local capacity and typed retirement/authority laws are unchanged. Remaining:
+optimized/minimum-compiler matrix, strict lint/docs and final integrated Nix/archive
+gates; frozen2e21756 retains its own full-gate result.

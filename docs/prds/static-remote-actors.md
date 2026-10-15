@@ -22882,3 +22882,372 @@ Final integrated release record against `ed22995`: eight paths, production
 Rust +0/-0/net0, tests +0/-0/net0 and public types +0/-0. Documents/changelog
 +164/-17/net147, manifest +1/-1/net0 and locks +2/-2/net0 account for the whole
 delta. The release worktree has no untracked files; required CI remains pending.
+
+
+### Unhosted export comparison — research preparation, 2026-10-15
+
+Fresh branch `research/static-remote-unhosted` starts on actual main
+`ed2299587c63d792a625a5a5ec6948d615a4e4c2`. The release PR367 remains frozen
+on its submitted head while this independent research runs. No user worktree
+or active DevX source changes. The selected Behavior/Actors0.25.0 revision
+2bb4510, Address0.3.0, Communication0.1.5, Timers0.2.0 and private Observe
+owners remain unchanged; there is no Cargo patch or dependency update.
+
+Source inventory9ed9deea and unhosted facts8d3c9272 distinguish an explicit
+application-owned export from certification of any supplied child. A public
+ApplicationScope is affine: it cannot be cloned or declare two roots. A fresh
+call to an unhosted topology's registration method cannot recover the canonical
+runtime occurrence space. No allocation-source or address-equality shortcut is
+selected as ownership evidence.
+
+Before choosing a shipping export API, compare existing ordinary composition:
+A retains its actual published child recipient as its configured destination;
+B supplies another genuine recipient. A per-export closure compares exact
+existing recipient authority and never takes an independent delivery target.
+Use two actual public Applications, existing unhosted child topology, the
+causal B preparation fence, and all original native/notification/cleanup products.
+Observe A=1 and B=2 only after full acquisition; omission of the association
+comparison must expose B=3 at the independent domain oracle. This is an
+application policy comparison, not a new actor-model law, authentication proof
+or Node-issued membership certificate.
+
+Expected temporary scope: replace the existing owning hosting research test
+source and append this PRD record (two paths); production +0/-0/net0, tests
+no more than 30 introduced lines, public types +0/-0. Reuse CounterParent,
+CounterChildren, EstablishedRecipient equality, external mailboxes, Node and
+ordinary Application execution. Retain the submitted hosting source separately
+and restore it after controls and intended inversion in both profiles. Do not
+ship a duplicate permanent scenario. Exact sources, outcomes and differences
+remain evidence until reviewed; all full acceptance obligations stay open.
+
+The unhosted fixed-export comparison executes six pinned-Nix runs: corrected
+and restored controls each pass exactly one test in debug and optimized builds;
+omitting only the comparison fails exactly that test in each profile with the
+actual foreign Counter at3 instead of2 after complete native checks. The runner
+restores hosting.rs byte-exact to main. Independent receipt9c210198 verifies
+all six exact named results and335 source/manifest/lock records. No production
+source or public interface changes. This proves fixed genuine export selection;
+it also rejects A's sibling and cannot certify arbitrary Node child membership.
+Do not replace that remaining obligation with trust in an allocation identity.
+
+### JSON receiving comparison — before production selection
+
+Under standing recommendation delegation, execute the previously prepared
+ordinary Rust composition before retaining a receiving API. serde_json1.0.151 alone
+accepts outer and nested positional structs, contrary to the approved object
+profile. The already selected fixture json-event-parser0.2.3 supplies ordinary
+lexical events; compose its borrowed preflight with serde_json1.0.151 decoding
+of concrete Counter/Ledger declarations containing public Metadata. No new codec,
+protocol trait, erased message, authority product or default limit is selected.
+
+The candidate checks input/proof bytes before parsing, complete outer object,
+object-valued decoded top-level bombay keys, token bytes, nesting and parser
+states. A token limit checked after materialization is not a peak-heap proof.
+Concrete Serde schemas retain required fields, duplicates and unknown-field
+refusal; authentication, versions, replay and actor admission remain separate.
+The reply payload-array control must pass; escaped bombay keys get the same
+object rule. Omit outer and nested shape checks separately to demonstrate the
+intended array-acceptance failures in both profiles, with positive/restored
+controls and exact input/proof preservation.
+
+Temporary scope: one research test file under the existing protected Counter
+owner, one explicit isolated Cargo test-target mount and this PRD. Production
++0/-0/net0, public types+0/-0; forecast at most350 formatted test lines,400
+cumulative introduced test lines including the prior24-line unhosted comparison.
+Four cumulative paths include restored hosting.rs. Preserve original manifest
+and research source externally, restore temporary mounts after verification.
+The public receiving signature and actual Node callback consumers still need
+selection and concrete evidence before production retention. Full R02 remains
+open, as do all full R01–R25 obligations.
+
+The first shape diagnostic passes but reports unread native cause fields. Add
+precise native-cause/schema observations instead of a lint allowance. The first
+recorded control then fails its new guessed truncation-message expectation,
+not a shape inversion: json-event-parser handles EOF in ObjectKeyOrEnd through
+ObjectKey and actually returns “Object keys must be strings”. Preserve that
+failed source/log and correct only the test expectation to the exact owning
+source result. No parser or error reclassification changes. Fresh controls and
+intended shape omissions remain required; the failed control receives no credit.
+
+The final private JSON shape sourcef084daf0 executes eight pinned-Nix runs:
+corrected/restored controls pass exactly one named test per profile; independently
+omitting outer or metadata object enforcement exposes a successfully decoded
+Counter at each intended object oracle in both profiles. Reviewed08-run receipt
+98a156bb and source/custody review ed34400c preserve the initial failed expectation,
+all335 restored inputs, original manifest and removed temporary file. Token,
+logical-depth and parser-state boundaries remain unexecuted; this is not fullR02.
+
+### Shipping JSON check — decision and change record before production
+
+Under the user's standing recommended-choice delegation, select the ordinary
+crate-based composition just demonstrated. Keep serde_json1.0.151 for concrete
+protocol decoding; select already fixture-locked json-event-parser0.2.3 as an
+optional dependency of Bombay's existing remote feature, with default features
+disabled. Plain Serde alone demonstrably admits positional structs. A handwritten
+lexer or custom recursive Serde implementation has no demonstrated need. No new
+wire format, proof representation, protocol macro, registry or runtime is added.
+The selected parser's MSRV1.74 and MIT/Apache licenses fit Bombay's current graph.
+The Rust API Guidelines checklist was inspected; primary implementation remains
+the exact selected package source, including >-before-push stack behavior.
+
+Choose the deliberately lower-level `remote::json::check(protected, proof,
+&limits) -> Result<(), Error>` function. `json::Limits` is one named product
+of five explicit NonZeroUsize maxima: input bytes, proof bytes, decoded-token
+bytes, logical nesting and native parser states. It supplies no Default, builder
+or policy values. Public semantic fields expose these required configuration
+inputs, not mutable parser representation. `json::Error` preserves distinct
+size/object/nesting refusals and the actual native syntax cause; an absent
+native event is reported as NoEvent, without fabricating an input classification.
+There is no generic decoder, verified-message wrapper or protocol trait.
+
+The five limits are coexisting independent caller inputs, so the product owns
+a real acceptance policy. The Error owns native syntax/refusal evidence. Their
+concrete consumers are Counter and terminating Ledger DTOs with public Metadata;
+the actual Node callback only retains original Queries, while asynchronous Work
+checks bytes, uses its concrete Serde schema and provider, then the exact runtime
+issued root. Preserve actual send/reply/retirement/notification/close results.
+Keep child membership open. Retain this shared function only with both real
+Node consumers; tests and examples may not own a competing implementation.
+
+Before implementation, add the public compile/shape regression. Current Bombay
+has no remote::json; establish that exact missing-interface denial and retain
+the independently passing private composition/inversions as semantic provenance.
+Then add focused exact/excess input, proof, token, nesting and parser-state
+assertions and their intended inversions, plus real receiving consumers. Native
+parser errors remain original local causes and are not serialized as replies.
+Token refusal occurs after materialization and establishes no peak-heap bound.
+Metadata presence, uniqueness, fifteen fields and protocol variants remain with
+the concrete strict schema; versions, provider proof, replay, freshness, global
+identity and admission remain separate. No full acceptance row closes here.
+
+Stage forecast: at most14 cumulative paths including temporary restored research
+paths, production Rust+220/-0/net220, up to600 retained test lines and two new
+public types; no other public type, limit/default or crate choice is selected.
+Expected paths: new remote/json.rs and remote_json.rs, remote module, Bombay
+manifest, root/isolated locks, existing remote_node tests, this PRD, acceptance,
+and current capability/module documents as needed. Reuse existing parser, Serde,
+Node, try_retain/verify, ExternalActor and native receiving owners. Root owns all
+manifest/lock/export integration. Current retained source delta before this stage
+is production+0/-0/net0, tests+0/-0/net0 and public types+0/-0; PRD prose is
+measured separately. The historical task-wide union is not newly certified by
+this stage forecast. Preserve the earlier broader accounting qualifications.
+
+Public interface regression executes through pinned Nix and fails only E0432
+for missing bombay::remote::json on current main. An earlier conversion setup
+command had no generated test target; preserve its separate log and give it no
+interface-denial credit. The shipping regression has no private parser or error
+wrapper: ordinary calls check syntax, then each concrete Serde declaration.
+Native causes and all independent fixed vectors remain observable.
+
+Cargo adds only the selected parser package, but also canonicalizes four
+unrelated Windows dependency references in errno/rustix/tempfile/winapi-util,
+repeating the earlier SDK-adoption behavior. Preserve the Cargo-generated
+snapshot; under the already selected narrow-lock policy restore those four
+complete original package records, retaining the new Cargo-owned parser record
+and Bombay edge. Require exact whole-record comparison and locked validation.
+This is no dependency refresh or version change.
+
+Independent API source review identifies the same selected thiserror generator
+problem already handled by ingress: native-source derivation emits an inline
+AsDynError import inside generated Error::source, prohibited by the applicable
+instructions. Under recommendation delegation choose the existing minimal
+manual Display/std::error::Error style, with module-scope imports, exhaustive
+variants and original Syntax cause chaining. Removing the source would erase
+evidence; a replacement derive crate has no need. This changes formatting/error
+realization only, not parser or acceptance policy, and stays within220 production
+lines/two public types. The selected generator source remains review evidence.
+
+Shipping shape controls now pass exactly1/0/0 through the public API in debug
+and optimized builds; both root/fixture locked metadata and root formatting
+pass. Root lock is400 records:398 complete unrelated records unchanged, the
+local Bombay dependency edge updated and the selected parser record identical
+to the existing fixture. Fixture324 records preserve323 unchanged records.
+Cargo's four unrelated Windows references were restored before these actual
+locked commands; no graph-refresh credit is claimed.
+
+Before adding the actual Node witnesses, raise this stage's test ceiling to1000
+retained lines and cumulative path ceiling to15 under standing recommended-choice
+authorization. Production220 and two public types remain unchanged. The extra
+space covers complete native/notification/Query custody for both existing actors,
+not another production layer. The direct child-module placement reuses the exact
+parent MailLedger without extraction. Pure limit regressions and their precise
+source cuts precede retention. A Scope-origin proposal remains separate research;
+no application identity/provenance state is selected in this JSON stage.
+
+PR367 actually merges through the normal guarded squash at01:43:59Z on
+2026-10-15 as81dc1448ac14f7669c41d49607cb4e552f5835f6, tree d744ed7c identical
+to submitteda463. All six checks and final source/native/Nix reviews pass;
+required Nix38661023980/job116182020880 executes703/0/1 per workspace profile,
+35 public remote/profile,55 protected+6 Node+3 native-count/profile and exact
+hosting1/0/0/profile. Driver2048/four Observe1024 complete,441 payload hashes
+are verified, Miri is skipped. Reviews ab3346e9/6bba0987/3febd53e and fresh
+branch-rule check precede merge. Publish38667235330 succeeds; actual registry
+archive verification remains pending before publication is credited. This new
+JSON branch remains based on earlier main ed229 until normal integration.
+
+The first public limit build stops at a test setup coercion: Box<[u8]> accepts
+a byte slice, not the borrowed fixed array passed there. Preserve that E0277
+source/log and add only the ordinary .as_slice() borrow. No type, policy,
+wrapper or production correction follows from it. Limit executions remain
+uncredited until the compiling controls actually execute.
+
+Node consumer setup correction: the first compile stopped at E0432 because
+`Exit` belongs to the existing ordinary prelude, rather than the crate root.
+The failed log and source are retained; they receive no semantic-test credit.
+Only that import is corrected, without adding an export or changing ownership.
+
+Publication review is now complete: actual non-yanked bombay-rs0.1.2 archive,
+registry API and sparse index agree on checksum
+94224188917b8863478154a4a30e32f104555ce2aa78b2ee50d5427706ccf12c.
+The annotated tag and archive VCS identify merged81dc; all363 source payloads
+match Git. Normalized manifest preserves24 dependency edges and exact SDK1.10.9
+TLS-only selection. Packaged368-record lock differs from root399 by packaging
+rules and does not constrain downstream resolution. Review eea3069b and receipt
+853d4acc record the exact differences. No fresh downstream build or full remote
+acceptance is credited; the package declares Rust1.96.
+
+The five public JSON limit/shape tests now pass in both profiles, followed by
+both real Node consumers (exactly2/0/0 per profile). They use native SessionLocal
+queries and explicit deterministic proof records, not real authentication or a
+TLS handshake. The receiver checks original bytes, concrete schema and provider
+before actual typed root sends. Counter's Read fences earlier admissions; the
+Ledger's permitted Read actually terminates it. Existing full native results,
+notification receipts, joined retirement report, Queryable undeclaration and
+Node close precede effect/custody oracles. Deliberate production cuts and exact
+restoration controls are now running; final review and delivery remain open.
+
+Independent counterexample review identifies NoEvent as unexercisable with the
+selected parser's complete-input implementation: each path currently returns
+Some(event/error). Its public return contract remains Option, so the receiver
+keeps an exhaustive typed refusal rather than panicking or inventing a Syntax
+cause. No executable NoEvent witness or future-parser compatibility is claimed.
+This qualification introduces no production change or additional public type.
+
+Required CI selection correction, before editing its owning definition: the
+remote debug/release Nix checks enumerate integration targets and therefore
+would omit the new remote_json target. Under standing recommendation delegation
+select adding that existing target to both lists; application_clients already
+includes both Node witnesses. Do not add another workflow or duplicate runner.
+Raise this stage's cumulative path ceiling from15 to18 to cover flake.nix and
+any required current public-API/backlog reconciliation; expected retained paths
+are13 before those last two documents and three restored research paths are
+counted separately in the cumulative union. Production Rust220, retained tests
+1000 and two public types are unchanged. The CI definition delta is two lines
+replaced, with no new acceptance claim.
+
+Shipping JSON verification checkpoint: all eight independent production cuts
+(outer object, metadata object, input bytes, proof bytes, token bytes, nesting,
+parser-state off-by-one and native source loss) fail the intended single named
+regression in both profiles. Counter is2 instead of1 after complete cleanup;
+Ledger's second permitted Read returns the actual Closed send error. Each limit
+cut admits the forbidden input, and source removal loses the actual cause.
+Four byte-exact restored controls pass: five public JSON tests and two Node tests
+per profile. The20-record receipt and restoration record retain all source/log
+hashes; setup/coercion failures remain separately uncredited. Independent source
+review fec344d8 performs distinct invariant and counterexample passes; it covers
+healthy147-line source9b5a568c, not transient mutants. Final execution review,
+main integration, strict checks and reviewed PR delivery remain pending.
+
+Complete pre-integration stage measurement includes every untracked source:
+production Rust +148/-0/net148; tests +964/-0/net964; public API +2 types/-0.
+There are15 retained paths and three restored research paths, cumulative18/18.
+Manifest/locks/CI and prose are separate; no example or shared actor abstraction
+was added. Keep production220, tests1000 and two-type ceilings. This is a scoped
+prerequisite stage rather than full R01–R25/AUTH1/NET1 completion.
+
+Normal main integration: preserve all release/main records before the subsequent
+JSON research and implementation records. Backlog opening keeps the newer actual
+publication observation while retaining the original external PR360 failure.
+Cargo root and fixture merge the local version0.1.2 and JSON edge independently;
+no Behavior update or foreign worktree is imported. Combined locked validation
+and strict checks must run on this integrated source before PR preparation.
+
+Integrated strict Clippy stops on six test-only findings: two similar local
+names, one documentation spelling, two long causal tests and one redundant
+formatting borrow. Preserve its exact log and source before correction. Rename
+reply publication results to `publication`, mark SessionLocal as code, and use
+formatting's existing implicit borrow. Under recommendation delegation add one
+narrow test-function expect(too_many_lines) to each complete Node causal witness:
+splitting their custody/cleanup into new forwarding structures would obscure the
+independent actor effect oracle without reducing production complexity. No broad
+lint allowance or production/API change is selected; retained tests stay below
+1000 lines. Fresh strict checks and both controls remain mandatory.
+
+The next strict run reaches the remaining pure shape witness and reports only
+its111-line length. Keep its independent fixed-vector/control comparison intact
+with the same narrow function-level expectation, rather than adding a forwarding
+fixture abstraction. Preserve the second lint log separately. This adds four
+test attribute lines, no assertions or production changes; retained tests976/1000.
+
+Final scoped minimization review0417bc75 confirms15 retained paths, no untracked
+files, production148/0, tests976/0 and two public types. Graph/style review
+7454310b verifies all test changes preserve body/order/ownership and complete
+unrelated lock records. Execution review40dc8d0d independently rehashes all20
+logs/eight source cuts and verifies intended failures plus exact restoration.
+No immutable negative-executable copies or peak-heap/identity/TLS claim is made.
+
+Repository audit retains one explicit migration obligation: the existing private
+protected_counter/protected/mod.rs lexical receiver serves the older flat
+seven-meaning transport research protocol and its six-field policy. It is not a
+shipping competitor or the new Metadata object receiver; replacing it blindly
+would change established error classifications and transport evidence. Keep its
+source/proof provenance intact in this stage. A measured migration to shared
+owning primitives remains required during full remote integration/minimization;
+do not claim repository-wide receiver consolidation or full PRD distillation.
+
+Combined remote checks pass42/0/0 per profile, strict remote/default workspace
+Clippy and formatting pass. The subsequent workspace run suffers ENOSPC during
+compile-contract checking, producing invalid compile-fail observations; the
+runner's receipt write also fails. Preserve raw logs and incomplete receipt,
+and credit no workspace completion. No production change follows. After the
+terminal process is confirmed stopped, remove only coordinator .rmeta compiler
+metadata older than24h (4057 files,3923283529 bytes), with exact path/size receipt.
+Sources, worktrees, logs, lockfiles and proof executables remain intact. Retry
+failed workspace checks after actual free-space verification; earlier focused
+source-cut evidence is unchanged.
+
+Draft PR368 is open from feat/static-remote-json at f4a7f19, targeting main.
+Its required submitted-head CI runs alongside the local post-ENOSPC workspace
+retry; neither a draft PR nor earlier focused checks establish delivery. Final
+local results and submitted-head source/native/Nix reviews remain required.
+Keep the full PRD active and all full rows open. No main push or bypass occurs.
+
+Next-stage investigation qualification: the private independent-origin Arc
+proposal remains unselected. A constructed pair of private Scopes sharing one
+allocator is not a demonstrated public path: ApplicationScope is affine and
+non-cloneable, and with_root consumes it. Therefore that artificial adversary
+cannot justify an extra identity allocation. First evaluate retaining a weak
+reference to the existing ApplicationAddresses owner at actual actor issuance,
+while preserving the real distinction that external reply endpoints share the
+allocator but are not owned actors. No representation, export API or production
+change is selected from this investigation alone.
+
+### Shipping JSON — final local verification checkpoint
+
+The exact integrated Rust/manifests/locks at f4a7f19 pass all required local
+commands through pinned Nix: cargo fmt --all -- --check; strict Clippy for the
+workspace and for Bombay remote/all-targets; six selected remote integration
+targets in debug and optimized (42/0/0 each); cargo test --workspace in both
+profiles (707/0/4 over91 Cargo summaries each); cargo nextest run --workspace
+(703 passed, one skipped); remote cargo doc --no-deps with warnings denied; and
+the isolated locked metadata control. The failed ENOSPC workspace run remains
+separately uncredited. Five pre-space successes are recovered only from their
+printed terminal records and rehashed raw logs; no truncated receipt is repaired
+by assumption. Post-space workspace/fixture records are independently retained.
+
+Native submitted-head CI on f4a succeeds in debug and optimized. Reviewd5970e68
+and receipt2d82858f verify both official artifact digests and414 payloads, exact
+source/certificate custody,64 protected cases/160 roles combined, child2/query2/
+reply1 per profile and exact42/2 versus41/0 native counters. Ordinary30 cases/
+84 roles per profile retain four late_exit uncertainties without false success.
+These native tests do not execute the new public JSON cases or close full rows.
+Required Nix remains live; later submitted-head checks/review/merge are mandatory.
+
+Final complete contribution versus actual main81dc remains15 retained paths,
+production Rust+148/-0/net148, tests+976/-0/net976, public types+2/-0; no untracked
+files. Manifest+2/-1, locks+8/-0 and Nix definition+2/-2 are separate from Rust.
+Current documentation owns its own prose delta. Scoped minimization retains only
+one new production JSON checker and its explicit two-type policy/refusal surface;
+the legacy flat-protocol research receiver retains its recorded migration duty.
+This checkpoint is not full PRD distillation or feature delivery. Every full
+R01–R25/AUTH1/NET1 obligation and deferred-scope distinction remains intact.

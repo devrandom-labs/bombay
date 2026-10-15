@@ -634,3 +634,7 @@ async fn bound_sender_preserves_nonwaiting_full_retry_prefix_and_closed_commands
     assert_eq!(custody.additional_failures.len(), 0);
     assert_eq!(custody.retirement_failures.len(), 0);
 }
+
+#[cfg(feature = "remote")]
+#[path = "application_clients/json_receiving.rs"]
+mod json_receiving;
