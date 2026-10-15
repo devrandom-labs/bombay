@@ -47,9 +47,12 @@ The unmerged crate-owned export retains one existing native client per request;
 20 focused consumer tests pass in both profiles. Two native Full-retry cases
 also pass with the narrow loan-release-panic extension. Dispatch removal,
 authority bypass and late storage fail their intended assertions in both
-profiles, followed by exact restored controls. Complete combined checks,
-interface minimization, review and PR delivery remain required. These scoped results do
-not change any full R01–R25, AUTH1 or NET1 state.
+profiles, followed by exact restored controls. Scoped interface minimization
+and independent source reviews are recorded. Draft PR372 contains the candidate
+and the corrected allocation measurement: restored plain55/0/0 and protected
+70/0/1 suites pass in both profiles. Final combined gates, execution review and
+actual PR delivery remain required. These scoped results do not change any
+full R01–R25, AUTH1 or NET1 state.
 
 An isolated test-only composition now runs two actual Nodes with both protocols
 and positive provider families: all eight retained-Read controls pass, while

@@ -23,9 +23,11 @@ Stash custody. Explicit Full retry has two passing native pressure cases in
 both profiles; dispatch-removal and permission-refusal inversions fail their
 intended assertions in both profiles. The narrow permission-loan release-panic
 witness also passes both profiles, with intended late-storage failures and
-fresh restored controls. Standard diagnostic/source custody is independently
-qualified; combined source checks, minimization, review and delivery remain.
-These are scoped implementation results, not combined checks or delivery.
+fresh restored controls. Standard diagnostic/source custody and scoped
+minimization are independently qualified. PR372 contains the candidate; its
+corrected allocation measurement passes the full plain and protected suites
+in both profiles. Final combined gates, execution review and actual delivery
+remain required. These scoped results do not establish complete remote support.
 All full R01–R25, AUTH1 and NET1 gates, protected Node-owned exports and the
 separate remote-counter application remain open.
 See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
@@ -25817,3 +25819,56 @@ dev removed only this session's compiled debug cache:29549 files/18.2GiB. Source
 evidence, release cache and active worktrees remain; free space rises to26GiB
 and is24GiB after the focused rebuild. This actual resource change justifies
 fresh verification, not an unqualified retry of the failed CI law.
+
+### PR372 — restored controls and final scope reconciliation
+
+Healthy committed source is edfeec1, including actual main75c8db4f. The only
+post-integration test correction is +53/-16/net37; production, public API and
+dependencies are unchanged. The process-wide snapshot inversion executes the
+intended caller-count failure in both profiles: the retained foreign allocation
+is counted beside the caller's own allocation, yielding observed2/4224 rather
+than1/128. The global total is an observation, not a portable requirement. The
+worker has joined before this assertion; no actor exists yet. Exact Git
+restoration returns the owning file to9b34f8bf, with root/fixture locks unchanged.
+Source reviews2400acfa/6aa53749 and execution revieweae9ec1a retain their separate
+compile-shape, semantic-failure, nested-child and restored-control scopes.
+
+Fresh restored plain Counter suites execute55/0/0 each; protected-feature suites
+execute70/0/1 each, with exactly the same70 pass names in both profiles. The
+ignored subprocess role receives no execution credit from this ordinary suite.
+Inventory13813e3b and the raw logs retain that distinction. Strict isolated
+all-target/all-feature Clippy and workspace/fixture formatting return0 through
+pinned Nix. Workspace Nextest executes703 passed/one skipped; its default-feature
+scope remains separate from the20 remote-focused cases. This direct command
+does not carry an automatic complete-input snapshot: Rust, manifests and locks
+remain unchanged while these two delivery documents are reconciled. The four
+current production-source cuts still have32 intended
+failures and fresh20/0/0 restored controls; these are independent of the
+allocation measurement inversion. Required CI and local Nix on this corrected
+head remain live at this checkpoint, rather than inheriting the failed15edf
+overall result or earlier successful prerequisite gates.
+
+Independent scope review90eb789a/receipt5dea15de measures the complete retained
+endpoint against81dc1448:43 tracked paths, no untracked paths; production
++899/-2/net897; tests+8178/-13/net8165; public API+8/-0 types. The existing
+inline-unit reclassification178/3 is applied exactly once. This includes the
+actual release0.1.3 integration and allocation correction. It is new capability,
+not a net code reduction. Earlier controlled-SDK and whole-goal records carry.
+
+Three previously omitted release/documentation paths bring the named cumulative
+software inventory to98. Keep the five unresolved-history slots:103 allocated
+slots does not prove103 distinct historical owners or bound every historical
+gap. Under the user's standing recommendation delegation, select the narrow
+software-slot allowance110 before any further production edit, replacing100.
+This corrects the three-slot accounting shortfall and leaves seven slots; keep
+15000 test/tooling lines,1100 net production lines and10 public types unchanged.
+The known conservative line envelope is14602, including30 governing-configuration
+introductions and23 carried release/header removed lines. Its398-line margin
+is not a complete historical-upper-bound certificate. The40 retained external
+controllers total2061 raw lines; the prior qualification controller's51-line
+version remains separately accounted history. No scope reset or additional
+feature, dependency, default, service API or abstraction is selected here.
+
+Final CI/artifact review and a normal exact-head guarded merge remain required.
+Record their actual results and merge in the next delivery checkpoint; no full
+R01–R25, AUTH1 or NET1 gate closes from this prerequisite.
