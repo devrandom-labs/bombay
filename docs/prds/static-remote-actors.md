@@ -23206,6 +23206,52 @@ Sources, worktrees, logs, lockfiles and proof executables remain intact. Retry
 failed workspace checks after actual free-space verification; earlier focused
 source-cut evidence is unchanged.
 
+Draft PR368 is open from feat/static-remote-json at f4a7f19, targeting main.
+Its required submitted-head CI runs alongside the local post-ENOSPC workspace
+retry; neither a draft PR nor earlier focused checks establish delivery. Final
+local results and submitted-head source/native/Nix reviews remain required.
+Keep the full PRD active and all full rows open. No main push or bypass occurs.
+
+Next-stage investigation qualification: the private independent-origin Arc
+proposal remains unselected. A constructed pair of private Scopes sharing one
+allocator is not a demonstrated public path: ApplicationScope is affine and
+non-cloneable, and with_root consumes it. Therefore that artificial adversary
+cannot justify an extra identity allocation. First evaluate retaining a weak
+reference to the existing ApplicationAddresses owner at actual actor issuance,
+while preserving the real distinction that external reply endpoints share the
+allocator but are not owned actors. No representation, export API or production
+change is selected from this investigation alone.
+
+### Shipping JSON — final local verification checkpoint
+
+The exact integrated Rust/manifests/locks at f4a7f19 pass all required local
+commands through pinned Nix: cargo fmt --all -- --check; strict Clippy for the
+workspace and for Bombay remote/all-targets; six selected remote integration
+targets in debug and optimized (42/0/0 each); cargo test --workspace in both
+profiles (707/0/4 over91 Cargo summaries each); cargo nextest run --workspace
+(703 passed, one skipped); remote cargo doc --no-deps with warnings denied; and
+the isolated locked metadata control. The failed ENOSPC workspace run remains
+separately uncredited. Five pre-space successes are recovered only from their
+printed terminal records and rehashed raw logs; no truncated receipt is repaired
+by assumption. Post-space workspace/fixture records are independently retained.
+
+Native submitted-head CI on f4a succeeds in debug and optimized. Reviewd5970e68
+and receipt2d82858f verify both official artifact digests and414 payloads, exact
+source/certificate custody,64 protected cases/160 roles combined, child2/query2/
+reply1 per profile and exact42/2 versus41/0 native counters. Ordinary30 cases/
+84 roles per profile retain four late_exit uncertainties without false success.
+These native tests do not execute the new public JSON cases or close full rows.
+Required Nix remains live; later submitted-head checks/review/merge are mandatory.
+
+Final complete contribution versus actual main81dc remains15 retained paths,
+production Rust+148/-0/net148, tests+976/-0/net976, public types+2/-0; no untracked
+files. Manifest+2/-1, locks+8/-0 and Nix definition+2/-2 are separate from Rust.
+Current documentation owns its own prose delta. Scoped minimization retains only
+one new production JSON checker and its explicit two-type policy/refusal surface;
+the legacy flat-protocol research receiver retains its recorded migration duty.
+This checkpoint is not full PRD distillation or feature delivery. Every full
+R01–R25/AUTH1/NET1 obligation and deferred-scope distinction remains intact.
+
 ### Application-certified export clients — decision before production
 
 This branch starts at actual latest main81dc and fast-forwards the still-open
