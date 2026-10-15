@@ -459,13 +459,14 @@ this primitive is recorded in PR363.
 
 The new `remote::Metadata` provides fifteen required raw declarations for the
 concrete protocol's `bombay` field. Its Serde traits reject unknown/duplicate
-object fields, but decoding alone accepts positional structs too. The pending
-bounded receiving boundary must establish the selected JSON object shape and
+object fields, but decoding alone accepts positional structs too. Merged
+`remote::json::check` establishes the selected bounded JSON object shape; concrete
+protocol schemas and the receiving service must still
 check versions, profiles, SDK identities, replay and permission. Metadata neither
 authenticates input nor grants actor access. Providers protect the exact original
 transmitted bytes; deserializing and reserializing is not proof verification.
 
-The implementation branch adds `application.open_node(config).await` behind
+Merged PR364 delivers `application.open_node(config).await` behind
 `remote`. Its input is the configuration owner's `Config` from
 `bombay-zenoh-config` 1.10.2 (aliased as `zenoh_config` in Cargo). Build
 root/child topology with ordinary Application first. Its returned
@@ -487,8 +488,11 @@ host. Trusted work can clone or close the native Session and must honor the SDK
 host/custody contract; exposing that advanced API does not enforce all remote
 policy. Whole operation disposal is surrender, not proof of joined retirement.
 
-This Node contribution is still under verification and not merged. Typed remote
-exports, authentication/admission and the ordinary multi-node API remain pending.
+Node is delivered; the unmerged `ApplicationHandle::export` contribution uses
+that Node's private Session and actual Application ownership. It retains each
+request's originals with an independent existing reply client and preserves
+native nonwaiting admission results. It remains a lower-level candidate:
+authenticated remote operations and the ordinary multi-node API are still pending.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 

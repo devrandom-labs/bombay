@@ -25437,7 +25437,8 @@ nine harnesses with406/0/0 total:333 owning unit tests, five actor-interface,
 36 Application-client, five supervisor, four ingress, five JSON, seven metadata,
 eight Node and three verification tests. The owning original-allocation-cause
 test and all20 network_replay cases actually execute. Combined optimized
-qualification remains live at this checkpoint. These are scoped local checks,
+qualification subsequently passes the same406/0/0, including the owning
+allocation-cause test and all20 network_replay cases. These are scoped local checks,
 not submitted-head CI or new remote acceptance credit.
 
 The seven additions to the public exhaustive ExportError sum are breaking source
@@ -25467,3 +25468,27 @@ publication collector and inline invocations must be added to that accounting.
 No scope reset or whole-goal reduction is claimed. The selected1100 production,
 10 public-type,100 software-path and15000 test/tooling allowances carry; final
 historical uncertainty and remaining margin stay visible through integration.
+
+Scoped two-pass minimization reviewa0a6f1c6 proves exact error relocation:
+reconstructing its former owner yields originalbe7f334a; removing that relocated
+body restores diagnostic ownerc4e0fe88, and the native operation implementation
+remains byte-identical to retry owner8799429b. Five new public types retain
+their distinct invariant or custody. Test-only style edits preserve the exact
+old predicates and ownership transfers; both fresh combined profiles now pass.
+The review's stale Node-unmerged sentence in user-facing-api.md is corrected,
+without claiming delivery of Export or authenticated operations. This adds one
+documentation path beyond the preceding39-path retained census; no software
+owner, production line or public type is added by that correction.
+
+Before final delivery, requalify four current-shipping cuts after main integration:
+remove only the native recipient comparison from request_row; misclassify the
+first attempt's actual permission cause as UnknownRequest; disable retained
+provider-identity matching under the explicit resend observation selector; and
+omit Node's private Session attachment. Independent finite-oracle review confirms
+four cases per cut: respective post-cleanup assertions are "another Application
+key reached admission", "native loan error crossed actual attempt", "duplicate
+must reuse", and "actual Node must issue its public export". Counter's extra
+reply and Ledger's exact Closed(Read) remain acquired before the duplicate
+oracle; no nonexistent reply is awaited. Run both profiles, inspect actual named
+failures, then restore exact committed source and rerun controls. The old global
+NativePending cut is retired because its policy was deliberately removed.
