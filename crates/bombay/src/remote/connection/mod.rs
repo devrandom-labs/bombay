@@ -1,5 +1,9 @@
 //! Application connection inputs and private native configuration construction.
 
+mod retirement;
+
+pub(crate) use retirement::Connection;
+
 use super::startup::NodeStartupRefusal;
 use serde::Deserialize;
 use serde_json::Value;

@@ -675,6 +675,118 @@ actual close Result before dropping that final strong Session; a later worker
 failure remains a separate joined result. No boxed future is introduced by
 Bombay; the SDK's existing implementation remains its own private detail.
 
+The formatted lifetime owner b516c74f retains434 introduced/removes3 lines,
+within600. Before production its actual pinned missing-interface command fails
+101 for exactly unresolved Connection and three missing private connection
+arguments. There is no unrelated diagnostic credit. The complete source and
+both lock guards return0; log33322b57 preserves the actual failure.
+
+The parent remote module will curate one crate-private Connection re-export,
+an eighth expected path, rather than exposing its implementation module. The
+owned closing future uses Rust's precise lifetime capture to retain only its
+actual producer and receiving channel; it must not borrow the Network inputs.
+This expresses the already selected independent receiving ownership, with no
+public generic or new abstraction. Preserve the original close Result before
+Session disposal and dispose any refused Result only after explicit close.
+Select three immediate Network disposals in the owning tests after successful
+open, so accidental borrowing by the closing future is rejected by Rust. These
+three test introductions strengthen the selected owned-future law; b516's
+earlier missing-interface compiler evidence remains attributed to its own bytes.
+
+Private host refusal after a connection was acquired preserves the original
+Application and Work through the existing error product, while surrendering
+the acquired Connection to its independent close task. Its separately owned
+receiving future remains available to prove close; retry would reopen networking
+after that result, never reuse a possibly retiring connection. This is the
+recommended explicit refusal disposition under standing delegation. Ordinary
+public callers still pass no connection and retain their existing contract.
+The three selected lifetime tests do not yet execute this host-refusal branch.
+
+After healthy focused debug and optimized controls, select bounded causal cuts:
+complete native close before publishing the root report (a deliberate early
+close before parked Work can resume), and omit transfer of the actual close
+Result while retaining finite cleanup. Each must fail a post-cleanup oracle in
+both profiles. A source lifetime-capture cut omitting use<> must separately fail
+the three immediate Network disposals, without runtime-credit substitution.
+Reserve at most20 temporary Rust introductions in existing owners. Restore
+exact healthy bytes before broader controls. No timeout failure establishes a
+law, and the one parked poll alone is not proof across every possible schedule.
+
+The private owner uses associated open/session/retire operations with clear
+receivers, checked against the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/predictability.html).
+Its unboxed, concrete receiving future and precise capture follow the
+[Rust Reference](https://doc.rust-lang.org/reference/types/impl-trait.html#precise-capturing).
+This adds no trait, generic resource hook or public SDK escape. Independent
+two-pass source review confirms the seven frozen production inputs, including
+the unchanged ordinary public execution bounds and cfg-local absence paths.
+The private Some(connection) host-refusal disposition is now explicitly recorded
+above; its execution witness remains open. Debug's three actual lifecycle cases
+pass on production f73d2865/execution55735de2/tests06798b7a. Optimized execution
+and selected causal cuts must finish before retaining semantic acceptance.
+Keep the current source ownership map and backlog index consistent in this same
+stage; these two existing documentation paths are additional to the eight Rust
+paths. They must continue to identify the unfinished public service boundary
+and open full acceptance rows rather than promoting this private comparison.
+
+Next shipping comparison prerequisite: independent source review finds that
+network_replay's generic Ledger providers verify requests but still publish the
+constant reply proof [13,17]. The actual Counter request/reply protectors belong
+to a different concrete receipt family; substituting them by name would not
+prove Ledger integration. Before retaining any generic public service contract,
+port real protection through each chosen concrete family and run actual Counter
+and terminating Ledger consumers. ApplicationScope's early typed endpoint,
+Application-certified targets, verify's outside result slot, existing Export
+retention/admission and the existing cleanup kernel remain the owners. No public
+declaration/provider trait, schema, routing key or service default is selected by
+this source finding. The private lifetime stage does not settle those contracts.
+
+### Application connection custody — verified private stage
+
+Actual pinned controls complete3/0/0 initially in debug and13/0/0 optimized
+(eight prior configuration controls, two inherited Counter tests, three new
+lifetime cases). Final combined library commands each return0 with346/0/0,
+debug and optimized. Workspace formatting, workspace/all-target remote+axum
+compilation and local-only no-default-features compilation each return0.
+Normal workspace/all-target strict Clippy returns101 for exactly eight unused
+private declarations/methods: the seven earlier mapping warnings and the new
+open path awaiting its actual shipping consumer. No lint is suppressed and no
+release eligibility is claimed.
+
+The deliberate pre-report native close completes before parked Work observes
+the report. Both profiles fail only the saved premature-close oracle686, with
+two passing controls. Omitting the real close-result handoff fails all three
+original-result assertions684/783/921 in each profile, after finite cleanup.
+Removing only precise capture yields exactly three E0505 diagnostics at the
+Network disposals598/720/814; this is static evidence without execution credit.
+No timeout, setup failure or zero-match run establishes any law. All sources
+and both locks restore byte-exact. Independent source/execution reviews retain
+their authorship distinction and verify each actual negative's source version.
+The compact results record lives with the source/log evidence in
+/tmp/bombay-application-connection-custody/results.md.
+Terminal resultse276c917 explicitly records strictClippy101 and the unexecuted
+branches. Inventorybd9de471 binds44 finite source/log/record artifacts; standard
+checksum verification returns0 for all44. These are evidence revisions of the
+same existing owners, not44 new software programs or copied executables.
+
+This stage changes11 paths including untracked retirement.rs: production
+Rust+126/-6/net120; tests+437/-3/net434; three current documents. Public API
+types+0/-0; no manifest, dependency or lock changes. It is new private capability,
+not code reduction. Complete endpoint against81dc1448 has53 tracked differences
+plus that one untracked path: production+1342/-6/net1336 and tests+10290/-14/
+net10276, applying the established inline178/3 classification once and counting
+connection/tests.rs wholly as tests. Older extents remain carried/unproved.
+With owning Communication production+122/-25/net97, the measured window totals
+1433 net production within1600;14 public-type/18000 verification/115 software
+allowances carry without resetting earlier records. User worktree still has
+only its original AGENTS.md edit and is untouched.
+
+Missing-host refusal, native close error/producer failure and Entity-family
+runtime branches are not executed here. Source ordering is not their acceptance
+proof. Native callback drain, transport authentication and actual public service
+replacement remain required. All full R01–R25/AUTH1/NET1 rows remain open and
+PR373/374 holds remain. Do not mark this contribution or the full feature merged
+from these local checks; reviewed PR and required CI delivery are still required.
+
 ### Capacity cost and layout — selected owning measurements
 
 The Consumer correctionf07fda17 now passes complete native15/0/0 and four
@@ -731,6 +843,40 @@ measurement forecast and750 retained/2200 authored owner verification cap
 global1600/14/18000/115 remain. This pays real formatting and correct full-state
 measurement rather than retaining an invalid smaller fixture. The review
 itself supplies no executed benchmark or allocation credit.
+
+Measurement accounting now includes actual Rust revisions and direct shell/JS
+inputs. Before timing, select350 introduced measurement/research lines in place
+of250; retained698/750 and prior authored1738 carry within2200 even with the
+conservative full350 reservation. No new controller or production change is
+authorized by this accounting. Timings require the coordinator's exclusive
+CPU lease; source inspection may continue while compilation is paused.
+
+### Capacity cost — actual local verification, timings still pending
+
+Frozen benchmark f415df2d and allocation owner6e649e38 compile through the
+owner's pinned1.95 shell. Four actual allocation commands pass: baseline and
+candidate, each debug and optimized. On aarch64-darwin, Consumer<(), Box<u64>>
+grows64 to72 bytes and Consumer<(), u64> grows64 to80 bytes, all alignment8.
+The matching Option layouts are8 and16 bytes. These are concrete measured
+layouts, not an arbitrary-payload or whole-service bound. The candidate's
+single allocation window reports zero successful allocations with4096 actual
+Pending-to-Available observer rounds and16384 user deliveries; loop counts
+come from the reviewed source and do not measure resident bytes.
+
+Actual `nix flake check -L --keep-going` returns0 for all seven local checks:
+package, workspace nextest95/95 across19 binaries, documentation, Rust/TOML
+formatting, audit and deny. Explicit owning workspace/all-target strict Clippy
+also returns0. Nine source/manifest/lock/flake guards match before and after.
+Receiptc6cea1e4/inventorya39d8d91 retain commands, source and exact limitations;
+the coordinator independently rehashes all24 artifacts with exit0. Known
+measurement/research introductions318 carry within350; owner retained698/750
+and conservative authored1738+350 remain within2200.
+
+No timed group ran: independent DevX compiler sessions repeatedly started new
+compilers during the offered quiet window. Do not interrupt that work or treat
+compiler completion as performance evidence. Correctness verification continued
+in parallel. CPU costs, Linux CI, owning PR/release and actual Bombay adoption
+remain open; these local checks do not select the candidate into Cargo.lock.
 
 ### Pending protection — ordinary Rust comparison before implementation
 

@@ -11,6 +11,8 @@ mod metadata;
 pub(crate) mod startup;
 mod verification;
 
+pub(crate) use connection::Connection;
+
 pub use export::{Admission, Export, ExportError, ExportLimits, RequestKey, RequestRefusal};
 pub use ingress::{IngressError, try_retain};
 pub use metadata::Metadata;

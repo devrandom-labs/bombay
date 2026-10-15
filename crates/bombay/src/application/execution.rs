@@ -13,6 +13,8 @@ use crate::local::effects::{
 };
 use crate::local::ingress::{DEFAULT_USER_CAPACITY, StandardIngress};
 use crate::observe;
+#[cfg(feature = "remote")]
+use crate::remote::Connection;
 use crate::terminal::{
     ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, RetirementNotificationError,
     RetirementSchema, RootOrigin, publish_retirement_report,
@@ -250,6 +252,8 @@ where
                     Some(executor.spawn(installed_families.shutdown(publications)))
                 },
             ),
+            #[cfg(feature = "remote")]
+            None,
         );
         let receiving = async move {
             let (work, root_retirement, termination_notification) = receiving.await;
@@ -480,7 +484,12 @@ where
         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
     {
-        self.execute_with_invocation(work, |work: Work, application| work(application))
+        self.execute_with_invocation(
+            work,
+            |work: Work, application| work(application),
+            #[cfg(feature = "remote")]
+            None,
+        )
     }
 
     // Keep original Work separate from its invocation so Node can lend its Session.
@@ -499,6 +508,7 @@ where
         self,
         work: Work,
         invoke: Invoke,
+        #[cfg(feature = "remote")] connection: Option<Connection>,
     ) -> Result<
         (
             impl Future<Output = ()>,
@@ -654,6 +664,8 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
+            #[cfg(feature = "remote")]
+            connection,
         );
         let receiving = async move {
             let (work, root, termination_notification) = receiving.await;
@@ -835,6 +847,8 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
+            #[cfg(feature = "remote")]
+            None,
         );
         let receiving = async move {
             let (work, root, termination_notification) = receiving.await;
@@ -1637,6 +1651,7 @@ pub(in crate::application) fn execute_application_with<
         InstalledFamilies::ShutdownPublications,
         RetireUnstartedFamilies,
     ),
+    #[cfg(feature = "remote")] connection: Option<Connection>,
 ) -> (
     impl Future<Output = ()>,
     impl Future<
@@ -1859,9 +1874,15 @@ where
             started
         };
         let (retirement_publication, retirement_observation) = observe::pair();
+        #[cfg(feature = "remote")]
+        let session = connection
+            .as_ref()
+            .map(|connection| connection.session().clone());
         let (joined_publication, joined) = oneshot::channel();
         let origin = RootOrigin::<Owner>::new(MailAddr::APPLICATION_ROOT);
         let cleanup = executor.spawn(async move {
+            #[cfg(feature = "remote")]
+            let connection = connection;
             // Joining observes the actual actor; it does not request a stop.
             // Publish its small report while application work can still await it.
             let joined_actor = actor_join.await;
@@ -1890,6 +1911,10 @@ where
             let refused_root = root_publication.send((origin, retirement)).err();
             let refused_notification = notification_publication.send(notifications).err();
             installed_families.shutdown(family_publications).await;
+            #[cfg(feature = "remote")]
+            if let Some(connection) = connection {
+                connection.retire();
+            }
             // Abandoning the whole receiving owner surrenders unread originals.
             // Their disposal cannot preempt the already acquired family cleanup.
             drop((refused_root, refused_notification));
@@ -1917,6 +1942,8 @@ where
                             retirement_observation,
                             interface_allocations,
                             receptionists,
+                            #[cfg(feature = "remote")]
+                            session,
                         );
                         {
                             let mut application_work = pin!(invoke(work, application));

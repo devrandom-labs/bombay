@@ -90,6 +90,13 @@ release and PR374 API delivery are held pending that correction; passing scoped
 CI does not satisfy the boundary. The remote PRD and acceptance matrix retain
 the session-free two-Application witness and all other open remote obligations.
 
+The active private connection stage now integrates explicit connection ownership
+with the existing Application cleanup kernel. Focused lifecycle controls,
+intended causal defects and346 library tests pass their stated oracles in each
+profile. Strict lint still fails on eight unused private declarations awaiting
+the shipping service. No shipping service, transport handshake, full callback
+retirement or complete remote acceptance is credited by this internal stage.
+
 The pending-protection comparison now passes both concrete finite providers
 in debug/optimized builds, with restored complete Counter72/0/1 per profile
 and intended ownership/replay inversions. It closes no full remote requirement;

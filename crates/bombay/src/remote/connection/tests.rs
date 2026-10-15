@@ -1,7 +1,18 @@
-//! Native configuration construction; no file access, DNS, connection or TLS proof.
-use super::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
+//! Native configuration and private Application connection custody; no service-readiness proof.
+use super::{Connection, ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
+use crate::actors::ActorExt;
+use crate::application::{Application, ApplicationOutcome};
+use crate::behavior::{ClassifySettlement, Never, SettlementStatus};
 use crate::remote::startup::NodeStartupRefusal;
+use crate::{
+    ActorCustody, ActorFailureAssessment, ActorRetirement, Completion, MailAddr,
+    RetirementAssessment,
+};
+use behavior_actors::StopOnShutdown;
+use core::future::{Future, poll_fn};
+use core::pin::pin;
 use serde_json::Value;
+use std::cell::Cell;
 use std::error::Error;
 #[cfg(unix)]
 use std::ffi::OsString;
@@ -10,9 +21,16 @@ use std::num::NonZeroUsize;
 use std::os::unix::ffi::OsStringExt;
 use std::path::PathBuf;
 use std::ptr;
-use tokio::sync::Semaphore;
+use std::rc::Rc;
+use std::task::{Context, Poll, Waker};
+use tokio::runtime::Builder;
+use tokio::sync::{Semaphore, oneshot};
 use zenoh_config::{EndPoints, ModeDependent, WhatAmI};
 use zenoh_protocol::core::LocatorsStrategy;
+
+#[path = "../../../../../examples/counter/src/counter.rs"]
+mod counter;
+use counter::{Counter, CounterMessage, CounterValue};
 
 fn connecting() -> ConnectionEndpoints {
     ConnectionEndpoints {
@@ -505,4 +523,420 @@ fn non_utf8_credential_paths_preserve_all_five_original_allocations() {
             matches!(refusal, NodeStartupRefusal::CredentialPath { field } if field == expected_field)
         );
     }
+}
+
+fn listening_counter_network() -> Network {
+    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
+    Network {
+        layout: NetworkLayout::Peer {
+            connect: None,
+            listen: Some(ConnectionEndpoints {
+                addresses: vec!["localhost:0".into()],
+                certificate: CredentialSource::File(certificates.join("recipient-certificate.pem")),
+                private_key: CredentialSource::File(certificates.join("recipient-private-key.pem")),
+            }),
+        },
+        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
+        max_retained_queries: NonZeroUsize::new(2).unwrap(),
+    }
+}
+
+fn assert_stopped_counter(retirement: ActorRetirement<StopOnShutdown<Counter>, Never, Vec<Never>>) {
+    let ActorRetirement::Completed {
+        custody:
+            ActorCustody {
+                behavior: _actor,
+                control,
+                user,
+                descendants,
+                child_failures,
+                capability_failures,
+                additional_failures,
+                received_interpretation,
+                received_source,
+                source_index,
+                acquired_ingress,
+                retirement_failures,
+                terminal_report,
+                unread_owner_cancellation,
+            },
+        interpretation,
+        source,
+        settlements,
+        completion,
+    } = retirement
+    else {
+        panic!("actual Counter must complete under its selected shutdown template");
+    };
+    assert_eq!(completion, Completion::Stopped);
+    assert!(interpretation.is_none() && source.is_none());
+    assert!(received_interpretation.is_none() && received_source.is_none());
+    assert!(source_index.is_none() && acquired_ingress.is_none());
+    assert!(unread_owner_cancellation.is_none() && terminal_report.is_none());
+    assert!(control.is_empty() && user.is_empty());
+    assert_eq!(descendants.as_slice(), [] as [Never; 0]);
+    assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
+    assert!(capability_failures.is_empty());
+    assert!(additional_failures.is_empty() && retirement_failures.is_empty());
+    let settlement = settlements.settlement_status();
+    assert_eq!(settlement, SettlementStatus::Accepted);
+}
+
+#[test]
+fn connection_custody_waits_for_work_after_root_retirement() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let network = listening_counter_network();
+            let (connection, closing) = Connection::open(&network)
+                .await
+                .unwrap_or_else(|_| panic!("explicit private TLS connection"));
+            drop(network);
+            let session = connection.session().clone();
+            let mut closing = pin!(closing);
+            let (entered, mut parked) = oneshot::channel();
+            let (release, released) = oneshot::channel();
+            let calls = Rc::new(Cell::new(0));
+            let increments = Box::new(2_u64);
+            let allocation = ptr::from_ref(increments.as_ref());
+            let work = (increments, Rc::clone(&calls), entered, released);
+            let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+                .execute_with_invocation(
+                    work,
+                    |(increments, calls, entered, released), application| {
+                        calls.set(calls.get() + 1);
+                        async move {
+                            let mut client = application
+                                .export_client::<_, CounterValue>(
+                                    application.root().established_recipient(),
+                                )
+                                .unwrap_or_else(|_| panic!("actual root client"));
+                            let mut admissions = Vec::new();
+                            for _ in 0..*increments {
+                                admissions.push(client.try_send(CounterMessage::Increment));
+                            }
+                            let read = client.try_send(CounterMessage::Read(client.recipient()));
+                            let value = client.receive().await;
+                            let stopped = application.request_shutdown();
+                            let report = application.lifecycle().retirement().await;
+                            let published =
+                                entered.send((admissions, read, value, stopped, report, client));
+                            let released = released.await;
+                            (increments, calls, published, released)
+                        }
+                    },
+                    Some(connection),
+                )
+                .unwrap_or_else(|_| panic!("entered Application host"));
+            let mut execution = Box::pin(execution);
+            let mut completed = None;
+            let mut parked = poll_fn(|context| {
+                if completed.is_none()
+                    && let Poll::Ready(output) = execution.as_mut().poll(context)
+                {
+                    completed = Some(output);
+                }
+                pin!(&mut parked).poll(context)
+            })
+            .await;
+            let mut borrowed_close = closing.as_mut();
+            let before_release = borrowed_close
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop()));
+            drop(borrowed_close);
+            let close_poll = match &before_release {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(_) => Poll::Ready(()),
+            };
+            let native_closed_while_parked = session.is_closed();
+            let release = release.send(());
+            let ((), (outcome, native, notifications)) = tokio::join!(
+                async {
+                    if completed.is_none() {
+                        execution.await;
+                    }
+                },
+                receiving
+            );
+            let closed = match before_release {
+                Poll::Pending => closing.await,
+                Poll::Ready(original) => original,
+            };
+            let mut tail = Vec::new();
+            if let Ok((_, _, _, _, _, client)) = &mut parked {
+                client.close_admission();
+                while let Some(original) = client.receive().await {
+                    tail.push(original);
+                }
+            }
+            let native_closed_after_join = session.is_closed();
+            let (output, cleanup) = outcome
+                .try_into_completed()
+                .unwrap_or_else(|_| panic!("original Work completion"));
+            let (increments, original_calls, published, released) = output;
+            let (admissions, read, value, stopped, report, _client) = parked.unwrap();
+            let (joined, original_close) = closed;
+            assert!(cleanup.is_ok() && joined.is_ok());
+            assert!(matches!(original_close, Ok(Ok(()))));
+            assert_eq!(close_poll, Poll::Pending);
+            assert!(!native_closed_while_parked && native_closed_after_join);
+            assert!(release.is_ok() && published.is_ok() && released.is_ok());
+            assert!(completed.is_none());
+            assert!(admissions.iter().all(Result::is_ok) && read.is_ok() && stopped.is_ok());
+            assert_eq!(admissions.len(), 2);
+            let value = value.unwrap();
+            assert_eq!((value.from, value.message), (MailAddr::APPLICATION_ROOT, 2));
+            assert!(tail.is_empty());
+            assert_eq!(ptr::from_ref(increments.as_ref()), allocation);
+            assert_eq!(*increments, 2);
+            assert_eq!(calls.get(), 1);
+            assert!(Rc::ptr_eq(&calls, &original_calls));
+            assert_eq!(report.retirement(), RetirementAssessment::Established);
+            assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+            let notifications = notifications.unwrap();
+            assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+            let (origin, retirement) = native.unwrap();
+            assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+            assert_stopped_counter(retirement);
+        });
+}
+
+#[test]
+fn connection_custody_survives_whole_parked_execution_disposal() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let network = listening_counter_network();
+            let (connection, closing) = Connection::open(&network)
+                .await
+                .unwrap_or_else(|_| panic!("explicit private TLS connection"));
+            drop(network);
+            let session = connection.session().clone();
+            let closing = pin!(closing);
+            let (entered, mut parked) = oneshot::channel();
+            let (release, released) = oneshot::channel();
+            let calls = Rc::new(Cell::new(0));
+            let work = (Box::new(3_u64), Rc::clone(&calls), entered, released);
+            let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+                .execute_with_invocation(
+                    work,
+                    |(increments, calls, entered, released), application| {
+                        calls.set(calls.get() + 1);
+                        async move {
+                            let mut client = application
+                                .export_client::<_, CounterValue>(
+                                    application.root().established_recipient(),
+                                )
+                                .unwrap_or_else(|_| panic!("actual root client"));
+                            let mut admissions = Vec::new();
+                            for _ in 0..*increments {
+                                admissions.push(client.try_send(CounterMessage::Increment));
+                            }
+                            let read = client.try_send(CounterMessage::Read(client.recipient()));
+                            let value = client.receive().await;
+                            let stopped = application.request_shutdown();
+                            let report = application.lifecycle().retirement().await;
+                            let published =
+                                entered.send((admissions, read, value, stopped, report, client));
+                            let released = released.await;
+                            (increments, calls, published, released)
+                        }
+                    },
+                    Some(connection),
+                )
+                .unwrap_or_else(|_| panic!("entered Application host"));
+            let mut execution = Box::pin(execution);
+            let mut completed = None;
+            let mut parked = poll_fn(|context| {
+                if completed.is_none()
+                    && let Poll::Ready(output) = execution.as_mut().poll(context)
+                {
+                    completed = Some(output);
+                }
+                pin!(&mut parked).poll(context)
+            })
+            .await;
+            drop(execution);
+            let abandoned_release = release.send(());
+            let ((outcome, native, notifications), (joined, original_close)) =
+                tokio::join!(receiving, closing);
+            let mut tail = Vec::new();
+            if let Ok((_, _, _, _, _, client)) = &mut parked {
+                client.close_admission();
+                while let Some(original) = client.receive().await {
+                    tail.push(original);
+                }
+            }
+            let native_closed = session.is_closed();
+            let (admissions, read, value, stopped, report, _client) = parked.unwrap();
+            let ApplicationOutcome::Interrupted { cleanup } = outcome else {
+                panic!("dropping the actual parked execution must retain Interrupted");
+            };
+            assert!(cleanup.is_ok() && joined.is_ok());
+            assert!(matches!(original_close, Ok(Ok(()))));
+            assert!(native_closed && abandoned_release.is_err());
+            assert!(completed.is_none());
+            assert_eq!(calls.get(), 1);
+            assert!(admissions.iter().all(Result::is_ok) && read.is_ok() && stopped.is_ok());
+            assert_eq!(admissions.len(), 3);
+            let value = value.unwrap();
+            assert_eq!((value.from, value.message), (MailAddr::APPLICATION_ROOT, 3));
+            assert!(tail.is_empty());
+            assert_eq!(report.retirement(), RetirementAssessment::Established);
+            assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+            let notifications = notifications.unwrap();
+            assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+            let (origin, retirement) = native.unwrap();
+            assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+            assert_stopped_counter(retirement);
+        });
+}
+
+#[test]
+fn connection_custody_closes_after_unpolled_execution_without_consuming_cold_work() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let network = listening_counter_network();
+            let (connection, closing) = Connection::open(&network)
+                .await
+                .unwrap_or_else(|_| panic!("explicit private TLS connection"));
+            drop(network);
+            let session = connection.session().clone();
+            let closing = pin!(closing);
+            let calls = Rc::new(Cell::new(0));
+            let increments = Box::new(5_u64);
+            let allocation = ptr::from_ref(increments.as_ref());
+            let work = (increments, Rc::clone(&calls));
+            let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+                .execute_with_invocation(
+                    work,
+                    |(increments, calls), application| {
+                        calls.set(calls.get() + 1);
+                        async move {
+                            let mut client = application
+                                .export_client::<_, CounterValue>(
+                                    application.root().established_recipient(),
+                                )
+                                .unwrap_or_else(|_| {
+                                    panic!("actual original cold Application root")
+                                });
+                            let mut admissions = Vec::new();
+                            for _ in 0..*increments {
+                                admissions.push(client.try_send(CounterMessage::Increment));
+                            }
+                            let read = client.try_send(CounterMessage::Read(client.recipient()));
+                            let value = client.receive().await;
+                            let stopped = application.request_shutdown();
+                            let report = application.lifecycle().retirement().await;
+                            client.close_admission();
+                            let mut tail = Vec::new();
+                            while let Some(original) = client.receive().await {
+                                tail.push(original);
+                            }
+                            (
+                                increments, calls, admissions, read, value, stopped, report,
+                                client, tail,
+                            )
+                        }
+                    },
+                    Some(connection),
+                )
+                .unwrap_or_else(|_| panic!("entered Application host"));
+            drop(execution);
+            let ((outcome, unstarted_native, unstarted_notifications), (joined, original_close)) =
+                tokio::join!(receiving, closing);
+            let native_closed = session.is_closed();
+            let ApplicationOutcome::Unstarted {
+                application,
+                work: (increments, original_calls),
+            } = outcome
+            else {
+                panic!("unpolled execution returns original Application and Work");
+            };
+            let recovered_allocation = ptr::from_ref(increments.as_ref());
+            let calls_before_retry = original_calls.get();
+            let (execution, receiving) = application
+                .execute_with(move |application| {
+                    original_calls.set(original_calls.get() + 1);
+                    async move {
+                        let mut client = application
+                            .export_client::<_, CounterValue>(
+                                application.root().established_recipient(),
+                            )
+                            .unwrap_or_else(|_| panic!("returned original Application root"));
+                        let mut admissions = Vec::new();
+                        for _ in 0..*increments {
+                            admissions.push(client.try_send(CounterMessage::Increment));
+                        }
+                        let read = client.try_send(CounterMessage::Read(client.recipient()));
+                        let value = client.receive().await;
+                        let stopped = application.request_shutdown();
+                        let report = application.lifecycle().retirement().await;
+                        client.close_admission();
+                        let mut tail = Vec::new();
+                        while let Some(original) = client.receive().await {
+                            tail.push(original);
+                        }
+                        (
+                            increments,
+                            original_calls,
+                            admissions,
+                            read,
+                            value,
+                            stopped,
+                            report,
+                            client,
+                            tail,
+                        )
+                    }
+                })
+                .unwrap_or_else(|_| panic!("original cold inputs remain lawful"));
+            let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+            let (output, cleanup) = outcome
+                .try_into_completed()
+                .unwrap_or_else(|_| panic!("returned original Work inputs complete"));
+            let (
+                increments,
+                original_calls,
+                admissions,
+                read,
+                value,
+                stopped,
+                report,
+                _client,
+                tail,
+            ) = output;
+            assert!(joined.is_ok() && cleanup.is_ok());
+            assert!(matches!(original_close, Ok(Ok(()))));
+            assert!(native_closed && unstarted_native.is_err() && unstarted_notifications.is_err());
+            assert_eq!(allocation, recovered_allocation);
+            assert_eq!(ptr::from_ref(increments.as_ref()), allocation);
+            assert_eq!(*increments, 5);
+            assert_eq!(calls_before_retry, 0);
+            assert_eq!(calls.get(), 1);
+            assert!(Rc::ptr_eq(&calls, &original_calls));
+            assert!(admissions.iter().all(Result::is_ok) && read.is_ok() && stopped.is_ok());
+            assert_eq!(admissions.len(), 5);
+            let value = value.unwrap();
+            assert_eq!((value.from, value.message), (MailAddr::APPLICATION_ROOT, 5));
+            assert!(tail.is_empty());
+            assert_eq!(report.retirement(), RetirementAssessment::Established);
+            assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+            let notifications = notifications.unwrap();
+            assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+            let (origin, retirement) = native.unwrap();
+            assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+            assert_stopped_counter(retirement);
+        });
 }

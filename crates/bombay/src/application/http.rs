@@ -272,6 +272,8 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
+            #[cfg(feature = "remote")]
+            None,
         );
         let receiving = async move {
             let (work, root, termination_notification) = receiving.await;

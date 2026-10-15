@@ -70,6 +70,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         retirement: Observation<ActorRetirementReport>,
         allocations: ApplicationAddresses,
         families: Families,
+        #[cfg(feature = "remote")] session: Option<Session>,
     ) -> Self {
         Self {
             root,
@@ -78,7 +79,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
             allocations,
             families,
             #[cfg(feature = "remote")]
-            session: None,
+            session,
         }
     }
 
