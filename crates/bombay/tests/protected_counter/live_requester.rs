@@ -521,8 +521,7 @@ async fn live_read<Receipt>(
         (read, caller_native, caller_notifications, caller_cleanup, caller_closed, undeclared,
             remaining_queries, requests, legacy_values, publications, primed, stopped, report, target_address, scope)
     }).unwrap_or_else(|_| panic!("receiver Work host entry"));
-    let ((), outcome) =
-        tokio::join!(execution, receiving);
+    let ((), outcome) = tokio::join!(execution, receiving);
     let (outcome, receiver_native, receiver_notifications, ()) = outcome.into_parts();
     let (output, receiver_cleanup) = outcome
         .try_into_completed()

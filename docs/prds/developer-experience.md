@@ -2588,3 +2588,22 @@ Both independent final evidence reviews accept all eight raw log hashes, exact
 test/denial selections and615 frozen sources. Only this requirement evidence
 prose is added afterward; the tested Rust is unchanged. Existing generic
 retirement/receiver-state and first-sender inverse limits remain as recorded.
+
+Full c6590d7 Nix check exits1 after4761.443 seconds:23 of24 gates pass;
+protected-counter alone fails the isolated manifest's formatting check. Its
+actual live requester cases already pass both profiles. All609 source hashes,
+HEAD and clean status are conserved; NODE-INTEGRATED-FULL-NIX-AUDIT binds the
+24 declared outcomes, raw log hash and23 valid store paths. No signing or disk
+failure occurred. Normalize that one split join statement (+1/-2 test lines);
+runtime production, public surface and every action/assertion stay unchanged.
+The full check remains failed until fresh verification; do not transfer its
+23 passes to the newer SDK-callback candidate.
+Both independent source/evidence reviews confirm the exact whitespace-only
+repair and bounded23/1 result. Fresh selected protected-counter verification
+passes atb4a5e9e in424.968 seconds with609 unchanged source hashes and clean
+status: base53/public6/each hosting1/native Query3/live requester2 cases per
+profile, then isolated formatting and both strict lint commands. Grep echoes
+are not additional executions. Both evidence reviews pass. This is one repaired
+gate; the earlier full-flake result remains23/1, with no24-check rerun or credit
+for the newer actor-only candidate. NODE-INTEGRATED-PROTECTED-FORMAT-NIX binds
+the actual command, source maps and raw log hash.
