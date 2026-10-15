@@ -26,6 +26,7 @@ mod counter {
     use tokio::runtime::Builder;
     use tokio::sync::mpsc;
     use tokio::task::unconstrained;
+    use zenoh::handlers::FifoChannelHandler;
     use zenoh::query::Query;
     use zenoh::sample::Locality;
 
@@ -387,11 +388,11 @@ mod counter {
                             occupied.take(),
                             guarded_query.take(),
                         ));
-                        let reply = issued.as_ref().ok().map(|replies| replies.try_recv());
+                        let reply = issued.as_ref().ok().map(FifoChannelHandler::try_recv);
                         let guarded_reply = occupied_issuance
                             .as_ref()
                             .ok()
-                            .map(|replies| replies.try_recv());
+                            .map(FifoChannelHandler::try_recv);
                         (
                             observations,
                             before_count,

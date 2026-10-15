@@ -25,6 +25,7 @@ use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::mpsc;
 use tokio::task::unconstrained;
+use zenoh::handlers::FifoChannelHandler;
 use zenoh::query::Query;
 use zenoh::sample::Locality;
 
@@ -213,8 +214,8 @@ async fn cancelled_ledger_read<Receipt>(
                 let mut receiving = pin!(export.receive_native(b));
                 poll_fn(|cx| Poll::Ready(receiving.as_mut().poll(cx))).await
             };
-            let wakes = Arc::new(WakeCount(AtomicUsize::new(0)));
-            let waker = Waker::from(Arc::clone(&wakes));
+            let wake_count = Arc::new(WakeCount(AtomicUsize::new(0)));
+            let waker = Waker::from(Arc::clone(&wake_count));
             let mut query = None;
             let mut completed = None;
             let (pending_inputs, issued_query, query_ready) = {
@@ -238,7 +239,7 @@ async fn cancelled_ledger_read<Receipt>(
                 let mut receiving = pin!(unconstrained(export.receive(&mut query, &mut completed)));
                 let pending = receiving.as_mut().poll(&mut Context::from_waker(&waker));
                 // Exclude the collection's initial self-wake from the producer oracle.
-                let before = wakes.0.load(Ordering::SeqCst);
+                let before = wake_count.0.load(Ordering::SeqCst);
                 let appended = sender.send(LedgerCommand::Append(original)).await;
                 let fallback = if appended.is_err() {
                     Some(application.request_shutdown())
@@ -246,7 +247,7 @@ async fn cancelled_ledger_read<Receipt>(
                     None
                 };
                 let report = application.lifecycle().retirement().await;
-                let after = wakes.0.load(Ordering::SeqCst);
+                let after = wake_count.0.load(Ordering::SeqCst);
                 let ready = receiving.as_mut().poll(&mut Context::from_waker(&waker));
                 (pending, appended, fallback, report, before, after, ready)
             };
@@ -382,7 +383,7 @@ async fn cancelled_ledger_read<Receipt>(
     let refusal_count = refused_queries.len();
     // This readiness-only query has no reply policy; surrender its complete owners.
     drop((received_query, query, query_drain, refused_queries));
-    let query_reply = issued_query.as_ref().ok().map(|replies| replies.try_recv());
+    let query_reply = issued_query.as_ref().ok().map(FifoChannelHandler::try_recv);
     drop(session);
     let closed = node.close().await;
     // Observe both independent admissions and A cancellation only after full cleanup.

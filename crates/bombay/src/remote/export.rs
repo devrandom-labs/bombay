@@ -596,6 +596,10 @@ where
     }
 }
 
+#[expect(
+    clippy::option_option,
+    reason = "preserve no acquisition, acquired closure and acquired Query as separate facts"
+)]
 async fn receive_query(
     incoming: &mut mpsc::Receiver<(Query, OwnedSemaphorePermit)>,
     received: &mut Option<Option<(Query, OwnedSemaphorePermit)>>,

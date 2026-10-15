@@ -493,6 +493,7 @@ controls, intended inversions and exact-restored results in both profiles.
 Required Nix38726056219 executes406 remote cases per profile, workspace703/0/1
 and bounded Driver/Observe fuzz; conditional Miri is skipped. The separate
 concurrent-receive contribution remains unmerged: six current-source cuts fail
-their intended assertions in both profiles and the restored affected debug406
-passes. Optimized combined checks and its own delivery remain required.
+their intended assertions in both profiles. Restored affected406 passes in both
+profiles before lint-only corrections; final source passes fresh focused controls,
+strict workspace Clippy and formatting. Its own CI and delivery remain required.
 No full R01–R25, AUTH1 or NET1 obligation closes from these results.

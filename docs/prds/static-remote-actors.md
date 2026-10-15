@@ -26,10 +26,11 @@ qualified. Required run38726056219 passes, including406 remote cases per profile
 Conditional Miri is skipped. This new API is merged, not yet registry-published.
 
 The dependent concurrent receive contribution remains unmerged. Its three
-extended Counter/Ledger cases pass in both profiles; all six current-source cuts
-reach their intended assertions in both profiles, followed by exact restoration.
-The restored complete affected debug suite passes406; optimized and final
-delivery checks remain required. All full R01–R25, AUTH1 and NET1 gates,
+extended Counter/Ledger cases pass in both profiles; six causal cuts reach their
+intended assertions in both profiles, followed by exact restoration. Full affected
+commands pass406 per profile before lint-only corrections; the final source has
+fresh focused controls, strict workspace Clippy and formatting passing. Required
+CI and actual delivery remain pending. All full R01–R25, AUTH1 and NET1 gates,
 authenticated Node-owned exports and the separate remote-counter application
 remain open. These primitives do not establish complete remote support.
 See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
@@ -26219,3 +26220,83 @@ No copied CI executable or production identity proof is claimed.
 This delivers the scoped request-isolation primitive and its minimization,
 not a full remote acceptance row or registry publication. The concurrent-input
 branch must integrate this actual merged prerequisite before its own delivery.
+
+### Concurrent input — actual main integration and final lint finding
+
+The isolated unpublished branch now uses actual mergede2a4e7f3 as its base.
+Preserve its former complete checkpoint on local ref
+research/remote-coordination-before-main; no worktree or source copy was added.
+Replay the four branch-local commits on the exact merged tree. Full Git diff
+against preservedd89a44b returns0 after replay; resulting headbb2eb7e therefore
+retains every tested source and record byte. Earlier0f4e843 remains reachable
+through that preserved lineage. This is integration, not a scope reset.
+
+All six final test-source causal cuts execute in both profiles, with9 intended
+assertion failures and9 passing controls per profile,36 executions across three
+unique extended cases. Independent reviewa7341173/hash inventorydeb1127e seals
+the exact patches, inputs, results and Git restoration. The full affected debug
+command actually returns0 with406 passes across the same nine harnesses; the
+20 export cases are a subset, not additional unique cases. Optimized combined
+execution on the integrated head remains live.
+
+Workspace strict Clippy actually returns101 for one private receive_query
+parameter: nested Option encodes no acquisition, acquired channel closure, or
+an acquired Query/permit. The old public method and native retained field already
+use this exact product. Select a function-scoped expect(option_option) with that
+three-state reason, matching the existing owning representation. This adds four
+production annotation lines, no executable operation, type, dependency or API.
+Do not replace the product with a wrapper just to silence a lint. Wait for the
+current immutable optimized command to finish before editing its Rust input;
+then require strict Clippy and fresh focused debug/optimized controls. Preserve
+the earlier cut/combined evidence with its actual pre-annotation source hashes.
+
+Both full affected commands actually finish406/0/0 before the annotation; after
+that four-line annotation the fresh three focused cases pass in both profiles.
+The next strict pass resolves the production lint and exposes four test-style
+diagnostics: wakes/waker names and three redundant try_recv closures. Select
+the existing SDK FifoChannelHandler method directly with module-scope imports,
+and rename only the count owner to wake_count. Retain every actual method call,
+result classification, actor input and post-cleanup oracle. Expected at most12
+test introductions keeps the conservative421 stage bound within425. These are
+style corrections, not new semantics or permission for wider cleanup. Repeat
+strict checks and focused controls on their final source before submission.
+
+### Concurrent input — scoped minimization and submission checkpoint
+
+Final source135bc702/testsd53e29f2/2714adbc passes strict pinned workspace
+all-target Clippy with remote enabled, formatting, and three focused cases in
+both debug and optimized profiles. All commands actually return0, and all six
+source/manifest/lock hashes match again afterward. Before the four annotation
+lines and nine mechanical test introductions, both full affected commands
+actually execute406/0/0; the twelve causal-cut commands remain sealed to their
+actual earlier source bytes. Final review4e9676d9 preserves that distinction,
+accepts the equivalent method references/count rename and confirms all original
+oracles/ownership remain. Do not relabel older logs as final-byte executions.
+
+Scoped minimization retains the existing Export and request rows as owners.
+One inherent receive operation expresses the proved public borrowing gap;
+FuturesUnordered owns only the actual temporary waits, and the private functions
+share existing acquisition bodies. Counter and Ledger provide concrete public
+Application consumers. There is no new trait, wrapper, macro, erased future,
+task hierarchy, observation cell, public type, capacity policy or actor contract.
+The allocation/rebuild cost, finite native-first proof and still-unresolved
+shipping provider-borrow/admission seam remain explicit. This accepts this
+contribution's ownership/API minimization, not whole-PRD distillation.
+
+Against actual parent e2a4e7f3 this contribution has13 existing tracked paths:
+production Rust+101/-26/net75; tests+289/-15/net274; public API+0/-0 types.
+The manifest separately adds2/removes1 and both locks add one dependency edge;
+no package/version/checksum changes. Historical Rust-test introductions remain
+conservatively bounded418/425 after the exact nine-line style patch; formatting
+is check-only. The last independent review adds19 direct inspection lines and
+20 conservatively counted chronological prose lines, including its correction.
+No new controller/source owner is introduced by these mechanical fixes.
+
+Complete current endpoint against81dc1448:43 tracked differences, no untracked
+paths; production Rust+974/-2/net972, tests+8452/-13/net8439, public API+8/-0 types.
+The prior inline-unit178/3 classification is applied once. Carry the16000
+verification allowance,1100 net production,10 public types and109/110 allocated
+software slots, including five unresolved-history slots. Earlier unbounded
+historical extents are still unproved. This is new capability, not a reduction.
+Required CI on the submitted combined source, final execution review and actual
+PR delivery remain required; every full remote acceptance row remains open.

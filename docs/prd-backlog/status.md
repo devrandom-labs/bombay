@@ -57,8 +57,10 @@ merge ise2a4e7f3; its tree matches reviewed663ac970. Publication remains separat
 An isolated dependent contribution adds concurrent query/native
 receiving to the existing export: its three extended Counter/Ledger cases pass
 in debug and optimized profiles. All six current-source cuts reach intended
-assertions in both profiles; exact-restored affected debug406 passes. Optimized
-combined checks and final delivery remain required. These results do not change any
+assertions in both profiles; exact-restored affected406 passes in both profiles
+before lint-only corrections. Final source has fresh focused controls, strict
+workspace Clippy and formatting passing. Its own required CI and actual delivery
+remain required. These results do not change any
 full R01–R25, AUTH1 or NET1 state.
 
 An isolated test-only composition now runs two actual Nodes with both protocols
