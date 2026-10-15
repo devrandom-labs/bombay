@@ -1174,7 +1174,7 @@ accepted-prefix and rejection assertion unchanged. Expected test delta2/-2;
 production/API/bounds0. Both actual JSON journeys must pass before retaining the
 merge, with two reviews checking the complete original assertion bodies.
 
-Protected JSON merge result: current debug passes all26 tests across
+Protected JSON merge result at6cb42ef: current/MSRV debug/release each pass all26 tests across
 application_clients, node_borrowing, node_outcome, remote_json, sender_allocations
 and sender_sharing. All nine client/shutdown denials and all three Session-loan
 fixtures pass; both actual JSON receivers preserve their original custody oracles.
@@ -1186,5 +1186,11 @@ pre-merge head: upstream production+148/-0, DevX production+0/-0; tests+976/-0
 with exactly+2/-2 caller-line substitutions relative to upstream; public JSON
 Limits/Error are upstream additions, no DevX types. Both original-source counters,
 local capacity and typed retirement/authority laws are unchanged. Remaining:
-optimized/minimum-compiler matrix, strict lint/docs and final integrated Nix/archive
-gates; frozen2e21756 retains its own full-gate result.
+final integrated Nix/archive gates. Final workspace all-target/all-feature strict
+Clippy, warning-denied rustdoc and fmt pass; every frozen tracked source hash
+matches. Frozen2e21756 separately passes all24 native Nix gates in4860.772 seconds
+with unchanged source hashes and clean Git; its raw log names all24 successes.
+The delivery worktree now points to2e21756. A later cache inventory finds13 outputs
+present and11 absent, so continued artifact availability is not claimed. This
+full run predates sender storage, diagnostic tooling and JSON integration and
+does not certify their newer combined source. No prior signing/disk failure is waived.
