@@ -307,8 +307,40 @@ child presentation uses the existing `NativeChild` and sealed
 and actual native task context. The [completion and receiving tests](../crates/bombay/tests/completed_application_receiving.rs)
 exercise panicking host access, distinct actor/caller executors, original
 allocation return, and partial family-cleanup cancellation. Ordinary application
-assembly uses the generated topology above.
+assembly uses the generated topology above. A manual namespace that executes
+native actors also implements `NativeHost`, returning its selected `Runtime`
+by reference. Pure hosting metadata does not require that execution capability.
 
+## Application interpreters
+
+For application effects such as opening a file, keep the request in an explicit
+`Actions` lane. Its `ExternalRequest::Interpreter` names the concrete interpreter
+that owns the operation; its existing `ActionItem` and `InterpretItem` contracts
+retain the original request, acquired reply and complete rejection.
+
+A leaf application selects a constructor with
+`Application::new(actor).with_interpreter(factory)`. A function or closure can
+supply the constructor; named configuration implements `InterpreterFactory`.
+For a child graph, add `interpreter: Config;` to the existing `topology!`
+declaration and pass the configuration to `Topology::new(config)`. Root, fresh
+children, cold actors and Entity actors each receive their own interpreter.
+Their concrete service may be non-`Sync`; the shared constructor is `Send + Sync`.
+`Runtime` selects these native capabilities and construction, not an executor.
+
+Construction happens after successful pure initialization, before address
+commitment and initialization effects. Dropping and recreating a pending native
+activation preserves its original interpreter and initialization actions.
+Ordinary applications retain their standard capabilities without supplying a
+constructor. Even when the declared interpreter is `()`, custom requests require
+an explicit constructor; absence grants no custom interpretation capability.
+
+The [file/environment journeys](../crates/bombay/tests/application_services.rs),
+[configured descendants](../crates/bombay/tests/configured_descendants.rs) and
+[constructor failure tests](../crates/bombay/tests/interpreter_startup.rs) execute
+this path with complete rejection and retirement. The
+[unit interpreter tests](../crates/bombay/tests/interpreter_selection.rs) prove
+that explicit unit services can perform real IO while missing or wrongly owned
+interpreters remain statically denied.
 
 Use `ActorRetirement::completion()` to borrow the normal stop or exhaustion
 reason. Failure and owner cancellation return `None`; inspection leaves the

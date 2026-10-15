@@ -3,6 +3,7 @@ mod creation;
 mod delivery;
 pub(crate) mod observation;
 mod reports;
+pub(crate) mod services;
 pub(crate) mod timers;
 
 use crate::address::{ApplicationAddresses, MailAddr};
@@ -26,6 +27,7 @@ use core::future::Future;
 use core::marker::PhantomData;
 pub(crate) use reports::LocalTerminalReports;
 use reports::TerminalReportTransaction;
+use services::InterpreterStartup;
 use std::any::Any;
 use std::collections::HashMap;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -34,6 +36,7 @@ use std::time::Instant;
 use tokio::sync::oneshot;
 use tokio::task::{JoinError, coop};
 
+#[cfg(test)]
 impl<C, N, Bindings, Origins> ApplicationCapabilities<C, N, NoParent, Bindings, Origins>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -42,7 +45,22 @@ where
         inputs: ApplicationCapabilityInputs<C, N>,
         child_bindings: Bindings,
     ) -> Self {
+        Self::new_with_services(inputs, child_bindings, ())
+    }
+}
+
+impl<C, N, Bindings, Origins, Services>
+    ApplicationCapabilities<C, N, NoParent, Bindings, Origins, Services>
+where
+    C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+{
+    fn new_with_services(
+        inputs: ApplicationCapabilityInputs<C, N>,
+        child_bindings: Bindings,
+        services: Services,
+    ) -> Self {
         Self {
+            services,
             actor_spaces: inputs.actor_spaces,
             allocations: inputs.allocations,
             mailbox_capacity: inputs.mailbox_capacity,
@@ -63,15 +81,17 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins> ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Services>
+    ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
     fn with_parent<Parent>(
         self,
         parent_reports: Parent,
-    ) -> ApplicationCapabilities<C, N, Parent, Bindings, Origins> {
+    ) -> ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services> {
         ApplicationCapabilities {
+            services: self.services,
             actor_spaces: self.actor_spaces,
             allocations: self.allocations,
             mailbox_capacity: self.mailbox_capacity,
@@ -91,6 +111,56 @@ where
         }
     }
 
+    /// Dispose separately owned services before their native construction owner.
+    fn dispose(self, failures: &mut Vec<Box<dyn Any + Send>>) {
+        let ApplicationCapabilities {
+            services,
+            actor_spaces,
+            allocations,
+            mailbox_capacity,
+            address,
+            control,
+            timers,
+            observations,
+            next_local_source,
+            next_child_route,
+            operation_failures,
+            child_bindings,
+            activation_tasks,
+            exact_observations,
+            terminal_reports,
+            parent_reports,
+            origins,
+        } = self;
+        // Dispose actor-local services while their construction owner is still
+        // retained. Independent user destructors must never unwind together.
+        if let Err(payload) = catch_unwind(AssertUnwindSafe(|| drop(services))) {
+            failures.push(payload);
+        }
+        if let Err(payload) = catch_unwind(AssertUnwindSafe(|| {
+            drop((
+                actor_spaces,
+                allocations,
+                mailbox_capacity,
+                address,
+                control,
+                timers,
+                observations,
+                next_local_source,
+                next_child_route,
+                operation_failures,
+                child_bindings,
+                activation_tasks,
+                exact_observations,
+                terminal_reports,
+                parent_reports,
+                origins,
+            ));
+        })) {
+            failures.push(payload);
+        }
+    }
+
     fn inject_control_event<Control, Path>(&self, control: Control)
     where
         C::Event: InjectEvent<Control, Path>,
@@ -105,8 +175,8 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins> RetireCapabilities
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Services> RetireCapabilities
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: Send + 'static,
@@ -228,8 +298,8 @@ where
         // All original output lanes are acquired before this explicit disposal.
         // A user destructor may destroy its own consumed values; retain the
         // original native cause alongside the actual completed cleanup outputs.
-        if let Err(payload) = catch_unwind(AssertUnwindSafe(|| drop(capabilities.take()))) {
-            retirement.retirement_failures.push(payload);
+        if let Some(capabilities) = capabilities.take() {
+            capabilities.dispose(&mut retirement.retirement_failures);
         }
     }
 
@@ -252,6 +322,10 @@ where
 /// seam. It is not an application extension API.
 pub(crate) trait CommitActions<B: BehaviorSettlements<Ph = Never>> {
     type Retired;
+
+    /// Ensure actor-owned interpreters are ready before reservation or binding ACK.
+    /// Fully constructed interpreters already satisfy this operation.
+    fn initialize(&mut self) {}
 
     fn commit(
         &mut self,
@@ -323,9 +397,12 @@ impl<Capabilities> ActionInterpreter<Capabilities> {
     }
 }
 
-impl<B, Actor, Spaces, Parent, Bindings, Origins> CommitActions<B>
-    for ActionInterpreter<ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>>
+impl<B, Actor, Spaces, Parent, Bindings, Origins, Services> CommitActions<B>
+    for ActionInterpreter<
+        ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
+    >
 where
+    Services: InterpreterStartup<Spaces>,
     Actor: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     B: BehaviorSettlements<
             Ph = Never,
@@ -340,36 +417,43 @@ where
     BehaviorAddr<B>: Send,
     B::Birth: InterpretCreations<
             BehaviorAddr<B>,
-            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
+            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
             B::Event,
             behavior::Here,
         >,
     <B::Birth as behavior::BirthMode>::Child: Send,
     <B::Birth as CreationSettlements<BehaviorAddr<B>>>::Settlements: SourceSettlementCustody<
-            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
+            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
             B::Event,
             Custody = <B::Birth as CreationSettlements<BehaviorAddr<B>>>::SourceCustody,
         > + Send,
     <B::Sends as SendSettlements>::Settlements: SourceSettlementCustody<
-            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
+            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
             B::Event,
             Custody = <B::Sends as SendSettlements>::SourceCustody,
         > + Send,
     B::Sends: InterpretSends<
-            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
+            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
             B::Event,
             behavior::Here,
         > + Send,
     ActionSettlementOf<B>: SourceSettlementCustody<
-            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
+            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
             B::Event,
             Custody = B::SourceCustody,
         > + ClassifySettlement
         + Send,
-    ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>:
+    ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>:
         RetireCapabilities<Event = B::Event> + TerminalReportTransaction + Send,
 {
-    type Retired = <ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins> as RetireCapabilities>::Descendants;
+    type Retired = <ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services> as RetireCapabilities>::Descendants;
+
+    fn initialize(&mut self) {
+        let capabilities = self.capabilities_mut();
+        capabilities
+            .services
+            .initialize(capabilities.actor_spaces.as_ref());
+    }
 
     async fn commit(
         &mut self,
@@ -408,18 +492,18 @@ where
         progress: &mut Option<SourceProgress<ActionSettlementOf<B>, B::SourceCustody>>,
     ) {
         <ActionSettlementOf<B> as SourceSettlementCustody<
-            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
+            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
             B::Event,
         >>::prepare_source(progress);
         if let Some(SourceProgress::Offering(custody)) = progress {
             <ActionSettlementOf<B> as SourceSettlementCustody<
-                ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
+                ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
                 B::Event,
             >>::offer_next_to_source(custody, self.capabilities_mut())
             .await;
         }
         <ActionSettlementOf<B> as SourceSettlementCustody<
-            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins>,
+            ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services>,
             B::Event,
         >>::finish_source(progress);
     }
@@ -438,10 +522,10 @@ where
 
     async fn receive_retirement(
         interpreter: &mut Option<Self>,
-        received: &mut Option<CapabilityRetirement<B::Event, <ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins> as RetireCapabilities>::Descendants>>,
+        received: &mut Option<CapabilityRetirement<B::Event, <ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services> as RetireCapabilities>::Descendants>>,
     ) where
         B::Event: Send,
-        <ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins> as RetireCapabilities>::Descendants: Send,
+        <ApplicationCapabilities<Actor, Spaces, Parent, Bindings, Origins, Services> as RetireCapabilities>::Descendants: Send,
 {
         let Some(owner) = interpreter.as_mut() else {
             return;
@@ -489,10 +573,12 @@ pub(crate) struct ApplicationCapabilities<
     P = NoParent,
     Bindings = NoChildBindings,
     Origins = StructuralOrigins<C>,
+    Services = (),
 > where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
     actor_spaces: Arc<N>,
+    services: Services,
     allocations: ApplicationAddresses,
     mailbox_capacity: MailboxCapacity,
     address: MailAddr,

@@ -25,12 +25,31 @@ pub use work::WorkOutcome;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::entity::EntityDefinition;
 use crate::launch::ActorSpace;
+use crate::{InterpreterFactory, Runtime};
 use behavior::{Behavior, Never, Protocol};
 
 impl<Root> Application<Root, ActorSpace<Root::Protocol>>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
+    /// Add actor-owned external interpreters beside standard local capabilities.
+    /// The constructor is borrowed after pure initialization, before commitment
+    /// or effects. Each actor owns its constructed service; retirement never
+    /// invokes the constructor.
+    #[must_use]
+    pub fn with_interpreter<F: InterpreterFactory>(
+        self,
+        factory: F,
+    ) -> Application<Root, (ActorSpace<Root::Protocol>, Runtime<F>)> {
+        Application {
+            root: self.root,
+            spaces: (self.spaces, Runtime::with_interpreter(factory)),
+            members: self.members,
+            families: self.families,
+            scope: self.scope,
+        }
+    }
+
     /// Declare one concrete root behavior in its local protocol space.
     #[must_use]
     pub fn new(root: Root) -> Self {

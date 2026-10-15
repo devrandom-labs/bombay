@@ -32,7 +32,8 @@ use bombay::entity::{
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationBehavior,
     ApplicationCleanupError, ApplicationDefinitionError, ApplicationStagingError, ChildFailure,
-    ChildOrigin, ProjectTerminal, RetirementAssessment, RootOrigin, WorkOutcome,
+    ChildOrigin, NativeHost, ProjectTerminal, RetirementAssessment, RootOrigin, Runtime,
+    WorkOutcome,
 };
 use bombay::{
     ActorSpace, Application, ApplicationTopology, EstablishNativeChild, Hosts, MailAddr,
@@ -3127,6 +3128,14 @@ struct HostAccountSpaces {
     accounts: ActorSpace<ReceivingAccount>,
 }
 
+impl NativeHost for HostAccountSpaces {
+    type Runtime = Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: Runtime = Runtime::new();
+        &RUNTIME
+    }
+}
+
 impl HostAccountSpaces {
     fn new() -> Self {
         Self {
@@ -3884,6 +3893,14 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
 struct UnwindingAccountSpaces {
     accounts: ActorSpace<ReceivingAccount>,
     hosting_failure: Mutex<Option<Box<dyn Any + Send>>>,
+}
+
+impl NativeHost for UnwindingAccountSpaces {
+    type Runtime = Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: Runtime = Runtime::new();
+        &RUNTIME
+    }
 }
 
 impl Hosts<ReceivingAccount> for UnwindingAccountSpaces {

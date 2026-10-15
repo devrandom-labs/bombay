@@ -8,7 +8,7 @@ use bombay::prelude::{Completion, Exit, MailAddr, StopOnShutdown};
 use bombay::routing::{WorkQueue, WorkQueueMessage, WorkQueueOutcome, WorkQueueRejection};
 use bombay::{
     ActorNotificationReceipts, ActorSpace, ApplicationCleanupError, ApplicationTopology,
-    RootRegistration, WorkOutcome,
+    NativeHost, RootRegistration, Runtime, WorkOutcome,
 };
 use core::future::{Future, poll_fn};
 use core::task::Poll;
@@ -29,6 +29,14 @@ type Queue = WorkQueue<
 struct QueueRegistration {
     queues: ActorSpace<Queue>,
     failure: Mutex<Option<String>>,
+}
+
+impl NativeHost for QueueRegistration {
+    type Runtime = Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: Runtime = Runtime::new();
+        &RUNTIME
+    }
 }
 
 impl RootRegistration<Queue> for QueueRegistration {

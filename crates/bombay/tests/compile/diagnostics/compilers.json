@@ -11,7 +11,7 @@
       "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
     }
   },
-  "patch_sha256": "ec071a38e82838465cd1337672d9d5b792a9a7333869a2d106993ee096547839",
+  "patch_sha256": "3b5bd9722867dfda3767bc3186ec2c822ceee27669c1892be2028ebb42dbce4d",
   "snapshots": {
     "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
       "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
@@ -19,7 +19,7 @@
       "fixture_sha256": "90c6c3f3987b27f8ce4282d974604f840b13150854f33276b27c1df301a4eb59"
     },
     "crates/bombay/tests/compile/fail/topology_duplicate_roles.stderr": {
-      "canonical_sha256": "5350d460f7c9160a4d76873015987ea01e7a3b19e03273f576b4d660a7f7e546",
+      "canonical_sha256": "8f03cd257435f412d429c496eed0a7f2b3f8f44cb1ec87286119ae5b1383c3f8",
       "minimum_sha256": "73b6893c117e50ccdb8e7bca7349b56127a69b7a3fea4a637302a0ad2be65244",
       "fixture_sha256": "06ccc8b704c338d0c5e316fc050b42780207e43cf1174628362be0d4113249fd"
     },
@@ -29,8 +29,8 @@
       "fixture_sha256": "0c422e499e5b2a1f83190b127fcb1495c6c1a8b44eeb55355e6632c7b5ae3d88"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr": {
-      "canonical_sha256": "4b72519459833d37b51b20207c482ad9e812d87f7d37d3dedf58df70fb33defa",
-      "minimum_sha256": "fa523d5d00895b394e8316c0952fd06959de79becbf2447b46edd6d539312a04",
+      "canonical_sha256": "381298fd1fb41be7b6e19c234c3e039d9840fdb7eb6ff19068098043c7bc3058",
+      "minimum_sha256": "485a75c8eeb2c94bf20ae3b70972ed4152bf3b835cc7de6af0ce1747451b73cc",
       "fixture_sha256": "b734feaa270862259d11afbd438fb0abc226a4a65369dba2d4bdf500d0046824"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_forged_position.stderr": {
@@ -54,7 +54,7 @@
       "fixture_sha256": "f07f122b9853377b3b07fcf48db3f5f1bac6a8a9d92a50064f7486284a278860"
     },
     "crates/bombay/tests/compile/fail/topology_swapped_roles.stderr": {
-      "canonical_sha256": "cab3fdbd8ebf52c444beaecf5118792bc1e20888ec2f267312d0ac5a37c7f590",
+      "canonical_sha256": "dcd9df98c886e4e83d3754bab6b428565ea213458a0f7607e722290944440bf5",
       "minimum_sha256": "48d6eeea1102f65b78d7c71102dc6a16e8a5a0dbc799f408ff65706a3185ae2d",
       "fixture_sha256": "6beed97507e989884df13c1a04df721a820f962af81a1059c8d0644414619179"
     },
@@ -68,6 +68,8 @@
     "tests/compile/fail/axum_wrong_root_protocol.rs",
     "tests/compile/fail/discarded_actor_policy_and_terminal.rs",
     "tests/compile/fail/fluent_template_order_is_static.rs",
+    "tests/compile/fail/interpreter_missing.rs",
+    "tests/compile/fail/interpreter_owner.rs",
     "tests/compile/fail/stash_requires_closed_phase.rs",
     "tests/compile/fail/stash_requires_infallible_error.rs",
     "tests/compile/fail/topology_duplicate_roles.rs",
@@ -109,12 +111,14 @@
     "topology_rejects_invalid_entity_class_sources",
     "axum_protocol_inversion_is_compile_checked",
     "behavior_layer_authoring_contract",
-    "worker_factory_rejects_invalid_capabilities"
+    "worker_factory_rejects_invalid_capabilities",
+    "native_interpreter_rejects_absence_and_wrong_owner"
   ],
   "targets": {
     "application_topology": 18,
     "axum": 7,
     "template_authoring": 1,
-    "worker_factory": 4
+    "worker_factory": 4,
+    "interpreter_selection": 2
   }
 }

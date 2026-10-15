@@ -1,4 +1,6 @@
+use super::services::{NativeCapabilities, NativeConstruction};
 use crate::ActorExecutionOutcome;
+use crate::NativeHost;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::MailboxCapacity;
 use crate::launch::{
@@ -11,7 +13,7 @@ use crate::local::children::{
 use crate::local::effects::reports::LocalParentReports;
 use crate::local::effects::{
     ActionInterpreter, ApplicationCapabilities, ApplicationCapabilityInputs, BindingTerminal,
-    CommitActions, NoParent,
+    CommitActions,
 };
 use crate::local::endpoint::InstalledActor;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
@@ -37,9 +39,9 @@ use core::marker::PhantomData;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-impl<C, N, P, Bindings, Origins, New, RootEvent, Path>
+impl<C, N, P, Bindings, Origins, New, RootEvent, Path, Services>
     InterpretItem<Creations<CreateChild<MailAddr, New>>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     New: Send,
@@ -91,8 +93,8 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Source, Input> SourceAdmission<C::Event, Source, Input>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Source, Input, Services> SourceAdmission<C::Event, Source, Input>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: EventIngress<Source, Input>,
@@ -331,7 +333,8 @@ where
     C: BehaviorBase + Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: Send + 'static,
     BehaviorMessage<C>: Send,
-    N: Send + Sync + 'static,
+    N: NativeHost + Send + Sync + 'static,
+    N::Runtime: NativeConstruction,
     <Child::Birth as BirthMode>::Child: behavior::ChildOccurrenceProduct<
             crate::local::children::RuntimeChildBindings<
                 Descendants,
@@ -358,7 +361,7 @@ where
         > + Send
         + 'static,
     ActionInterpreter<
-        ApplicationCapabilities<
+        NativeCapabilities<
             Child,
             N,
             LocalParentReports<C::Event, Child, C::Birth>,
@@ -431,13 +434,12 @@ where
             move |control, terminal_reports, timers, observations| {
                 let bindings = NestedBindings::<Child, Descendants>::new_in(actor_spaces.as_ref());
                 ActionInterpreter::new(
-                    ApplicationCapabilities::<
+                    <N::Runtime as NativeConstruction>::capabilities::<
                         Child,
                         N,
-                        NoParent,
                         NestedBindings<Child, Descendants>,
                         StructuralOrigins<Child::Base>,
-                    >::new_with_bindings(
+                    >(
                         ApplicationCapabilityInputs {
                             address,
                             actor_spaces,
@@ -898,8 +900,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Position, Child, Descendants> EstablishChild<Position, Child>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Position, Child, Descendants, Services>
+    EstablishChild<Position, Child>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + BehaviorBase,
     Child:
@@ -949,9 +952,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path>
+impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path, Services>
     InterpretItem<BeginActivation<Worker, Plan>, C::Event, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<WorkerActivation<Worker, Plan>, Path> + Send + 'static,
@@ -999,9 +1002,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Source, Role, Worker, Plan, RootEvent, Path>
+impl<C, N, P, Bindings, Origins, Source, Role, Worker, Plan, RootEvent, Path, Services>
     InterpretItem<PrepareWorkers<Source, Role, Worker, Plan>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<WorkerPreparation<Source, Role, Worker, Plan>, Path> + Send + 'static,
@@ -1112,7 +1115,7 @@ mod child_projection_panic {
     };
     use crate::{
         ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport, ActorSpace,
-        ActorSpaces, LedgerProtocol, RetirementAssessment, ShutdownLedger,
+        ActorSpaces, LedgerProtocol, NativeHost, RetirementAssessment, Runtime, ShutdownLedger,
     };
 
     type ProjectionCustody = (oneshot::Sender<(Id, ChildTerminal)>, Box<dyn Any + Send>);
@@ -1210,6 +1213,14 @@ mod child_projection_panic {
     #[derive(ActorSpaces)]
     struct ProjectionSpaces {
         parents: ActorSpace<ProjectionParent>,
+    }
+
+    impl NativeHost for ProjectionSpaces {
+        type Runtime = Runtime;
+        fn runtime(&self) -> &Self::Runtime {
+            const RUNTIME: Runtime = Runtime::new();
+            &RUNTIME
+        }
     }
 
     impl RetirementSchema for ChildTerminal {
@@ -1410,6 +1421,14 @@ mod child_projection_panic {
     )]
     struct LedgerSpaces {
         creators: ActorSpace<LedgerCreator>,
+    }
+
+    impl NativeHost for LedgerSpaces {
+        type Runtime = Runtime;
+        fn runtime(&self) -> &Self::Runtime {
+            const RUNTIME: Runtime = Runtime::new();
+            &RUNTIME
+        }
     }
 
     impl RetirementSchema for LedgerChildRetirement {

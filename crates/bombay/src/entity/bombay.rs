@@ -1,5 +1,8 @@
 //! Native binding from Entity lifecycle effects to Bombay incarnations.
 
+use crate::NativeHost;
+use crate::local::effects::services::{NativeCapabilities, NativeConstruction};
+
 use crate::terminal::RetirementSchema;
 use core::future::Future;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -22,8 +25,8 @@ use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::local::effects::CommitActions;
+use crate::local::effects::NoParent;
 use crate::local::effects::{ActionInterpreter, ActionSettlementOf};
-use crate::local::effects::{ApplicationCapabilities, NoParent};
 use crate::local::endpoint::{ActorRef, request_actor_shutdown};
 use crate::topology::Hosts;
 use crate::{ActorRetirement, ActorRetirementReport};
@@ -34,7 +37,7 @@ use super::{
     RetirementMode,
 };
 
-type NativeEntityCapabilities<B, N, Terminal> = ApplicationCapabilities<
+type NativeEntityCapabilities<B, N, Terminal> = NativeCapabilities<
     B,
     Arc<N>,
     NoParent,
@@ -87,7 +90,8 @@ where
             RuntimeChildBindings<Terminal, StructuralOrigins<<B as BehaviorBase>::Base>>,
         > + Send
         + 'static,
-    N: Hosts<B::Protocol> + Send + Sync + 'static,
+    N: Hosts<B::Protocol> + NativeHost + Send + Sync + 'static,
+    N::Runtime: NativeConstruction,
     ChildBindings<B, Terminal, StructuralOrigins<<B as BehaviorBase>::Base>>: ChildBindingsIn<B, Arc<N>>
         + RetireChildTasks<Root = Terminal, Failures = ChildFailures>
         + Send
@@ -120,7 +124,7 @@ where
                     Terminal,
                     StructuralOrigins<<B as BehaviorBase>::Base>,
                 >::new_in(&self);
-                ActionInterpreter::new(ApplicationCapabilities::new_with_bindings(
+                ActionInterpreter::new(<N::Runtime as NativeConstruction>::capabilities(
                     crate::local::effects::ApplicationCapabilityInputs {
                         address,
                         actor_spaces: Arc::new(self),

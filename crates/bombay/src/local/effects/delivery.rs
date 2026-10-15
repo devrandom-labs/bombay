@@ -22,9 +22,9 @@ use core::convert::Infallible;
 use core::future::Future;
 use std::time::Instant;
 
-impl<C, N, P, Bindings, Origins, Target, RootEvent, Path>
+impl<C, N, P, Bindings, Origins, Target, RootEvent, Path, Services>
     InterpretItem<Delivery<Target>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr>,
@@ -78,9 +78,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Target, RootEvent, Path>
+impl<C, N, P, Bindings, Origins, Target, RootEvent, Path, Services>
     InterpretItem<EstablishedDelivery<Target>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr>,
@@ -122,9 +122,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path>
+impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path, Services>
     InterpretItem<CustomerDelivery<Target>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr>,
@@ -259,9 +259,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path>
+impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path, Services>
     InterpretItem<DiagnosticAction<Recipient<Target>, Target::Msg>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr>,
@@ -335,9 +335,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path>
+impl<C, N, Parent, Bindings, Origins, Target, RootEvent, Path, Services>
     InterpretItem<DiagnosticAction<EstablishedRecipient<Target>, Target::Msg>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr>,
@@ -410,9 +410,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Diagnostic, RootEvent, Path>
+impl<C, N, Parent, Bindings, Origins, Diagnostic, RootEvent, Path, Services>
     InterpretItem<DiagnosticAction<Infallible, Diagnostic>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Diagnostic: Send,
@@ -450,9 +450,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Target, Occurrence, RootEvent, Path>
+impl<C, N, P, Bindings, Origins, Target, Occurrence, RootEvent, Path, Services>
     InterpretItem<ChildDelivery<Target, Occurrence>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
     Target: Protocol<Addr = MailAddr>,
@@ -519,9 +519,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Child, Source, Input, Occurrence, RootEvent, Path>
+impl<C, N, P, Bindings, Origins, Child, Source, Input, Occurrence, RootEvent, Path, Services>
     InterpretItem<ChildInput<Child, Source, Input, Occurrence>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
         + ResolveChildOccurrence<Occurrence, Child = Child>,
@@ -594,8 +594,8 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Worker, Plan> ProxyControlAdmission<Worker, Plan>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+impl<C, N, Parent, Bindings, Origins, Worker, Plan, Services> ProxyControlAdmission<Worker, Plan>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
         + ResolveChildOccurrence<ChildHead, Child = StableProxy<Worker, Plan>>,
@@ -659,9 +659,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Worker, Plan, RootEvent, Path>
+impl<C, N, Parent, Bindings, Origins, Worker, Plan, RootEvent, Path, Services>
     InterpretItem<ProxyOperation<Here, Worker, Plan>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Worker: Behavior<Protocol: Protocol<Addr = MailAddr>> + Send,
@@ -695,9 +695,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Target, Job, RootEvent, Path>
+impl<C, N, Parent, Bindings, Origins, Target, Job, RootEvent, Path, Services>
     InterpretItem<AssignWorker<Target, Job>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr, Msg = Assignment<Job>>,
@@ -725,9 +725,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path>
+impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path, Services>
     InterpretItem<InitializeWorker<Worker, Plan>, C::Event, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<WorkerInitializationReport<Worker, Plan>, Path>,
@@ -774,8 +774,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, D, Path> InterpretItem<EntityAdmission<D>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, D, Path, Services>
+    InterpretItem<EntityAdmission<D>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     D: EntityDefinition,

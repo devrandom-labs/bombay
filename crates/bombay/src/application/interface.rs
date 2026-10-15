@@ -1162,7 +1162,7 @@ mod installed_shutdown_contract {
     use tokio::sync::oneshot;
     use tokio::time::{Duration, timeout};
 
-    use crate::{LedgerProtocol, ShutdownLedger};
+    use crate::{LedgerProtocol, NativeHost, Runtime, ShutdownLedger};
     #[tokio::test]
     #[expect(
         clippy::too_many_lines,
@@ -1414,6 +1414,14 @@ mod installed_shutdown_contract {
         actors: ActorSpace<LedgerProtocol>,
         disposal: LedgerSpaceDisposal,
         retired_spaces: Arc<AtomicUsize>,
+    }
+
+    impl NativeHost for RetiringLedgerSpace {
+        type Runtime = Runtime;
+        fn runtime(&self) -> &Self::Runtime {
+            const RUNTIME: Runtime = Runtime::new();
+            &RUNTIME
+        }
     }
 
     impl Hosts<LedgerProtocol> for RetiringLedgerSpace {

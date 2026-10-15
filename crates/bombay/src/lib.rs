@@ -46,6 +46,7 @@ mod application;
 pub mod entity;
 mod launch;
 mod local;
+pub use local::effects::services::{ExternalRequest, InterpreterFactory, NativeHost, Runtime};
 #[allow(
     dead_code,
     reason = "Bombay uses pair publication while this same private source retains the separately verified keyed Observe API"

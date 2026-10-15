@@ -11,8 +11,8 @@ use core::future::Future;
 use core::mem;
 use tokio::sync::oneshot;
 
-impl<C, N, P, Bindings, Origins> TerminalReportTransaction
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Services> TerminalReportTransaction
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
@@ -21,8 +21,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Report, Path> InterpretItem<ReportToParent<Report>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Report, Path, Services>
+    InterpretItem<ReportToParent<Report>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     P: ParentReporting<Report> + Send,
@@ -60,9 +61,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Path>
+impl<C, N, P, Bindings, Origins, Path, Services>
     InterpretItem<ReportTerminalOutcome<MailAddr>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Self: Send,
@@ -95,8 +96,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Plan, Path> InterpretItem<ReportShutdownPlan<Plan>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Plan, Path, Services>
+    InterpretItem<ReportShutdownPlan<Plan>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: EventIngress<Here, InstallShutdownPlan<Plan>>,

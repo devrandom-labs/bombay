@@ -1,4 +1,5 @@
 use super::{ApplicationScope, MailboxCapacity};
+use crate::NativeHost;
 use crate::address::MailAddr;
 use crate::application::composition::ComposeApplication;
 use crate::application::execution::{
@@ -10,6 +11,7 @@ use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::local::effects::CommitActions;
+use crate::local::effects::services::NativeConstruction;
 use crate::terminal::{ActorRetirement, RetirementSchema, RootOrigin};
 use crate::topology::{ApplicationTopology, RootRegistration};
 use behavior::{
@@ -99,7 +101,8 @@ where
         ((Self, Router, SocketAddr), TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -329,7 +332,8 @@ where
         ((Self, Router, SocketAddr), TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>

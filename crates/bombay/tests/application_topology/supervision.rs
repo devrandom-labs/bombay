@@ -6,8 +6,8 @@ use bombay::WorkOutcome;
 use bombay::atomic::{FixedSupervisor, StableProxy};
 use bombay::behavior::{Behavior, BirthMode, ChildHead, CreationKind};
 use bombay::{
-    ApplicationTopology, ChildFailure, ChildOrigin, Hosts, NativeChild, ProjectTerminal,
-    RetirementSchema, RootRegistration,
+    ApplicationTopology, ChildFailure, ChildOrigin, Hosts, NativeChild, NativeHost,
+    ProjectTerminal, RetirementSchema, RootRegistration, Runtime,
 };
 use core::convert::Infallible;
 use core::time::Duration;
@@ -143,6 +143,7 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
         + Send
         + 'static,
     Spaces: ApplicationTopology<ManagedSupervisor, (), Descendants = RootDescendants>
+        + NativeHost<Runtime = Runtime>
         + RootRegistration<<ManagedSupervisor as Behavior>::Protocol>
         + Hosts<Status>
         + Hosts<Capability>

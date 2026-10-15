@@ -8,7 +8,7 @@
 use bombay::behavior::{Behavior, ChildCons, ChildHead, NoChildren};
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport,
-    RetirementAssessment, RetirementSchema,
+    NativeHost, RetirementAssessment, RetirementSchema, Runtime,
 };
 use bombay::{
     ApplicationBehavior, ApplicationTopology, ChildFailure, ChildOrigin, Hosts, NativeChild,
@@ -191,6 +191,7 @@ fn run_cold_account_family<Spaces, Descendants>(
         + Send
         + 'static,
     Spaces: ApplicationTopology<ManagedRoot, ColdMembers, Descendants = Descendants>
+        + NativeHost<Runtime = Runtime>
         + RootRegistration<<Root as Behavior>::Protocol>
         + Hosts<<Account as Behavior>::Protocol>
         + NativeChild<ColdApplication, ChildHead, ManagedAccount, Descendants, Never>,

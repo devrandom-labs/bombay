@@ -3,11 +3,13 @@
 use super::composition::ComposeApplication;
 use super::execution::RootInterpreter;
 use super::{Application, ApplicationHandle, ApplicationOutcome, ApplicationScope, WorkOutcome};
+use crate::NativeHost;
 use crate::address::MailAddr;
 use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::local::effects::CommitActions;
+use crate::local::effects::services::NativeConstruction;
 use crate::remote::startup::{NodeStartupRefusal, check_node_configuration};
 use crate::terminal::{ActorRetirement, RetirementSchema, RootOrigin};
 use crate::topology::{ApplicationTopology, RootRegistration};
@@ -227,7 +229,8 @@ where
         NodeExecutionRefusal<Work>,
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -339,7 +342,8 @@ where
         NodeExecutionRefusal<Work>,
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>

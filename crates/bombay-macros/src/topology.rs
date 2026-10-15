@@ -11,6 +11,7 @@ pub(crate) struct TopologyDeclaration {
     hosts: Vec<LogicalHost>,
     members: Vec<TopologyChild>,
     families: Vec<EntityFamily>,
+    interpreter: Option<Type>,
 }
 
 struct ActorClass {
@@ -51,6 +52,7 @@ impl Parse for TopologyDeclaration {
         let mut hosts = Vec::new();
         let mut members = Vec::new();
         let mut families = Vec::new();
+        let mut interpreter = None;
         while !content.is_empty() {
             let name: Ident = content.parse()?;
             if name == "families" && content.peek(syn::token::Brace) {
@@ -98,6 +100,22 @@ impl Parse for TopologyDeclaration {
             } else {
                 None
             };
+            if name == "interpreter" && content.peek(Token![;]) {
+                let Some(configuration) = behavior else {
+                    return Err(Error::new_spanned(
+                        name,
+                        "interpreter requires its configuration type",
+                    ));
+                };
+                if interpreter.replace(configuration).is_some() {
+                    return Err(Error::new_spanned(
+                        name,
+                        "one interpreter configuration per topology",
+                    ));
+                }
+                content.parse::<Token![;]>()?;
+                continue;
+            }
             let role_parent = if content.peek(Token![for]) {
                 content.parse::<Token![for]>()?;
                 Some(content.parse()?)
@@ -142,6 +160,7 @@ impl Parse for TopologyDeclaration {
             hosts,
             members,
             families,
+            interpreter,
         };
         declaration.validate()?;
         Ok(declaration)
@@ -389,6 +408,11 @@ impl TopologyDeclaration {
                 }
             })
             .collect();
+        let interpreter = self.interpreter.as_ref().map(|declared| {
+            let name = format_ident!("__BombayTopology_{}_{}", self.name, aliases.len());
+            aliases.push(quote!(#[allow(non_camel_case_types)] type #name = #declared;));
+            syn::parse_quote!(super::#name)
+        });
         let resolved = Self {
             visibility: self.visibility.clone(),
             name: self.name.clone(),
@@ -396,9 +420,30 @@ impl TopologyDeclaration {
             hosts,
             members,
             families,
+            interpreter,
         };
         let expansion = resolved.expand_resolved(bombay);
         quote!(#(#aliases)* #expansion)
+    }
+
+    fn runtime(&self, bombay: &TokenStream) -> (Ident, TokenStream, TokenStream, TokenStream) {
+        let mut field = format_ident!("__bombay_runtime");
+        while self.hosts.iter().any(|host| host.name == field) {
+            field = format_ident!("_{}", field);
+        }
+        let (runtime, parameters, constructor) = match &self.interpreter {
+            Some(configuration) => (
+                quote!(#bombay::Runtime<#configuration>),
+                quote!(configuration: #configuration),
+                quote!(#bombay::Runtime::with_interpreter(configuration)),
+            ),
+            None => (
+                quote!(#bombay::Runtime),
+                TokenStream::new(),
+                quote!(#bombay::Runtime::new()),
+            ),
+        };
+        (field, runtime, parameters, constructor)
     }
 
     fn caller_visibility(&self) -> Visibility {
@@ -1019,9 +1064,14 @@ impl TopologyDeclaration {
         let all_generics = generic_tokens(&all_parameters);
         let all_bounds = parameter_bounds(&all_parameters);
         let root_descendants = schema_tokens(&root.name);
+        let (runtime_field, runtime, parameters, constructor) = self.runtime(bombay);
         quote!(#visibility mod #name {
-            #caller_visibility struct Topology { root: #bombay::ActorSpace<#root_protocol>, #(#fields,)* }
-            impl Topology { #caller_visibility fn new() -> Self { Self { root: #bombay::ActorSpace::new(), #(#constructors,)* } } }
+            #caller_visibility struct Topology { root: #bombay::ActorSpace<#root_protocol>, #runtime_field: #runtime, #(#fields,)* }
+            impl Topology { #caller_visibility fn new(#parameters) -> Self { Self { root: #bombay::ActorSpace::new(), #runtime_field: #constructor, #(#constructors,)* } } }
+            impl #bombay::NativeHost for Topology {
+                type Runtime = #runtime;
+                fn runtime(&self) -> &Self::Runtime { &self.#runtime_field }
+            }
             impl #bombay::RootRegistration<#root_protocol> for Topology { fn root_space(&self) -> &#bombay::ActorSpace<#root_protocol> { &self.root } }
             #(#hosting)* #(#expansions)*
             impl #all_generics #bombay::ApplicationTopology<OriginalRoot, #members> for Topology where #all_bounds { type Descendants = #root_descendants; }
@@ -1090,16 +1140,22 @@ impl TopologyDeclaration {
         let visibility = &self.visibility;
         let name = &self.name;
         let caller_visibility = self.caller_visibility();
+        let (runtime_field, runtime, parameters, constructor) = self.runtime(bombay);
         quote! {
             #visibility mod #name {
                 #caller_visibility struct Topology #scope_generics #scope_bounds {
                     root: #bombay::ActorSpace<#root_protocol>,
+                    #runtime_field: #runtime,
                     #(#fields,)*
                 }
                 impl #scope_generics #scope #scope_bounds {
-                    #caller_visibility fn new() -> Self {
-                        Self { root: #bombay::ActorSpace::new(), #(#constructors,)* }
+                    #caller_visibility fn new(#parameters) -> Self {
+                        Self { root: #bombay::ActorSpace::new(), #runtime_field: #constructor, #(#constructors,)* }
                     }
+                }
+                impl #scope_generics #bombay::NativeHost for #scope #scope_bounds {
+                    type Runtime = #runtime;
+                    fn runtime(&self) -> &Self::Runtime { &self.#runtime_field }
                 }
                 impl #scope_generics #bombay::RootRegistration<#root_protocol> for #scope #scope_bounds {
                     fn root_space(&self) -> &#bombay::ActorSpace<#root_protocol> { &self.root }

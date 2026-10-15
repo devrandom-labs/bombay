@@ -167,3 +167,10 @@ async fn explicit_unit_interpreter_performs_real_io_and_retains_complete_rejecti
     assert!(matches!(item.access, FileAccess::Ready));
     assert_eq!(reason.kind(), io::ErrorKind::NotADirectory);
 }
+
+#[test]
+fn native_interpreter_rejects_absence_and_wrong_owner() {
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail("tests/compile/fail/interpreter_missing.rs");
+    cases.compile_fail("tests/compile/fail/interpreter_owner.rs");
+}

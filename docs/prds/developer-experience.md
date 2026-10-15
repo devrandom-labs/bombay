@@ -1840,3 +1840,220 @@ Cross-check DX15/22, Driver D-INIT/D-RETIRE, native Entity launch/ACK, directory
 slot removal and normalized actor contracts. Disposition: pass for this bounded
 Entity proof; candidate production remains uncommitted pending activation retry,
 costs, final package/full gates and migration.
+
+Activation retry witness, pre-edit DX15: dropping a borrowing activate future
+while private binding ACK is pending must retain the same native environment,
+original initialization and actor-local interpreter. Recreate the operation
+twice against the same outside slots; construction stays exactly once and its
+real File remains undisposed until actual native retirement. ACK/publication
+still follow their existing order, and accepted cancellation is acquired before
+complete residual/resource disposal. Use native construction and the actual
+LocalEnvironment/ActiveEnvironment ports in the owning services module's unit
+tests; no new production accessor, callback, state, bound or capability. A real
+constructor opens the original manifest File and its drop records complete
+metadata/error custody. An isolated inverse that replaces get_or_insert_with
+with unconditional reconstruction must fail before ACK for duplicate creation.
+Aggregate production states,24 terminal alternatives, branches, public surface
+and production lines stay unchanged; the new test is cfg(test) only.
+
+Namespace-free native construction, pre-edit derived law: the empty namespace
+product () owns no shared logical registration but can execute actual exact-only
+children through existing NativeChild::registration. Its constructor is standard
+Runtime, with unit native service absence; it must imply neither Hosts<P> nor
+RootRegistration<P> and must not accept ExternalRequest. Existing unchanged
+delivery::generic_proxy_child_input_returns_exact_non_clone_input_after_native_shutdown
+and observation::committed_distinct_event_targets_transfer_to_unrelated_shutdown_interpreter
+are complete real child/proxy/worker/refusal/retirement witnesses. The owning
+unit build GUARDED-ACTIVATION-RETRY-FIRST-CHECK is RED because their existing
+NativeChild-for-() paths lost native selection; do not replace them with a marker
+test or cfg(test)-only impl. Add production NativeHost for () selecting actual
+standard construction (expected +8 lines, no new type/bound/phase). Explicit
+selection in three named manual-host fixtures is a separate mechanical adoption
+of the already proven manual-host contract; keep local Self child ports and all
+original assertions/disposal values. ActorSpaces remains pure metadata. Both
+independent design reviews accept this law; constructor absence remains unit
+and configured unit interpreters still require explicit construction.
+
+Activation retry proof: the initial empty-Actions test was insufficient for
+affine custody. Its replacement retains one original boxed EstablishedDelivery
+through two dropped ACK-pending operation futures. The actual recipient stays
+pending before ACK, then receives the same allocation/content/origin exactly
+once. Published ActorRef equals the original private endpoint; complete native
+settlement and retirement retain the accepted receipt and dispose the original
+File exactly once. This proves endpoint identity, not global address freshness
+across independent application scopes. Both independent review passes accept.
+
+GUARDED-AFFINE-ACTIVATION-INVERSION simulates unconditional reconstruction in
+an isolated source copy: debug/release both fail the intended constructor count
+(left2/right1), and both restored controls pass with the original source hash.
+GUARDED-NATIVE-AFFINE-MATRIX passes337 owning unit tests plus18 native consumer
+tests in each1.99/1.96 debug/release run, conserving all596 source hashes.
+Durations17.460/57.124/30.125/171.338 seconds. One deliberate ignored subprocess
+fixture executes through its checked parent. Focused strict lint passes in4.015
+seconds and pinned formatting passes. These results include both unchanged real
+namespace-free child witnesses; external manual-host catalogue migration remains
+separate and has not passed all-target checks.
+
+Aggregate checkpoint against6826a61, including untracked source: production
++531/-127/net404 across15 files; tests+3032/-104/net2928. These physical-line
+counts conservatively include cfg(test) methods inside production impls; an
+independent balanced-module count reproduces every file. NativeHost for() adds
+11 physical production lines including spacing; the other new source in this
+batch is test-only. Public types remain four, with one production module,
+12 Rust spellings plus one DSL clause, 24 terminal alternatives and zero new
+production transition branches. Driver's complete control sum stays seven:
+Prepared/Activating/Initializing/SettlingInitialization/Active/Retiring/
+RetirementAttempted. LocalResidual stays Prepared/Uncommitted/Retired (three);
+Publication stays Pending/Published (two). There is one transition authority.
+Option<S> owns absence
+before guarded construction or the exact acquired interpreter, whose File stays
+live through ACK and is disposed at retirement. No duplicated cause, inferred
+provenance, semantic boolean, extra dispatcher, widened protocol or structural
+caller syntax is introduced. Existing opaque native panic custody is reused;
+there is no protocol erasure. Cross-check DX15/22, Driver D-INIT/D-RETIRE,
+creation/ACK, execution-ownership and normalized actor contracts. Disposition:
+pass for this bounded proof. Candidate production is retained for integration after the focused gates below;
+final repository/archive gates and delivery remain open.
+
+Standard counter cost comparison, DX15/26: final
+NATIVE-STANDARD-MEMORY-FROZEN-MATRIX passes 40 fresh processes: five before and
+five after in each current/MSRV debug/release configuration. Both probe sources
+are byte-identical and compare clean120cc2d with bf107a4 plus the recorded native
+interpreter overlay. All 79 normalized dependency records match. Probe source,
+manifests and locks are hashed before execution and conserved after every run;
+both repository inventories are conserved. Both independent reviews pass after
+adding actual reply-origin and both nested notification checks. Earlier unfrozen
+or weaker-oracle measurements receive no final credit.
+
+| Compiler/profile | Allocation blocks, before = after | Peak bytes, before = after | End bytes, before = after |
+| --- | ---: | ---: | ---: |
+| 1.99 debug | 80 | 142060 | 56 |
+| 1.99 release | 78 | 138724 | 56 |
+| 1.96 debug | 80 | 142100 | 56 |
+| 1.96 release | 78 | 138724 | 56 |
+
+Every complete heap product agrees across all ten runs within its configuration,
+including total bytes and peak/end blocks. The actual increment/read/reply,
+shutdown/termination, joined cleanup, notification results and complete native
+root custody are checked. This is the exact default-feature counter comparison;
+remote code and the configured service's own memory are outside its scope.
+Shared caches and concurrent unrelated builds prevent comparative compilation
+or latency claims. No memory reduction or programme completion is claimed.
+
+Manual-host catalogue adoption, pre-edit DX15/25: the complete all-feature
+workspace check (GUARDED-NATIVE-CATALOGUE-ALL-FEATURES-RED) fails only four test
+targets using seven existing manual native hosts. Reuse the proven NativeHost
+port with standard Runtime for AccountHosts, QueueRegistration, HostAccountSpaces,
+UnwindingAccountSpaces, GardenSpaces, SupervisorHosts and CounterSpaces. Their
+actual native child/Entity/queue/replacement/refusal journeys already define the
+required constructor choice; pure Hosts/RootRegistration metadata is unchanged.
+The two generic generated/manual comparison functions execute standard native
+applications, so require NativeHost<Runtime = Runtime> at those execution cuts.
+Both have two real substitutions. Accounts<Spaces>::EntityDefinition stays pure.
+This is adoption of the established derived native-construction law: no new
+production type, trait, bound, field, callback or policy. Preserve every original
+assertion, accessor panic, child port and terminal value. Expected delta: eight
+test files, about 80 test lines, zero production/API changes. Both independent
+design reviews accept. Before/after Driver control states stay seven, residual
+alternatives three, publication alternatives two and terminal alternatives 24;
+no actor transition authority or branch changes. Run the four real downstream
+targets plus owning/service matrix and strict lint before retaining this batch.
+
+Static-authority checkpoint: the first catalogue run fails four existing
+snapshots. Three retain exactly the same error-code sequences and differ only
+in the source excerpt adding NativeHost at native execution. The forged
+constructor now reports missing NativeHost before its existing sealed-startup,
+non-Send actor and report-interpreter failures. Do not accept that earlier
+rejection as proof of independent creation authority. Supply the existing
+CounterScope with only the proven standard Runtime selection, preserve its
+original Rc actor and counterfeit EstablishNativeChild body, then require the
+creation-authority denial independently. This is a test refinement of the
+existing sealed native-creation law, not a production change or new bound.
+Compare both supported compiler transcripts before changing reviewed expected
+files and their minimum-compiler patch; preserve every original invalid program
+except this explicit prerequisite, and retain the initial mismatch evidence.
+The matrix driver's predicted338 owning tests was also false: actual all-feature
+execution has337. Its planned total is421 (337 owner +18 services +66 advanced
+consumer tests), independently of any snapshot outcome; correct that count
+without granting the failed first run passing credit.
+
+Refined authority evidence: after the explicit standard Runtime prerequisite,
+both1.99 and1.96 report identical E0119 at the original counterfeit impl. The
+actor's Rc state and fake execution body remain unchanged. Only diagnostic line
+numbers and truthful capability type arguments differ from the old expectation.
+The other three current snapshots change one existing NativeHost bound excerpt;
+MSRV swapped/duplicate-role transcripts remain exactly their prior reviewed
+values and omit that excerpt. Preserve all original error-code sequences. The
+minimum patch is rebased over these reviewed canonical changes, with all ten
+expected patched hashes checked; the first patch-preparation assumption that
+MSRV retained both role excerpts was rejected before manifest changes.
+
+Final verification separates responsibilities: the existing immutable
+supported-compiler diagnostic driver owns all37 named fixtures, six suites and
+30 outer tests on each compiler. The native all-feature runtime matrix runs
+418 outer tests per compiler/profile (the same421 selected tests with exactly
+three topology compile harnesses delegated to that driver). Count outer test
+names separately from compile-fixture paths, require exact filtered counts and
+preserve the failed first combined replay. No failing runtime or static denial
+is excluded: the moved harnesses execute in the independent diagnostic check.
+
+Catalogue retention checkpoint, DX15/19/25: all four reviewed all-feature
+runtime configurations pass418 outer tests each (1.99 debug18.047s,
+release441.382s;1.96 debug118.710s,release470.600s). Every configuration conserves
+all596 source hashes and delegates exactly three topology compile harnesses to
+the unchanged immutable diagnostic driver. That driver independently passes all37
+fixtures, six suites and30 outer tests on both supported compilers, preserving
+caller and scratch sources. Full workspace/all-target/all-feature checking and
+strict Clippy, all-feature rustdoc with denied warnings, and formatting pass.
+The first failed replay and reviewed four diagnostic refinements remain recorded.
+No final repository/archive acceptance is inferred from these focused gates.
+
+Native request-owner CI law, pre-edit DX15/19/25: permanently check the existing
+native execution distinction between absent services and an explicitly supplied
+unit interpreter. OpenFile declares unit ownership and its unit interpreter
+performs actual File IO through the existing Services implementation. The same
+ordinary application must reject an absent constructor (E0277) and a Services
+constructor with the wrong declared owner (E0271). The real explicit-unit runtime
+journey independently checks accepted File, original rejection, actor and full
+retirement; no empty interpreter or placeholder proves the law. External caller
+probes already compile the explicit unit case and reject both alternatives for
+these exact errors. Add two invalid programs and one compile harness using the
+same actual request owner, then enroll them in immutable supported diagnostics.
+This is test adoption of the existing static capability law; no production or
+public interface change. Driver states7, residual alternatives3, publication
+alternatives2 and terminal alternatives24 stay unchanged; no branches or actor
+transition authority are added. Reuse ActionItem, ExternalRequest, InterpretItem,
+Services, Application::run and the existing diagnostic owner. Keep fixture counts
+separate from outer tests, preserve prior expectations and review both compiler
+transcripts before accepting them. Cross-check DX15/19/25, Driver D-INIT/D-RETIRE,
+execution ownership and native Services capability selection.
+
+Owner-denial transcript review: both supported compilers produce identical
+expected bytes: two E0277 diagnostics for missing interpretation and two E0271
+diagnostics for the wrong declared interpreter owner. Their actual receiving
+loans and real File service compile before the final Application::run capability
+check; no unrelated error establishes rejection. New immutable coverage is39
+fixtures, seven suites and32 outer tests. The existing ten compiler-specific
+snapshot entries and their reviewed minimum patch remain unchanged by these two
+identical transcripts. Both initial capture runs fail only because the two new
+expectation files did not yet exist; their raw logs are retained.
+
+Native extension retention, DX15/19/25: both immutable39-case checks pass
+(current114.506s;minimum117.159s), with seven suites,32 outer tests and600
+conserved caller/scratch source hashes. Both exact invalid programs compile on
+both compilers when only their constructor becomes explicit unit; these four
+positive controls isolate the rejected capability. The two-test selection target
+and formatting pass. Both independent source and terminal-receipt review passes accept the law. The canonical Cargo-readme guide now
+describes constructor ownership, one topology clause, guarded construction and
+manual NativeHost selection, and links the actual IO/failure consumers.
+Cumulative Rust delta against6826a61: production+531/-127/net404 across15
+production files; tests+3265/-114/net3151;36 changed Rust files. Four public types,
+12 Rust spellings, one DSL clause and one production module remain unchanged.
+Complete Driver states7, residual3, publication2, terminal24, and actor transition
+branches remain unchanged. The same exact owned request/reply, current service,
+configuration, ACK and endpoint are needed at each surviving alternative; residue
+scan finds no new arrival history, duplicate cause, inferred provenance,
+semantic flags, false cardinality, structural user syntax or second authority.
+Cross-check DX15/19/25, D-INIT/D-RETIRE, execution ownership and native creation.
+Disposition: pass for focused integration retention; final combined repository,
+archive, configured-service cost and delivery requirements remain open.

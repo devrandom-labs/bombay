@@ -1,10 +1,18 @@
 use super::{Counter, CounterMessage, CounterValue, counter_application};
 use bombay::behavior::{ClassifySettlement, Never, SettlementStatus};
 use bombay::prelude::*;
-use bombay::{ActorSpace, ApplicationTopology, RootRegistration};
+use bombay::{ActorSpace, ApplicationTopology, NativeHost, RootRegistration, Runtime};
 
 struct CounterSpaces {
     counter: ActorSpace<Counter>,
+}
+
+impl NativeHost for CounterSpaces {
+    type Runtime = Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: Runtime = Runtime::new();
+        &RUNTIME
+    }
 }
 impl RootRegistration<Counter> for CounterSpaces {
     fn root_space(&self) -> &ActorSpace<Counter> {

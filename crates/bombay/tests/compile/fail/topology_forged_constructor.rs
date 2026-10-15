@@ -7,6 +7,13 @@ use behavior::{InterpreterRequests, ReportToParent};
 #[path = "../../../../../examples/counter/src/counter.rs"]
 mod counter;
 struct CounterScope;
+impl bombay::NativeHost for CounterScope {
+    type Runtime = bombay::Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: bombay::Runtime = bombay::Runtime::new();
+        &RUNTIME
+    }
+}
 struct CounterReport { value: Rc<u64> }
 #[bombay::actor(message = Never, sends = { values: InterpreterRequests<ReportToParent<u64>> })]
 impl CounterReport {

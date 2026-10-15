@@ -343,6 +343,9 @@ where
         if owner.residual.is_some() {
             return;
         }
+        if let Some(interpreter) = owner.interpreter.as_mut() {
+            interpreter.initialize();
+        }
         if owner.activation_rejection.is_none() && owner.reservation.is_none() {
             match owner.addresses.try_reserve(owner.address) {
                 Ok(reservation) => owner.reservation = Some(reservation),

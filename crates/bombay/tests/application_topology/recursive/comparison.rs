@@ -13,8 +13,8 @@ use bombay::lifecycle::StopOnShutdown;
 use bombay::prelude::{Exit, TimerId};
 use bombay::{
     ActorCustody, ActorRetirement, ActorSpace, Application, ApplicationTopology, ChildFailure,
-    ChildOrigin, Completion, EstablishNativeChild, MailAddr, NativeChild, PendingChild,
-    ProjectTerminal, RetirementSchema, RootRegistration, WorkOutcome,
+    ChildOrigin, Completion, EstablishNativeChild, MailAddr, NativeChild, NativeHost, PendingChild,
+    ProjectTerminal, RetirementSchema, RootRegistration, Runtime, WorkOutcome,
 };
 use core::future::Future;
 use core::ops::ControlFlow;
@@ -23,6 +23,14 @@ use std::collections::HashSet;
 
 struct GardenSpaces {
     root: ActorSpace<<Root as Behavior>::Protocol>,
+}
+
+impl NativeHost for GardenSpaces {
+    type Runtime = Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: Runtime = Runtime::new();
+        &RUNTIME
+    }
 }
 struct BranchRetirement {
     origin: ChildOrigin<Root, ChildHead>,

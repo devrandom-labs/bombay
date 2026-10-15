@@ -1,4 +1,5 @@
 use super::{ApplicationScope, MailboxCapacity};
+use crate::NativeHost;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::composition::ComposeApplication;
 use crate::application::{Application, ApplicationHandle, ApplicationOutcome, WorkOutcome};
@@ -7,9 +8,9 @@ use crate::launch::spawn_local_execution;
 use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
+use crate::local::effects::services::{NativeCapabilities, NativeConstruction};
 use crate::local::effects::{
-    ActionInterpreter, ApplicationCapabilities, ApplicationCapabilityInputs, CommitActions,
-    NoParent,
+    ActionInterpreter, ApplicationCapabilityInputs, CommitActions, NoParent,
 };
 use crate::local::ingress::StandardIngress;
 use crate::observe;
@@ -110,7 +111,8 @@ where
         (Self, Work, TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -310,7 +312,8 @@ where
         (Self, Work, TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -426,7 +429,8 @@ where
         (Self, Work, TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -523,7 +527,8 @@ where
         (Self, Work, TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -704,7 +709,8 @@ where
         (Self, TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -876,7 +882,8 @@ where
         (Self, TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -984,7 +991,8 @@ where
         (Self, Builder, RunError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -1080,7 +1088,8 @@ where
         (Self, Work, TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -1212,13 +1221,8 @@ impl<ApplicationInputs, ColdWork, Work, Output, StagingInputs, PreparedInputs> D
     }
 }
 
-type RootCapabilities<Actor, Spaces, Terminal, Origins> = ApplicationCapabilities<
-    Actor,
-    Spaces,
-    NoParent,
-    ChildBindings<Actor, Terminal, Origins>,
-    Origins,
->;
+type RootCapabilities<Actor, Spaces, Terminal, Origins> =
+    NativeCapabilities<Actor, Spaces, NoParent, ChildBindings<Actor, Terminal, Origins>, Origins>;
 
 pub(in crate::application) type RootInterpreter<Actor, Spaces, Terminal, Origins> =
     ActionInterpreter<RootCapabilities<Actor, Spaces, Terminal, Origins>>;
@@ -1375,7 +1379,8 @@ where
     Actor::SourceCustody: Send + 'static,
     <Actor::Birth as BirthMode>::Child:
         ChildOccurrenceProduct<RuntimeChildBindings<Terminal, Origins>> + Send + 'static,
-    Spaces: RootRegistration<Actor::Protocol> + Send + Sync + 'static,
+    Spaces: RootRegistration<Actor::Protocol> + NativeHost + Send + Sync + 'static,
+    Spaces::Runtime: NativeConstruction,
     ChildBindings<Actor, Terminal, Origins>:
         ChildBindingsIn<Actor, Spaces> + RetireChildTasks<Root = Terminal> + Send + 'static,
     RootInterpreter<Actor, Spaces, Terminal, Origins>: CommitActions<
@@ -1526,13 +1531,12 @@ where
                 address,
                 root,
                 move |control, terminal_reports, timers, observations| {
-                    ActionInterpreter::new(ApplicationCapabilities::<
+                    ActionInterpreter::new(<Spaces::Runtime as NativeConstruction>::capabilities::<
                         Actor,
                         Spaces,
-                        NoParent,
                         ChildBindings<Actor, Terminal, Origins>,
                         Origins,
-                    >::new_with_bindings(
+                    >(
                         ApplicationCapabilityInputs {
                             address,
                             actor_spaces,
