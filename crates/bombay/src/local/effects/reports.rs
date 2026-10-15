@@ -674,6 +674,8 @@ mod parent_conversion_custody {
                     Config::new(1),
                     MailAddr::APPLICATION_ROOT,
                     parent,
+                    #[cfg(feature = "remote")]
+                    None,
                     move |control, terminal_reports, timers, observations| {
                         let mut capabilities = ApplicationCapabilities::<
                         Parent,

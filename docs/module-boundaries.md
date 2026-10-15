@@ -27,7 +27,7 @@ adds no mailbox, actor authority or transport runtime. The new private
 exported with `remote`. Existing optional Serde owns its structural codec;
 protocol products own their fields. Metadata is untrusted and format-neutral:
 object-shape, resource, profile/version, SDK, replay and permission acceptance
-remain distinct receiving obligations. The implementation branch adds public
+remain distinct receiving obligations. Reviewed PR368 delivers public
 `remote/json.rs`: its borrowed `check` uses selected json-event-parser0.2.3
 for complete outer/metadata object checks and five explicit acceptance maxima.
 It preserves native syntax causes and leaves original protected/proof buffers
@@ -123,9 +123,10 @@ tree:
 | `application/scope.rs` | establish external endpoints needed before root construction | `ApplicationScope` transfers one root declaration and the existing address allocation source into Application. Prepared and staging rejection retain it for exact-value retry; receivers remain independently owned. |
 | `application/composition.rs` | static declaration-to-Behavior composition and exact origin selection | canonical `ApplicationBehavior`, `ApplicationDefinitionError` and `ApplicationStagingError`; implementation traits remain private |
 | `application/execution.rs` | one paired execution/result owner, supplied Work, cleanup custody and configured blocking entry | `ApplicationOutcome`, `ApplicationCleanupError` and `RunError`; async, owned blocking and Entity execution share this owner |
-| `application/interface.rs` | application capability construction, root-bound communication and explicit lifecycle projection | ApplicationHandle is the entry; ApplicationClient owns root-bound replies and ApplicationSender owns one-way sending. Both reuse ExternalActor. ApplicationLifecycle owns shutdown/termination/joined-report observation; handle methods delegate. ActorInterface exports named capabilities without lifecycle authority. ExternalTarget and ExternalActor remain the typed exported-target port; no receiving is cloned. |
+| `application/interface.rs` | application capability construction, fixed-target communication and explicit lifecycle projection | ApplicationHandle is the entry; ApplicationClient owns fixed-target replies and ApplicationSender owns one-way sending. Both reuse ExternalActor. The remote implementation branch adds Application-certified actor construction and native nonwaiting client attempts. ApplicationLifecycle owns shutdown/termination/joined-report observation. ActorInterface exports named capabilities without lifecycle authority; no receiving is cloned. |
 | `application/node.rs` | opt-in fresh native Session and one finalized Application declaration; reuse the existing execution/receiving owner | `remote::Node`, `NodeExecutionRefusal`; no replacement actor lifecycle or forwarding topology builders |
 | `remote/startup.rs` | selected configured TLS profile and exact original-input startup refusal | `remote::NodeStartupRefusal`; native certificate parsing and TLS remain SDK-owned |
+| `remote/clients.rs` | remote-only Application-certified client construction refusals | `remote::ExportError`; the existing Application interface owns certification and returns the original target, while native endpoint failures retain their original cause |
 | `application/http.rs` | opt-in HTTP preparation, binding and serving over the common execution owner | existing application methods; retains bind, serving and actor failures. The feature-gated outcome mapper remains in `application/execution.rs`. |
 | `local/children.rs` | closed occurrence product, exact creation status, endpoint/control and descendant task retirement | crate-private; creation-order native custody and independent descendant retirement assessments stay with the local actor |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |
