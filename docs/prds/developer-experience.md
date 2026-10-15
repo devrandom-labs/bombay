@@ -25,6 +25,41 @@ production capability. Upstream test hashes and exact inputs are frozen in
 focused debug/release tests, static denials and combined repository gates remain
 required before delivery advancement.
 
+The first combined compile fails E0061 at the imported export-client allocation:
+the verified DevX owner already requires its configured reply capacity. Reuse
+`ApplicationHandle::client_capacity` exactly as `client_to` does; do not invent
+a default, new limit or allocation path. Before correcting that call, add a
+two-slot certified reply-client journey with three owned boxed commands: two
+accepted messages retain their origin/allocation, Full returns the exact third,
+and ordinary shutdown returns complete retirement. This is the same DX06
+resource-owner law through the newly imported client, not a new abstraction.
+An explicit default-capacity inversion must fail that black-box witness.
+
+Current integration evidence: all363 selected native/library tests pass on
+Rust1.99 in debug and release (337 library,5 interface,16 client,5 supervisor),
+including the existing static denials. Both actual Node hosting journeys pass
+in both profiles. Focused strict Clippy, Rust formatting and Nix formatting pass;
+all385 frozen Rust/configuration hashes remain unchanged. The separate-source,
+separate-target capacity inversion fails at the intended third-command check
+in both profiles; exact restoration passes both controls. Two independent
+review passes confirm all five imported test bodies retain their original
+assertions/effects after only complete-product acquisition changes. Their
+admission traces are bounded evidence; they do not independently prove every
+retirement lane. The new capacity witness checks normal retirement lanes too.
+
+Integration checkpoint: the allocation correction reuses an existing validated
+capacity and changes one production call argument (+1/-1); no state alternative,
+transition branch, module, public type, bound or lifecycle authority is added.
+Existing scope capacities and WorkOutcome/ApplicationOutcome custody are reused,
+with no history, repeated cause, semantic boolean or structural caller alias.
+The upstream association feature retains its own new remote-only owner reference
+and ExportError; those are imported source, not further DevX abstractions.
+Cross-check DX04/06/20/25/27, the selected Behavior receiving laws, Driver law and
+execution ownership. Disposition: pass for this bounded reconciliation. MSRV,
+layout costs and all combined-source Nix gates remain pending; delivery stays
+at fully gated ea2b5b4. Evidence: `CLIENT-INTEGRATION-*`, `CLIENT-HOSTING-*` and
+`CLIENT-CAPACITY-*` under the existing evidence root.
+
 The frozen committed c3b74ab is being integrated on
 feat/remote-devx-integration; its active authoring worktree is untouched.
 Records below retain their original source and verification provenance.

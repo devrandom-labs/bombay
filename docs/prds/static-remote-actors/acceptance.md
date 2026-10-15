@@ -84,7 +84,7 @@ owning cuts fail as intended and their restored controls pass both profiles;
 final protected59/0/1 and strict checks pass on5f929068/5cdbce9c. Integration,
 replacement exact-head CI and delivery remain pending, separately from full rows.
 
-The next implementation stage adds crate-owned `remote::json::check` with the
+PR368 delivers crate-owned `remote::json::check` with the
 existing selected event-parser crate. Five pure public tests and two actual
 Node consumers pass in debug and optimized builds. The latter are SessionLocal
 queries with deterministic proof records: they do not establish TLS handshake
@@ -94,9 +94,26 @@ All cleanup, native results, notifications and Node close are acquired before
 those domain oracles. Eight intended production cuts each fail their exact assertion in both profiles,
 and byte-exact restored controls pass. Independent source and execution review
 retain the native Counter2-versus1 and LedgerClosed oracles. Final combined
-checks and reviewed delivery remain pending. No full R02/R14 or other row closes.
+checks and reviewed delivery are now recorded: PR368 merged792529ea after all
+six CI checks and scoped final reviews passed. Required Nix executes the five
+JSON cases and both Node consumers once in each profile. No full R02/R14 or
+other row closes.
 
 The user requires crate-owned remote capability behind Cargo feature `remote`.
+The dependent export-client implementation branch now certifies actual root,
+sibling and nested-child recipients against their Application's existing source
+before reply allocation. It preserves closed-target membership and native
+allocation refusals. Six ownership cuts reach their intended failures in both
+profiles, followed by six fresh restored controls. The same existing client gains
+a remote-only nonwaiting attempt with exact native Full/Closed originals and
+allocated sender identity. Two complementary consumer controls and five admission
+cuts pass in both profiles; both consumers pass after exact restoration. The
+independent test/source/execution reviews and uncredited disk/lint failures remain
+in the PRD. Combined-source local checks pass; required CI and reviewed delivery
+remain pending. This is
+local target/admission evidence, not protected publication, replay, permission
+coherence, real remote Stop or closure of a full R01–R25 row.
+
 Examples consume its public API; example-only implementations cannot pass R01.
 Keep the local counter in `examples/counter` and the remote counter in
 `examples/remote-counter`. Each teaches one complete application through public
