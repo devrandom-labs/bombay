@@ -266,56 +266,175 @@ fn native_join_resumes_after_a_borrowed_wait_and_retains_caller_local_work() {
 }
 
 #[test]
-fn raw_native_execution_retains_a_result_borrowing_its_original_session() {
+fn node_execution_uses_actor_capabilities_and_returns_original_work_for_retry() {
     let host = Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
         .build()
         .expect("the native SDK host");
+    let mut node = host
+        .block_on(
+            Application::new(Counter::new().stop_on_shutdown())
+                .open_node(listening_configuration()),
+        )
+        .unwrap_or_else(|_| panic!("the actual native node opens"));
+    let original = vec![41, 43].into_boxed_slice();
+    let allocation = original.as_ptr();
+    let original_file = File::open(concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml"))
+        .expect("real non-Clone work custody");
+    let calls = Arc::new(AtomicUsize::new(0));
+    let observed_calls = Arc::clone(&calls);
+    let work = {
+        let refused = node.execute_with(|application| async move {
+            observed_calls.fetch_add(1, Ordering::SeqCst);
+            let mut caller = application
+                .client::<CounterValue>()
+                .expect("the actual counter client");
+            caller
+                .send(CounterMessage::Increment)
+                .await
+                .unwrap_or_else(|_| panic!("the increment is admitted"));
+            caller
+                .send(CounterMessage::Read(caller.recipient()))
+                .await
+                .unwrap_or_else(|_| panic!("the read is admitted"));
+            let reply = caller.receive().await.expect("the actual typed reply");
+            let shutdown = application.request_shutdown();
+            (
+                original,
+                original_file,
+                reply,
+                application.root().address(),
+                shutdown,
+            )
+        });
+        let Err(NodeExecutionRefusal::Host { work, cause }) = refused else {
+            panic!("an absent host returns the exact original callable");
+        };
+        assert!(cause.is_missing_context());
+        work
+    };
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
     host.block_on(async {
-        let mut node = Application::new(Counter::new().stop_on_shutdown())
-            .open_node(listening_configuration())
-            .await
-            .unwrap_or_else(|_| panic!("the actual native node opens"));
-        {
+        let completed = timeout(Duration::from_secs(10), async {
             let (execution, receiving) = node
-                .execute_with(|application, session| async move {
-                    let mut caller = application
-                        .client::<CounterValue>()
-                        .expect("the actual client");
-                    caller
-                        .send(CounterMessage::Read(caller.recipient()))
-                        .await
-                        .unwrap_or_else(|_| panic!("the real read is admitted"));
-                    let reply = caller.receive().await.expect("the actual reply");
-                    let current = session.zid();
-                    let shutdown = application.request_shutdown();
-                    (session, current, reply.message, shutdown)
-                })
-                .unwrap_or_else(|_| panic!("the raw lending operation issues"));
-            execution.await;
-            let outcome = receiving.await;
-            let ((session, current, reply, shutdown), retirement) = outcome
-                .try_into_completed()
-                .unwrap_or_else(|_| panic!("the original borrowed result returns"));
-            assert_eq!(session.zid(), current);
-            assert!(!session.is_closed());
-            assert_eq!(reply, 0);
+                .execute_with(work)
+                .unwrap_or_else(|_| panic!("the restored declaration retries its original work"));
+            let ((), outcome) = tokio::join!(execution, receiving);
+            let ((original, mut original_file, reply, root_address, shutdown), retirement) =
+                outcome
+                    .try_into_completed()
+                    .unwrap_or_else(|_| panic!("the same original work completes"));
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            assert!(ptr::eq(original.as_ptr(), allocation));
+            assert_eq!(&*original, &[41, 43]);
+            let mut contents = String::new();
+            original_file
+                .read_to_string(&mut contents)
+                .expect("the original non-Clone file remains usable after retry and retirement");
+            assert_eq!(contents, include_str!("../Cargo.toml"));
+            assert_eq!((reply.from, reply.message), (root_address, 1));
             assert_eq!(shutdown, Ok(()));
             assert!(retirement.cleanup().is_ok());
             let notifications = retirement
                 .notifications()
                 .as_ref()
-                .expect("independent notifications return");
+                .expect("both original notifications return");
             assert!(notifications.termination.is_ok());
             assert!(notifications.retirement.is_ok());
             let (origin, root) = retirement
                 .retirement()
                 .as_ref()
-                .expect("native root returns");
-            assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-            assert_counter_retirement(root, 0);
-        }
+                .expect("the independent native root returns");
+            assert_eq!(origin.address(), root_address);
+            assert_counter_retirement(root, 1);
+            let closed = node.close().await;
+            assert!(closed.is_ok());
+        })
+        .await;
+        completed.expect("actor work and joined retirement finish within the watchdog");
+    });
+}
+
+#[test]
+fn node_execution_resumes_original_futures_with_borrowed_caller_local_work() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .expect("the native SDK host");
+    let calls = &Cell::new(0);
+    let original = Rc::new(vec![47, 53]);
+    let allocation = Rc::as_ptr(&original);
+    host.block_on(async {
+        let mut node = Application::new(Counter::new().stop_on_shutdown())
+            .open_node(listening_configuration())
+            .await
+            .unwrap_or_else(|_| panic!("the actual native node opens"));
+        let (entered, entry) = oneshot::channel();
+        let (release, permission) = oneshot::channel();
+        let (observed, outcome) = {
+            let (execution, receiving) = node
+                .execute_with(|application| async move {
+                    calls.set(calls.get() + 1);
+                    let published = entered.send(application.root().address());
+                    let permitted = permission.await;
+                    let current = application.root().address();
+                    let shutdown = application.request_shutdown();
+                    (original, calls, published, permitted, current, shutdown)
+                })
+                .unwrap_or_else(|_| panic!("caller-local paired work is issued"));
+            let mut execution = pin!(execution);
+            let mut receiving = pin!(receiving);
+            let observed = timeout(Duration::from_secs(10), async {
+                let borrowing = execution.as_mut();
+                let mut borrowing = pin!(borrowing);
+                tokio::select! {
+                    observed = entry => observed.expect("work entered its actual permission gate"),
+                    () = borrowing.as_mut() => panic!("execution cannot finish without permission"),
+                }
+            })
+            .await
+            .expect("the execution starts within the watchdog");
+            let mut context = Context::from_waker(Waker::noop());
+            let receiver_wait = receiving.as_mut().poll(&mut context);
+            assert!(matches!(receiver_wait, Poll::Pending));
+            let execution_wait = execution.as_mut().poll(&mut context);
+            assert!(matches!(execution_wait, Poll::Pending));
+            assert_eq!(calls.get(), 1);
+            let released = release.send(());
+            assert!(released.is_ok());
+            let ((), outcome) = timeout(Duration::from_secs(10), async {
+                tokio::join!(execution.as_mut(), receiving.as_mut())
+            })
+            .await
+            .expect("both original paired owners finish after permission");
+            (observed, outcome)
+        };
+        let ((original, borrowed, published, permitted, current, shutdown), retirement) = outcome
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("the original caller-local work completes"));
+        assert!(ptr::eq(Rc::as_ptr(&original), allocation));
+        assert_eq!(&*original, &[47, 53]);
+        assert!(ptr::eq(borrowed, calls));
+        assert_eq!(borrowed.get(), 1);
+        assert_eq!(published, Ok(()));
+        assert_eq!(permitted, Ok(()));
+        assert_eq!(current, observed);
+        assert_eq!(shutdown, Ok(()));
+        assert!(retirement.cleanup().is_ok());
+        let notifications = retirement
+            .notifications()
+            .as_ref()
+            .expect("both original notifications return");
+        assert!(notifications.termination.is_ok());
+        assert!(notifications.retirement.is_ok());
+        let (origin, root) = retirement
+            .retirement()
+            .as_ref()
+            .expect("the independent native root returns");
+        assert_eq!(origin.address(), observed);
+        assert_counter_retirement(root, 0);
         let closed = node.close().await;
         assert!(closed.is_ok());
     });

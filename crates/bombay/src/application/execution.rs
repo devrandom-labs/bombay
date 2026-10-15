@@ -483,7 +483,7 @@ where
         self.execute_with_invocation(work, |work: Work, application| work(application))
     }
 
-    // Keep original Work separate from its invocation so Node can lend its Session.
+    // Keep original Work separate while Node associates its private connection.
     #[expect(
         clippy::type_complexity,
         reason = "preserve the independent original work, native root and both notification receiving products"

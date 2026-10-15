@@ -576,9 +576,12 @@ return caller-local, non-`Send` values. The joined result is the ordinary
 `ApplicationOutcome`, including independent native retirement and both
 notification results. Finish receiving before `node.close().await`, retaining
 the independent close result.
+For independently driven operations, use
+`node.execute_with(|application| async move { ... })` and retain both returned
+futures. This uses the same actor-only Work contract.
 
 Transport hiding remains unfinished: startup configuration, exported query
-custody and the paired `execute_with` method still expose SDK types. These are
+custody and native failures still expose SDK types. These are
 remaining interface work, not the canonical business callback. Zenoh is Bombay's
 internal network; application authors compose actors and use typed Bombay
 clients and recipients. Both execution entry points preserve the original
@@ -592,8 +595,8 @@ discovery, mutual TLS, configured private roots, verified names and explicit
 native query capacity. No default capacity is selected. Per-endpoint overrides
 and `OneOf` fallback are rejected. SDK parsing verifies actual credentials; policy
 checks alone prove no handshake. Opening requires an entered multithreaded Tokio
-host. The remaining paired SDK method can clone or close the native Session;
-removing that transport access is required to complete this interface work.
+host. Native SDK configuration and query access must move into their runtime
+owners before the network interface work is complete.
 Whole operation disposal is surrender, not proof of joined retirement.
 
 `ApplicationHandle::export` uses its Node's private Session and actual

@@ -1,0 +1,22 @@
+use bombay::Application;
+use bombay::actors::ActorExt;
+use zenoh_config::Config;
+
+#[path = "../../../../../examples/counter/src/counter.rs"]
+mod counter;
+
+use counter::Counter;
+
+async fn close_running_node(config: Config) {
+    let mut node = Application::new(Counter::new().stop_on_shutdown())
+        .open_node(config)
+        .await
+        .unwrap_or_else(|_| panic!("the node opens"));
+    let (execution, receiving) = node
+        .execute_with(|application| async move { application.request_shutdown() })
+        .unwrap_or_else(|_| panic!("the declared actor work is issued"));
+    let _closed = node.close().await;
+    let _received = tokio::join!(execution, receiving);
+}
+
+fn main() {}

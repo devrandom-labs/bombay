@@ -161,11 +161,11 @@ impl<Root, Spaces, Members> Node<Root, Spaces, Members> {
         }
     }
 
-    /// Close the native Session independently of Application retirement.
+    /// Close the Node connection independently of Application retirement.
     ///
     /// First acquire the execution's original work/outcome, native root and both
-    /// notifications. Retain this separate close Result. Borrowed output can keep
-    /// the Session borrowed and must be discharged before mutable close.
+    /// notifications. Retain this separate close Result. Paired execution and
+    /// receiving futures retain their Node borrow until their owners leave scope.
     /// Closing after surrendering an operation does not prove joined retirement.
     ///
     /// # Panics
@@ -298,11 +298,13 @@ where
         }
     }
 
-    /// Issue the exact declared root/child application while lending this Session.
+    /// Issue the declared application with ordinary typed actor work.
     ///
     /// Retain both returned operations outside disposable borrowed waits. Receiving
     /// conserves the original Work/outcome, complete native root/descendants and
     /// independently acquired termination and retirement notification results.
+    /// Work receives the same Application handle as joined execution and may
+    /// retain caller-local borrows and non-Send values.
     ///
     /// # Errors
     /// Returns original Work for closed Session, already-issued declaration or
@@ -311,8 +313,8 @@ where
         clippy::type_complexity,
         reason = "retain existing independent native and notification products without a new receiving wrapper"
     )]
-    pub fn execute_with<'node, Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
-        &'node mut self,
+    pub fn execute_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
+        &mut self,
         work: Work,
     ) -> Result<
         (
@@ -390,14 +392,14 @@ where
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
-        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>, &'node Session) -> WorkFuture,
+        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
     {
         let (application, work) = self.take_application(work)?;
         let session = &self.session;
         match application.execute_with_invocation(work, move |work: Work, mut application| {
             application.session = Some(session.clone());
-            work(application, session)
+            work(application)
         }) {
             Ok(products) => Ok(products),
             Err((application, work, cause)) => {

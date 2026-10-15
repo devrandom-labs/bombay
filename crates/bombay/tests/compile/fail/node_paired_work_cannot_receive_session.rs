@@ -10,23 +10,23 @@ mod counter;
 
 use counter::Counter;
 
-async fn return_session<'loan>(
+async fn receive_session(
     application: ApplicationHandle<
         <StopOnShutdown<Counter> as Behavior>::Protocol,
         <StopOnShutdown<Counter> as Behavior>::Event,
     >,
-    session: &'loan Session,
-) -> (&'loan Session, Result<(), ShutdownRejection>) {
-    let shutdown = application.request_shutdown();
-    (session, shutdown)
+    session: &Session,
+) -> Result<(), ShutdownRejection> {
+    assert!(!session.is_closed());
+    application.request_shutdown()
 }
 
-async fn borrowed_session(config: Config) {
+async fn actor_work(config: Config) {
     let mut node = Application::new(Counter::new().stop_on_shutdown())
         .open_node(config)
         .await
         .unwrap_or_else(|_| panic!("the node opens"));
-    let _execution = node.execute_with(return_session);
+    let _execution = node.execute_with(receive_session);
 }
 
 fn main() {}
