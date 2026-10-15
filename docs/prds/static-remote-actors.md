@@ -23770,3 +23770,49 @@ passes all twelve terminal commands and their twice-checked raw hashes. It
 confirms all four new remote ownership/client names and both isolated hosted/
 unhosted names execute once per profile. Source/VCS, authorship, ignored cases
 and executable-custody limits above remain explicit; required CI is still pending.
+
+
+### Release 0.1.3 successor — isolated lock correction
+
+The release bot closed PR369 without merging and opened PR371 on main
+8d809b3d, initial head d6f1635d183122d3ffc3b33fe6e4adaa728e91b2. The new
+release manifest and root lock select Bombay0.1.3; the separate transport-custody
+lock still selects the path package0.1.2. Required Nix run38692170914 /
+job116280364212 fails before protected tests because --locked forbids updating
+that record. This is a setup failure, with no runtime or transport credit.
+
+Apply the previously verified one-record version correction to the successor:
+one fixture lock line added and one removed; all323 other complete package
+records must remain identical. No production source, dependency selection,
+public API or runtime policy changes. Reuse the existing workspace/package
+owners. Expected paths: this PRD, acceptance and backlog status, and the isolated
+lock. This correction carries the cumulative earlier scope and verification
+records without reset; it does not reopen the closed release branch.
+
+Fresh locked metadata and affected tests must execute on this combined source.
+Old PR369 green checks belong to its older source and cannot qualify PR371.
+Required CI/review/merge and actual registry publication remain separate gates.
+PR370's scoped certified-client prerequisite merged at8d809b3d with all required
+checks passing; full remote R01–R25/AUTH1/NET1 remain open.
+
+
+Successor correction verification: pinned `cargo metadata --offline --locked
+--format-version 1 --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml`
+accepts corrected lock0, refuses the restored original stale lock101 for the
+intended --locked mismatch, then accepts the byte-exact corrected lock0 again.
+Both successful resolved graphs contain the actual Bombay0.1.3 path package.
+Initial inspection tried decoding a shell-banner brace as JSON; preserve that
+parser failure separately. Selecting the actual packages JSON line fixes only
+evidence inspection, not Rust or lock resolution.
+
+Pinned `cargo test --offline --locked --manifest-path
+docs/prds/static-remote-actors/transport-custody/Cargo.toml --features
+protected-transport --test protected_counter` passes68/0/1 in debug; the same
+command with --release passes68/0/1. The ignored test earns no execution credit.
+These local tests include PR370's current client/hosting source; they do not
+replace successor CI or establish TLS subprocess/production identity acceptance.
+Raw receipts remain in /tmp/bombay-pr371-fixture-verification.
+Final correction delta against d6: four paths; production0, test source0, public
+API0; fixture lock+1/-1, documentation+66/-0. Independent two-pass source review
+confirms all323 unrelated records unchanged. Required exact-head CI, review,
+merge and publication remain pending.

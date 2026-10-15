@@ -444,3 +444,13 @@ CI38153406874 and publication38158907672 passed; full registry-consumer proof
 and Bombay adoption remain open.
 Protected JSON Application integration and genuine child-owned preparation
 verification run independently under the PRD's selected contracts. All full R01–R25, AUTH1/NET1 states and reciprocal dependencies stay open.
+
+Release0.1.3 now tracks successor PR371 on merged main8d809b3d; PR369 was
+closed without merging by the release bot. Its initial required check stopped
+on the isolated fixture path-package version mismatch before protected Counter tests.
+The one-record correction and fresh combined checks are pending delivery; old
+PR369 checks do not qualify the successor. All full remote acceptance stays open.
+
+The successor lock correction now passes fresh pinned locked metadata, the
+intended stale-lock failure and exact restored control, plus protected Counter
+68/0/1 in each profile. Exact-head CI/review/merge/publication remain pending.

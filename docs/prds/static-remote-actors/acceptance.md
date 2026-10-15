@@ -427,3 +427,13 @@ Actual Linux optimized workspace643/0/1 remains distinct from local644/0/1;
 Counter54 executes plain/coverage debug and release, owner floors pass, and
 Driver2048/Observe4×1024 finish. Miri is skipped. Native64cases/160roles pass
 separately; held controls retain local inversion provenance. All fullR01–R25 stay open.
+
+Release0.1.3 now tracks successor PR371 on merged main8d809b3d; PR369 was
+closed without merging by the release bot. Its initial required check stopped
+on the isolated fixture path-package version mismatch before protected Counter tests.
+The one-record correction and fresh combined checks are pending delivery; old
+PR369 checks do not qualify the successor. All full remote acceptance stays open.
+
+The successor lock correction now passes fresh pinned locked metadata, the
+intended stale-lock failure and exact restored control, plus protected Counter
+68/0/1 in each profile. Exact-head CI/review/merge/publication remain pending.
