@@ -1,13 +1,8 @@
 //! Root-bound communication preserves affine receiving and truthful sender identity.
 
 use bombay::actors::ActorExt;
-use bombay::behavior::{
-    BehaviorBase, ClassifySettlement, EstablishedDelivery, EstablishedRecipient, Protocol,
-    SettlementStatus,
-};
-use bombay::prelude::{
-    Actions, ActorRetirement, Application, BehaviorActed, Completion, Exit, MailAddr,
-};
+use bombay::behavior::{BehaviorBase, ClassifySettlement, SettlementStatus};
+use bombay::prelude::{Actions, ActorRetirement, Application, Completion, Exit, MailAddr};
 #[cfg(feature = "remote")]
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use bombay::{ActorNotificationReceipts, MailboxCapacity};
@@ -22,20 +17,14 @@ use core::pin::pin;
 use core::task::{Context, Poll, Waker};
 use core::time::Duration;
 use counter::{Counter, CounterMessage};
+
+#[path = "application_clients/ledger.rs"]
+mod ledger;
 #[cfg(feature = "remote")]
 use counter::{CounterProcessed, CounterValue};
-
-struct Receipts;
-
-impl Protocol for Receipts {
-    type Addr = MailAddr;
-    type Msg = Vec<MailAddr>;
-}
-
-enum LedgerCommand {
-    Append(Box<[u8]>),
-    Read(EstablishedRecipient<Receipts>),
-}
+#[cfg(feature = "remote")]
+use ledger::Receipts;
+use ledger::{LedgerCommand, MailLedger};
 
 #[tokio::test(flavor = "current_thread")]
 async fn explicit_targets_and_one_shared_caller_preserve_protocols_origins_and_rejections() {
@@ -136,26 +125,6 @@ async fn explicit_targets_and_one_shared_caller_preserve_protocols_origins_and_r
     let custody = retirement.custody().expect("the actual counter survives");
     assert_eq!(custody.descendants, []);
     assert_eq!(custody.child_failures, []);
-}
-
-struct MailLedger {
-    entries: Vec<(MailAddr, Box<[u8]>)>,
-}
-
-#[bombay::actor(sends = { receipts: Vec<EstablishedDelivery<Receipts>> })]
-impl MailLedger {
-    fn receive(&mut self, from: MailAddr, command: LedgerCommand) -> BehaviorActed<Self> {
-        match command {
-            LedgerCommand::Append(original) => {
-                self.entries.push((from, original));
-                Ok(Actions::cont())
-            }
-            LedgerCommand::Read(reply_to) => {
-                let origins = self.entries.iter().map(|(origin, _)| *origin).collect();
-                Ok(Actions::stop().send_receipts(EstablishedDelivery::new(reply_to, origins)))
-            }
-        }
-    }
 }
 
 #[tokio::test(flavor = "current_thread")]

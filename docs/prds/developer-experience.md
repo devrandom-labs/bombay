@@ -2443,3 +2443,71 @@ the focused callback law; catalogue retention remains blocked on native-test
 ownership. Do not add a session accessor, second callback family or dummy export
 for those callers. Public SDK configuration/export/query surfaces remain open;
 this candidate is not whole-repository or complete SDK-hiding acceptance.
+
+Native-test ownership, pre-edit DX01/20/23/25: actual SDK query drivers belong
+under Node's private test owner; public constructor/admission/refusal tests must
+remain external. The business callback stays actor-only. Capture the owning
+Node's actual shared SDK connection before invocation inside the private owner;
+introduce no session accessor, callback variant, feature marker or fake session.
+First prove the existing recorded/scheduled Counter and Ledger query/replay
+journeys there, preserving all protocol values, calls, accepted prefixes,
+provider/native observations and retirement oracles. Full SDK-dependent public
+client compilation fails on the existing two-argument callbacks before this cut.
+
+Keep one test-owned Ledger actor/protocol source and one shared finite
+request/provider/configuration source for the real external/private consumers.
+Parent visibility supplies only the existing plain protocol products and
+provider functions needed by those tests; no validated runtime contract is
+widened. The external constructor suite intentionally never executes provider
+verification; any dead-code expectation must be limited to that partial fixture
+use, not suppress interface or invariant failures. Reuse existing self-crate
+alias, actual example Counter source, existing providers and full retirement
+oracle. Expected production/API delta0 (only cfg(test) module curation); fixture
+moves are test-only. Control7/residual3/publication2/terminal24 and all current
+owned values/authority remain unchanged. Broad transport-test migration waits
+for these four real private-owner journeys and both review passes. Public
+configuration/export/query hiding remains a separate open interface obligation.
+
+First-cut compiler veto: the moved Ledger's generated send product retained
+private visibility while its actor became parent-visible. Use the existing
+named-lane visibility at exactly the actor's test-parent scope; no public
+runtime type, new bound or production macro change is involved. Remove imports
+whose definitions moved to the shared protocol source. Independent reviews
+conserve every original journey action and assertion. They also require an
+additional observable: each retained connection clone is closed after its
+owning Node closes. This proves the new private alias shares close authority;
+an omitted actual close must fail this assertion even if an Ok receipt is used.
+
+Focused ownership proof: all four original recorded/scheduled Counter/Ledger
+journeys pass Rust1.99/1.95 in debug and optimized builds (16 executions).
+Each command lists and runs exactly those four names; all615 source hashes are
+identical across both compilers/profiles. Replacing only Node.close's native
+close with Ok makes every journey fail specifically at connection.is_closed()
+in both profiles (eight failures, no compiler error). Byte-restoring the owner
+restores all eight passes; the complete615-source snapshot also matches.
+Both independent evidence reviews verify all12 raw log hashes and the exact
+mutant/restored owner bytes. The inverse reaches the first sender-close check;
+it does not establish three independent close-site inversions. Existing generic
+retirement/Counter-state and finite nonshipping provider limits remain.
+NODE-PRIVATE-QUERY-{CURRENT,MINIMUM}-ROWS, NODE-PRIVATE-CLOSE-ROWS and
+NODE-PRIVATE-QUERY-VERIFIED bind commands, actual names and raw log hashes.
+Both source reviews conserve the original protocol/actor bodies, every action,
+replay/native observation and retirement assertion; the new clone shares the
+SDK's existing SessionInner and adds no opening or lifecycle authority.
+
+Aggregate checkpoint: Node still owns its original optional Application and
+connection. Driver remains Prepared/Activating/Initializing/
+SettlingInitialization/Active/Retiring/RetirementAttempted, with unchanged
+settlement3/action2/terminal24 alternatives and their current values. Runtime
+branches, modules and public spellings are unchanged. Test source +1390/-1329/
+net61; test-only module curation +4; four test source modules added; runtime
+production and public types +0/-0. No arrival-history state, repeated cause,
+false cardinality, nested transition authority, semantic boolean or structural
+caller syntax is added. Cross-check actual Driver, Node association/close,
+ApplicationOutcome and DX01/20/23/25. Disposition: pass the focused owner cut;
+the remaining native catalogue and SDK-facing configuration/query contracts are
+still open. No whole-repository or full SDK-hiding acceptance is claimed.
+The external no-default-feature consumer also passes its seven runtime cases;
+its two static harnesses are explicitly excluded from that command. Its only
+follow-up is gating the moved Receipts import to its actual remote consumers;
+the private native test bodies and owning runtime remain unchanged.

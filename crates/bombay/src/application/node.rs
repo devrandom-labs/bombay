@@ -409,3 +409,7 @@ where
         }
     }
 }
+
+#[cfg(test)]
+#[path = "node/tests/mod.rs"]
+mod tests;
