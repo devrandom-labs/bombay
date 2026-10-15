@@ -25872,3 +25872,59 @@ feature, dependency, default, service API or abstraction is selected here.
 Final CI/artifact review and a normal exact-head guarded merge remain required.
 Record their actual results and merge in the next delivery checkpoint; no full
 R01–R25, AUTH1 or NET1 gate closes from this prerequisite.
+
+### Concurrent export input — isolated research before implementation
+
+PR372's final submitted source is663ac97. Its CI/delivery gate remains separate;
+this research branch does not alter that submitted source. Selected dependency
+versions and ownership remain Behavior/Actors0.25.0, Communication0.1.5,
+Tokio1.53.1 and transitive futures-util0.3.34, without patches. Sealed research
+fe50322b/8da4583a inspects their actual receive, notification and future-set
+implementations. It selects no new production API, dependency or default.
+
+The required next law is two-way progress: an incoming query must progress while
+a prior actor reply remains pending, and an actor reply must progress without
+a later query or unrelated wake. Current receive_query/receive_native each
+borrow the whole Export. First isolate that ordinary public composition in an
+existing consumer test owner and compile it through pinned Nix. Expected E0499
+documents a borrowing limitation only; it is not an executed semantic inverse
+or proof that any particular new API is needed. Keep the probe under60 new
+source lines, with no manifest/dependency/public-type changes or new controller.
+
+Alternatives under investigation are disjoint borrowing within the existing
+owner using standard/Tokio futures, or the already locked FuturesUnordered for
+multiple actual native waits. The latter owns its children and their wake
+registrations but allocates per child; rebuilding it ends those borrowed waits
+and incurs allocation churn. Inspect and measure before selecting it. Dropping
+a temporary Communication receive removes its actual notification waiter;
+payload retention alone cannot establish progress. Preserve any acquired native
+result before disposing its producer. Do not invent a readiness flag, extra
+mailbox, task hierarchy, scheduler or public wrapper to evade the question.
+
+Mailbox-capacity readiness is a separate unresolved prerequisite. The selected
+Communication exposes no public capacity-only waiter. Its awaited send may
+admit after waiting and therefore cannot replace the approved coherent fresh
+permission check plus nonwaiting admission. This research promises no automatic
+idle retry, timeout, resource default, production identity or full acceptance.
+
+The public composition probe now has actual evidence: the unchanged concrete
+consumer target compiles with --no-run and exits0. Adding ten lines that retain
+both futures produces exactly one E0499 at the second mutable Export borrow.
+Both commands use pinned Nix with the selected lock and offline Cargo. No
+runtime test executes. Exact restoration returns the existing test owner from
+probe d53ff9c3 to original e71cf573; only this coordinator-owned PRD remains
+changed. Receipt5f1cac38/review9a2f0596 preserve the actual argv, outcomes, raw
+logs and source hashes. The coordinator independently inspected both commands,
+the exact diagnostic and restoration after the author's two disclosed passes.
+This demonstrates the public borrowing gap, not a selected solution or a
+runtime progress guarantee. No production API or dependency is changed.
+
+Correct the first probe-cost estimate: ten introduced/restored Rust lines are
+only part of this research. The author's baseline/run/restore/review programs
+add61 conservatively counted inline tooling lines, including their embedded
+review text. Keep the earlier ten-only estimate as superseded evidence.
+The known finite envelope becomes14673, leaving327 under15000; it still is not
+a full historical upper bound. Conservatively add three inline software-owner
+identities:101 identified plus five unresolved-history slots gives106 allocated
+against110. This adds no retained test/production/dependency/public-type lines,
+but the authored historical research and tooling remain cumulative.
