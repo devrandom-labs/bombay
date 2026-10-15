@@ -94,6 +94,18 @@ Do not weaken custody, pending-operation, replay or independent domain oracles
 to meet a size estimate. This remains test-only ownership research; any fixed
 fixture authority earns no fresh/revocable-permission or shipping-service credit.
 
+Private transport inventory `62b758ff` identifies the existing HTTP path as the
+first ordinary-Rust comparison location: asynchronous startup acquisition and
+private serving Work already reuse `execute_application_with`, preserving cold,
+partial, prepared, completed, native and notification outcomes. Investigate a
+private network service through that owner rather than a public Node forwarding
+facade or second runtime. Current Node opens before execution, closes separately
+and omits Entity families; hiding its Session argument alone is insufficient.
+No replacement signature/configuration type is selected. Static protocol/provider
+composition, startup refusal/readiness, retry triggers, service failure and complete
+network retirement remain required contracts. This source inventory adds twenty
+direct read inputs and 26 research lines; it executes no new feature witness.
+
 ## Current delivery (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
