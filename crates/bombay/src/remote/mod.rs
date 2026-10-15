@@ -4,6 +4,7 @@
 //! and actor-mailbox admission retain their separate contracts.
 
 mod ingress;
+pub mod json;
 mod metadata;
 pub(crate) mod startup;
 mod verification;
