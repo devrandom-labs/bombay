@@ -1277,3 +1277,22 @@ snapshot payload remain unchanged. Only three reviewed E0277 heading articles
 are appended to the minimum-compiler patch. Rust production/API+0/-0; tool+26/-13,
 expectation records+55/-4. No actor state, effect, queue, branch or ownership law
 changes. Final integrated Nix/archive gates and owner publication remain open.
+
+Native interpreter construction (DX15), pre-edit: derived extension law, using
+the existing ActionItem/InterpretItem receiving loans and named send products.
+Application::new(actor).with_interpreter(services) must admit the supplied
+concrete owner beside standard timers and delivery without replacing Environment.
+First write a caller that emits real OpenFile and ReadEnvironment requests in
+initialization and composes an actual terminating timer/shutdown pair; establish
+the missing-method compiler failure before production changes. This first
+construction witness supplies no runtime, cancellation or retirement acceptance.
+Services preserve complete OS rejections and return acquired File/String values
+through the existing receiving loan. Their ActionItem::retain_accepted must keep
+those actual owned results; the default intentionally discharges a receipt and
+cannot prove terminal custody. Reuse prepare_item/finish_item and existing pure
+actor authoring. No production type, bound, default, wrapper or dispatch change
+is authorized by this construction test alone. Before lowering, the smallest
+native journey must also prove both wrapper orders, standard delivery, unsupported
+leaves, exact failure, interrupted/late completion and full retirement; the
+external coherence probe does not replace those obligations. Expected first
+batch: one test source and this record, zero production changes.
