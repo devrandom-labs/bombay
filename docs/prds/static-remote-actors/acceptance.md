@@ -100,7 +100,7 @@ JSON cases and both Node consumers once in each profile. No full R02/R14 or
 other row closes.
 
 The user requires crate-owned remote capability behind Cargo feature `remote`.
-The dependent export-client implementation branch now certifies actual root,
+Merged PR370 (8d809b3d) certifies actual root,
 sibling and nested-child recipients against their Application's existing source
 before reply allocation. It preserves closed-target membership and native
 allocation refusals. Six ownership cuts reach their intended failures in both
@@ -109,10 +109,23 @@ a remote-only nonwaiting attempt with exact native Full/Closed originals and
 allocated sender identity. Two complementary consumer controls and five admission
 cuts pass in both profiles; both consumers pass after exact restoration. The
 independent test/source/execution reviews and uncredited disk/lint failures remain
-in the PRD. Combined-source local checks pass; required CI and reviewed delivery
-remain pending. This is
+in the PRD. Combined-source local checks and all six required/submitted checks
+pass; source/native/Nix reviews precede actual merge8d809b3d. This is
 local target/admission evidence, not protected publication, replay, permission
 coherence, real remote Stop or closure of a full R01–R25 row.
+
+A dependent test-only composition now carries an actual protected Counter Read
+through two public Nodes to the existing live requester actor. Both finite
+provider families pass in debug and optimized; four deliberately altered
+forwarding values fail the independent native final-state oracle after cleanup,
+and four fresh byte-exact restored controls pass. Actual typed Actions trigger
+the query and acknowledge consuming its reply. This supplies the narrow live
+consumer evidence. A subsequent comparison now protects the actual generated
+reply bytes using each finite provider's original Future and the existing
+result-preservation operation; it removes preregistered expected replies.
+Both profiles and the same four forwarding corruptions/restored controls pass.
+This does not supply production replay ownership, secure reply protection,
+adverse identity cases or a complete R01 witness.
 
 Examples consume its public API; example-only implementations cannot pass R01.
 Keep the local counter in `examples/counter` and the remote counter in
@@ -428,6 +441,13 @@ Counter54 executes plain/coverage debug and release, owner floors pass, and
 Driver2048/Observe4×1024 finish. Miri is skipped. Native64cases/160roles pass
 separately; held controls retain local inversion provenance. All fullR01–R25 stay open.
 
+Persistent private-request ownership now passes the independent32-case replay/
+custody campaign and12-case cancellation campaign with exact intended failures
+and restored controls. Combined Application clients pass22/0/0 per profile,
+strict scoped lint and formatting. Actual Node-associated shipping export,
+current mutable authority and full R01–R25/AUTH1/NET1 remain open.
+### Historical release0.1.3 preparation checkpoints
+
 Release0.1.3 now tracks successor PR371 on merged main8d809b3d; PR369 was
 closed without merging by the release bot. Its initial required check stopped
 on the isolated fixture path-package version mismatch before protected Counter tests.
@@ -462,3 +482,13 @@ isolated all-target/all-feature Clippy and format. Independent source5474865f /
 execution6dcc69da reviews pass twice. This qualifies submission of a corrected
 PR371 head, not required CI, TLS campaigns, merge or publication. The earlier
 144-byte excess remains unattributed and all full remote acceptance stays open.
+
+Current release result: PR371 actually merged75c8db4f with all six checks and
+scoped final source/native/Nix reviews passing. The registry archive, tag and267
+Rust files for bombay-rs0.1.3 match that reviewed tree; publication is verified.
+Earlier failures above retain their original scope and are not overwritten.
+The current unmerged export candidate adds per-request native clients and
+explicit Full-only retry. Its20 focused tests and combined406 tests pass in
+debug and optimized builds before release-main integration. Current-source
+inversions, post-integration combined gates, final review and PR delivery remain
+required. No full R01–R25, AUTH1 or NET1 obligation closes from these results.

@@ -23,18 +23,49 @@ after all six checks and scoped source/native/Nix reviews passed. It delivers
 crate-owned JSON object/limit checks and real Counter/Ledger Node consumers;
 eight intended inversions pass their stated oracles in both profiles. SessionLocal
 consumers and separate native TLS campaigns retain their distinct proof scopes.
-The dependent export-client branch adds remote-only Application certification
+[Client PR370](https://github.com/devrandom-labs/bombay/pull/370) merged8d809b3d
+after all six checks and scoped reviews passed. It delivers remote-only Application certification
 for actual root, sibling and nested-child recipients before reply allocation.
 Focused ownership, closure and native-error controls, six intended inversions
-and fresh restored controls pass in both profiles; local combined checks pass,
-while its required CI and reviewed PR delivery remain pending. This
+and fresh restored controls pass in both profiles; combined local checks and
+required CI pass on the exact reviewed/merged source. This
 does not supply remote publication or close any full acceptance row.
 Its existing fixed-target client now has a remote-only nonwaiting attempt;
 the two actual pressure/origin/closure consumers pass in both profiles. False
 success/classification cuts fail in both profiles (ten intended failures total);
 both consumer tests pass after exact restoration. Independent execution review
-8a97b4a6 qualifies those results. Combined-source local checks pass; actual
-required CI and reviewed delivery remain pending.
+8a97b4a6 qualifies those results. Actual reviewed merge is8d809b3d with
+required Nix38683330920 passing. Release PR371 merged75c8db4f through normal
+head-guarded squash after all six checks and final scoped reviews passed.
+Its tree matches reviewed41a36c5 exactly; required Nix38707141434 passes.
+Actual bombay-rs0.1.3 publication is verified: the registry checksum, clean VCS
+commit, annotated tag and267 Rust files match the reviewed merged tree.
+Its packaged graph retains SDK1.10.9, TLS1.10.3 and Rustls0.23.46. No new
+registry-consumer execution or complete remote support is claimed.
+
+The unmerged crate-owned export retains one existing native client per request;
+20 focused consumer tests pass in both profiles. Two native Full-retry cases
+also pass with the narrow loan-release-panic extension. Dispatch removal,
+authority bypass and late storage fail their intended assertions in both
+profiles, followed by exact restored controls. Scoped interface minimization
+and independent source reviews are recorded. Draft PR372 contains the candidate
+and the corrected allocation measurement: restored plain55/0/0 and protected
+70/0/1 suites pass in both profiles. Final combined gates, execution review and
+actual PR delivery remain required. These scoped results do not change any
+full R01–R25, AUTH1 or NET1 state.
+
+An isolated test-only composition now runs two actual Nodes with both protocols
+and positive provider families: all eight retained-Read controls pass, while
+eight stateless comparisons fail their intended oracle after native cleanup.
+This proves the fixed-key research distinction, not production replay policy or
+a full witness. A dependent live-requester comparison now passes both finite
+providers in both profiles; four forwarded-value corruptions reach the intended
+final actor-state failure and fresh byte-exact restored controls pass. The actual
+actor emits its typed completion acknowledgement before shutdown. Both finite
+providers now protect actual generated reply bytes, retaining their original
+results before producer disposal; scoped strict checks and the whole70/0/1
+target pass in both profiles. Shipping authenticated request/reply protection
+and the shared export/replay owner remain required.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;
@@ -444,6 +475,13 @@ CI38153406874 and publication38158907672 passed; full registry-consumer proof
 and Bombay adoption remain open.
 Protected JSON Application integration and genuine child-owned preparation
 verification run independently under the PRD's selected contracts. All full R01–R25, AUTH1/NET1 states and reciprocal dependencies stay open.
+
+Persistent private-request ownership now passes the independent32-case replay/
+custody campaign and12-case cancellation campaign with exact intended failures
+and restored controls. Combined Application clients pass22/0/0 per profile,
+strict scoped lint and formatting. Actual Node-associated shipping export,
+current mutable authority and full R01–R25/AUTH1/NET1 remain open.
+### Historical release0.1.3 preparation checkpoints
 
 Release0.1.3 now tracks successor PR371 on merged main8d809b3d; PR369 was
 closed without merging by the release bot. Its initial required check stopped
