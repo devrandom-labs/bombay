@@ -144,6 +144,18 @@ reported as successful joined cleanup. Whole-owner surrender remains distinct
 from cancelling a borrowed wait. Inspect and prove cancellation/timeout cuts
 before selecting a network retirement implementation or adding any cleanup task.
 
+Private configuration comparison `7b95615e` retains an ordinary consuming
+Application method and a semantic Rust input product as the first candidate,
+without selecting their signatures or credential/address representations.
+Reuse native setters and the existing strict profile checks internally. The
+selected EndPoint constructor accepts grammar but does not establish DNS/socket
+reachability; plain addresses must not inject native `?` metadata or `#` options.
+Native Config serialization skips all five base64 credential fields, so a
+Config-to-JSON normalization roundtrip cannot preserve those originals. These
+hazards need direct regressions before retaining the private mapping. Fixed
+security/profile approvals carry; no new parser, SDK JSON public API, resource
+default, host mode or Send bound is selected by this source comparison.
+
 ## Current delivery (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
