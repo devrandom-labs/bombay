@@ -1256,3 +1256,18 @@ canonical golden, dependency or production API change. Expected delta: one
 tool, two expectation records and this coordination record. Independently
 review the three heading-only changes and prove omitted targets, wrong mode,
 added source and a damaged named expectation are rejected before retention.
+
+Retained replay result: corrected current/MSRV runs each pass37 fixtures
+(35 denials/two positives), six compile harnesses and30 outer tests in114.391/
+109.693 seconds. Actual compiler identities are1.99/1.96; all585 caller hashes
+remain unchanged. The first parser ignored unexpected fixture paths; its real-log
+counterexample is retained and that candidate receives no final verifier credit.
+The corrected parser checks paths before membership and rejects duplicates and
+wrong pass/fail modes. Nine transcript controls and both independent reviews pass.
+Three full-driver controls reject omitted targets despite raw exit0, added source
+despite raw exit0, and a deliberately damaged named stash expectation with actual
+Rust exit101. Canonical fixture/expectation files, Cargo graphs and every prior
+snapshot payload remain unchanged. Only three reviewed E0277 heading articles
+are appended to the minimum-compiler patch. Rust production/API+0/-0; tool+26/-13,
+expectation records+55/-4. No actor state, effect, queue, branch or ownership law
+changes. Final integrated Nix/archive gates and owner publication remain open.

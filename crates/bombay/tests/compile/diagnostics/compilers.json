@@ -11,7 +11,7 @@
       "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
     }
   },
-  "patch_sha256": "d78f77419462335505aeeba7c95a537252ceb621bae24a3d95a65ee359780450",
+  "patch_sha256": "ec071a38e82838465cd1337672d9d5b792a9a7333869a2d106993ee096547839",
   "snapshots": {
     "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
       "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
@@ -57,10 +57,19 @@
       "canonical_sha256": "cab3fdbd8ebf52c444beaecf5118792bc1e20888ec2f267312d0ac5a37c7f590",
       "minimum_sha256": "48d6eeea1102f65b78d7c71102dc6a16e8a5a0dbc799f408ff65706a3185ae2d",
       "fixture_sha256": "6beed97507e989884df13c1a04df721a820f962af81a1059c8d0644414619179"
+    },
+    "crates/bombay/tests/compile/fail/worker_factory_not_callable.stderr": {
+      "canonical_sha256": "df0f015bb3e2c67168334356bab6488d7cdc9f0a6daddbf4f112c62d4f7b0109",
+      "minimum_sha256": "0b389cfd3432ce8749361acf8f2dd56928a9be86713db6efd1bcc674b5d03fc6",
+      "fixture_sha256": "1cca36456928fcebe254528aae7b4c769401ef18447c22207f809cc05574c8e8"
     }
   },
   "cases": [
     "tests/compile/fail/axum_wrong_root_protocol.rs",
+    "tests/compile/fail/discarded_actor_policy_and_terminal.rs",
+    "tests/compile/fail/fluent_template_order_is_static.rs",
+    "tests/compile/fail/stash_requires_closed_phase.rs",
+    "tests/compile/fail/stash_requires_infallible_error.rs",
     "tests/compile/fail/topology_duplicate_roles.rs",
     "tests/compile/fail/topology_erased_cold_origin.rs",
     "tests/compile/fail/topology_family_duplicate_class.rs",
@@ -84,12 +93,28 @@
     "tests/compile/fail/topology_inferred_wrong_role_parent.rs",
     "tests/compile/fail/topology_missing_readiness.rs",
     "tests/compile/fail/topology_missing_trace.rs",
-    "tests/compile/fail/topology_swapped_roles.rs"
+    "tests/compile/fail/topology_swapped_roles.rs",
+    "tests/compile/fail/worker_factory_clone.rs",
+    "tests/compile/fail/worker_factory_not_callable.rs",
+    "tests/compile/fail/worker_factory_not_send.rs",
+    "tests/compile/fail/worker_factory_reuse.rs",
+    "tests/compile/fail/worker_factory_source_refusal.rs",
+    "tests/compile/fail/worker_factory_wrong_output.rs",
+    "tests/compile/pass/fluent_template_stack.rs",
+    "tests/compile/pass/stash_machine.rs"
   ],
   "suites": [
     "topology_rejects_missing_capabilities_and_invalid_custody",
     "topology_inference_rejects_forged_roles_and_incomplete_declarations",
     "topology_rejects_invalid_entity_class_sources",
-    "axum_protocol_inversion_is_compile_checked"
-  ]
+    "axum_protocol_inversion_is_compile_checked",
+    "behavior_layer_authoring_contract",
+    "worker_factory_rejects_invalid_capabilities"
+  ],
+  "targets": {
+    "application_topology": 18,
+    "axum": 7,
+    "template_authoring": 1,
+    "worker_factory": 4
+  }
 }

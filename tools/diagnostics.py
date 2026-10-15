@@ -30,6 +30,27 @@ def snapshot_names(root):
     return sorted(str(path.relative_to(root)) for path in root.rglob("*") if path.is_file())
 
 
+def diagnostic_coverage(transcript, manifest):
+    cases = re.findall(
+        r"^test (.+?\.rs)"
+        r"(?: \[(should pass|should fail to compile)\])? \.\.\. ok$",
+        transcript, re.MULTILINE)
+    paths = [path for path, _ in cases]
+    suites = [name for name in manifest["suites"]
+              if transcript.count(f"test {name} ... ok\n") == 1]
+    summaries = re.findall(
+        r"test result: ok\. (\d+) passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;",
+        transcript)
+    modes = all(mode == "should pass" if "/pass/" in path
+                else mode in ("", "should fail to compile") for path, mode in cases)
+    complete = len(paths) == len(set(paths)) == len(manifest["cases"]) and \
+        set(paths) == set(manifest["cases"]) and modes and \
+        suites == manifest["suites"] and \
+        sorted(map(int, summaries)) == sorted(manifest["targets"].values())
+    return {"verified_cases": sorted(paths), "verified_suites": suites,
+            "case_modes_valid": modes, "coverage_complete": complete}
+
+
 def main():
     arguments = argparse.ArgumentParser(description=__doc__)
     arguments.add_argument("--output", type=Path, required=True)
@@ -102,8 +123,9 @@ def main():
                        CARGO_PROFILE_DEV_DEBUG="0", CARGO_PROFILE_TEST_DEBUG="0",
                        CARGO_PROFILE_RELEASE_DEBUG="0", CARGO_TERM_COLOR="never")
             argv = [options.cargo, "test", "--locked", "-p", "bombay-rs", "--features",
-                    "axum", "--test", "application_topology", "--test", "axum",
-                    "--no-fail-fast"]
+                    "axum", "--no-fail-fast"]
+            for target in manifest["targets"]:
+                argv.extend(["--test", target])
             log = output / "diagnostics.log"
             with log.open("w") as transcript:
                 completed = subprocess.run(argv, cwd=workspace, env=env, stdout=transcript,
@@ -111,20 +133,11 @@ def main():
             receipt["commands"].append({"argv": argv, "exit": completed.returncode,
                                         "log": log.name, "log_sha256": digest(log)})
             transcript = log.read_text()
-            cases = set(re.findall(r"^test (tests/compile/fail/\S+\.rs) \.\.\. ok$",
-                                   transcript, re.MULTILINE))
-            receipt["verified_cases"] = sorted(cases)
-            receipt["verified_suites"] = [name for name in manifest["suites"]
-                                         if f"test {name} ... ok\n" in transcript]
-            coverage = cases == set(manifest["cases"]) and \
-                receipt["verified_suites"] == manifest["suites"] and all(
-                    f"test result: ok. {count} passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;"
-                    in transcript for count in [18, 7])
-            receipt["coverage_complete"] = coverage
+            receipt.update(diagnostic_coverage(transcript, manifest))
             receipt["snapshot_after_tests"] = hashes(workspace, snapshot_names(workspace))
             if receipt["snapshot_after_tests"] != expected:
                 raise SystemExit("Verification changed the source or expected diagnostics")
-            if completed.returncode == 0 and not coverage:
+            if completed.returncode == 0 and not receipt["coverage_complete"]:
                 raise SystemExit("Successful exit without the complete named diagnostic corpus")
         status = completed.returncode
     finally:

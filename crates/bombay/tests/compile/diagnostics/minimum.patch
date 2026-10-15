@@ -741,3 +741,29 @@
 +   | |_^
 +   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
 +   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
+--- a/crates/bombay/tests/compile/fail/worker_factory_not_callable.stderr
++++ b/crates/bombay/tests/compile/fail/worker_factory_not_callable.stderr
+@@ -1,4 +1,4 @@
+-error[E0277]: expected an `FnMut(&_)` closure, found `u8`
++error[E0277]: expected a `FnMut(&_)` closure, found `u8`
+  --> tests/compile/fail/worker_factory_not_callable.rs:1:27
+   |
+ 1 | fn main() { let _source = bombay::WorkerFactory::new(3_u8); }
+@@ -14,7 +14,7 @@
+   |     Factory: FnMut(&Role) -> Preparation,
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `WorkerFactory`
+
+-error[E0277]: expected an `FnMut(&_)` closure, found `u8`
++error[E0277]: expected a `FnMut(&_)` closure, found `u8`
+  --> tests/compile/fail/worker_factory_not_callable.rs:1:54
+   |
+ 1 | fn main() { let _source = bombay::WorkerFactory::new(3_u8); }
+@@ -32,7 +32,7 @@
+   |     pub const fn new(factory: Factory) -> Self {
+   |                  --- required by a bound in this associated function
+
+-error[E0277]: expected an `FnMut(&_)` closure, found `u8`
++error[E0277]: expected a `FnMut(&_)` closure, found `u8`
+  --> tests/compile/fail/worker_factory_not_callable.rs:1:27
+   |
+ 1 | fn main() { let _source = bombay::WorkerFactory::new(3_u8); }
