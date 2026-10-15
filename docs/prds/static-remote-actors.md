@@ -24461,3 +24461,54 @@ including actual Node association, bounded ingress/refusal disposition, coherent
 current-authority guards, exact Full retry/uncertainty, protected reply emission
 and original retirement. No new production API or concurrency default is
 selected by this private one-outstanding comparison.
+
+
+### Export constructor and request identity — ordinary Rust eligibility
+
+Actual main8d is incorporated after proving its tree equals already incorporated
+reviewed7d57 exactly; ancestry merge preserves the checkpoint8388285a tree.
+No independent main source is discarded. Research commit05346bbc preserves
+the private runtime/cancellation comparison and complete stage records.
+
+Before production selection, compile the external286-line private ordinary-Rust
+constructor candidate def7fef5 under the existing client target. It composes the
+real declaration/count receiver, certified client and persistent rows; four
+concrete declarations cover both provider families and both actual protocols.
+Keep a temporary explicit child path only for compilation and restore it exactly
+afterward. Forecast286 raw test-only source lines plus declaration, no production
+or API change; the introduced research path counts cumulatively (38/40).
+
+A constructor-fixed same-request predicate compares only provider-owned logical
+identity and sequence. Protected bytes still conflict independently. Byte-only
+request lookup is rejected because equal bytes in different logical sessions
+may coexist; a borrowed row prevents later exclusive owner operations. Compare
+an opaque request key issued from the existing actual reply recipient plus a
+private ordinal. Selected recipient equality delegates to the native admission
+Weak::ptr_eq, not a numeric address. This adds no identifier generator, registry
+or allocation; public retention would require an additional justified type and
+measured cross-export/cross-Application denial. No public key API is selected
+merely by this compiler-only candidate.
+
+The prototype's free lexical Application/Session pairing is deliberately private:
+it cannot prove Node association. Shipping must consume the selected private
+Node attachment and prove absent/closed/foreign/error cases. Likewise supplied
+guards must be actual coherent permission loans with meaningful substitutions;
+the fixed unit check is not a revocation proof. The synchronous rejection
+consumer owns the exact native refusal but can itself retain/block/panic; no
+whole-service pressure, FINAL or bounded rejection guarantee follows.
+
+Compile diagnostics only qualify or veto this concrete composition; they cannot
+justify wrappers, aliases, bounds or public surfaces. Preserve original causes
+and diagnostics, then restore the parent and keep all full acceptance open.
+
+
+The exact external constructor/key candidate def7fef5 passes pinned cargo check
+--offline --locked -p bombay-rs --features remote --test application_clients,
+exit0; raw64fb6af0 retains15 expected unused-private-candidate warnings. This
+is compiler eligibility only, not a strict lint pass, executed declaration,
+current-authority guarantee or shipping API. The temporary parent is restored
+byte-exactb1e3127d; no production source is retained. Runtime prerequisites
+are same-export distinct-session/equal-byte acceptance and same-address
+cross-Application/cross-export key refusal before authority or mailbox access,
+plus genuine authority loans. Complete constructor/ingress/retirement and all
+full remote gates remain required.
