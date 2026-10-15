@@ -23770,3 +23770,129 @@ passes all twelve terminal commands and their twice-checked raw hashes. It
 confirms all four new remote ownership/client names and both isolated hosted/
 unhosted names execute once per profile. Source/VCS, authorship, ignored cases
 and executable-custody limits above remain explicit; required CI is still pending.
+
+
+### Native Read replay custody — test-only composition stage
+
+PR370 now submits the certified-client contribution at7d57b60, targeting actual
+main792529ea. Fresh CI38683330920 is live; no delivery is credited. Reuse the
+clean merged JSON worktree as the isolated replay research branch rather than
+adding another worktree. Its base is the exact submitted client source.
+
+The next smallest law is preservation of one acquired native Read outcome across
+a duplicate protected request. Repeating an already completed terminating Ledger
+Read must not replace its actual first result with a later Closed refusal. The
+intended stateless comparison must first retain that real Closed(Read(original))
+after joined retirement, then fail the one-attempt oracle after all native and
+network cleanup. Counter supplies a second concrete protocol, with no claim that
+its nonmutating Read changes actor state.
+
+Test ordinary Rust functions and a bounded two-element outside Vec of real native
+results before considering a reusable production owner. Reuse existing Task
+Actions for an actual sender batch, actual Node-owned Sessions, JSON checks,
+provider-result custody, ingress retention and the certified native client.
+The two existing provider families contribute only explicitly ported positive
+recorded/oneshot equations over current Metadata15. Their test-only request/reply
+schemas, fixed identities and limits select no production wire/profile/default.
+This Task finishes after emitting the batch; service Work receives the replies.
+Typed replies returning into a live requesting actor remain a full R01 duty.
+
+Expected source: one new owning application_clients/network_replay.rs test module
+and its existing parent's declaration. Expected production/API/dependency delta:
+zero. Candidate raw tests+684/-0 are unformatted and uncompiled; a second review
+and formatted measurement precede adoption. Under the standing recommendation
+delegation, accept a checkpoint of33 cumulative paths,368 net production lines,
+3800 test lines and three public types in the current measured post81dc window.
+The extra path is the new test module; earlier whole-goal and multi-repository
+records remain authoritative and are not reset. This is a review bound, not a
+code-size target or acceptance waiver. No new runtime, provider trait, mailbox,
+production cache or macro is authorized by this test-only comparison.
+
+Stateless comparison and corrected controls must execute in debug and optimized
+builds. Timeouts, port races, missing callbacks, compilation and unrelated
+assertions earn no semantic inversion credit. Retain each actual Query/Reply,
+permit, protected/proof allocation, provider result and native refusal outside
+disposable waits until complete cleanup/oracles. Actual transport execution is
+separate from deterministic policy proof. Authorization updates, bounded replay
+windows, altered-content conflicts, caller cancellation, protected Stop, child
+exports and all full R01–R25/AUTH1/NET1 obligations remain required.
+
+
+The finalized candidate is683 raw test lines after product/naming minimization;
+independent two-pass review672f17dc qualifies source3d70020b only. Pinned formatting
+produces991 new-module lines (995 including its parent declaration), projecting
+3197 cumulative test net. Initial no-run compilation fails source eligibility: the
+Task family is exported through the selected public lifecycle module, and a
+redundant post-borrow recipient getter in generic assertions demands an otherwise
+unneeded Send bound. Inspect the exact selected lifecycle/task source, correct
+only its import, and remove the redundant getter comparison. The original reply
+capability remains retained and is checked against the actual Ledger Closed
+original; no new generic bound, production API or architecture is introduced.
+Preserve the original compiler failure without semantic inversion credit.
+
+
+The second no-run command rejects moving the original query receiver into Work
+when the enclosing owner must drain it after cleanup. Preserve the stated outside
+queue owner by lending Work an explicit mutable receiver borrow; the existing
+public execute_with contract accepts borrowed Work. Add no shared ownership,
+clone, wrapper or bound. This is correction of the test's custody spelling, not
+a new runtime contract or a passing replay assertion.
+
+
+The corrected borrowed-source candidate compiles with one unused-field warning:
+its affine client is deliberately retained through all native cleanup. Make that
+terminal custody explicit in each concrete consumer: surrender the owned reply
+client only after the last native/replay oracle. This preserves its lifetime and
+adds no bound, warning exemption or replacement owner. Compilation alone still
+establishes no executing replay result.
+
+
+All four exact debug replay controls pass1/0/0 on source9c29139d, and all four
+stateless comparisons fail only at the intended two-attempts-versus-one oracle
+after cleanup. Ledger first establishes its actual Closed(Read(original)) and
+error Reply; Counter independently observes two actual acquired native Reads.
+Each is a two-Node native TLS execution using fixed test-provider records, not
+production identity or full remote acceptance. Original compiler eligibility
+failures receive no inversion credit. The same matrix is now compiling optimized
+source; no optimized outcome is credited yet. Per-case source/command/log custody
+does not claim copied binaries or immutable full-graph capture for every case.
+
+
+The complete matrix is terminal exit0: eight retained-result controls pass and
+eight stateless comparisons reach their intended two-versus-one failure across
+both protocols/providers and both profiles. Source9c29139d stays byte-exact for
+all sixteen executions. Author-qualified execution review43ea41c6 / audit49613912
+checks every exact named row, raw hash and cleanup-before-oracle ordering; its
+authorship and missing binary/full-graph custody are explicit. Actual code is
+993 module lines plus four declaration lines, with no production/API changes.
+
+Pinned formatting passes. Scoped strict Clippy reports fourteen style diagnostics,
+retained separately without semantic credit. Select ordinary borrowed role input,
+Option-of-reference observations, exhaustive merged refusal patterns and equivalent
+if-let/let chains. Retain narrowly scoped test-only complexity/length expectations
+where complete original native products and explicit policy inputs belong together;
+add no wrapper, alias, trait or generic bound for a lint. Reverify affected positive
+and stateless cases on the resulting source. Full R01 still requires the protected
+reply to reach a live requester actor; SDK IDs here select no production logical
+replay namespace. Approved provider-authorized logical bindings and checked
+sequences retain their separate normative contract.
+
+
+The selected style patch74948fae and pinned formatting produce final source
+373124e2,1013 module lines plus four declaration lines. Scoped strict Clippy
+and formatting pass. A fresh complete sixteen-case matrix on these bytes again
+executes eight retained-result positives and eight intended stateless failures;
+the original-source matrix remains separate. The entire owning Application
+client target passes20/0/0 in debug and optimized, including all four new cases.
+Independent style/source/execution review3dc74a76 checks preserved Rust tokens,
+all exact rows/log hashes and oracle ordering; no full witness or copied-binary
+claim follows.
+
+Complete current test-only endpoint: four changed paths, zero untracked files;
+production+0/-0/net0, tests+1017/-0/net1017, public types+0/-0. Including the
+previous measured JSON/client window: production+306/-1/net305, tests+3223/-4/
+net3219, public types+3/-0,30 retained plus three restored research paths. The
+33-path/368-production/3800-test/three-type checkpoint holds; older whole-goal
+records are carried without reset. No manifest, lock or production source changed
+in this research stage. Keep it on the dependent research branch while the
+actual client PR370 required CI and complete remote implementation remain open.

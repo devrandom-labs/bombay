@@ -688,3 +688,7 @@ async fn certified_client_try_send_preserves_full_retry_and_exact_root_closure()
         retirement,
     ));
 }
+
+#[cfg(feature = "remote")]
+#[path = "application_clients/network_replay.rs"]
+mod network_replay;

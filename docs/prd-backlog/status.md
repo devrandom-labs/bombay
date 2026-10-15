@@ -35,6 +35,11 @@ success/classification cuts fail in both profiles (ten intended failures total);
 both consumer tests pass after exact restoration. Independent execution review
 8a97b4a6 qualifies those results. Combined-source local checks pass; actual
 required CI and reviewed delivery remain pending.
+An isolated test-only composition now runs two actual Nodes with both protocols
+and positive provider families: all eight retained-Read controls pass, while
+eight stateless comparisons fail their intended oracle after native cleanup.
+This proves the fixed-key research distinction, not production replay policy or
+a full witness. The protected reply still needs a live requester actor consumer.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;
