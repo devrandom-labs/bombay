@@ -1243,3 +1243,16 @@ registry execution fails one existing worker-factory diagnostic expectation
 (three error headings use "a" instead of "an"); new stash fixtures pass.
 Keep that failure recorded. Owner review/publication, normal registry adoption,
 final consumer gates and bounded retention/overflow remain open.
+
+Supported authoring diagnostics, pre-edit: the normal MSRV registry matrix
+fails only worker_factory_not_callable: three E0277 headings say "a" instead
+of "an"; source-span labels and every rejection remain unchanged. Extend the
+existing immutable compiler replay with this exact reviewed patch and hashes,
+retaining all25 prior denials and adding the12 actual authoring/worker fixtures
+(35 denials/two positives total), six compile harnesses and target counts
+18/7/1/4. Derive commands/counts from one manifest; check each path's pass/fail
+mode, exact occurrence counts and complete source conservation. No Rust source,
+canonical golden, dependency or production API change. Expected delta: one
+tool, two expectation records and this coordination record. Independently
+review the three heading-only changes and prove omitted targets, wrong mode,
+added source and a damaged named expectation are rejected before retention.
