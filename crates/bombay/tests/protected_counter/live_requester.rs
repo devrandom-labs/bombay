@@ -509,7 +509,8 @@ async fn live_read<Receipt>(
                 reply_declaration, reply_verification, reply_scope, delivered, acknowledged, additional_reply,
                 reply_publications, stopped, report, command, requester_address, caller_id, receiver_id)
         }).unwrap_or_else(|_| panic!("caller Work host entry"));
-        let ((), (outcome, caller_native, caller_notifications)) = tokio::join!(caller_execution, caller_receiving);
+        let ((), outcome) = tokio::join!(caller_execution, caller_receiving);
+        let (outcome, caller_native, caller_notifications, ()) = outcome.into_parts();
         let (read, caller_cleanup) = outcome.try_into_completed().unwrap_or_else(|_| panic!("original caller Work"));
         let caller_closed = caller.close().await;
         let undeclared = queryable.undeclare().await;
@@ -520,8 +521,9 @@ async fn live_read<Receipt>(
         (read, caller_native, caller_notifications, caller_cleanup, caller_closed, undeclared,
             remaining_queries, requests, legacy_values, publications, primed, stopped, report, target_address, scope)
     }).unwrap_or_else(|_| panic!("receiver Work host entry"));
-    let ((), (outcome, receiver_native, receiver_notifications)) =
+    let ((), outcome) =
         tokio::join!(execution, receiving);
+    let (outcome, receiver_native, receiver_notifications, ()) = outcome.into_parts();
     let (output, receiver_cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original receiver Work"));

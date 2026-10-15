@@ -334,6 +334,15 @@
                 done
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter remote_counter::native_ -- --test-threads=1
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter remote_counter::native_ -- --test-threads=1
+                for profile in debug release; do
+                  profile_arguments=()
+                  if [[ "$profile" == release ]]; then profile_arguments+=(--release); fi
+                  cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter "''${profile_arguments[@]}" live_requester:: > "requester-$profile.log" 2>&1
+                  cat "requester-$profile.log"
+                  grep -F 'test live_requester::recorded_live_requester_stores_checked_read_reply ... ok' "requester-$profile.log"
+                  grep -F 'test live_requester::scheduled_live_requester_stores_checked_read_reply ... ok' "requester-$profile.log"
+                  grep -F 'test result: ok. 2 passed; 0 failed; 0 ignored;' "requester-$profile.log"
+                done
                 cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check
                 cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter -- --deny warnings
                 cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter -- --deny warnings

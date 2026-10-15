@@ -41,7 +41,7 @@ def diagnostic_coverage(transcript, manifest):
     summaries = re.findall(
         r"test result: ok\. (\d+) passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;",
         transcript)
-    modes = all(mode == "should pass" if "/pass/" in path
+    modes = all(mode in ("", "should pass") if "/pass/" in path
                 else mode in ("", "should fail to compile") for path, mode in cases)
     complete = len(paths) == len(set(paths)) == len(manifest["cases"]) and \
         set(paths) == set(manifest["cases"]) and modes and \
