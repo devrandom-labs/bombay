@@ -48,10 +48,15 @@ The unmerged crate-owned export retains one existing native client per request;
 also pass with the narrow loan-release-panic extension. Dispatch removal,
 authority bypass and late storage fail their intended assertions in both
 profiles, followed by exact restored controls. Scoped interface minimization
-and independent source reviews are recorded. Draft PR372 contains the candidate
+and independent source reviews are recorded. Ready PR372 contains the candidate
 and the corrected allocation measurement: restored plain55/0/0 and protected
-70/0/1 suites pass in both profiles. Final combined gates, execution review and
-actual PR delivery remain required. These scoped results do not change any
+70/0/1 suites pass in both profiles. Workspace Nextest passes703/one skipped;
+five current CI checks pass, including independently reviewed native TLS debug
+and release campaigns. Required Nix remains live and actual PR delivery remains
+required. An isolated dependent contribution adds concurrent query/native
+receiving to the existing export: its three extended Counter/Ledger cases pass
+in debug and optimized profiles. Intended causal failures, restored controls
+and final delivery remain required for that contribution. These results do not change any
 full R01–R25, AUTH1 or NET1 state.
 
 An isolated test-only composition now runs two actual Nodes with both protocols

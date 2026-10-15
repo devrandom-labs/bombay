@@ -187,6 +187,22 @@ mod counter {
                             };
                             let mut query = None;
                             let mut completed = None;
+                            let occupied_issuance = session
+                                .get("bombay/association/read")
+                                .allowed_destination(Locality::SessionLocal)
+                                .payload(records[0].protected.as_ref())
+                                .attachment(records[0].proof.as_ref())
+                                .await;
+                            export.receive_query(&mut query).await;
+                            let query_guard = {
+                                let mut receiving =
+                                    pin!(unconstrained(export.receive(&mut query, &mut completed)));
+                                receiving
+                                    .as_mut()
+                                    .poll(&mut Context::from_waker(Waker::noop()))
+                            };
+                            let premature = completed.take();
+                            let guarded_query = query.take();
                             let received_a = {
                                 let mut receiving =
                                     pin!(unconstrained(export.receive(&mut query, &mut completed)));
@@ -274,6 +290,7 @@ mod counter {
                                     without_native,
                                     completed,
                                 ),
+                                (occupied_issuance, guarded_query, query_guard, premature),
                             ))
                         } else {
                             None
@@ -337,29 +354,55 @@ mod counter {
                 while let Some(original) = fence.receive().await {
                     fence_drain.push(original);
                 }
-                let (query_observation, before_count, occupied_count, query_reply) =
-                    if let Some((.., query, _, (before, issued, _, occupied, _, _))) =
-                        acquired.as_mut()
+                let (query_observations, before_count, occupied_count, query_reply, guarded_reply) =
+                    if let Some((
+                        ..,
+                        query,
+                        _,
+                        (before, issued, _, occupied, _, _),
+                        (occupied_issuance, guarded_query, _, _),
+                    )) = acquired.as_mut()
                     {
-                        let observation = query.as_ref().map(|received| {
-                            received.as_ref().map(|(query, _)| {
-                                (
-                                    query.key_expr().as_str().to_owned(),
-                                    query.payload().map(|bytes| bytes.to_bytes().into_owned()),
-                                    query
-                                        .attachment()
-                                        .map(|bytes| bytes.to_bytes().into_owned()),
-                                )
-                            })
-                        });
+                        let observations =
+                            [query.as_ref(), guarded_query.as_ref()].map(|received| {
+                                received.map(|received| {
+                                    received.as_ref().map(|(query, _)| {
+                                        (
+                                            query.key_expr().as_str().to_owned(),
+                                            query
+                                                .payload()
+                                                .map(|bytes| bytes.to_bytes().into_owned()),
+                                            query
+                                                .attachment()
+                                                .map(|bytes| bytes.to_bytes().into_owned()),
+                                        )
+                                    })
+                                })
+                            });
                         let before_count = before.iter().count();
                         let occupied_count = occupied.iter().count();
-                        drop((query.take(), before.take(), occupied.take()));
+                        drop((
+                            query.take(),
+                            before.take(),
+                            occupied.take(),
+                            guarded_query.take(),
+                        ));
                         let reply = issued.as_ref().ok().map(|replies| replies.try_recv());
-                        (observation, before_count, occupied_count, reply)
+                        let guarded_reply = occupied_issuance
+                            .as_ref()
+                            .ok()
+                            .map(|replies| replies.try_recv());
+                        (
+                            observations,
+                            before_count,
+                            occupied_count,
+                            reply,
+                            guarded_reply,
+                        )
                     } else {
-                        (None, 0, 0, None)
+                        ([None, None], 0, 0, None, None)
                     };
+                let [query_observation, guarded_observation] = query_observations;
                 let unreceived_queries = query_drain.len();
                 let refused_queries = mem::take(&mut *refusals.lock().unwrap());
                 let refusal_count = refused_queries.len();
@@ -398,10 +441,17 @@ mod counter {
                     _,
                     completed,
                     (_, issued_query, occupied, _, without_native, unexpected_completion),
+                    (occupied_issuance, _, query_guard, premature),
                 )) = acquired
                 else {
                     panic!("both actual attempts were acquired");
                 };
+                assert!(
+                    premature.is_none(),
+                    "an occupied Query must prevent native acquisition"
+                );
+                assert!(occupied_issuance.is_ok());
+                assert!(matches!(query_guard, Poll::Ready(())));
                 assert!(admitted_a.is_ok() && admitted_b.is_ok());
                 assert_eq!(received_a, Some(()));
                 assert_eq!(completed.as_ref(), Some(a));
@@ -433,6 +483,12 @@ mod counter {
                 assert_eq!(first_user.message, 1);
                 let Some(Some((key, payload, proof))) = &query_observation else {
                     panic!("the queued Query progresses with no eligible native row");
+                };
+                assert_eq!(key, "bombay/association/read");
+                assert_eq!(payload.as_deref(), Some(first.1.as_ref()));
+                assert_eq!(proof.as_deref(), Some(first.2.as_ref()));
+                let Some(Some((key, payload, proof))) = &guarded_observation else {
+                    panic!("the occupied slot retains its actual Query");
                 };
                 assert_eq!(key, "bombay/association/read");
                 assert_eq!(payload.as_deref(), Some(first.1.as_ref()));
@@ -470,7 +526,7 @@ mod counter {
                     actual_b, 2,
                     "B must acquire B's value; complete original native drain={drain_values:?}"
                 );
-                drop((issued_query, query_reply));
+                drop((issued_query, query_reply, occupied_issuance, guarded_reply));
             });
     }
 }

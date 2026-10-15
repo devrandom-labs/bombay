@@ -26047,8 +26047,9 @@ and all normal run/merge gates remain required.
 
 ### Concurrent input — first implementation and causal verification
 
-The selected implementation adds72 net production lines, including the normal
-optional futures-util edge. It adds no public type or dependency package version.
+The selected implementation adds71 net production Rust lines, plus one net
+manifest line for the optional normal futures-util edge (72 combined). It adds
+no public type or dependency package version.
 Both lock changes add only that edge to Bombay; all400 root and325 isolated
 package identities/checksums remain unchanged. The existing request owns native
 acquisition, and the concrete private query function preserves the prior channel
@@ -26080,3 +26081,75 @@ not selection of another API, trait, dependency or receipt owner. Together with
 the previously sealed38 inputs, the known pre-run finite envelope is15009;
 normal run and mutation inputs remain charged against15500 and the150 further
 direct-tooling allowance. Historical software gaps remain explicitly unproved.
+
+The incoming-query cut executes through both profiles with three intended
+assertion failures each: Counter retains one undeclared query rather than zero,
+and both Ledger consumers fail actual query acquisition. The first discarded-wait
+proposal was too broad: changing shared Request::receive also broke Counter's
+older awaited exact-request B receive. That three-case debug run printed the two
+intended Ledger failures but left Counter waiting; its exact child was terminated
+with SIGTERM and Cargo returned101 from the signal. It is not a completed test
+gate or successful Counter control. A separate two-case debug run reaches both
+intended native-wake assertions, after complete cleanup.
+
+Restore the exact healthy owner before refining that cut. Select disposal only
+inside the new combined map child: each poll creates, polls and disposes the
+existing request receive operation, while the collection child stays alive.
+Keep the original Request::receive and receive_native unchanged, allowing the
+Counter's old exact-request B wait to remain a valid control. This is a narrower
+fault injection, not a production design change or weakened test oracle.
+
+The refined combined-only disposal cut now executes in both profiles: Counter
+passes and both Ledger consumers fail the exact native-producer wake assertion.
+The false-empty-native-input cut executes with both Ledger controls passing and
+Counter failing its retained-query-prefix assertion in both profiles. These
+results remain tied to the pre-boundary-extension test source; no later-source
+execution is inferred from them.
+
+Before accepting the new operation, close a test gap found by the coordinator:
+the occupied-query guard also needs a concrete counterexample while a native
+reply is already available. Select an actual additional local Query in the
+existing Counter trace after its A producer fence. Retain that Query/permit
+outside, poll the combined operation, preserve its untouched native completion
+slot, then continue the existing A/B and empty-set trace. Keep all original
+owners through cleanup before observing the guard outcome. Removing only the
+query-slot guard must acquire A prematurely and fail the post-cleanup oracle.
+No second test owner or production change is needed.
+
+Under standing recommendation delegation, expand this same stage's historical
+Rust-test introduction allowance275 to350 and further direct-input allowance150
+to225 before editing that test. Keep the cumulative15500 verification allowance,
+1100 net production,10 public types and110 software slots unchanged. This
+bounded extension buys the missing occupied-query witness and its debug/
+optimized inverse rather than leaving a promised new guard source-only.
+
+The formatted boundary extension measures74 additions/18 removals, larger than
+the informal30–40-line forecast because it also preserves and projects both
+actual Query owners. Its initial unformatted patch was not separately sealed
+before rustfmt; do not describe335 retained/historical-known additions as the
+complete introduction history. Conservatively allow up to148 authored lines
+for this extension (each of the smaller initial patch and final replacement
+bounded by74), making the stage bound409 including the earlier261. Select425
+historical test introductions before further production edits; the cumulative
+15500 allowance remains unchanged. No new test owner or public type is added.
+The upper bound is cost accounting, not an execution or full-history certificate.
+
+Current complete endpoint census against81dc1448 retains43 tracked differences
+and no untracked paths. Apply the same existing inline-unit178/3 classification
+once: production Rust+970/-2/net968; tests+8450/-13/net8437; public API+8/-0 types.
+Other configuration/guidance is+3619/-51/net3568 before this prose checkpoint.
+Do not fold the manifest's one net line into the Rust-only production count or
+sum overlapping test patches to obtain endpoint gross counts. This is new
+capability, not code reduction. The small inline census is one additional
+software owner:102 identified plus five unresolved-history slots gives107/110
+allocated. Its source is conservatively budgeted20 tooling lines; this does not
+repair earlier unresolved historical extents.
+
+The occupied-Query extension passes independent second source reviewb9e8b99a/
+patch1b238b29: A is actually ready after its existing FIFO fence; both Query
+originals/permits are retained until cleanup; the new premature-completion
+oracle precedes the old A assertions. Actual focused controls again execute
+3 passed/0 failed/0 ignored in debug and optimized profiles. Keep the prior
+three cuts qualified to their earlier test bytes. Recheck all six cuts against
+this final extended source, then restore and execute the complete affected
+20-case export suite in both profiles before accepting the operation.

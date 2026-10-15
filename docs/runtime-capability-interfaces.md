@@ -63,6 +63,16 @@ Full permits explicit retry; interrupted return remains uncertain. Protocol
 authentication, native reply validation, publication permission, retry waiting
 and full resource/security acceptance remain distinct uncompleted obligations.
 This candidate does not introduce another local mailbox or Behavior algebra.
+Its dependent concurrent receive operation borrows the existing query channel
+and actual eligible native waits together. The optional normal futures-util
+dependency remains behind `remote`, with only `alloc` selected and defaults off.
+An acquired native result stays in its request row; a separate runtime-issued
+key identifies it without declaring protocol validity or business completion.
+Either occupied outside slot prevents further acquisition. Native-first
+selection relies on once-acquired append-only rows for its lifetime request-count
+bound; this is no latency, capacity-wake or whole-memory bound. Temporary future
+collection allocation and rebuild work remain explicit costs. This operation
+does not supply authenticated orchestration or reply publication.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The
