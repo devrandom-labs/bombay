@@ -36,7 +36,7 @@ actual main-based source before review/merge. Those checks are pending here.
 This delivers dependency adoption only: full R01–R25/AUTH1/NET1, Application
 networking and the required private transport boundary remain open.
 
-## Current delivery (2026-10-15 UTC)
+## Earlier delivery snapshot (before PR372)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
 CI and scoped reviews passed. PR367 merged81dc1448; bombay-rs0.1.2 publication

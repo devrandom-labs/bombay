@@ -414,7 +414,7 @@ original failure and released correction are verified through actual ActorRef
 in debug and optimized builds; see
 [EXEC's delivery record (historical)](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
 The selected Communication0.1.6 retains that correction and the original
-pre-mapping rejected-item custody. Its [release record](prds/static-remote-actors.md#owning-closure-correction-delivery-and-registry-selection)
+pre-mapping rejected-item custody. The earlier correction's [release record](prds/static-remote-actors.md#owning-closure-correction-delivery-and-registry-selection)
 preserves source, CI and registry evidence. That prerequisite correction does not accept the remaining EXEC laws.
 
 Its capacity observation grants neither a reservation nor authority; final
