@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.3...bombay-rs-v0.2.0) - 2026-10-15
+
+### Added
+
+- *(remote)* [**breaking**] retain isolated actor requests ([#372](https://github.com/devrandom-labs/bombay/pull/372))
+
+### Other
+
+- *(remote)* verify provider result conservation ([#376](https://github.com/devrandom-labs/bombay/pull/376))
+
 ## [0.1.3](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.2...bombay-rs-v0.1.3) - 2026-10-15
 
 ### Added
