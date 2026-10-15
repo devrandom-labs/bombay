@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-14. This is the implementation index for the
+Updated: 2026-10-15 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
@@ -23,8 +23,12 @@ real Counter/Ledger Node consumers; focused controls pass both profiles, while
 intended inversions, final integration, required checks and delivery remain open.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
+PR360 was externally merged c1d5b2bd with native debug still failing;
+its original failure remains uncredited.
 Historical PR322 and PR323 were closed as superseded after source review;
 closure is not merge or credit for their original acceptance requirements.
+
+## Historical prerequisite checkpoints
 
 DevX integration prerequisite [PR359](https://github.com/devrandom-labs/bombay/pull/359)
 merged `7fccf08b120dc468de6e5aa2ed9719724814c375` at2026-10-13T22:17:06Z.
@@ -374,7 +378,7 @@ it does not remove the inventory's finer requirements or optional decisions.
 
 | Item | State | Blocked by | Unblocks | Evidence |
 | --- | --- | --- | --- | --- |
-| FAIR1: PERF-07 local selection prerequisite | active | none | none | [Event fairness](../prds/event-fairness.md); deterministic source service only, full overload/latency work remains open. |
+| FAIR1: PERF-07 local selection prerequisite | merged | none | none | [Event fairness](../prds/event-fairness.md); reviewed PR366 merged `b652cd7` after all required CI passed. Deterministic source service only; full overload/latency work remains open. |
 
 ## Retained local evidence
 
