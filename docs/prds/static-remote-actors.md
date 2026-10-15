@@ -28050,3 +28050,57 @@ verification Rust+0/-0 and public types+0/-0. All existing cumulative counts,
 unsupported foreign-waker qualification, PR373/374 privacy holds and full remote
 acceptance obligations carry unchanged. Finished contributions proceed through
 review and required CI independently of the remaining Application service.
+
+## Communication capacity dependency (2026-10-15 UTC)
+
+The automatic release38811968998 succeeds on963067e0. Registry0.1.6 is un-yanked;
+its actual archive checksume5d5a581c47408d64234b7e89a229b63a333584cfe5c10b6fe656daa2c1e4853
+matches the official checksum. Independent archive review finds all packaged
+Rust files byte-identical to reviewed owner source; VCS and annotated tag resolve
+the merged commit. The normalized package has no changed runtime dependency
+edges. This supplies publication evidence, not a Bombay integration build.
+
+Select the recommended narrow adoption under standing delegation: require
+Communication0.1.6 in the existing workspace dependency and update only that
+registry record in the workspace and isolated transport locks. Keeping0.1.5
+would omit the verified capacity API; a lock-only update would let downstream
+applications select the older version. A complete dependency refresh introduces
+unrelated changes and is unnecessary. Preserve every other locked package and
+all frozen Behavior/Actors0.25.0 identities. No new dependency or Cargo patch.
+
+Before edits, expected dependency surface is three existing paths: Cargo.toml
+and two locks, production Rust+0/-0, tests+0/-0, public types+0/-0. Reuse all
+existing mailbox/application/transport controls; no implementation-mirroring
+test. Compare complete package records before/after, then run affected debug
+and optimized tests and required checks. Existing shipping-private dead-code
+and public privacy failures remain explicit; this dependency selection cannot
+close them or any full remote witness. All cumulative scope limits carry.
+
+Coordinator adoption controls now pass actual348 library and38 Application
+cases in each profile, with both pinned commands returning0 and locks unchanged.
+The eight pre-existing unused private declarations still warn; no strict lint
+pass is inferred. Normal Cargo update initially changed four unrelated Windows
+edges; after validating those differences, their original package records were
+restored. Complete parsed comparisons then prove all399 root and324 fixture
+neighbors and non-package keys unchanged. Independent owning/source/graph
+review passes; selected archive source matches the publication. This is a
+version-only change, without a new law or implementation-mirroring test.
+
+To deliver independently, latest main e2a4e7f3 receives only that dependency
+patch and current version guidance, preserving its own unmerged-edge-free locks.
+Draft [PR377](https://github.com/devrandom-labs/bombay/pull/377), currentd9b955c,
+has11 paths, dependency+5/-5 and docs+69/-9: production Rust+0/-0, tests+0/-0,
+public types+0/-0. Its main-source locks44b9daf8/8090a793 are intentionally
+distinct from coordinator d4ab9a6f/95986a62. Main-based controls, strict lint and
+new exact-head CI are running, not credited yet. PR376 remains separately ready
+while required Nix runs; neither independent delivery imports the private service.
+The existing1600/14/20000/115 cumulative limits and older unknowns carry.
+
+Final coordinator endpoint against81dc1448 now has58 tracked paths and zero
+untracked paths: production+1342/-6/net1336; verification Rust+10685/-14/net10671,
+including connection/tests.rs wholly as tests and the established178/3 inline
+verification exactly once. Version guidance adds no Rust/API surface. The known
+production window with the separate owning contribution remains1440; historical
+unproved extents are not reset. Both actual coordinator command exits are0,
+and coordinator.sha256 seals the source, graph and raw logs separately from
+the forthcoming main-based verification.

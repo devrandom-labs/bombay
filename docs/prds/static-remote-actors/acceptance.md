@@ -19,8 +19,11 @@ The public Application service and SDK privacy replacement remain absent, so
 these facts close no full row. Owning Communication PR13 merged as39fd717e
 with all five checks passing and exact reviewed/tested/main tree agreement.
 It separately verifies capacity readiness and exact custody. Its version-only
-release PR14 merged963067e0 after all five checks passed; actual registry
-publication, Bombay adoption and Application integration remain required.
+release PR14 merged963067e0 after all five checks passed. Actual registry,
+archive and tag verification passes. The coordinator selects0.1.6 with every
+other package retained and348 library/38 Application cases passing per profile;
+independent main-based adoption PR377 still needs its own checks/CI/merge.
+Actual Application integration remains required.
 Main-based provider PR376 now passes all eight local pinned commands and
 independent review atfc85ec10, with focused6 and full74/0/1 in both profiles.
 Its required Nix remains running. Neither local passing tests nor PR readiness

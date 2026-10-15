@@ -131,7 +131,10 @@ recorded, not a speedup. Updated Linux CI passes package78/workspace101 with
 the unchanged zero-allocation assertions, using existing Nextest process
 isolation and separate doctests. The earlier allocation failure's exact source
 remains unattributed. Release PR14 merged963067e0 with all five checks passing;
-actual registry publication and Bombay adoption remain required. Existing Full-only caller-triggered retries retain their
+registry/archive/tag verification passes for published0.1.6. The coordinator
+selects that package alone and348 library/38 Application cases pass per profile.
+Independent main-based adoption PR377 is draft pending its own checks/CI/merge.
+Existing Full-only caller-triggered retries retain their
 narrower scope; the automatic capacity-wait/fresh-permission witness is open.
 
 Provider-test [PR376](https://github.com/devrandom-labs/bombay/pull/376) is ready
