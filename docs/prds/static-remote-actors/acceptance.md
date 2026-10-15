@@ -100,7 +100,7 @@ JSON cases and both Node consumers once in each profile. No full R02/R14 or
 other row closes.
 
 The user requires crate-owned remote capability behind Cargo feature `remote`.
-The dependent export-client implementation branch now certifies actual root,
+Merged PR370 (8d809b3d) certifies actual root,
 sibling and nested-child recipients against their Application's existing source
 before reply allocation. It preserves closed-target membership and native
 allocation refusals. Six ownership cuts reach their intended failures in both
@@ -109,8 +109,8 @@ a remote-only nonwaiting attempt with exact native Full/Closed originals and
 allocated sender identity. Two complementary consumer controls and five admission
 cuts pass in both profiles; both consumers pass after exact restoration. The
 independent test/source/execution reviews and uncredited disk/lint failures remain
-in the PRD. Combined-source local checks pass; required CI and reviewed delivery
-remain pending. This is
+in the PRD. Combined-source local checks and all six required/submitted checks
+pass; source/native/Nix reviews precede actual merge8d809b3d. This is
 local target/admission evidence, not protected publication, replay, permission
 coherence, real remote Stop or closure of a full R01–R25 row.
 
@@ -440,3 +440,9 @@ Actual Linux optimized workspace643/0/1 remains distinct from local644/0/1;
 Counter54 executes plain/coverage debug and release, owner floors pass, and
 Driver2048/Observe4×1024 finish. Miri is skipped. Native64cases/160roles pass
 separately; held controls retain local inversion provenance. All fullR01–R25 stay open.
+
+Persistent private-request ownership now passes the independent32-case replay/
+custody campaign and12-case cancellation campaign with exact intended failures
+and restored controls. Combined Application clients pass22/0/0 per profile,
+strict scoped lint and formatting. Actual Node-associated shipping export,
+current mutable authority and full R01–R25/AUTH1/NET1 remain open.

@@ -22,7 +22,7 @@ The new opt-in `remote::Metadata` is a shared untrusted fifteen-field Serde
 declaration for concrete protocols. It does not issue authority or select a
 target. Its raw decoding accepts positional structs as well as objects; the
 receiving boundary must enforce the chosen object layout and all policy.
-The implementation branch supplies `remote::json::check` for borrowed protected
+Merged PR368 supplies `remote::json::check` for borrowed protected
 JSON and separate proof bytes. Its explicit Limits select input/proof bytes,
 decoded token bytes, logical nesting and native parser states, without defaults.
 Bombay's check uses the selected parser to enforce the outer object and decoded
@@ -36,7 +36,7 @@ policy. Startup profile checks preserve original declarations on refusal;
 actual SDK and root/child integration remain separate verification gates.
 Native transport fixtures remain scoped verification consumers.
 
-The export-client implementation branch adds remote-only
+Merged PR370 adds remote-only
 `ApplicationHandle::export_client` over an existing EstablishedRecipient. Actual
 native actor issuance retains a weak association with its Application's existing
 allocation source; external reply endpoints retain none. The constructor checks
@@ -45,7 +45,7 @@ original target on either ownership or native allocation refusal. Root and
 descendant actors share this rule; target closure does not change association.
 This adds no address registry, actor lifecycle, network declaration, readiness or
 authorization policy. Existing local `client_to` remains unrestricted.
-The same branch adds remote-only `ApplicationClient::try_send` for an exact
+The same merged contribution adds remote-only `ApplicationClient::try_send` for an exact
 EstablishedRecipient target. It reuses the existing caller/target and native
 Full/Closed originals without awaiting capacity. The local service retains its
 permission/time snapshot and retry policy; client construction and attempted
