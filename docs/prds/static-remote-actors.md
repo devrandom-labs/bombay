@@ -18,6 +18,9 @@ are prerequisite interfaces, not proof of the finished Application experience.
 Audit and minimize the complete public surface before declaring full delivery;
 do not retain an extra forwarding facade solely to conceal unfinished plumbing.
 No replacement API or production design is selected by this clarification.
+The user's latest clarification makes the lifecycle coupling explicit: native
+network objects must remain private throughout Application construction,
+execution and retirement, rather than being handed to a user-provided loop.
 Passing CI cannot authorize retaining PR374's native Query/permit signature;
 PR374 delivery and release PR373 merge/publication are held until the
 public-boundary correction is reconciled. Existing
@@ -68,6 +71,227 @@ this stage;18000 verification lines and115 software slots remain, with all
 historical/other-repository extents retained. Reconcile actual service expansion
 separately before exceeding these bounds. Do not publish this as another
 finished primitive while the Application boundary remains incomplete.
+
+### Private mapping implementation stage
+
+Select the real private mapping now, keeping the new input types unexported
+until Application integration consumes them. This is an intermediate working
+tree, not retained/publicly delivered API: an unused private mapping is expected
+to fail a normal production dead-code gate until that integration exists. Do
+not suppress that gate, add test-only production flags or introduce a forwarding
+public method to make it green. Keep the existing native surface explicitly
+unfixed and both release holds in force.
+
+The pre-production owning test must first fail to name the selected absent
+inputs/mapping. Then implement the exact Network-to-Config conversion with
+borrowed original inputs, private typed setters and no whole-Config roundtrip.
+Cover all five distinct File/base64 sources, Peer directions/RouterClient,
+explicit quota, empty directions, endpoint option injection/native parse error
+and non-UTF-8 path refusal. Inspect actual native getters and unchanged original
+allocations. This is a pure construction law; native open/readiness and real
+Application integration remain mandatory afterward.
+
+Reuse the existing flat NodeStartupRefusal during this private stage. Under
+recommendation delegation, select three truthful mapping reasons: unsupported
+credential path encoding; actual native address-construction failure with its
+already boxed standard Error; actual serde_json credential-value conversion
+failure with the original unboxed Error. Outer formatting omits causes and
+source() borrows each original. Spell acquired native Boxes with std Error in
+new public fields; this adds no boxing/erasure. A new opaque error/kind pair
+would add two types without deleting an owning distinction. Final public
+Application error naming/shape is still subject to whole-path minimization.
+
+Expected mapping footprint is revised before edits: remote/connection/mod.rs
+and its owning tests.rs, remote/mod.rs, startup.rs and Cargo.toml, with at most
+300 introduced production lines including declarations/docs/error arms and
+400 retained/750 authored test lines. This replaces the220 mapping forecast;
+the1400 cumulative production/14 public additions/115 software slots/18000
+verification limits carry. All prior source revisions/other repositories and
+historical gaps carry. Add only the already selected serde_json1.0.151 normal
+remote-only edge; preserve package versions/checksums and narrowly update a
+fixture dependency edge only if the actual graph requires it. No new crate,
+codec, service API, resource default, authority port or lifecycle policy is
+selected by this construction stage.
+
+The initial missing-input command actually returns101 with exactly the absent
+four connection inputs and Address/CredentialPath variants (source7bcab83f).
+It supplies compile-only pre-production evidence, not a runtime regression or
+network witness. Select one private credential declaration operation over the
+five actual native field pairs: it borrows the selected source, converts only
+the chosen File or Base64 alternative and invokes that field's native setter.
+This removes five repeated source-conversion matches without adding a state,
+trait, wrapper or public port. Both file and base64 substitutions are exercised
+for all five fields. The original Network remains borrowed and unchanged on
+every exit; failures retain the actual conversion cause. Fixed native setter
+rejections remain typed Unsupported refusals rather than production panics.
+
+Before formatting or extending the first draft, select400 introduced mapping
+production lines (replacing300),600 retained/1200 authored owning test lines
+(replacing400/750), within the carried1400 production/14 public/18000
+verification/115 software-slot allowances. Independent review requires mixed
+File/base64 sources, refusal of an empty direction beside a valid direction,
+and outer error formatting/source preservation. Those are direct counterexamples
+to the selected construction law, not additional runtime/security scope. Carry
+the first production draft and271-line test draft and their formatter
+revisions; no historical count is reset and no source-only counterexample is
+credited as an executed inversion.
+
+Parallel capacity prerequisite, before owner edits: select the no-payload
+`MailboxRef::wait_for_capacity` comparison with `Capacity::{Available, Closed}`
+on exact Communication0.1.5 source24ad2b9. Available is a guarded observation of
+an insertion-eligible ticket, never a slot reservation or an admission permit.
+The same outside command and proof remain charged to their request; Bombay
+must recheck current permission/time before every nonwaiting attempt. Closure
+and a racing competitor remain distinct native outcomes. No new sender/anchor
+API, callback, timer, per-request task or retry-resource default is selected.
+
+Compare the separate existing Tokio Notify broadcast path recommended in
+b7998ad0: wake observers on each successful dequeue, admission closure and
+consumer teardown, leaving blocked producers' existing notify-one protocol
+intact. Sharing that notify-one queue can consume a producer's wake without
+inserting; replacing every producer wake with broadcast changes the established
+contention path. The selected comparison pays fixed lane memory and per-pop
+synchronization plus observer wake work; measure those costs before retention.
+Use actual ring/admission state and Tokio notification-generation semantics,
+not an extra queue, capacity estimate or copied model. Keep no counting sender,
+admission lock or strong admission owner across the wait. Actual lifecycle races,
+cancelled registrations and non-stride dequeues need independent observations.
+
+First author the missing-method compile regression and deterministic native
+full/dequeue/close/competition/cancellation traces in the owning repository,
+then obtain root review before production. Forecast at most120 owner production
+introductions,350 retained/1000 authored tests across owning lib, existing
+mailbox/edge tests, Loom tests, README and mailbox-admission documentation.
+One public enum and one inherent method; no dependencies, version bump or
+Bombay adoption yet. Charge this entire parallel patch to the same cumulative
+1400 production/14 public/18000 verification/115 software-slot envelope, carrying
+all earlier repositories and historical gaps. Both missing-API compilation and
+runtime defect inversions must retain their truthful separate evidence. The
+new checkout is /tmp/bombay-communication-capacity on feat/capacity-observation;
+its selected tree has no AGENTS.md. Use that owner's pinned Nix1.95 toolchain,
+an isolated target and its required gates. Root coordinates contract selection,
+manifests, locks, integration and any publication; this authoring lease grants
+no release or merge. R08/R09 remain open until the real Bombay service uses it.
+
+The first actual private-construction control688a933a/c18c9c34 passes all eight
+focused cases in debug (333 unrelated cases filtered). Final formatted owning
+tests504 lines; mapping216 plus24 startup lines and one module declaration.
+The root lock remains byte-identical56661c60. Before temporary defect edits,
+select four independent source cuts in the same mapping: OneOf instead of
+AllOf; discard the actual Base64 setter operation; omit the plain-address guard;
+allow public PKI instead of deployment roots only. Run each selected owning
+oracle in debug and optimized builds after positive controls, record its actual
+intended assertion, restore exact mapping bytes, then rerun the complete eight
+controls. No setup/compile failure counts as a semantic kill. These bounded
+cuts add no production design/API and remain inside400 mapping introductions.
+Normal production dead-code checking remains expected to refuse this unused
+private module until actual Application integration consumes it.
+
+All eight corrected construction controls pass in both profiles, then each of
+the four isolated cuts fails its intended oracle in both profiles. OneOf fails
+the actual group comparison, discarded base64 fails Null versus the actual
+declared secret, the removed address guard exposes an unexpected Ok(native
+Config), and public PKI fails the true-versus-false profile comparison. After
+exact source restoration, all eight controls pass again per profile. Source
+c18c9c34/tests688a933a, all five source/manifest/lock guards and the raw command
+logs in /tmp/bombay-private-connection/ bind those results. They prove pure
+construction only, with no native-open, permission, traffic or lifecycle credit.
+
+Actual strict Clippy then returns101 with seven expected unused private-input/
+mapping errors, two function-length style diagnostics and duplicate source
+match arms. Before editing select the repository's existing function-scoped
+expect(too_many_lines) for the one coherent configuration construction and its
+independent complete-getter test; combine the identical original-cause match
+arms. This changes no domain/state/API and avoids invented subdivision merely
+to satisfy the style limit. Keep the dead-code errors unsuppressed and the
+module unexported. Run fresh focused controls on the final bytes and retain the
+actual unfinished production gate. Inspect the isolated fixture's locked graph
+before applying only its already approved Bombay-to-serde_json edge, if needed.
+
+Final private-stage checkpoint: mapping0d090e2b/tests e8465cf8 pass all eight
+focused cases in both debug and optimized. Independent review proves removal
+of only their scoped style attributes reproduces the two inversion-source
+hashes; the merged source arm returns the same cause. No old inversion is
+relabelled as a final-byte execution. Pinned formatting and local-only
+`cargo check --offline --locked -p bombay-rs --no-default-features` return0.
+Final strict Clippy returns101 solely for seven unused private declarations;
+there is no dead-code allowance or provisional public forwarding consumer.
+Native serving/startup/retirement and public API correction remain incomplete.
+
+Command receipt `/tmp/bombay-private-connection/execution.json` is68fba5c1:
+six eight-case positive runs and eight intended one-case negative runs, with
+actual source/log digests and the unfinished lint result. All Rust commands use
+the pinned Nix shell/profile and isolated existing target. Focused command is
+`cargo test --offline --locked -p bombay-rs --features remote --lib
+remote::connection::tests`, with `--release` for optimized; the cuts select the
+named individual test. The fixture's original locked metadata returns101;
+adding only its Bombay serde_json edge makes locked metadata return0. All325
+package records preserve versions/checksums and all other fields; root lock
+56661c60 is unchanged. Neither command is a registry-publication proof.
+
+This stage versus17be3a9 spans eight paths, including both new owning source
+files: production Rust+245/-1/net244; tests+508/-0/net508; public types+0/-0
+(four input declarations remain unreachable through the private module).
+The complete present Bombay tree versus81dc1448 has46 tracked and two untracked
+paths: production+1219/-3/net1216, tests+9611/-14/net9597 after the previously
+recorded178/3 inline-test classification once. All manifests, locks, CI and
+guidance remain in the complete path account; these line figures classify Rust.
+Prior public additions8 and the four reserved future inputs carry. Existing
+other-repository/history extents and their gaps remain, rather than becoming a
+new whole-goal upper bound. No source gate, full remote row or delivery hold is
+closed by this checkpoint. Preserve this as intermediate research, not a new
+standalone primitive release; actual Application consumption is the next law.
+
+Parallel Communication candidate4cd1f3d7 adds74 production and244/-2 test
+lines across three existing paths at24ad2b9; one candidate public enum/method,
+unchanged manifests/lock and no release/adoption. Both four-case controls pass.
+Six isolated causal cuts each fail their intended wake/terminal oracle in both
+profiles; exact-restored unfiltered mailbox target passes12/0/0 in each.
+Receipt3d8a7ef7 and handoff631d0167 preserve twelve qualified101 negatives and
+the separately uncredited first optimized wrapper exit0; that wrapper supplied
+no passing credit and was rerun for actual Cargo101. Source/target lease is
+released. Actual model/race coverage, measured costs
+and notification-unwind semantics remain prerequisites. Its82 introduced
+production lines and497 conservative test introductions carry, including the
+temporary cuts; six full evidence-source copies11632 rows are accounted
+separately. Adding this current owning patch gives1290 net production and9839
+net tests in these two present source windows, within their selected allowance;
+all older repositories/history qualifications remain. R08/R09 and all other
+full remote obligations stay open.
+
+Independent artifact/execution review now checks all21 capacity source/log
+hashes, six isolated source diffs, intended post-cleanup failures and full restored
+12/0/0 per profile. The shared-channel cut fails second-observer notification,
+not an invented sender-wake assertion. The reviewer did not rerun commands;
+actual process statuses are attributed to the executing author and raw failures.
+Its earlier liveness-oracle recommendation remains disclosed. This21-input
+review introduces no controller/prose artifact and proves no model, performance,
+unwind, registry or full acceptance requirement.
+
+PR373's exact93a55de required run38742962936/job116449131388 completed SUCCESS
+at2026-10-15T15:03:14Z; all six current checks are successful and auto-merge is
+absent. This is observed check status, not an additional technical artifact
+audit or full acceptance proof. Its publication hold remains until the private
+Application boundary is corrected.
+
+Fresh SDK1.10.9 orchestrator inspection changes the private mapping: client
+startup iterates top-level connect groups and stops after one succeeds. Mapping
+an approved all-of address list to multiple Single groups would silently add
+fallback semantics. Construct one Locators/AllOf group containing the complete
+ordered connecting list; keep listening addresses as their native list. The
+owning test must use two distinct outgoing addresses and inspect the actual
+group/strategy/order. This preserves the selected declaration policy; it does
+not establish native connection success, all-peer readiness or startup timeout.
+
+PR374's exact9747c90 required run38740611634/job116441028426 actually passes at
+2026-10-15T14:42:24Z; all six checks are green. Reviewba720694/receipt9595cf12
+verifies actual remote406 per profile, optimized workspace703/0/1, four coverage
+floors and five terminal fuzz budgets (Driver2048, four Observe1024). Two API/ZIP
+digests match;439 physical fuzz files are hashed twice. Miri is skipped. Its
+50 direct inputs and41 chronological record introductions carry; old899e31fb
+review digest is superseded. Exact submitted/synthetic treeeb6b90f8 matches.
+This is execution evidence only: the public-native delivery and release hold
+remain, with no full remote row or ordinary Application API acceptance.
 
 ### Pending protection — ordinary Rust comparison before implementation
 

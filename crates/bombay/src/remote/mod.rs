@@ -3,6 +3,7 @@
 //! The provider owns authentication policy. Network connections, authorization
 //! and actor-mailbox admission retain their separate contracts.
 
+mod connection;
 mod export;
 mod ingress;
 pub mod json;

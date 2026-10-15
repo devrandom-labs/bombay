@@ -18,6 +18,18 @@ pub enum NodeStartupRefusal {
     CredentialConflict { field: &'static str },
     /// A used connection direction lacks a required credential declaration.
     CredentialRequired { field: &'static str },
+    /// A credential path cannot be represented without changing its contents.
+    CredentialPath { field: &'static str },
+    /// Native address construction failed; the original cause remains available.
+    Address {
+        field: &'static str,
+        cause: Box<dyn Error + Send + Sync + 'static>,
+    },
+    /// A credential value could not enter the native secret representation.
+    CredentialValue {
+        field: &'static str,
+        cause: serde_json::Error,
+    },
     /// Native retained-query capacity was not explicitly supplied.
     QueryLimitRequired,
     /// Capacity exceeds the native semaphore representation.
@@ -228,6 +240,15 @@ impl fmt::Display for NodeStartupRefusal {
             Self::CredentialRequired { field } => {
                 write!(formatter, "missing Node credential: {field}")
             }
+            Self::CredentialPath { field } => {
+                write!(formatter, "credential path is not UTF-8: {field}")
+            }
+            Self::Address { field, .. } => {
+                write!(formatter, "invalid connection address: {field}")
+            }
+            Self::CredentialValue { field, .. } => {
+                write!(formatter, "invalid credential value: {field}")
+            }
             Self::QueryLimitRequired => {
                 formatter.write_str("the Node requires explicit retained query capacity")
             }
@@ -259,12 +280,14 @@ impl fmt::Debug for NodeStartupRefusal {
 impl Error for NodeStartupRefusal {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::Open { cause } => Some(cause.as_ref()),
+            Self::Open { cause } | Self::Address { cause, .. } => Some(cause.as_ref()),
+            Self::CredentialValue { cause, .. } => Some(cause),
             Self::Host { cause } => Some(cause),
             Self::ConfiguredRuntimeId
             | Self::Unsupported { .. }
             | Self::CredentialConflict { .. }
             | Self::CredentialRequired { .. }
+            | Self::CredentialPath { .. }
             | Self::QueryLimitRequired
             | Self::QueryLimitExcessive
             | Self::HostFlavor { .. } => None,
