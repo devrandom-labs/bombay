@@ -24144,3 +24144,52 @@ strict/fmt outcomes and both complete70/0/1 inventories, with actual provider
 Future/custody and source reconstruction checked twice. Its no-crypto/fullR
 qualification and prior-source separation remain explicit. No production
 source or API is added by this research checkpoint.
+
+
+### Persistent owner — ordinary Rust compiler comparison
+
+The corrected external candidate69cce807 is245 raw lines and keeps first206
+d284088a separately. It owns the actual Session/Queryable/count receiver and
+certified client with retained request/proof/receipt/native rows. Its private
+Uncertain stage precedes send/Full retry; one outstanding native row survives
+cancelled waiting. Two actual protocol call sites share the same owner.
+No public cache-helper retention is authorized by this comparison.
+
+Before a production design, mount it temporarily beside the existing actual
+Application client actors and run pinned cargo check for that exact target.
+This is type/composition eligibility only, not runtime cancellation/admission/
+replay or gateway proof. Preserve all diagnostics; restore the parent and remove
+the temporary module after sealing evidence. No manifest/default/dependency
+change. Under recommendation delegation select36 cumulative paths and4600
+test lines for this temporary comparison, keeping production368/public types3
+and all earlier complete-goal ledgers unchanged. Forecast at most400 formatted
+test-only lines plus declaration, production/public API0.
+
+Actual Node-associated constructor, bounded ingress declaration/refusal
+settlement, current-authority typed projections, reply validation and joined
+cleanup remain gates before any public production owner. The existing borrowed
+provider Binding/sequence projection must be provided by its actual Receipt;
+SDK metadata equality cannot replace it. The native one-outstanding restriction
+is a private comparison law, not a silently selected shipping resource default.
+
+Dynamic producer evidence remains one actual Read value1 in all current
+executions. Source review verifies use of the supplied actual byte slice;
+these finite runs alone do not exclude a hypothetical hardcoded value1
+protector or prove varied-value production behavior. Keep that distinction
+when moving this seam into the two-protocol shipping export.
+
+
+The exact69cce807 candidate passes pinned cargo check --offline --locked
+-p bombay-rs --features remote --test application_clients, actual exit0.
+Raw logbbcb9793 and initial-check.json retain exact argv/source guards.
+No compiler adapter, Clone/Debug bound, public type or library source change
+is needed for this private ordinary-Rust representation. This is compile-only
+eligibility; no instance/cancellation/replay/cleanup execution is inferred.
+The temporary module is sealed externally and removed; the owning target
+parent is byte-exact HEAD again. The temporary introduced surface was245
+module lines plus five declaration lines, production/public API0. Retained
+combined tests remain3990; the cumulative path union is36 including four
+restored research paths. Next instantiate both real protocol consumers and
+prove this retained-state owner, then integrate actual constructor/ingress/
+refusal and cleanup within the same production contribution before public
+retention. All full remote witnesses and deferred requirements remain open.
