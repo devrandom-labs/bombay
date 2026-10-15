@@ -1,6 +1,51 @@
 # Static remote actors and typed admission
 
-## Current delivery (2026-10-15 UTC)
+## Current delivery and provider-test contribution (2026-10-15 UTC)
+
+PR372 merged through its reviewed PR as e2a4e7f3 after all six checks passed.
+This separate branch starts from that exact latest main and changes no
+production code, public API, dependency or lock. All full R01–R25, AUTH1 and
+NET1 obligations remain open. The complete Application-owned remote service
+and separate remote-counter application are still required.
+
+The user requires all transport configuration, sessions, requests, replies and
+cleanup to remain private inside Bombay, including advanced public APIs.
+Existing native public APIs remain defects awaiting that service replacement.
+The separate PR373 release and PR374 API contribution remain held for that
+correction. This test-only contribution does not retain a new SDK API or lift
+either hold.
+
+The previously reviewed live_requester source e090227f carries two finite
+provider families through outbound request protection, actual typed requester
+Actions and generated native replies. Its pending-protection comparison keeps
+the same non-Clone receipt while another native request and replay progress.
+The scheduled provider's send-before-await path does not prove a Pending poll;
+the separately controlled pending protector supplies that narrower witness.
+These deterministic provider records are neither production cryptography nor
+KERI identity evidence. Session-local traffic is not a TLS handshake campaign.
+
+Independent minimization removes only the later duplicate delivery assertion;
+the earlier finite intended-failure oracle and final native actor checks remain.
+The resulting source is 07e3a096 and needs its own integration execution.
+
+Scope before integration: existing test source +702/-13/net689, existing Nix
+verification commands +3/-0, public types +0/-0, production +0/-0. Reuse existing
+main Application, Node, typed external-service and Export retention/native
+interfaces; import no unmerged production. Both locks retain their original
+main hashes (e058fe21 and 2d25fab9). Coordinator source review and independent
+two-pass integration review pass; compilation and submitted-source CI remain
+pending. Prior causal inversions retain their original source provenance and
+cannot substitute for executing this main-based source.
+
+Required Nix now explicitly runs all six feature-gated live_requester tests in
+each profile and checks the actual 6/0/0 summary. The previous filters selected
+other modules and could omit this contribution. Nix syntax parsing passes.
+Before delivery, run focused and complete affected consumers in debug and
+optimized builds, strict lint and formatting, then review actual required CI
+and merge through the PR. Commit and merge finished contributions independently;
+an open PR or passing local controls cannot establish merged delivery.
+
+## Earlier delivery checkpoint (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
 CI and scoped reviews passed. PR367 merged81dc1448; bombay-rs0.1.2 publication
