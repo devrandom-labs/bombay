@@ -2394,4 +2394,11 @@ runtime production, public surface and every action/assertion stay unchanged.
 The full check remains failed until fresh verification; do not transfer its
 23 passes to the newer SDK-callback candidate.
 Both independent source/evidence reviews confirm the exact whitespace-only
-repair and bounded23/1 result. Fresh corrected-gate execution remains required.
+repair and bounded23/1 result. Fresh selected protected-counter verification
+passes atb4a5e9e in424.968 seconds with609 unchanged source hashes and clean
+status: base53/public6/each hosting1/native Query3/live requester2 cases per
+profile, then isolated formatting and both strict lint commands. Grep echoes
+are not additional executions. Both evidence reviews pass. This is one repaired
+gate; the earlier full-flake result remains23/1, with no24-check rerun or credit
+for the newer actor-only candidate. NODE-INTEGRATED-PROTECTED-FORMAT-NIX binds
+the actual command, source maps and raw log hash.
