@@ -28328,3 +28328,83 @@ production+51/-40/net11; tests+408/-11/net397; public API+0/-0 types.
 The cumulative endpoint includes60 tracked paths and zero untracked paths,
 with production+1384/-37/net1347 and tests+11082/-14/net11068 as above.
 Independent delivery PR376/PR377 still await required CI; no merge is inferred.
+
+
+### Shipping service — selected protected-message carriage
+
+Under standing recommendation delegation, retain the existing SDK payload for
+exact protected JSON and its native attachment for opaque provider-owned proof.
+This reuses the selected serializer, provider representation and transport;
+there is no new codec, Base64 container or dependency. An outer JSON container
+would add encoding rules, extra materialization and separate encoded/decoded
+limits without a demonstrated need. Embedded-object reserialization would
+violate exact-byte protection. Schema/version and lifecycle/error choices remain
+separate; finite test providers remain unsuitable for production startup.
+
+The actual Application service must inspect borrowed native presence and byte
+lengths before to_bytes, contiguous copies, parsing or provider invocation.
+Selected SDK1.10.9 exposes those borrowed payload/attachment and length methods.
+Missing proof stays distinct from present empty proof; only the declared provider
+can decide whether empty is valid. Do not promote the reply fixtures' missing
+attachment unwrap_or_default into shipping code. Pre-copy checks bound Bombay's
+subsequent materialization, not prior SDK reception, fragmentation CPU, parser
+peak heap or arbitrary provider allocation. The real two-protocol/two-provider
+service must reject missing/oversize/mismatched evidence before native admission
+or typed requester delivery; a fragmented-buffer allocation oracle must detect
+copy-before-limit rather than relying only on zero provider calls. This selects
+carriage, not a standalone public wire utility or a completed full witness.
+
+### Shipping startup — select independent acquisition publication
+
+Fresh lock/source binding remains Behavior/Actors0.25.0 at2bb45100,
+Address0.3.0 at9f058dc0, Communication0.1.6 at963067e0 and Timers0.2.0 at9369d1f;
+no Cargo patches. Behavior instruction digest2b7a9195 is unchanged. Existing
+Application execution/publication owns cold input custody; Connection owns its
+unique cleanup signal; the existing native close task and Tokio oneshot own
+joined close acquisition. No additional lifecycle owner or dependency.
+
+The concrete remaining defect is acquired startup output lost when its producer
+is disposed before the kernel binds that output. Select a cold Connection
+startup factory returning (1) a lending AsyncFnOnce over the original Network
+and (2) independent receiving. Before the acquiring producer returns Ready, it
+transfers the actual startup refusal OR the actual close JoinHandle/receiver
+product to that independent one-way publication. Acquiring returns its optional
+Connection and the actual Sender::send return. Absence is absence of that owner,
+not a replacement error: the complete typed cause stays exactly once in the
+accepted report or verbatim in the actual refused-send original. Preserve both
+facts; do not fabricate a successful status, clone errors or require receiving
+to be polled before startup progresses. Independent receiving first joins the
+close producer and then obtains its original native close Result. Missing report,
+startup refusal and acquired joined/close outcomes remain distinct Results.
+
+The optional Connection still transfers through PreparedApplication into the
+same cleanup task. Plain positional return products suffice privately; a new
+public receipt API, wrapper, trait, GAT, macro or shared mutable slot is not
+selected. This replaces the existing private open entry, rather than retaining
+a second implementation. Intercept actual SDK Ready inside its live pinned
+operation and publish before disposing that producer; wrapping its awaited
+result would repeat the already demonstrated adapter defect.
+
+Before production, author actual Application cold-startup regressions with a
+real configured connection and a genuine native configuration refusal. A
+poll_fn producer owning a test-only original disposal panic delegates to the
+actual acquisition; its Ready output is not substituted. The exact original
+cold Application/Network/Work and independent startup/close facts must survive
+that disposal panic. Successful native cleanup and receiving surrender remain
+separate. The intended real-source inversion carries the report only with
+acquisition output instead of publishing it before Ready, making the same
+post-disposal receipt oracle fail finitely; restore exact source afterward.
+Read/review each test twice before execution. Debug and optimized controls,
+source inversion and exact restores are required. Existing preopened and cold
+controls migrate only to this already-recorded acquisition/publication syntax;
+they do not gain policies or lose assertions.
+
+Expected production: one owning retirement.rs, at most120 net lines, no public
+types/dependencies/manifest or lock changes. Test surface: new application-owned
+startup tests, its cfg(test) mount and mechanical existing Application/Connection
+controls; at most600 retained/1400 authored test lines plus100 inversion lines.
+Expected fixture/public visibility changes0. Known combined production1451 plus
+120 stays below1600; public14, verification/tooling20000 and software slots115
+carry, with historical unknowns retained. This is private capability growth and
+necessary custody evidence for the whole Application service; it is not delivery
+of that service, relaxation of either release hold, or closure of a full row.
