@@ -14,6 +14,15 @@ PR delivery remain tracked in the
 [PRD](../prds/static-remote-actors.md#application-startup-custody--isolated-delivery-stage-2026-10-15).
 This is a local ownership prerequisite; full remote gates remain open.
 
+Communication0.1.6 is selected for narrow adoption after owning PR13 and release
+PR14 merged with all checks passing and actual registry/archive verification.
+The minimum and both locks change only the existing package. Capacity readiness
+is an observation, not reserved capacity or admission authority. Main-based
+integration verification and PR delivery remain pending; fresh-authority retries
+and the complete remote Application service remain required. Full remote rows
+stay open; [the PRD](../prds/static-remote-actors.md#communication-capacity-dependency-2026-10-15-utc)
+records source, scope and exact completion gates.
+
 [Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
 mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
 All six checks passed onfc85ec10, including required Nix38807714831;

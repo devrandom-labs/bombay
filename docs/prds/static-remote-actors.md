@@ -1,51 +1,65 @@
 # Static remote actors and typed admission
 
-## Current delivery and provider-test contribution (2026-10-15 UTC)
+## Communication capacity dependency (2026-10-15 UTC)
 
-PR372 merged through its reviewed PR as e2a4e7f3 after all six checks passed.
-This separate branch starts from that exact latest main and changes no
-production code, public API, dependency or lock. All full R01–R25, AUTH1 and
-NET1 obligations remain open. The complete Application-owned remote service
-and separate remote-counter application are still required.
+Select the recommended narrow registry adoption under the user's standing
+delegation: raise the existing Communication minimum to0.1.6 and update only
+its version/checksum in both locks. A lock-only change would still let consumers
+select0.1.5, which lacks the verified capacity operation. A broad dependency
+refresh is unnecessary. Every other dependency, frozen Behavior/Actors0.25.0
+and the absence of repository patches remain unchanged.
 
-The user requires all transport configuration, sessions, requests, replies and
-cleanup to remain private inside Bombay, including advanced public APIs.
-Existing native public APIs remain defects awaiting that service replacement.
-The separate PR373 release and PR374 API contribution remain held for that
-correction. This test-only contribution does not retain a new SDK API or lift
-either hold.
+Owning [PR13](https://github.com/devrandom-labs/bombay-communication/pull/13)
+merged39fd717e after all five checks and independent source/actual-log reviews
+passed. Release [PR14](https://github.com/devrandom-labs/bombay-communication/pull/14)
+merged963067e0 after all five checks passed; its reviewed and merged trees
+equalb33455208db74cf25245cda40175269d15033434. Automatic release38811968998
+succeeded. The published un-yanked0.1.6 archive has checksum
+e5d5a581c47408d64234b7e89a229b63a333584cfe5c10b6fe656daa2c1e4853;
+all15 packaged Rust files match reviewed source, and VCS/tag resolve963067e0.
 
-The previously reviewed live_requester source e090227f carries two finite
-provider families through outbound request protection, actual typed requester
-Actions and generated native replies. Its pending-protection comparison keeps
-the same non-Clone receipt while another native request and replay progress.
-The scheduled provider's send-before-await path does not prove a Pending poll;
-the separately controlled pending protector supplies that narrower witness.
-These deterministic provider records are neither production cryptography nor
-KERI identity evidence. Session-local traffic is not a TLS handshake campaign.
+Communication owns no-payload capacity observation and exact payload custody
+through notification failure. Available observes capacity; it reserves no slot
+and grants no permission. Bombay must recheck current authority before each
+nonwaiting attempt. Progress assumes normal executor wakers: arbitrary foreign
+waker-panic sibling progress is unsupported, with failed broader research
+retained. The owning change accepts measured workload cost increases; it claims
+no speedup. Existing final admission, retry and uncertainty laws remain intact.
 
-Independent minimization removes only the later duplicate delivery assertion;
-the earlier finite intended-failure oracle and final native actor checks remain.
-The resulting source is 07e3a096 and needs its own integration execution.
+This independent branch starts from latest main e2a4e7f3. Planned surface is
+three existing dependency files and eight current documentation records:
+production Rust+0/-0; tests+0/-0; public types+0/-0. It reuses existing controls
+without adding implementation-mirroring tests. All earlier cumulative scope
+and unknown historical extents carry. Compare every locked package record;
+execute affected debug/optimized tests, strict checks and required CI on the
+actual main-based source before review/merge. Those checks are pending here.
+This delivers dependency adoption only: full R01–R25/AUTH1/NET1, Application
+networking and the required private transport boundary remain open.
 
-Scope before integration: existing test source +702/-13/net689, existing Nix
-verification commands +3/-0, public types +0/-0, production +0/-0. Reuse existing
-main Application, Node, typed external-service and Export retention/native
-interfaces; import no unmerged production. Both locks retain their original
-main hashes (e058fe21 and 2d25fab9). Coordinator source review and independent
-two-pass integration review pass; compilation and submitted-source CI remain
-pending. Prior causal inversions retain their original source provenance and
-cannot substitute for executing this main-based source.
+## Provider conservation delivery (2026-10-15 UTC)
 
-Required Nix now explicitly runs all six feature-gated live_requester tests in
-each profile and checks the actual 6/0/0 summary. The previous filters selected
-other modules and could omit this contribution. Nix syntax parsing passes.
-Before delivery, run focused and complete affected consumers in debug and
-optimized builds, strict lint and formatting, then review actual required CI
-and merge through the PR. Commit and merge finished contributions independently;
-an open PR or passing local controls cannot establish merged delivery.
+[Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
+mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks passed onfc85ec10, including required Nix38807714831;
+reviewed, tested and merged trees equal54451654. Independent required/native
+reviews9ce15cf1/ba0e2a35 and merge receipt095a3c42 retain actual execution and
+source attribution. Six provider cases execute per profile: two finite refusals,
+two actual two-Node TLS requester flows and two local pending-protection cases.
+Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
+adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
+privacy remain open. PR373 release and PR374 API delivery remain held.
 
-## Earlier delivery checkpoint (2026-10-15 UTC)
+The contribution retains source07e3a096 (+702/-13 test lines), removing only
+one duplicate assertion from reviewede090227f. It preserves the original
+finite-failure and independent native actor oracles. Original main locks were
+e058fe21/2d25fab9 with Communication0.1.5; this branch's adoption intentionally
+uses44b9daf8/8090a793 with0.1.6. No old-head CI proves that combined source.
+The merge from current main carries the provider tests and explicit six-case
+Nix loop unchanged. Re-run affected checks, review the actual combined head
+and let required CI pass before this adoption PR merges. Earlier local d9b
+verification remains exact-source evidence, not a combined execution claim.
+
+## Earlier delivery snapshot (before PR372)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
 CI and scoped reviews passed. PR367 merged81dc1448; bombay-rs0.1.2 publication
@@ -26006,3 +26020,24 @@ production+10/-4/net6; tests+193/-0/net193; public API+0/-0 types. PRD/acceptanc
 status are the other three paths. This is new ownership protection, not net
 code reduction. Required CI, broad affected-source checks and actual merge are
 still pending when this focused contribution is submitted.
+
+
+PR379 first submission0542801 commits the isolated correction and passing
+focused D/R evidence. Its actual pinned workspace all-feature debug command
+then completes0, including existing Application/HTTP/Entity, integration,
+compile-pass/compile-fail and documentation checks. That run selects the
+original Communication0.1.5 and is not attributed to a later combined graph.
+
+To verify integration early and avoid a serial CI wait, normally merge the
+reviewed PR377 head3299340 into this feature branch while PR377's required
+check still runs. The sole real status-document conflict retains both delivery
+records. The execution source and all193 test lines remain byte-exactd6cb7886.
+Cargo.toml and both locks are byte-exact329; complete other399/324 package
+records are unchanged, with Communication0.1.6 now selected. No new version,
+API, feature or source design is introduced. Fresh combined checks/CI receive
+new source attribution; original054 CI may be superseded naturally and does
+not prove the new head. PR379 must not merge before PR377 actually delivers.
+Relative to329, the kernel contribution remains exactly four paths, production
++10/-4/net6, verification+193/-0/net193, public types+0/-0. Against current
+c249 main the temporary stacked diff also includes the eleven-path separately
+reviewed dependency contribution; cumulative accounting is not reset.

@@ -9,15 +9,22 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
-The main-based provider-test contribution reuses reviewed source e090227f,
-removing one duplicate assertion as 07e3a096, and existing main APIs without
-production, dependency or public API
-changes. Six finite-provider cases now have an explicit required-Nix command
-and nonzero 6/0/0 assertion in each profile. Integration execution and actual PR
-delivery remain pending. These tests preserve original protection results and
-non-Clone receipts through real native requester/replay work; they do not prove
-production authentication or the complete private Application service. Native
-SDK exposure remains a defect; PR373/374 remain held for its replacement.
+Communication0.1.6 publication is verified after reviewed owning PR13 and release
+PR14 merges with passing CI. Narrow Bombay adoption is selected; its main-based
+tests and PR delivery remain pending. Capacity observation neither reserves a
+slot nor substitutes for fresh permission checks. Arbitrary foreign-waker-panic
+sibling progress is unsupported. This prerequisite closes no full row.
+
+[Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
+mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks passed onfc85ec10, including required Nix38807714831;
+reviewed, tested and merged trees equal54451654. Independent required/native
+reviews9ce15cf1/ba0e2a35 and merge receipt095a3c42 retain actual execution and
+source attribution. Six provider cases execute per profile: two finite refusals,
+two actual two-Node TLS requester flows and two local pending-protection cases.
+Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
+adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
+privacy remain open. PR373 release and PR374 API delivery remain held.
 
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
