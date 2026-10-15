@@ -2223,3 +2223,83 @@ meaningful local absence. Disposition: pass this focused correction; the fresh
 combined runtime, supported diagnostics, strict lint, full24 native Nix checks
 and archives remain separate acceptance gates. The upcoming source freeze must
 include the complete merged main and this correction.
+
+Actor-only Node work (DX01/20): deliberate Bombay interface policy makes the
+network SDK internal. The pre-edit Counter compile witness fails only E0282 at
+node.run_with(|application| async move { /* typed actor work */ }).await.
+Reuse Application's existing FnOnce(ApplicationHandle) -> WorkFuture contract,
+Node's one declaration/connection owner, take_application refusal and the existing
+private connection association. Remove the public SDK callback argument and its
+higher-ranked loan requirement. No new constructor, wrapper, type, state, generic
+parameter, dependency or capability lookup is selected. Work/future/result gain
+no Send or static bounds. Runtime/transport tests can still inspect their SDK.
+
+The complete ownership equation stays original Work on refusal; accepted work
+returns its business value plus independent cleanup, actual native root and both
+notification results. Missing-host refusal restores the same declaration for
+retry. Successful startup still precedes invoking Work. Node closing stays a
+separate owned operation. The focused stage changes only joined run_with;
+configuration, Query-bearing exports and paired SDK execution remain open.
+Existing SDK-based callers are migrated only after the focused journey and
+association proof, using the established one-argument contract.
+
+The four final Node tests cover real increment/read and exact root origin/value1;
+missing-host retry of a real non-Clone File and original Box allocation;
+borrowed-wait cancellation with original Rc and caller-local non-Send Cell;
+Closed/Issued refusal and one successful reoffer of each original Work; and the
+unchanged paired borrowing contract. One shared retirement oracle requires actual
+Counter state0/1, both notifications, every independent residual lane and the
+exact one retained Stop(Stopped) settlement with empty creation/send lanes.
+The earlier Accepted-only oracle was vacuous for an empty collection. An actual
+completion-owner settlement-loss inverse fails0-versus1 in7.937 seconds and
+restoration passes4.160 seconds. Both invariant and counterexample reviews accept
+every changed test; repeated green executions do not replace these reviews.
+
+Both receipt-profile Counter export constructors now use the same actor-only
+callback. Their existing declaration/drain/refusal/native/notification observations
+remain. The returned export connection is open before actual Node.close and closed
+afterward, independently proving shared lifecycle without a work SDK parameter.
+Removing the actual private association fails both optimized cases with NodeAbsent
+in81.804 seconds; restoration passes83.853 seconds. Ledger paired cases are unchanged.
+These construction tests issue no Query and establish no provider/replay semantics.
+
+The direct SDK-argument denial returns only shutdown, avoiding the unrelated old
+borrowed-output veto. Its exact source compiles on originalfb295b6 (44.100 seconds)
+and fails solely E0593 at the new one-argument contract. Current/MSRV immutable
+suites pass all three exact borrowing/arity fixtures in17.402/16.440 seconds;
+their sole arity golden is byte-identical. The obsolete loan-output denial is
+replaced explicitly; remaining paired lending/close exclusion stay independent.
+Both reviews validate fixture equality, actual original owner source, all609
+source hashes, exact suite/mode coverage and raw-log hashes.
+
+Shared target directories contaminated two current denial attempts, including
+a sequential replay: Cargo reused the control's executable. Those failures and
+the overlapping control receive no acceptance credit. Final verification uses
+dedicated checkout/compiler targets after pinned cleaning of all three owner
+packages, with exact listed test names. All40 Node/client tests and nine client
+denials pass current debug/release in47.301/106.050 seconds and MSRV debug/release
+in47.839/121.274 seconds; all609 frozen hashes remain conserved. Full workspace/all-target/all-feature strict debug lint passes20.387 seconds;
+format checking passes2.458 seconds. Final repository/package gates remain open.
+
+Aggregate checkpoint: Driver states7, residual3, publication2 and terminal24 are
+unchanged. No new aggregate/subordinate state, result alternative, transition
+branch, public spelling, production module or actor authority exists. The existing
+optional connection retains actual Node association or meaningful local absence;
+no arrival-history label, semantic flag, repeated cause or structural user alias
+is introduced. Production+14/-18/net-4 (including rustdoc); Rust tests/fixtures
++138/-94/net44; diagnostic snapshots+73/-27/net46; public types+0/-0. Owning method
+and ordinary guide use the same callback syntax. Driver initialization/retirement
+law and the existing complete Application outcome remain authoritative. Disposition:
+pass this focused callback layer, with SDK configuration/query/paired surfaces,
+full gates, archive delivery and the broader DevX programme still open. Cleanfb295b6
+Nix checks in the separate interpreter worktree cannot prove this later change.
+
+Broader debug lint found one unchanged incoming export-client test over its
+line limit. Its law accepts exactly ExportError::Endpoint and inspects that
+original native cause/source by address; every other variant must fail the test.
+The equivalent single let-else preserves every operation, assertion and drop
+order without a lint exemption. Separate test-only commit94f607a removes10 lines;
+its exact native unit test passes current debug26.869 seconds and MSRV optimized
+122.647 seconds. Both source reviews pass; the earlier40-case integration matrix
+does not cover this later cfg(test) edit. Whole branch Rust test delta is net34
+including that separately reviewed edit; production remains net-4.

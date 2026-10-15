@@ -191,11 +191,12 @@ where
 {
     /// Await caller-local work and the complete joined application retirement.
     ///
-    /// The callback may borrow the native Session across awaits. Its result must
-    /// be independent of that temporary loan; use `execute_with` for a result
-    /// that borrows the Session or for separately owned execution and receiving.
-    /// This operation is cold until polled. Canceling a borrowed wait leaves the
-    /// owned operation available; dropping the whole operation surrenders it.
+    /// Work receives the ordinary Application handle for typed actor clients,
+    /// lifecycle requests and composition, using the same callback contract as
+    /// `Application::run_with`. Work and its result may borrow caller-local values
+    /// and need not be Send. This operation is cold until polled. Canceling a borrowed wait
+    /// leaves the owned operation available; dropping the whole operation
+    /// surrenders it.
     ///
     /// # Errors
     /// Returns the original callable when execution is refused. A missing host
@@ -203,7 +204,7 @@ where
     ///
     /// # Panics
     /// Retains the existing application setup, work and native SDK contracts.
-    pub async fn run_with<Actor, StagingFailure, ChildFailures, Work, Output>(
+    pub async fn run_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
         &mut self,
         work: Work,
     ) -> Result<
@@ -211,7 +212,7 @@ where
             WorkOutcome<
                 Application<Root, Spaces, Members>,
                 Work,
-                Output,
+                WorkFuture::Output,
                 (),
                 (Root, Spaces, Work, StagingFailure, ApplicationScope),
                 (Actor, Spaces, ApplicationScope),
@@ -277,20 +278,15 @@ where
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
-        Work: for<'loan> AsyncFnOnce(
-            ApplicationHandle<Root::Protocol, Actor::Event>,
-            &'loan Session,
-        ) -> Output,
+        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
+        WorkFuture: Future,
     {
         let (application, work) = self.take_application(work)?;
         let session = &self.session;
-        match application.execute_with_invocation(
-            work,
-            move |work: Work, mut application| async move {
-                application.session = Some(session.clone());
-                work(application, session).await
-            },
-        ) {
+        match application.execute_with_invocation(work, move |work: Work, mut application| {
+            application.session = Some(session.clone());
+            work(application)
+        }) {
             Ok((execution, receiving)) => {
                 execution.await;
                 Ok(receiving.await)

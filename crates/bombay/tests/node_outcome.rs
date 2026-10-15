@@ -1,15 +1,24 @@
 #![cfg(feature = "remote")]
 
-#[path = "../../../examples/counter/src/counter.rs"]
-mod counter;
+mod counter {
+    include!("../../../examples/counter/src/counter.rs");
+
+    pub(super) fn retained_value(counter: &Counter) -> u64 {
+        counter.value
+    }
+}
 
 use bombay::actors::ActorExt;
-use bombay::behavior::{ClassifySettlement, Never, SettlementStatus};
+use bombay::behavior::{
+    BehaviorBase, ClassifySettlement, Never, NoSends, SettlementStatus, Stopped,
+};
 use bombay::prelude::*;
 use bombay::remote::NodeExecutionRefusal;
 use counter::{Counter, CounterMessage, CounterValue};
 use std::cell::Cell;
+use std::fs::File;
 use std::future::Future;
+use std::io::Read;
 use std::path::PathBuf;
 use std::pin::pin;
 use std::ptr;
@@ -17,9 +26,10 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::task::{Context, Poll, Waker};
+use std::time::Duration;
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
-use zenoh::Session;
+use tokio::time::timeout;
 use zenoh_config::Config;
 
 fn listening_configuration() -> Config {
@@ -41,7 +51,7 @@ fn listening_configuration() -> Config {
 }
 
 #[test]
-fn native_node_returns_original_work_and_complete_retirement_through_one_outcome() {
+fn node_work_uses_only_actor_capabilities_and_returns_original_work_for_retry() {
     let host = Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
@@ -55,12 +65,13 @@ fn native_node_returns_original_work_and_complete_retirement_through_one_outcome
         .unwrap_or_else(|_| panic!("the actual native node opens"));
     let original = vec![41, 43].into_boxed_slice();
     let allocation = original.as_ptr();
+    let original_file = File::open(concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml"))
+        .expect("real non-Clone work custody");
     let calls = Arc::new(AtomicUsize::new(0));
     let observed_calls = Arc::clone(&calls);
     let work = {
-        let operation = node.run_with(async move |application, session: &Session| {
+        let operation = node.run_with(|application| async move {
             observed_calls.fetch_add(1, Ordering::SeqCst);
-            assert!(!session.is_closed(), "the actual borrowed Session is live");
             let mut caller = application
                 .client::<CounterValue>()
                 .expect("the actual counter client");
@@ -74,11 +85,13 @@ fn native_node_returns_original_work_and_complete_retirement_through_one_outcome
                 .unwrap_or_else(|_| panic!("the read is admitted"));
             let reply = caller.receive().await.expect("the actual typed reply");
             let shutdown = application.request_shutdown();
-            assert!(
-                !session.is_closed(),
-                "the original Session remains live after the reply"
-            );
-            (original, reply, application.root().address(), shutdown)
+            (
+                original,
+                original_file,
+                reply,
+                application.root().address(),
+                shutdown,
+            )
         });
         let mut operation = pin!(operation);
         let mut context = Context::from_waker(Waker::noop());
@@ -91,37 +104,50 @@ fn native_node_returns_original_work_and_complete_retirement_through_one_outcome
     };
     assert_eq!(calls.load(Ordering::SeqCst), 0);
     host.block_on(async {
-        let outcome = node
-            .run_with(work)
-            .await
-            .unwrap_or_else(|_| panic!("the restored declaration retries its original work"));
-        let ((original, reply, root_address, shutdown), retirement) = outcome
-            .try_into_completed()
-            .unwrap_or_else(|_| panic!("the same original work completes"));
-        assert_eq!(calls.load(Ordering::SeqCst), 1);
-        assert!(ptr::eq(original.as_ptr(), allocation));
-        assert_eq!(&*original, &[41, 43]);
-        assert_eq!((reply.from, reply.message), (root_address, 1));
-        assert_eq!(shutdown, Ok(()));
-        assert!(retirement.cleanup().is_ok());
-        let notifications = retirement
-            .notifications()
-            .as_ref()
-            .expect("both original notifications return");
-        assert!(notifications.termination.is_ok());
-        assert!(notifications.retirement.is_ok());
-        let (origin, root) = retirement
-            .retirement()
-            .as_ref()
-            .expect("the independent native root returns");
-        assert_eq!(origin.address(), root_address);
-        assert_counter_retirement(root);
-        let closed = node.close().await;
-        assert!(closed.is_ok());
+        let completed = timeout(Duration::from_secs(10), async {
+            let outcome = node
+                .run_with(work)
+                .await
+                .unwrap_or_else(|_| panic!("the restored declaration retries its original work"));
+            let ((original, mut original_file, reply, root_address, shutdown), retirement) =
+                outcome
+                    .try_into_completed()
+                    .unwrap_or_else(|_| panic!("the same original work completes"));
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            assert!(ptr::eq(original.as_ptr(), allocation));
+            assert_eq!(&*original, &[41, 43]);
+            let mut contents = String::new();
+            original_file
+                .read_to_string(&mut contents)
+                .expect("the original non-Clone file remains usable after retry and retirement");
+            assert_eq!(contents, include_str!("../Cargo.toml"));
+            assert_eq!((reply.from, reply.message), (root_address, 1));
+            assert_eq!(shutdown, Ok(()));
+            assert!(retirement.cleanup().is_ok());
+            let notifications = retirement
+                .notifications()
+                .as_ref()
+                .expect("both original notifications return");
+            assert!(notifications.termination.is_ok());
+            assert!(notifications.retirement.is_ok());
+            let (origin, root) = retirement
+                .retirement()
+                .as_ref()
+                .expect("the independent native root returns");
+            assert_eq!(origin.address(), root_address);
+            assert_counter_retirement(root, 1);
+            let closed = node.close().await;
+            assert!(closed.is_ok());
+        })
+        .await;
+        completed.expect("actor work and joined retirement finish within the watchdog");
     });
 }
 
-fn assert_counter_retirement(root: &ActorRetirement<StopOnShutdown<Counter>, Never, Vec<Never>>) {
+fn assert_counter_retirement(
+    root: &ActorRetirement<StopOnShutdown<Counter>, Never, Vec<Never>>,
+    expected_value: u64,
+) {
     assert_eq!(root.completion(), Some(&Completion::Stopped));
     let ActorRetirement::Completed {
         custody,
@@ -133,6 +159,10 @@ fn assert_counter_retirement(root: &ActorRetirement<StopOnShutdown<Counter>, Nev
     else {
         panic!("the original counter stops normally");
     };
+    assert_eq!(
+        counter::retained_value(custody.behavior.base()),
+        expected_value
+    );
     assert_eq!(custody.child_failures.len(), 0);
     assert_eq!(custody.capability_failures.len(), 0);
     assert_eq!(custody.additional_failures.len(), 0);
@@ -140,6 +170,13 @@ fn assert_counter_retirement(root: &ActorRetirement<StopOnShutdown<Counter>, Nev
     assert!(interpretation.is_none());
     assert!(source.is_none());
     assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
+    assert_eq!(settlements.len(), 1);
+    let stopped = &settlements[0];
+    assert_eq!(stopped.creations.len(), 0);
+    assert!(matches!(stopped.sends.owned, NoSends));
+    assert_eq!(stopped.sends.inner.values.len(), 0);
+    assert_eq!(stopped.sends.inner.processed_increments.len(), 0);
+    assert_eq!(stopped.become_, Step::Stop(Stopped));
     assert_eq!(custody.user.len(), 0);
     assert_eq!(custody.control.len(), 0);
     assert_eq!(custody.descendants.len(), 0);
@@ -158,7 +195,7 @@ fn native_join_resumes_after_a_borrowed_wait_and_retains_caller_local_work() {
         .enable_all()
         .build()
         .expect("the native SDK host");
-    let calls = Cell::new(0);
+    let calls = &Cell::new(0);
     let original = Rc::new(vec![47, 53]);
     let allocation = Rc::as_ptr(&original);
     host.block_on(async {
@@ -169,11 +206,11 @@ fn native_join_resumes_after_a_borrowed_wait_and_retains_caller_local_work() {
         let (entered, entry) = oneshot::channel();
         let (release, permission) = oneshot::channel();
         let outcome = {
-            let operation = node.run_with(async |application, session: &Session| {
+            let operation = node.run_with(|application| async move {
                 calls.set(calls.get() + 1);
-                let published = entered.send(session.zid());
+                let published = entered.send(application.root().address());
                 let permitted = permission.await;
-                let current = session.zid();
+                let current = application.root().address();
                 let shutdown = application.request_shutdown();
                 (original, published, permitted, current, shutdown)
             });
@@ -222,7 +259,7 @@ fn native_join_resumes_after_a_borrowed_wait_and_retains_caller_local_work() {
             .as_ref()
             .expect("native root returns");
         assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-        assert_counter_retirement(root);
+        assert_counter_retirement(root, 0);
         let closed = node.close().await;
         assert!(closed.is_ok());
     });
@@ -277,7 +314,7 @@ fn raw_native_execution_retains_a_result_borrowing_its_original_session() {
                 .as_ref()
                 .expect("native root returns");
             assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-            assert_counter_retirement(root);
+            assert_counter_retirement(root, 0);
         }
         let closed = node.close().await;
         assert!(closed.is_ok());
@@ -300,11 +337,10 @@ fn native_join_returns_original_work_for_closed_and_already_issued_nodes() {
         assert!(closed.is_ok());
         let original = vec![59, 61].into_boxed_slice();
         let allocation = original.as_ptr();
-        let calls = Cell::new(0);
+        let calls = &Cell::new(0);
         let Err(NodeExecutionRefusal::SessionClosed { work }) = closed_node
-            .run_with(async |application, session: &Session| {
+            .run_with(|application| async move {
                 calls.set(calls.get() + 1);
-                assert!(!session.is_closed());
                 let shutdown = application.request_shutdown();
                 (original, shutdown)
             })
@@ -335,17 +371,19 @@ fn native_join_returns_original_work_for_closed_and_already_issued_nodes() {
             .expect("independent notifications return");
         assert!(notifications.termination.is_ok());
         assert!(notifications.retirement.is_ok());
-        assert_counter_retirement(&retirement.retirement().as_ref().expect("root returns").1);
+        assert_counter_retirement(
+            &retirement.retirement().as_ref().expect("root returns").1,
+            0,
+        );
         let closed = node.close().await;
         assert!(closed.is_ok());
 
         let original = vec![67, 71].into_boxed_slice();
         let allocation = original.as_ptr();
-        let calls = Cell::new(0);
+        let calls = &Cell::new(0);
         let Err(NodeExecutionRefusal::ExecutionIssued { work }) = node
-            .run_with(async |application, session: &Session| {
+            .run_with(|application| async move {
                 calls.set(calls.get() + 1);
-                assert!(!session.is_closed());
                 let shutdown = application.request_shutdown();
                 (original, shutdown)
             })
@@ -376,7 +414,10 @@ fn native_join_returns_original_work_for_closed_and_already_issued_nodes() {
             .expect("independent notifications return");
         assert!(notifications.termination.is_ok());
         assert!(notifications.retirement.is_ok());
-        assert_counter_retirement(&retirement.retirement().as_ref().expect("root returns").1);
+        assert_counter_retirement(
+            &retirement.retirement().as_ref().expect("root returns").1,
+            0,
+        );
         let closed = replacement.close().await;
         assert!(closed.is_ok());
     });

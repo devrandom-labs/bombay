@@ -10,7 +10,6 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 use tokio::runtime::Builder;
 use tokio::sync::mpsc;
-use zenoh::Session;
 use zenoh::query::Query;
 
 async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bool) {
@@ -22,8 +21,7 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
         .await
         .unwrap_or_else(|_| panic!("actual configured Counter Node"));
     let outcome = node
-        .run_with(async move |application, session: &Session| {
-            let actual_zid = session.zid();
+        .run_with(|application| async move {
             let target = application.root().established_recipient();
             let declaration = application
                 .export::<_, CounterValue, Receipt>(
@@ -40,12 +38,12 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
                 .await;
             let stopped = application.request_shutdown();
             let report = application.lifecycle().retirement().await;
-            (declaration, actual_zid, stopped, report)
+            (declaration, stopped, report)
         })
         .await
         .unwrap_or_else(|_| panic!("actual Counter execution host"));
     let (outcome, native, notifications, ()) = outcome.into_parts();
-    let ((declaration, actual_zid, stopped, report), cleanup) = outcome
+    let ((declaration, stopped, report), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Counter Work acquired"));
     let declaration = match declaration {
@@ -74,6 +72,12 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
         }
         Err(original) => Err(original),
     };
+    if let Ok((_, session, ..)) = &declaration {
+        assert!(
+            !session.is_closed(),
+            "the Node connection remains open before close"
+        );
+    }
     let closed = node.close().await;
     let native = native.expect("complete Counter native original");
     assert_completed(native, None);
@@ -83,7 +87,6 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
         .unwrap_or_else(|(_, cause)| panic!("actual Node must issue its public export: {cause:?}"));
     assert_eq!(diagnostic, "Export { .. }");
     assert!(undeclared.is_ok());
-    assert_eq!(session.zid(), actual_zid);
     assert!(session.is_closed());
     assert!(rows.is_empty() && queries.is_empty());
     assert!(matches!(end, mpsc::error::TryRecvError::Disconnected));

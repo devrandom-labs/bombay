@@ -570,18 +570,18 @@ The `remote` feature provides `application.open_node(config).await`. Its input i
 root/child topology with ordinary Application first. Its returned
 `remote::Node` owns that declaration and one fresh native Session. Await the
 complete application with
-`node.run_with(async |application, session: &zenoh::Session| { ... }).await`.
-The application argument stays inferred; this advanced SDK argument may name
-`Session`. Work can borrow the Session across awaits and return caller-local,
-non-`Send` values. The joined result is the ordinary `ApplicationOutcome`,
-including independent native retirement and both notification results. Its
-business result is independent of the temporary Session loan.
+`node.run_with(|application| async move { ... }).await`.
+Work receives the same inferred Application handle as local execution and can
+return caller-local, non-`Send` values. The joined result is the ordinary
+`ApplicationOutcome`, including independent native retirement and both
+notification results. Finish receiving before `node.close().await`, retaining
+the independent close result.
 
-Use `node.execute_with(|application, session| async move { ... })` when the
-result itself borrows the Session, or when execution and receiving must remain
-separate owned operations. Finish receiving before `node.close().await`,
-retaining the independent native close result. Rust prevents mutable close while
-a result still borrows the Session. Both entry points preserve the original
+Transport hiding remains unfinished: startup configuration, exported query
+custody and the paired `execute_with` method still expose SDK types. These are
+remaining interface work, not the canonical business callback. Zenoh is Bombay's
+internal network; application authors compose actors and use typed Bombay
+clients and recipients. Both execution entry points preserve the original
 callable on refusal. Missing-host refusal also restores the original declaration;
 a second execution returns `NodeExecutionRefusal::ExecutionIssued`, including
 when that already-issued Node's Session is closed.
@@ -592,9 +592,9 @@ discovery, mutual TLS, configured private roots, verified names and explicit
 native query capacity. No default capacity is selected. Per-endpoint overrides
 and `OneOf` fallback are rejected. SDK parsing verifies actual credentials; policy
 checks alone prove no handshake. Opening requires an entered multithreaded Tokio
-host. Trusted work can clone or close the native Session and must honor the SDK
-host/custody contract; exposing that advanced API does not enforce all remote
-policy. Whole operation disposal is surrender, not proof of joined retirement.
+host. The remaining paired SDK method can clone or close the native Session;
+removing that transport access is required to complete this interface work.
+Whole operation disposal is surrender, not proof of joined retirement.
 
 `ApplicationHandle::export` uses its Node's private Session and actual
 Application ownership. Each request retains its originals with an independent
