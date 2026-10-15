@@ -5,6 +5,8 @@ use crate::entity::{
 use crate::local::endpoint::{ActorRef, ExtractLocalEndpoint, SendError, request_actor_shutdown};
 use crate::local::ingress::{Admission, AdmissionClosure};
 use crate::observe::{Observation, Publisher, pair};
+#[cfg(feature = "remote")]
+use crate::remote::ExportError;
 use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
 use behavior::{
@@ -99,6 +101,45 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         Replies::Msg: Send,
     {
         ApplicationClient::establish(target, &self.allocations)
+    }
+
+    /// Construct a reply client only for an actor owned by this Application.
+    ///
+    /// The exact root and any owned child use the same operation. Foreign actor
+    /// recipients and external reply endpoints are refused before allocation.
+    /// Known ownership survives target closure; a later send retains its actual
+    /// native closure result and original message.
+    ///
+    /// This checks association only. It does not publish a network endpoint,
+    /// establish readiness, authenticate a caller or grant operation permission.
+    /// Sending retains the existing awaited or nonwaiting mailbox contract.
+    ///
+    /// # Errors
+    /// Returns the complete original recipient with its association refusal or
+    /// the actual error establishing the existing native reply endpoint.
+    #[cfg(feature = "remote")]
+    pub fn export_client<TargetProtocol, Replies>(
+        &self,
+        target: EstablishedRecipient<TargetProtocol>,
+    ) -> Result<
+        ApplicationClient<EstablishedRecipient<TargetProtocol>, Replies>,
+        (EstablishedRecipient<TargetProtocol>, ExportError),
+    >
+    where
+        TargetProtocol: Protocol<Addr = MailAddr>,
+        TargetProtocol::Msg: Send + 'static,
+        Replies: Protocol<Addr = MailAddr>,
+        Replies::Msg: Send,
+    {
+        let mut interpreter = ExtractLocalEndpoint;
+        let endpoint = target.clone().interpret(&mut interpreter);
+        if !endpoint.belongs_to(&self.allocations) {
+            return Err((target, ExportError::UnownedTarget));
+        }
+        match ApplicationClient::establish(target, &self.allocations) {
+            Ok(client) => Ok(client),
+            Err((target, cause)) => Err((target, ExportError::Endpoint { cause })),
+        }
     }
 
     /// Bind one exact actor recipient or stable Entity reference to a one-way sender.
@@ -277,6 +318,29 @@ where
     /// Close new replies while preserving the accepted prefix for receiving.
     pub fn close_admission(&self) {
         self.caller.close_admission();
+    }
+}
+
+#[cfg(feature = "remote")]
+impl<Target, Replies> ApplicationClient<EstablishedRecipient<Target>, Replies>
+where
+    Target: Protocol<Addr = MailAddr>,
+    Replies: Protocol<Addr = MailAddr>,
+    Replies::Msg: Send,
+{
+    /// Attempt the selected actor's mailbox without waiting for capacity.
+    ///
+    /// Uses this client's allocated sender identity and exact retained target.
+    /// Permission must be checked before each attempt; this performs no
+    /// authentication, retry or serialization. Acceptance is distinct from
+    /// processing, a business reply and joined retirement.
+    ///
+    /// # Errors
+    /// Returns the native [`TrySendError::Full`] or [`TrySendError::Closed`]
+    /// with the complete original command. Closure establishes refused
+    /// admission, not completed actor retirement.
+    pub fn try_send(&self, command: Target::Msg) -> Result<(), TrySendError<Target::Msg>> {
+        self.caller.try_send(&self.target, command)
     }
 }
 
@@ -722,9 +786,17 @@ where
 #[cfg(test)]
 mod tests {
     use crate::actors::ActorExt;
+    #[cfg(feature = "remote")]
+    use crate::application::ApplicationScope;
+    #[cfg(feature = "remote")]
+    use crate::remote::ExportError;
     use behavior::{AllocationRejection, BehaviorBase, MessageProtocol, Never, User};
     use behavior_actors::{Exit, StopOnShutdown};
     use core::num::NonZeroUsize;
+    #[cfg(feature = "remote")]
+    use std::error::Error as StdError;
+    #[cfg(feature = "remote")]
+    use std::ptr;
     use std::sync::{Arc, Mutex};
     use tokio::task::JoinError;
 
@@ -1023,6 +1095,102 @@ mod tests {
             .expect("the root retains its original data");
         assert_eq!(custody.behavior.base().entries, [13, 17]);
         assert_eq!(custody.behavior.base().received, []);
+    }
+
+    #[cfg(feature = "remote")]
+    #[tokio::test]
+    async fn export_client_refusals_keep_originals_and_native_allocation_cause() {
+        let scope = ApplicationScope {
+            allocations: ApplicationAddresses::from_next(u64::MAX - 2),
+        };
+        let external = scope.external::<MessageProtocol<MailAddr, u64>>().unwrap();
+        let external_recipient = external.recipient();
+        let expected_external = external_recipient.clone();
+        let (outcome, native, notifications) = scope
+            .with_root(
+                ShutdownLedger {
+                    entries: vec![13, 17],
+                    received: Vec::new(),
+                }
+                .stop_on_shutdown(),
+            )
+            .run_with(move |application| async move {
+                let root = application.root().established_recipient();
+                let expected_root = root.clone();
+                let unowned = application
+                    .export_client::<_, MessageProtocol<MailAddr, u64>>(external_recipient);
+                let available =
+                    application.export_client::<_, MessageProtocol<MailAddr, u64>>(root.clone());
+                let construction =
+                    application.export_client::<_, MessageProtocol<MailAddr, u64>>(root);
+                let shutdown = application.request_shutdown();
+                let report = application.lifecycle().retirement().await;
+                (
+                    unowned,
+                    available,
+                    construction,
+                    expected_root,
+                    shutdown,
+                    report,
+                    external,
+                )
+            })
+            .await
+            .unwrap_or_else(|_| panic!("the actual Application starts"));
+        let (originals, cleanup) = outcome
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("the original Work results are retained"));
+        let (_, retirement) = native.expect("the original root joins");
+        let notifications = notifications.expect("both notification results are acquired");
+        let (unowned, available, construction, expected_root, shutdown, report, external) =
+            originals;
+        assert!(cleanup.is_ok());
+        assert!(notifications.termination.is_ok());
+        assert!(notifications.retirement.is_ok());
+        assert_eq!(retirement.completion(), Some(&Completion::Stopped));
+        let custody = retirement
+            .custody()
+            .expect("the native root state survives");
+        assert_eq!(custody.behavior.base().entries, [13, 17]);
+        assert_eq!(custody.behavior.base().received, []);
+        assert_eq!(custody.descendants, []);
+        assert_eq!(custody.child_failures, []);
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+        assert!(shutdown.is_ok());
+        assert!(matches!(
+            &unowned,
+            Err((target, ExportError::UnownedTarget)) if target == &expected_external
+        ));
+        assert!(
+            available.is_ok(),
+            "the refusal preserves the last available reply endpoint"
+        );
+        let (returned_root, error) = construction
+            .as_ref()
+            .err()
+            .expect("the owned root retains its native reply-allocation refusal");
+        let cause = match error {
+            ExportError::Endpoint { cause } => cause,
+            ExportError::UnownedTarget => panic!("the genuine root remains associated"),
+        };
+        let ExternalActorError::Allocation(rejection) = cause;
+        let source = StdError::source(error).expect("the actual native cause is chained");
+        let retained_address = ptr::from_ref(source).addr();
+        let original_address = ptr::from_ref(cause).addr();
+        let allocation = StdError::source(cause).expect("the actual allocation cause is retained");
+        assert_eq!(returned_root, &expected_root);
+        assert_eq!(*rejection, AllocationRejection::Exhausted);
+        assert_eq!(retained_address, original_address);
+        assert_eq!(allocation.to_string(), rejection.to_string());
+        drop((
+            unowned,
+            available,
+            construction,
+            external,
+            expected_external,
+            expected_root,
+        ));
     }
 
     #[test]

@@ -2,6 +2,8 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+#[cfg(feature = "remote")]
+use std::sync::Weak;
 
 use behavior::{Address, AllocationRejection, Behavior, EndpointAddress, Protocol};
 
@@ -66,6 +68,11 @@ pub(crate) struct ApplicationAddresses {
 }
 
 impl ApplicationAddresses {
+    #[cfg(feature = "remote")]
+    pub(crate) fn downgrade(&self) -> Weak<AtomicU64> {
+        Arc::downgrade(&self.next)
+    }
+
     pub(crate) fn new() -> Self {
         // Zero is reserved for the application root.
         Self::from_next(1)

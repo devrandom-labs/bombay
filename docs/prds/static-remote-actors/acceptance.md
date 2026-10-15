@@ -97,6 +97,19 @@ retain the native Counter2-versus1 and LedgerClosed oracles. Final combined
 checks and reviewed delivery remain pending. No full R02/R14 or other row closes.
 
 The user requires crate-owned remote capability behind Cargo feature `remote`.
+The dependent export-client implementation branch now certifies actual root,
+sibling and nested-child recipients against their Application's existing source
+before reply allocation. It preserves closed-target membership and native
+allocation refusals. Six ownership cuts reach their intended failures in both
+profiles, followed by six fresh restored controls. The same existing client gains
+a remote-only nonwaiting attempt with exact native Full/Closed originals and
+allocated sender identity. Two complementary consumer controls and five admission
+cuts pass in both profiles; both consumers pass after exact restoration. The
+independent test/source/execution reviews and uncredited disk/lint failures remain
+in the PRD. Combined-source checks and reviewed delivery remain pending. This is
+local target/admission evidence, not protected publication, replay, permission
+coherence, real remote Stop or closure of a full R01–R25 row.
+
 Examples consume its public API; example-only implementations cannot pass R01.
 Keep the local counter in `examples/counter` and the remote counter in
 `examples/remote-counter`. Each teaches one complete application through public

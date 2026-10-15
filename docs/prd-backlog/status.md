@@ -22,6 +22,15 @@ The next implementation branch adds crate-owned JSON object/limit checks and
 real Counter/Ledger Node consumers; focused controls and all eight intended
 inversions pass their stated oracles in both profiles. Main is integrated;
 combined required checks and reviewed delivery remain open.
+The dependent export-client branch adds remote-only Application certification
+for actual root, sibling and nested-child recipients before reply allocation.
+Focused ownership, closure and native-error controls, six intended inversions
+and fresh restored controls pass in both profiles; combined checks and its
+reviewed PR remain pending. This
+does not supply remote publication or close any full acceptance row.
+Its existing fixed-target client now has a remote-only nonwaiting attempt;
+the two actual pressure/origin/closure consumers pass in both profiles. False
+success/classification cuts and combined-source delivery checks remain pending.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;

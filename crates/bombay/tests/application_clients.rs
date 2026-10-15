@@ -6,6 +6,8 @@ use bombay::behavior::{BehaviorBase, EstablishedDelivery, EstablishedRecipient, 
 use bombay::prelude::{
     Actions, ActorRetirement, Application, BehaviorActed, Completion, Exit, MailAddr,
 };
+#[cfg(feature = "remote")]
+use bombay::{ActorFailureAssessment, RetirementAssessment, TrySendError};
 
 #[path = "../../../examples/counter/src/counter.rs"]
 mod counter;
@@ -16,6 +18,8 @@ use core::pin::pin;
 use core::task::{Context, Poll, Waker};
 use core::time::Duration;
 use counter::{Counter, CounterMessage};
+#[cfg(feature = "remote")]
+use counter::{CounterProcessed, CounterValue};
 
 struct Receipts;
 
@@ -497,3 +501,190 @@ mod protected_requests;
 #[cfg(feature = "remote")]
 #[path = "application_clients/json_receiving.rs"]
 mod json_receiving;
+
+#[cfg(feature = "remote")]
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "retain actual pressure, the independent processing fence and native custody together"
+)]
+async fn certified_client_try_send_preserves_full_retry_and_exact_root_closure() {
+    let received = Application::new(Counter::new().stop_on_shutdown())
+        .run_with(|application| async move {
+            let root = application.root().established_recipient();
+            let address = application.root().address();
+            let mut client = application
+                .export_client::<_, CounterValue>(root)
+                .unwrap_or_else(|_| panic!("the real root is associated with this Application"));
+            let mut processing = application
+                .external::<CounterProcessed>()
+                .expect("the existing processing receipt owns independent receiving");
+            let reply_to = client.recipient();
+            let expected_reply = reply_to.clone();
+            let mut prefix = Vec::new();
+            // This current-thread Work does not yield while filling the owning
+            // Application mailbox's existing 1024 slots, so the root cannot drain.
+            for _ in 0..1_024 {
+                let admitted = client.try_send(CounterMessage::Increment);
+                prefix.push(admitted);
+            }
+            let mut full = Some(client.try_send(CounterMessage::Read(reply_to)));
+            // An actual FIFO Read reply establishes that the accepted prefix
+            // was interpreted before the single retry; no scheduler delay is guessed.
+            let drained = client.send(CounterMessage::Read(client.recipient())).await;
+            let before = if drained.is_ok() {
+                client.receive().await
+            } else {
+                None
+            };
+            let (full_reply, retried) = match full.take() {
+                Some(Err(TrySendError::Full(original))) => {
+                    let actual_reply = match &original {
+                        CounterMessage::Read(reply_to) => Some(reply_to.clone()),
+                        CounterMessage::Increment | CounterMessage::IncrementAndReply { .. } => {
+                            None
+                        }
+                    };
+                    let retried = client.try_send(original);
+                    (actual_reply, Some(retried))
+                }
+                other => {
+                    full = other;
+                    (None, None)
+                }
+            };
+            let fenced = client
+                .send(CounterMessage::IncrementAndReply {
+                    request_sequence: 37,
+                    reply_to: processing.recipient(),
+                })
+                .await;
+            let checkpoint = if fenced.is_ok() {
+                processing.receive().await
+            } else {
+                None
+            };
+            client.close_admission();
+            let mut after = Vec::new();
+            while let Some(reply) = client.receive().await {
+                after.push(reply);
+            }
+            let stopped = application.request_shutdown();
+            let termination = application.termination().await;
+            let report = application.lifecycle().retirement().await;
+            let closed = client.try_send(CounterMessage::Read(expected_reply.clone()));
+            (
+                client,
+                address,
+                expected_reply,
+                prefix,
+                full,
+                full_reply,
+                drained,
+                before,
+                retried,
+                after,
+                fenced,
+                checkpoint,
+                processing,
+                stopped,
+                termination,
+                report,
+                closed,
+            )
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the real current-thread Application starts"));
+    let (outcome, native, notifications) = received;
+    let (output, cleanup) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the independent Work results are retained"));
+    let (origin, retirement) = native.expect("the exact root joins");
+    let notifications = notifications.expect("both independent notification results are acquired");
+    let (
+        client,
+        address,
+        expected_reply,
+        prefix,
+        full,
+        full_reply,
+        drained,
+        before,
+        retried,
+        after,
+        fenced,
+        checkpoint,
+        processing,
+        stopped,
+        termination,
+        report,
+        closed,
+    ) = output;
+    assert!(cleanup.is_ok());
+    assert!(matches!(&notifications.termination, Ok(())));
+    assert!(matches!(&notifications.retirement, Ok(())));
+    assert_eq!(origin.address(), address);
+    assert_eq!(retirement.completion(), Some(&Completion::Stopped));
+    let custody = retirement
+        .custody()
+        .expect("the original Counter remains native");
+    assert_eq!(custody.descendants, []);
+    assert_eq!(custody.child_failures, []);
+    let ActorRetirement::Completed {
+        interpretation,
+        source,
+        ..
+    } = &retirement
+    else {
+        panic!("the original Counter retains its normal joined retirement");
+    };
+    assert!(interpretation.is_none() && source.is_none());
+    assert!(custody.control.is_empty() && custody.user.is_empty());
+    assert!(custody.capability_failures.is_empty() && custody.additional_failures.is_empty());
+    assert!(custody.unread_owner_cancellation.is_none());
+    assert!(custody.received_interpretation.is_none() && custody.received_source.is_none());
+    assert!(custody.source_index.is_none() && custody.acquired_ingress.is_none());
+    assert!(custody.retirement_failures.is_empty() && custody.terminal_report.is_none());
+    assert_eq!(prefix.len(), 1_024);
+    for admission in &prefix {
+        assert!(admission.is_ok());
+    }
+    assert!(full.is_none());
+    assert_eq!(full_reply.as_ref(), Some(&expected_reply));
+    assert!(drained.is_ok() && matches!(&retried, Some(Ok(()))));
+    assert_eq!(
+        before.as_ref().map(|reply| (reply.from, reply.message)),
+        Some((address, 1_024))
+    );
+    let retry_observations = after
+        .iter()
+        .map(|reply| (reply.from, reply.message))
+        .collect::<Vec<_>>();
+    assert_eq!(retry_observations, [(address, 1_024)]);
+    assert!(fenced.is_ok());
+    assert_eq!(
+        checkpoint
+            .as_ref()
+            .map(|reply| (reply.from, reply.message.request_sequence)),
+        Some((address, 37))
+    );
+    assert!(stopped.is_ok());
+    assert!(matches!(&termination, Ok(Exit::Normal)));
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(matches!(&closed,
+        Err(TrySendError::Closed(CounterMessage::Read(reply_to))) if reply_to == &expected_reply));
+    drop((
+        client,
+        prefix,
+        full,
+        retried,
+        after,
+        checkpoint,
+        processing,
+        closed,
+        notifications,
+        origin,
+        retirement,
+    ));
+}

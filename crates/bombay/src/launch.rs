@@ -1,13 +1,15 @@
 //! One concrete task-launch boundary for local actors.
 
 use core::fmt;
+#[cfg(feature = "remote")]
+use core::sync::atomic::AtomicU64;
 use std::any::Any;
 use std::error::Error;
 use std::future::{Future, poll_fn};
 use std::ops::ControlFlow;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::pin::Pin;
-#[cfg(test)]
+#[cfg(any(test, feature = "remote"))]
 use std::sync::Weak;
 use std::task::Poll;
 
@@ -1108,6 +1110,8 @@ where
         config,
         address,
         behavior,
+        #[cfg(feature = "remote")]
+        None,
         make_interpreter,
     )
     .await
@@ -1122,6 +1126,7 @@ pub(crate) fn spawn_owned_execution<B, I>(
     config: Config,
     address: MailAddr,
     behavior: B,
+    #[cfg(feature = "remote")] application: Option<Weak<AtomicU64>>,
     make_interpreter: impl FnOnce(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
@@ -1152,6 +1157,8 @@ where
             config,
             address,
             behavior,
+            #[cfg(feature = "remote")]
+            application,
             make_interpreter,
             |environment| {
                 let (commitment, committed) = oneshot::channel();
@@ -1209,6 +1216,8 @@ where
         config,
         address,
         behavior,
+        #[cfg(feature = "remote")]
+        None,
         make_interpreter,
         |environment| {
             let (publication, activation) = oneshot::channel();
@@ -1236,6 +1245,7 @@ pub(crate) async fn spawn_owned_entity_with<B, I>(
     config: Config,
     address: MailAddr,
     behavior: B,
+    #[cfg(feature = "remote")] application: Option<Weak<AtomicU64>>,
     make_interpreter: impl FnOnce(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
@@ -1261,6 +1271,8 @@ where
         config,
         address,
         behavior,
+        #[cfg(feature = "remote")]
+        application,
         make_interpreter,
     )
     .await
@@ -1275,6 +1287,7 @@ async fn spawn_owned_with_mode<B, I, M>(
     config: Config,
     address: MailAddr,
     behavior: B,
+    #[cfg(feature = "remote")] application: Option<Weak<AtomicU64>>,
     make_interpreter: impl FnOnce(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
@@ -1301,6 +1314,8 @@ where
         config,
         address,
         behavior,
+        #[cfg(feature = "remote")]
+        application,
         make_interpreter,
         |environment| {
             let (commitment, committed) = oneshot::channel();
@@ -1327,6 +1342,7 @@ async fn spawn_local_with<B, I, M, P, Start, Control>(
     config: Config,
     address: MailAddr,
     behavior: B,
+    #[cfg(feature = "remote")] application: Option<Weak<AtomicU64>>,
     make_interpreter: impl FnOnce(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
@@ -1363,6 +1379,8 @@ where
         config,
         address,
         behavior,
+        #[cfg(feature = "remote")]
+        application,
         make_interpreter,
         publish,
     );
@@ -1392,6 +1410,7 @@ pub(crate) fn spawn_local_execution<B, I, M, P, Start, Control>(
     config: Config,
     address: MailAddr,
     behavior: B,
+    #[cfg(feature = "remote")] application: Option<Weak<AtomicU64>>,
     make_interpreter: impl FnOnce(
         communication::ControlSender<B::Event>,
         LocalTerminalReports,
@@ -1437,6 +1456,8 @@ where
         config,
         termination,
         cancellation_request,
+        #[cfg(feature = "remote")]
+        application,
         move |control, timers, observations| {
             make_interpreter(
                 control,
@@ -1550,9 +1571,15 @@ where
         SourceSettlementCustody<InertCapabilities, B::Event, Custody = B::SourceCustody> + Send,
     F: FnMut(&ActionsOf<B>) + Send + 'static,
 {
-    spawn_owned_entity_with(addresses, config, address, behavior, move |_, _, _, _| {
-        ObserveInertActions(commit)
-    })
+    spawn_owned_entity_with(
+        addresses,
+        config,
+        address,
+        behavior,
+        #[cfg(feature = "remote")]
+        None,
+        move |_, _, _, _| ObserveInertActions(commit),
+    )
     .await
     .map(|mut owned| {
         owned.acknowledge_binding();
@@ -2773,6 +2800,8 @@ mod ordinary_owner_retirement {
             Config::new(2),
             observation,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             |_, _, _| ObserveInertActions(|_: &ActionsOf<WaitingActor>| {}),
         );
         let control = environment.control();
@@ -3148,6 +3177,8 @@ mod transitive_source_cancellation {
             Config::new(2),
             termination,
             cancellation,
+            #[cfg(feature = "remote")]
+            None,
             move |control, timers, observations| {
                 let capabilities =
                     ApplicationCapabilities::<SourceCycleActor, ()>::new_with_bindings(
@@ -5475,6 +5506,8 @@ mod root_join_custody {
                         Config::new(2),
                         MailAddr::APPLICATION_ROOT,
                         RootState { values, finish },
+                        #[cfg(feature = "remote")]
+                        None,
                         |_, _, _, _| RootCleanup {
                             decisions: interpreted,
                             initializing: Some((Some(initializing), admitted)),
@@ -5617,6 +5650,8 @@ mod root_join_custody {
                         values,
                         finish: RootFinish::Stop,
                     },
+                    #[cfg(feature = "remote")]
+                    None,
                     |_, _, _, _| RootCleanup {
                         decisions: interpreted,
                         initializing: Some((None, admitted)),
@@ -5750,6 +5785,8 @@ mod root_join_custody {
                     values,
                     finish: RootFinish::Stop,
                 },
+                #[cfg(feature = "remote")]
+                None,
                 |_, _, _, _| RootCleanup {
                     decisions: interpreted,
                     initializing: Some((None, admitted)),
@@ -5885,6 +5922,8 @@ mod root_join_custody {
                 Config::new(2),
                 termination,
                 cancellation,
+                #[cfg(feature = "remote")]
+                None,
                 |_, _, _| {
                     ObserveInertActions(move |actions: &ActionsOf<RootState>| {
                         assert_eq!(actions.sends, NoSends);
@@ -6050,6 +6089,8 @@ mod root_join_custody {
                     values,
                     finish: RootFinish::Stop,
                 },
+                #[cfg(feature = "remote")]
+                None,
                 |_, _, _, _| RootCleanup {
                     decisions: interpreted,
                     initializing: Some((None, admitted)),
@@ -6239,6 +6280,8 @@ mod root_join_custody {
                         values,
                         finish: RootFinish::Stop,
                     },
+                    #[cfg(feature = "remote")]
+                    None,
                     |_, _, _, _| RootCleanup {
                         decisions: interpreted,
                         initializing: Some((None, admitted)),

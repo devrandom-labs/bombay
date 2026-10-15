@@ -1822,6 +1822,8 @@ where
                 config,
                 address,
                 root,
+                #[cfg(feature = "remote")]
+                Some(allocations.downgrade()),
                 move |control, terminal_reports, timers, observations| {
                     ActionInterpreter::new(ApplicationCapabilities::<
                         Actor,

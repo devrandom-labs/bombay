@@ -1,3 +1,5 @@
+#[cfg(feature = "remote")]
+use crate::address::ApplicationAddresses;
 use crate::address::MailAddr;
 use crate::local::ingress::{Admission, AdmissionClosure, EndpointMailbox, LocalIngress};
 use crate::observe::{Observation, affine_pair};
@@ -11,6 +13,8 @@ use communication::{ControlSender, MailboxRef, TrySendError, UserClosed};
 use core::fmt;
 use core::future::Future;
 use core::marker::PhantomData;
+#[cfg(feature = "remote")]
+use core::sync::atomic::AtomicU64;
 use std::sync::Weak;
 
 impl<P> fmt::Debug for ActorRef<P>
@@ -122,6 +126,8 @@ impl<P: Protocol> Clone for ActorRef<P> {
             address: self.address,
             endpoint: self.endpoint.clone(),
             termination: self.termination.clone(),
+            #[cfg(feature = "remote")]
+            application: self.application.clone(),
             protocol: PhantomData,
         }
     }
@@ -159,11 +165,14 @@ impl<P: Protocol> ActorRef<P> {
         address: P::Addr,
         endpoint: EndpointMailbox<P::Addr, P::Msg>,
         termination: Observation<Termination<P::Addr>>,
+        #[cfg(feature = "remote")] application: Option<Weak<AtomicU64>>,
     ) -> Self {
         Self {
             address,
             endpoint,
             termination,
+            #[cfg(feature = "remote")]
+            application,
             protocol: PhantomData,
         }
     }
@@ -178,8 +187,17 @@ impl<P: Protocol> ActorRef<P> {
             address,
             endpoint: EndpointMailbox::Standard { mailbox, admission },
             termination,
+            #[cfg(feature = "remote")]
+            application: None,
             protocol: PhantomData,
         }
+    }
+
+    #[cfg(feature = "remote")]
+    pub(crate) fn belongs_to(&self, allocations: &ApplicationAddresses) -> bool {
+        self.application
+            .as_ref()
+            .is_some_and(|application| application.ptr_eq(&allocations.downgrade()))
     }
 
     /// Observe the retained terminal result of this exact incarnation.
@@ -343,6 +361,8 @@ pub struct ActorRef<P: Protocol> {
     address: P::Addr,
     endpoint: EndpointMailbox<P::Addr, P::Msg>,
     termination: Observation<Termination<P::Addr>>,
+    #[cfg(feature = "remote")]
+    application: Option<Weak<AtomicU64>>,
     protocol: PhantomData<fn() -> P>,
 }
 
@@ -410,6 +430,8 @@ mod delivery_rejection {
                 admission: Arc::downgrade(&admission),
             },
             termination,
+            #[cfg(feature = "remote")]
+            None,
         );
         let origin = MailAddr(223);
         let first = vec![11, 13].into_boxed_slice();
