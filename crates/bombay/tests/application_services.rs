@@ -5,6 +5,9 @@ use bombay::behavior::{
 };
 use bombay::prelude::TimerId;
 use bombay::{ActorNotificationReceipts, ActorRetirement, Application, MailAddr};
+use core::future::pending;
+use core::pin::pin;
+use core::ptr;
 use core::time::Duration;
 use std::env::VarError;
 use std::io::{self, Read};
@@ -39,6 +42,10 @@ struct DocumentRequest {
     files: InterpreterRequests<OpenFile>,
     settings: InterpreterRequests<ReadEnvironment>,
 })]
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the actor contract returns typed Actions through its success or error carrier"
+)]
 impl Documents {
     fn init(&mut self) -> BehaviorActed<Self> {
         let mut actions = Actions::cont();
@@ -64,6 +71,10 @@ impl Documents {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one native ownership journey checks every independent original result and retirement lane"
+)]
 async fn file_and_environment_services_compose_beside_native_timers() {
     let rejected_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml/missing");
     let rejected_path_allocation = rejected_path.as_os_str().as_encoded_bytes().as_ptr();
@@ -133,19 +144,19 @@ async fn file_and_environment_services_compose_beside_native_timers() {
     assert_eq!(completion, bombay::prelude::Completion::Stopped);
     assert!(interpretation.is_none());
     assert!(source.is_none());
-    assert!(custody.behavior.base().files.is_empty());
-    assert!(custody.behavior.base().settings.is_empty());
-    assert!(custody.control.is_empty());
-    assert!(custody.user.is_empty());
-    assert!(custody.descendants.is_empty());
-    assert!(custody.child_failures.is_empty());
-    assert!(custody.capability_failures.is_empty());
-    assert!(custody.additional_failures.is_empty());
+    assert_eq!(custody.behavior.base().files.len(), 0);
+    assert_eq!(custody.behavior.base().settings.len(), 0);
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert_eq!(custody.additional_failures.len(), 0);
     assert!(custody.received_interpretation.is_none());
     assert!(custody.received_source.is_none());
     assert!(custody.source_index.is_none());
     assert!(custody.acquired_ingress.is_none());
-    assert!(custody.retirement_failures.is_empty());
+    assert_eq!(custody.retirement_failures.len(), 0);
     assert!(custody.terminal_report.is_none());
     assert!(custody.unread_owner_cancellation.is_none());
     assert_eq!(settlements.len(), 2);
@@ -154,9 +165,9 @@ async fn file_and_environment_services_compose_beside_native_timers() {
         .next()
         .expect("the terminal turn precedes older retained turns");
     assert!(matches!(stopped.become_, Step::Stop(_)));
-    assert!(stopped.creations.is_empty());
+    assert_eq!(stopped.creations.len(), 0);
     assert_eq!(stopped.sends.owned, NoSends);
-    assert!(stopped.sends.inner.owned.is_empty());
+    assert_eq!(stopped.sends.inner.owned.len(), 0);
     let mut files = stopped.sends.inner.inner.files.into_iter();
     let Some(SettledItem::Attempted(ItemSettlement::Rejected { item, reason })) = files.next()
     else {
@@ -183,9 +194,9 @@ async fn file_and_environment_services_compose_beside_native_timers() {
         .next()
         .expect("the earlier retained initialization stays complete");
     assert!(matches!(initialized.become_, Step::Continue));
-    assert!(initialized.creations.is_empty());
+    assert_eq!(initialized.creations.len(), 0);
     assert_eq!(initialized.sends.owned, NoSends);
-    assert!(initialized.sends.inner.owned.is_empty());
+    assert_eq!(initialized.sends.inner.owned.len(), 0);
     let mut files = initialized.sends.inner.inner.files.into_iter();
     let Some(SettledItem::Attempted(ItemSettlement::Accepted(mut file))) = files.next() else {
         panic!("the acquired file survives native interpreter retirement");
@@ -204,7 +215,12 @@ async fn file_and_environment_services_compose_beside_native_timers() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn native_cancellation_retains_acquired_file_pending_request_and_both_untouched_suffixes() {
+#[expect(
+    clippy::too_many_lines,
+    reason = "one native ownership journey checks every independent original result and retirement lane"
+)]
+async fn native_interpreter_panic_retains_acquired_file_pending_request_and_both_untouched_suffixes()
+ {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
     let expected_path = path.clone();
     let waiting_path = path.clone();
@@ -216,6 +232,8 @@ async fn native_cancellation_retains_acquired_file_pending_request_and_both_unto
     let entered = Arc::new(Notify::new());
     let expected_entered = Arc::clone(&entered);
     let (release, permission) = oneshot::channel();
+    let cause = Box::new([59, 61]);
+    let cause_pointer = ptr::from_ref(cause.as_ref()).cast::<()>();
     let request = DocumentRequest {
         files: vec![
             OpenFile {
@@ -224,9 +242,9 @@ async fn native_cancellation_retains_acquired_file_pending_request_and_both_unto
             },
             OpenFile {
                 path: waiting_path,
-                access: FileAccess::Waiting {
+                access: FileAccess::Panicking {
                     entered: Arc::clone(&entered),
-                    permission,
+                    cause: permission,
                 },
             },
             OpenFile {
@@ -249,17 +267,23 @@ async fn native_cancellation_retains_acquired_file_pending_request_and_both_unto
             .send(request)
             .await
             .unwrap_or_else(|_| panic!("the exact concrete command is admitted"));
-        entered.notified().await;
-        // Returning application work requests existing owner cancellation.
-        // The file permission stays held outside the whole Application run.
+        tokio::time::timeout(Duration::from_secs(5), entered.notified())
+            .await
+            .expect("the real pending file operation is entered");
+        let released = release.send(cause);
+        released.expect("the original pending provider receives the actual cause");
+        let termination = tokio::time::timeout(Duration::from_secs(5), application.termination())
+            .await
+            .expect("the guarded interpreter panic terminates the actor");
+        assert_eq!(termination, Err(bombay::prelude::Crash::Panicked));
     })
     .await
     .unwrap_or_else(|_| panic!("the native host is entered"))
     .into_parts();
     let ((), cleanup) = work
         .try_into_completed()
-        .unwrap_or_else(|_| panic!("work returns after the interpreter really suspends"));
-    cleanup.expect("the existing owner cancellation joins complete retirement");
+        .unwrap_or_else(|_| panic!("application work observes the actual host panic"));
+    cleanup.expect("native host panic joins complete retirement");
     let notifications = notifications.expect("both original notification results remain available");
     notifications
         .termination
@@ -267,31 +291,33 @@ async fn native_cancellation_retains_acquired_file_pending_request_and_both_unto
     notifications
         .retirement
         .expect("retirement publication succeeds");
-    let (_, retirement) = native.expect("the cancelled actor is independently acquired");
-    let ActorRetirement::OwnerCancelled {
+    let (_, retirement) = native.expect("the failed actor is independently acquired");
+    let ActorRetirement::HostExecutionPanicked {
+        payload,
         custody,
         settlements,
         interpretation,
         source,
     } = retirement
     else {
-        panic!("cancellation cannot become normal completion or an effects rejection");
+        panic!("the guarded interpreter panic must preserve its complete partial action");
     };
-    assert!(settlements.is_empty());
+    assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), cause_pointer);
+    assert_eq!(settlements.len(), 0);
     assert!(source.is_none());
-    assert!(custody.behavior.files.is_empty());
-    assert!(custody.behavior.settings.is_empty());
-    assert!(custody.control.is_empty());
-    assert!(custody.user.is_empty());
-    assert!(custody.descendants.is_empty());
-    assert!(custody.child_failures.is_empty());
-    assert!(custody.capability_failures.is_empty());
-    assert!(custody.additional_failures.is_empty());
+    assert_eq!(custody.behavior.files.len(), 0);
+    assert_eq!(custody.behavior.settings.len(), 0);
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert_eq!(custody.additional_failures.len(), 0);
     assert!(custody.received_interpretation.is_none());
     assert!(custody.received_source.is_none());
     assert!(custody.source_index.is_none());
     assert!(custody.acquired_ingress.is_none());
-    assert!(custody.retirement_failures.is_empty());
+    assert_eq!(custody.retirement_failures.len(), 0);
     assert!(custody.terminal_report.is_none());
     assert!(custody.unread_owner_cancellation.is_none());
     let Some(InterpretationProgress::Interpreting(((creations, sends), become_))) = interpretation
@@ -303,7 +329,7 @@ async fn native_cancellation_retains_acquired_file_pending_request_and_both_unto
     else {
         panic!("the original empty creation lane completed before either send lane");
     };
-    assert!(creations.is_empty());
+    assert_eq!(creations.len(), 0);
     let Some(InterpretationProgress::Interpreting((files, settings))) = sends else {
         panic!("both named lanes remain in the original product");
     };
@@ -337,12 +363,12 @@ async fn native_cancellation_retains_acquired_file_pending_request_and_both_unto
         waiting_allocation
     );
     assert_eq!(waiting.path, expected_path);
-    let FileAccess::Waiting {
+    let FileAccess::Panicking {
         entered: returned,
-        permission: _,
+        cause: _,
     } = &waiting.access
     else {
-        panic!("the retired pending request keeps its permission capability");
+        panic!("the failed pending request keeps its exact provider state");
     };
     assert!(Arc::ptr_eq(&expected_entered, returned));
     let Some(Some(InterpretationProgress::Original(suffix))) = files.next() else {
@@ -354,6 +380,263 @@ async fn native_cancellation_retains_acquired_file_pending_request_and_both_unto
     );
     assert_eq!(suffix.path, expected_path);
     assert!(matches!(suffix.access, FileAccess::Ready));
+    assert!(files.next().is_none());
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one native ownership journey checks every independent original result and retirement lane"
+)]
+async fn owner_cancellation_waits_for_the_inflight_effect_and_keeps_its_complete_settlement() {
+    let entered = Arc::new(Notify::new());
+    let (release, permission) = oneshot::channel();
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
+    let request = DocumentRequest {
+        files: vec![
+            OpenFile {
+                path: path.clone(),
+                access: FileAccess::Ready,
+            },
+            OpenFile {
+                path: path.clone(),
+                access: FileAccess::Waiting {
+                    entered: Arc::clone(&entered),
+                    permission,
+                },
+            },
+            OpenFile {
+                path,
+                access: FileAccess::Ready,
+            },
+        ],
+        settings: vec![ReadEnvironment {
+            name: String::from("CARGO_MANIFEST_DIR"),
+        }],
+    };
+    let (execution, result) = Application::new(Documents {
+        files: vec![],
+        settings: vec![],
+    })
+    .with_interpreter(|| Services)
+    .execute_with(|application| async move {
+        let sender = application.sender().expect("the ordinary bound sender");
+        sender
+            .send(request)
+            .await
+            .unwrap_or_else(|_| panic!("the original batch is admitted"));
+        pending::<()>().await;
+    })
+    .unwrap_or_else(|_| panic!("the native host is entered"));
+    {
+        let mut execution = pin!(execution);
+        tokio::select! {
+            () = &mut execution => panic!("the held effect cannot complete"),
+            () = entered.notified() => {},
+            () = tokio::time::sleep(Duration::from_secs(5)) => panic!("the file provider must enter"),
+        }
+    }
+    let mut result = pin!(result);
+    let premature = tokio::time::timeout(Duration::from_millis(100), &mut result).await;
+    assert!(
+        premature.is_err(),
+        "cancellation cannot preempt the in-flight effect"
+    );
+    assert!(
+        !release.is_closed(),
+        "the pending original provider remains owned"
+    );
     let released = release.send(());
-    released.expect("the retired request still owns its original permission receiver");
+    released.expect("the accepted effect receives its original permission");
+    let (work, native, notifications, ()) = tokio::time::timeout(Duration::from_secs(5), result)
+        .await
+        .expect("cancellation joins after the in-flight batch settles")
+        .into_parts();
+    let bombay::WorkOutcome::Interrupted { cleanup } = work else {
+        panic!("the original application work is interrupted");
+    };
+    cleanup.expect("the actual cancellation cleanup joins");
+    let notifications = notifications.expect("both independent notifications are retained");
+    notifications
+        .termination
+        .expect("actual termination publication");
+    notifications
+        .retirement
+        .expect("actual retirement publication");
+    let (_, retirement) = native.expect("the joined actor is independently acquired");
+    let ActorRetirement::OwnerCancelled {
+        custody,
+        settlements,
+        interpretation,
+        source,
+    } = retirement
+    else {
+        panic!("the queued owner request is observed after effect settlement");
+    };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert_eq!(custody.behavior.files.len(), 0);
+    assert_eq!(custody.behavior.settings.len(), 0);
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert_eq!(custody.additional_failures.len(), 0);
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert_eq!(custody.retirement_failures.len(), 0);
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.unread_owner_cancellation.is_none());
+    let mut settlements = settlements.into_iter();
+    let batch = settlements
+        .next()
+        .expect("the complete accepted batch precedes cancellation");
+    assert!(settlements.next().is_none());
+    assert_eq!(batch.creations.len(), 0);
+    assert!(matches!(batch.become_, Step::Continue));
+    assert_eq!(batch.sends.files.len(), 3);
+    for file in batch.sends.files {
+        let SettledItem::Attempted(ItemSettlement::Accepted(mut file)) = file else {
+            panic!("each original file effect completes before cancellation");
+        };
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)
+            .expect("the independently retained file is usable");
+        assert_eq!(contents, include_str!("../Cargo.toml"));
+    }
+    let mut settings = batch.sends.settings.into_iter();
+    let Some(SettledItem::Attempted(ItemSettlement::Accepted(value))) = settings.next() else {
+        panic!("the independent environment lane completes in the same batch");
+    };
+    assert!(settings.next().is_none());
+    assert_eq!(value, env!("CARGO_MANIFEST_DIR"));
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one native ownership journey checks every independent original result and retirement lane"
+)]
+async fn timer_outside_shutdown_keeps_io_receipts_and_unemitted_requests() {
+    let rejected_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml/missing");
+    let rejected_path_allocation = rejected_path.as_os_str().as_encoded_bytes().as_ptr();
+    let expected_rejected_path = rejected_path.clone();
+    let rejected_name = String::from("=");
+    let rejected_name_allocation = rejected_name.as_ptr();
+    let documents = Documents {
+        files: vec![
+            OpenFile {
+                path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"),
+                access: FileAccess::Ready,
+            },
+            OpenFile {
+                path: rejected_path,
+                access: FileAccess::Ready,
+            },
+        ],
+        settings: vec![
+            ReadEnvironment {
+                name: String::from("CARGO_MANIFEST_DIR"),
+            },
+            ReadEnvironment {
+                name: rejected_name,
+            },
+        ],
+    };
+    let root = documents
+        .stop_on_shutdown()
+        .with_one_shot(TimerId(1), Duration::ZERO, |_| Actions::stop());
+    let (work, native, notifications, ()) = Application::new(root)
+        .with_interpreter(|| Services)
+        .run_with(|application| async move { application.termination().await })
+        .await
+        .unwrap_or_else(|_| panic!("the native host is entered"))
+        .into_parts();
+    let (termination, cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("both initialization lanes finish before the real timer"));
+    assert_eq!(termination, Ok(bombay::prelude::Exit::Normal));
+    cleanup.expect("application cleanup joins the original actor");
+    let ActorNotificationReceipts {
+        termination,
+        retirement,
+    } = notifications.expect("both independent notification results remain available");
+    termination.expect("termination publication succeeds");
+    retirement.expect("retirement publication succeeds");
+    let (_, retirement) = native.expect("the complete native retirement remains available");
+    let ActorRetirement::Completed {
+        custody,
+        settlements,
+        completion,
+        interpretation,
+        source,
+    } = retirement
+    else {
+        panic!("the native timer stops the actor after both lanes execute");
+    };
+    assert_eq!(completion, bombay::prelude::Completion::Stopped);
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    let documents = custody.behavior.base();
+    assert_eq!(documents.files.len(), 1);
+    assert_eq!(documents.settings.len(), 1);
+    let file = &documents.files[0];
+    assert_eq!(
+        file.path.as_os_str().as_encoded_bytes().as_ptr(),
+        rejected_path_allocation
+    );
+    assert_eq!(file.path, expected_rejected_path);
+    assert!(matches!(file.access, FileAccess::Ready));
+    let setting = &documents.settings[0];
+    assert_eq!(setting.name.as_ptr(), rejected_name_allocation);
+    assert_eq!(setting.name, "=");
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert_eq!(custody.additional_failures.len(), 0);
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert_eq!(custody.retirement_failures.len(), 0);
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.unread_owner_cancellation.is_none());
+    assert_eq!(settlements.len(), 2);
+    let mut settlements = settlements.into_iter();
+    let stopped = settlements
+        .next()
+        .expect("the terminal turn precedes older retained turns");
+    assert!(matches!(stopped.become_, Step::Stop(_)));
+    assert_eq!(stopped.creations.len(), 0);
+    assert_eq!(stopped.sends.inner.owned, NoSends);
+    assert_eq!(stopped.sends.owned.len(), 0);
+    assert_eq!(stopped.sends.inner.inner.files.len(), 0);
+    assert_eq!(stopped.sends.inner.inner.settings.len(), 0);
+    let initialized = settlements
+        .next()
+        .expect("the earlier retained initialization stays complete");
+    assert!(matches!(initialized.become_, Step::Continue));
+    assert_eq!(initialized.creations.len(), 0);
+    assert_eq!(initialized.sends.inner.owned, NoSends);
+    assert_eq!(initialized.sends.owned.len(), 0);
+    let mut files = initialized.sends.inner.inner.files.into_iter();
+    let Some(SettledItem::Attempted(ItemSettlement::Accepted(mut file))) = files.next() else {
+        panic!("the acquired file survives native interpreter retirement");
+    };
+    assert!(files.next().is_none());
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .expect("the actual retained file is still usable");
+    assert_eq!(contents, include_str!("../Cargo.toml"));
+    let mut settings = initialized.sends.inner.inner.settings.into_iter();
+    let Some(SettledItem::Attempted(ItemSettlement::Accepted(value))) = settings.next() else {
+        panic!("the environment receipt survives alongside the actual file");
+    };
+    assert!(settings.next().is_none());
+    assert_eq!(value, env!("CARGO_MANIFEST_DIR"));
 }

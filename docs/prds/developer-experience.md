@@ -1538,7 +1538,7 @@ separate remaining gates; this success journey must not be credited for them.
 
 Pre-edit aggregate checkpoint: actor transition authority remains the generated
 Behavior; control sums remain InterpretationProgress(3), Interpretation(2),
-ItemSettlement(4), SettledItem(2), and all22 ActorRetirement alternatives. The
+ItemSettlement(4), SettledItem(2), and all24 ActorRetirement alternatives. The
 test actor's optional next child owns exactly one pending recursive actor,
 not an arrival-history phase. Config owns actual construction inputs; retained
 File owns the OS resource and each actor owns its original Box allocation.
@@ -1598,7 +1598,7 @@ Both independent source reviews pass for these hypotheses. Pinned1.99 check
 remains intentionally RED on missing ExternalRequest; complete type checking
 and native execution are unproved. Raw command: GUARDED-CONSTRUCTOR-PRE-EDIT-RED;
 current hashes/deltas: GUARDED-CONSTRUCTOR-WITNESSES-CHECKPOINT.json. The standard
-22 ActorRetirement alternatives and all production control sums, branches,
+24 ActorRetirement alternatives and all production control sums, branches,
 modules and public spellings are unchanged. Notice owns an optional actual typed
 refusal, and the constructor owns an optional actual native cause; neither is a
 semantic flag or another transition authority. Production/API delta remains
@@ -1606,3 +1606,95 @@ zero. DX15 stays open: pure init panic, dropped/recreated activation, child/Enti
 constructor panic, manual-host selection, non-Sync service custody and complete
 native compiler/runtime proofs remain required. No production candidate is
 retained from these test-only hypotheses.
+
+Native interpreter candidate — DX15/16
+
+Pre-edit law (derived native composition policy): namespace metadata and native
+execution selection remain distinct. NativeHost selects the existing complete
+capability constructor through Runtime. Ordinary ActorSpace/generated Topology
+select it automatically; a manual local host owns its selection and retains its
+own NativeChild implementations through descendants. Pure Hosts,
+RootRegistration, ApplicationTopology and EntityDefinition do not require that
+execution capability. Entity keeps nominal D::Hosts and EntityRef<D>.
+
+Caller syntax: Application::new(actor).with_interpreter(factory), or one declared
+`interpreter: Config;` with Topology::new(config). InterpreterFactory accepts a
+callable or named configuration; ExternalRequest associates a leaf with its
+concrete interpreter. One actual service belongs to each actor. Services require
+Send, not Clone or Sync; native absence is unit and supplied custody is Option<S>.
+Ordinary callers supply no absence policy. A real unit-valued interpreter still
+requires its explicit constructor. Root/child/Entity reuse one construction body;
+macros only derive syntax and static selection. No new dependency or dispatcher.
+
+Guarded startup constructs the service after pure initialization hands over its
+original Actions, before reservation/binding ACK/effects. Initial unit/None state
+is determined statically; no configuration callback runs before that guard.
+Retirement never constructs a missing service. Pre-edit witnesses6826a61 and
+GUARDED-CONSTRUCTOR-PRE-EDIT-RED precede production. Existing Driver/native
+terminal protocols retain constructor panic without another child failure sum.
+Expected change was +250 to +450 production lines, four public contracts and the
+existing assembly/leaf/macro owners; expanded cumulative budget is authorized.
+
+Independent disposal law, recorded before its fix: Services and Runtime<Config>
+can each own a panicking destructor. The real File subprocess witness produces
+SIGABRT under whole-product disposal (GUARDED-INDEPENDENT-DISPOSAL-NATIVE-RED).
+Final disposal now exhaustively separates Services, catches its destruction while
+configuration remains owned, then catches the unchanged native product. Both
+original causes append to existing retirement_failures. The operation owns only
+synchronous disposal; async child/report retirement stays with its existing
+owner. No new actor state, lifecycle authority, protocol or error alternative.
+
+Native focused evidence: six application journeys plus the subprocess parent
+and three original request-loan tests each pass on1.99/1.96 debug/release,
+with all source hashes conserved (GUARDED-NATIVE-FINAL-MATRIX). The deliberate
+ignored child is invoked by its parent. Reviewed replay also passes all four configurations
+(GUARDED-NATIVE-REVIEWED-MATRIX), requiring exactly one matching child and exact
+service-before-constructor cause order. Coupled-disposal and omitted-child
+inversions fail in both profiles; restored controls pass
+(GUARDED-DISPOSAL-INVERSION). Descendants use actual
+Cell-owned non-Sync services: two configuration values each construct four
+separate instances, each used once; actual File receipts, original actor boxes,
+creation provenance, ready sender/origin addresses and every retirement lane are
+checked. Constructor panic retains original actor/Actions/cause/uninvoked work
+and permits real recovery. Pure initialization refusal constructs no service.
+Interpreter panic retains the acquired File, pending request and untouched
+suffixes. Native cancellation waits for the in-flight batch and then retains its
+complete settlement. The earlier tests that assumed return-from-work cancellation,
+pending-effect preemption or retained empty initialization are falsified and
+receive no credit; their raw failures remain. A real cancellation-preemption
+inverse fails the waiting oracle in debug/release; both restored controls pass
+(GUARDED-CANCELLATION-INVERSION).
+Focused strict lint passes after separating synchronous owned disposal and
+preserving complete test oracles. Final extended formatting and strict lint pass.
+
+Aggregate checkpoint: ActorRetirement has24 alternatives before and after
+(including Panicked/Cancelled; the earlier count22 omitted those two). No
+production control enum or existing native-leaf transition body changes. The
+only new subordinate runtime sum is supplied Option<S>, whose live payload is
+the actual actor-local interpreter. Standard absence remains zero-sized unit.
+No arrival history, repeated cause, false cardinality, semantic boolean,
+structural caller type path or second transition authority is introduced.
+Measured whole-candidate delta, public spellings and source hashes are retained
+in GUARDED-NATIVE-EXTENDED-COUNTS; include untracked services.rs and tests.
+Production +520/-127/net393; tests +854/-96/net758 (Git diff plus untracked files).
+One production module and four public types are added, none removed; twelve
+Rust public spellings plus one DSL clause are added. No new actor transition
+branch or terminal alternative. These are new capabilities, not code reduction.
+Cross-check DX15/16, Driver D-INIT/D-TURN/D-RETIRE, execution-ownership, native
+creation/ACK and normal atomic-actor contracts. Two independent source/test
+reviews identify and correct the custody/oracle faults above. Overall candidate
+disposition remains reopen: child/Entity constructor panic, manual hosting,
+pure init panic, dropped/recreated activation, layout/costs, final package/full
+gates and catalogue remain unproved. The second wrapper order now uses the
+existing pure timer-stop policy: File/env receipts remain complete, while the
+unemitted second requests stay with the actor at their original allocations.
+An initial base_mut accessor assumption was false and is removed without any
+owner API change. A supplied unit interpreter performs actual IO and retains
+its complete native initialization rejection; the first Completed oracle was
+false because initialization rejection overrides Stop. On both supported
+compilers, removing the explicit constructor is denied E0277 and assigning the
+wrong interpreter owner is denied E0271; both restored native controls pass
+(GUARDED-SELECTION-DENIALS). All twelve focused tests pass current/MSRV debug/release with all593 source
+hashes conserved (GUARDED-NATIVE-EXTENDED-MATRIX); one deliberate ignored child
+runs through its checked parent. Exact command durations are7.395/12.652/4.087/
+13.752 seconds. This remains focused native evidence, not full repository gates. No migration, publication or whole-programme acceptance follows.

@@ -6,6 +6,7 @@ use core::future::Future;
 use std::env::{self, VarError};
 use std::fs::File;
 use std::io;
+use std::panic::resume_unwind;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::{Notify, oneshot};
@@ -15,11 +16,19 @@ pub(super) struct OpenFile {
     pub(super) access: FileAccess,
 }
 
+#[allow(
+    dead_code,
+    reason = "independent test binaries reuse the same request; the native service target exercises every access alternative"
+)]
 pub(super) enum FileAccess {
     Ready,
     Waiting {
         entered: Arc<Notify>,
         permission: oneshot::Receiver<()>,
+    },
+    Panicking {
+        entered: Arc<Notify>,
+        cause: oneshot::Receiver<Box<[u8; 2]>>,
     },
 }
 
@@ -147,6 +156,13 @@ impl<Event, Path> InterpretItem<OpenFile, Event, Path> for Services {
                 } => {
                     entered.notify_one();
                     permission.await.map_err(io::Error::other)
+                }
+                FileAccess::Panicking { entered, cause } => {
+                    entered.notify_one();
+                    let cause = cause
+                        .await
+                        .expect("the native test injects its actual cause");
+                    resume_unwind(cause);
                 }
             };
             let Some(request) = input.take() else {

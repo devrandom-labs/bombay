@@ -75,6 +75,10 @@ impl Notice {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one native ownership journey checks every independent original result and retirement lane"
+)]
 async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked_work() {
     let scope = ApplicationScope::new();
     let mut replies = scope
@@ -170,20 +174,20 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
         custody.behavior.base().file.is_none(),
         "pure initialization already emitted the original request"
     );
-    assert!(custody.control.is_empty());
-    assert!(custody.user.is_empty());
-    assert!(custody.descendants.is_empty());
-    assert!(custody.child_failures.is_empty());
-    assert!(custody.capability_failures.is_empty());
-    assert!(custody.additional_failures.is_empty());
-    assert!(custody.retirement_failures.is_empty());
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert_eq!(custody.additional_failures.len(), 0);
+    assert_eq!(custody.retirement_failures.len(), 0);
     assert!(custody.received_interpretation.is_none());
     assert!(custody.received_source.is_none());
     assert!(custody.source_index.is_none());
     assert!(custody.acquired_ingress.is_none());
     assert!(custody.terminal_report.is_none());
     assert!(custody.unread_owner_cancellation.is_none());
-    assert!(initialization.creates.is_empty());
+    assert_eq!(initialization.creates.len(), 0);
     assert!(matches!(initialization.become_, Step::Continue));
     assert_eq!(initialization.sends.owned, NoSends);
     let mut files = initialization.sends.inner.files.into_iter();
@@ -248,13 +252,13 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
     assert!(source.is_none());
     assert_eq!(custody.behavior.base().original.as_ptr(), actor_pointer);
     assert!(custody.behavior.base().file.is_none());
-    assert!(custody.control.is_empty());
-    assert!(custody.user.is_empty());
-    assert!(custody.descendants.is_empty());
-    assert!(custody.child_failures.is_empty());
-    assert!(custody.capability_failures.is_empty());
-    assert!(custody.additional_failures.is_empty());
-    assert!(custody.retirement_failures.is_empty());
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert_eq!(custody.additional_failures.len(), 0);
+    assert_eq!(custody.retirement_failures.len(), 0);
     assert!(custody.received_interpretation.is_none());
     assert!(custody.received_source.is_none());
     assert!(custody.source_index.is_none());
@@ -265,8 +269,8 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
     let mut files = 0;
     for settled in settlements {
         assert_eq!(settled.sends.owned, NoSends);
-        assert!(settled.sends.inner.ready.is_empty());
-        assert!(settled.creations.is_empty());
+        assert_eq!(settled.sends.inner.ready.len(), 0);
+        assert_eq!(settled.creations.len(), 0);
         for file in settled.sends.inner.files {
             let SettledItem::Attempted(ItemSettlement::Accepted(file)) = file else {
                 panic!("the actual file is acquired exactly once during successful recovery");
@@ -349,13 +353,13 @@ async fn pure_initialization_refusal_never_constructs_services_even_during_retir
         path_pointer
     );
     assert!(matches!(request.access, FileAccess::Ready));
-    assert!(custody.control.is_empty());
-    assert!(custody.user.is_empty());
-    assert!(custody.descendants.is_empty());
-    assert!(custody.child_failures.is_empty());
-    assert!(custody.capability_failures.is_empty());
-    assert!(custody.additional_failures.is_empty());
-    assert!(custody.retirement_failures.is_empty());
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert_eq!(custody.additional_failures.len(), 0);
+    assert_eq!(custody.retirement_failures.len(), 0);
     assert!(custody.received_interpretation.is_none());
     assert!(custody.received_source.is_none());
     assert!(custody.source_index.is_none());

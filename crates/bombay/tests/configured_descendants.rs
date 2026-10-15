@@ -1,19 +1,21 @@
 //! A configured native host must survive cold and recursive child startup.
 use bombay::actors::ActorExt;
 use bombay::behavior::{
-    Actions, BehaviorActed, BehaviorBase, ChildChoice, ChildCreationOutcome, ClassifySettlement,
-    CreateChild, CreationKind, CreationSequence, CreationSettlement, Creations,
-    EstablishedDelivery, EstablishedRecipient, InterpreterRequests, ItemSettlement,
+    ActionItem, Actions, BehaviorActed, BehaviorBase, ChildChoice, ChildCreationOutcome,
+    ClassifySettlement, CreateChild, CreationKind, CreationSequence, CreationSettlement, Creations,
+    EstablishedDelivery, EstablishedRecipient, InterpretItem, InterpreterRequests, ItemSettlement,
     MessageProtocol, Never, NoSends, SettledItem, SettlementStatus,
 };
 use bombay::prelude::{ActorRetirement, Completion, Exit, StopOnShutdown};
 use bombay::{ApplicationScope, MailAddr, RetirementSchema};
+use core::future::Future;
+use std::cell::Cell;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, PoisonError};
 
 #[path = "application_services/requests.rs"]
 mod requests;
@@ -21,21 +23,65 @@ mod requests;
 use requests::{FileAccess, OpenFile, Services};
 
 impl bombay::ExternalRequest for OpenFile {
-    type Interpreter = Services;
+    type Interpreter = Files;
+}
+
+struct Files {
+    identity: usize,
+    calls: Cell<usize>,
+    visits: Arc<Mutex<BTreeMap<usize, usize>>>,
+    service: Services,
+}
+
+impl<Event, Path> InterpretItem<OpenFile, Event, Path> for Files {
+    fn interpret_item<'a>(
+        &'a mut self,
+        input: <OpenFile as ActionItem>::Input<'a>,
+        received: &'a mut Option<<OpenFile as ActionItem>::Reply>,
+    ) -> impl Future<Output = ()> + Send + 'a
+    where
+        OpenFile: 'a,
+    {
+        let previous = self.calls.replace(self.calls.get() + 1);
+        assert_eq!(
+            previous, 0,
+            "each separately owned service interprets its one file"
+        );
+        let previous = self
+            .visits
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(self.identity, self.calls.get());
+        assert!(
+            previous.is_none(),
+            "no service instance is shared between actors"
+        );
+        <Services as InterpretItem<OpenFile, Event, Path>>::interpret_item(
+            &mut self.service,
+            input,
+            received,
+        )
+    }
 }
 
 struct Config {
     label: Box<[u8]>,
     constructions: Arc<AtomicUsize>,
+    visits: Arc<Mutex<BTreeMap<usize, usize>>>,
 }
 
 impl bombay::InterpreterFactory for Config {
-    type Interpreter = Services;
+    type Interpreter = Files;
 
-    fn create(&self) -> Services {
+    fn create(&self) -> Files {
         assert_eq!(&*self.label, b"documents");
-        self.constructions.fetch_add(1, Ordering::SeqCst);
-        Services
+        let identity = self.constructions.fetch_add(1, Ordering::SeqCst);
+        Files {
+            identity,
+            calls: Cell::new(0),
+            visits: Arc::clone(&self.visits),
+            service: Services,
+        }
     }
 }
 
@@ -57,6 +103,10 @@ type DocumentReady = MessageProtocol<MailAddr, u8>;
     births = { document: ManagedDocument },
     creation_settlements = retain_for_retirement,
 )]
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the actor contract returns typed Actions through its success or error carrier"
+)]
 impl Root {
     fn init(&mut self) -> BehaviorActed<Self> {
         let mut sequence = CreationSequence::new();
@@ -65,8 +115,8 @@ impl Root {
         let file = self.file.take().expect("the original root file request");
         Ok(
             Actions::create(Creations::one(CreateChild::birth(id, document)))
-                .send_files(file)
-                .send_ready(EstablishedDelivery::new(
+                .with_send(file)
+                .with_send(EstablishedDelivery::new(
                     self.ready.clone(),
                     self.original[0],
                 )),
@@ -92,6 +142,10 @@ type ManagedDocument = StopOnShutdown<Document>;
     births = { next: ManagedDocument },
     creation_settlements = retain_for_retirement,
 )]
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the actor contract returns typed Actions through its success or error carrier"
+)]
 impl Document {
     fn init(&mut self) -> BehaviorActed<Self> {
         let file = self
@@ -109,12 +163,10 @@ impl Document {
             }
             None => Actions::cont(),
         };
-        Ok(actions
-            .send_files(file)
-            .send_ready(EstablishedDelivery::new(
-                self.ready.clone(),
-                self.original[0],
-            )))
+        Ok(actions.with_send(file).with_send(EstablishedDelivery::new(
+            self.ready.clone(),
+            self.original[0],
+        )))
     }
 }
 
@@ -189,7 +241,7 @@ fn collect_documents(
         let mut births = Vec::new();
         for settled in settlements {
             assert_eq!(settled.sends.owned, NoSends);
-            assert!(settled.sends.inner.ready.is_empty());
+            assert_eq!(settled.sends.inner.ready.len(), 0);
             for file in settled.sends.inner.files {
                 let SettledItem::Attempted(ItemSettlement::Accepted(file)) = file else {
                     panic!("the descendant's actual acquired file survives retirement");
@@ -223,12 +275,12 @@ fn collect_documents(
         assert!(actor.next.is_none());
         let previous = originals.insert(actor.original.as_ptr() as usize, actor.original.to_vec());
         assert!(previous.is_none());
-        assert!(custody.control.is_empty());
-        assert!(custody.user.is_empty());
-        assert!(custody.child_failures.is_empty());
-        assert!(custody.capability_failures.is_empty());
-        assert!(custody.additional_failures.is_empty());
-        assert!(custody.retirement_failures.is_empty());
+        assert_eq!(custody.control.len(), 0);
+        assert_eq!(custody.user.len(), 0);
+        assert_eq!(custody.child_failures.len(), 0);
+        assert_eq!(custody.capability_failures.len(), 0);
+        assert_eq!(custody.additional_failures.len(), 0);
+        assert_eq!(custody.retirement_failures.len(), 0);
         assert!(custody.received_interpretation.is_none());
         assert!(custody.received_source.is_none());
         assert!(custody.source_index.is_none());
@@ -241,7 +293,7 @@ fn collect_documents(
             retirement: next,
         }) = children.next()
         else {
-            assert!(births.is_empty());
+            assert_eq!(births.len(), 0);
             assert!(remaining.next().is_none());
             return count;
         };
@@ -259,10 +311,15 @@ fn collect_documents(
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one native ownership journey checks every independent original result and retirement lane"
+)]
 async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
     let first = Arc::new(AtomicUsize::new(0));
     let second = Arc::new(AtomicUsize::new(0));
     for constructions in [&first, &second] {
+        let visits = Arc::new(Mutex::new(BTreeMap::new()));
         let scope = ApplicationScope::new();
         let mut replies = scope
             .external::<DocumentReady>()
@@ -311,6 +368,7 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
                 archive::Topology::new(Config {
                     label: Box::from(*b"documents"),
                     constructions: Arc::clone(constructions),
+                    visits: Arc::clone(&visits),
                 }),
             )
             .child(
@@ -352,6 +410,8 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
             .try_into_completed()
             .unwrap_or_else(|_| panic!("the complete work phase remains available"));
         cleanup.expect("the original native owner joins all four actors");
+        let visits = visits.lock().unwrap_or_else(PoisonError::into_inner);
+        assert_eq!(*visits, BTreeMap::from([(0, 1), (1, 1), (2, 1), (3, 1)]));
         let notifications = notifications.expect("independent root notification custody");
         notifications.termination.expect("termination publication");
         notifications.retirement.expect("retirement publication");
@@ -376,7 +436,7 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
         let mut births = BTreeMap::new();
         for settled in settlements {
             assert_eq!(settled.sends.owned, NoSends);
-            assert!(settled.sends.inner.ready.is_empty());
+            assert_eq!(settled.sends.inner.ready.len(), 0);
             for file in settled.sends.inner.files {
                 let SettledItem::Attempted(ItemSettlement::Accepted(file)) = file else {
                     panic!("the root's real acquired file survives alongside all children");
@@ -411,12 +471,12 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
         assert!(actor.document.is_none());
         let mut originals =
             BTreeMap::from([(actor.original.as_ptr() as usize, actor.original.to_vec())]);
-        assert!(custody.control.is_empty());
-        assert!(custody.user.is_empty());
-        assert!(custody.child_failures.is_empty());
-        assert!(custody.capability_failures.is_empty());
-        assert!(custody.additional_failures.is_empty());
-        assert!(custody.retirement_failures.is_empty());
+        assert_eq!(custody.control.len(), 0);
+        assert_eq!(custody.user.len(), 0);
+        assert_eq!(custody.child_failures.len(), 0);
+        assert_eq!(custody.capability_failures.len(), 0);
+        assert_eq!(custody.additional_failures.len(), 0);
+        assert_eq!(custody.retirement_failures.len(), 0);
         assert!(custody.received_interpretation.is_none());
         assert!(custody.received_source.is_none());
         assert!(custody.source_index.is_none());
@@ -456,7 +516,7 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
                 &mut addresses,
             );
         }
-        assert!(births.is_empty());
+        assert_eq!(births.len(), 0);
         assert_eq!(roles, BTreeSet::from(["document", "background"]));
         assert_eq!(addresses.len(), 4);
         assert_eq!(originals, expected);
