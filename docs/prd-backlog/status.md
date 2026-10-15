@@ -6,6 +6,14 @@ locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
 
+Current release correction: automated [PR369](https://github.com/devrandom-labs/bombay/pull/369)
+original head bumps Bombay0.1.3 but leaves the isolated dependency locked to0.1.2. All
+three failed jobs stop at --locked setup before transport execution. The PRD
+records the corrected lock, passing stale/restored metadata controls and required
+fresh CI. JSON PR368
+is actually merged792529ea; certified-client PR370 remains separately unmerged.
+
+
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.
 All nine archives and fresh SDK1.10.9 consumer/owning Query/Config cases are
@@ -18,10 +26,11 @@ registry/archive checksum, annotated tag and all363 source payloads match the
 merged source, with exact SDK1.10.9 selection. Downstream Cargo still resolves its
 own graph; no fresh downstream build is claimed. The immutable0.1.1 release uses
 the older SDK1.10.8. Original native failures and HTTP uncertainty remain recorded.
-The next implementation branch adds crate-owned JSON object/limit checks and
-real Counter/Ledger Node consumers; focused controls and all eight intended
-inversions pass their stated oracles in both profiles. Main is integrated;
-combined required checks and reviewed delivery remain open.
+JSON PR368 merged792529ea after all six checks and scoped final reviews. It
+delivers crate-owned JSON object/limit checks and real Counter/Ledger Node
+consumers; eight intended inversions pass in both profiles. PR370 separately
+adds Application-certified clients and nonwaiting admission, with local combined
+checks passing and fresh required CI live. Neither closes a full acceptance row.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;

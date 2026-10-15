@@ -2,14 +2,13 @@
 
 ## Current delivery (2026-10-15 UTC)
 
-Fairness PR366 and hosting PR365 have merged after all required CI and scoped
-reviews passed. Both source locks now select corrected SDK 1.10.9. Release
-PR367 carries the fixture lock correction and delivery records; its fresh CI,
-merge and publication remain pending. All full R01–R25, AUTH1 and NET1 gates,
-Node-owned exports and the separate remote-counter application remain open.
-See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
-for exact commits, tests, scope and limitations. The following earlier
-checkpoints preserve their historical source and gate states.
+Fairness PR366, hosting PR365, release PR367 and JSON PR368 are merged after
+required CI and scoped reviews. Bombay0.1.2 publication and corrected SDK1.10.9
+are verified. PR368 merged792529ea. The subsequent automated release PR369
+original head bumps Bombay0.1.3, but its isolated lock still selects0.1.2;
+all three failed CI jobs stop at that locked setup, before transport execution.
+The separate certified-client PR370 has local checks passing and fresh CI live.
+All full R01–R25/AUTH1/NET1 and remote-counter obligations remain open.
 
 ## Historical delivery repair — 2026-10-14
 
@@ -23251,3 +23250,39 @@ one new production JSON checker and its explicit two-type policy/refusal surface
 the legacy flat-protocol research receiver retains its recorded migration duty.
 This checkpoint is not full PRD distillation or feature delivery. Every full
 R01–R25/AUTH1/NET1 obligation and deferred-scope distinction remains intact.
+
+
+### Release0.1.3 — narrow isolated lock correction
+
+Exact automated PR369 head802e2bf1 targets delivered main792529ea. Independent
+triage75938e50 / receipt58652bcb proves CI38682788639 required job116250847173
+and native jobs116250847481/497 all fail --locked setup for the isolated fixture.
+No new TLS runtime failure is demonstrated; owning tests/campaigns do not execute.
+Root Cargo.lock already carries Bombay0.1.3. The isolated324-record lock retains
+Bombay0.1.2; its323 unrelated complete records must remain unchanged. Engine's
+31-record fuzz lock has no Bombay package and needs no correction.
+
+Under standing recommendation delegation select the prepared one-record patch:
+transport-custody/Cargo.lock local Bombay0.1.2→0.1.3, with no other graph change.
+Expected correction: one existing lock path+1/-1 and PRD/backlog evidence; zero
+production/test/public-type delta. Reuse the clean merged hosting worktree as an
+isolated release branch, preserving its original source in Git. Existing earlier
+cumulative scope records remain; no production surface expands. Prove actual
+locked metadata on corrected source, original stale lock rejection and restored
+corrected source. Then obtain fresh required/native CI. No automation redesign
+or wider dependency refresh belongs to this blocker. Coordinate delivery with
+PR370; its current CI cannot certify a later version refresh.
+
+
+The correction now passes actual pinned full-graph locked metadata (exit0),
+restoring the original stale lock reproduces the intended --locked rejection
+(exit101), and byte-exact restored corrected source passes again (exit0). Both
+positive graphs select local Bombay0.1.3 among324 packages. Independently reviewed
+source and all six raw output hashes confirm the same one-record delta and323
+unchanged records; native execution is not inferred from metadata. Final lock
+SHA256 a82df82af6148ef41a56ed09389843ef100c8e98adf715690a009a8ad8814200.
+The focused correction changes three paths: lock+1/-1 and two evidence documents,
+with production+0/-0/net0, tests+0/-0/net0, public types+0/-0 and no untracked
+files. The full automated release additionally owns its existing manifest, root
+lock and changelog changes (six endpoint paths total). Fresh required/native CI
+and reviewed release delivery remain pending.
