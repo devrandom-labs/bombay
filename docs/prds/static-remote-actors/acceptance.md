@@ -9,6 +9,18 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
+The final pending-protection comparison32c534a5 executes both finite providers
+in debug and optimized builds; restored complete Counter targets pass72/0/1
+per profile. Borrowing instead of sharing is statically denied; substituting an
+equal receipt or including authority revision in replay identity reaches the
+intended post-cleanup failures in both profiles. This proves one original
+receipt can support concurrent immutable consumers while another native request
+progresses. It proves no Query traffic, current revocation, protected publication
+or finished public service. All full rows stay open. The public API must expose
+only Bombay contracts, with transport configuration, sessions, queries, replies,
+declarations and callbacks private even for advanced consumers. PR373 and PR374
+remain held pending that integration.
+
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
 2026-10-13T22:17:06Z after all six checks pass ondf6144f. Source trees match.

@@ -156,6 +156,56 @@ hazards need direct regressions before retaining the private mapping. Fixed
 security/profile approvals carry; no new parser, SDK JSON public API, resource
 default, host mode or Send bound is selected by this source comparison.
 
+### Pending protection — final executed comparison
+
+Final test source `32c534a5` retains one existing owner, +500/-3/net497
+test lines. Production, dependencies, manifests, locks and public types are
+unchanged. Both finite provider cases pass in debug and optimized builds;
+the restored complete protected Counter target passes72/0/1 in each profile.
+Strict isolated Clippy and pinned formatting pass. The ignored subprocess
+entrypoint and intentional nested allocation-role failures earn no network
+campaign credit; the actual parent commands return0.
+
+The borrowed-receipt alternative is rejected by exactly five E0502 diagnostics,
+not a runtime failure. Substituting a separately verified equal receipt fails
+both providers' original-allocation oracle in both profiles. Comparing complete
+Scope instead of logical identity fails both providers' duplicate-original
+recovery oracle in both profiles. Those eight runtime failures occur after
+actual native cleanup. Exact source restoration and all six source/manifest/
+lock guards match before the final complete controls. Authority19/20 variation
+proves replay-namespace comparison only, not fresh production authorization.
+
+The actual pending protector retains one original opaque receipt through Rc
+while a second request progresses; its factory runs once across two borrowed
+wait cancellations. Native actor observations are independently1 and2 from the
+exact root. Final try_unwrap returns each original non-Clone receipt; a refused
+unwrap remains owned. Rc construction requests376/392 bytes for these exact
+providers, one allocation each; cloning the reader reference allocates nothing.
+Two strong references are sampled and are the source-derived maximum for this
+comparison, not a measured whole-service memory limit.
+
+Evidence is `/tmp/bombay-shipping-export-review/pending-protection/`: final
+source32c534a5, six-input guardse9a4d395, author receipt2bf3b5d0 and execution
+recordab100351. Exact commands and raw logs retain historical compile/style
+failures separately. This local record makes no immutable executable/full-source
+copy or durable archive claim. Independent final review8ec1db21 binds the final
+source, all44 artifact hashes, six restored inputs and intended outcomes; it
+finds no remaining blocker within this comparison. Its42 direct inputs and11
+chronological prose introductions carry separately. No Query traffic, protected wire publication, current
+mutable permissions, automatic Full retry or finished public service is proved.
+
+Complete working-tree checkpoint against81dc1448:43 tracked paths differ,
+no untracked paths; production+974/-2/net972, tests+8952/-16/net8936,
+public API+8/-0 types. Inline unit178/3 remains classified once. This stage's
+conservative local Rust-introduction envelope is954 (visible lower bound906),
+plus130 authored direct input lines/128 executed:1084 finite introductions,
+without a new controller. Prior records, review costs, the18000 verification
+allowance,115 software slots and unresolved historical extents carry; these
+endpoint and local figures are not a complete historical upper-bound claim.
+Full remote acceptance, shipping API minimization, required combined CI and
+reviewed delivery remain open. PR373 and PR374 remain held for the private
+transport boundary regardless of their individual CI results.
+
 ## Current delivery (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required

@@ -82,14 +82,19 @@ its original failure remains uncredited.
 Historical PR322 and PR323 were closed as superseded after source review;
 closure is not merge or credit for their original acceptance requirements.
 
-## Historical prerequisite checkpoints
-
 Current public-boundary requirement: networking belongs entirely to Bombay's
 Application lifecycle. Zenoh Config, Session, Query, Reply, declarations and
 transport callbacks must remain private even for advanced public APIs. PR373
 release and PR374 API delivery are held pending that correction; passing scoped
 CI does not satisfy the boundary. The remote PRD and acceptance matrix retain
 the session-free two-Application witness and all other open remote obligations.
+
+The pending-protection comparison now passes both concrete finite providers
+in debug/optimized builds, with restored complete Counter72/0/1 per profile
+and intended ownership/replay inversions. It closes no full remote requirement;
+the private transport/Application implementation remains the active work.
+
+## Historical prerequisite checkpoints
 
 DevX integration prerequisite [PR359](https://github.com/devrandom-labs/bombay/pull/359)
 merged `7fccf08b120dc468de6e5aa2ed9719724814c375` at2026-10-13T22:17:06Z.
