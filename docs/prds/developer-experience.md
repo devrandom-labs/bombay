@@ -1505,3 +1505,77 @@ tests do not prove custody here. Before retaining a native factory design, its
 first complete journey must inject a real constructor panic and inspect original
 actor/configuration and acquired native values. This review establishes source
 constraints, not an executed native failure or a retained production design.
+
+Configured descendants (DX15), pre-edit native regression: a topology that
+declares a real interpreter configuration must construct a separate service for
+the root, a fresh child, that child's fresh child and a cold member. The same
+nominal topology must accept different configuration values in two applications.
+This is a deliberate extension policy, not an actor-model allocation law.
+Desired syntax is `interpreter: Config;` in the existing topology declaration,
+`Topology::new(config)`, and a real `InterpreterFactory::create(&self)` operation.
+Ordinary topology declarations retain inferred native construction without a
+caller-supplied absence policy. The supplied operation may construct a unit
+service, but ordinary absence must not grant external-request authority.
+
+Ownership equation: one shared configuration owns construction authority; each
+actor owns its own constructed service and original typed request/receipt loans.
+The regression reuses the existing File/environment request definitions,
+ActorExt shutdown decoration, recursive birth roles, cold staging and complete
+native retirement. It observes four real File receipts and exact original actor
+allocations per application, independent constructor counts for both config
+values, normal root completion and every child retirement/failure lane. A
+service-using grandchild falsifies accidental host unwrapping. No new dispatcher,
+source engine, lifecycle engine or retirement schema is selected by this test.
+
+Expected test-only change: one integration target and this change record;
+production/API +0/-0. The proposed declaration and constructor remain unproved
+until the native witness executes. Lowering must reuse the three existing root,
+child and Entity assembly sites and CommitActions. Compatibility experiments
+must separately prove advanced manual recursive hosts: a foreign owning wrapper
+cannot transparently preserve every existing generic NativeChild impl under
+Rust's orphan rules. Constructor panic and the fixed EntityRef<D> equation are
+separate remaining gates; this success journey must not be credited for them.
+
+Pre-edit aggregate checkpoint: actor transition authority remains the generated
+Behavior; control sums remain InterpretationProgress(3), Interpretation(2),
+ItemSettlement(4), SettledItem(2), and all22 ActorRetirement alternatives. The
+test actor's optional next child owns exactly one pending recursive actor,
+not an arrival-history phase. Config owns actual construction inputs; retained
+File owns the OS resource and each actor owns its original Box allocation.
+Production states, subordinate sums, branches, lines, modules and public
+spellings all change by zero. No runtime lookup, semantic boolean, repeated
+failure cause, second transition authority or positional user effect access is
+proposed. Cross-check DX02/03/15/16, execution-ownership, Driver initialization
+ordering and the selected0.26 receiving-loan law. Disposition: test hypothesis;
+no production model is retained before its independent reviews and falsifiers.
+
+Constructor unwind (DX15), pre-edit native regression: supplied service
+construction runs while Prepared still owns the original actor, scope and
+configuration, before native ports or actor custody are handed to user code.
+Use the existing execute_with execution/receiving pair: catch the constructor's
+actual unwind, acquire Prepared and its independent receiving failures, then
+retry the original root, scope, configuration and uninvoked callable. The real
+File receipt and early-endpoint reply must survive successful retry. This is
+Bombay ownership policy. Reuse WorkOutcome::Prepared and the existing setup
+unwind/publication contract; do not classify constructor panic as behavior
+initialization rejection or invent a successful birth. Test-only production/API
+delta remains zero. This root witness does not close child or Entity panic cuts.
+
+Native witness checkpoint: configured_descendants and interpreter_startup add
+694 test lines; production+0/-0/net0 and public types+0/-0. All73 production
+sources remain byte-identical to415c40e. Pinned1.99 cargo check intentionally
+fails on the unsupported interpreter declaration and missing ExternalRequest;
+full type checking and runtime execution remain unproved. Two source reviews
+correct the single-child report shape, startup-order assumption, per-actor File
+counts, role-specific original actors, explicit committed birth receipts and
+actual sender/origin correlation. Readiness uses real typed replies after the
+File lane. The panic witness preserves the original opaque cause allocation,
+then proves the returned scope still advances its original allocation source.
+Both final source reviews pass only this bounded hypothesis. Rustfmt and diff
+checks pass; raw commands and source hashes are in
+NATIVE-CONSTRUCTOR-WITNESSES-CHECKPOINT.json and NATIVE-CONSTRUCTOR-REVIEWED-RED.
+Existing control sums/states/branches/modules/public spellings stay unchanged;
+the constructor's optional cause owns an actual pending native unwind value,
+not a semantic flag. No new actor transition authority or production candidate
+is retained. DX15 stays open; no native integration, separate non-Sync service,
+constructor failure for children/Entity, or complete compiler proof is claimed.
