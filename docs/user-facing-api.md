@@ -466,17 +466,17 @@ check versions, profiles, SDK identities, replay and permission. Metadata neithe
 authenticates input nor grants actor access. Providers protect the exact original
 transmitted bytes; deserializing and reserializing is not proof verification.
 
-Merged PR364 delivers `application.open_node(config).await` behind
-`remote`. Its input is the configuration owner's `Config` from
-`bombay-zenoh-config` 1.10.2 (aliased as `zenoh_config` in Cargo). Build
-root/child topology with ordinary Application first. Its returned
-`remote::Node` owns that declaration and one fresh native Session. Execute once
-with `node.execute_with(|application, session| async move { ... })`; execution and
-receiving reuse the existing native-root and two-notification receipts. Receive
-those facts before `node.close().await`, retaining the independent native close
-result. Work may borrow the Session; borrowed output must be released before
-mutable close. A second execution returns the original callable in
-`NodeExecutionRefusal::ExecutionIssued`.
+The ordinary multi-node Application API is still incomplete. Networking must
+belong entirely to Bombay's Application construction, execution and retirement.
+Public configuration, protocols, callbacks, results and errors must use Bombay
+contracts; Zenoh configuration, sessions, queries, replies and declarations stay
+private, including for advanced users. The separate remote-counter application
+must demonstrate this composition without transport imports or request loops.
+
+Merged PR364's Node and PR372's Export are implementation prerequisites. Their
+current public native-configuration/session/query exposure is a defect pending
+removal, not the supported finished application-authoring path. The remote PRD
+holds the next release and API delivery until this boundary is reconciled.
 
 Startup returns the original Application/configuration on profile, host or
 native refusal. The selected profile requires configured TLS addresses, disabled
@@ -484,9 +484,9 @@ discovery, mutual TLS, configured private roots, verified names and explicit
 native query capacity. No default capacity is selected. Per-endpoint overrides
 and `OneOf` fallback are rejected. SDK parsing verifies actual credentials; policy
 checks alone prove no handshake. Opening requires an entered multithreaded Tokio
-host. Trusted work can clone or close the native Session and must honor the SDK
-host/custody contract; exposing that advanced API does not enforce all remote
-policy. Whole operation disposal is surrender, not proof of joined retirement.
+host. These are implementation constraints, not transport objects users should
+manage. Whole operation disposal is surrender, not proof of joined retirement;
+Bombay must retain actual cleanup outcomes through its Application owner.
 
 Node and PR372's `ApplicationHandle::export` are delivered on main. Export uses
 that Node's private Session and actual Application ownership. It retains each

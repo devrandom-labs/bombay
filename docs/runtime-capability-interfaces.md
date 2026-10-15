@@ -35,6 +35,12 @@ It owns no new actor trait, mailbox, lifetime authority or permission
 policy. Startup profile checks preserve original declarations on refusal;
 actual SDK and root/child integration remain separate verification gates.
 Native transport fixtures remain scoped verification consumers.
+The user requires this transport ownership to stay entirely private. Current
+native Config/Session/Query exposure is provisional and must be removed from
+all public APIs, including advanced ones. Networking startup, service work and
+retirement must reuse Application ownership; users compose Bombay contracts.
+The next release/API delivery is held until the remote PRD's session-free
+Application witness and public-surface audit establish that boundary.
 
 Merged PR370 adds remote-only
 `ApplicationHandle::export_client` over an existing EstablishedRecipient. Actual
