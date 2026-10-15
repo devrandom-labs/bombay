@@ -1142,3 +1142,24 @@ Checkpoint: Rust production/tests+0/-0, public types/traits/bounds/modules/state
 branches+0/-0; tooling+143, frozen diagnostic evidence+838, coordination+record.
 No actor state, runtime authority, fixture type equation or dependency changes.
 Disposition: pass for these compiler snapshots; complete DX19 support stays open.
+
+Latest-main protected JSON integration, pre-edit (2026-10-15): import792529e
+from main while preserving the local Application/sender/diagnostic work. This
+adds borrowed protected-text checks owned by the remote module, not ordinary
+actor semantics or another application spine. Its named Limits product keeps
+five distinct acceptance limits explicit; check borrows both originals and
+leaves verification, typed decoding, admission, replay and retirement with their
+existing owners. Token limits apply after native token materialization; preserve
+the explicit absence of a whole-heap bound. No new DevX wrapper or remote API.
+
+Inspect exact new dependency json-event-parser0.2.3 and locked manifests before
+crediting integration. Retain all five remote_json tests plus the actual
+application_clients/json_receiving journeys and their original rejection,
+accepted-prefix, closure and retirement oracles. Preserve node_outcome and
+node_borrowing in both remote Nix gates while adding remote_json; retain common
+env inheritance and both rustdoc warning denials. Reuse all imported code and
+Tests unchanged; resolve only true overlap, then run current/MSRV debug/release
+consumers and full integrated gates. The frozen2e21756 run is independent and
+stays frozen. Source delta/public surface below distinguishes upstream capability
+from DevX edits. Local/remote ownership and existing control-state sums unchanged
+by the merge; new parsing alternatives belong to the imported checker alone.
