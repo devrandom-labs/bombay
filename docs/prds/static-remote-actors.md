@@ -24512,3 +24512,69 @@ are same-export distinct-session/equal-byte acceptance and same-address
 cross-Application/cross-export key refusal before authority or mailbox access,
 plus genuine authority loans. Complete constructor/ingress/retirement and all
 full remote gates remain required.
+
+
+### Request keys and actual authority loans — private runtime qualification
+
+Select the external550-line runtime candidate276ee79a against the already
+compiler-qualified def7fef5 owner. Four concrete cases use Counter/Ledger and
+both existing providers. Real lexical Node Work declarations retain all native
+cleanup; no Query traffic or Node-private attachment is claimed. Each accepts
+two identical protected byte sequences under different provider-owned logical
+sessions, and preserves a fresh same-identity duplicate at full row capacity.
+Cross-Application same-numeric-address and same-Application other-export keys
+must refuse before authority callbacks or native sends.
+
+Actual current-authority loans are RefCell::Ref for Counter and MutexGuard for
+Ledger; command construction observes denied mutation while the loan is live.
+Known local revocation refuses even cached admitted rows, while the independent
+second session remains eligible. This is neither global revocation knowledge
+nor a physical-time/complete send-window proof. AuthorityError still has only
+one concrete test substitution and remains unselected for public retention.
+
+Mount a copy of the frozen private owner plus this child outside the worktree,
+with one temporary explicit path from the existing client test. Preserve both
+original sealed files, diagnostics and exact parent restoration. Conservative
+introduced runtime source568 lines including mount, plus constructor286; no
+production/API/dependency change. New research path raises the cumulative path
+union to39/40. Expected test surface remains inside6500; actual formatting and
+final retained deltas must be measured. No public owner/key/error is selected
+from compilation alone.
+
+After actual positive controls qualify, remove only request_row's three-line
+endpoint equality guard. The unchanged ordinal/provider/actor path must fail
+“another Application key reached admission” after all acquired original cleanup,
+then exact restored controls must pass both providers/protocols/profiles.
+Full retry, producer uncertainty, callback pressure, complete shipping
+constructor/retirement and every full acceptance row remain separate gates.
+
+
+Request-key runtime qualification is terminal: six source-bound Cargo commands
+each execute the same four named cases, yielding eight positives, eight intended
+endpoint-source omission failures and eight fresh restored controls across both
+profiles. The selector is a checked prefix, not --exact: all four actual names
+and counts are verified. Every inverse fails the foreign-key oracle at Counter
+line249/Ledger468 after acquired cleanup, not setup, timeout or another assertion.
+Independent two-pass execution review3ccbcabe / receiptc3bb198b verifies all
+raw hashes, argv, inventories and native ownership. Matrixb1ef7941 retains each
+actual status and three source guards.
+
+The healthy mounted ownerddecc91a and runtime276ee79a are restored exactly;
+the repository parent is restoredb1e3127d with no retained probe source. The
+existing actor tests remain the committed22-case target; no full26-case combined
+gate or strict lint pass is inferred from these temporary cases. Twelve unused
+private-candidate warnings are explicit. Guard has actual Ref/MutexGuard
+substitutions; its held-at-command observation does not isolate a drop solely
+between construction and send. The authority error remains one concrete
+VerificationError, so public generic retention still requires resolution.
+
+This establishes the concrete need for native owner-bound request keys and
+coexistence of equal bytes under independent logical sessions. Source introduced
+by the finite prototype remains test-only, conservatively854 raw chronological
+lines including runtime mount plus constructor286 (runtime568+constructor286);
+this is introduced research surface, not retained production or a replacement
+for final formatted measurement. Cumulative research paths39/40, retained
+production305/test4758/public types3 remain unchanged. All earlier ledgers,
+shipping constructor/refusal/retirement gates and full R01–R25/AUTH1/NET1 carry
+forward. The next contribution must integrate the actual Node-associated
+production owner and delete both consumers' duplicated mechanisms.
