@@ -1,10 +1,33 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-14. This is the implementation index for the
+Updated: 2026-10-15 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
+
+Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
+merged1ea4bd16 after reviewed passing PR CI and exact-main CI38631426153.
+Guarded publication38638728105 succeeded; independent registry review verifies
+all nine archives against the exact source. Fresh SDK1.10.9 registry consumers
+and 112 owning Query/Config cases pass with exact source and lock review.
+[Fairness PR366](https://github.com/devrandom-labs/bombay/pull/366) merged `b652cd7`
+and [hosting PR365](https://github.com/devrandom-labs/bombay/pull/365) merged `ed22995`
+after all six checks and independent source/native/Nix reviews passed. Their
+merged trees match the reviewed trees. The corrected SDK is adopted in both
+locks; local fairness and explicitly hosted child isolation are delivered.
+All full R01–R25, AUTH1 and NET1 obligations remain open. Release PR367 carries
+the fixture lock correction; fresh CI, merge and publication remain required
+before Bombay0.1.2 delivery.
+Original native failures, HTTP uncertainty and cancelled runs remain recorded.
+PR360 was externally mergedc1d5b2bd at2026-10-14T20:44:33Z with native debug
+still failing; its three crates were published. Bombay0.1.1 still pins SDK1.10.8,
+so dependency publication alone does not correct that released remote profile.
+A later Bombay release and all full remote witnesses remain open.
+Historical PR322 and PR323 were closed as superseded after source review;
+closure is not merge or credit for their original acceptance requirements.
+
+## Historical prerequisite checkpoints
 
 DevX integration prerequisite [PR359](https://github.com/devrandom-labs/bombay/pull/359)
 merged `7fccf08b120dc468de6e5aa2ed9719724814c375` at2026-10-13T22:17:06Z.
@@ -33,26 +56,21 @@ remote tests and three SessionLocal native-count tests in each profile; scoped
 source/native/required-log reviews are recorded. The intact original/count-permit
 transfer preserves exact capacity/channel causes, not authentication, actor
 admission, bytes or whole-service bounds. AUTH1/NET1 and every full R01–R25
-obligation remain open. Node and common message declarations exist on the
-implementation branch; their reviewed PR delivery remains pending.
+obligation remain open. Node and common message declarations are delivered by
+reviewed PR364; complete remote operations remain unimplemented.
 
-The research branch now implements the shared fifteen-field raw `remote::Metadata`
-with an optional existing Serde edge. Seven structural schema tests and twenty
-other affected public tests pass in both profiles; strict checks and scoped
-minimization pass. The isolated lock adds only its existing Serde edge, preserving
-all324 packages. Object-shape, bounded decoding and all policy/admission remain
-pending. Actual Node/Application code now exists behind remote and is under
-verified startup and root/child composition. Six public Node controls, intended
-owner cuts/restorations, combined local checks and scoped minimization pass;
-submitted-head CI and reviewed PR delivery remain pending. Authentication,
-admission and multi-node integration remain open. This contribution is not
-yet merged; [PR364](https://github.com/devrandom-labs/bombay/pull/364) is submitted.
-Its first Nix failure exposed omitted certificate fixtures, now corrected and
-verified from the actual filtered source. Fresh Rustls advisories require0.23.46:
-both selected locks now preserve every unrelated graph choice, and protected66/0/1
-plus affected public35/0/0 pass per profile. Replacement exact-head CI/review and
-the separate controlled-package published minimum correction remain pending.
-No full requirement changes state.
+[PR364](https://github.com/devrandom-labs/bombay/pull/364) delivers raw fifteen-field
+Metadata and native Node/Application composition behind `remote`. It merged
+`406df116dd081593e1099a1f3301d2fb91bfc4fc` at2026-10-14T17:43:09Z after scoped
+minimization, final source/artifact review and all six checks passed on04c47413.
+Required Nix38596070399/job115963560778 executes six Node cases and35 public
+remote/Application tests in each profile. Native transport artifacts remain
+separate; Miri is skipped. Both selected locks use Rustls0.23.46. Controlled
+[PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12) prepares the published
+minimum correction; actual archive consumers pass, while floor/CI/publication
+remain open. Bounded object decoding, Node-owned exports, authentication,
+admission, replay and multi-node integration remain unimplemented. No full
+R01–R25, AUTH1 or NET1 requirement changes state.
 
 Count-before-copy prerequisite [PR357](https://github.com/devrandom-labs/bombay/pull/357)
 merged `671ba86094fe96d6333b1c3645a85b0ac1918f68` at
@@ -354,6 +372,12 @@ inventory requirement; it is not supplied by named topology declarations.
 DX1 now selects its owning contracts and acceptance witnesses; implementation
 remains subject to the paired PRD’s staged proofs. The product table groups the remaining programme work;
 it does not remove the inventory's finer requirements or optional decisions.
+
+## Local event fairness
+
+| Item | State | Blocked by | Unblocks | Evidence |
+| --- | --- | --- | --- | --- |
+| FAIR1: PERF-07 local selection prerequisite | merged | none | none | [Event fairness](../prds/event-fairness.md); reviewed PR366 merged `b652cd7` after all required CI passed. Deterministic source service only; full overload/latency work remains open. |
 
 ## Retained local evidence
 

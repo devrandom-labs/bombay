@@ -28,14 +28,14 @@ use communication::{Config, Consumer, ControlSender, Drained, Received, mailbox_
 use core::future::{pending, poll_fn};
 use core::hash::Hash;
 use core::ops::ControlFlow;
-use core::pin::Pin;
+use core::pin::{Pin, pin};
 use core::task::Poll;
 use std::any::Any;
 use std::sync::{Arc, Weak};
 use std::time::Instant;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
-use tokio::task::JoinError;
+use tokio::task::{JoinError, coop};
 
 impl<B, U, Descendants> LocalResidual<B, U, Descendants>
 where
@@ -99,8 +99,10 @@ where
             TerminationObservations<BehaviorAddr<B>, B::Event>,
         ) -> I,
     ) -> Self {
+        // Ordinary control and user ingress share service; source settlement
+        // separately receives controls only and preserves its causal barrier.
         let (control_liveness, owner, mailbox, consumer) =
-            mailbox_channel::<B::Event, M::Item>(config);
+            mailbox_channel::<B::Event, M::Item>(config.with_aging_cap(1));
         let control_liveness = Arc::new(control_liveness);
         let admission = Arc::new(Admission::new(owner));
         let endpoint = ActorRef::new(
@@ -432,6 +434,8 @@ where
             } => {
                 let active = ActiveLocalEnvironment {
                     inbox: LocalInbox::new(consumer),
+                    next_event_source: EventSource::Mailbox,
+                    next_settlement_source: SettlementSource::Control,
                     admission,
                     control_liveness: Some(control_liveness),
                     interpreter: Some(interpreter),
@@ -536,26 +540,43 @@ where
                     None => pending().await,
                 }
             };
-            let acquired = if let Some(deadline) = self
+            let interpreter = self
                 .interpreter
                 .as_mut()
-                .expect("the active incarnation owns its interpreter")
-                .next_deadline()
-            {
-                tokio::select! {
-                    biased;
-                    cancellation = cancellation => Acquired::OwnerCancellation(cancellation),
-                    received = self.inbox.recv() => Acquired::Mailbox(received),
-                    event = self.interpreter.as_mut().expect("the active incarnation owns its interpreter").next_local_event() => Acquired::Local(event),
-                    () = tokio::time::sleep_until(deadline.into()) => Acquired::Deadline,
-                }
-            } else {
-                tokio::select! {
-                    biased;
-                    cancellation = cancellation => Acquired::OwnerCancellation(cancellation),
-                    received = self.inbox.recv() => Acquired::Mailbox(received),
-                    event = self.interpreter.as_mut().expect("the active incarnation owns its interpreter").next_local_event() => Acquired::Local(event),
-                }
+                .expect("the active incarnation owns its interpreter");
+            let deadline = interpreter.next_deadline();
+            let acquired = {
+                let mut cancellation = pin!(cancellation);
+                // Custom ingress must share Tokio's budget with Sleep and JoinSet.
+                let mut mailbox = pin!(coop::cooperative(self.inbox.recv()));
+                let mut local = pin!(interpreter.next_local_event());
+                let mut timer = pin!(async {
+                    match deadline {
+                        Some(deadline) => tokio::time::sleep_until(deadline.into()).await,
+                        None => pending().await,
+                    }
+                });
+                poll_fn(|context| {
+                    if let Poll::Ready(request) = cancellation.as_mut().poll(context) {
+                        return Poll::Ready(Acquired::OwnerCancellation(request));
+                    }
+                    for source in self.next_event_source.order() {
+                        let acquired = match source {
+                            EventSource::Mailbox => {
+                                mailbox.as_mut().poll(context).map(Acquired::Mailbox)
+                            }
+                            EventSource::Local => local.as_mut().poll(context).map(Acquired::Local),
+                            EventSource::Timer => {
+                                timer.as_mut().poll(context).map(|()| Acquired::Deadline)
+                            }
+                        };
+                        if acquired.is_ready() {
+                            return acquired;
+                        }
+                    }
+                    Poll::Pending
+                })
+                .await
             };
             let received = match acquired {
                 Acquired::OwnerCancellation(Some(cancellation)) => {
@@ -568,7 +589,10 @@ where
                     self.owner_cancellation = None;
                     continue;
                 }
-                Acquired::Local(Ok(event)) => return ControlFlow::Continue(Some(event)),
+                Acquired::Local(Ok(event)) => {
+                    self.next_event_source = EventSource::Timer;
+                    return ControlFlow::Continue(Some(event));
+                }
                 Acquired::Local(Err(failure)) => {
                     return ControlFlow::Break(LocalRetirementRequest::CapabilityFailed(failure));
                 }
@@ -579,11 +603,15 @@ where
                         .expect("the active incarnation owns its interpreter")
                         .pop_due(Instant::now())
                     {
+                        self.next_event_source = EventSource::Mailbox;
                         return ControlFlow::Continue(Some(event));
                     }
                     continue;
                 }
-                Acquired::Mailbox(Some(received)) => received,
+                Acquired::Mailbox(Some(received)) => {
+                    self.next_event_source = EventSource::Local;
+                    received
+                }
                 Acquired::Mailbox(None) => return ControlFlow::Continue(None),
             };
             match received {
@@ -611,24 +639,55 @@ where
                     None => pending().await,
                 }
             };
-            tokio::select! {
-                biased;
-                request = cancellation => {
+            let acquired = {
+                let mut cancellation = pin!(cancellation);
+                let mut mailbox = pin!(coop::cooperative(self.inbox.recv_source()));
+                let mut local = pin!(
+                    self.interpreter
+                        .as_mut()
+                        .expect("the active incarnation owns its interpreter")
+                        .next_local_event()
+                );
+                poll_fn(|context| {
+                    if let Poll::Ready(request) = cancellation.as_mut().poll(context) {
+                        return Poll::Ready(Err(request));
+                    }
+                    for source in self.next_settlement_source.order() {
+                        let event = match source {
+                            SettlementSource::Control => mailbox.as_mut().poll(context).map(Ok),
+                            SettlementSource::Local => {
+                                local.as_mut().poll(context).map(|event| event.map(Some))
+                            }
+                        };
+                        if let Poll::Ready(event) = event {
+                            return Poll::Ready(Ok((source, event)));
+                        }
+                    }
+                    Poll::Pending
+                })
+                .await
+            };
+            match acquired {
+                Err(request) => {
                     self.owner_cancellation = None;
                     if let Some(request) = request {
-                        return ControlFlow::Break(LocalRetirementRequest::OwnerCancellation(request));
+                        return ControlFlow::Break(LocalRetirementRequest::OwnerCancellation(
+                            request,
+                        ));
                     }
                 }
-                event = async {
-                    // Preserve the existing unbiased source/capability arbitration.
-                    tokio::select! {
-                        event = self.inbox.recv_source() => Ok(event),
-                        event = self.interpreter.as_mut().expect("the active incarnation owns its interpreter").next_local_event() => event.map(Some),
-                    }
-                } => return match event {
-                    Ok(event) => ControlFlow::Continue(event),
-                    Err(failure) => ControlFlow::Break(LocalRetirementRequest::CapabilityFailed(failure)),
-                },
+                Ok((source, event)) => {
+                    self.next_settlement_source = match source {
+                        SettlementSource::Control => SettlementSource::Local,
+                        SettlementSource::Local => SettlementSource::Control,
+                    };
+                    return match event {
+                        Ok(event) => ControlFlow::Continue(event),
+                        Err(failure) => {
+                            ControlFlow::Break(LocalRetirementRequest::CapabilityFailed(failure))
+                        }
+                    };
+                }
             }
         }
     }
@@ -1097,6 +1156,40 @@ enum Publication<P, A: Eq + Hash, Endpoint> {
     Published,
 }
 
+/// Next service entitlement; pending polls never advance it.
+#[derive(Clone, Copy)]
+enum EventSource {
+    Mailbox,
+    Local,
+    Timer,
+}
+
+impl EventSource {
+    fn order(self) -> [Self; 3] {
+        match self {
+            Self::Mailbox => [Self::Mailbox, Self::Local, Self::Timer],
+            Self::Local => [Self::Local, Self::Timer, Self::Mailbox],
+            Self::Timer => [Self::Timer, Self::Mailbox, Self::Local],
+        }
+    }
+}
+
+// Settlement has its own eligibility set and must not reset ordinary service.
+#[derive(Clone, Copy)]
+enum SettlementSource {
+    Control,
+    Local,
+}
+
+impl SettlementSource {
+    fn order(self) -> [Self; 2] {
+        match self {
+            Self::Control => [Self::Control, Self::Local],
+            Self::Local => [Self::Local, Self::Control],
+        }
+    }
+}
+
 /// The only local value with mailbox ingress and address ownership.
 pub(crate) struct ActiveLocalEnvironment<
     B: BehaviorSettlements<Ph = Never>,
@@ -1111,6 +1204,8 @@ pub(crate) struct ActiveLocalEnvironment<
     BehaviorAddr<B>: Hash,
 {
     inbox: LocalInbox<B, M>,
+    next_event_source: EventSource,
+    next_settlement_source: SettlementSource,
     admission: Arc<Admission<M::Item>>,
     control_liveness: Option<Arc<ControlSender<B::Event>>>,
     interpreter: Option<I>,
@@ -1130,15 +1225,13 @@ pub(crate) struct ActiveLocalEnvironment<
 }
 
 #[cfg(test)]
-use core::pin::pin;
-
-#[cfg(test)]
 mod tests {
     use crate::MailboxCapacity;
     use core::task::{Context, Waker};
     use std::convert::Infallible;
     use std::mem::size_of;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::task::Wake;
     use std::time::Duration;
 
     use behavior::{
@@ -2821,13 +2914,405 @@ mod tests {
         }
     }
 
+    type ReadyEnvironment = ActiveLocalEnvironment<
+        ReadyActor,
+        ActionInterpreter<ApplicationCapabilities<ReadyActor, ()>>,
+    >;
+
+    async fn fairness_environment(
+        observations: Vec<Observation<Termination<MailAddr>>>,
+        timer_count: u64,
+    ) -> (
+        ReadyEnvironment,
+        ActorRef<MessageProtocol<MailAddr, u64>>,
+        oneshot::Sender<OwnerCancellation>,
+    ) {
+        let (_, termination) = observe::pair();
+        let (owner, cancellation) = oneshot::channel();
+        let (terminal, _) = oneshot::channel();
+        let deadline = Instant::now().checked_sub(Duration::from_secs(1)).unwrap();
+        let mailbox_capacity =
+            MailboxCapacity::new(1024).expect("the actual fairness mailbox capacity");
+        let prepared = LocalEnvironment::<ReadyActor, _, StandardIngress>::prepare(
+            MailAddr(1),
+            ActorSpace::new(),
+            Config::new(mailbox_capacity.get()),
+            termination,
+            cancellation,
+            move |control, mut timers, mut pending| {
+                for (index, observation) in observations.into_iter().enumerate() {
+                    pending
+                        .insert_peer::<Here>(MailAddr(u64::try_from(index).unwrap()), observation);
+                }
+                for sequence in 0..timer_count {
+                    timers
+                        .schedule_at::<Here>(ScheduleAt::new(
+                            TimerId(sequence),
+                            TimerGeneration(1),
+                            deadline,
+                        ))
+                        .unwrap();
+                }
+                ActionInterpreter::new(
+                    ApplicationCapabilities::<ReadyActor, ()>::new_with_bindings(
+                        ApplicationCapabilityInputs {
+                            actor_spaces: Arc::new(()),
+                            allocations: ApplicationAddresses::new(),
+                            address: MailAddr(1),
+                            mailbox_capacity,
+                            control,
+                            timers,
+                            observations: pending,
+                            terminal_reports: LocalTerminalReports::new(terminal),
+                        },
+                        NoChildBindings::default(),
+                    ),
+                )
+            },
+        );
+        let endpoint = prepared.endpoint.clone();
+        let mut prepared = Some(prepared);
+        let mut actions = Some(Actions::cont());
+        let mut activated = None;
+        <_ as Environment<ReadyActor>>::activate(&mut prepared, &mut actions, &mut activated).await;
+        let Some(Ok((mut active, interpretation))) = activated else {
+            panic!("native activation must succeed")
+        };
+        assert!(matches!(interpretation, Interpretation::Complete(_)));
+        let published = active.publish();
+        assert!(matches!(published, ControlFlow::Continue(())));
+        (active, endpoint, owner)
+    }
+
+    #[tokio::test]
+    async fn fairness_all_ready_and_single_source_floods_have_bounded_service() {
+        for counts in [[256_u64, 256, 256], [512, 1, 1], [1, 512, 1], [1, 1, 512]] {
+            let observations = (0..counts[1])
+                .map(|_| {
+                    let (publisher, observation) = observe::pair();
+                    publisher.complete(Ok(Exit::Normal));
+                    observation
+                })
+                .collect();
+            let (mut active, endpoint, owner) = fairness_environment(observations, counts[2]).await;
+            for sequence in 0..counts[0] {
+                endpoint.send_from(MailAddr(7), sequence).await.unwrap();
+            }
+            let mut acquired = [Vec::new(), Vec::new(), Vec::new()];
+            let mut waiting = [0; 3];
+            for _ in 0..counts.iter().sum::<u64>() {
+                let event = active.next().await;
+                let (family, event) = match event {
+                    ControlFlow::Continue(Some(event @ ReadyEvent::Mailbox(_))) => (0, event),
+                    ControlFlow::Continue(Some(event @ ReadyEvent::Observation(_))) => (1, event),
+                    ControlFlow::Continue(Some(event @ ReadyEvent::Timer(_))) => (2, event),
+                    _ => panic!("every acquisition must retain a queued native event"),
+                };
+                for index in 0..3 {
+                    if index == family {
+                        waiting[index] = 0;
+                    } else if acquired[index].len() < usize::try_from(counts[index]).unwrap() {
+                        waiting[index] += 1;
+                    }
+                    assert!(
+                        waiting[index] < 3,
+                        "ready family {index} exceeded two other acquisitions"
+                    );
+                }
+                acquired[family].push(event);
+            }
+            let expected = [
+                (0..counts[0])
+                    .map(|sequence| ReadyEvent::Mailbox(User::new(MailAddr(7), sequence)))
+                    .collect::<Vec<_>>(),
+                (0..counts[1])
+                    .map(|sequence| {
+                        ReadyEvent::Observation(PeerStopped::new(
+                            MailAddr(sequence),
+                            Ok(Exit::Normal),
+                        ))
+                    })
+                    .collect(),
+                (0..counts[2])
+                    .map(|sequence| {
+                        ReadyEvent::Timer(TimerElapsed::new(TimerId(sequence), TimerGeneration(1)))
+                    })
+                    .collect(),
+            ];
+            assert_eq!(
+                acquired, expected,
+                "complete FIFO payloads survive every losing selection"
+            );
+            let exhausted = {
+                let mut next = pin!(active.next());
+                next.as_mut().poll(&mut Context::from_waker(Waker::noop()))
+            };
+            assert!(matches!(exhausted, Poll::Pending));
+            drop((endpoint, owner));
+        }
+    }
+
+    #[tokio::test]
+    async fn fairness_settlement_cannot_reset_ordinary_service() {
+        let observations = (0..8)
+            .map(|_| {
+                let (publisher, observation) = observe::pair();
+                publisher.complete(Ok(Exit::Normal));
+                observation
+            })
+            .collect();
+        let (mut active, endpoint, owner) = fairness_environment(observations, 1).await;
+        endpoint.send_from(MailAddr(7), 17).await.unwrap();
+        let mut ordinary = Vec::new();
+        for sequence in 0..3 {
+            match active.next().await {
+                ControlFlow::Continue(Some(event)) => ordinary.push(event),
+                _ => panic!("all ordinary sources remain available"),
+            }
+            active
+                .control_liveness
+                .as_ref()
+                .unwrap()
+                .send(ReadyEvent::SourceInput(sequence))
+                .unwrap();
+            // Complete each admitted control before the next ordinary turn.
+            loop {
+                match active.next_source().await {
+                    ControlFlow::Continue(Some(ReadyEvent::SourceInput(value))) => {
+                        assert_eq!(value, sequence);
+                        break;
+                    }
+                    ControlFlow::Continue(Some(ReadyEvent::Observation(_))) => {}
+                    _ => panic!("settlement only acquires eligible results"),
+                }
+            }
+        }
+        assert_eq!(
+            ordinary,
+            [
+                ReadyEvent::Mailbox(User::new(MailAddr(7), 17)),
+                ReadyEvent::Observation(PeerStopped::new(MailAddr(0), Ok(Exit::Normal))),
+                ReadyEvent::Timer(TimerElapsed::new(TimerId(0), TimerGeneration(1))),
+            ],
+            "settlement cannot erase ordinary service entitlements"
+        );
+        drop((endpoint, owner));
+    }
+
+    #[tokio::test]
+    async fn fairness_standard_mailbox_bounds_user_wait_under_control_flood() {
+        let (mut active, endpoint, owner) = fairness_environment(Vec::new(), 0).await;
+        for sequence in 0..256 {
+            active
+                .control_liveness
+                .as_ref()
+                .unwrap()
+                .send(ReadyEvent::SourceInput(sequence))
+                .unwrap();
+            endpoint.send_from(MailAddr(7), sequence).await.unwrap();
+        }
+        let mut acquired = Vec::new();
+        for _ in 0..512 {
+            match active.next().await {
+                ControlFlow::Continue(Some(event)) => acquired.push(event),
+                _ => panic!("both mailbox lanes remain ready"),
+            }
+        }
+        let expected = (0..256)
+            .flat_map(|sequence| {
+                [
+                    ReadyEvent::SourceInput(sequence),
+                    ReadyEvent::Mailbox(User::new(MailAddr(7), sequence)),
+                ]
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            acquired, expected,
+            "standard user ingress waits for at most one control"
+        );
+        drop((endpoint, owner));
+    }
+
+    #[tokio::test]
+    async fn fairness_source_settlement_rotates_without_admitting_users_or_timers() {
+        let observations = (0..256)
+            .map(|_| {
+                let (publisher, observation) = observe::pair();
+                publisher.complete(Ok(Exit::Normal));
+                observation
+            })
+            .collect();
+        let (mut active, endpoint, owner) = fairness_environment(observations, 1).await;
+        endpoint.send_from(MailAddr(7), 17).await.unwrap();
+        for sequence in 0..256 {
+            active
+                .control_liveness
+                .as_ref()
+                .unwrap()
+                .send(ReadyEvent::SourceInput(sequence))
+                .unwrap();
+        }
+        let mut acquired = Vec::new();
+        for _ in 0..512 {
+            match active.next_source().await {
+                ControlFlow::Continue(Some(event)) => acquired.push(event),
+                _ => panic!("source settlement must retain admitted results"),
+            }
+        }
+        let expected = (0..256)
+            .flat_map(|sequence| {
+                [
+                    ReadyEvent::SourceInput(sequence),
+                    ReadyEvent::Observation(PeerStopped::new(MailAddr(sequence), Ok(Exit::Normal))),
+                ]
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(acquired, expected);
+        let waiting = {
+            let mut next = pin!(active.next_source());
+            next.as_mut().poll(&mut Context::from_waker(Waker::noop()))
+        };
+        assert!(
+            matches!(waiting, Poll::Pending),
+            "ordinary inputs cannot bypass settlement"
+        );
+        let mailbox = active.next().await;
+        assert!(matches!(
+            mailbox,
+            ControlFlow::Continue(Some(ReadyEvent::Mailbox(User {
+                from: MailAddr(7),
+                message: 17
+            })))
+        ));
+        let timer = active.next().await;
+        assert!(matches!(
+            timer,
+            ControlFlow::Continue(Some(ReadyEvent::Timer(TimerElapsed {
+                id: TimerId(0),
+                generation: TimerGeneration(1)
+            })))
+        ));
+        active
+            .control_liveness
+            .as_ref()
+            .unwrap()
+            .send(ReadyEvent::SourceInput(257))
+            .unwrap();
+        let requested = owner.send(OwnerCancellation);
+        assert!(requested.is_ok());
+        let stopped = active.next_source().await;
+        assert!(matches!(
+            stopped,
+            ControlFlow::Break(LocalRetirementRequest::OwnerCancellation(_))
+        ));
+        let retained = active.inbox.drain().unwrap();
+        assert_eq!(retained.control, [ReadyEvent::SourceInput(257)]);
+        assert_eq!(retained.user, []);
+        drop(endpoint);
+    }
+
+    #[tokio::test]
+    async fn fairness_mailbox_flood_yields_to_the_executor() {
+        let (mut active, endpoint, owner) = fairness_environment(Vec::new(), 0).await;
+        for sequence in 0..512 {
+            endpoint.send_from(MailAddr(7), sequence).await.unwrap();
+        }
+        let mut receiving = Box::pin(async {
+            let mut acquired = Vec::new();
+            for _ in 0..512 {
+                match active.next().await {
+                    ControlFlow::Continue(Some(event)) => acquired.push(event),
+                    _ => panic!("the finite mailbox flood stays live"),
+                }
+            }
+            acquired
+        });
+        let first_poll = receiving
+            .as_mut()
+            .poll(&mut Context::from_waker(Waker::noop()));
+        assert!(
+            matches!(first_poll, Poll::Pending),
+            "a mailbox flood must return control to the host"
+        );
+        let acquired = receiving.await;
+        let expected = (0..512)
+            .map(|sequence| ReadyEvent::Mailbox(User::new(MailAddr(7), sequence)))
+            .collect::<Vec<_>>();
+        assert_eq!(acquired, expected);
+        drop((endpoint, owner));
+    }
+
+    #[derive(Default)]
+    struct EventWake(AtomicUsize);
+    impl Wake for EventWake {
+        fn wake(self: Arc<Self>) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+        fn wake_by_ref(self: &Arc<Self>) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    #[tokio::test]
+    async fn fairness_idle_cancellation_and_notifications_preserve_selection() {
+        let (publisher, observation) = observe::pair();
+        let (mut active, endpoint, owner) = fairness_environment(vec![observation], 0).await;
+        let notification = Arc::new(EventWake::default());
+        let waker = Waker::from(Arc::clone(&notification));
+        for _ in 0..4 {
+            let waiting = {
+                let mut next = pin!(active.next());
+                next.as_mut().poll(&mut Context::from_waker(&waker))
+            };
+            assert!(matches!(waiting, Poll::Pending));
+        }
+        assert_eq!(
+            notification.0.load(Ordering::SeqCst),
+            0,
+            "idle receivers must not self-wake"
+        );
+        publisher.complete(Ok(Exit::Normal));
+        assert!(
+            notification.0.load(Ordering::SeqCst) > 0,
+            "the original observation wakes the parked receiver"
+        );
+        let event = active.next().await;
+        assert!(matches!(
+            event,
+            ControlFlow::Continue(Some(ReadyEvent::Observation(_)))
+        ));
+        notification.0.store(0, Ordering::SeqCst);
+        {
+            let mut next = pin!(active.next());
+            let waiting = next.as_mut().poll(&mut Context::from_waker(&waker));
+            assert!(matches!(waiting, Poll::Pending));
+            endpoint.send_from(MailAddr(7), 91).await.unwrap();
+            assert!(
+                notification.0.load(Ordering::SeqCst) > 0,
+                "mailbox arrival wakes the parked receiver"
+            );
+            // Cancel the notified receiver before acquisition; its payload must
+            // remain available to retirement when owner cancellation wins.
+        }
+        let requested = owner.send(OwnerCancellation);
+        assert!(requested.is_ok());
+        let stopped = active.next().await;
+        assert!(matches!(
+            stopped,
+            ControlFlow::Break(LocalRetirementRequest::OwnerCancellation(_))
+        ));
+        let retained = active.inbox.drain().unwrap();
+        assert_eq!(retained.user, [User::new(MailAddr(7), 91)]);
+        assert_eq!(retained.control, []);
+    }
+
     #[tokio::test(flavor = "current_thread")]
-    async fn jointly_ready_source_mailbox_observation_and_timer_follow_native_acquisition_order() {
+    async fn fairness_jointly_ready_sources_rotate() {
         acquire_ready_campaign(Vec::new()).await;
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn continuously_ready_mailbox_postpones_observation_and_timer_until_mailbox_quiesces() {
+    async fn fairness_mailbox_flood_cannot_postpone_observation_or_timer() {
         acquire_ready_campaign(vec![13, 17, 19, 23, 29, 31, 37, 41]).await;
     }
 
@@ -2856,7 +3341,7 @@ mod tests {
         >::prepare(
             address,
             ActorSpace::new(),
-            Config::new(2),
+            Config::new(mailbox_inputs.len() + 2),
             termination,
             owner_cancellation,
             move |control, mut timers, mut observations| {
@@ -2904,6 +3389,9 @@ mod tests {
         let endpoint = environment.endpoint.clone();
         let queued = endpoint.send_from(sender, 11).await;
         queued.expect("the original live endpoint accepts this exact mailbox input");
+        for input in &mailbox_inputs {
+            endpoint.send_from(sender, *input).await.unwrap();
+        }
         let mut prepared = Some(environment);
         let mut initialization_actions = Some(Actions::cont());
         let mut received_activation = None;
@@ -2926,42 +3414,10 @@ mod tests {
         let mut acquired = Vec::new();
         // The real source is control ingress: Communication prioritizes it over
         // ordinary user ingress. It is not a fourth independent select branch.
-        for _ in 0..2 {
+        for _ in 0..mailbox_inputs.len() + 4 {
             match active.next().await {
                 ControlFlow::Continue(Some(event)) => acquired.push(event),
-                ControlFlow::Continue(None) => {
-                    panic!("jointly ready native ingress must remain live")
-                }
-                ControlFlow::Break(request) => {
-                    drop(request);
-                    panic!("jointly ready native ingress must not request retirement");
-                }
-            }
-        }
-        for input in &mailbox_inputs {
-            let queued = endpoint.send_from(sender, *input).await;
-            queued.expect("the original live endpoint accepts this exact mailbox input");
-            match active.next().await {
-                ControlFlow::Continue(Some(event)) => acquired.push(event),
-                ControlFlow::Continue(None) => {
-                    panic!("replenished native mailbox must remain live")
-                }
-                ControlFlow::Break(request) => {
-                    drop(request);
-                    panic!("replenished native mailbox must not request retirement");
-                }
-            }
-        }
-        for _ in 0..2 {
-            match active.next().await {
-                ControlFlow::Continue(Some(event)) => acquired.push(event),
-                ControlFlow::Continue(None) => {
-                    panic!("original observation and due timer must remain available")
-                }
-                ControlFlow::Break(request) => {
-                    drop(request);
-                    panic!("ready observation and timer must not request retirement");
-                }
+                _ => panic!("ready native ingress must return its exact event"),
             }
         }
         let mut retiring = Some(active);
@@ -3018,6 +3474,8 @@ mod tests {
         drop((endpoint, owner_request, publication, terminal_receiver));
         let mut expected = vec![
             ReadyEvent::SourceInput(47),
+            ReadyEvent::Observation(PeerStopped::new(peer, Ok(Exit::Normal))),
+            ReadyEvent::Timer(TimerElapsed::new(timer, generation)),
             ReadyEvent::Mailbox(User::new(sender, 11)),
         ];
         expected.extend(
@@ -3025,11 +3483,6 @@ mod tests {
                 .into_iter()
                 .map(|input| ReadyEvent::Mailbox(User::new(sender, input))),
         );
-        expected.push(ReadyEvent::Observation(PeerStopped::new(
-            peer,
-            Ok(Exit::Normal),
-        )));
-        expected.push(ReadyEvent::Timer(TimerElapsed::new(timer, generation)));
         assert_eq!(acquired, expected);
         let [initialization] = settlements.as_slice() else {
             panic!("native retirement retains the single whole initialization settlement");

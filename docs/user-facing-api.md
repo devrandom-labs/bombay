@@ -354,7 +354,10 @@ Returning from Work does not request shutdown. The root's concrete Behavior
 must accept or transform `ShutdownRequested`; topology does not select policy.
 `ApplicationHandle::client()` creates a root-bound client with typed reply
 receiving; its protocol can be inferred from the domain reply capability.
-`sender()` creates a one-way root sender without a reply declaration.
+`sender()` creates a one-way root sender without a reply declaration. For an
+exact local recipient, `sender.try_send(command)` attempts admission without a
+capacity wait and returns the complete command in `Full` or `Closed`. Stable
+Entity references use asynchronous `send`, which can resolve and hydrate them.
 `request_shutdown()` and `termination()` delegate to the existing lifecycle
 owner. Request acknowledgement, observed termination and joined cleanup remain
 distinct. `lifecycle()` remains the explicit projection when another consumer

@@ -1,7 +1,7 @@
 [package]
 name = "bombay-rs"
 description = "A pluggable process runtime over Bombay Behavior."
-version = "0.1.1"
+version = "0.1.2"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -33,7 +33,7 @@ timers = { workspace = true }
 triomphe = { workspace = true }
 axum = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
-zenoh = { package = "bombay-zenoh", version = "=1.10.8", default-features = false, features = ["transport_tls"], optional = true }
+zenoh = { package = "bombay-zenoh", version = "=1.10.9", default-features = false, features = ["transport_tls"], optional = true }
 zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-features = false, optional = true }
 zenoh_protocol = { package = "zenoh-protocol", version = "=1.10.1", default-features = false, optional = true }
 

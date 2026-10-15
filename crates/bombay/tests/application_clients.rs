@@ -1,11 +1,15 @@
 //! Root-bound communication preserves affine receiving and truthful sender identity.
 
-use bombay::ActorNotificationReceipts;
 use bombay::actors::ActorExt;
-use bombay::behavior::{BehaviorBase, EstablishedDelivery, EstablishedRecipient, Protocol};
+use bombay::behavior::{
+    BehaviorBase, ClassifySettlement, EstablishedDelivery, EstablishedRecipient, Protocol,
+    SettlementStatus,
+};
 use bombay::prelude::{
     Actions, ActorRetirement, Application, BehaviorActed, Completion, Exit, MailAddr,
 };
+use bombay::{ActorNotificationReceipts, MailboxCapacity};
+use communication::TrySendError;
 
 #[path = "../../../examples/counter/src/counter.rs"]
 mod counter;
@@ -440,6 +444,7 @@ fn root_clients_preserve_authority_and_protocol_denials() {
     cases.compile_fail("tests/compile/fail/application_client_wrong_root_message.rs");
     cases.compile_fail("tests/compile/fail/application_client_forged_root.rs");
     cases.compile_fail("tests/compile/fail/application_sender_requires_target_capability.rs");
+    cases.compile_fail("tests/compile/fail/application_sender_cannot_try_entity.rs");
     cases.compile_fail("tests/compile/fail/application_client_wrong_selected_message.rs");
 }
 
@@ -504,3 +509,128 @@ async fn closing_root_client_preserves_accepted_reply_and_then_exhausts() {
 #[cfg(feature = "remote")]
 #[path = "application_clients/protected_requests.rs"]
 mod protected_requests;
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one affine admission journey retains original Full/retry/Closed commands, the accepted prefix and complete native retirement"
+)]
+async fn bound_sender_preserves_nonwaiting_full_retry_prefix_and_closed_commands() {
+    let first = Box::<[u8]>::from([73, 79]);
+    let second = Box::<[u8]>::from([83, 89]);
+    let third = Box::<[u8]>::from([97, 101]);
+    let pointers = [first.as_ptr(), second.as_ptr(), third.as_ptr()];
+    let closed = Box::<[u8]>::from([103, 107]);
+    let closed_pointer = closed.as_ptr();
+    let outcome = Application::new(Counter::new().stop_on_shutdown())
+        .client_capacity(MailboxCapacity::new(2).expect("the actual two-slot external mailbox"))
+        .run_with(|application| async move {
+            let mut peer = application
+                .external::<MailLedger>()
+                .expect("the actual ledger endpoint");
+            let sender = application
+                .sender_to(peer.recipient())
+                .unwrap_or_else(|_| panic!("the actual exact-target sender"));
+            sender
+                .try_send(LedgerCommand::Append(first))
+                .unwrap_or_else(|_| panic!("first original command admitted"));
+            sender
+                .try_send(LedgerCommand::Append(second))
+                .unwrap_or_else(|_| panic!("second original command admitted"));
+            let Err(TrySendError::Full(LedgerCommand::Append(third))) =
+                sender.try_send(LedgerCommand::Append(third))
+            else {
+                panic!("Full returns the complete original third command");
+            };
+            assert_eq!(third.as_ptr(), pointers[2]);
+            let first = peer
+                .receive()
+                .await
+                .expect("the first accepted original command");
+            assert_eq!(first.from, sender.address());
+            let LedgerCommand::Append(first) = first.message else {
+                panic!("the original append");
+            };
+            assert_eq!(first.as_ptr(), pointers[0]);
+            assert_eq!(&*first, &[73, 79]);
+            sender
+                .try_send(LedgerCommand::Append(third))
+                .unwrap_or_else(|_| panic!("the same rejected command retries after one dequeue"));
+            peer.close_admission();
+            let Err(TrySendError::Closed(LedgerCommand::Append(closed))) =
+                sender.try_send(LedgerCommand::Append(closed))
+            else {
+                panic!("Closed returns the complete original command");
+            };
+            assert_eq!(closed.as_ptr(), closed_pointer);
+            let mut accepted = vec![first];
+            for (pointer, bytes) in [(pointers[1], [83, 89]), (pointers[2], [97, 101])] {
+                let received = peer.receive().await.expect("the accepted ordered prefix");
+                assert_eq!(received.from, sender.address());
+                let LedgerCommand::Append(original) = received.message else {
+                    panic!("the original append");
+                };
+                assert_eq!(original.as_ptr(), pointer);
+                assert_eq!(&*original, &bytes);
+                accepted.push(original);
+            }
+            let drained = peer.receive().await;
+            assert!(drained.is_none());
+            let shutdown = application.request_shutdown();
+            (accepted, closed, shutdown)
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the caller host is entered"));
+    let ((accepted, closed, shutdown), retirement) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("original accepted and refused commands return together"));
+    assert_eq!(
+        accepted
+            .iter()
+            .map(|message| message.as_ptr())
+            .collect::<Vec<_>>(),
+        pointers
+    );
+    assert_eq!(closed.as_ptr(), closed_pointer);
+    assert_eq!(&*closed, &[103, 107]);
+    assert_eq!(shutdown, Ok(()));
+    assert!(retirement.cleanup().is_ok());
+    let notifications = retirement
+        .notifications()
+        .as_ref()
+        .expect("both notification results return");
+    assert!(notifications.termination.is_ok());
+    assert!(notifications.retirement.is_ok());
+    let (origin, root) = retirement
+        .retirement()
+        .as_ref()
+        .expect("the native root returns");
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert_eq!(root.completion(), Some(&Completion::Stopped));
+    let ActorRetirement::Completed {
+        custody,
+        interpretation,
+        source,
+        settlements,
+        ..
+    } = root
+    else {
+        panic!("the original root stops normally");
+    };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.unread_owner_cancellation.is_none());
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert_eq!(custody.additional_failures.len(), 0);
+    assert_eq!(custody.retirement_failures.len(), 0);
+}

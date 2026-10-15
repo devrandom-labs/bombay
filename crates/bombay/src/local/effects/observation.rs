@@ -20,7 +20,7 @@ use behavior_actors::{
     PeerObservationRejection, PeerStopped, ShutdownChild, ShutdownEstablished, ShutdownId,
     ShutdownRejection, ShutdownRequested,
 };
-use communication::ControlClosed;
+use communication::{ControlClosed, ControlSender};
 use core::future::{Future, poll_fn};
 use core::marker::PhantomData;
 use core::pin::Pin;
@@ -687,14 +687,19 @@ where
         });
     }
 
-    pub(crate) async fn next(&mut self) -> E {
+    pub(super) async fn next(&mut self) -> TerminationEvent<E> {
         poll_fn(|context| {
             for index in 0..self.pending.len() {
                 if let Poll::Ready(outcome) =
                     Pin::new(&mut self.pending[index].future).poll(context)
                 {
                     let pending = self.pending.remove(index);
-                    return Poll::Ready((pending.inject)(pending.source, outcome));
+                    let event = (pending.inject)(pending.source, outcome);
+                    let event = match pending.source {
+                        TerminationSource::Peer(_) => TerminationEvent::Peer(event),
+                        TerminationSource::Child(_) => TerminationEvent::Child(event),
+                    };
+                    return Poll::Ready(event);
                 }
             }
             Poll::Pending
@@ -712,6 +717,26 @@ pub(in crate::local::effects) struct EstablishedObservationInterpreter<'a, Capab
 enum TerminationSource<A: Address> {
     Peer(A),
     Child(CreationId),
+}
+
+/// Child lifecycle facts follow already-admitted parent reports in control FIFO.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum TerminationEvent<E> {
+    Peer(E),
+    Child(E),
+}
+
+impl<E> TerminationEvent<E> {
+    pub(super) fn into_local(self, control: &ControlSender<E>) -> Option<E> {
+        match self {
+            Self::Peer(event) => Some(event),
+            Self::Child(event) => match control.send(event) {
+                Ok(()) => None,
+                // A closed destination cannot erase the authoritative fact.
+                Err(ControlClosed(event)) => Some(event),
+            },
+        }
+    }
 }
 
 type InjectTermination<A, E> = fn(TerminationSource<A>, Termination<A>) -> E;
@@ -861,7 +886,10 @@ mod tests {
         let stopped = observations.next().await;
         assert_eq!(
             stopped,
-            ObserverEvent::Stopped(PeerStopped::new(MailAddr(2), Ok(Exit::Normal),))
+            TerminationEvent::Peer(ObserverEvent::Stopped(PeerStopped::new(
+                MailAddr(2),
+                Ok(Exit::Normal)
+            )))
         );
     }
 
@@ -911,11 +939,17 @@ mod tests {
         let second = observations.next().await;
         assert_eq!(
             first,
-            LayeredObserverEvent::Outer(PeerStopped::new(MailAddr(2), Ok(Exit::Normal)))
+            TerminationEvent::Peer(LayeredObserverEvent::Outer(PeerStopped::new(
+                MailAddr(2),
+                Ok(Exit::Normal)
+            )))
         );
         assert_eq!(
             second,
-            LayeredObserverEvent::Inner(PeerStopped::new(MailAddr(2), Ok(Exit::Normal)))
+            TerminationEvent::Peer(LayeredObserverEvent::Inner(PeerStopped::new(
+                MailAddr(2),
+                Ok(Exit::Normal)
+            )))
         );
     }
 
@@ -947,9 +981,18 @@ mod tests {
         assert_eq!(
             [first, second, third],
             [
-                ObserverEvent::Stopped(PeerStopped::new(MailAddr(1), Ok(Exit::Normal))),
-                ObserverEvent::Stopped(PeerStopped::new(MailAddr(2), Ok(Exit::Normal))),
-                ObserverEvent::Stopped(PeerStopped::new(MailAddr(3), Ok(Exit::Normal))),
+                TerminationEvent::Peer(ObserverEvent::Stopped(PeerStopped::new(
+                    MailAddr(1),
+                    Ok(Exit::Normal)
+                ))),
+                TerminationEvent::Peer(ObserverEvent::Stopped(PeerStopped::new(
+                    MailAddr(2),
+                    Ok(Exit::Normal)
+                ))),
+                TerminationEvent::Peer(ObserverEvent::Stopped(PeerStopped::new(
+                    MailAddr(3),
+                    Ok(Exit::Normal)
+                ))),
             ]
         );
     }

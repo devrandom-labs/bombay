@@ -373,6 +373,23 @@ impl<Target> ApplicationSender<Target> {
     }
 }
 
+impl<P> ApplicationSender<EstablishedRecipient<P>>
+where
+    P: Protocol<Addr = MailAddr>,
+{
+    /// Attempt a one-way command without waiting for mailbox capacity.
+    ///
+    /// Uses this sender's original identity and the exact selected recipient.
+    /// Stable Entity resolution uses [`Self::send`] instead.
+    ///
+    /// # Errors
+    /// Returns Full or Closed with the complete original command, preserving
+    /// the admission contract of [`ExternalActor::try_send`].
+    pub fn try_send(&self, command: P::Msg) -> Result<(), TrySendError<P::Msg>> {
+        self.caller.try_send(&self.target, command)
+    }
+}
+
 impl<P, Event> fmt::Debug for ApplicationLifecycle<P, Event>
 where
     P: Protocol,

@@ -1,12 +1,27 @@
-error: lifetime may not live long enough
-  --> tests/compile/fail/node_join_cannot_return_session.rs:17:58
+error[E0308]: mismatched types
+  --> tests/compile/fail/node_join_cannot_return_session.rs:29:20
    |
-17 |           .run_with(async |application, session: &Session| {
-   |  ________________________________________________-_______-_^
-   | |                                                |       |
-   | |                                                |       return type of async closure is (&'2 Session, Result<(), ShutdownRejection>)
-   | |                                                let's call the lifetime of this reference `'1`
-18 | |             let shutdown = application.request_shutdown();
-19 | |             (session, shutdown)
-20 | |         })
-   | |_________^ returning this value requires that `'1` must outlive `'2`
+29 |     let _outcome = node.run_with(return_session).await;
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ one type is more general than the other
+   |
+   = note: expected tuple `(&'loan Session, Result<(), ShutdownRejection>)`
+              found tuple `(&Session, Result<(), ShutdownRejection>)`
+note: the lifetime requirement is introduced here
+  --> src/application/node.rs
+   |
+   |         ) -> Output,
+   |              ^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/compile/fail/node_join_cannot_return_session.rs:29:50
+   |
+29 |     let _outcome = node.run_with(return_session).await;
+   |                                                  ^^^^^ one type is more general than the other
+   |
+   = note: expected tuple `(&'loan Session, Result<(), ShutdownRejection>)`
+              found tuple `(&Session, Result<(), ShutdownRejection>)`
+note: the lifetime requirement is introduced here
+  --> src/application/node.rs
+   |
+   |         ) -> Output,
+   |              ^^^^^^

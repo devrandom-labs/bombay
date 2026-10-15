@@ -316,6 +316,14 @@
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --release --test protected_counter
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter public_node_
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter public_node_
+                for profile in debug release; do
+                  profile_arguments=()
+                  if [[ "$profile" == release ]]; then profile_arguments+=(--release); fi
+                  cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter "''${profile_arguments[@]}" public_node::hosting::same_address_foreign_child_keeps_its_owning_application -- --exact > "hosting-$profile.log" 2>&1
+                  cat "hosting-$profile.log"
+                  grep -F 'test public_node::hosting::same_address_foreign_child_keeps_its_owning_application ... ok' "hosting-$profile.log"
+                  grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "hosting-$profile.log"
+                done
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter remote_counter::native_ -- --test-threads=1
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter remote_counter::native_ -- --test-threads=1
                 cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check

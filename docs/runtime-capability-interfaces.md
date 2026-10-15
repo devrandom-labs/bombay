@@ -64,6 +64,41 @@ and termination methods delegate to ApplicationLifecycle; they define no
 additional lifecycle state or engine. Named exported interfaces remain separate
 capability products for external consumers and other destinations.
 
+## Local event service
+
+At each ordinary acquisition, ready owner cancellation takes precedence.
+The local environment then rotates service between mailbox, local results and
+due timers, starting after the last acquired source and skipping pending
+sources. A continuously ready family receives service within three ordinary
+acquisitions, assuming the actor continues progressing. Local results rotate
+termination observations and startup results, giving each family a bound of
+two local selections. A child termination transfers into the existing control
+FIFO, behind its already-admitted parent reports; peer observations return
+locally. This preserves completion-before-termination without globally
+prioritizing mailbox traffic. Control-only source settlement rotates its control
+mailbox and local results; it never admits ordinary users or timers early.
+Its separate cursor cannot reset the next ordinary source’s entitlement.
+
+These are acquisition bounds, not elapsed-time guarantees. Every acquisition
+path participates in Tokio's cooperative budget so an always-ready custom
+receiver cannot monopolize the host while budget-aware timers/tasks yield.
+When nothing is ready the receiving futures register notifications and park.
+Selection loss preserves the original facts and tasks. A child fact already
+transferred out of observation remains owned by the existing control FIFO.
+Complete action settlement and retirement keep their existing causal order.
+
+Communication owns control priority and user aging. The standard local
+environment selects its existing aging cap of one: during ordinary receiving,
+a waiting user follows at most one control. Combined with outer rotation,
+each continuously ready mailbox lane gets service within six ordinary
+acquisitions. A child termination’s delivery also waits for its finite prefix
+of earlier control entries; later controls cannot overtake it. Source settlement still admits only controls
+and local results. These bounds do not establish individual worker CPU shares.
+Long folds and awaited commitment still delay later turns;
+independent workers and explicit admission/expiry policy address those distinct
+problems. Research, proof assumptions and regressions are in the
+[event fairness PRD](prds/event-fairness.md).
+
 ## One runtime, two halves
 
 An executable Bombay actor is the composition of exactly two kinds of value:
@@ -169,6 +204,9 @@ origin. Its receiver returns the complete `User` so reply provenance is not
 discarded. Closure precedes terminal publication, and stale exact recipients
 reject without retargeting.
 
+An exact-recipient `ApplicationSender::try_send` delegates the same synchronous
+admission contract, preserving its allocated identity and complete Full/Closed
+command. Stable Entity senders retain asynchronous resolution and hydration.
 Application-owned service code can use `ExternalActor::try_send` for one exact
 `EstablishedRecipient` without waiting for mailbox capacity. Communication's
 existing `TrySendError` returns the original message as Full or Closed; closure

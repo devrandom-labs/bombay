@@ -828,3 +828,103 @@ scheduling parameter or new caller structural bound is added. Control selectors
 are private service entitlements needed by the policy; no actor lifecycle state
 or transition authority is duplicated. Review found the fairness terminal oracle
 partial; resolve that during consumption migration, with a second review.
+
+
+Concrete sender gap exposed by new main consumer: fairness requires synchronous,
+nonwaiting admissions before the actor can run. The existing Application.sender
+wrapper only exposes async send; switching to it gives E0599 for try_send
+(LATEST-FAIRNESS-CAPACITY-DEBUG). Awaiting admission can yield and invalidate the
+fully-preloaded independent fairness witness. Reopen the owner instead of hiding
+interface/external/type ceremony in the new test.
+
+Pre-edit sender law: deliberate API composition of the existing local admission
+contract. An ApplicationSender bound to an exact EstablishedRecipient may attempt
+one command synchronously, using its original identity, with complete original
+Full/Closed command return and unchanged accepted prefix. Stable Entity resolution
+may await; do not add nonwaiting delivery there. Desired syntax:
+`application.sender()?.try_send(command)` and `.sender_to(recipient)?.try_send(command)`.
+Reuse ExternalActor.try_send, actual endpoint/Communication TrySendError and sealed
+existing exact-recipient capability; no new trait, bound on the general sender,
+policy, type or dependency. One specialized inherent method, expected owner
+interface.rs net15–25 lines. Focused RED before production: existing fairness
+preload plus application_clients full→one dequeue→exact original retry→prefix→
+Closed ownership test. Two real protocols (Flood, MailLedger); no wrapper actor
+semantic or initialization/lifecycle policy changes. Model control sums,
+subordinate states, branches and storage remain unchanged. Record static
+capability denial, independent review and both profiles before retention.
+
+Sender refinement: the focused test closes admission with two accepted commands
+still queued, then recovers that ordered prefix and every original allocation;
+Full/retry/Closed remain separate exact values. It also inspects every normal
+root retirement lane and both notifications. EntityRef<D> with a valid existing
+ExternalTarget capability is rejected specifically for absent try_send (E0599),
+not an unrelated bound. All seven existing client denials remain unchanged; the
+new eighth denial's generation passes. Two independent reviews approve the
+actual method and tests, including non-Debug commands and possible wrong-origin,
+reordered-prefix, destructive-close and reconstructed-payload counterexamples.
+Owner production+17/-0, one method, zero type/trait/dependency/state/storage or
+semantic branch changes (BOUND-SENDER-CHECKPOINT). This is new capability syntax,
+not a claimed source reduction. Current combined debug and optimized corpora each pass360 tests, including336
+owner tests, six capacity tests,12 client tests and the cold/node/fairness witnesses.
+The current-source MSRV debug corpus also passes all360 tests and all nine client/shutdown diagnostic fixtures. MSRV optimized/native, session-loan fixtures and full gates remain required. Both independent ownership inversions now fail for their intended laws in debug/release, and all four restored controls pass (LATEST-OWNERSHIP-INVERSES). Final workspace all-feature/all-target strict Clippy and the isolated protected-transport fixture strict Clippy pass (LATEST-WORKSPACE-CLIPPY-RETAINED, LATEST-NATIVE-CLIPPY).
+
+Combined SDK1.10.9 native corpus passes65 tests per profile, including the added
+hosted-child isolation witness; one existing subprocess-only test is separately
+executed by all ten controlled TLS campaigns. Their64 cases and160 role processes
+pass with actual compiler-artifact executable hashes and372 frozen source files
+unchanged (LATEST-TLS-VERIFIED and per-campaign receipts). Do not infer a networking
+feature-complete claim from these preserved extension witnesses. The current
+source remains an uncommitted latest-main merge until remaining checks finish.
+Complete tracked/untracked reconciliation is LATEST-MERGE-DELTA:28 paths, no
+untracked files, imported source including embedded tests +951/-96, separate
+tests +922/-5, and documents/manifests/gates +1642/-69 at that snapshot. These
+include upstream work; custom production is only +17/-0, with zero public types
+added or removed. Custom test-fixture adaptations and complete custody assertions
+remain test source. LATEST-MERGE-CHECKPOINT and BOUND-SENDER-CHECKPOINT retain
+the control-state, owned-value, provenance and residue disposition; final gates
+remain open.
+
+User correction2026-10-14: ordinary remote actor usage must hide Session and
+communicate through typed recipients. The present Node.run_with callback is an
+advanced native-SDK join, not the finished ordinary remote actor API. Keep that
+extension port explicit in guidance. A Session-free facade with no actual typed
+remote delivery would conceal missing integration; do not add it as a cosmetic
+wrapper. Typed exports/permission/admission remain the separately deferred remote
+programme, carrying this ordinary-use requirement. Ordinary local Application
+callbacks remain inferred and SDK-free.
+
+Final strict lint finds the strengthened fairness journey now110 lines. Retain
+its complete independent ownership oracle and scope too_many_lines expectation
+to that single integrated trace; add no test wrapper/state or weakened assertion
+merely to satisfy the line metric. Rerun strict gates rather than omit custody.
+
+User ownership clarification: the user will implement the ordinary remote API
+and merge it into main; this programme will integrate that delivered source and
+improve its caller experience afterward. Keep the current SDK adapter as advanced
+access. No competing remote-delivery implementation is selected here; continue
+the selected local programme and required combined-source verification.
+
+Remote extension design clarified by user: callers explicitly choose local or
+remote hosting/recipients. Local actors require no Session or transport codec;
+a remote runtime adapter owns SDK access while Behavior remains the same pure,
+typed Actions contract. Keep that hosting distinction explicit in capabilities,
+with no second actor algebra or transport requirement imposed on local protocols.
+The user owns delivery of this separate remote work to main.
+
+Session-loan diagnostics: the original MSRV snapshot fails only on closure
+description (LATEST-NODE-BORROWING-MSRV). A named, independently valid borrowing
+callback replaces that closure; the same callback is accepted by raw execute_with
+and rejected by joined run_with at its independent Output bound. The raw
+compile-pass control, both denials and existing real borrowed-result journey
+retain distinct evidence. Two independent reviews approve the paired fixtures;
+a static-result candidate was rejected because it would fail even through raw
+execution. LATEST-NODE-LOAN-REVIEW retains both reviews and byte-exact comparison;
+LATEST-NODE-LOAN-PROVENANCE preserves the pre-edit record. Final paired current/MSRV replays pass all three fixtures. The first current
+paired run reports two unexpected successes during concurrent disk exhaustion;
+its raw log remains a failure, with no passing credit. After freeing inactive
+owned cache, the same current test binary passes in the pinned Nix environment.
+Selected trybuild ignores Cargo exit status when no matching JSON diagnostic is
+parsed, so the infrastructure cause is plausible but not independently proven.
+No production signature or capability changes. MSRV native debug also passes65
+tests with its one existing controlled-subprocess ignore; optimized MSRV and all
+final repository gates remain required.

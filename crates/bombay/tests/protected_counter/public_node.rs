@@ -820,3 +820,6 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
         absent_host,
     ));
 }
+
+#[path = "hosting.rs"]
+mod hosting;
