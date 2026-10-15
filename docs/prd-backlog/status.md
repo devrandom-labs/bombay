@@ -119,17 +119,19 @@ The public transport privacy gate now has three compiler counterexamples:
 all compile through Bombay inference, so its expected-denial test intentionally
 fails. Passing scoped CI on PR373/PR374 cannot waive that current defect.
 
-The capacity-only prerequisite is in owning Communication PR13, based on24ad2b9.
+The capacity-only prerequisite merged through owning Communication PR13 as
+39fd717e after all five checks and scoped reviews passed. Its reviewed head,
+tested merge and actual main trees match exactly, based on24ad2b9.
 Twenty-one native controls and four bounded models pass in both profiles;
 the removed-original custody and pinning compatibility regressions retain their
 actual intended failures. The supported normal-waker contract keeps arbitrary
 foreign-callback sibling progress explicitly unsupported, with the original
 failed broader tests preserved. Measured workload regressions are accepted and
-recorded, not a speedup. Updated owning CI remains required: an earlier Linux
-allocation failure exposed process-wide counter isolation, and the existing
-Nextest runner plus separate doctests is being verified without weakening the
-zero-allocation bound. No new release/version or Bombay
-adoption is selected. Existing Full-only caller-triggered retries retain their
+recorded, not a speedup. Updated Linux CI passes package78/workspace101 with
+the unchanged zero-allocation assertions, using existing Nextest process
+isolation and separate doctests. The earlier allocation failure's exact source
+remains unattributed. Publication and Bombay
+adoption remain required. Existing Full-only caller-triggered retries retain their
 narrower scope; the automatic capacity-wait/fresh-permission witness is open.
 
 ## Historical prerequisite checkpoints

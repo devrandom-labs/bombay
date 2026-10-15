@@ -27994,3 +27994,31 @@ older historical qualifications carry. The independent main-based PR376 remains
 its own five-path contribution; duplicating source in its worktree does not
 reset this record or establish a second delivery. Its debug/release transport
 jobs, CodeQL and Cargo Deny now pass, required Nix remains live.
+
+### Owning capacity contribution — reviewed merge recorded
+
+Communication [PR13](https://github.com/devrandom-labs/bombay-communication/pull/13)
+merged at2026-10-15T21:35:29Z as39fd717e8de5a37c236f0b209c1eeed22b0fac60,
+through the normal PR squash operation with exact-head match0c193c28. Main was
+still24ad2b9 before merge; GitHub reports no branch rules/review requests. All
+five submitted checks pass. Independent actual raw Linux review confirms both
+PR38810160479 and push38810154545 succeed on attempt1 with package78/78,
+native21, workspace101/101, both unchanged zero-allocation cases, zero skipped,
+and actual doc0. Cargo Deny and both CodeQL checks pass. No blind retry, bound
+change, admin merge or direct push to main is used.
+
+PR checkoutf1d4a5d7ffb4ee79192c82cde4739f4508e4e819 is GitHub's synthetic
+merge of0c193c28 into24ad2b9. Its authoritative Git tree, reviewed source head
+and actual squash merge all equal917e812c3f54c5bc1d2d94447a4cfa248fa1d112.
+This proves the reviewed/tested source reached main rather than relying only
+on a green status. Raw logs8acdc745/0eb6fd89 and independent review retain the
+actual checks, count and custody limits. Older allocation1 and failed broader
+foreign-panic fanout proofs remain preserved/unattributed or unsupported as
+recorded; merging cannot transform them into passing proof.
+
+Final owning scope is six paths: production+129/-25/net104; verification
++994/-5/net989; Nix tooling+5/-0; docs+151/-0; public API+1 type/+1 method,
+no Cargo dependency/lock changes. This marks only that owning prerequisite
+merged. Publication, Bombay graph adoption, actual fresh-permission capacity
+integration and every full R01–R25/AUTH1/NET1 witness remain open. The entire
+goal stays active, and PR376's separate required Nix job is still running.
