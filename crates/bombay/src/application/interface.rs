@@ -1337,18 +1337,8 @@ mod tests {
             .as_ref()
             .err()
             .expect("the owned root retains its native reply-allocation refusal");
-        let cause = match error {
-            ExportError::Endpoint { cause } => cause,
-            ExportError::UnownedTarget => panic!("the genuine root remains associated"),
-            ExportError::NodeAbsent
-            | ExportError::SessionClosed
-            | ExportError::QueryCapacity
-            | ExportError::Storage { .. }
-            | ExportError::Declaration { .. }
-            | ExportError::Conflict
-            | ExportError::RetentionCapacity => {
-                panic!("native reply allocation retains its exact endpoint cause")
-            }
+        let ExportError::Endpoint { cause } = error else {
+            panic!("native reply allocation retains its exact endpoint cause");
         };
         let ExternalActorError::Allocation(rejection) = cause;
         let source = StdError::source(error).expect("the actual native cause is chained");
