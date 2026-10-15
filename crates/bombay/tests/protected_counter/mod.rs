@@ -7,8 +7,7 @@
 #[cfg(test)]
 use alloc_count::AllocCounter;
 use bombay::behavior::{
-    Behavior, BehaviorSettlements, ClassifySettlement, Here, Ingress, MessageProtocol,
-    SettlementStatus,
+    Behavior, BehaviorSettlements, Here, Ingress, MessageProtocol, SettlementStatus,
 };
 use bombay::prelude::*;
 use bombay::{
@@ -52,43 +51,15 @@ mod protected;
 mod counter;
 use counter::{Counter, CounterMessage, CounterProcessed, CounterSends, CounterValue};
 
+mod requester;
+use requester::*;
+
+mod custody;
+use custody::completed_actor;
+
 struct CounterRequest {
     protected: Box<[u8]>,
     proof: Box<[u8]>,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterOperation {
-    Increment,
-    Read,
-    Stop,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Binding {
-    deployment: &'static str,
-    caller: &'static str,
-    controller: &'static str,
-    actor: &'static str,
-    host: &'static str,
-    protocol: &'static str,
-    runtime_generation: u64,
-    actor_generation: u64,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Identity {
-    binding: Binding,
-    sequence: u64,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Scope {
-    identity: Identity,
-    operation: CounterOperation,
-    grant_issuer: &'static str,
-    authority_generation: u64,
-}
-#[derive(Clone, Copy)]
-enum Permission {
-    Granted,
-    Revoked,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg(test)]
@@ -205,23 +176,6 @@ impl fmt::Debug for VerificationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, formatter)
     }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterRefusal {
-    Invalid,
-    Stale,
-    Unavailable,
-    Binding,
-    Grant,
-    Conflict,
-    RetentionFull,
-    Revoked,
-    Expired,
-    Count,
-    IndividualBytes,
-    TotalBytes,
-    Accounting,
-    Exhausted,
 }
 // Trusted finite authority survives the actual local Application executions.
 // It proves only this explicit profile contract; no cold restart durability.
@@ -370,21 +324,6 @@ struct CounterAuthorization<R> {
     retained: Vec<CounterReplayRecord>,
     reserved_bytes: usize,
     next_correlation: Option<u64>,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterStatus {
-    IncrementAdmitted,
-    ReadAdmitted,
-    StopAccepted,
-    StopRejected(ShutdownRejection),
-    PossiblyAdmitted,
-    Closed,
-    Refused(CounterRefusal),
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct CounterReport {
-    correlation: u64,
-    status: CounterStatus,
 }
 // Full products never become actor messages; only the outside caller consumes.
 struct CounterAdmission<R> {
@@ -835,56 +774,6 @@ impl CounterProofProfile {
         match self {
             Self::RecordedTest => "counter-record-test-v1",
             Self::ScheduledTest => "counter-scheduled-test-v1",
-        }
-    }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterProofPurpose {
-    Request,
-    Refused,
-    MailboxAdmitted,
-    IncrementProcessed,
-    ReadReply,
-    StopAccepted,
-    RetirementReport,
-}
-impl CounterProofPurpose {
-    fn name(self) -> &'static str {
-        match self {
-            Self::Request => "request",
-            Self::Refused => "refused",
-            Self::MailboxAdmitted => "mailbox_admitted",
-            Self::IncrementProcessed => "increment_processed",
-            Self::ReadReply => "read_reply",
-            Self::StopAccepted => "stop_accepted",
-            Self::RetirementReport => "retirement_report",
-        }
-    }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterProtectedMeaning {
-    Request,
-    Refused(CounterRefusal),
-    IncrementAdmitted,
-    ReadAdmitted,
-    IncrementProcessed,
-    ReadReply(u64),
-    StopAccepted,
-    RetirementReport {
-        retirement: RetirementAssessment,
-        failures: ActorFailureAssessment,
-    },
-}
-impl CounterProtectedMeaning {
-    fn purpose(self) -> CounterProofPurpose {
-        match self {
-            Self::Request => CounterProofPurpose::Request,
-            Self::Refused(_) => CounterProofPurpose::Refused,
-            Self::IncrementAdmitted | Self::ReadAdmitted => CounterProofPurpose::MailboxAdmitted,
-            Self::IncrementProcessed => CounterProofPurpose::IncrementProcessed,
-            Self::ReadReply(_) => CounterProofPurpose::ReadReply,
-            Self::StopAccepted => CounterProofPurpose::StopAccepted,
-            Self::RetirementReport { .. } => CounterProofPurpose::RetirementReport,
         }
     }
 }
@@ -1598,334 +1487,10 @@ mod scheduled_provider {
     }
 }
 
-enum CounterServiceInput {
-    Verify(u64),
-    #[cfg(test)]
-    ReportConsumed(u64),
-    #[cfg(test)]
-    ReadObserved {
-        correlation: u64,
-        value: u64,
-    },
-    ProtectedConsumed {
-        correlation: u64,
-        purpose: CounterProofPurpose,
-    },
-}
-type CounterRequests = MessageProtocol<MailAddr, CounterServiceInput>;
-enum CounterRequesterMessage {
-    BeginProtected {
-        correlation: u64,
-        scope: Scope,
-    },
-    ProtectedReply {
-        correlation: u64,
-        scope: Scope,
-        meaning: CounterProtectedMeaning,
-    },
-    #[cfg(test)]
-    Begin(u64),
-    #[cfg(test)]
-    VerificationCompleted(CounterReport),
-    #[cfg(test)]
-    ReadObserved {
-        correlation: u64,
-        value: u64,
-    },
-}
-enum CounterRequesterState {
-    Protected {
-        correlation: u64,
-        scope: Scope,
-        receipts: Vec<CounterProtectedMeaning>,
-    },
-    Ready,
-    #[cfg(test)]
-    Verifying(u64),
-    #[cfg(test)]
-    WaitingRead(CounterReport),
-    #[cfg(test)]
-    Complete {
-        report: CounterReport,
-        observation: Option<u64>,
-    },
-}
-#[derive(thiserror::Error)]
-enum CounterRequesterError {
-    #[error("unexpected {kind}", kind = match .0.as_ref() {
-        CounterRequesterMessage::BeginProtected { .. } => "protected verification trigger",
-        CounterRequesterMessage::ProtectedReply { .. } => "protected completion",
-        #[cfg(test)]
-        CounterRequesterMessage::Begin(_) => "verification trigger",
-        #[cfg(test)]
-        CounterRequesterMessage::VerificationCompleted(_) => "verification completion",
-        #[cfg(test)]
-        CounterRequesterMessage::ReadObserved { .. } => "Counter snapshot",
-    })]
-    UnexpectedMessage(Box<CounterRequesterMessage>),
-}
-impl fmt::Debug for CounterRequesterError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "CounterRequesterError({self})")
-    }
-}
-struct CounterRequester {
-    service: EstablishedRecipient<CounterRequests>,
-    #[cfg(test)]
-    counter: EstablishedRecipient<Counter>,
-    #[cfg(test)]
-    replies: EstablishedRecipient<CounterValue>,
-    state: CounterRequesterState,
-}
-#[bombay::actor(
-    sends = {
-        verification: Vec<EstablishedDelivery<CounterRequests>>,
-        reads: Vec<EstablishedDelivery<Counter>>,
-    },
-    error = CounterRequesterError,
-)]
-impl CounterRequester {
-    fn receive(&mut self, message: CounterRequesterMessage) -> BehaviorActed<Self> {
-        match message {
-            CounterRequesterMessage::BeginProtected { correlation, scope } => {
-                if !matches!(self.state, CounterRequesterState::Ready) {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::BeginProtected { correlation, scope },
-                    )));
-                }
-                self.state = CounterRequesterState::Protected {
-                    correlation,
-                    scope,
-                    receipts: Vec::new(),
-                };
-                Ok(Actions::cont().send_verification(EstablishedDelivery::new(
-                    self.service.clone(),
-                    CounterServiceInput::Verify(correlation),
-                )))
-            }
-            CounterRequesterMessage::ProtectedReply {
-                correlation,
-                scope,
-                meaning,
-            } => {
-                let CounterRequesterState::Protected {
-                    correlation: expected,
-                    scope: captured,
-                    receipts,
-                } = &mut self.state
-                else {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::ProtectedReply {
-                            correlation,
-                            scope,
-                            meaning,
-                        },
-                    )));
-                };
-                let compatible = matches!(
-                    (scope.operation, meaning),
-                    (_, CounterProtectedMeaning::Refused(_))
-                        | (
-                            CounterOperation::Increment,
-                            CounterProtectedMeaning::IncrementAdmitted
-                                | CounterProtectedMeaning::IncrementProcessed,
-                        )
-                        | (
-                            CounterOperation::Read,
-                            CounterProtectedMeaning::ReadAdmitted
-                                | CounterProtectedMeaning::ReadReply(_),
-                        )
-                        | (
-                            CounterOperation::Stop,
-                            CounterProtectedMeaning::StopAccepted
-                                | CounterProtectedMeaning::RetirementReport { .. },
-                        )
-                );
-                let contradicted = receipts.iter().any(|prior| {
-                    matches!(
-                        (prior, meaning),
-                        (CounterProtectedMeaning::Refused(_), _)
-                            | (_, CounterProtectedMeaning::Refused(_))
-                    )
-                });
-                if *expected != correlation
-                    || *captured != scope
-                    || !compatible
-                    || contradicted
-                    || receipts
-                        .iter()
-                        .any(|prior| prior.purpose() == meaning.purpose())
-                {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::ProtectedReply {
-                            correlation,
-                            scope,
-                            meaning,
-                        },
-                    )));
-                }
-                receipts.push(meaning);
-                Ok(Actions::cont().send_verification(EstablishedDelivery::new(
-                    self.service.clone(),
-                    CounterServiceInput::ProtectedConsumed {
-                        correlation,
-                        purpose: meaning.purpose(),
-                    },
-                )))
-            }
-            #[cfg(test)]
-            admission => self.receive_admission_report(admission),
-        }
-    }
-}
-#[cfg(test)]
-impl CounterRequester {
-    fn receive_admission_report(
-        &mut self,
-        message: CounterRequesterMessage,
-    ) -> BehaviorActed<Self> {
-        match message {
-            CounterRequesterMessage::Begin(correlation) => {
-                if !matches!(self.state, CounterRequesterState::Ready) {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::Begin(correlation),
-                    )));
-                }
-                self.state = CounterRequesterState::Verifying(correlation);
-                Ok(Actions::cont().send_verification(EstablishedDelivery::new(
-                    self.service.clone(),
-                    CounterServiceInput::Verify(correlation),
-                )))
-            }
-            CounterRequesterMessage::VerificationCompleted(report) => {
-                if !matches!(self.state, CounterRequesterState::Verifying(expected) if expected == report.correlation)
-                {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::VerificationCompleted(report),
-                    )));
-                }
-                self.state = match report.status {
-                    CounterStatus::IncrementAdmitted | CounterStatus::ReadAdmitted => {
-                        CounterRequesterState::WaitingRead(report)
-                    }
-                    CounterStatus::StopAccepted | CounterStatus::StopRejected(_) => {
-                        CounterRequesterState::Complete {
-                            report,
-                            observation: None,
-                        }
-                    }
-                    CounterStatus::PossiblyAdmitted
-                    | CounterStatus::Closed
-                    | CounterStatus::Refused(_) => CounterRequesterState::Complete {
-                        report,
-                        observation: None,
-                    },
-                };
-                let actions = Actions::cont().send_verification(EstablishedDelivery::new(
-                    self.service.clone(),
-                    CounterServiceInput::ReportConsumed(report.correlation),
-                ));
-                match report.status {
-                    // Read is an independent native snapshot, never an Increment acknowledgement.
-                    CounterStatus::IncrementAdmitted => {
-                        Ok(actions.send_reads(EstablishedDelivery::new(
-                            self.counter.clone(),
-                            CounterMessage::Read(self.replies.clone()),
-                        )))
-                    }
-                    CounterStatus::ReadAdmitted
-                    | CounterStatus::StopAccepted
-                    | CounterStatus::StopRejected(_)
-                    | CounterStatus::PossiblyAdmitted
-                    | CounterStatus::Closed
-                    | CounterStatus::Refused(_) => Ok(actions),
-                }
-            }
-            CounterRequesterMessage::ReadObserved { correlation, value } => {
-                let prior = replace(&mut self.state, CounterRequesterState::Ready);
-                match prior {
-                    CounterRequesterState::WaitingRead(report)
-                        if report.correlation == correlation =>
-                    {
-                        self.state = CounterRequesterState::Complete {
-                            report,
-                            observation: Some(value),
-                        };
-                        Ok(Actions::cont().send_verification(EstablishedDelivery::new(
-                            self.service.clone(),
-                            CounterServiceInput::ReadObserved { correlation, value },
-                        )))
-                    }
-                    retained => {
-                        self.state = retained;
-                        Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                            CounterRequesterMessage::ReadObserved { correlation, value },
-                        )))
-                    }
-                }
-            }
-            message => Err(CounterRequesterError::UnexpectedMessage(Box::new(message))),
-        }
-    }
-}
 #[cfg(test)]
 fn complete_counter(report: CounterReport) -> CounterRequesterMessage {
     CounterRequesterMessage::VerificationCompleted(report)
 }
-// Actual native custody, not a reduced shadow outcome. Every native field is inspected.
-fn completed_actor<B>(origin: RootOrigin<B>, retirement: ActorRetirement<B, Never, Vec<Never>>) -> B
-where
-    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    B::Settlements: ClassifySettlement,
-{
-    let ActorRetirement::Completed {
-        custody:
-            ActorCustody {
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                behavior,
-                control,
-                user,
-                descendants,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-            },
-        settlements,
-        completion,
-        interpretation,
-        source,
-    } = retirement
-    else {
-        panic!("actual native actor failed; no clean result is synthesized");
-    };
-    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(child_failures.as_slice(), []);
-    assert!(capability_failures.is_empty());
-    assert!(unread_owner_cancellation.is_none());
-    assert!(interpretation.is_none());
-    assert!(source.is_none());
-    assert!(additional_failures.is_empty());
-    assert!(received_interpretation.is_none());
-    assert!(received_source.is_none());
-    assert!(source_index.is_none());
-    assert!(acquired_ingress.is_none());
-    assert!(retirement_failures.is_empty());
-    assert!(terminal_report.is_none());
-    let assessment = settlements.settlement_status();
-    assert_eq!(assessment, SettlementStatus::Accepted);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-    assert_eq!(descendants.as_slice(), [] as [Never; 0]);
-    assert_eq!(completion, Completion::Stopped);
-    behavior
-}
-
 #[cfg(test)]
 fn assert_cancelled_actor<B>(
     origin: RootOrigin<B>,
@@ -9798,7 +9363,3 @@ mod provider_receipt_custody {
 
 #[cfg(all(test, feature = "protected-transport"))]
 mod public_node;
-
-#[cfg(all(test, feature = "protected-transport"))]
-#[path = "live_requester.rs"]
-mod live_requester;

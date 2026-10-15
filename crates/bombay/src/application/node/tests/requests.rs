@@ -220,7 +220,8 @@ mod scheduled {
 }
 
 fn configuration(address: &str, role: &EndpointRole) -> Config {
-    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("certificates");
+    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
     let (listen, connect, certificate, key, certificate_owner, key_owner) = match role {
         EndpointRole::Receiver => (
             vec![address],
@@ -292,6 +293,10 @@ fn limits() -> json::Limits {
         parser_states: NonZeroUsize::new(16).unwrap(),
     }
 }
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "preserve the original fixture's borrowed validation signature during owner relocation"
+)]
 fn current_scope(
     scope: &ProofScope,
     current: &Metadata,
@@ -334,6 +339,10 @@ fn logical_scope() -> Scope {
     clippy::too_many_lines,
     reason = "one causal trace preserves actual Actions, protected originals, both Nodes and complete native custody through the final requester-state oracle"
 )]
+#[expect(
+    clippy::similar_names,
+    reason = "retain distinct native receiver/received values and receipt projection/reply protection in the original trace"
+)]
 async fn live_read<Receipt>(
     profile: ProviderProfile,
     provider: impl AsyncFn(
@@ -353,7 +362,9 @@ async fn live_read<Receipt>(
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("explicit receiver Node startup"));
-    let (execution, receiving) = receiver.execute_with(|receiver, receiver_session| async move {
+    let receiver_connection = receiver.session.clone();
+    let receiver_session = &receiver_connection;
+    let (execution, receiving) = receiver.execute_with(|receiver| async move {
         let target = receiver.root().established_recipient();
         let target_address = receiver.root().address();
         let mut counter = receiver.export_client::<_, CounterValue>(target.clone())
@@ -379,7 +390,9 @@ async fn live_read<Receipt>(
             .unwrap_or_else(|_| panic!("explicit caller Node startup"));
         let service_requests = &mut requests;
         let query_receiving = &mut queries;
-        let (caller_execution, caller_receiving) = caller.execute_with(|caller, caller_session| async move {
+        let caller_connection = caller.session.clone();
+        let caller_session = &caller_connection;
+        let (caller_execution, caller_receiving) = caller.execute_with(|caller| async move {
             let requester = caller.root().established_recipient();
             let requester_address = caller.root().address();
             let command = caller.export_client::<_, CounterRequests>(requester)
@@ -519,7 +532,7 @@ async fn live_read<Receipt>(
         let stopped = receiver.request_shutdown();
         let report = receiver.lifecycle().retirement().await;
         (read, caller_native, caller_notifications, caller_cleanup, caller_closed, undeclared,
-            remaining_queries, requests, legacy_values, publications, primed, stopped, report, target_address, scope)
+            remaining_queries, requests, legacy_values, publications, primed, stopped, report, target_address, scope, caller_connection)
     }).unwrap_or_else(|_| panic!("receiver Work host entry"));
     let ((), outcome) = tokio::join!(execution, receiving);
     let (outcome, receiver_native, receiver_notifications, ()) = outcome.into_parts();
@@ -543,6 +556,7 @@ async fn live_read<Receipt>(
         receiver_report,
         target_address,
         configured_scope,
+        caller_connection,
     ) = output;
     let (
         current,
@@ -581,6 +595,8 @@ async fn live_read<Receipt>(
     ) = read;
     // All actual Work/native/notification/Queryable/Session cleanup is acquired
     // before observing the domain outcome. Original Query/Reply tuples remain here.
+    assert!(receiver_connection.is_closed());
+    assert!(caller_connection.is_closed());
     assert!(receiver_cleanup.is_ok() && caller_cleanup.is_ok());
     assert!(receiver_closed.is_ok() && caller_closed.is_ok() && undeclared.is_ok());
     for notifications in [&caller_notifications, &receiver_notifications] {

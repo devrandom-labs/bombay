@@ -170,7 +170,10 @@
                 RUSTDOCFLAGS = "--deny warnings";
               };
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery
+                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1
+                cat "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';
@@ -180,7 +183,12 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery";
+              buildPhaseCargoCommand = ''
+                cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-release.log" 2>&1
+                cat "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-release.log"
+              '';
             }
           );
           bombay-fmt = craneLib.cargoFmt commonArgs;
@@ -334,15 +342,6 @@
                 done
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter remote_counter::native_ -- --test-threads=1
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter remote_counter::native_ -- --test-threads=1
-                for profile in debug release; do
-                  profile_arguments=()
-                  if [[ "$profile" == release ]]; then profile_arguments+=(--release); fi
-                  cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter "''${profile_arguments[@]}" live_requester:: > "requester-$profile.log" 2>&1
-                  cat "requester-$profile.log"
-                  grep -F 'test live_requester::recorded_live_requester_stores_checked_read_reply ... ok' "requester-$profile.log"
-                  grep -F 'test live_requester::scheduled_live_requester_stores_checked_read_reply ... ok' "requester-$profile.log"
-                  grep -F 'test result: ok. 2 passed; 0 failed; 0 ignored;' "requester-$profile.log"
-                done
                 cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check
                 cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --test protected_counter -- --deny warnings
                 cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter -- --deny warnings

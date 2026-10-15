@@ -111,8 +111,7 @@ fn same_address_foreign_child_keeps_its_owning_application() {
             .unwrap_or_else(|_| panic!("actual ordinary B execution"));
         let (output_a, cleanup_a, native_a, notifications_a, received_b) = {
             let (execution_a, receiving_a) = node
-                .execute_with(move |application, session| async move {
-                    let runtime_scope = session.zid();
+                .execute_with(move |application| async move {
                     let export = exports_a
                         .send(
                             &application.root().established_recipient(),
@@ -165,7 +164,6 @@ fn same_address_foreign_child_keeps_its_owning_application() {
                     let advanced = advance.send(());
                     let stopped = application.request_shutdown();
                     (
-                        runtime_scope,
                         export,
                         published,
                         root_address,
@@ -201,7 +199,6 @@ fn same_address_foreign_child_keeps_its_owning_application() {
         };
         let closed = node.close().await;
         let (
-            _runtime_scope,
             export_a,
             published_a,
             root_address_a,
@@ -470,8 +467,7 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
             .unwrap_or_else(|_| panic!("actual ordinary B execution"));
         let (output_a, cleanup_a, native_a, notifications_a, received_b) = {
             let (execution_a, receiving_a) = node
-                .execute_with(move |application, session| async move {
-                    let runtime_scope = session.zid();
+                .execute_with(move |application| async move {
                     let export = exports_a
                         .send(
                             &application.root().established_recipient(),
@@ -521,7 +517,6 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
                     let advanced = advance.send(());
                     let stopped = application.request_shutdown();
                     (
-                        runtime_scope,
                         export,
                         published,
                         root_address,
@@ -558,7 +553,6 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
         };
         let closed = node.close().await;
         let (
-            _runtime_scope,
             export_a,
             published_a,
             root_address_a,

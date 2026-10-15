@@ -2607,3 +2607,129 @@ are not additional executions. Both evidence reviews pass. This is one repaired
 gate; the earlier full-flake result remains23/1, with no24-check rerun or credit
 for the newer actor-only candidate. NODE-INTEGRATED-PROTECTED-FORMAT-NIX binds
 the actual command, source maps and raw log hash.
+
+Protected-requester ownership, pre-edit DX01/20/23/25: the isolated consumer
+still fails20 diagnostics, primarily the removed two-argument callbacks with
+inference fallout (NODE-PROTECTED-CALLBACKS-PRE-EDIT-RED). Reuse the proven Node
+test ownership: actual SDK query/reply work moves under private Node tests,
+with the same receiver/caller connections captured before actor-only Work.
+No SDK accessor, alternate callback, dummy export, new session, dependency or
+feature marker is allowed. Preserve every native effect/original/receipt and
+complete requester/receiver retirement observation before further migration.
+
+Share the existing Requester actor and its finite protocol from one test source,
+plus the original complete owned-retirement oracle. Parent scope needs those
+plain fields, variants and the actor's existing generated send product at the
+same test-parent visibility. Do not change the actor transition bodies or
+protocol equations. The isolated root's global allocator and53 base cases stay
+isolated; do not import that whole root into library tests. The Requester keeps
+its original five states/five inputs/four service alternatives/one error;
+meaning8/status7/refusal14/purpose7/operation3/permission2 also stay unchanged.
+Node fields, Driver7/settlement3/action2/terminal24 and all runtime branches,
+modules and public spellings remain unchanged. Expected runtime/API delta0;
+two shared test modules replace their inline source and the native test moves.
+Cross-check actual Node/Export/Requester, complete owned retirement and the
+finite provider scope; first prove both real provider modes before adopting
+the remaining external public/hosting callers. Gate selectors must follow the
+owning library's already-remote test gate, without widening the isolated vendor.
+
+Extraction checkpoint: both focused private journeys pass current/minimum debug.
+The13 original pure-test calls invoke the facade's existing inherent hook,
+including its measured allocation behavior. The facade inserts MailAddr into
+that hook (macros/lib.rs193–200); Behavior owns transition, not receive. Initial
+private-hook E0624 vetoes and a rejected UFCS assumption (E0782) remain in raw
+receipts, without acceptance credit. Preserve the hook's existing test-owner
+access with pub(super), just like the extracted plain fields and Sends. This is
+confined to test parents, with no external/runtime capability or new operation;
+keep its body and original13 calls unchanged. A lifecycle wrapper would change
+the measured operation; include! would disperse dependency ownership. Independent
+source review confirms this bounded ownership decision. Remove only the root
+settlement import now owned by the extracted oracle, then repeat both profiles.
+
+The bounded extraction passes the exact original53 isolated tests plus both
+private native Requester journeys in current/minimum debug/optimized profiles
+(220 executions,617 frozen source hashes per compiler). Independent name audit
+compares the isolated set with the original gate, deduplicating its printed
+line echo. This proves the actor-only adoption, with the previously identified
+close-observation ordering limitation still requiring correction.
+
+Retained observer correction, pre-edit: move the same captured caller connection
+through the existing receiver Work product, then inspect both connections only
+after query undeclaration/drain, both native retirements/notifications and outer
+close have been acquired. Preserve the original operation order and owned values;
+introduce no status flag, replacement handle, wrapper or runtime API. Both source
+reviews identify and accept this acquire-before-observe correction. A temporary
+owning Node::close omission must fail the final observer, then byte-exact owner
+restoration must pass; do not infer a separate caller-site inversion.
+
+Remaining protected ordinary callers, mechanical adoption: retain the original
+six public Node tests and both hosting journeys. The first public test's SDK-ZID
+borrow observation is explicitly superseded by a caller-owned borrowed Cell:
+entry observes0; permission release resumes the same Work and changes that
+original owner to1. Retain the pending-wait observation, all original payload
+allocation/refusal/permission checks, actual reply0 and complete retirement.
+Existing current paired borrow tests already prove this actor-only contract.
+Remove only unused Session callback parameters elsewhere. Hosting's two SDK IDs
+were discarded without assertions; remove that unused product plumbing, keeping
+all foreign/hosted recipient, original payload and independent retirement checks.
+No new annotation, bound, callback family or production type is allowed.
+
+Move the exact nonempty Requester gate selections to the existing remote library
+debug/release gates, which already run those owners. Keep all isolated base,
+public, hosting and native Query gate commands intact. Do not expand isolated
+vendor inputs or dependencies. Runtime state/branches/public surface remain0;
+new test ownership contributes two shared modules, without nested authority.
+
+Lint adoption checkpoint: the owning package adds pedantic checks absent from the
+isolated crate. Six style diagnostics concern existing domain names and the
+existing borrowed validation signature. Both independent source reviews accept
+function-local expectations only: live_read preserves native receiver/received
+values and projection/protection distinctions; current_scope preserves the
+original finite fixture's borrowed signature. It is not a JSON callback port.
+No name, body, argument, effect or runtime/API shape changes. Initial strict lint
+failure remains recorded. Renew final source/profile checks after these metadata
+edits; the earlier617-source matrix and close inverses retain their byte scope.
+
+Final metadata matrix limitation: minimum1.96 completes all rows, but current1.99
+optimized protected run parks in the missing-host retry test after65 other passes
+and one existing ignore. After252.881 seconds and a native process sample, that
+specific test process is terminated (SIGTERM/exit101); the run is failed, never
+waived by its same-binary isolated pass. All617 source hashes match the completed
+minimum matrix before termination. The sample locates the second block_on but
+cannot select execution, receiving or connection-close await. Preserve the raw
+failure/sample and investigate with temporary test-driver tracing around those
+existing awaits. No fold effect, synchronization, timeout policy, test
+serialization, automatic retry or production API is justified by this evidence.
+Tracing changes only diagnostics and must be byte-exact restored; successful
+traced runs cannot explain away the original hang or establish final acceptance.
+
+Handoff disposition: preserve this coherent actor-only consumer migration as a
+reviewable DevX milestone, while the selected programme and final gates remain
+open. Current/minimum debug/optimized pre-metadata matrix passes272 actual
+executions plus four existing ignores with617 frozen sources; exact final
+metadata source passes minimum both profiles and current debug, while the
+current optimized protected suite remains the explicit252.881-second failed
+hang described above. Its private Requester pair passes optimized. Strict
+all-feature/all-target bombay-rs lint, both isolated lint configurations, both
+formatting checks, four callback compile fixtures (one pass/three denials) and
+five Node runtime cases pass. Two independent source/evidence reviews preserve
+all original actions and ownership checks. Actual close omission fails both
+Requester modes in debug/optimized; byte-exact restoration passes. A detached
+Cell counterexample fails the independent caller-owner assertion; restoration
+passes. No separate caller-close inverse or stronger settlement/receiver-state
+oracle is claimed.
+
+All temporary tracing is removed byte-exact; diagnostic original/traced binaries
+and source/build/sample hashes remain outside the repository. Bounded diagnostic
+trials do not resolve the original hang and receive no acceptance credit. Source
+scan retains actor-only business callbacks and intentional compile denials.
+Runtime production/public API delta0 for this batch; test source +1285/-1236/net49,
+two shared test modules and one native-module move. Requester5/input5/service4,
+Node fields, Driver7/settlement3/action2/terminal24 and their owned current values
+remain unchanged; no new runtime branch/state, history, repeated cause, false
+cardinality, nested authority, semantic boolean or structural caller path.
+Cross-check Node/Export, actual facade hook, complete retirement and finite
+provider laws with DX01/20/23/25. Disposition: retain the mechanical migration
+for review; final integrated acceptance is open because of the unresolved hang.
+Raw configuration/export Query custody, automatic timer ownership and remaining
+selected criteria are not closed. No full24-gate result is claimed for this head.
