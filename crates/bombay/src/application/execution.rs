@@ -2063,9 +2063,9 @@ mod startup {
 
     #[test]
     #[expect(
-        clippy::result_large_err,
+        clippy::borrowed_box,
         clippy::too_many_lines,
-        reason = "preserve original cold inputs, original panic and independently observed acquired-owner custody in one trace"
+        reason = "startup borrows the original boxed cold Application; retain its owners, panic and custody in one trace"
     )]
     fn ready_startup_owner_is_released_when_its_producer_disposal_panics() {
         let observations = {

@@ -26041,3 +26041,34 @@ Relative to329, the kernel contribution remains exactly four paths, production
 +10/-4/net6, verification+193/-0/net193, public types+0/-0. Against current
 c249 main the temporary stacked diff also includes the eleven-path separately
 reviewed dependency contribution; cumulative accounting is not reset.
+
+
+Fresh combined699 local verification completes all five commands. Workspace
+all-feature tests pass760/0/1 across86 pre-doc sections and4/0/3 across five
+documentation sections; owning optimized library334/0/0, formatting and full
+all-feature workspace build pass. Strict all-target/all-feature Clippy returns
+101 for two owning-test diagnostics: intentional &Box<Application> and an
+unfulfilled result_large_err expectation. Production and dependencies have no
+diagnostic. Preserve the actual failure, rather than claiming all five pass.
+
+Before correction, retain exactly the selected boxed cold-owner law: the
+existing kernel calls AsyncFnOnce(&Inputs), with Inputs=Box<Application>.
+Its actual borrow is &Box<Application>; unboxing changes the regression and
+&T does not match this existing contract. Replace only the unused expectation
+with a narrowly documented borrowed_box expectation on this one test. Keep
+too_many_lines, all original types, operations and assertions. Independent
+source review accepts this style exception. No new type, bound, wrapper,
+dependency or production-line change. Re-run strict Clippy on the correction;
+new-head required CI remains separate from old699 runtime evidence.
+
+
+Corrected source9308f768 changes exactly two lint-attribute lines; kernel and
+every test-body byte remain identical to699/d6cb. Independent two-pass review
+confirms the selected existing boxed-input law. Fresh pinned strict workspace
+all-target/all-feature Clippy completes0 in10.52s(log5435cf91); fresh format
+check completes0. Runtime/build results remain explicitly attributed to699,
+with functional body identity recorded instead of pretending they reran. New
+head CI will verify its actual combined source; no old-head gate is reused.
+Complete scope remains four paths relative329, production+10/-4/net6,
+verification+193/-0/net193, public types+0/-0; annotation correction adds no
+production or public surface. Required CI and both actual merges remain open.
