@@ -12,7 +12,7 @@ contracts, not native transport objects. The separate remote-counter application
 demonstrate the ordinary boundary; tests carry assertions and fault campaigns.
 
 Current source `9747c90e` does not satisfy this requirement: Node owns and opens
-the Session, but `Node::execute` passes `&Session` to work, startup accepts the
+the Session, but `Node::execute_with` passes `&Session` to work, startup accepts the
 raw SDK Config, and the low-level Export exposes native query custody. These
 are prerequisite interfaces, not proof of the finished Application experience.
 Audit and minimize the complete public surface before declaring full delivery;
@@ -78,6 +78,21 @@ record tables preserve the old two-record profile. A real SessionLocal Node
 comparison may investigate current ownership, but cannot endorse the leaking
 public API or claim two-node/TLS/security delivery. Final shipping consumers
 must use the fully private transport boundary above.
+
+Comparison checkpoint before further authoring: the first uncompiled test draft
+has 486 retained additions, exceeding the 300-line estimate. Its author reports
+244 initial lines, approximately 11 corrective introductions and 387 formatter
+additions: at least 642 known introductions, not an exact complete-history bound.
+No execution is credited. Before continuing, select a bounded 600 retained /
+1200 historical test-line allowance and 18000 cumulative verification/tooling
+lines; prior counts, 115 software slots, production 1100 and public types 10
+carry. Preserve the oversized source/patch digest before revision. First compare
+an ordinary returned move closure that holds observations until outer native,
+notification and Node cleanup, removing the duplicate Work tuple/destructuring.
+Use an explicit finite record array where it removes repeated construction.
+Do not weaken custody, pending-operation, replay or independent domain oracles
+to meet a size estimate. This remains test-only ownership research; any fixed
+fixture authority earns no fresh/revocable-permission or shipping-service credit.
 
 ## Current delivery (2026-10-15 UTC)
 
