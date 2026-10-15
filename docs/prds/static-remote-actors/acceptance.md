@@ -22,7 +22,9 @@ It separately verifies capacity readiness and exact custody. Its version-only
 release PR14 merged963067e0 after all five checks passed. Actual registry,
 archive and tag verification passes. The coordinator selects0.1.6 with every
 other package retained and348 library/38 Application cases passing per profile;
-independent main-based adoption PR377 still needs its own checks/CI/merge.
+independent main-based adoption PR377 is ready after its eight actual checks
+and independent source/execution reviews pass. Main controls are333 library,
+36 Application and70/0/1 protected-counter per profile. Required CI/merge remain.
 Actual Application integration remains required.
 Main-based provider PR376 now passes all eight local pinned commands and
 independent review atfc85ec10, with focused6 and full74/0/1 in both profiles.

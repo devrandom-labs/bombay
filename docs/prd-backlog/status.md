@@ -133,7 +133,10 @@ isolation and separate doctests. The earlier allocation failure's exact source
 remains unattributed. Release PR14 merged963067e0 with all five checks passing;
 registry/archive/tag verification passes for published0.1.6. The coordinator
 selects that package alone and348 library/38 Application cases pass per profile.
-Independent main-based adoption PR377 is draft pending its own checks/CI/merge.
+Independent main-based adoption PR377 is ready after all eight actual local
+checks and both independent source/execution reviews pass; required CI/merge
+remain pending. Actual main controls are333 library/36 Application and70/0/1
+protected-counter per profile, distinct from coordinator348/38.
 Existing Full-only caller-triggered retries retain their
 narrower scope; the automatic capacity-wait/fresh-permission witness is open.
 

@@ -28150,3 +28150,65 @@ only language syntax. No actor, network or provider law executes, and the named
 generic example has no independent production eligibility. Real acquired-result
 custody through startup-producer disposal, staging failure and final cleanup
 must remain in the focused ownership regression before retaining production.
+
+### Acquired connection handoff — selected private integration
+
+Under standing recommendation delegation, select one private prepared product
+for the existing kernel. It holds the existing work publication, installed
+families and (remote-only) optional Connection; successful preparation transfers
+all three into the existing root/family cleanup composition. Remove the kernel's
+premature connection argument. Ordinary local, HTTP and Entity preparation have
+no connection; the existing preopened test invocation captures its connection
+in its current preparation closure. No public Application API is selected here.
+
+The product owns a genuine preparation invariant: resources actually acquired
+during cold startup survive into runtime cleanup independently of caller Work.
+It adds no event interpreter or lifecycle owner. The old two-element return
+cannot carry that third acquired owner, cfg tuple syntax was vetoed, and a
+shared mutable slot would add coordination instead of transferring ownership.
+This deletes the premature kernel argument at current call sites; named fields
+group coexisting owners rather than hiding a structural user path. Actual local,
+HTTP and Entity consumers retain their unchanged absence/presence semantics.
+
+Before production, add an application-owned kernel regression using the real
+Counter and a test-only pure Network constructor from its existing owner.
+Open the actual connection in borrowed startup, independently hand its actual
+close receiving future to the test, park, then resume that same acquisition.
+Prepared Work records its actual private session association, performs Counter
+increment/read and awaits root retirement while Work remains parked. Release
+Work and acquire original work/native/two-notification/close/cleanup results
+before assertions. Omitting only the prepared Connection must deterministically
+record no Work session and fail that oracle after cleanup; a finite close-Pending
+snapshot alone is insufficient as an inversion. An unpolled control must retain
+original boxed cold inputs and invoke startup zero times.
+
+Expected production: existing execution.rs and http.rs, at most120 net lines,
+one private product, public types+0/-0, dependencies/locks+0/-0. Verification:
+application/mod.rs test declaration, new application/tests.rs and at most10
+test-only fixture/re-export lines in the current connection/remote owners;
+at most450 retained/1000 authored test lines plus80 inversion lines. Existing
+preopened controls remain. Record/review twice before executing, run debug and
+optimized controls and the precise omission cut, restore, then affected existing
+local/HTTP/Entity tests. All source changes remain on the coordinator branch.
+The known combined production window1440 plus this ceiling stays within1600;
+14 public additions/20000 verification/115 software slots and historical gaps
+carry. This is capability growth, not code reduction.
+
+Independent review identifies a separate remaining cut: the kernel currently
+binds startup output after disposing its producer. This stage's independent
+close-receiver publication is test instrumentation; it does not solve shipping
+acquired-output preservation if that producer's disposal panics. Do not erase
+that obligation or close full R18/public privacy/service acceptance here.
+
+### Main-based adoption — reviewed readiness
+
+PR377 is now ready for review at unchanged d9b955c6. All eight actual main-based
+pinned commands pass: library333 and application_clients36 in each profile;
+protected-counter70/0/1 in each; both formatting and strict all-target Clippy
+checks. The sole ignored case still requires its controlled TLS fixture.
+Execution74e0145a and inventory42bffd8d bind27 unchanged guarded inputs; actual
+main locks remain44b9daf8/8090a793. The early message quoting coordinator lock
+hashes is corrected explicitly: every actual command used the proper main tree.
+Independent execution review90e732bd and source/graph reviewff344969 both pass.
+The clean main-based source contains no private coordinator changes. Required
+current-head CI is still running, so no merge/full remote credit is given.
