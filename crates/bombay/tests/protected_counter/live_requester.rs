@@ -122,6 +122,48 @@ fn registered(
     }
     Ok((claims, *scope))
 }
+fn request_proof(
+    bytes: &[u8],
+    configured: &Metadata,
+    scope: Scope,
+    records: &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    profile: ProviderProfile,
+) -> Result<Box<[u8]>, VerificationError> {
+    let declared: ReadRequest =
+        serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+    let binding = scope.identity.binding;
+    if declared.bombay != *configured
+        || configured.provider_profile.as_ref() != profile.name()
+        || declared.kind != Purpose::Request
+        || declared.operation != CounterOperation::Read
+        || configured.deployment.as_ref() != binding.deployment
+        || configured.caller.as_ref() != binding.caller
+        || configured.controller.as_ref() != binding.controller
+        || configured.actor.as_ref() != binding.actor
+        || configured.host.as_ref() != binding.host
+        || configured.protocol.as_ref() != binding.protocol
+        || configured.actor_generation != binding.actor_generation
+        || configured.grant_issuer.as_ref() != scope.grant_issuer
+        || configured.authority_generation != scope.authority_generation
+        || configured.request_sequence != scope.identity.sequence
+        || scope.operation != NativeOperation::Read
+    {
+        return Err(VerificationError::Invalid);
+    }
+    let mut records = records.borrow_mut();
+    if records.len() >= 2 {
+        return Err(VerificationError::ProofCapacity);
+    }
+    let proof = Box::<[u8]>::from([7, 11]);
+    records.push((
+        scope,
+        ProtectedMessage {
+            protected: bytes.into(),
+            proof: proof.clone(),
+        },
+    ));
+    Ok(proof)
+}
 mod recorded {
     use super::*;
     pub(super) struct Receipt {
@@ -130,6 +172,20 @@ mod recorded {
     }
     pub(super) fn projection(receipt: &Receipt) -> (&ProofScope, Scope) {
         (&receipt.claims, receipt.logical)
+    }
+    pub(super) fn protect_request(
+        bytes: &[u8],
+        configured: &Metadata,
+        scope: Scope,
+        records: &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    ) -> Ready<Result<Box<[u8]>, VerificationError>> {
+        ready(request_proof(
+            bytes,
+            configured,
+            scope,
+            records,
+            ProviderProfile::Recorded,
+        ))
     }
     pub(super) fn protect(
         bytes: &[u8],
@@ -183,6 +239,26 @@ mod scheduled {
     }
     pub(super) fn proof(receipt: &Receipt) -> &[u8] {
         &receipt.original_proof
+    }
+    pub(super) async fn protect_request(
+        bytes: &[u8],
+        configured: &Metadata,
+        scope: Scope,
+        records: &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    ) -> Result<Box<[u8]>, VerificationError> {
+        let (published, received) = oneshot::channel();
+        let result = request_proof(
+            bytes,
+            configured,
+            scope,
+            records,
+            ProviderProfile::Scheduled,
+        );
+        let transfer = published.send(result);
+        match transfer {
+            Ok(()) => received.await.map_err(VerificationError::Unavailable)?,
+            Err(original) => original,
+        }
     }
     pub(super) async fn protect(
         bytes: &[u8],
@@ -359,6 +435,12 @@ fn logical_scope() -> Scope {
 )]
 async fn live_read<Receipt>(
     profile: ProviderProfile,
+    request_protector: impl AsyncFn(
+        &[u8],
+        &Metadata,
+        Scope,
+        &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    ) -> Result<Box<[u8]>, VerificationError>,
     provider: impl AsyncFn(
         &ProtectedMessage,
         &RefCell<Vec<(Scope, ProtectedMessage)>>,
@@ -415,13 +497,9 @@ async fn live_read<Receipt>(
             // Explicit finite provider assignment: the legacy logical Scope and
             // complete SDK declarations coexist. No cast/hash maps ZID into Scope,
             // and transport identity is not the logical binding/replay namespace.
-            let request_bytes = serde_json::to_vec(&ReadRequestRef { bombay: &current,
-                kind: Purpose::Request, operation: CounterOperation::Read }).unwrap();
-            let mut records = Vec::with_capacity(2);
-            records.push((scope, ProtectedMessage { protected: request_bytes.clone().into_boxed_slice(), proof: Box::from([7, 11]) }));
-            let records = RefCell::new(records);
-            let original = ProtectedMessage { protected: request_bytes.into_boxed_slice(), proof: Box::from([7, 11]) };
-            let original_allocations = (original.protected.as_ptr(), original.proof.as_ptr());
+            let records = RefCell::new(Vec::with_capacity(2));
+            let initial_records = records.borrow().len();
+            let protection_calls = Cell::new(0);
             let begun = command.try_send(CounterRequesterMessage::BeginProtected { correlation: 23, scope });
             let (replies, mut receiving_reply) = mpsc::channel(2);
             let reply_capacity = Arc::new(Semaphore::new(2));
@@ -431,8 +509,27 @@ async fn live_read<Receipt>(
             // credit. No native Query is issued until the real Actions trigger.
             let trigger = if begun.is_ok() { Some(timeout(Duration::from_secs(3), service_requests.receive()).await) }
                 else { None };
+            let mut original = None;
+            let mut original_allocations = None;
+            if matches!(&trigger, Some(Ok(Some(User { message: CounterServiceInput::Verify(23), .. })))) {
+                let request_bytes = serde_json::to_vec(&ReadRequestRef { bombay: &current,
+                    kind: Purpose::Request, operation: CounterOperation::Read }).unwrap().into_boxed_slice();
+                let mut protection = None;
+                verify(&request_bytes, &mut protection, |bytes| {
+                    protection_calls.set(protection_calls.get() + 1);
+                    request_protector(bytes, &current, scope, &records)
+                }).await;
+                original = Some(match protection.unwrap() {
+                    Ok(proof) => {
+                        let message = ProtectedMessage { protected: request_bytes, proof };
+                        original_allocations = Some((message.protected.as_ptr(), message.proof.as_ptr()));
+                        Ok(message)
+                    }
+                    Err(cause) => Err((request_bytes, cause)),
+                });
+            }
             let mut wire_reply = None;
-            let issued = if matches!(&trigger, Some(Ok(Some(User { message: CounterServiceInput::Verify(23), .. })))) {
+            let issued = if let Some(Ok(original)) = &original {
                 Some(caller_session.get("bombay/live/read").consolidation(ConsolidationMode::None)
                     .timeout(Duration::from_secs(3)).payload(original.protected.to_vec()).attachment(original.proof.to_vec())
                     .callback(move |reply| {
@@ -526,7 +623,7 @@ async fn live_read<Receipt>(
             }} else { None };
             let stopped = caller.request_shutdown();
             let report = caller.lifecycle().retirement().await;
-            (current, original, original_allocations, begun, trigger, issued, query,
+            (current, original, original_allocations, initial_records, protection_calls.into_inner(), begun, trigger, issued, query,
                 received_request, request_shape, request_declaration, request_verification, request_scope,
                 admitted, native_reply, produced_reply, protection, reply_publication, wire_reply, received_reply, reply_shape,
                 reply_declaration, reply_verification, reply_scope, delivered, acknowledged, additional_reply,
@@ -570,6 +667,8 @@ async fn live_read<Receipt>(
         current,
         original,
         original_allocations,
+        initial_records,
+        protection_calls,
         begun,
         trigger,
         issued,
@@ -618,6 +717,16 @@ async fn live_read<Receipt>(
     let requester = completed_actor(origin, retirement).into_inner();
     let (origin, retirement) = receiver_native.unwrap();
     let receiver_actor = completed_actor(origin, retirement);
+    // This delivery oracle remains finite when the obsolete constant proof is
+    // substituted: peer refusal sends a native error, and no ACK is awaited.
+    assert!(
+        matches!(&delivered, Some(Ok(()))),
+        "actor-issued request protection must enable checked reply delivery"
+    );
+    assert_eq!(initial_records, 0);
+    assert_eq!(protection_calls, 1);
+    let original = original.as_ref().unwrap().as_ref().unwrap();
+    let original_allocations = original_allocations.unwrap();
     assert!(primed.is_ok() && begun.is_ok() && caller_stopped.is_ok() && receiver_stopped.is_ok());
     assert!(matches!(&issued, Some(Ok(()))));
     assert_eq!(target_address, MailAddr::APPLICATION_ROOT);
@@ -758,6 +867,88 @@ fn assert_receipt<Receipt>(
     }
 }
 
+async fn request_protection_refusals(
+    profile: ProviderProfile,
+    protect: impl AsyncFn(
+        &[u8],
+        &Metadata,
+        Scope,
+        &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    ) -> Result<Box<[u8]>, VerificationError>,
+) {
+    let configured = metadata(profile, "caller-session".into(), "receiver-session".into());
+    let scope = logical_scope();
+    let records = RefCell::new(Vec::with_capacity(2));
+    let mut caller = metadata(profile, "caller-session".into(), "receiver-session".into());
+    caller.caller = "foreign-caller".into();
+    let mut controller = metadata(profile, "caller-session".into(), "receiver-session".into());
+    controller.controller = "foreign-controller".into();
+    let mut wrong_profile = metadata(profile, "caller-session".into(), "receiver-session".into());
+    wrong_profile.provider_profile = "unconfigured-provider".into();
+    let mut foreign_scope = scope;
+    foreign_scope.identity.binding.actor = "foreign-actor";
+    let mut other_generation = scope;
+    other_generation.identity.binding.actor_generation += 1;
+    let mut refusals = Vec::new();
+    for (claims, trusted, purpose, expected_scope) in [
+        (&caller, &configured, Purpose::Request, scope),
+        (&controller, &configured, Purpose::Request, scope),
+        (&configured, &configured, Purpose::ReadReply, scope),
+        (&wrong_profile, &wrong_profile, Purpose::Request, scope),
+        (&configured, &configured, Purpose::Request, foreign_scope),
+        (&configured, &configured, Purpose::Request, other_generation),
+    ] {
+        let bytes = serde_json::to_vec(&ReadRequestRef {
+            bombay: claims,
+            kind: purpose,
+            operation: CounterOperation::Read,
+        })
+        .unwrap();
+        let mut result = None;
+        verify(&bytes, &mut result, |bytes| {
+            protect(bytes, trusted, expected_scope, &records)
+        })
+        .await;
+        refusals.push((bytes, result, records.borrow().len()));
+    }
+    assert_eq!(refusals.len(), 6);
+    for (bytes, result, retained) in &refusals {
+        assert!(!bytes.is_empty());
+        assert!(matches!(result, Some(Err(VerificationError::Invalid))));
+        assert_eq!(
+            *retained, 0,
+            "refused declarations cannot register proof authority"
+        );
+    }
+    assert!(records.borrow().is_empty());
+}
+
+#[test]
+fn recorded_outbound_request_protection_refuses_untrusted_declarations() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(request_protection_refusals(
+            ProviderProfile::Recorded,
+            recorded::protect_request,
+        ));
+}
+
+#[test]
+fn scheduled_outbound_request_protection_refuses_untrusted_declarations() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(request_protection_refusals(
+            ProviderProfile::Scheduled,
+            scheduled::protect_request,
+        ));
+}
+
 #[test]
 fn recorded_live_requester_stores_checked_read_reply() {
     Builder::new_multi_thread()
@@ -767,6 +958,7 @@ fn recorded_live_requester_stores_checked_read_reply() {
         .unwrap()
         .block_on(live_read(
             ProviderProfile::Recorded,
+            recorded::protect_request,
             recorded::verify,
             recorded::protect,
             recorded::projection,
@@ -782,6 +974,7 @@ fn scheduled_live_requester_stores_checked_read_reply() {
         .unwrap()
         .block_on(live_read(
             ProviderProfile::Scheduled,
+            scheduled::protect_request,
             scheduled::verify,
             scheduled::protect,
             scheduled::projection,

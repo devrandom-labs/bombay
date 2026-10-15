@@ -565,6 +565,173 @@ positive observations, not separately mutation-qualified clauses. Restore
 exacte090 after each cut and finish the complete affected Counter target in
 both profiles. No test result is credited as production identity/authentication.
 
+### Outbound request protection — verified comparison checkpoint
+
+Frozen test owner e090227f adds202/removes9 lines, net193; production and public
+API are unchanged. Both final pinned fixture commands actually complete74/0/1
+in debug and optimized profiles. The ignored controlled-subprocess test remains
+separate. Four focused positive cases pass in both profiles. Replacing request
+protection with the old constant bypass fails both live delivery assertions
+after cleanup; omitting logical actor-generation validation fails both provider
+refusal assertions in both profiles. These are four actual intended negative
+commands, not compiler or timeout credit. The five other adverse declarations
+are positive refusal controls without individual mutation qualification.
+
+Fixture-target strict Clippy and exact-file formatting pass. Root library
+strict lint remains open for the unused private connection construction. Actual
+source and both locks match after restoration. The coordinator independently
+verifies the complete artifact inventory with exit0; author execution record
+5d9fb451 and inventory2b056e0e preserve all statuses and exact source versions.
+Two-pass source reviews retain their authorship distinction. Conservative229
+test introductions and the previously reserved direct-input/seal costs carry.
+This comparison uses finite test providers, not production cryptography, and
+does not close any full remote acceptance row or the public SDK privacy defect.
+
+### Application connection custody — selected before implementation
+
+Previous turn made progress: privacy gate2cd0c95 is committed/pushed and actual
+compiler counterexamples deny passing credit; decisions9dc39b0 retain the next
+native custody law. Fresh root/fixture locks remain56661c60/0b512104; selected
+Behavior/Actors0.25.0 and their complete instructions2b7a9195 are unchanged.
+The new Communication correction is not yet a published or selected dependency.
+
+The existing Application cleanup already joins the root while work runs, then
+waits for the work barrier and retires Entity families. Reuse that owner rather
+than adding a runtime, actor, registry, generic resource interpreter or service
+task hierarchy. Under standing recommendation delegation, select one private
+connection value: its actual Session and the sole close signal belong together.
+One actual Tokio close task owns the original Session and waits for that signal
+or its abandonment. It performs explicit SDK close and transfers the actual
+Result before disposing it. An independent owned receiving future first joins
+that producer, then receives its original close Result. Keep JoinError and
+receipt/close error as separate standard Results, without a new public report,
+SDK-typed public field, erased future or replacement observation primitive.
+
+This is a deliberate Application lifecycle policy. A borrowed wait never owns
+the connection or producer output. Cancelling the whole owning execution
+surrenders its work but must not stop actual cleanup. SDK Drop logging does
+not establish successful close. A task failure with a closed result channel
+must not be called network retirement. No timeout or resource default is added.
+
+Ordinary owned products suffice: the private connection pairs Session and its
+affine close signal; the actual producer/receiver form the independent owned
+receiving future. The single concrete optional connection passed into the
+existing execution kernel is genuine presence/absence, not a mandatory no-op
+callback. Add no public trait, generic resource policy, builder or forwarding
+entrypoint. This owns the distinct interval between network acquisition and
+joined Application retirement, deleting the eventual user's manual close
+sequence. A future-local Session or closing on work completion alone cannot
+preserve that interval. Existing Node and its exposed SDK callbacks remain
+unfixed until the actual service API replaces them; do not make lint pass by
+publishing this private comparison.
+
+Before production, extend the owning connection tests using the actual Counter
+and existing Application kernel: hold work after the runtime-issued root
+retirement report, prove the connection and its closing operation remain live,
+cancel only a borrowed close wait, release work, then acquire actual native/
+notification/family-barrier and close results before observing success. Also
+abandon the whole execution while work is parked and abandon it before first
+poll; retain the actual Interrupted/Unstarted outcome and original cold inputs,
+and prove close still finishes. Use real configured TLS listening and explicit
+fixture limits, not a copied lifecycle model or inferred socket disappearance.
+These are private lifetime witnesses, not a TLS handshake, service readiness,
+authenticated command exchange, Entity-family acceptance or complete R01 proof.
+
+Expected paths: remote/connection/mod.rs, a private retirement.rs and existing
+tests.rs; application/execution.rs, interface.rs, node.rs and http.rs for the
+existing constructor/kernel callers. Private execute_with_invocation accepts
+the real optional connection; ordinary/legacy callers pass absence. The kernel
+holds it through root join, work barrier and family retirement, then releases
+its close signal. Before that handoff cancellation drops the same owner. The
+live handle receives only its existing private Session field. Keep all public
+ordinary execution signatures and bounds unchanged, and retain non-Send work.
+
+Forecast at most160 introduced/net125 production lines and350 retained/800
+authored tests, no new public types/dependencies/manifests/lock. Current measured
+windows have1216 Bombay plus97 Communication net production, carrying all older
+extents. Select1600 cumulative net production (replacing1400) for this bounded
+integration;14 public additions/18000 verification/115 software slots carry.
+Owner-specific220/700/2000 allowances remain unchanged. No final public service
+API, schema, routing key, provider format or resource policy is selected here.
+
+Before formatting the284-introduction lifetime draft, select600 retained/1400
+authored connection-test lines (replacing350/800), carrying the initial draft
+and all formatter revisions. Dense raw lines must not weaken the complete
+native custody oracles to fit a forecast. Independent two-pass source review
+passes the three tests' ownership, actual non-Send Rc work, complete native
+fields and joined close-result distinctions. Correct the now-stale module
+documentation and compare concrete Vec<Never> lanes with exact empty products.
+The imported canonical Counter includes two existing tests; record those
+separately from the three new Application lifetime cases.
+
+Actual SDK1.10.9 source inspection confirms close's inherited10-second timeout
+and default wait_callbacks=false. This comparison declares no native callbacks;
+neither is_closed nor a successful SDK close proves all callbacks retired or
+selects the final production timeout/drain policy. Keep those full-resource
+prerequisites open, without enabling new SDK features in this stage. The close
+worker retains its strong Session outside the awaited builder, so disposal of
+that completed builder's WeakSession cannot destroy the Session. Transfer the
+actual close Result before dropping that final strong Session; a later worker
+failure remains a separate joined result. No boxed future is introduced by
+Bombay; the SDK's existing implementation remains its own private detail.
+
+### Capacity cost and layout — selected owning measurements
+
+The Consumer correctionf07fda17 now passes complete native15/0/0 and four
+bounded models4/0/0 in both profiles, all three intended custody cuts, explicit
+owning strict Clippy and formatting. Independent two-pass production review
+passes with authorship of the earlier characterization disclosed. Receipt31cbfded
+and all27 artifacts bind the actual source and executions. Current owner delta:
+ordinary production+122/-25/net97; verification+619/-2/net617; three paths,
+untracked0. Conservative introductions199/220 production and1738/2000
+verification carry. Close/teardown wake faults, broader gates and release stay
+open. Layout is Option<U>, potentially including discriminant/padding, rather
+than a promise that storage equals exactly size_of::<U>().
+
+Before measurement edits, select reuse of existing Criterion0.8.2 twolane.rs
+mailbox_admission/{owner_reference_1024,raw_anchor_1024} and drain_throughput_20k
+at exact base24ad2b9 and candidatef07. These measure total no-capacity-observer
+delivery cost; old producer-contention tests do not measure capacity observers.
+Add one paired candidate workload in that same owner: saturated ring, actual
+wait_for_capacity registration established Pending, actual dequeue, Available,
+and refill/rearm. Compare actual candidate with/without that observer; base
+has no observer API and cannot supply an identical observer case. No copied
+queue or replacement algorithm is eligible. Reuse the existing isolated
+mailbox_allocation test's single counter/measurement thread for warm observer
+allocation counts and actual Consumer/Option payload size and alignment for
+Box<u64> and u64. Counting allocation calls does not prove requested bytes,
+resident memory or whole-service bounds.
+
+Use the owner's pinned1.95 shell, existing isolated target and unchanged
+manifests/lock. A detached base checkout contains55 tracked paths/354396 source
+bytes, separately counted copied evidence, not55 newly authored owners. Keep
+it and the candidate intact and share the target sequentially; do not delete
+worktrees. Run paired samples with no simultaneous agent Rust compilation,
+record actual Criterion estimates/variance, and impose no invented latency
+limit. The existing default Criterion measurement policy is retained. No new
+crate or production/default/API change is selected.
+
+Forecast60–75 retained measurement lines across the existing bench/allocation
+owners within700 retained/2000 authored verification;1738 authored and619
+retained carry before edits. Stop if the actual measured delta exceeds those
+allowances. Source/time leases must be coordinated explicitly. Owning required
+Nix includes build/nextest/docs/fmt/taplo/audit/deny, not Criterion or strict
+Clippy; all broader gates and release remain separate required work.
+
+Measurement draft review catches a real fixture defect before execution:
+Config::new(1) rounds up to two slots, so a single initial value does not make
+the observer wait. Use the explicit two-slot fixture, fill both slots, retain
+actual Pending, dequeue once, acquire Available, then refill before the batch
+ends. Allocation rounds already use the actual two-slot full state. Preserve
+the original three benchmark bodies and original allocation assertions.
+
+Before formatting that correction, select a100 retained/250 authored line
+measurement forecast and750 retained/2200 authored owner verification cap
+(replacing700/2000), carrying619/1738 and all history. Production199/220 and
+global1600/14/18000/115 remain. This pays real formatting and correct full-state
+measurement rather than retaining an invalid smaller fixture. The review
+itself supplies no executed benchmark or allocation credit.
+
 ### Pending protection — ordinary Rust comparison before implementation
 
 The next law is concurrent immutable consumption of one authenticated receipt:
