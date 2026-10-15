@@ -1296,3 +1296,126 @@ native journey must also prove both wrapper orders, standard delivery, unsupport
 leaves, exact failure, interrupted/late completion and full retirement; the
 external coherence probe does not replace those obligations. Expected first
 batch: one test source and this record, zero production changes.
+
+Construction RED: pinned1.99 compilation of application_services fails solely
+with E0599 at with_interpreter; all existing request, product and wrapper types
+compile. Both independent reviews accept only this construction scope: a method
+that dropped Services could satisfy it. It supplies no runtime acceptance.
+
+Graph ownership decision before lowering: the application owns a constructor,
+not one interpreter instance that must somehow move into several actors.
+Canonical syntax becomes with_interpreter(|| Services). Each applicable actor
+receives one owned instance before its initialization effects; it retains that
+instance through interpretation and disposes it only after the existing complete
+native retirement. Root, ordinary/fresh/cold children and Entity must use the
+same construction policy; do not silently deliver a root-only port. Only
+construction authority is shared; Fn + Sync does not imply immutable captured
+state. Each actor owns its returned instance, which requires neither
+Clone nor Sync; independent backing resources remain the constructor’s policy.
+Host refusal returns the original Application and callable;
+accepted/rejected/pending request/result custody stays in the existing action
+and source products. No service-instance-return API is promised by this policy.
+Constructor panic and instance-destructor panic must follow the existing native
+failure/retirement paths without losing independently acquired lanes.
+
+Reuse Fn()->Service and the existing native receiving-loan traits. A compiler-only
+probe confirms a local factory equation for ordinary absence () can coexist with
+the Fn()->Service implementation. The external route must additionally require
+the actual Fn constructor and exact request::Interpreter equality, so ordinary
+applications gain no user request capability through the absence value. This
+probe is not native execution evidence. Expected production responsibilities:
+one public request-owner trait, one Application constructor method, an inferred
+constructor parameter on the same Application spine, and private per-actor
+instance/constructor ownership at the existing capabilities. No new actor engine,
+public marker, fallback, effect language, service Clone bound or no-op input.
+Before production, extend the failing witness to express a genuinely pending
+owned request and the complete smallest native journey. Before retention, prove
+root/child instance separation, both wrapper orders and ordinary absence denial. Exact
+affected owners and measured delta must be recorded with that retained patch.
+
+Memory falsifier in the disposable factory probe: storing Arc<()> for ordinary
+absence grows the local interpreter product128 versus120 bytes. That candidate
+is not retained. The factory equation must preserve a zero-sized shared value
+and instance for absence; supplied constructors alone own shared construction
+authority. This permits independent, non-Clone, non-Sync service instances while
+avoiding an ordinary-actor pointer/allocation for an unused extension. The new
+associated shared representation is justified by this measured memory law, not
+by a compiler diagnostic. Native allocation/layout evidence remains required.
+
+
+Factory ownership probe (DX15), scoped result: the standalone actor-services
+workspace executes actual File acquisition, environment lookup and the existing
+TimerQueue with two separately owned, non-Clone/non-Sync service instances.
+Three tests pass on pinned current1.99/MSRV1.96 in debug/release. Four corresponding
+absence-denial builds fail specifically because () is not a callable constructor,
+with the real request and service implementation otherwise available. The eight
+commands, compiler identities and unchanged source hashes are retained in
+SERVICE-FACTORY-MATRIX.json. The measured absent-service product now equals the
+native120-byte timer product; the earlier128-byte Arc<()> candidate remains a
+recorded falsifier. This is object layout in the standalone probe, not native
+Application heap or execution evidence. Both independent reviews pass only this
+scope. Request prepare/finish, replay, source delivery, constructor timing,
+pending cancellation, native root/child/cold/Entity ownership, host refusal and
+complete retirement remain open. No production symbols or bounds are retained
+from this probe. Ordinary callers never supply the private () absence value.
+
+Next native witness, before production: preserve actual File/String receipts and
+complete original OS rejections through the existing source and retirement
+products. Emit accepted requests in both initialization lanes, then rejected requests
+in the actual timer’s stopping transition; a lawful rejection must not skip a
+later lane. The Driver rejects initialization settlements on any rejection,
+so that startup failure is a separate witness rather than claimed as normal
+completion. Separately suspend a file request before
+consumption, drop its interpretation future, and resume the same receiving loan:
+accepted prefix, pending original request, untouched suffix and exact late result
+must survive. Model no new aggregate phase or actor engine. Reuse existing
+InterpretationProgress::{Original,Interpreting,Completed}, ItemSettlement,
+prepare_item/finish_item and the selected native retirement products. Production
+remains unchanged until the complete native failing journey exists.
+
+
+Receiving-loan verification: three source-backed service_custody tests execute
+real File/environment acquisition, cancellation of a pending interpretation,
+resumption, completed replay and closed-permission rejection. Both File offsets
+are advanced before resumption/replay, detecting receipt replacement. Exact
+request bytes, allocations, permission variant and Notify identity are checked.
+All three tests pass on current1.99/MSRV1.96 debug/release; two actual premature
+consumption inversions fail at the intended pending-request assertion and both
+restored controls pass. Focused warning-denied Clippy passes. Its suggested
+async-fn rewrite fails with Event/Path E0309; explicit existing receiving-loan
+future signatures remain, with a narrow documented lint expectation and no new
+lifetime bounds. Raw failure is retained, not credited as a passing build.
+
+Native application_services is an intentionally RED pre-edit witness: the
+existing missing-method receipt records two E0599; explicit associated-owner
+declarations subsequently expose two E0405. The earlier verifier expected the
+old error and rejected the new transcript; preserve that verifier failure and
+use the corrected exact-error receipt. No native semantic acceptance is claimed.
+The test specifies accepted initialization, a rejected ordinary timer Stop,
+newest-first complete action custody, native delivery and cancellation with an
+acquired File, original pending request and two independent untouched suffixes.
+Do not weaken the Driver's initialization rejection to satisfy this witness.
+
+Current batch changes zero production lines/types/traits/modules/states/branches.
+The existing control sums remain InterpretationProgress(3), Interpretation(2),
+ItemSettlement(4), SettledItem(2) and the existing complete ActorRetirement sum.
+Only the test request's FileAccess(Ready|Waiting) describes actual permission
+custody; it owns no actor transition authority. Production generic bounds,
+exports and dependencies are unchanged. The retained request loan owns the
+pending PathBuf, permission receiver and notification endpoint; its acquired
+File owns the advanced offset, and each untouched suffix owns its exact request.
+No arrival-history state, repeated cause, semantic boolean or structural caller
+syntax is added. Cross-check selected0.26 receiving/source contracts, Driver
+D-INIT-1/D-TERM-1/D-RETIRE-1 and execution-ownership. Both reviews pass for the
+request-loan proof; the native witness remains unproved. Production+0/-0/net0,
+public API types+0/-0. Complete tracked/untracked test delta and commit are
+recorded at the checkpoint below. Disposition: pass for the request-loan proof;
+no production candidate is retained and DX15/16 remain open.
+
+Checkpoint delta against616205d, including every untracked test: production
++0/-0/net0; tests+799/-0/net799 across three sources; public types+0/-0. All73
+production Rust files are byte-identical to the baseline. ActorRetirement retains
+its22 variants. Native Application witness is intentionally RED on this design
+branch; it is not merged into the passing delivery branch or credited as a
+runtime result. Request sources and exact measurements are preserved in
+SERVICES-CUSTODY-CHECKPOINT.json; no new chronological audit document is created.
