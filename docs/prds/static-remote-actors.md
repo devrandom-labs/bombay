@@ -36,6 +36,29 @@ actual main-based source before review/merge. Those checks are pending here.
 This delivers dependency adoption only: full R01–R25/AUTH1/NET1, Application
 networking and the required private transport boundary remain open.
 
+## Provider conservation delivery (2026-10-15 UTC)
+
+[Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
+mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks passed onfc85ec10, including required Nix38807714831;
+reviewed, tested and merged trees equal54451654. Independent required/native
+reviews9ce15cf1/ba0e2a35 and merge receipt095a3c42 retain actual execution and
+source attribution. Six provider cases execute per profile: two finite refusals,
+two actual two-Node TLS requester flows and two local pending-protection cases.
+Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
+adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
+privacy remain open. PR373 release and PR374 API delivery remain held.
+
+The contribution retains source07e3a096 (+702/-13 test lines), removing only
+one duplicate assertion from reviewede090227f. It preserves the original
+finite-failure and independent native actor oracles. Original main locks were
+e058fe21/2d25fab9 with Communication0.1.5; this branch's adoption intentionally
+uses44b9daf8/8090a793 with0.1.6. No old-head CI proves that combined source.
+The merge from current main carries the provider tests and explicit six-case
+Nix loop unchanged. Re-run affected checks, review the actual combined head
+and let required CI pass before this adoption PR merges. Earlier local d9b
+verification remains exact-source evidence, not a combined execution claim.
+
 ## Earlier delivery snapshot (before PR372)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required

@@ -327,6 +327,9 @@
                   cat "unhosted-$profile.log"
                   grep -F 'test public_node::hosting::unhosted_export_clients_preserve_exact_application_ownership ... ok' "unhosted-$profile.log"
                   grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "unhosted-$profile.log"
+                  cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter "''${profile_arguments[@]}" live_requester:: > "requester-$profile.log" 2>&1
+                  cat "requester-$profile.log"
+                  grep -F 'test result: ok. 6 passed; 0 failed; 0 ignored;' "requester-$profile.log"
                 done
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter remote_counter::native_ -- --test-threads=1
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter remote_counter::native_ -- --test-threads=1

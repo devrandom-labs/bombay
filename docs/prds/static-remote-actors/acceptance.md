@@ -15,6 +15,17 @@ tests and PR delivery remain pending. Capacity observation neither reserves a
 slot nor substitutes for fresh permission checks. Arbitrary foreign-waker-panic
 sibling progress is unsupported. This prerequisite closes no full row.
 
+[Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
+mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks passed onfc85ec10, including required Nix38807714831;
+reviewed, tested and merged trees equal54451654. Independent required/native
+reviews9ce15cf1/ba0e2a35 and merge receipt095a3c42 retain actual execution and
+source attribution. Six provider cases execute per profile: two finite refusals,
+two actual two-Node TLS requester flows and two local pending-protection cases.
+Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
+adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
+privacy remain open. PR373 release and PR374 API delivery remain held.
+
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
 2026-10-13T22:17:06Z after all six checks pass ondf6144f. Source trees match.
