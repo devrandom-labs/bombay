@@ -5,7 +5,7 @@ use behavior::{Behavior, BehaviorAddr, BehaviorMessage, EndpointAddress, Never, 
 use behavior_actors::{
     Deadline, DeadlineReaction, EstablishedTerminationMonitor, EstablishedTerminationReaction,
     FinalizeOnShutdown, ObserveEstablished, OneShot, Periodic, ReceiveTimeout, ShutdownReaction,
-    Stash, StashRoute, StopOnShutdown, TimedReaction, TimerId,
+    Stash, StashRoute, StaticallyInfallible, StopOnShutdown, TimedReaction, TimerId,
 };
 
 /// Discover and compose reusable wrappers from any concrete actor behavior.
@@ -18,10 +18,13 @@ pub trait ActorExt: Behavior + Sized {
     /// Stash selected messages using a pure decision over the inner behavior and message.
     ///
     /// Replay observes the inner state returned by each preceding transition.
+    /// The inner transition must be statically infallible: replay cannot undo
+    /// actions already produced by earlier messages.
     #[must_use]
     fn with_stash(self, route: fn(&Self, &BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
     where
         Self: Behavior<Ph = Never>,
+        Self::Error: StaticallyInfallible,
     {
         Stash::new(self, route)
     }

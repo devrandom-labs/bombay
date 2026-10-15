@@ -1188,3 +1188,58 @@ Limits/Error are upstream additions, no DevX types. Both original-source counter
 local capacity and typed retirement/authority laws are unchanged. Remaining:
 optimized/minimum-compiler matrix, strict lint/docs and final integrated Nix/archive
 gates; frozen2e21756 retains its own full-gate result.
+
+Stash construction, pre-edit (DX14/19): deliberate API composition policy over
+an existing derived replay law. A release may emit accepted Actions for several
+held inputs; those actions have no rollback. Existing Stash execution therefore
+requires the sealed StaticallyInfallible error capability. Bare Stash::new and
+ActorExt.with_stash currently admit fallible inner actors that cannot execute,
+release anything, expose mutable state or recover a valid inner actor. Require
+that SAME existing capability at construction, with a diagnostic at the caller's
+composition expression. Preserve Never and MachineError<A,M,Never> witnesses,
+closed phases, wrapper order and complete FIFO prefix/stop/tail custody.
+
+Before production changes, prove owning construction with its existing u8 rejection and ordinary facade
+construction with an owned Box<[u8]> rejection both unexpectedly compile. Change the
+existing owning compile-fail rustdoc so bare construction is the oracle; add a
+focused facade compile-fail fixture and retain the prior closed-phase denial.
+Only then put Error:StaticallyInfallible on the two construction methods and
+annotate the existing sealed trait with actionable diagnostic text. No broader
+struct/inspection bound, new trait/type/default/dependency or transition change.
+Reuse existing stash properties, actual worker/scope queue orders and Machine
+rollback tests. Add a compile-pass infallible Machine caller beside an ordinary
+infallible actor. Expected owner production+one trait diagnostic+one method bound;
+Bombay+one method bound; test/guidance updates together. No catalogue migration.
+
+Checkpoint before: control states unchanged (inner B plus owned FIFO queue),
+subordinate state/results0 added; the queue owns exact deferred inputs needed
+for replay/retirement. Existing StashRoute has3 alternatives, no new branch or
+module. Public type/trait/spelling count unchanged. Count exact retained deltas
+and replay tests after; scan for semantic flags/history/duplicated causes/nested
+authority/structural caller syntax. Cross-check DX14/19, Actions ownership and
+Stash statically-infallible replay documentation. Independent design review
+finds no supported non-executable storage use lost; constructor eligibility is
+the sole narrower promise. Bounded retention/overflow remains separate open work.
+
+Both pre-production REDs now fail for the intended oracle: owner rustdoc says
+construction compiled despite compile_fail; Bombay's sole new invalid-error
+fixture likewise unexpectedly succeeds, while its prior four fixtures pass.
+Preserve those original logs. Retain only the existing capability at the two
+constructors; no runtime implementation or type declaration changes.
+
+Selected-owner patch403a4f1 is based on published98983b4; the earlier0.23
+documentation-branch prototype receives no0.26 acceptance credit. Corrected
+constructor denial,44 owner tests per profile, all965 workspace tests and all
+ten Nix gates pass (305.388 seconds; frozen source hashes unchanged). The
+four-workspace/archive preflight passes; all137 packaged Rust files match.
+Paired source consumers pass invalid-error/valid-Machine checks and four
+unchanged native stash cases per current/MSRV debug/release configuration;
+this is not publication or whole-suite credit. Both independent test reviews
+and final consumer review pass. Owner production+9/-1/net8, rustdoc+1/-2,
+tests+57/-0; no new types/states/branches/modules. Bombay adds the same existing
+bound and rustdoc, one denial and one inferred Machine positive. Current
+debug/release pass10 tests and12 fixtures; strict lint/rustdoc/fmt pass. MSRV
+registry execution fails one existing worker-factory diagnostic expectation
+(three error headings use "a" instead of "an"); new stash fixtures pass.
+Keep that failure recorded. Owner review/publication, normal registry adoption,
+final consumer gates and bounded retention/overflow remain open.
