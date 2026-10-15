@@ -103,7 +103,7 @@ The Engine surface is exercised by its
 | `Completion`, `SettlementFailure` | Engine's exact Driver disposition and settlement failure sums, re-exported for terminal matching. | `Debug`, `Copy`, `Clone`, equality; `SettlementFailure` implements `Error`. |
 | `testing::InfallibleResultExt::infallible` | Deliberate test-only helper for `Result<T, Never>` or `Result<T, Infallible>`; a pure test caller extracts an inhabited success. | No panic branch; adding an inhabited error makes the call fail compilation. Absent from the ordinary prelude. |
 
-The implementation branch's JSON callers are the five public shape/limit tests
+The JSON prerequisite delivered by PR368 has five public shape/limit tests
 in remote_json.rs and two actual Node Counter/MailLedger consumers in
 application_clients/json_receiving.rs. They reuse the existing actor definitions
 and receiving owners. SessionLocal deterministic records establish neither a
@@ -124,8 +124,10 @@ sender origins through pressure, one retry and repeated closure. Its certified
 Counter consumer uses an independent existing processing receipt as a FIFO fence
 before closing/draining replies; false retry success cannot leave it waiting for
 an absent reply. Both controls pass in debug and optimized. The source reviews
-retain two rejected hanging drafts; current intended cuts and combined checks
-remain separate gates.
+retain two rejected hanging drafts. Five intended cuts reach their failures in
+both profiles, then both consumers pass on byte-exact restored source; independent
+execution review8a97b4a6 qualifies these results. Combined checks and reviewed
+delivery remain separate gates.
 
 The remote foundation's concrete caller checks are
 [public Node composition](../crates/bombay/tests/protected_counter/public_node.rs),

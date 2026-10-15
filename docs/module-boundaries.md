@@ -27,7 +27,7 @@ adds no mailbox, actor authority or transport runtime. The new private
 exported with `remote`. Existing optional Serde owns its structural codec;
 protocol products own their fields. Metadata is untrusted and format-neutral:
 object-shape, resource, profile/version, SDK, replay and permission acceptance
-remain distinct receiving obligations. The implementation branch adds public
+remain distinct receiving obligations. Reviewed PR368 delivers public
 `remote/json.rs`: its borrowed `check` uses selected json-event-parser0.2.3
 for complete outer/metadata object checks and five explicit acceptance maxima.
 It preserves native syntax causes and leaves original protected/proof buffers

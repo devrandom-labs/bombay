@@ -18,10 +18,11 @@ registry/archive checksum, annotated tag and all363 source payloads match the
 merged source, with exact SDK1.10.9 selection. Downstream Cargo still resolves its
 own graph; no fresh downstream build is claimed. The immutable0.1.1 release uses
 the older SDK1.10.8. Original native failures and HTTP uncertainty remain recorded.
-The next implementation branch adds crate-owned JSON object/limit checks and
-real Counter/Ledger Node consumers; focused controls and all eight intended
-inversions pass their stated oracles in both profiles. Main is integrated;
-combined required checks and reviewed delivery remain open.
+[JSON PR368](https://github.com/devrandom-labs/bombay/pull/368) merged792529ea
+after all six checks and scoped source/native/Nix reviews passed. It delivers
+crate-owned JSON object/limit checks and real Counter/Ledger Node consumers;
+eight intended inversions pass their stated oracles in both profiles. SessionLocal
+consumers and separate native TLS campaigns retain their distinct proof scopes.
 The dependent export-client branch adds remote-only Application certification
 for actual root, sibling and nested-child recipients before reply allocation.
 Focused ownership, closure and native-error controls, six intended inversions
@@ -30,7 +31,9 @@ reviewed PR remain pending. This
 does not supply remote publication or close any full acceptance row.
 Its existing fixed-target client now has a remote-only nonwaiting attempt;
 the two actual pressure/origin/closure consumers pass in both profiles. False
-success/classification cuts and combined-source delivery checks remain pending.
+success/classification cuts fail in both profiles (ten intended failures total);
+both consumer tests pass after exact restoration. Independent execution review
+8a97b4a6 qualifies those results. Combined-source delivery checks remain pending.
 All full R01–R25, AUTH1 and NET1 obligations remain open. Local hosted isolation
 is not arbitrary Node-owned child association, authentication or replay proof.
 PR360 was externally merged c1d5b2bd with native debug still failing;

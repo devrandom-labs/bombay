@@ -2,11 +2,15 @@
 
 ## Current delivery (2026-10-15 UTC)
 
-Fairness PR366 and hosting PR365 have merged after all required CI and scoped
-reviews passed. Both source locks now select corrected SDK 1.10.9. Release
-PR367 carries the fixture lock correction and delivery records; its fresh CI,
-merge and publication remain pending. All full R01–R25, AUTH1 and NET1 gates,
-Node-owned exports and the separate remote-counter application remain open.
+Fairness PR366, hosting PR365 and release PR367 have merged after all required
+CI and scoped reviews passed. PR367 merged81dc1448; bombay-rs0.1.2 publication
+is verified against the registry archive and merged source. Both source locks
+select corrected SDK1.10.9. JSON PR368 merged792529ea after all six CI checks
+and final source/execution reviews passed. The dependent client
+contribution passes focused ownership/admission controls and intended inversions
+in both profiles; its remaining combined checks and reviewed delivery are pending.
+All full R01–R25, AUTH1 and NET1 gates, protected Node-owned exports and the
+separate remote-counter application remain open.
 See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
 for exact commits, tests, scope and limitations. The following earlier
 checkpoints preserve their historical source and gate states.
@@ -23682,3 +23686,51 @@ these focused totals nor prior independent source review permits PR delivery.
 The four-line narrow test-length expectation updates retained tests to1230/-4/
 net1226 stage,2206/-4/net2202 including JSON; production and public types remain
 unchanged. Final census/source review still must cover the complete tree.
+
+
+Committed-source reconciliation5e4b7940 / receipt3d23deed passes for99932d12,
+tree60929afd. All16 Rust census files match their Git objects: production
++158/-1/net157, tests+1230/-4/net1226, one public type and two methods. Including
+the qualified JSON parent: production+306/-1/net305, tests+2206/-4/net2202,
+three public types and29 retained paths; three restored research paths remain
+carried against the32-path checkpoint. All22 tracked manifests, locks and Cargo
+configuration files match the stage base60f3. Exact reversal reconstructs all
+three pre-style test hashes; production is unchanged from independent reviewc439.
+Authorship exclusions remain explicit. The original current-status paragraphs
+are reconciled without changing historical failures or full acceptance states.
+
+The same combined runner now passes workspace debug707/0/4 across91 summaries,
+selected remote386/0/0 across nine targets in each profile, and isolated protected
+Counter68/0/1 in each profile. Formatting, strict default/remote all-target Clippy
+and workspace build pass. Workspace release is still compiling; Nextest and
+warning-denied remote docs follow in the same runner. None is credited before
+its actual terminal command. Current source reviews do not substitute for
+required CI or reviewed PR delivery.
+
+
+### JSON prerequisite — actual reviewed delivery, 2026-10-15 UTC
+
+[PR368](https://github.com/devrandom-labs/bombay/pull/368) merged normally at
+04:40:10Z as792529eacc0aedf265fdd4366deac953b3b76eb3, guarded against exact
+headd727b860 and base81dc1448. All six checks pass; active main rules require
+the PR and Nix check, with no bypass used. Submitted and merged trees both equal
+fb62ed55f2081daeb4cd6e69c4e6b44bc5273286. No direct main push occurred.
+
+Final required-Nix reviewd6e0f780 / receipt5891599e qualifies actual run38675054515/
+job116226729195, completed in82m23s within its unchanged90-minute budget. Remote
+42/0/0 executes in each profile, including all five JSON cases and both Node
+Counter/terminating Ledger consumers. Workspace all-targets703/0/1 and separate
+doctests4/0/3 retain their distinct commands. Each profile executes isolated
+protected55, public Node6, native counts3 and exact hosting1. Build, formatting,
+strict lint, documentation, composition and Loom gates pass. Driver2048 and
+four Observe campaigns1024 each finish; all445 uploaded fuzz payload hashes and
+official archive digests are verified. Conditional Miri is skipped.
+
+Separate final native review6667379d / receiptf02c8c2e qualifies32 protected
+cases/80 roles per profile. Ordinary research retains its four late-exit
+uncertainty groups per profile; their killed roles earn no delivery/cleanup
+credit. Neither the native campaign nor deterministic SessionLocal Node tests
+prove production identity or a complete protected remote operation. All full
+R01–R25/AUTH1/NET1 and the separate remote-counter remain open. The scoped JSON
+prerequisite alone is merged; the dependent client contribution awaits its own
+combined gates, reviewed PR and passing required CI.
