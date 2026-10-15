@@ -25928,3 +25928,155 @@ a full historical upper bound. Conservatively add three inline software-owner
 identities:101 identified plus five unresolved-history slots gives106 allocated
 against110. This adds no retained test/production/dependency/public-type lines,
 but the authored historical research and tooling remain cumulative.
+
+### Concurrent export input — selected bounded composition
+
+Fresh six-owner verificationa7b18ea8/7db5ac49 inspects current source, relevant
+tests and documentation for Behavior/Actors0.25.0, Address0.3.0,
+Communication0.1.5, private Observe and Timers0.2.0. Exact versions, selected
+760-line Behavior instructions, root locke058fe21 and absence of patches are
+rechecked. Native actor receiving remains Communication-owned; this operation
+adds no Behavior effect, local mailbox, observation publisher or lifecycle.
+
+Under the standing recommendation delegation, select one inherent Export
+operation with the proposed caller spelling
+`export.receive(&mut query, &mut completed).await`. The query slot has exactly
+the existing receive_query product; completed is Option<RequestKey<Replies>>.
+An occupied outside slot suppresses further acquisition. A native completion
+leaves the actual User or EOF in its existing request row before notifying the
+caller. This adds no public product or mutable view of retained acquisitions.
+Existing query-only and exact-request native receiving remain available.
+
+Use already locked futures-util0.3.34's FuturesUnordered with the narrow alloc
+feature, defaults disabled and the ordinary Cargo requirement ^0.3.34, as an
+optional normal dependency behind remote. Both locks retain the exact current
+package records; supported-source evidence remains version-specific rather
+than promising untested future patch behavior. Its StreamExt reexport
+avoids a separate futures-core edge. Fixed std/Tokio branches cannot hold an
+arbitrary number of row waits; temporary receive polling loses registrations.
+A handwritten scheduler or one runtime task per row has no demonstrated need.
+FuturesUnordered retains the actual borrowed child futures and registrations;
+its per-child allocation and O(N) rebuild work are explicit costs, bounded by
+the existing retained-request count. No allocation/performance improvement is
+claimed. End outstanding borrows before row mutation, then rearm before parking.
+Preserve acquired originals before every completed producer is disposed.
+
+Select native-first acquisition for this append-only owner. The source-qualified
+proof f2a7db35 relies on each eligible row acquiring once, at most N lifetime
+rows, and filtering already acquired User/EOF, Unattempted and native refusals.
+Clearing an outside completed-key slot cannot clear a private row acquisition.
+Thus a continuously ready query follows at most N genuine native acquisitions;
+native Pending/self-wake continues to the query branch in the same select poll.
+This is an acquisition bound assuming continued polling and available host
+budget, not a latency promise. Eviction, rearming or an infinite ready branch
+would reopen this policy. A stronger N-independent rotation requires additional
+entitlement state and is not selected for this finite owner.
+
+Before production edits, extend existing consumer law tests: the native-pending
+Ledger must acquire an actual local Query; after rearming the held receive, an
+actual actor producer fence must increase its registered wake count before any
+manual repoll, and the exact native result must remain retained. Compare against
+the count after the initial Pending poll, since the collection can self-wake
+during initialization. SDK source fence916a957e establishes that same-Session,
+local get().await completes its synchronous declaration callback. Acquire the
+actual Query/refusal before assertions; separately control available test-poll
+budget using Tokio's existing unconstrained wrapper. This isolates notification
+progress rather than proving executor fairness. Keep complete native cleanup
+before finite oracles and retain the earlier cancellation law. Counter also
+consumes the new operation as the second concrete protocol substitution.
+Expected pre-edit failure is the missing inherent method, with no runtime
+credit. Then require debug/optimized controls and intended query-branch and
+discarded-wait inversions, using exact native facts rather than timeout success.
+
+The isolated next contribution is independent of PR372's immutable submitted
+source; final delivery depends on that prerequisite's actual reviewed merge.
+Expected existing owners: remote/export.rs, crate Cargo.toml, root and isolated
+fixture locks, network_replay/cancellation.rs and association.rs, plus PRD/index.
+Reuse the existing native result slots and clients; move shared query/native
+acquisition bodies only to private functions or the existing Request owner.
+Expected net production at most100 lines, test introductions at most250, no
+new public types or software path. Carried production897/public8 and known
+verification14673 give prospective997/8/14923, within1100/10/15000. The known
+software allocation remains106/110. Stop and reconcile before exceeding these
+bounded stage estimates; incomplete historical accounting remains explicit.
+No schema, identity proof, resource default, capacity trigger, automatic retry,
+full service API or full R01–R25 acceptance is selected by this operation.
+
+### Concurrent input — pre-implementation test and budget checkpoint
+
+The first new consumer source compiles against the unchanged production owner
+only as far as three E0599 diagnostics for the selected missing receive method;
+the command actually exits101. It supplies static-gap evidence only. The
+subsequent empty-eligible-set/occupied-output counterexample is source-reviewed
+before implementation; it has no additional old-source compile or runtime
+credit. Do not rerun an absent-method check merely to regenerate the same
+diagnostic after clearing its build cache. Actual runtime cuts remain required.
+
+Final formatted test endpoint is231/-15/net216 across the same two owners.
+Authored history is larger:207 introductions before formatting plus54 introduced
+formatting lines gives261, above the initial250 estimate. The author stopped
+before any production/manifest/lock change and reported this difference.
+Under standing recommendation delegation, select275 historical Rust-test
+introductions for this bounded stage and raise the carried verification-tooling
+allowance15000 to15500 before production. Known finite extent is14966 before
+the final evidence seal, including32 direct shell input lines; leave explicit
+room for the required debug/optimized controls, inversions and restoration.
+Budget at most150 further direct verification/tooling lines for this stage.
+Production1100 net/stage100, public types10/stage0 and software slots110 remain;
+no history reset or complete historical upper-bound certificate is claimed.
+The expansion funds verification of this same receive law, not another feature.
+
+The Counter boundary queues a real local Query after both native row results
+are acquired. A full outside completed-key slot must suppress acquisition;
+after taking it, the query must progress with no eligible native rows. The
+actual late A tail remains available for the existing exact-drain assertion,
+so reacquiring an already acquired row is independently observable. Empty
+FuturesUnordered Ready(None) must not become a false input acquisition. The
+native-first N bound counts calls with both outside slots empty, continued
+polling/host budget and once-acquired append-only rows. It is source-qualified,
+not a measured all-N fairness or elapsed-time guarantee.
+
+Only idle session-owned compiled caches were removed for actual disk pressure:
+pinned Cargo clean removed3.2GiB dev and4.3GiB release output; two idle trybuild
+compiled-output directories removed another approximately3.5GiB after lsof
+found no holders. Source, evidence, generated diagnostic workspaces and active
+worktrees remain. No worktree was deleted. The first force-style removal command
+was rejected before execution; the bounded non-force removal succeeded. This
+resource change provides no semantic test credit. Current source implementation
+and all normal run/merge gates remain required.
+
+### Concurrent input — first implementation and causal verification
+
+The selected implementation adds72 net production lines, including the normal
+optional futures-util edge. It adds no public type or dependency package version.
+Both lock changes add only that edge to Bombay; all400 root and325 isolated
+package identities/checksums remain unchanged. The existing request owns native
+acquisition, and the concrete private query function preserves the prior channel
+acquisition law. Independent source review4fcfef18 accepts the composition; its
+fixed-collection-overhead rustdoc correction is applied before this checkpoint.
+
+Pinned offline focused controls actually execute the same three existing cases
+in debug and optimized profiles: Counter association and both Ledger provider
+substitutions,3 passed/0 failed/0 ignored each. These are extended cases, not
+three additional unique tests. Healthy source before the rustdoc correction is
+a026f486; the correction changes documentation only. The missing-method compile
+remains static-gap evidence rather than runtime inversion credit.
+
+Select the five independently reviewed causal cuts355512d4: omit only incoming
+query progress; dispose actual native waits after each Pending poll; accept an
+empty native collection as input; ignore an occupied completed-key slot; and
+rearm already acquired rows. Apply each independently from the committed healthy
+checkpoint, without modifying test oracles, through debug and optimized runs.
+The first intended post-cleanup oracle can differ across Counter and Ledger.
+Require actual assertion failures and successful compilation, then exact Git
+restoration and fresh healthy controls. No timeout or unrelated panic counts.
+Query-slot suppression remains source-reviewed, distinct from the tested
+completed-key boundary. The lifetime-N bound remains source-qualified.
+
+Read-only service/provider follow-up adds37 direct tooling input lines. It finds
+that a protector borrowing the retained receipt cannot coexist with a mutable
+whole-Export receive. That is a subsequent ordinary-Rust composition question,
+not selection of another API, trait, dependency or receipt owner. Together with
+the previously sealed38 inputs, the known pre-run finite envelope is15009;
+normal run and mutation inputs remain charged against15500 and the150 further
+direct-tooling allowance. Historical software gaps remain explicitly unproved.

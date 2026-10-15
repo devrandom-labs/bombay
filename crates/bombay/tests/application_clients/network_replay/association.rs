@@ -1,7 +1,7 @@
 //! Exact request reply-endpoint isolation and post-retirement retention.
 mod counter {
     //! A late A reply stays with A while B acquires its own actual value.
-    //! One finite Recorded provider and local native Counter; no Query or shipping identity claim.
+    //! One finite Recorded provider and raw local Query readiness; no shipping identity claim.
     use super::super::{
         Binding, Counter, CounterMessage, CounterOperation, CounterValue, EndpointRole,
     };
@@ -16,12 +16,18 @@ mod counter {
     use bombay::prelude::Application;
     use bombay::remote::{Admission, ExportLimits, IngressError, verify};
     use bombay::{ActorFailureAssessment, RetirementAssessment};
+    use core::future::Future;
+    use core::mem;
+    use core::pin::pin;
+    use core::task::{Context, Poll, Waker};
     use std::num::NonZeroUsize;
     use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
     use tokio::runtime::Builder;
     use tokio::sync::mpsc;
+    use tokio::task::unconstrained;
     use zenoh::query::Query;
+    use zenoh::sample::Locality;
 
     #[test]
     #[expect(
@@ -171,7 +177,27 @@ mod counter {
                                     },
                                 )
                                 .map(|_| ());
-                            let received_a = export.receive_native(a).await;
+                            let a_fence_reply = fence.recipient();
+                            let a_fence_sent =
+                                fence.send(CounterMessage::Read(a_fence_reply)).await;
+                            let a_fence_user = if a_fence_sent.is_ok() {
+                                fence.receive().await
+                            } else {
+                                None
+                            };
+                            let mut query = None;
+                            let mut completed = None;
+                            let received_a = {
+                                let mut receiving =
+                                    pin!(unconstrained(export.receive(&mut query, &mut completed)));
+                                match receiving
+                                    .as_mut()
+                                    .poll(&mut Context::from_waker(Waker::noop()))
+                                {
+                                    Poll::Ready(()) => Some(()),
+                                    Poll::Pending => None,
+                                }
+                            };
                             let extra_a = if let Some(reply_to) = &saved_reply {
                                 Some(sender.send(CounterMessage::Read(reply_to.clone())).await)
                             } else {
@@ -195,6 +221,29 @@ mod counter {
                                 )
                                 .map(|_| ());
                             let received_b = export.receive_native(b).await;
+                            let query_before_local = query.take();
+                            let issued_query = session
+                                .get("bombay/association/read")
+                                .allowed_destination(Locality::SessionLocal)
+                                .payload(records[0].protected.as_ref())
+                                .attachment(records[0].proof.as_ref())
+                                .await;
+                            let occupied = {
+                                let mut receiving =
+                                    pin!(unconstrained(export.receive(&mut query, &mut completed)));
+                                receiving
+                                    .as_mut()
+                                    .poll(&mut Context::from_waker(Waker::noop()))
+                            };
+                            let query_while_occupied = query.take();
+                            let completed_a = completed.take();
+                            let without_native = {
+                                let mut receiving =
+                                    pin!(unconstrained(export.receive(&mut query, &mut completed)));
+                                receiving
+                                    .as_mut()
+                                    .poll(&mut Context::from_waker(Waker::noop()))
+                            };
                             // A control-lane shutdown must not overtake the accepted B prefix.
                             let fence_reply = fence.recipient();
                             let fence_sent = fence.send(CounterMessage::Read(fence_reply)).await;
@@ -213,6 +262,18 @@ mod counter {
                                 saved_reply,
                                 fence_sent,
                                 fence_user,
+                                a_fence_sent,
+                                a_fence_user,
+                                query,
+                                completed_a,
+                                (
+                                    query_before_local,
+                                    issued_query,
+                                    occupied,
+                                    query_while_occupied,
+                                    without_native,
+                                    completed,
+                                ),
                             ))
                         } else {
                             None
@@ -239,7 +300,7 @@ mod counter {
                         export,
                         retained_a,
                         retained_b,
-                        acquired,
+                        mut acquired,
                         primed,
                         stopped,
                         report,
@@ -276,6 +337,33 @@ mod counter {
                 while let Some(original) = fence.receive().await {
                     fence_drain.push(original);
                 }
+                let (query_observation, before_count, occupied_count, query_reply) =
+                    if let Some((.., query, _, (before, issued, _, occupied, _, _))) =
+                        acquired.as_mut()
+                    {
+                        let observation = query.as_ref().map(|received| {
+                            received.as_ref().map(|(query, _)| {
+                                (
+                                    query.key_expr().as_str().to_owned(),
+                                    query.payload().map(|bytes| bytes.to_bytes().into_owned()),
+                                    query
+                                        .attachment()
+                                        .map(|bytes| bytes.to_bytes().into_owned()),
+                                )
+                            })
+                        });
+                        let before_count = before.iter().count();
+                        let occupied_count = occupied.iter().count();
+                        drop((query.take(), before.take(), occupied.take()));
+                        let reply = issued.as_ref().ok().map(|replies| replies.try_recv());
+                        (observation, before_count, occupied_count, reply)
+                    } else {
+                        (None, 0, 0, None)
+                    };
+                let unreceived_queries = query_drain.len();
+                let refused_queries = mem::take(&mut *refusals.lock().unwrap());
+                let refusal_count = refused_queries.len();
+                drop((query_drain, refused_queries));
                 drop(session);
                 let closed = node.close().await;
                 let native = native.expect("actual full native root");
@@ -285,9 +373,9 @@ mod counter {
                 assert!(primed.is_ok() && stopped.is_ok());
                 assert_eq!(report.retirement(), RetirementAssessment::Established);
                 assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
-                assert!(query_drain.is_empty());
+                assert_eq!(unreceived_queries, 0);
                 assert!(matches!(query_end, mpsc::error::TryRecvError::Disconnected));
-                assert!(refusals.lock().unwrap().is_empty());
+                assert_eq!(refusal_count, 0);
                 let (Ok((a, None)), Ok((b, None))) = (&retained_a, &retained_b) else {
                     panic!("distinct actual retained requests");
                 };
@@ -305,12 +393,29 @@ mod counter {
                     saved_reply,
                     fence_sent,
                     fence_user,
+                    a_fence_sent,
+                    a_fence_user,
+                    _,
+                    completed,
+                    (_, issued_query, occupied, _, without_native, unexpected_completion),
                 )) = acquired
                 else {
                     panic!("both actual attempts were acquired");
                 };
                 assert!(admitted_a.is_ok() && admitted_b.is_ok());
                 assert_eq!(received_a, Some(()));
+                assert_eq!(completed.as_ref(), Some(a));
+                assert_eq!(before_count, 0);
+                assert_eq!(occupied_count, 0);
+                assert!(issued_query.is_ok());
+                assert!(matches!(occupied, Poll::Ready(())));
+                assert!(matches!(without_native, Poll::Ready(())));
+                assert!(unexpected_completion.is_none());
+                assert!(a_fence_sent.is_ok());
+                let a_fence_user =
+                    a_fence_user.expect("the earlier independent fence joins A's send");
+                assert_eq!(a_fence_user.from, target_origin);
+                assert_eq!(a_fence_user.message, 1);
                 assert_eq!(received_b, Some(()));
                 assert!(matches!(&extra_a, Some(Ok(()))));
                 assert!(incremented.is_ok());
@@ -326,6 +431,12 @@ mod counter {
                 };
                 assert_eq!(first_user.from, target_origin);
                 assert_eq!(first_user.message, 1);
+                let Some(Some((key, payload, proof))) = &query_observation else {
+                    panic!("the queued Query progresses with no eligible native row");
+                };
+                assert_eq!(key, "bombay/association/read");
+                assert_eq!(payload.as_deref(), Some(first.1.as_ref()));
+                assert_eq!(proof.as_deref(), Some(first.2.as_ref()));
                 assert_eq!(second_user.from, target_origin);
                 for (row, original) in [(first, allocations[0]), (second, allocations[1])] {
                     assert_eq!((row.1.as_ptr(), row.2.as_ptr()), original);
@@ -359,6 +470,7 @@ mod counter {
                     actual_b, 2,
                     "B must acquire B's value; complete original native drain={drain_values:?}"
                 );
+                drop((issued_query, query_reply));
             });
     }
 }

@@ -9,6 +9,8 @@ use core::future::{Future, poll_fn};
 use core::mem;
 use core::pin::pin;
 use core::task::Poll;
+use futures_util::StreamExt;
+use futures_util::stream::FuturesUnordered;
 use std::collections::TryReserveError;
 use std::error::Error;
 use std::num::NonZeroUsize;
@@ -205,6 +207,36 @@ where
     native: Option<Option<User<MailAddr, Replies::Msg>>>,
 }
 
+impl<Target, Replies, Receipt> Request<Target, Replies, Receipt>
+where
+    Target: Protocol<Addr = MailAddr>,
+    Replies: Protocol<Addr = MailAddr>,
+{
+    fn awaits_reply(&self) -> bool {
+        self.native.is_none()
+            && matches!(
+                self.admission,
+                Admission::Uncertain | Admission::Returned(Ok(()))
+            )
+    }
+
+    async fn receive(&mut self)
+    where
+        Replies::Msg: Send,
+    {
+        let native = &mut self.native;
+        let mut receiving = pin!(self.client.receive());
+        poll_fn(|context| match receiving.as_mut().poll(context) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(original) => {
+                *native = Some(original);
+                Poll::Ready(())
+            }
+        })
+        .await;
+    }
+}
+
 impl<Target, Replies, Receipt> Export<Target, Replies, Receipt>
 where
     Target: Protocol<Addr = MailAddr>,
@@ -256,18 +288,54 @@ where
         &mut self,
         received: &mut Option<Option<(Query, OwnedSemaphorePermit)>>,
     ) {
-        if received.is_some() {
+        receive_query(&mut self.incoming, received).await;
+    }
+
+    /// Acquire a query or one request's native receiving result.
+    ///
+    /// Either occupied outside slot suppresses further polling. A native key
+    /// identifies an acquired User or EOF retained in its existing request row;
+    /// it does not establish protocol validity or business completion.
+    /// Actual pending native waits remain alive while this operation is parked.
+    /// Dropping this operation cancels those waits, preserving acquired rows.
+    ///
+    /// Native acquisitions take precedence. Each append-only row acquires once,
+    /// so a ready query follows at most the configured lifetime request maximum
+    /// native acquisitions, assuming continued polling and available host budget.
+    /// This is not a latency promise or mailbox-capacity notification.
+    /// The temporary future set rebuilds one child node per eligible row, plus
+    /// fixed collection overhead. Keep the Query and its count permit together.
+    pub async fn receive(
+        &mut self,
+        query: &mut Option<Option<(Query, OwnedSemaphorePermit)>>,
+        completed: &mut Option<RequestKey<Replies>>,
+    ) {
+        if query.is_some() || completed.is_some() {
             return;
         }
-        let mut receiving = pin!(self.incoming.recv());
-        poll_fn(|context| match receiving.as_mut().poll(context) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(original) => {
-                *received = Some(original);
-                Poll::Ready(())
+        let mut replies = self
+            .entries
+            .iter_mut()
+            .enumerate()
+            .filter(|(_, request)| request.awaits_reply())
+            .map(|(row, request)| {
+                let key = RequestKey {
+                    recipient: request.client.recipient(),
+                    row,
+                };
+                async move {
+                    request.receive().await;
+                    key
+                }
+            })
+            .collect::<FuturesUnordered<_>>();
+        tokio::select! {
+            biased;
+            Some(key) = replies.next(), if !replies.is_empty() => {
+                *completed = Some(key);
             }
-        })
-        .await;
+            () = receive_query(&mut self.incoming, query) => {}
+        }
     }
 
     /// Borrow this retained request's exact originals and optional native acquisition.
@@ -444,24 +512,9 @@ where
     pub async fn receive_native(&mut self, request: &RequestKey<Replies>) -> Option<()> {
         let row = self.request_row(request)?;
         let retained = &mut self.entries[row];
-        if retained.native.is_some()
-            || matches!(
-                &retained.admission,
-                Admission::Unattempted | Admission::Returned(Err(_))
-            )
-        {
-            return Some(());
+        if retained.awaits_reply() {
+            retained.receive().await;
         }
-        let native = &mut retained.native;
-        let mut receiving = pin!(retained.client.receive());
-        poll_fn(|context| match receiving.as_mut().poll(context) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(original) => {
-                *native = Some(original);
-                Poll::Ready(())
-            }
-        })
-        .await;
         Some(())
     }
 
@@ -541,4 +594,22 @@ where
         drop(authority);
         Ok(&retained.admission)
     }
+}
+
+async fn receive_query(
+    incoming: &mut mpsc::Receiver<(Query, OwnedSemaphorePermit)>,
+    received: &mut Option<Option<(Query, OwnedSemaphorePermit)>>,
+) {
+    if received.is_some() {
+        return;
+    }
+    let mut receiving = pin!(incoming.recv());
+    poll_fn(|context| match receiving.as_mut().poll(context) {
+        Poll::Pending => Poll::Pending,
+        Poll::Ready(original) => {
+            *received = Some(original);
+            Poll::Ready(())
+        }
+    })
+    .await;
 }

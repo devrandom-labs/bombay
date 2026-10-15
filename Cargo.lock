@@ -436,6 +436,7 @@ dependencies = [
  "bombay-zenoh",
  "bombay-zenoh-config",
  "dhat",
+ "futures-util",
  "json-event-parser",
  "loom",
  "parking_lot",
