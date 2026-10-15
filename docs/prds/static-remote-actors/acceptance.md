@@ -41,21 +41,22 @@ Counter/Ledger fixed vectors. Seven structural schema tests pass in both profile
 and the intended unknown-field inverse fails before exact restoration. Its Serde
 array control exposes a receiving-boundary prerequisite: shipping input must have
 the selected object shape. No authentication, zero-admission, full bound or full
-R02 acceptance is credited from raw decoding. Node/profile construction now
-has actual feature-gated crate code and is under public startup/root/child
-verification. The bounded receiving decoder remains
-unimplemented. Initial debug and optimized startup regressions fail exactly for
-empty-group credential classification and native diagnostic disclosure; final
-corrected startup controls pass in debug and optimized after independent
-review. Six actual public Node cases pass both profiles after real-owner
-falsifiers and byte-exact restoration. Combined local workspace/remote/protected
-checks and scoped minimization pass; reviewed PR, required CI and actual merge
-remain pending in [PR364](https://github.com/devrandom-labs/bombay/pull/364).
-The missing certificate fixtures are now included and the six unchanged cases
-pass from actual filtered Nix source in both profiles. New Rustls advisories
-require0.23.46; selected locks and affected controls pass locally on that graph,
-while fresh required CI and the published owner-minimum correction remain
-separate gates. No full row closes from this contribution.
+R02 acceptance is credited from raw decoding. Node/profile composition is now
+delivered in [PR364](https://github.com/devrandom-labs/bombay/pull/364), merged
+`406df116dd081593e1099a1f3301d2fb91bfc4fc` at2026-10-14T17:43:09Z after scoped
+minimization, final source/artifact review and all six checks passed on04c47413.
+Required Nix38596070399/job115963560778 executes six Node cases and35 public
+remote/Application tests per profile. Fresh native evidence retains its separate
+transport scope; primitive fuzz passes and conditional Miri is skipped. Missing
+certificate packaging and selected Rustls0.23.46 are verified in that actual
+source. Controlled Zenoh PR12 merged1ea4bd16 with passing exact-main CI; its
+guarded publication38638728105 succeeded. Fresh registry consumer runs pass on
+Rust1.99 and1.88, and independent review556699b5 verifies112 exact owning Query/
+Config executions. Both candidate PRs now select SDK1.10.9 with five package
+updates per lock;394/319 unrelated complete records remain unchanged. Combined
+verification and exact-head CI remain required before their merges. Bounded
+decoding, shipping exports/admission/replay and all full rows remain open. The new local foreign-child isolation test and its real owner inversions
+are a subsequent prerequisite, not delivery of Node-owned export association.
 
 The selected count-before-copy comparison covers accepted queued, active and
 unread native requests only. Both real providers fail the original count3-versus2 oracle after cleanup in
@@ -370,9 +371,9 @@ distinguishing Stop acceptance from joined retirement; they do not prove a runti
 early-publication defect. This local evidence is included in the scoped PR356 prerequisite merge; it earns
 no remote held-target Stop, global identity or full R11 acceptance credit.
 
-### Adopted dependency and combined verification checkpoint
+### Historical 1.10.8 dependency and combined verification checkpoint
 
-The isolated stage now selects published Zenoh1.10.8 and its corrected owning
+That earlier isolated stage selected published Zenoh1.10.8 and its corrected owning
 closure. Independent adoption review84e556cb verifies both complete graphs,
 402/324 nodes and394/316 preserved records, all nine registered pins and unchanged
 TLS-only features. Registered consumer/owning evidence passes on Rust1.99 and1.88;

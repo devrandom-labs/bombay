@@ -31,7 +31,7 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Instant;
 use tokio::sync::oneshot;
-use tokio::task::JoinError;
+use tokio::task::{JoinError, coop};
 
 impl<C, N, Bindings, Origins> ApplicationCapabilities<C, N, NoParent, Bindings, Origins>
 where
@@ -48,6 +48,7 @@ where
             control: inputs.control,
             timers: inputs.timers,
             observations: inputs.observations,
+            next_local_source: LocalSource::Observation,
             next_child_route: 0,
             operation_failures: ActorFailureAssessment::NoFailuresFound,
             child_bindings: Some(child_bindings),
@@ -75,6 +76,7 @@ where
             control: self.control,
             timers: self.timers,
             observations: self.observations,
+            next_local_source: self.next_local_source,
             next_child_route: self.next_child_route,
             operation_failures: self.operation_failures,
             child_bindings: self.child_bindings,
@@ -114,10 +116,29 @@ where
     type Descendants = (Vec<BindingTerminal<Bindings>>, Bindings::Failures);
 
     async fn next_local_event(&mut self) -> Result<Self::Event, JoinError> {
-        tokio::select! {
-            biased;
-            termination_event = self.observations.next() => Ok(termination_event),
-            task = self.activation_tasks.as_mut().expect("live activation tasks remain installed").next_event() => task,
+        loop {
+            let observation = coop::cooperative(self.observations.next());
+            let startup = self
+                .activation_tasks
+                .as_mut()
+                .expect("live activation tasks remain installed")
+                .next_event();
+            let (next, event) = match self.next_local_source {
+                LocalSource::Observation => tokio::select! {
+                    biased;
+                    event = observation => (LocalSource::Startup, Ok(event.into_local(&self.control))),
+                    event = startup => (LocalSource::Observation, event.map(Some)),
+                },
+                LocalSource::Startup => tokio::select! {
+                    biased;
+                    event = startup => (LocalSource::Observation, event.map(Some)),
+                    event = observation => (LocalSource::Startup, Ok(event.into_local(&self.control))),
+                },
+            };
+            self.next_local_source = next;
+            if let Some(event) = event? {
+                return Ok(event);
+            }
         }
     }
 
@@ -453,6 +474,11 @@ where
     pub(crate) terminal_reports: LocalTerminalReports,
 }
 
+enum LocalSource {
+    Observation,
+    Startup,
+}
+
 pub(crate) struct ApplicationCapabilities<
     C,
     N,
@@ -468,6 +494,7 @@ pub(crate) struct ApplicationCapabilities<
     control: ControlSender<C::Event>,
     timers: LocalTimers<C::Event>,
     observations: TerminationObservations<MailAddr, C::Event>,
+    next_local_source: LocalSource,
     next_child_route: u64,
     operation_failures: ActorFailureAssessment,
     child_bindings: Option<Bindings>,
@@ -5738,3 +5765,6 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod fairness;
