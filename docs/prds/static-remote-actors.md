@@ -121,6 +121,28 @@ Remove the unit cell and its loans. This preserves the actual checked input
 without claiming current mutable/revocable permission. Keep prior executions
 qualified to their source bytes, then rerun final controls and intended cuts.
 No private/provisional transport API gains final public approval from this test.
+Also compare each receipt's existing logical `Scope.identity`, rather than full
+Scope: changing a grant issuer or authority generation cannot create a fresh
+replay identity. Use the existing approved distinction; no new identity policy
+is selected. Add a bounded fixture variation for the duplicate's provider-declared
+authority generation while preserving the first logical identity and protected
+bytes, and assert the duplicate still recovers its originals after cleanup.
+The inverse full-Scope predicate must reach its intended post-cleanup replay
+failure. This is identity-comparison evidence, not proof of fresh production
+authorization or key-rotation acceptance. Expected additional test inputs stay
+within the recorded 600 retained /1200 historical allowance; stop and reconcile
+the actual record before exceeding it.
+
+Selected SDK retirement inspection: Session source `713b4f96` closes on its
+last strong Drop via `close().wait()` and logs an error; Queryable source
+`48ef26e8` similarly undeclares on Drop without returning its error. Close builder
+`b4c6b750` uses the SDK's existing ten-second timeout, unavailable as a normal
+public setting in this supported feature profile. These are source facts, not
+executed shutdown proofs or new Bombay defaults. Automatic Application retirement
+must retain actual explicit undeclare/close results; implicit Drop cannot be
+reported as successful joined cleanup. Whole-owner surrender remains distinct
+from cancelling a borrowed wait. Inspect and prove cancellation/timeout cuts
+before selecting a network retirement implementation or adding any cleanup task.
 
 ## Current delivery (2026-10-15 UTC)
 
