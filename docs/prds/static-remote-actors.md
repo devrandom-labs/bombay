@@ -206,6 +206,12 @@ Full remote acceptance, shipping API minimization, required combined CI and
 reviewed delivery remain open. PR373 and PR374 remain held for the private
 transport boundary regardless of their individual CI results.
 
+The same privacy rule is now explicit in this branch's AGENTS.md. The user's
+existing dirty AGENTS.md in main-2 remains untouched. This nine-line instruction
+change raises the complete current endpoint to44 tracked paths, no untracked
+paths; production/test/API counts above are unchanged. It does not itself
+remove the known public leaks or establish a passing public consumer.
+
 ## Current delivery (2026-10-15 UTC)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
