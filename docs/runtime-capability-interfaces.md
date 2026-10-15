@@ -51,6 +51,19 @@ Full/Closed originals without awaiting capacity. The local service retains its
 permission/time snapshot and retry policy; client construction and attempted
 mailbox admission remain separate facts. Stable Entity resolution still awaits.
 
+The unmerged export contribution composes those existing owners through
+`ApplicationHandle::export`. Only Node execution attaches its own native Session
+to the live handle; there is no public arbitrary handle/Session pairing.
+`remote::Export` retains protected bytes, proof and opaque provider receipt with
+one independent existing reply client per request. It compares stable provider
+identities, preserves duplicate/conflicting originals, and checks explicit count
+limits before allocating a new endpoint. Final permission/time loans cover one
+nonwaiting mailbox attempt and native result storage. Only a retained native
+Full permits explicit retry; interrupted return remains uncertain. Protocol
+authentication, native reply validation, publication permission, retry waiting
+and full resource/security acceptance remain distinct uncompleted obligations.
+This candidate does not introduce another local mailbox or Behavior algebra.
+
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The
 workspace lockfile selects the executable contract.

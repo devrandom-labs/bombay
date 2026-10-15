@@ -10,19 +10,19 @@ use bombay::behavior::{
 };
 use bombay::lifecycle::{Task, TaskMessage, TaskResult, TaskState};
 use bombay::prelude::{Application, MailAddr, StopOnShutdown};
-use bombay::remote::{IngressError, Metadata, json, try_retain, verify};
+use bombay::remote::{
+    Admission, Export, ExportError, ExportLimits, IngressError, Metadata, RequestKey,
+    RequestRefusal, json, try_retain, verify,
+};
 use bombay::{
     ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement, ActorRetirementReport,
     ApplicationClient, RetirementAssessment, RootOrigin, SendError, TrySendError,
 };
 use core::ops::AsyncFn;
-use core::pin::pin;
-use core::task::Poll;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use std::collections::TryReserveError;
 use std::env;
 use std::fmt::Debug;
-use std::future::{Future, Ready, poll_fn, ready};
+use std::future::{Future, Ready, ready};
 use std::net::TcpListener;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
@@ -31,7 +31,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
-use zenoh::query::{ConsolidationMode, Query, Queryable, Reply};
+use zenoh::query::{ConsolidationMode, Query, Reply};
 use zenoh::{Error as ZenohError, Session};
 use zenoh_config::Config;
 
@@ -79,6 +79,7 @@ impl ProviderProfile {
     }
 }
 #[derive(Clone, Copy)]
+// Observation selector only: Resend requires an actual production retention mutant.
 enum ReadRetention {
     ReuseFirst,
     Resend,
@@ -325,196 +326,37 @@ fn current_scope<Operation: Eq>(
     Ok(())
 }
 
-// The actual Node-associated constructor must produce these coexisting owners.
-// Do not expose a freely paired Session/client constructor as a public API.
-struct StaticExport<Target, Replies, Receipt>
-where
-    Target: Protocol<Addr = MailAddr>,
-    Replies: Protocol<Addr = MailAddr>,
-{
-    session: Session,
-    queryable: Queryable<()>,
-    incoming: mpsc::Receiver<(Query, OwnedSemaphorePermit)>,
-    client: ApplicationClient<EstablishedRecipient<Target>, Replies>,
-    maximum_entries: NonZeroUsize,
-    awaiting_native: Option<usize>,
-    entries: Vec<Entry<Receipt, Target::Msg, Replies::Msg>>,
-}
-
-// No receipt, request, command, native reply or proof needs Clone/Debug.
-struct Entry<Receipt, Command, Native> {
-    request: Box<[u8]>,
-    request_proof: Box<[u8]>,
-    receipt: Receipt,
-    admission: Admission<Command>,
+struct ReadAcquisition<Operation, Receipt, WireValue, Replies: Protocol<Addr = MailAddr>> {
+    invocation: Result<(), ZenohError>,
+    query_publication: Option<IngressError<Query>>,
     #[expect(
         clippy::option_option,
-        reason = "the outside acquisition slot preserves the native optional User, including an acquired closed reply stream"
+        reason = "retain not acquired, acquired closure and acquired Query independently"
     )]
-    native: Option<Option<User<MailAddr, Native>>>,
-}
-
-// Uncertain precedes native linearization; an unwinding wake cannot reset it.
-enum Admission<Command> {
-    Unattempted,
-    Uncertain,
-    Returned(Result<(), TrySendError<Command>>),
-}
-
-enum AdmissionRefusal {
-    Authority(VerificationError),
-    NativePending { entry: usize },
-}
-
-// A duplicate's newly acquired receipt is returned, never silently discarded.
-enum Retention<Receipt> {
-    First {
-        entry: usize,
-    },
-    Duplicate {
-        entry: usize,
-        original: (Box<[u8]>, Box<[u8]>, Receipt),
-    },
-}
-
-enum RetentionFailure {
-    Conflict { existing: usize },
-    Capacity,
-    Allocation(TryReserveError),
-}
-
-impl<Target, Replies, Receipt> StaticExport<Target, Replies, Receipt>
-where
-    Target: Protocol<Addr = MailAddr>,
-    Replies: Protocol<Addr = MailAddr>,
-    Replies::Msg: Send,
-{
-    // Call only after authentication AND current request-authority validation.
-    // The original receipt remains the owner of the logical binding/sequence.
-    // Current permission is not inferred from equality or from an occupied row.
-    #[expect(
-        clippy::type_complexity,
-        reason = "return the exact request, proof and opaque receipt beside the actual retention refusal without another product owner"
-    )]
-    fn retain(
-        &mut self,
-        request: Box<[u8]>,
-        request_proof: Box<[u8]>,
-        receipt: Receipt,
-        identity: fn(&Receipt) -> (&Binding, u64),
-        comparison: ReadRetention,
-    ) -> Result<Retention<Receipt>, ((Box<[u8]>, Box<[u8]>, Receipt), RetentionFailure)> {
-        let key = identity(&receipt);
-        let existing = match comparison {
-            ReadRetention::ReuseFirst => self
-                .entries
-                .iter()
-                .position(|entry| identity(&entry.receipt) == key),
-            ReadRetention::Resend => None,
-        };
-        if let Some(existing) = existing {
-            let original = (request, request_proof, receipt);
-            if self.entries[existing].request.as_ref() != original.0.as_ref() {
-                return Err((original, RetentionFailure::Conflict { existing }));
-            }
-            return Ok(Retention::Duplicate {
-                entry: existing,
-                original,
-            });
-        }
-        if self.entries.len() == self.maximum_entries.get() {
-            return Err((
-                (request, request_proof, receipt),
-                RetentionFailure::Capacity,
-            ));
-        }
-        if let Err(cause) = self.entries.try_reserve_exact(1) {
-            return Err((
-                (request, request_proof, receipt),
-                RetentionFailure::Allocation(cause),
-            ));
-        }
-        let entry = self.entries.len();
-        self.entries.push(Entry {
-            request,
-            request_proof,
-            receipt,
-            admission: Admission::Unattempted,
-            native: None,
-        });
-        Ok(Retention::First { entry })
-    }
-
-    // Entry indexes are private results of retain, not public lookup handles.
-    // The current fixed test authority is checked in this synchronous attempt.
-    // A mutable-authority guard/serialization proof remains separate shipping work.
-    fn attempt<'entry>(
-        &'entry mut self,
-        entry: usize,
-        current: impl FnOnce(&'entry Receipt) -> Result<(), VerificationError>,
-        command: impl FnOnce(EstablishedRecipient<Replies>) -> Target::Msg,
-    ) -> Result<&'entry Admission<Target::Msg>, AdmissionRefusal> {
-        let retained = &mut self.entries[entry];
-        current(&retained.receipt).map_err(AdmissionRefusal::Authority)?;
-        if matches!(&retained.admission, Admission::Unattempted) {
-            if let Some(entry) = self.awaiting_native {
-                return Err(AdmissionRefusal::NativePending { entry });
-            }
-            let command = command(self.client.recipient());
-            retained.admission = Admission::Uncertain;
-            self.awaiting_native = Some(entry);
-            let original = self.client.try_send(command);
-            if original.is_err() {
-                self.awaiting_native = None;
-            }
-            retained.admission = Admission::Returned(original);
-        }
-        Ok(&retained.admission)
-    }
-
-    // Only the one retained outstanding row can take the affine native reply.
-    // Pin this whole operation outside temporary borrowed waits. Dropping it
-    // leaves the outstanding row and Uncertain/Returned(Ok) fact intact; a new
-    // row cannot be sent or take its late reply. Protocol reply validation is
-    // still separate: receiving User does not establish protected wire meaning.
-    async fn receive_native(&mut self, entry: usize) {
-        if self.awaiting_native != Some(entry) {
-            return;
-        }
-        let retained = &mut self.entries[entry];
-        let awaiting_native = &mut self.awaiting_native;
-        let mut receiving = pin!(self.client.receive());
-        poll_fn(|context| match receiving.as_mut().poll(context) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(original) => {
-                retained.native = Some(original);
-                *awaiting_native = None;
-                Poll::Ready(())
-            }
-        })
-        .await;
-    }
-}
-
-struct ReadAcquisition<Operation, Receipt, WireValue> {
-    invocation: Result<(), ZenohError>,
-    query_publication: Option<Result<(), IngressError<Query>>>,
-    query: Option<Result<(Query, OwnedSemaphorePermit), mpsc::error::TryRecvError>>,
+    query: Option<Option<(Query, OwnedSemaphorePermit)>>,
     original: Option<ProtectedMessage>,
     shape: Option<Result<(), json::Error>>,
     declaration: Option<Result<ReadRequest<Operation>, serde_json::Error>>,
     verification: Option<Result<Receipt, VerificationError>>,
     scope: Option<Result<(), VerificationError>>,
-    admission: Option<usize>,
-    attempt_refusal: Option<AdmissionRefusal>,
+    attempt: Option<Result<(), RequestRefusal<VerificationError>>>,
     #[expect(
         clippy::type_complexity,
         reason = "retain first or duplicate originals and every exact refusal in the acquisition that received them"
     )]
-    retained:
-        Option<Result<Retention<Receipt>, ((Box<[u8]>, Box<[u8]>, Receipt), RetentionFailure)>>,
+    retained: Option<
+        Result<
+            (RequestKey<Replies>, Option<(Box<[u8]>, Box<[u8]>, Receipt)>),
+            ((Box<[u8]>, Box<[u8]>, Receipt), ExportError),
+        >,
+    >,
     original_allocations: Option<(*const u8, *const u8)>,
     source: Option<usize>,
+    #[expect(
+        clippy::option_option,
+        reason = "distinguish no native acquisition from an acquired closed stream"
+    )]
+    native_acquisition: Option<Option<()>>,
     reply_publication: Option<Result<(), ZenohError>>,
     reply: Option<(Reply, OwnedSemaphorePermit)>,
     reply_original: Option<ProtectedMessage>,
@@ -536,23 +378,36 @@ where
     batch: Option<User<MailAddr, TaskResult<Vec<ProtectedMessage>>>>,
     batch_allocations: Vec<(*const u8, *const u8)>,
     begun: Result<(), SendError<BatchCommand>>,
-    acquisitions: Vec<ReadAcquisition<Operation, Receipt, WireValue>>,
-    entries: Vec<Entry<Receipt, Target::Msg, Replies::Msg>>,
-    awaiting_native: Option<usize>,
+    acquisitions: Vec<ReadAcquisition<Operation, Receipt, WireValue, Replies>>,
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain every affine request original, native client and drained tail without another owner"
+    )]
+    requests: Vec<(
+        RequestKey<Replies>,
+        Box<[u8]>,
+        Box<[u8]>,
+        Receipt,
+        Admission<Target::Msg>,
+        Option<Option<User<MailAddr, Replies::Msg>>>,
+        ApplicationClient<EstablishedRecipient<Target>, Replies>,
+        Vec<User<MailAddr, Replies::Msg>>,
+    )>,
     first_retirement: Option<ActorRetirementReport>,
-    expected_reply: EstablishedRecipient<Replies>,
     #[expect(
         clippy::type_complexity,
         reason = "retain each original Query refusal and its native callback publication"
     )]
-    query_callbacks:
-        Arc<Mutex<Vec<Result<(), mpsc::error::TrySendError<Result<(), IngressError<Query>>>>>>>,
+    query_callbacks: Arc<Mutex<Vec<Result<(), mpsc::error::TrySendError<IngressError<Query>>>>>>,
     #[expect(
         clippy::type_complexity,
         reason = "retain the original Reply and native ingress cause for every callback"
     )]
     reply_callbacks: Vec<Arc<Mutex<Vec<Result<(), IngressError<Reply>>>>>>,
     query_drain: Vec<(Query, OwnedSemaphorePermit)>,
+    query_end: mpsc::error::TryRecvError,
+    refusal_drain: Vec<IngressError<Query>>,
+    refusal_end: mpsc::error::TryRecvError,
     undeclared: Result<(), ZenohError>,
     sender_cleanup: Result<(), bombay::ApplicationCleanupError>,
     #[expect(
@@ -568,7 +423,6 @@ where
     >,
     sender_notifications: Result<ActorNotificationReceipts, oneshot::error::RecvError>,
     sender_closed: Result<(), ZenohError>,
-    client: ApplicationClient<EstablishedRecipient<Target>, Replies>,
 }
 
 impl<Target, Replies, Operation, Receipt, WireValue>
@@ -578,21 +432,22 @@ where
     Replies: Protocol<Addr = MailAddr>,
 {
     fn native_outcomes(&self) -> impl Iterator<Item = &User<MailAddr, Replies::Msg>> {
-        self.entries
+        self.requests
             .iter()
-            .filter_map(|entry| entry.native.as_ref().and_then(Option::as_ref))
+            .filter_map(|entry| entry.5.as_ref().and_then(Option::as_ref))
     }
 
     fn request_original<'a>(
         &'a self,
-        acquired: &'a ReadAcquisition<Operation, Receipt, WireValue>,
+        acquired: &'a ReadAcquisition<Operation, Receipt, WireValue, Replies>,
     ) -> Option<(&'a [u8], &'a [u8], &'a Receipt)> {
         match acquired.retained.as_ref()? {
-            Ok(Retention::First { entry }) => {
-                let entry = self.entries.get(*entry)?;
-                Some((&entry.request, &entry.request_proof, &entry.receipt))
+            Ok((key, None)) => {
+                let (_, protected, proof, receipt, _, _, _, _) =
+                    self.requests.iter().find(|entry| &entry.0 == key)?;
+                Some((protected, proof, receipt))
             }
-            Ok(Retention::Duplicate { original, .. }) | Err((original, _)) => {
+            Ok((_, Some(original))) | Err((original, _)) => {
                 Some((&original.0, &original.1, &original.2))
             }
         }
@@ -602,10 +457,13 @@ where
 #[expect(
     clippy::too_many_arguments,
     clippy::too_many_lines,
+    clippy::type_complexity,
     reason = "one causal trace keeps explicit policy inputs and all original acquisition and cleanup products together"
 )]
 async fn read_study<Target, Replies, Operation, Receipt, WireValue, FirstRetirement>(
-    client: ApplicationClient<EstablishedRecipient<Target>, Replies>,
+    mut export: Export<Target, Replies, Receipt>,
+    mut announcements: mpsc::Receiver<IngressError<Query>>,
+    query_callbacks: Arc<Mutex<Vec<Result<(), mpsc::error::TrySendError<IngressError<Query>>>>>>,
     receiver_session: &Session,
     address: &str,
     target: MailAddr,
@@ -613,7 +471,6 @@ async fn read_study<Target, Replies, Operation, Receipt, WireValue, FirstRetirem
     binding: Binding,
     operation: Operation,
     profile: ProviderProfile,
-    retention: ReadRetention,
     expected: WireValue,
     read: fn(EstablishedRecipient<Replies>) -> Target::Msg,
     encode: fn(&Replies::Msg) -> WireValue,
@@ -635,39 +492,13 @@ where
     WireValue: Serialize + DeserializeOwned,
     FirstRetirement: Future<Output = ActorRetirementReport>,
 {
-    let query_capacity = Arc::new(Semaphore::new(2));
-    let (incoming, received) = mpsc::channel(2);
-    let (announced, mut announcements) = mpsc::channel(2);
-    let query_callbacks = Arc::new(Mutex::new(Vec::new()));
-    let callbacks = Arc::clone(&query_callbacks);
-    let capacity = Arc::clone(&query_capacity);
-    let queryable = receiver_session
-        .declare_queryable("bombay/replay/read")
-        .callback(move |query| {
-            let retained = try_retain(&incoming, &capacity, query);
-            let announced = announced.try_send(retained);
-            callbacks.lock().unwrap().push(announced);
-        })
-        .await
-        .unwrap();
     let mut sender = Application::new(RequestTask::new().stop_on_shutdown())
         .open_node(configuration(address, &EndpointRole::Caller))
         .await
         .unwrap_or_else(|_| panic!("explicit caller Node setup"));
-    let expected_reply = client.recipient();
-    let mut entries = Vec::new();
-    entries.try_reserve_exact(2).unwrap();
-    let mut export = StaticExport {
-        session: receiver_session.clone(),
-        queryable,
-        incoming: received,
-        client,
-        maximum_entries: NonZeroUsize::new(2).unwrap(),
-        awaiting_native: None,
-        entries,
-    };
     // The owner is outside borrowed Sender Work; no fresh runtime is opened.
     let retained_export = &mut export;
+    let refused_queries = &mut announcements;
     let (execution, receiving) = sender.execute_with(|application, caller_session| async move {
         let caller_zid = caller_session.zid().to_string();
         let receiver_zid = receiver_session.zid().to_string();
@@ -710,20 +541,18 @@ where
                     }).await;
                 let mut acquired = ReadAcquisition {
                     invocation, query_publication: None, query: None, original: None, shape: None,
-                    declaration: None, verification: None, scope: None, admission: None, attempt_refusal: None,
-                    retained: None, original_allocations: None, source: None,
+                    declaration: None, verification: None, scope: None, attempt: None,
+                    retained: None, original_allocations: None, source: None, native_acquisition: None,
                     reply_publication: None, reply: None, reply_original: None, reply_shape: None, reply_declaration: None,
                     reply_verification: None, reply_scope: None,
                 };
                 if acquired.invocation.is_ok() {
-                    let publication = tokio::select! {
-                        publication = announcements.recv() => publication,
-                        reply = received_reply.recv() => { acquired.reply = reply; None }
-                    };
-                    acquired.query_publication = publication;
-                    if matches!(&acquired.query_publication, Some(Ok(()))) {
-                        acquired.query = Some(retained_export.incoming.try_recv());
-                        if let Some(Ok((query, _permit))) = &acquired.query {
+                    tokio::select! {
+                        () = retained_export.receive_query(&mut acquired.query) => {},
+                        refusal = refused_queries.recv() => acquired.query_publication = refusal,
+                        reply = received_reply.recv() => acquired.reply = reply,
+                    }
+                    if let Some(Some((query, _permit))) = &acquired.query {
                             if let (Some(payload), Some(proof)) = (query.payload(), query.attachment()) {
                                 acquired.original = Some(ProtectedMessage {
                                     protected: payload.to_bytes().into_owned().into_boxed_slice(),
@@ -747,28 +576,26 @@ where
                                             panic!("the observed original success moves into retained ownership");
                                         };
                                         acquired.retained = Some(retained_export.retain(
-                                            original.protected, original.proof, receipt, identity, retention,
+                                            original.protected, original.proof, receipt,
                                         ));
-                                        let entry = match &acquired.retained {
-                                            Some(Ok(Retention::First { entry })) => {
-                                                match retained_export.attempt(*entry, |receipt| {
-                                                    current_scope(projection(receipt), &current, &operation, Purpose::Request, deadline)
-                                                }, read) {
-                                                    Ok(_) => acquired.admission = Some(*entry),
-                                                    Err(cause) => acquired.attempt_refusal = Some(cause),
+                                        let key = match &acquired.retained {
+                                            Some(Ok((key, duplicate))) => {
+                                                if duplicate.is_none() {
+                                                    acquired.attempt = Some(retained_export.attempt(key, |receipt| {
+                                                        current_scope(projection(receipt), &current, &operation, Purpose::Request, deadline)?;
+                                                        Ok(&current)
+                                                    }, read).map(|_| ()));
+                                                    tokio::select! {
+                                                        original = retained_export.receive_native(key) => acquired.native_acquisition = Some(original),
+                                                        reply = received_reply.recv() => acquired.reply = reply,
+                                                    }
                                                 }
-                                                tokio::select! {
-                                                    () = retained_export.receive_native(*entry) => {},
-                                                    reply = received_reply.recv() => acquired.reply = reply,
-                                                }
-                                                Some(*entry)
+                                                Some(key)
                                             }
-                                            Some(Ok(Retention::Duplicate { entry, .. })) => Some(*entry),
                                             Some(Err(_)) | None => None,
                                         };
-                                        let source = entry.and_then(|entry| {
-                                            retained_export.entries[entry].native.as_ref().and_then(Option::as_ref)
-                                        });
+                                        let source = key.and_then(|key| retained_export.request(key))
+                                            .and_then(|request| request.4.as_ref().and_then(Option::as_ref));
                                         if let Some(source) = source {
                                             acquired.source = Some(ptr::from_ref(source).addr());
                                             let actual = encode(&source.message);
@@ -786,8 +613,7 @@ where
                             if acquired.reply_publication.is_none() {
                                 acquired.reply_publication = Some(query.reply_err("protected read refused").await);
                             }
-                        }
-                    } else if let Some(Err(refusal)) = &acquired.query_publication {
+                    } else if let Some(refusal) = &acquired.query_publication {
                         let query = match refusal {
                             IngressError::Capacity { original, .. }
                             | IngressError::Queue { cause: mpsc::error::TrySendError::Full((original, _))
@@ -814,7 +640,7 @@ where
                             }
                     }
                 }
-                if retained_export.entries.iter().filter(|entry| matches!(&entry.native, Some(Some(_)))).count() == 1
+                if acquired.source.is_some()
                     && joined_first.is_none()
                     && let Some(retirement) = first_retirement.take() {
                     joined_first = Some(retirement.await);
@@ -844,21 +670,32 @@ where
     ) = output;
     drop(requests);
     let sender_closed = sender.close().await;
-    let StaticExport {
-        session,
-        queryable,
-        mut incoming,
-        client,
-        entries,
-        awaiting_native,
-        ..
-    } = export;
-    let undeclared = queryable.undeclare().await;
-    let mut query_drain = Vec::new();
-    while let Ok(original) = incoming.try_recv() {
-        query_drain.push(original);
+    let (undeclared, session, mut incoming, retained) = export.undeclare().await;
+    let mut requests = Vec::new();
+    for (key, protected, proof, receipt, admission, native, mut client) in retained {
+        client.close_admission();
+        let mut tail = Vec::new();
+        while let Some(original) = client.receive().await {
+            tail.push(original);
+        }
+        requests.push((
+            key, protected, proof, receipt, admission, native, client, tail,
+        ));
     }
-    // The original Node remains alive and will explicitly close outside this study.
+    let mut query_drain = Vec::new();
+    let query_end = loop {
+        match incoming.try_recv() {
+            Ok(original) => query_drain.push(original),
+            Err(cause) => break cause,
+        }
+    };
+    let mut refusal_drain = Vec::new();
+    let refusal_end = loop {
+        match announcements.try_recv() {
+            Ok(original) => refusal_drain.push(original),
+            Err(cause) => break cause,
+        }
+    };
     drop(session);
     ReadStudy {
         current,
@@ -870,19 +707,19 @@ where
         batch_allocations,
         begun,
         acquisitions,
-        entries,
-        awaiting_native,
+        requests,
         first_retirement: joined_first,
-        expected_reply,
         query_callbacks,
         reply_callbacks,
         query_drain,
+        query_end,
+        refusal_drain,
+        refusal_end,
         undeclared,
         sender_cleanup,
         sender_native,
         sender_notifications,
         sender_closed,
-        client,
     }
 }
 
@@ -913,8 +750,18 @@ fn assert_study<Target, Replies, Operation, Receipt, WireValue>(
     assert!(custody.capability_failures.is_empty() && custody.additional_failures.is_empty());
     assert!(custody.unread_owner_cancellation.is_none() && custody.retirement_failures.is_empty());
     assert!(study.begun.is_ok() && study.undeclared.is_ok());
-    assert!(study.query_drain.is_empty());
-    assert!(study.awaiting_native.is_none());
+    assert!(study.query_drain.is_empty() && study.refusal_drain.is_empty());
+    for request in &study.requests {
+        assert!(request.7.is_empty());
+    }
+    assert!(matches!(
+        study.query_end,
+        mpsc::error::TryRecvError::Disconnected
+    ));
+    assert!(matches!(
+        study.refusal_end,
+        mpsc::error::TryRecvError::Disconnected
+    ));
     assert_ne!(study.caller_zid, study.receiver_zid);
     assert_eq!(study.current.caller_session.as_ref(), study.caller_zid);
     assert_eq!(
@@ -934,22 +781,32 @@ fn assert_study<Target, Replies, Operation, Receipt, WireValue>(
         assert_eq!(original.proof.as_ptr(), *proof);
     }
     let callbacks = study.query_callbacks.lock().unwrap();
-    assert_eq!(callbacks.len(), 2);
+    assert_eq!(callbacks.len(), 0);
     for result in callbacks.iter() {
         assert!(result.is_ok());
     }
     assert_eq!(study.acquisitions.len(), 2);
     let first = &study.acquisitions[0];
-    let first_admission = &study.entries[first.admission.unwrap()].admission;
+    let Some(Ok((first_key, _))) = &first.retained else {
+        panic!("first actual retained key");
+    };
+    let first_admission = &study
+        .requests
+        .iter()
+        .find(|entry| &entry.0 == first_key)
+        .unwrap()
+        .4;
     assert!(matches!(first_admission, Admission::Returned(Ok(()))));
+    assert!(matches!(first.attempt, Some(Ok(()))));
+    assert!(matches!(first.native_acquisition, Some(Some(()))));
     assert!(study.native_outcomes().next().is_some());
     for actual in study.native_outcomes() {
         assert_eq!(actual.from, study.target);
     }
     for (index, acquisition) in study.acquisitions.iter().enumerate() {
         assert!(acquisition.invocation.is_ok());
-        assert!(matches!(&acquisition.query_publication, Some(Ok(()))));
-        assert!(matches!(&acquisition.query, Some(Ok(_))));
+        assert!(acquisition.query_publication.is_none());
+        assert!(matches!(&acquisition.query, Some(Some(_))));
         assert!(matches!(&acquisition.shape, Some(Ok(()))));
         if let Some(original) = &acquisition.verification {
             assert_verification(Some(original));
@@ -963,27 +820,18 @@ fn assert_study<Target, Replies, Operation, Receipt, WireValue>(
         let (protected_allocation, proof_allocation) = acquisition.original_allocations.unwrap();
         assert_eq!(protected.as_ptr(), protected_allocation);
         assert_eq!(proof.as_ptr(), proof_allocation);
-        if let Some(refusal) = &acquisition.attempt_refusal {
+        if let Some(Err(refusal)) = &acquisition.attempt {
             match refusal {
-                AdmissionRefusal::Authority(cause) => {
+                RequestRefusal::Authority { cause } => {
                     panic!("original current authority refusal: {cause:?}")
                 }
-                AdmissionRefusal::NativePending { entry } => {
-                    panic!("native row {entry} remains outstanding")
-                }
+                RequestRefusal::UnknownRequest => panic!("the export refused its own issued key"),
             }
         }
         if let Some(Err((_, refusal))) = &acquisition.retained {
-            match refusal {
-                RetentionFailure::Conflict { existing } => {
-                    panic!("authenticated request conflicts with row {existing}")
-                }
-                RetentionFailure::Capacity => panic!("explicit request-row capacity exhausted"),
-                RetentionFailure::Allocation(cause) => {
-                    panic!("original request-row allocation refusal: {cause}")
-                }
-            }
+            panic!("actual production retention refusal: {refusal}");
         }
+
         let declared = acquisition.declaration.as_ref().unwrap().as_ref().unwrap();
         assert_eq!(declared.bombay, study.current);
         assert_eq!(declared.kind, Purpose::Request);
@@ -1042,6 +890,10 @@ fn assert_report(report: ActorRetirementReport) {
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "keep the complete independent Counter trace and acquired cleanup products in one witness"
+)]
 async fn counter_case<Receipt>(
     profile: ProviderProfile,
     provider: impl AsyncFn(
@@ -1052,6 +904,7 @@ async fn counter_case<Receipt>(
     projection: fn(&Receipt) -> &ProofScope<CounterOperation>,
     identity: fn(&Receipt) -> (&Binding, u64),
     proof: fn(&Receipt) -> Option<&[u8]>,
+    same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
     let retention = read_retention();
     let address = reserved_address();
@@ -1063,12 +916,32 @@ async fn counter_case<Receipt>(
         .execute_with(|application, session| async move {
             let target = application.root().established_recipient();
             let target_address = application.root().address();
-            let client = application
-                .export_client::<_, CounterValue>(target)
-                .unwrap_or_else(|_| panic!("actual root certification and native allocation"));
-            let primed = client.try_send(CounterMessage::Increment);
+            let (announced, announcements) = mpsc::channel(2);
+            let query_callbacks = Arc::new(Mutex::new(Vec::new()));
+            let observed = Arc::clone(&query_callbacks);
+            let export = application
+                .export::<_, CounterValue, Receipt>(
+                    target,
+                    "bombay/replay/read",
+                    ExportLimits {
+                        queued_queries: NonZeroUsize::new(2).unwrap(),
+                        retained_queries: NonZeroUsize::new(2).unwrap(),
+                        retained_requests: NonZeroUsize::new(2).unwrap(),
+                    },
+                    same_request,
+                    move |original| {
+                        let published = announced.try_send(original);
+                        observed.lock().unwrap().push(published);
+                    },
+                )
+                .await
+                .unwrap_or_else(|_| panic!("actual Node-associated export"));
+            let sender = application.sender().unwrap();
+            let primed = sender.send(CounterMessage::Increment).await;
             let study = read_study(
-                client,
+                export,
+                announcements,
+                query_callbacks,
                 session,
                 &address,
                 target_address,
@@ -1085,7 +958,6 @@ async fn counter_case<Receipt>(
                 },
                 CounterOperation::Read,
                 profile,
-                retention,
                 1,
                 CounterMessage::Read,
                 |value| *value,
@@ -1115,7 +987,9 @@ async fn counter_case<Receipt>(
     let first = study.native_outcomes().next().unwrap();
     assert_eq!(first.from, study.target);
     assert_eq!(first.message, 1);
-    let first_source = ptr::from_ref(first).addr();
+    let first_source = study.acquisitions[0]
+        .source
+        .expect("first actual in-owner native observation");
     let sources = study
         .acquisitions
         .iter()
@@ -1124,7 +998,7 @@ async fn counter_case<Receipt>(
     let attempts = study
         .acquisitions
         .iter()
-        .filter(|a| a.admission.is_some())
+        .filter(|a| a.attempt.is_some())
         .count();
     let native_outcome_count = study.native_outcomes().count();
     let sender_native = study.sender_native.unwrap();
@@ -1138,8 +1012,7 @@ async fn counter_case<Receipt>(
     );
     assert_eq!(native_outcome_count, 1);
     assert_eq!(sources, [Some(first_source), Some(first_source)]);
-    assert!(study.acquisitions[1].admission.is_none());
-    drop(study.client);
+    assert!(study.acquisitions[1].attempt.is_none());
 }
 
 #[expect(
@@ -1156,6 +1029,7 @@ async fn ledger_case<Receipt>(
     projection: fn(&Receipt) -> &ProofScope<LedgerOperation>,
     identity: fn(&Receipt) -> (&Binding, u64),
     proof: fn(&Receipt) -> Option<&[u8]>,
+    same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
     let retention = read_retention();
     let address = reserved_address();
@@ -1172,18 +1046,36 @@ async fn ledger_case<Receipt>(
         .execute_with(|application, session| async move {
             let target = application.root().established_recipient();
             let target_address = application.root().address();
-            let client = application
-                .export_client::<_, Receipts>(target)
-                .unwrap_or_else(|_| {
-                    panic!("actual Ledger root certification and native allocation")
-                });
-            let caller = client.address();
+            let (announced, announcements) = mpsc::channel(2);
+            let query_callbacks = Arc::new(Mutex::new(Vec::new()));
+            let observed = Arc::clone(&query_callbacks);
+            let export = application
+                .export::<_, Receipts, Receipt>(
+                    target,
+                    "bombay/replay/read",
+                    ExportLimits {
+                        queued_queries: NonZeroUsize::new(2).unwrap(),
+                        retained_queries: NonZeroUsize::new(2).unwrap(),
+                        retained_requests: NonZeroUsize::new(2).unwrap(),
+                    },
+                    same_request,
+                    move |original| {
+                        let published = announced.try_send(original);
+                        observed.lock().unwrap().push(published);
+                    },
+                )
+                .await
+                .unwrap_or_else(|_| panic!("actual Node-associated export"));
+            let sender = application.sender().unwrap();
+            let caller = sender.address();
             let original = Box::<[u8]>::from([59, 61]);
             let allocation = original.as_ptr();
-            let primed = client.try_send(LedgerCommand::Append(original));
+            let primed = sender.send(LedgerCommand::Append(original)).await;
             let expected = vec![u64::from(caller)];
             let study = read_study(
-                client,
+                export,
+                announcements,
+                query_callbacks,
                 session,
                 &address,
                 target_address,
@@ -1200,7 +1092,6 @@ async fn ledger_case<Receipt>(
                 },
                 LedgerOperation::Read,
                 profile,
-                retention,
                 expected,
                 LedgerCommand::Read,
                 |origins| origins.iter().copied().map(u64::from).collect::<Vec<_>>(),
@@ -1243,7 +1134,9 @@ async fn ledger_case<Receipt>(
     let first = study.native_outcomes().next().unwrap();
     assert_eq!(first.from, study.target);
     assert_eq!(first.message.as_slice(), [caller]);
-    let first_source = ptr::from_ref(first).addr();
+    let first_source = study.acquisitions[0]
+        .source
+        .expect("first actual in-owner native observation");
     let sources = study
         .acquisitions
         .iter()
@@ -1252,27 +1145,29 @@ async fn ledger_case<Receipt>(
     let attempts = study
         .acquisitions
         .iter()
-        .filter(|a| a.admission.is_some())
+        .filter(|a| a.attempt.is_some())
         .count();
     let second = &study.acquisitions[1];
     match retention {
         ReadRetention::Resend => {
             // The stateless baseline must establish the genuine native cause
             // before the intended one-attempt oracle; a timeout is not this fact.
-            let Some(entry) = second.admission else {
-                panic!("the second acquisition retains its actual attempt row");
+            let Some(Ok((key, _))) = &second.retained else {
+                panic!("second actual retained key");
             };
+            let entry = study.requests.iter().find(|entry| &entry.0 == key).unwrap();
             let Admission::Returned(Err(TrySendError::Closed(LedgerCommand::Read(original)))) =
-                &study.entries[entry].admission
+                &entry.4
             else {
                 panic!("the second actual attempt returns its original Closed(Read)");
             };
-            assert_eq!(original, &study.expected_reply);
+            let expected_reply = entry.6.recipient();
+            assert_eq!(original, &expected_reply);
             let (reply, _) = second.reply.as_ref().unwrap();
             assert!(reply.result().is_err());
         }
         ReadRetention::ReuseFirst => {
-            assert!(second.admission.is_none());
+            assert!(second.attempt.is_none());
             let (reply, _) = second.reply.as_ref().unwrap();
             assert!(reply.result().is_ok());
         }
@@ -1287,7 +1182,6 @@ async fn ledger_case<Receipt>(
     );
     assert_eq!(native_outcome_count, 1);
     assert_eq!(sources, [Some(first_source), Some(first_source)]);
-    drop(study.client);
 }
 
 fn assert_provider_proof<Target, Replies, Operation, Receipt, Value>(
@@ -1311,6 +1205,31 @@ fn assert_provider_proof<Target, Replies, Operation, Receipt, Value>(
     }
 }
 
+fn same_recorded_counter(
+    a: &recorded::Receipt<CounterOperation>,
+    b: &recorded::Receipt<CounterOperation>,
+) -> bool {
+    recorded::identity(a) == recorded::identity(b)
+}
+fn same_scheduled_counter(
+    a: &scheduled::Receipt<CounterOperation>,
+    b: &scheduled::Receipt<CounterOperation>,
+) -> bool {
+    scheduled::identity(a) == scheduled::identity(b)
+}
+fn same_recorded_ledger(
+    a: &recorded::Receipt<LedgerOperation>,
+    b: &recorded::Receipt<LedgerOperation>,
+) -> bool {
+    recorded::identity(a) == recorded::identity(b)
+}
+fn same_scheduled_ledger(
+    a: &scheduled::Receipt<LedgerOperation>,
+    b: &scheduled::Receipt<LedgerOperation>,
+) -> bool {
+    scheduled::identity(a) == scheduled::identity(b)
+}
+
 #[test]
 fn recorded_counter_node_reuses_first_read_outcome() {
     Builder::new_multi_thread()
@@ -1324,6 +1243,7 @@ fn recorded_counter_node_reuses_first_read_outcome() {
             recorded::projection,
             recorded::identity,
             |_| None,
+            same_recorded_counter,
         ));
 }
 #[test]
@@ -1339,6 +1259,7 @@ fn scheduled_counter_node_reuses_first_read_outcome() {
             scheduled::projection,
             scheduled::identity,
             |receipt| Some(scheduled::proof(receipt)),
+            same_scheduled_counter,
         ));
 }
 #[test]
@@ -1354,6 +1275,7 @@ fn recorded_ledger_node_reuses_first_read_outcome() {
             recorded::projection,
             recorded::identity,
             |_| None,
+            same_recorded_ledger,
         ));
 }
 #[test]
@@ -1369,8 +1291,24 @@ fn scheduled_ledger_node_reuses_first_read_outcome() {
             scheduled::projection,
             scheduled::identity,
             |receipt| Some(scheduled::proof(receipt)),
+            same_scheduled_ledger,
         ));
 }
 
 #[path = "network_replay/cancellation.rs"]
 mod cancellation;
+
+#[path = "network_replay/construction.rs"]
+mod construction;
+
+#[path = "network_replay/refusals.rs"]
+mod refusals;
+
+#[path = "network_replay/permissions.rs"]
+mod permissions;
+
+#[path = "network_replay/association.rs"]
+mod association;
+
+#[path = "network_replay/pressure.rs"]
+mod pressure;

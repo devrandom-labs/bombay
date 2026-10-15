@@ -35,7 +35,21 @@ the two actual pressure/origin/closure consumers pass in both profiles. False
 success/classification cuts fail in both profiles (ten intended failures total);
 both consumer tests pass after exact restoration. Independent execution review
 8a97b4a6 qualifies those results. Actual reviewed merge is8d809b3d with
-required Nix38683330920 passing; the release PR still needs the new main.
+required Nix38683330920 passing. Release PR371 merged75c8db4f through normal
+head-guarded squash after all six checks and final scoped reviews passed.
+Its tree matches reviewed41a36c5 exactly; required Nix38707141434 passes.
+Actual bombay-rs0.1.3 publication is verified: the registry checksum, clean VCS
+commit, annotated tag and267 Rust files match the reviewed merged tree.
+Its packaged graph retains SDK1.10.9, TLS1.10.3 and Rustls0.23.46. No new
+registry-consumer execution or complete remote support is claimed.
+
+The unmerged crate-owned export retains one existing native client per request;
+20 focused consumer tests pass in both profiles. Two native Full-retry cases
+also pass with the narrow loan-release-panic extension. Dispatch removal,
+authority bypass and late storage fail their intended assertions in both
+profiles, followed by exact restored controls. Complete combined checks,
+interface minimization, review and PR delivery remain required. These scoped results do
+not change any full R01–R25, AUTH1 or NET1 state.
 
 An isolated test-only composition now runs two actual Nodes with both protocols
 and positive provider families: all eight retained-Read controls pass, while

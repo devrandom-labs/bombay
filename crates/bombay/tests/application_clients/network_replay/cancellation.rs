@@ -1,17 +1,17 @@
 //! Native reply custody across cancellation of a disposable receive operation.
 //! Reuses its actual actor, provider, configuration and ownership declarations.
 use super::{
-    Admission, AdmissionRefusal, Binding, EndpointRole, LedgerCommand, LedgerOperation, MailLedger,
-    ProtectedMessage, ProviderProfile, Purpose, ReadRequestRef, ReadRetention, Receipts, Retention,
-    StaticExport, VerificationError, assert_completed, configuration, current_scope, metadata,
-    recorded, reserved_address, scheduled,
+    Admission, Binding, EndpointRole, LedgerCommand, LedgerOperation, MailLedger, ProtectedMessage,
+    ProviderProfile, Purpose, ReadRequestRef, Receipts, VerificationError, assert_completed,
+    configuration, current_scope, metadata, recorded, reserved_address, same_recorded_ledger,
+    same_scheduled_ledger, scheduled,
 };
 use bombay::actors::ActorExt;
 use bombay::behavior::BehaviorBase;
-use bombay::composition::StashRoute;
+use bombay::composition::{StashRoute, StashStatus};
 use bombay::prelude::Application;
-use bombay::remote::{try_retain, verify};
-use bombay::{ActorFailureAssessment, RetirementAssessment, TrySendError};
+use bombay::remote::{ExportLimits, IngressError, verify};
+use bombay::{ActorFailureAssessment, RetirementAssessment};
 use core::future::{Future, poll_fn};
 use core::ops::AsyncFn;
 use core::pin::pin;
@@ -20,7 +20,8 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
-use tokio::sync::{Semaphore, mpsc};
+use tokio::sync::mpsc;
+use zenoh::query::Query;
 
 #[expect(
     clippy::too_many_lines,
@@ -35,6 +36,7 @@ async fn cancelled_ledger_read<Receipt>(
     ) -> Result<Receipt, VerificationError>,
     projection: fn(&Receipt) -> &super::ProofScope<LedgerOperation>,
     identity: fn(&Receipt) -> (&Binding, u64),
+    same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
     let root = MailLedger {
         entries: Vec::new(),
@@ -54,10 +56,22 @@ async fn cancelled_ledger_read<Receipt>(
         .execute_with(|application, session| async move {
             let target = application.root().established_recipient();
             let origin = application.root().address();
-            let client = application
-                .export_client::<_, Receipts>(target)
-                .unwrap_or_else(|_| panic!("actual hosted Ledger target"));
-            let reply_to = client.recipient();
+            let publications = Arc::new(Mutex::new(Vec::<IngressError<Query>>::new()));
+            let observed = Arc::clone(&publications);
+            let mut export = application
+                .export::<_, Receipts, Receipt>(
+                    target,
+                    "bombay/cancellation/read",
+                    ExportLimits {
+                        queued_queries: NonZeroUsize::new(2).unwrap(),
+                        retained_queries: NonZeroUsize::new(2).unwrap(),
+                        retained_requests: NonZeroUsize::new(2).unwrap(),
+                    },
+                    same_request,
+                    move |original| observed.lock().unwrap().push(original),
+                )
+                .await
+                .unwrap_or_else(|_| panic!("actual Node-associated Ledger export"));
             let sender = application.sender().unwrap();
             let sender_origin = sender.address();
             let binding = Binding {
@@ -132,49 +146,13 @@ async fn cancelled_ledger_read<Receipt>(
             .await;
             let receipt_a = verified_a.take().unwrap().unwrap();
             let receipt_b = verified_b.take().unwrap().unwrap();
-            let capacity = Arc::new(Semaphore::new(2));
-            let (incoming, received) = mpsc::channel(2);
-            let publications = Arc::new(Mutex::new(Vec::new()));
-            let observed = Arc::clone(&publications);
-            let queryable = session
-                .declare_queryable("bombay/cancellation/read")
-                .callback(move |query| {
-                    let retained = try_retain(&incoming, &capacity, query);
-                    observed.lock().unwrap().push(retained);
-                })
-                .await
-                .unwrap();
-            let mut export = StaticExport {
-                session: session.clone(),
-                queryable,
-                incoming: received,
-                client,
-                maximum_entries: NonZeroUsize::new(2).unwrap(),
-                awaiting_native: None,
-                entries: Vec::new(),
-            };
-            let retained_a = export.retain(
-                request_a.protected,
-                request_a.proof,
-                receipt_a,
-                identity,
-                ReadRetention::ReuseFirst,
-            );
-            let retained_b = export.retain(
-                request_b.protected,
-                request_b.proof,
-                receipt_b,
-                identity,
-                ReadRetention::ReuseFirst,
-            );
-            let (Ok(Retention::First { entry: a }), Ok(Retention::First { entry: b })) =
-                (&retained_a, &retained_b)
-            else {
+            let retained_a = export.retain(request_a.protected, request_a.proof, receipt_a);
+            let retained_b = export.retain(request_b.protected, request_b.proof, receipt_b);
+            let (Ok((a, None)), Ok((b, None))) = (&retained_a, &retained_b) else {
                 panic!("two distinct verified request keys");
             };
-            let (a, b) = (*a, *b);
             let deadline = Instant::now() + Duration::from_secs(30);
-            // Unit discharges only the temporary row loan; the native result stays in Entry.
+            // Unit discharges the returned Admission borrow; its native result stays in Export.
             let admitted_a = export
                 .attempt(
                     a,
@@ -189,7 +167,7 @@ async fn cancelled_ledger_read<Receipt>(
                         if identity(receipt).0 != &binding {
                             return Err(VerificationError::Invalid);
                         }
-                        Ok(())
+                        Ok(&current_a)
                     },
                     LedgerCommand::Read,
                 )
@@ -199,7 +177,7 @@ async fn cancelled_ledger_read<Receipt>(
                 poll_fn(|cx| Poll::Ready(receiving.as_mut().poll(cx))).await
             };
             // The whole receive operation is disposed; its export owner remains live.
-            let pending_b = export
+            let admitted_b = export
                 .attempt(
                     b,
                     |receipt| {
@@ -213,12 +191,12 @@ async fn cancelled_ledger_read<Receipt>(
                         if identity(receipt).0 != &binding {
                             return Err(VerificationError::Invalid);
                         }
-                        Ok(())
+                        Ok(&current_b)
                     },
                     LedgerCommand::Read,
                 )
                 .map(|_| ());
-            let untouched_b = {
+            let pending_b = {
                 let mut receiving = pin!(export.receive_native(b));
                 poll_fn(|cx| Poll::Ready(receiving.as_mut().poll(cx))).await
             };
@@ -235,14 +213,9 @@ async fn cancelled_ledger_read<Receipt>(
                 let mut receiving = pin!(export.receive_native(a));
                 poll_fn(|cx| Poll::Ready(receiving.as_mut().poll(cx))).await
             };
-            // Joined actor sends have settled. Close only this reply endpoint and keep
-            // any accepted prefix independently, including a reply stranded by the cut.
-            export.client.close_admission();
-            let mut remainder = Vec::new();
-            while let Some(original) = export.client.receive().await {
-                remainder.push(original);
-            }
-            let closed_b = export
+            // Joining A's stopping replay leaves B's actual command inside the retired Stash.
+            // Rechecking B must preserve its first accepted attempt, not send it again.
+            let replayed_b = export
                 .attempt(
                     b,
                     |receipt| {
@@ -256,31 +229,32 @@ async fn cancelled_ledger_read<Receipt>(
                         if identity(receipt).0 != &binding {
                             return Err(VerificationError::Invalid);
                         }
-                        Ok(())
+                        Ok(&current_b)
                     },
                     LedgerCommand::Read,
                 )
                 .map(|_| ());
+            let retired_b = {
+                let mut receiving = pin!(export.receive_native(b));
+                poll_fn(|cx| Poll::Ready(receiving.as_mut().poll(cx))).await
+            };
             (
                 export,
                 retained_a,
                 retained_b,
-                a,
-                b,
                 admitted_a,
                 pending_a,
+                admitted_b,
                 pending_b,
-                untouched_b,
                 appended,
                 append_allocation,
                 sender_origin,
                 origin,
-                reply_to,
                 fallback_shutdown,
                 report,
                 resumed_a,
-                remainder,
-                closed_b,
+                replayed_b,
+                retired_b,
                 allocations,
                 publications,
             )
@@ -294,85 +268,99 @@ async fn cancelled_ledger_read<Receipt>(
         export,
         retained_a,
         retained_b,
-        a,
-        b,
         admitted_a,
         pending_a,
+        admitted_b,
         pending_b,
-        untouched_b,
         appended,
         append_allocation,
         sender_origin,
         origin,
-        reply_to,
         fallback_shutdown,
         report,
         resumed_a,
-        remainder,
-        closed_b,
+        replayed_b,
+        retired_b,
         allocations,
         publications,
     ) = output;
-    let StaticExport {
-        session,
-        queryable,
-        incoming,
-        client,
-        entries,
-        ..
-    } = export;
-    let undeclared = queryable.undeclare().await;
-    drop((session, incoming));
+    let (undeclared, session, mut incoming, retained) = export.undeclare().await;
+    let mut requests = Vec::new();
+    for (key, protected, proof, receipt, admission, native, mut client) in retained {
+        client.close_admission();
+        let mut tail = Vec::new();
+        while let Some(original) = client.receive().await {
+            tail.push(original);
+        }
+        requests.push((
+            key, protected, proof, receipt, admission, native, client, tail,
+        ));
+    }
+    let mut query_drain = Vec::new();
+    let query_end = loop {
+        match incoming.try_recv() {
+            Ok(original) => query_drain.push(original),
+            Err(cause) => break cause,
+        }
+    };
+    drop(session);
     let closed = node.close().await;
-    // Intended guard-omission oracle is first, after every original cleanup output.
-    assert!(matches!(&pending_b, Err(AdmissionRefusal::NativePending { entry }) if *entry == a));
+    // Observe both independent admissions and A cancellation only after full cleanup.
+    let (Ok((a, None)), Ok((b, None))) = (&retained_a, &retained_b) else {
+        panic!("two independent actual issued keys");
+    };
+    assert!(admitted_b.is_ok());
     assert!(matches!(pending_a, Poll::Pending));
-    assert!(matches!(untouched_b, Poll::Ready(())));
-    assert!(matches!(resumed_a, Poll::Ready(())));
-    assert!(admitted_a.is_ok() && appended.is_ok() && closed_b.is_ok());
+    assert!(matches!(pending_b, Poll::Pending));
+    assert!(matches!(retired_b, Poll::Pending));
+    assert!(matches!(resumed_a, Poll::Ready(Some(()))));
+    assert!(admitted_a.is_ok() && appended.is_ok() && replayed_b.is_ok());
     assert!(cleanup.is_ok() && undeclared.is_ok() && closed.is_ok());
     assert!(fallback_shutdown.is_none());
+    assert!(query_drain.is_empty());
+    assert!(matches!(query_end, mpsc::error::TryRecvError::Disconnected));
     let notifications = notifications.as_ref().unwrap();
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     let (native_origin, retirement) = native.unwrap();
     assert_eq!(native_origin.address(), origin);
-    let ledger = retirement.custody().unwrap().behavior.base();
+    let behavior = &retirement.custody().unwrap().behavior;
+    let held = behavior.stashed_messages();
+    let ledger = behavior.base();
     let [(from, original)] = ledger.entries.as_slice() else {
         panic!("one actual Append");
     };
     assert_eq!(*from, sender_origin);
     assert_eq!(original.as_ptr(), append_allocation);
     assert_eq!(original.as_ref(), [59, 61]);
-    let Some(Some(reply)) = &entries[a].native else {
+    let first = requests.iter().find(|entry| &entry.0 == a).unwrap();
+    let second = requests.iter().find(|entry| &entry.0 == b).unwrap();
+    let Some(Some(reply)) = &first.5 else {
         panic!("A retains its actual User");
     };
     assert_eq!(reply.from, origin);
     assert_eq!(reply.message.as_slice(), [sender_origin]);
-    assert!(entries[b].native.is_none());
-    assert!(matches!(&entries[a].admission, Admission::Returned(Ok(()))));
-    let Admission::Returned(Err(TrySendError::Closed(LedgerCommand::Read(original)))) =
-        &entries[b].admission
-    else {
-        panic!("B retains original closed Read capability");
-    };
-    assert_eq!(original, &reply_to);
-    assert_eq!(remainder.len(), 0);
-    for (entry, allocation) in [(&entries[a], allocations[0]), (&entries[b], allocations[1])] {
-        assert_eq!(entry.request.as_ptr(), allocation.0);
-        assert_eq!(entry.request_proof.as_ptr(), allocation.1);
+    assert!(second.5.is_none());
+    assert!(matches!(&first.4, Admission::Returned(Ok(()))));
+    assert!(matches!(&second.4, Admission::Returned(Ok(()))));
+    let reply_a = first.6.recipient();
+    let reply_b = second.6.recipient();
+    assert_ne!(reply_a, reply_b);
+    assert_eq!(
+        held, 1,
+        "the actual retired Stash retains the unprocessed B command"
+    );
+    for row in &requests {
+        assert_eq!(row.7.len(), 0);
+    }
+    for (entry, allocation) in [(first, allocations[0]), (second, allocations[1])] {
+        assert_eq!(entry.1.as_ptr(), allocation.0);
+        assert_eq!(entry.2.as_ptr(), allocation.1);
     }
     assert!(publications.lock().unwrap().is_empty());
     assert_completed((native_origin, retirement), None);
-    drop((
-        client,
-        entries,
-        retained_a,
-        retained_b,
-        remainder,
-        publications,
-    ));
+    drop((requests, retained_a, retained_b, publications));
 }
 
 #[test]
@@ -387,6 +375,7 @@ fn recorded_cancelled_read_keeps_original_request_owner() {
             recorded::verify::<LedgerOperation>,
             recorded::projection,
             recorded::identity,
+            same_recorded_ledger,
         ));
 }
 #[test]
@@ -401,5 +390,6 @@ fn scheduled_cancelled_read_keeps_original_request_owner() {
             scheduled::verify::<LedgerOperation>,
             scheduled::projection,
             scheduled::identity,
+            same_scheduled_ledger,
         ));
 }
