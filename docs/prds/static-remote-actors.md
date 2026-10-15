@@ -23887,3 +23887,111 @@ law is claimed. Diagnostic stage: five paths, production+0/-0/net0, tests
 +12/-2/net10, public API+0/-0; two Nix command lines gain output capture only.
 All assertions/limits remain byte-for-byte unchanged. Actual exact-head CI must
 execute this final source and preserve its native and allocation proof scopes.
+
+
+### Release allocation scope correction — selected finite test composition
+
+Under the user's standing selection of recommended choices, adopt the prepared
+hybrid correction ceb7b99e after the independent finite calibration, before
+manifest or test edits. The exact owning failure remains d11's925-versus781
+comparison; its extra144 bytes remain unattributed. The proven defect in the
+measurement contract is different: DHAT's process-wide observation cannot
+establish a synchronous caller-thread-only allocation equality when unrelated
+threads may allocate. Do not describe a passing retry as identifying that cause.
+
+Candidate comparison eb146ec5 rejects allocation-counter0.8.1's fixed allocator
+and stats_alloc0.1.10's global scope for this composition. Select published
+alloc_count0.4.0 with defaults disabled only in the isolated transport-custody
+dev manifest. Its generic AllocCounter wraps the existing DHAT allocator; no
+allocator is handwritten. Keep every active-DHAT/header/incoming/awaited verifier
+window. Drop the actual Profiler immediately after the last verifier snapshot,
+then use current-thread snapshots only around the two existing synchronous
+association call sites. These closures return unit and contain no await.
+Retain every original assertion, byte/count bound, output and cleanup oracle.
+
+The external six-command calibration has four healthy/exact-restored passes
+and two intended process-global substitution failures at the joined
+foreign4096/local29-byte isolation oracle. Independent source review c9b847cd
+and execution review33b9592f preserve their authorship distinctions. This is
+finite 64-bit test evidence: cumulative counter overflow, failed allocations,
+arbitrary TLS contexts and snapshots across async migration are not qualified.
+The small selected crate's maintenance history and unchecked cumulative
+counters remain explicit costs; no production/runtime dependency is selected.
+
+Expected correction: protected_counter/mod.rs +22/-5/net17 test lines,
+transport-custody/Cargo.toml +1 dev-dependency line, its generated Cargo.lock
+and this acceptance/backlog record. Production+0/-0/net0; public API+0/-0.
+Existing whole-goal and post81dc scope counts carry forward without reset.
+Apply only the sealed two-file patch against its exact recorded base hashes.
+Use pinned Cargo to narrowly resolve the isolated lock, then require unchanged
+existing package identities/versions/checksums and only alloc_count newly added.
+No root manifest, root lock, production API, transport profile or required CI
+selection changes. The existing diagnostic CI job continues unchanged; preserve
+its terminal evidence before pushing another head.
+
+After lock qualification, execute the exact original allocation case in debug
+and optimized builds, strict isolated-target Clippy and format, then all
+required combined protected suites. The current source is a prepared correction,
+not a pass, feature acceptance, release merge or publication claim.
+
+
+The first pinned --no-deps metadata command did not resolve/write a lock; its
+unchanged-lock check failed and is retained as no-deps-lock-review.json. The
+full offline pinned metadata command then added exactly alloc_count0.4.0,
+checksum51fe56e8, and the owning isolated package's dependency edge. All323
+other complete package records are unchanged. Fixture lock now2d25fab9;
+root Cargo.lock remains unchanged. This is graph qualification, not execution.
+
+Exact bfa required CI38695226518/job116290114414 is terminal cancelled at
+2026-10-15T08:24:20Z. Its actual check annotation states the job exceeded
+1h30m0s. Flake Check itself succeeded; Driver fuzz printed DONE2048 but its
+step was cancelled and no artifact was retained. Observe fuzz/Miri did not
+execute. No complete required pass or release delivery follows. Full raw log
+d400fee3 preserves all four successful debug and optimized allocation window
+pairs781/781/787/787. It does not attribute the earlier144 bytes.
+
+Select the recommended bounded CI allowance correction under the user's standing
+delegation: raise only this existing required job's timeout from90 to120 minutes.
+The measured flake check consumed almost the entire prior job allowance; the
+unchanged later required campaigns must have time to execute and retain evidence.
+Moving campaigns to a new required job would alter gate structure and is not
+needed by this evidence. Keep all commands, fuzz budgets, concurrency, required
+checks, upload conditions and Miri event policy byte-for-byte unchanged. This
+adds one workflow path and+1/-1 infrastructure line, no production/public API.
+Do not rerun bfa to seek a green result; submit the verified correction head
+through the same PR and require fresh exact-head CI and review.
+
+
+Corrected local source now completes all eight pinned commands with unchanged
+selected source inputs: focused original allocation1/0/0 in each profile,
+plain protected55/0/0 in each profile, feature-enabled protected68/0/1 in each
+profile, strict all-target/all-feature isolated Clippy and formatting. Nested
+unknown-role and zero-match controls are deliberate separate observations; the
+ignored subprocess role has no execution credit. The comparison windows remain
+one block each at393/388,388/393,396/391,391/396 requested bytes. Original
+assertions/limits remain unchanged; no actual TLS campaign or full row follows
+from these in-process suites.
+
+Independent source/graph/workflow review5474865f and execution review6dcc69da
+check twice and qualify all24 complete retained DHAT diagnostic objects. Their
+311-file before/after guards include crate Rust/manifests and selected locks/
+workflow, excluding example/dependency sources; no complete-input or copied
+executable provenance is claimed. Root/fuzz package locks remain unchanged.
+The final correction before documentation-only reconciliation is seven paths:
+production+0/-0/net0, tests+22/-5/net17, public API+0/-0, isolated dev manifest
++1/-0, fixture lock+7/-0 and workflow+1/-1. Carry the prior release diagnostics,
+package-version/fixture correction and whole-goal records without resetting them.
+
+Submit this verified source through existing PR371 using a normal fast-forward
+push after checking its actual open bfa head. Fresh exact-head CI, final review,
+merge and actual registry publication remain required. The earlier144-byte
+failure stays unexplained; the correction establishes the selected bounded
+measurement contract and makes no attribution claim.
+
+
+The cumulative release contribution against main8d809b3d contains11 retained
+paths and no untracked path: production+0/-0/net0, tests+34/-7/net27, public API
++0/-0. Root/fixture package versions, changelog, diagnostic output selection,
+counting correction and existing CI capture/time allowance are all included.
+The root lock's only release change is the local Bombay version; the separate
+alloc_count registry addition belongs exclusively to the isolated fixture lock.

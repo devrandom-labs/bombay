@@ -4,6 +4,8 @@
 //! Finite byte conventions/limits are test inputs, not production defaults.
 //! No production KERI identity, durability, fresh global issuer or whole-heap bound.
 
+#[cfg(test)]
+use alloc_count::AllocCounter;
 use bombay::behavior::{
     Behavior, BehaviorSettlements, ClassifySettlement, Here, Ingress, MessageProtocol,
     SettlementStatus,
@@ -5190,11 +5192,12 @@ mod full_retry {
 
 #[cfg(test)]
 #[global_allocator]
-static COUNTER_COMPONENT_ALLOCATIONS: dhat::Alloc = dhat::Alloc;
+static COUNTER_COMPONENT_ALLOCATIONS: AllocCounter<dhat::Alloc> = AllocCounter(dhat::Alloc);
 
 #[cfg(test)]
 mod allocation_profile {
     use super::*;
+    use alloc_count::AllocSnapshot;
     use std::env::VarError;
     use std::pin::pin;
     use std::process::{self, Command};
@@ -5358,6 +5361,20 @@ mod allocation_profile {
                 after.total_blocks - before.total_blocks,
                 after.total_bytes - before.total_bytes,
             ),
+        )
+    }
+    fn requested_thread_allocations(allocate: impl FnOnce()) -> (u64, u64) {
+        let before = AllocSnapshot::now();
+        allocate();
+        let requested = before.elapsed();
+        let calls = requested
+            .alloc_calls
+            .checked_add(requested.realloc_calls)
+            .expect("finite synchronous allocation and reallocation count");
+        (
+            u64::try_from(calls).expect("finite synchronous requested allocation count"),
+            u64::try_from(requested.bytes_allocated)
+                .expect("finite synchronous requested allocation bytes"),
         )
     }
     fn counter_requested_fixture(protected: u8, configured: &[ProtectedRecord]) -> CounterRequest {
@@ -5546,9 +5563,10 @@ mod allocation_profile {
             after.total_blocks - before.total_blocks,
             after.total_bytes - before.total_bytes,
         );
+        drop(profiler);
         authorization.permission = Permission::Revoked;
         for position in 0..2 {
-            let ((), requested) = requested_allocations(|| {
+            let requested = requested_thread_allocations(|| {
                 authorization.associate(position, requests, replies);
             });
             measured.comparison_requests[position] = requested;
@@ -5570,7 +5588,7 @@ mod allocation_profile {
             *original = authorization.consume(correlation);
         }
         measured.reserved_after_consume = authorization.reserved_bytes;
-        let (duplicate, _) = requested_allocations(|| counter_requested_fixture(b'I', configured));
+        let duplicate = counter_requested_fixture(b'I', configured);
         measured.duplicate_allocations =
             Some((duplicate.protected.as_ptr(), duplicate.proof.as_ptr()));
         measured.duplicate_reservation = Some(authorization.reserve(duplicate));
@@ -5585,7 +5603,7 @@ mod allocation_profile {
                 provider(original, configured)
             })
             .await;
-            let ((), storage) = requested_allocations(|| {
+            let storage = requested_thread_allocations(|| {
                 authorization.associate(position, requests, replies);
             });
             measured.duplicate_requests = storage;
@@ -5641,7 +5659,6 @@ mod allocation_profile {
             });
             (authorization.limits.individual, authorization.limits.total) = previous_limits;
         }
-        drop(profiler);
         measured
     }
     fn assert_counter_storage<R>(
