@@ -1,17 +1,15 @@
-//! Constructor unwind must preserve prepared native inputs and the original callable.
+//! Guarded service construction preserves the actor, original actions and callable.
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, ClassifySettlement, EstablishedDelivery,
-    EstablishedRecipient, InterpreterRequests, ItemSettlement, MessageProtocol, Never, NoSends,
-    SettledItem, SettlementStatus,
+    EstablishedRecipient, InterpretationProgress, InterpreterRequests, ItemSettlement,
+    MessageProtocol, Never, NoSends, SettledItem, SettlementStatus, Step,
 };
 use bombay::prelude::{ActorRetirement, Completion, Exit};
-use bombay::{ApplicationCleanupError, ApplicationScope, MailAddr, WorkOutcome};
-use core::future::{Future, poll_fn};
-use core::task::Poll;
+use bombay::{Application, ApplicationScope, MailAddr, WorkOutcome};
 use std::fs::File;
 use std::io::Read;
-use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+use std::panic::resume_unwind;
 use std::path::PathBuf;
 use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -45,10 +43,17 @@ struct Notice {
     original: Box<[u8]>,
     file: Option<OpenFile>,
     ready: EstablishedRecipient<DocumentReady>,
+    refusal: Option<NoticeError>,
+}
+
+#[derive(Debug, PartialEq)]
+enum NoticeError {
+    Restricted(Box<[u8]>),
 }
 
 #[bombay::actor(
     message = Never,
+    error = NoticeError,
     sends = {
         files: InterpreterRequests<OpenFile>,
         ready: Vec<EstablishedDelivery<DocumentReady>>,
@@ -56,6 +61,9 @@ struct Notice {
 )]
 impl Notice {
     fn init(&mut self) -> BehaviorActed<Self> {
+        if let Some(error) = self.refusal.take() {
+            return Err(error);
+        }
         let file = self.file.take().expect("the original notice file request");
         Ok(Actions::cont()
             .send_files(file)
@@ -67,16 +75,17 @@ impl Notice {
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn constructor_unwind_keeps_original_actor_configuration_scope_and_work_for_retry() {
+async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked_work() {
     let scope = ApplicationScope::new();
     let mut replies = scope
         .external::<DocumentReady>()
         .expect("the original early endpoint");
-    let early_address = replies.address();
     let original = Box::<[u8]>::from([17, 19]);
     let actor_pointer = original.as_ptr();
     let work = Box::<[u8]>::from([23, 29]);
     let work_pointer = work.as_ptr();
+    let request = file_request();
+    let path_pointer = request.path.as_os_str().as_encoded_bytes().as_ptr();
     let attempts = Arc::new(AtomicUsize::new(0));
     let observed_attempts = Arc::clone(&attempts);
     let invocations = Arc::new(AtomicUsize::new(0));
@@ -88,8 +97,9 @@ async fn constructor_unwind_keeps_original_actor_configuration_scope_and_work_fo
         .with_root(
             Notice {
                 original,
-                file: Some(file_request()),
+                file: Some(request),
                 ready: replies.recipient(),
+                refusal: None,
             }
             .stop_on_shutdown(),
         )
@@ -111,7 +121,7 @@ async fn constructor_unwind_keeps_original_actor_configuration_scope_and_work_fo
                 let report = replies
                     .receive()
                     .await
-                    .expect("the original early endpoint survives retry");
+                    .expect("the original reply recipient survives recovery");
                 assert_eq!(report.message, 17);
                 assert_eq!(report.from, application.root().address());
                 let shutdown = application.request_shutdown();
@@ -121,66 +131,108 @@ async fn constructor_unwind_keeps_original_actor_configuration_scope_and_work_fo
                 work
             }
         })
-        .unwrap_or_else(|_| panic!("the actual host is entered before construction"));
-    let mut execution = Box::pin(execution);
-    let unwound = poll_fn(|context| {
-        Poll::Ready(catch_unwind(AssertUnwindSafe(|| {
-            execution.as_mut().poll(context)
-        })))
-    })
-    .await;
-    drop(execution);
-    let Err(cause) = unwound else {
-        panic!("the original constructor cause must unwind through the native execution port");
-    };
-    assert_eq!(ptr::from_ref(cause.as_ref()).cast::<()>(), cause_pointer);
-    assert_eq!(observed_attempts.load(Ordering::SeqCst), 1);
-    assert_eq!(observed_invocations.load(Ordering::SeqCst), 0);
-    let (work, native, notifications, ()) = receiving.await.into_parts();
-    assert!(native.is_err());
-    assert!(notifications.is_err());
-    let WorkOutcome::Prepared {
-        inputs: (root, spaces, scope),
+        .unwrap_or_else(|_| panic!("the actual host is entered"));
+    let ((), outcome) = tokio::join!(execution, receiving);
+    let (work, native, notifications, ()) = outcome.into_parts();
+    let WorkOutcome::NotInvoked {
         work,
+        startup_error,
         cleanup,
     } = work
     else {
-        panic!("constructor unwind must preserve the original prepared actor and configuration");
+        panic!("the original callable survives the failed private actor startup");
     };
-    assert!(matches!(
-        cleanup,
-        Err(ApplicationCleanupError::PublicationClosed(_))
-    ));
-    assert_eq!(root.base().original.as_ptr(), actor_pointer);
-    assert_eq!(&*root.base().original, &[17, 19]);
-    assert!(root.base().file.is_some());
-    let additional = scope
-        .external::<DocumentReady>()
-        .expect("the retained original allocation source can establish another endpoint");
-    assert_ne!(additional.address(), early_address);
-    assert_ne!(additional.address(), MailAddr::APPLICATION_ROOT);
-    let (work, native, notifications, ()) = scope
-        .with_topology(root, spaces)
-        .run_with(work)
-        .await
-        .unwrap_or_else(|_| panic!("the same original inputs retry in the same host"))
-        .into_parts();
-    let (work, cleanup) = work
-        .try_into_completed()
-        .unwrap_or_else(|_| panic!("the retained original callable actually runs on retry"));
-    assert_eq!(work.as_ptr(), work_pointer);
-    assert_eq!(&*work, &[23, 29]);
-    cleanup.expect("the actual native cleanup completes");
-    assert_eq!(observed_attempts.load(Ordering::SeqCst), 2);
-    assert_eq!(observed_invocations.load(Ordering::SeqCst), 1);
-    let notifications = notifications.expect("independent notification receiving");
+    assert!(startup_error.is_some());
+    cleanup.expect("native retirement completes despite the original constructor panic");
+    assert_eq!(observed_attempts.load(Ordering::SeqCst), 1);
+    assert_eq!(observed_invocations.load(Ordering::SeqCst), 0);
+    let notifications = notifications.expect("native notification results remain independent");
     notifications
         .termination
         .expect("actual termination publication");
     notifications
         .retirement
         .expect("actual retirement publication");
-    let (_, retirement) = native.expect("the retried actor remains independently owned");
+    let (origin, retirement) = native.expect("the failed native actor is independently received");
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::HostCommitPanicked {
+        custody,
+        initialization: Some(InterpretationProgress::Original(initialization)),
+        payload,
+    } = retirement
+    else {
+        panic!("constructor failure preserves untouched initialization before host commitment");
+    };
+    assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), cause_pointer);
+    assert_eq!(custody.behavior.base().original.as_ptr(), actor_pointer);
+    assert_eq!(&*custody.behavior.base().original, &[17, 19]);
+    assert!(
+        custody.behavior.base().file.is_none(),
+        "pure initialization already emitted the original request"
+    );
+    assert!(custody.control.is_empty());
+    assert!(custody.user.is_empty());
+    assert!(custody.descendants.is_empty());
+    assert!(custody.child_failures.is_empty());
+    assert!(custody.capability_failures.is_empty());
+    assert!(custody.additional_failures.is_empty());
+    assert!(custody.retirement_failures.is_empty());
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.unread_owner_cancellation.is_none());
+    assert!(initialization.creates.is_empty());
+    assert!(matches!(initialization.become_, Step::Continue));
+    assert_eq!(initialization.sends.owned, NoSends);
+    let mut files = initialization.sends.inner.files.into_iter();
+    let request = files
+        .next()
+        .expect("the exact original request was never interpreted");
+    assert!(files.next().is_none());
+    assert_eq!(
+        request.path.as_os_str().as_encoded_bytes().as_ptr(),
+        path_pointer
+    );
+    assert!(matches!(request.access, FileAccess::Ready));
+    let mut ready = initialization.sends.inner.ready.into_iter();
+    let ready_delivery = ready
+        .next()
+        .expect("the independent ready lane also stays untouched");
+    assert!(ready.next().is_none());
+    assert_eq!(ready_delivery.message, 17);
+    let mut actor = custody.behavior.into_inner();
+    actor.file = Some(request);
+    actor.ready = ready_delivery.to;
+    let (work, native, notifications, ()) = Application::new(actor.stop_on_shutdown())
+        .with_interpreter(|| Services)
+        .run_with(work)
+        .await
+        .unwrap_or_else(|_| {
+            panic!("the original actor and callable recover under a fresh runtime configuration")
+        })
+        .into_parts();
+    let (work, cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the retained original callable runs during recovery"));
+    assert_eq!(work.as_ptr(), work_pointer);
+    assert_eq!(&*work, &[23, 29]);
+    cleanup.expect("the recovered native cleanup completes");
+    assert_eq!(
+        observed_attempts.load(Ordering::SeqCst),
+        1,
+        "retirement must not retry service construction"
+    );
+    assert_eq!(observed_invocations.load(Ordering::SeqCst), 1);
+    let notifications = notifications.expect("independent recovered notification receiving");
+    notifications
+        .termination
+        .expect("actual termination publication");
+    notifications
+        .retirement
+        .expect("actual retirement publication");
+    let (_, retirement) = native.expect("the recovered actor remains independently owned");
     let ActorRetirement::Completed {
         custody,
         completion,
@@ -189,7 +241,7 @@ async fn constructor_unwind_keeps_original_actor_configuration_scope_and_work_fo
         source,
     } = retirement
     else {
-        panic!("service construction is not behavior failure");
+        panic!("recovered service construction permits normal actor completion");
     };
     assert_eq!(completion, Completion::Stopped);
     assert!(interpretation.is_none());
@@ -217,11 +269,97 @@ async fn constructor_unwind_keeps_original_actor_configuration_scope_and_work_fo
         assert!(settled.creations.is_empty());
         for file in settled.sends.inner.files {
             let SettledItem::Attempted(ItemSettlement::Accepted(file)) = file else {
-                panic!("the actual file is acquired exactly once on successful retry");
+                panic!("the actual file is acquired exactly once during successful recovery");
             };
             inspect_file(file);
             files += 1;
         }
     }
     assert_eq!(files, 1);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn pure_initialization_refusal_never_constructs_services_even_during_retirement() {
+    let scope = ApplicationScope::new();
+    let replies = scope
+        .external::<DocumentReady>()
+        .expect("a real early reply endpoint");
+    let original = Box::<[u8]>::from([41, 43]);
+    let actor_pointer = original.as_ptr();
+    let restriction = Box::<[u8]>::from([47, 53]);
+    let restriction_pointer = restriction.as_ptr();
+    let request = file_request();
+    let path_pointer = request.path.as_os_str().as_encoded_bytes().as_ptr();
+    let attempts = Arc::new(AtomicUsize::new(0));
+    let observed_attempts = Arc::clone(&attempts);
+    let (work, native, notifications, ()) = scope
+        .with_root(
+            Notice {
+                original,
+                file: Some(request),
+                ready: replies.recipient(),
+                refusal: Some(NoticeError::Restricted(restriction)),
+            }
+            .stop_on_shutdown(),
+        )
+        .with_interpreter(move || {
+            attempts.fetch_add(1, Ordering::SeqCst);
+            Services
+        })
+        .run()
+        .await
+        .unwrap_or_else(|_| panic!("the native host accepts the application declaration"))
+        .into_parts();
+    let WorkOutcome::NotInvoked {
+        work,
+        startup_error,
+        cleanup,
+    } = work
+    else {
+        panic!("refused initialization cannot grant application startup");
+    };
+    assert!(work.is_none());
+    assert!(startup_error.is_some());
+    cleanup.expect("native retirement works without constructing any service");
+    assert_eq!(observed_attempts.load(Ordering::SeqCst), 0);
+    let notifications = notifications.expect("both independent native notification results");
+    notifications
+        .termination
+        .expect("actual termination publication");
+    notifications
+        .retirement
+        .expect("actual retirement publication");
+    let (_, retirement) = native.expect("the original refused actor is independently received");
+    let ActorRetirement::InitializationRejected { custody, error } = retirement else {
+        panic!("the original pure refusal must not become a constructor failure");
+    };
+    let NoticeError::Restricted(restriction) = error;
+    assert_eq!(restriction.as_ptr(), restriction_pointer);
+    assert_eq!(&*restriction, &[47, 53]);
+    let actor = custody.behavior.base();
+    assert_eq!(actor.original.as_ptr(), actor_pointer);
+    assert_eq!(&*actor.original, &[41, 43]);
+    assert!(actor.refusal.is_none());
+    let request = actor
+        .file
+        .as_ref()
+        .expect("pure refusal retains its un-emitted file request");
+    assert_eq!(
+        request.path.as_os_str().as_encoded_bytes().as_ptr(),
+        path_pointer
+    );
+    assert!(matches!(request.access, FileAccess::Ready));
+    assert!(custody.control.is_empty());
+    assert!(custody.user.is_empty());
+    assert!(custody.descendants.is_empty());
+    assert!(custody.child_failures.is_empty());
+    assert!(custody.capability_failures.is_empty());
+    assert!(custody.additional_failures.is_empty());
+    assert!(custody.retirement_failures.is_empty());
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.unread_owner_cancellation.is_none());
 }

@@ -1549,33 +1549,60 @@ proposed. Cross-check DX02/03/15/16, execution-ownership, Driver initialization
 ordering and the selected0.26 receiving-loan law. Disposition: test hypothesis;
 no production model is retained before its independent reviews and falsifiers.
 
-Constructor unwind (DX15), pre-edit native regression: supplied service
-construction runs while Prepared still owns the original actor, scope and
-configuration, before native ports or actor custody are handed to user code.
-Use the existing execute_with execution/receiving pair: catch the constructor's
-actual unwind, acquire Prepared and its independent receiving failures, then
-retry the original root, scope, configuration and uninvoked callable. The real
-File receipt and early-endpoint reply must survive successful retry. This is
-Bombay ownership policy. Reuse WorkOutcome::Prepared and the existing setup
-unwind/publication contract; do not classify constructor panic as behavior
-initialization rejection or invent a successful birth. Test-only production/API
-delta remains zero. This root witness does not close child or Entity panic cuts.
+Constructor unwind (DX15), revised pre-edit law: invoke the supplied service
+constructor during the existing guarded Environment::activate operation, after
+the pure Behavior initialization returns its Actions and before reservation,
+private commitment/ACK or interpretation. Driver still owns the actor, while
+the borrowed environment owns Original initialization. Its existing
+ActivationPanicked retirement already becomes HostCommitPanicked; child startup
+already returns HostRejected with the original actor/actions and retains the
+exact native cause. Entity uses that same owning launch path. No new failure
+protocol, actor engine or retirement variant is needed. This is Bombay policy;
+it preserves the existing ordering of actor effects and fresh commitment.
 
-Native witness checkpoint: configured_descendants and interpreter_startup add
-694 test lines; production+0/-0/net0 and public types+0/-0. All73 production
-sources remain byte-identical to415c40e. Pinned1.99 cargo check intentionally
-fails on the unsupported interpreter declaration and missing ExternalRequest;
-full type checking and runtime execution remain unproved. Two source reviews
-correct the single-child report shape, startup-order assumption, per-actor File
-counts, role-specific original actors, explicit committed birth receipts and
-actual sender/origin correlation. Readiness uses real typed replies after the
-File lane. The panic witness preserves the original opaque cause allocation,
-then proves the returned scope still advances its original allocation source.
-Both final source reviews pass only this bounded hypothesis. Rustfmt and diff
-checks pass; raw commands and source hashes are in
-NATIVE-CONSTRUCTOR-WITNESSES-CHECKPOINT.json and NATIVE-CONSTRUCTOR-REVIEWED-RED.
-Existing control sums/states/branches/modules/public spellings stay unchanged;
-the constructor's optional cause owns an actual pending native unwind value,
-not a semantic flag. No new actor transition authority or production candidate
-is retained. DX15 stays open; no native integration, separate non-Sync service,
-constructor failure for children/Entity, or complete compiler proof is claimed.
+The earlier Prepared/configuration-retry hypothesis atc34f8d2 is reopened: it
+unnecessarily ran user construction before Driver ownership and missed this
+existing guard. Accepted runtime configuration authority retires normally;
+original domain actor, untouched initialization Actions, native cause and
+uninvoked Work remain independently owned. The root regression must inspect
+HostCommitPanicked, recover the original request and retry the original actor
+and callable with a fresh supplied runtime configuration. Pure init rejection
+must never construct services; retirement must work when construction never
+completed and must never invoke the constructor. Repeated activation polls must
+reuse the actual constructed service. Ordinary absence remains zero-sized; an
+Option<()> field for every native actor fails that memory requirement.
+
+CommitActions currently has no explicit interpreter-initialization operation;
+that owning operation remains to be proven. Do not overload commit, deadlines
+or source settlement as a hidden constructor hook, and do not require manual
+interpreters to provide empty callbacks. The claim concerns only the supplied
+service callback: existing make_interpreter, ChildBindings::new_in and namespace
+selection callbacks in LocalEnvironment::prepare need their own evidence.
+Both independent source reviews confirm these cuts; native execution remains
+unproved. Test-only production/API delta stays zero. Root evidence does not
+close child or Entity constructor failures.
+
+Native witness checkpoint: c34f8d2 adds694 test lines with zero production/API
+changes. Its prepared-scope recovery test and corresponding source hashes in
+NATIVE-CONSTRUCTOR-WITNESSES-CHECKPOINT.json are superseded by the guarded law
+above; the original raw RED receipts remain evidence only for that revision.
+The unchanged descendant witness checks the actual single-child report shape,
+per-actor File counts, role-specific original actors, explicitly committed birth
+receipts and actual sender/origin correlation. Real typed replies follow each
+File lane, avoiding any stronger startup-order assumption.
+
+The revised root witnesses preserve every original Actions lane and exact native
+cause, recover the original actor/request/callable with a fresh runtime config,
+and prove pure init refusal never constructs services, including during cleanup.
+Both independent source reviews pass for these hypotheses. Pinned1.99 check
+remains intentionally RED on missing ExternalRequest; complete type checking
+and native execution are unproved. Raw command: GUARDED-CONSTRUCTOR-PRE-EDIT-RED;
+current hashes/deltas: GUARDED-CONSTRUCTOR-WITNESSES-CHECKPOINT.json. The standard
+22 ActorRetirement alternatives and all production control sums, branches,
+modules and public spellings are unchanged. Notice owns an optional actual typed
+refusal, and the constructor owns an optional actual native cause; neither is a
+semantic flag or another transition authority. Production/API delta remains
+zero. DX15 stays open: pure init panic, dropped/recreated activation, child/Entity
+constructor panic, manual-host selection, non-Sync service custody and complete
+native compiler/runtime proofs remain required. No production candidate is
+retained from these test-only hypotheses.
