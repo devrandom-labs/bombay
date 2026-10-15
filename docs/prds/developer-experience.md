@@ -7,6 +7,24 @@ Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 Behavior/Actors0.26.0, macros0.14.2, Communication0.1.5 and Timers0.2.0
 without repository patches.
 
+Latest-main integration, pre-edit (2026-10-15): isolate upstream8d809b3 on
+`codex/devx-client-integration` from fully gated ea2b5b4; keep the unfinished
+DX15 interpreter work separate. The selected registry owners remain
+Behavior/Actors0.26.0, macros0.14.2, Communication0.1.5 and Timers0.2.0.
+Upstream's Application-owned export client derives exact association from the
+existing allocation owner, preserves the complete original recipient on refusal,
+and keeps native nonwaiting Full/Closed command custody. This is deliberate
+Bombay authority policy, not a new actor-model law. Preserve its original root,
+child, foreign-application, closed-target and supervisor recovery witnesses;
+no new interpretation engine, actor state, policy default or public type is
+proposed. Reuse the existing Application client and sender owners and audit
+ordinary syntax after merging. Expected integration edits are limited to
+overlapping interface, startup and verification contracts, with no additional
+production capability. Upstream test hashes and exact inputs are frozen in
+`CLIENT-INTEGRATION-INPUTS.json`. A clean merge alone proves no acceptance row;
+focused debug/release tests, static denials and combined repository gates remain
+required before delivery advancement.
+
 The frozen committed c3b74ab is being integrated on
 feat/remote-devx-integration; its active authoring worktree is untouched.
 Records below retain their original source and verification provenance.
