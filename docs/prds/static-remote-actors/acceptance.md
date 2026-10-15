@@ -21,6 +21,15 @@ only Bombay contracts, with transport configuration, sessions, queries, replies,
 declarations and callbacks private even for advanced consumers. PR373 and PR374
 remain held pending that integration.
 
+Current compiler counterexamples make the privacy defect executable:
+`remote_surface` fails its expected-denial assertions because ordinary Bombay
+consumers can infer native configuration, access the lent Session and acquire
+a native Query without importing the SDK. All three snippets compile; both
+outer debug/release test invocations return101 for that intended reason.
+Trybuild uses dev compilation in either outer profile. This is an intentional
+red acceptance gate, not a passing witness. Actual Application replacement and
+a complete public-surface audit must establish privacy before delivery.
+
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
 2026-10-13T22:17:06Z after all six checks pass ondf6144f. Source trees match.

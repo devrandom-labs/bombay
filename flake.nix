@@ -168,7 +168,7 @@
               inherit cargoArtifacts;
               env.RUSTDOCFLAGS = "--deny warnings";
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test actor_interface --test fixed_supervisor_recovery
+                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test remote_surface --test application_clients --test actor_interface --test fixed_supervisor_recovery
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';
@@ -178,7 +178,7 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test actor_interface --test fixed_supervisor_recovery";
+              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test remote_surface --test application_clients --test actor_interface --test fixed_supervisor_recovery";
             }
           );
           bombay-fmt = craneLib.cargoFmt commonArgs;

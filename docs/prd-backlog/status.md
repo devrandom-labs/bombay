@@ -103,12 +103,19 @@ Application API. The strict production gate still rejects the unused private
 mapping until real integration consumes it. PR373's six exact93a55de checks are
 also green; both delivery holds remain. No full remote row changes state.
 
+The public transport privacy gate now has three compiler counterexamples:
+all compile through Bombay inference, so its expected-denial test intentionally
+fails. Passing scoped CI on PR373/PR374 cannot waive that current defect.
+
 The capacity-only prerequisite is being verified in Communication's owning
 repository at24ad2b9. Its four focused native controls pass in both profiles;
 six intended source cuts fail in both, followed by exact-restored full12/0/0
 mailbox controls per profile. Independent source/artifact review passes;
-registered-race/model coverage, costs and notification-panic boundaries remain
-required. No new release/version or Bombay
+four bounded actual-probe models and their intended omission comparisons now
+also pass their stated oracles in both profiles. Independent review retains
+their scheduling/model limits and secondary negative-run SIGABRT. Native
+notification-panic custody, costs and broader gates remain required.
+No new release/version or Bombay
 adoption is selected. Existing Full-only caller-triggered retries retain their
 narrower scope; the automatic capacity-wait/fresh-permission witness is open.
 

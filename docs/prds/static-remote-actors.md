@@ -293,6 +293,200 @@ review digest is superseded. Exact submitted/synthetic treeeb6b90f8 matches.
 This is execution evidence only: the public-native delivery and release hold
 remain, with no full remote row or ordinary Application API acceptance.
 
+### Capacity race-model stage — selected before edits
+
+Previous goal turn made concrete progress: private connection source6bd9e7f
+is committed/pushed with eight-case controls and intended cuts; the owning
+Communication candidate has passing native controls/cuts and scoped independent
+review. The goal stays active. No full remote witness or delivery hold closes.
+Fresh root lock56661c60 still selects Behavior/Actors0.25.0 and Communication
+0.1.5 without patches; selected complete Behavior instructions remain2b7a9195.
+The new Communication source is an unadopted candidate at24ad2b9.
+
+Under standing recommendation delegation, select the smallest actual-path
+model comparison: extract the existing guarded admission/consumer/ticket check
+into one private MailboxRef operation returning standard Poll<Capacity>.
+Contention retries release the admission guard between snapshots. Native
+async waiting and a private blocking model loop reuse that exact operation;
+registration precedes its check in each caller. Add no public blocking method,
+new actor/runtime, queue, observer trait or executor. The existing private
+mailbox_admission_tests module hosts the models.
+
+The existing Loom Notify stand-in forgets broadcasts with no enabled waiter,
+unlike selected Tokio1.53.1's creation-time broadcast generation. Extend only
+that existing shim with a broadcast generation and snapshot/wait-after-snapshot
+operations. A model snapshots before the actual shared probe, then waits only
+while that generation is unchanged. Keep old permit/enabled/woken producer
+paths intact. This supplies the generation relation needed by the capacity
+models; it is not a complete native Future, waker-drop or panic model.
+
+Before source edits, author missing-probe/model regressions for dequeue versus
+snapshot/check/park, owner close with a surviving preclose sender, consumer
+teardown with drained originals, and a broadcast followed by competitor refill.
+Require actual outcomes/complete native traces and intended omitted/late
+publication inversions; an unrelated deadlock or branch-budget stop supplies
+no credit. Existing integration Loom models remain intact. Native cancellation
+stays with actual Tokio tests. Accepted payload versus caller-acquired Ready
+and notification panic remain a separate unresolved custody boundary; this
+normal-operation model cannot waive it or invent a catch/discharge policy.
+
+Forecast30–45 ordinary production introductions,15–25 model-shim and80–110
+model/test-loop lines in existing owning lib/docs. Select160 cumulative owner
+production introductions,500 retained/1600 authored owner test/model lines,
+replacing120/350/1000; carry current82 production and497 test introductions,
+all source copies and historical counts. Global1400 net production/14 public
+additions/18000 verification lines/115 software slots remain, including all
+older repositories and unresolved extents. No new public type, dependency,
+version or Bombay adoption. The coordinator continues actual Application
+composition while this independent owning verification runs.
+
+Capacity model checkpoint: exact restored owner source0449aade has four passing
+models and four passing native controls in debug and optimized. Each of four
+isolated omissions in each profile first fails its intended Loom deadlock;
+secondary modeled-destructor panic/SIGABRT remains disclosed, with no negative
+cleanup or completed-summary credit. Receipt1ba3ccef and handoffd3ea9d12 bind
+25 source/log artifacts, all independently rehashed. The independent two-pass
+source review finds no additional ordinary-operation model blocker. The single
+thread competitor-refill case proves the shim's broadcast-generation law, not
+the entire native asynchronous loop. Bounds remain maxpreemptions3 and default
+maxbranches1000, not arbitrary schedule/fairness proof.
+
+The complete owning delta is three existing paths, untracked0: ordinary
+production+86/-0/net86; verification+404/-2/net402, including16 Loom-only shim
+lines; docs+85/-0. Public additions remain one initial Capacity enum and its
+method; model stage adds none. Conservative introductions136/160 production
+and668/1600 verification carry prior revisions and source evidence copies.
+Broader owning gates, measured costs, release and Bombay adoption remain open.
+
+The review identifies a concrete native custody gap: pop removes the original
+payload and publishes the ring ticket before waking capacity observers. An
+observer waker panic can unwind before the caller obtains Some(payload).
+Select the next test-only counterexample before any production response: use
+the actual Tokio notification path with an intentionally panicking registered
+waker, retain the actual unwind cause, then finish mailbox cleanup and assert
+the independent original-payload trace. No copied model or timeout supplies
+that evidence. Forecast at most90 retained/200 authored lines in the existing
+mailbox test path, within500 retained/1600 authored owner verification caps.
+Existing controls stay intact. Catching the test's unwind for observation does
+not select a production catch/discharge policy, additional buffer, public error
+or API. Keep production frozen until the exact custody law and counterexample
+are established; passing normal-operation models cannot waive this failure.
+
+### Public transport privacy — compiler counterexamples before replacement
+
+The repeated user requirement selects public API privacy at every layer,
+including advanced use. Test that exact current defect before replacing its
+owner: downstream Rust must not be able to supply native configuration,
+obtain a native Session through execution, or receive a native Query from a
+public export. No direct SDK import is needed to exploit any of those current
+signatures; type inference is enough. Source text without the word Zenoh and
+an opaque returned future are therefore insufficient privacy evidence.
+
+Select three ordinary compile-fail fixtures in the existing trybuild scheme,
+plus one remote-only test target. Each attempts the corresponding existing
+native operation using only Bombay imports. They are expected to compile on
+the current defective public API, making trybuild fail its intended privacy
+assertion. Reject unrelated fixture diagnostics as evidence. After actual
+Application replacement, retain the observed relevant denial diagnostics and
+audit the complete replacement public surface; the three old-entrypoint tests
+alone cannot prove an arbitrary future API is private.
+
+Forecast four test paths and at most100 retained/200 authored Rust test lines,
+no production, dependency, public type or ownership-policy change. Reuse
+trybuild and the exact actual Counter/ordinary actor algebra; no macro or
+public API is introduced. Carry all paths and verification source in the
+existing cumulative allowance. This intentional red gate is an acceptance
+counterexample, not a feature completion or authority to merge failing CI.
+
+Actual pinned command `cargo test --offline --locked -p bombay-rs --features
+remote --test remote_surface` returns101, as does its --release invocation.
+All three fixtures compile successfully; trybuild then fails exactly its three
+expected-denial assertions. There are no unrelated fixture diagnostics. Logs
+e614d7e5 and997fa165 retain those results under the existing private-connection
+evidence directory. The optimized outer test still uses trybuild's standard
+dev-profile compiler invocations; it is not an independent optimized-codegen
+proof. Independent two-pass source review confirms the three accesses without
+SDK imports, and their narrower non-exhaustive scope.
+
+The four new test files add52/-0/net52 verification lines, production0/0/net0,
+public types0/0; root lock remains byte-identical56661c60. Current transport
+privacy gate is deliberately RED. Do not replace its compile-fail assertions
+with pass cases, mark it ignored, bless unrelated diagnostics or merge it as
+feature acceptance. Actual private Application replacement must make it pass.
+
+Pinned rustfmt --edition2024 --check passes all four exact fixture/test files.
+Before changing the required gate, select adding --test remote_surface to both
+existing Nix remote debug and optimized target lists. This adds two tooling
+lines, no runtime/API/dependency, and no new gate implementation. It ensures a
+future default-feature run cannot silently skip the remote privacy assertions.
+Required remote checks remain intentionally unpassable until the replacement;
+no broad Nix execution or merge is credited from this wiring.
+
+Nix syntax parsing returns0 and git diff --check passes. This privacy stage
+covers eight paths including its three records and Nix list: production
+0/0/net0; tests+52/-0/net52; Nix tooling+2/-2/net0; public types+0/-0.
+At healthy outbound-sourcee090 checkpoint the complete52-path Bombay window
+versus81dc1448, including four untracked fixtures, is production+1219/-3/net1216
+and tests+9856/-14/net9842. Classify the508-line owning connection/tests.rs as
+tests and apply the earlier178/3 inline-test classification exactly once.
+Do not classify all src paths as production. This measures the complete present
+window, not an upper bound for historical revisions or other repositories.
+
+The separate owning native panic counterexample10f7407c now actually fails
+the intended original-payload oracle in both profiles after complete receiver
+drain/owner/control cleanup. Original59 is dropped before Ready; original61's
+exact Box is retained. The actual caught wake panic remains owned. Each named
+run returns101 with0/1/12, without setup/timeout or uncaught-panic attribution.
+Receiptc5185201 binds raw logs85764b79/0652e2a5 and unchanged production0449aade;
+the prior610-line native-test prefix remains exactly058b. New test+90, carried
+owning verification+494/-2/net492, conservative authored858/1600, production
+introductions136/160. No repair, unwind policy, release or adoption is selected
+from that counterexample. These two measured source windows total1302 net
+ordinary production and10334 net test/model lines; all older extents carry.
+
+### Outbound request protection — selected before the first consumer
+
+The user's renewed requirement is absolute: Application owns connection,
+serving and retirement; no public layer exposes native configuration, sessions,
+queries, replies or callbacks. Existing Node/Export signatures remain defects,
+and both release holds remain. The following private test comparison advances
+the actual service contract; it is not an alternate public transport API.
+
+Fresh source inspection finds that live_read registers constant request proof
+bytes before the actor emits Actions. Both existing reply protectors require
+an authenticated incoming receipt, so neither can issue the first request.
+Reusing or fabricating that receipt would misstate authority. Requiring users
+to supply protected native requests would retain the prohibited plumbing.
+
+Under standing recommendation delegation, select a private reusable lending
+operation, protect_request: impl AsyncFn(&[u8]) -> Result<Box<[u8]>,
+VerificationError>, whose concrete provider captures its trusted outbound
+authority. Its input is the exact encoded request after actual Actions; receipt
+verification and receipt-dependent reply protection remain separate. Ordinary
+functions suffice: no provider trait, codec, crypto, crate, public product or
+production identity promise is added. A synchronous Fn would exclude a real
+pending provider; per-operation FnOnce remains the existing verify acquisition
+boundary, not the reusable provider configuration.
+
+First change only crates/bombay/tests/protected_counter/live_requester.rs.
+Start each finite provider's registration table empty, issue protection only
+after the actual requester Actions, and retain its actual result before
+producer disposal. Validate against independently configured trusted caller,
+controller, scope and request purpose rather than granting authority from the
+untrusted JSON. Prove actual peer receipt, native Read reply and requester typed
+completion. Preserve finite error replies and complete actor, notification and
+connection cleanup before oracles. A deliberate bypass using the old fixture
+proof must fail the intended protected-delivery oracle in both profiles; it
+must not hang while awaiting an acknowledgement that cannot arrive.
+
+Forecast up to400 retained/1000 authored test lines, no production/API delta,
+one existing path. Carry all previous source revisions and counts within the
+18000 verification allowance. Neither current provider's oneshot sent before
+its await demonstrates Pending; do not claim that result. Real pending request
+protection, final Application ownership, generic typed commands, fresh reply
+permission, replay and full resource bounds remain required. Root coordinates
+shared contracts/manifests/locks; this comparison author changes no such file.
+
 ### Pending protection — ordinary Rust comparison before implementation
 
 The next law is concurrent immutable consumption of one authenticated receipt:
