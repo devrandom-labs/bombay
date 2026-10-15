@@ -2733,3 +2733,50 @@ provider laws with DX01/20/23/25. Disposition: retain the mechanical migration
 for review; final integrated acceptance is open because of the unresolved hang.
 Raw configuration/export Query custody, automatic timer ownership and remaining
 selected criteria are not closed. No full24-gate result is claimed for this head.
+
+Supervision/pool caller refinement, pre-edit DX02/10/11/17/20: current public
+examples still name Status/Capability/CustomerProtocol and repeat those types in
+topology hosts. Runtime retirement/composed actor aliases have already gone.
+The source-backed consumer probe removes those declarations while preserving
+actual replacement, FIFO admission/completion, shutdown and retirement work.
+Both ordinary callers use exact established reply endpoints. Required law: an
+exact external recipient must not demand an unused logical namespace; genuine
+logical replies still require a static domain binding. Classification: derived
+capability composition, not a new actor-model guarantee.
+
+Inspect selected registry0.26.0 ReplyRoute, ReplyDeliveries, CustomerDelivery,
+FixedCommand/FifoCommand, request LogicalProtocols and Bombay Hosts/interpreter
+paths before selecting a correction. Their combined reply sums currently
+advertise logical capability independent of the chosen exact value; this is a
+source lead, not yet an executed fault or permission for a runtime fallback.
+Reuse existing DeliveryRoute implementations for exact/logical targets and
+complete customer rejection custody. Preserve mixed-routing use cases and
+original rejected jobs/routes; no no-op host, type erasure, arbitrary bound,
+example-only convenience helper or unconditional logical-capability widening
+may repair the probe. Separate the worker startup associated-type question and
+policy Config delivery from this capability proof. Initial budget: two copied
+actual consumer mains/worker modules outside the repository and this record,
+production/API/control states delta0. No owning abstraction selected yet.
+
+Executed source-backed REDs: FIFO fails three missing-Hosts E0277 diagnostics;
+supervision fails six for status/capability replies. Neither fails inference.
+Both independent reviews confirm the four original source hashes and unchanged
+worker bodies, work actions, replacement, FIFO results, shutdown and retirement
+handling. These printed examples are construction witnesses, not complete
+failure/retirement oracles. Metadata is truthful for today's broad ReplyRoute;
+removing it would hide real logical capability. Narrowing must survive command,
+storage and sends; independent supervisor query generics must not require an
+unconstrained Status route for capability-only work. Production/API/state delta0.
+
+
+Current isolated owner proof: ordinary queue/roster construction fixes exact
+reply endpoints; optional logical routing selects only the requested operation.
+Six real native archive-consumer tests pass1.99 debug/release, including FIFO
+original-payload rejection, retirement and both worker wrapper orders. Four
+logical-query hosting combinations compile; each missing selected host remains
+denied. The shared all-query supervisor choice was removed after an unused-host
+falsifier. Owner focused tests pass1.95 both profiles. These are explicit local
+three-owner path patches, not changes to this branch's native production or a
+registry release. The canonical Behavior PRD holds counts, reviews, source/log
+bindings and limitations. Worker aliases, complete logical failure custody,
+portable fixture adoption, costs, consumer migration and full gates remain open.
