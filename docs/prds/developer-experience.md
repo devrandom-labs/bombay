@@ -1346,3 +1346,18 @@ This proves the integrated baseline only: the separate configured-interpreter
 candidate, Linux/x86_64-Darwin, new archive checks and publication receive no
 credit. Earlier signing/disk failures remain failures. This record is a
 documentation-only successor to the frozen verified source.
+
+Latest-main integration: fresh fetch at2026-10-15T10:42Z selects75c8db4/PR371.
+An isolated release-integration worktree merges it into delivery ac1375c as
+cf6c5ef. All11 incoming paths merge without conflict. Root and isolated fixture
+versions advance0.1.2→0.1.3; the fixture adds alloc_count0.4.0 only as a pinned
+verification dependency. Main changes synchronous allocation measurements and
+retains Dhat stack diagnostics; remote/protected policies and every original
+assertion remain. Required commands add nocapture, CI timeout becomes120 minutes.
+The merge changes no crates/bombay/src production relative to ac1375c, preserves
+the DevX outcome migrations and configured client-capacity correction, and adds
+no ordinary caller ceremony or public API. Owner dependency selection remains
+Behavior/Actors0.26.0. No custom-interpreter candidate is included.
+Fresh native gates are required for this exact combined source; the120cc2d
+full-gate pass is not transferred to the release integration. Delivery remains
+ac1375c until exact-source verification and independent review pass.
