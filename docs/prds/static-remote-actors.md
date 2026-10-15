@@ -25717,3 +25717,103 @@ paths and no untracked path: production+0/-0/net0, tests+34/-7/net27, public API
 counting correction and existing CI capture/time allowance are all included.
 The root lock's only release change is the local Bombay version; the separate
 alloc_count registry addition belongs exclusively to the isolated fixture lock.
+
+### Current shipping replay qualification — explicit observation input
+
+Reuse the existing51-line qualification controller for the final replay cut.
+Add one optional explicit `resend` argument, rejecting any other extra argument
+before launching Cargo. Ordinary controls continue removing the inherited replay
+environment variable. The replay command deliberately selects the already
+reviewed comparison; record that exact input beside argv and source guards.
+This avoids a second controller or a less thoroughly guarded manual invocation.
+Preserve the prior controller bytes and count its51-line historical version;
+the same canonical software owner remains. No production/test source or default
+replay policy changes. The draft PR/immutable Nix source remains15edf7d.
+
+### PR372 — current-source cuts and allocation-header blocker
+
+Draft [PR372](https://github.com/devrandom-labs/bombay/pull/372) submits healthy
+15edf7d/tree19f62ae9, including actual main75c8db4f. It deliberately starts CI
+alongside independent local verification; it is not merge-ready. All four
+current source cuts execute four named intended failures in each profile
+(eight commands,32 failures), then fresh restored controls pass20/0/0 each.
+Independent execution reviewc0142606 verifies all353 before/after guards,
+exact source-derived mutations, selected replay input, raw hashes and oracles.
+The final source matches15edf7d; no mutant remains. The controller is57 lines,
+not58: +7/-1/net6, with its original51 lines retained separately. The old global
+NativePending comparison receives no current-policy credit.
+
+Required CI run38720810469/job116374595850 actually fails in its optimized
+protected Counter suite:54 passed/one failed at header coverage5687, then the
+outer child-classification assertion5950. Debug executes55/0/0. This is a
+different assertion from PR371's comparison equality. Its raw source-bound log
+is retained; initial gh run --log-failed was unavailable while sibling jobs
+remained live, and direct terminal-job log collection succeeded instead.
+
+Independent profile inspection identifies the first optimized Recorded profile's
+two real constructor reserves (640 and304 bytes) and foreign libtest allocations
+(48 and96 bytes), whose stacks contain test-console/mpmc code without protected
+Counter frames. The retained te/tl timing places those foreign allocations
+between the two reserves. Thus1088 versus944 is a source/timing-derived header
+inference, not a directly printed measurement. This attributes this header
+failure only; PR371's earlier144-byte comparison excess stays unattributed.
+
+Selected bounded test correction under standing recommendation delegation:
+measure both synchronous header and incoming-original requests using already
+selected alloc_count0.4.0's calling-thread snapshot while DHAT is inactive.
+Generalize the existing thread-count function to retain its actual FnOnce
+return beside the counts. Its two genuine substitutions are the original
+constructor Result and the array of two original requests. Existing unit-return
+association calls bind `((), counts)`; no new wrapper, public type or dependency.
+Start the existing DHAT profiler after those two synchronous windows. Preserve
+every capacity/byte assertion and all existing awaited verifier/global snapshots;
+DHAT's resulting profile no longer claims the earlier synchronous windows.
+Keeping active DHAT inside the thread window would also count profiler-internal
+allocations on that same thread. Weakening bounds or retrying the failure is
+rejected; a new allocator or controller has no demonstrated need.
+
+Before changing that function, add a deterministic cohort inside the existing
+isolated child, before its Builder/profiler: warm the same two standard Barrier
+gates on the same two threads, retain a foreign black-box Box4096 between the
+gates, and use the real function to return a caller Box128. Join the worker
+before asserting exact caller count1/128 and both native byte arrays. This
+first exposes the missing owned-return shape; that compile failure receives no
+semantic defect credit. The intended semantic inverse substitutes the selected
+crate's GlobalAllocSnapshot only in the owning function. The foreign allocation
+must then fail the exact caller-count oracle, without demanding a particular
+global total. Run both profiles and fresh restored controls.
+
+Expected correction: one existing test owner, about70 net test lines, zero
+production lines/public types/dependencies/new roles/controllers. Record actual
+scope including this regression and the controller's51-line history against the
+existing100 software-path/15000 test-tooling/1100 production/10 public-type
+checkpoint. The correction is a test-measurement blocker, not expanded remote
+feature scope. Required replacement CI and review precede any merge.
+
+The added cohort first exposed four missing Arc-name imports and three owned-
+return shape diagnostics. After the already-selected module-scope Arc import,
+the repeated no-run command fails only with E0308/E0277/E0599 for that unit-only
+shape; neither compilation attempt receives semantic execution credit. The
+return-preserving correction is now source-reviewed twice (cohort2400acfa and
+final6aa53749). Actual diff is test+53/-16/net37, production/API/dependencies0.
+Existing global helper, all assertions, numeric limits, profiler-disposal points
+and native cleanup remain unchanged. Selected owner SHA256 is
+`9b34f8bfb5c7364bfe2d266c17fd4b9552395d6a2bf5c26f49cbd8edb6ff26ac`.
+The focused owning allocation case then executes1/0/0 in debug and optimized,
+with the nested role/zero-match controls kept separate. The actual foreign
+allocation cohort and all four constructor/provider/order cohorts complete;
+strict comparison windows remain1 block per input and781/787 bytes total.
+Original locks retain root e058fe21 and fixture2d25fab9. The scoped owner hash
+was observed before and after these commands; no broader automatic source guard
+or copied-executable custody is claimed for this direct invocation. Global-
+snapshot inversion and exact restored controls remain required.
+
+Independent local Nix on clean15edf7d terminates for ENOSPC while compiling
+application_clients, before remote-debug execution. Receipt7a6aea9e/review619e5bad
+retain eight completed checks and15 cancelled checks; the overall gate fails.
+No test law is credited from that setup failure. With all our Rust jobs terminal
+and no holder of the shared target's Cargo locks, pinned Cargo clean --profile
+dev removed only this session's compiled debug cache:29549 files/18.2GiB. Source,
+evidence, release cache and active worktrees remain; free space rises to26GiB
+and is24GiB after the focused rebuild. This actual resource change justifies
+fresh verification, not an unqualified retry of the failed CI law.
