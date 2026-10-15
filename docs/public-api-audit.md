@@ -10,6 +10,14 @@ their upstream ownership. The [Rust API Guidelines checklist](https://rust-lang.
 informs names, traits, error behavior, and examples; exact ownership follows
 the selected Behavior instructions and [module map](module-boundaries.md).
 
+The user requires Zenoh to remain private to Bombay, including advanced APIs.
+Current Node/Export rows below inventory provisional transport-facing contracts;
+they do not approve retaining those contracts for complete remote delivery.
+Native Config, Session, Query, Reply, declaration and transport callback types
+must leave the public surface. Networking belongs to Application construction,
+execution and retirement, with Bombay errors preserving original causes. The
+remote PRD and acceptance matrix record the required ordinary public witness.
+
 Each row names its public methods or trait operations, its owner and caller,
 the construction invariant, standard trait decision, and the custody or error
 behavior. `Debug` on a generic value is conditional on its payload being

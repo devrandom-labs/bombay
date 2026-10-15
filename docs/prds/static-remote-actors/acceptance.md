@@ -134,9 +134,12 @@ composition. Assertions and transport/fault campaigns stay in owning tests or
 isolated research; relocating a fixture does not prove shipping remote support.
 Ordinary remote composition must use Bombay APIs without importing Zenoh,
 opening or closing its Session, declaring queryables, or writing transport
-request/reply loops. Bombay owns those operations and their cleanup. The public
-remote-counter application must demonstrate this boundary. Explicit advanced
-access may expose lower layers, but cannot be required for the ordinary path.
+request/reply loops. Bombay owns those operations and their cleanup within the
+Application lifecycle. The public remote-counter application must demonstrate
+this boundary. Advanced public APIs also use Bombay contracts and must not
+expose native Zenoh Config, Session, Query, Reply or declaration types. Review
+all public signatures, callbacks, exports, examples and rustdoc for those leaks;
+transport fixtures cannot substitute for the session-free Application witness.
 First reconcile the committed DevX Application APIs with the proven admission
 and retirement laws, preserving the active worktree's uncommitted changes.
 

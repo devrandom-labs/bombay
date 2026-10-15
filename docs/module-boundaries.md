@@ -48,7 +48,8 @@ isolated transport-custody package rather than an example binary.
 Ordinary remote Application composition must hide Session ownership, native
 configuration translation, declarations and transport request/reply loops inside
 Bombay. The current low-level Node interface does not establish that finished
-surface. Deliberate advanced access cannot be required by the public example.
+surface. Advanced public APIs also use Bombay contracts; Zenoh Config, Session,
+Query, Reply and declarations remain private implementation/test details.
 
 ## Workspace boundary
 

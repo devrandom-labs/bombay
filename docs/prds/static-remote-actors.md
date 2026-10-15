@@ -5,9 +5,10 @@
 The user reaffirmed on 2026-10-15 that Zenoh sessions are Bombay's concern.
 Ordinary users configure networking and compose a Bombay Application; they must
 not import Zenoh, open/close its Session, declare queryables or write transport
-request/reply loops. Bombay must own that plumbing and its lifecycle. Retain
-deliberate lower-layer access for advanced uses only where its contract is
-independently justified. The separate public remote-counter application must
+request/reply loops. Bombay must own that plumbing and its lifecycle, coupled
+to Application construction, running and retirement. The user further required
+that Zenoh stay private even through advanced APIs: power users compose Bombay
+contracts, not native transport objects. The separate remote-counter application must
 demonstrate the ordinary boundary; tests carry assertions and fault campaigns.
 
 Current source `9747c90e` does not satisfy this requirement: Node owns and opens
@@ -17,6 +18,13 @@ are prerequisite interfaces, not proof of the finished Application experience.
 Audit and minimize the complete public surface before declaring full delivery;
 do not retain an extra forwarding facade solely to conceal unfinished plumbing.
 No replacement API or production design is selected by this clarification.
+Passing CI cannot authorize retaining PR374's native Query/permit signature;
+PR374 delivery and release PR373 merge/publication are held until the
+public-boundary correction is reconciled. Existing
+raw Config, Session, Query, Reply, SDK declaration and transport callback contracts
+must become private implementation/test details. Public errors must remain
+Bombay contracts preserving actual causes without requiring SDK types. An extra
+facade over publicly retained internals would not meet this requirement.
 
 ### Pending protection — ordinary Rust comparison before implementation
 
@@ -61,6 +69,15 @@ Before the experiment, select 17000 cumulative verification/tooling lines and
 10 limits. The previous 110 allocated slots, including five unresolved-history
 slots, carry without reset. This funds one comparison lineage and its review;
 neither the allowance nor passing prerequisite tests closes a full remote row.
+
+Pending-provider refinement before test edits: both existing protectors finish
+on their first poll. Select a tiny private `protect_when_released` test variant
+in each provider: borrow its original receipt/configuration, await an owned
+oneshot release, then call the unchanged protector. Separate explicitly sized
+record tables preserve the old two-record profile. A real SessionLocal Node
+comparison may investigate current ownership, but cannot endorse the leaking
+public API or claim two-node/TLS/security delivery. Final shipping consumers
+must use the fully private transport boundary above.
 
 ## Current delivery (2026-10-15 UTC)
 
