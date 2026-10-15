@@ -5216,8 +5216,11 @@ mod allocation_profile {
     use super::*;
     use alloc_count::AllocSnapshot;
     use std::env::VarError;
+    use std::hint::black_box;
     use std::pin::pin;
     use std::process::{self, Command};
+    use std::sync::{Arc, Barrier};
+    use std::thread;
     use tokio::runtime::Runtime;
 
     // Provider-only calibration inside the already isolated owning test process.
@@ -5380,18 +5383,21 @@ mod allocation_profile {
             ),
         )
     }
-    fn requested_thread_allocations(allocate: impl FnOnce()) -> (u64, u64) {
+    fn requested_thread_allocations<T>(allocate: impl FnOnce() -> T) -> (T, (u64, u64)) {
         let before = AllocSnapshot::now();
-        allocate();
+        let owned = allocate();
         let requested = before.elapsed();
         let calls = requested
             .alloc_calls
             .checked_add(requested.realloc_calls)
             .expect("finite synchronous allocation and reallocation count");
         (
-            u64::try_from(calls).expect("finite synchronous requested allocation count"),
-            u64::try_from(requested.bytes_allocated)
-                .expect("finite synchronous requested allocation bytes"),
+            owned,
+            (
+                u64::try_from(calls).expect("finite synchronous requested allocation count"),
+                u64::try_from(requested.bytes_allocated)
+                    .expect("finite synchronous requested allocation bytes"),
+            ),
         )
     }
     fn counter_requested_fixture(protected: u8, configured: &[ProtectedRecord]) -> CounterRequest {
@@ -5429,14 +5435,7 @@ mod allocation_profile {
             counter_requested_fixture(b'Y', configured),
         ];
         let (release, released) = oneshot::channel();
-        let profiler = dhat::Profiler::builder()
-            .file_name(
-                env::temp_dir().join(format!("bombay-counter-allocations-{}.json", process::id())),
-            )
-            .trim_backtraces(None)
-            .eprint_json()
-            .build();
-        let (authorization, header_requests) = requested_allocations(|| {
+        let (authorization, header_requests) = requested_thread_allocations(|| {
             CounterAuthorization::new(
                 StartupMode::ExplicitTest,
                 Some((binding, deadline, target)),
@@ -5454,7 +5453,7 @@ mod allocation_profile {
                 },
             )
         });
-        let (originals, incoming_requests) = requested_allocations(|| match order {
+        let (originals, incoming_requests) = requested_thread_allocations(|| match order {
             IdentityOrder::Increasing => [
                 counter_requested_fixture(b'I', configured),
                 counter_requested_fixture(b'R', configured),
@@ -5467,6 +5466,13 @@ mod allocation_profile {
         let original_allocations = originals
             .each_ref()
             .map(|original| (original.protected.as_ptr(), original.proof.as_ptr()));
+        let profiler = dhat::Profiler::builder()
+            .file_name(
+                env::temp_dir().join(format!("bombay-counter-allocations-{}.json", process::id())),
+            )
+            .trim_backtraces(None)
+            .eprint_json()
+            .build();
         let mut measured = CounterAllocationObservations {
             authorization,
             header_requests,
@@ -5583,7 +5589,7 @@ mod allocation_profile {
         drop(profiler);
         authorization.permission = Permission::Revoked;
         for position in 0..2 {
-            let requested = requested_thread_allocations(|| {
+            let ((), requested) = requested_thread_allocations(|| {
                 authorization.associate(position, requests, replies);
             });
             measured.comparison_requests[position] = requested;
@@ -5620,7 +5626,7 @@ mod allocation_profile {
                 provider(original, configured)
             })
             .await;
-            let storage = requested_thread_allocations(|| {
+            let ((), storage) = requested_thread_allocations(|| {
                 authorization.associate(position, requests, replies);
             });
             measured.duplicate_requests = storage;
@@ -5986,6 +5992,37 @@ mod allocation_profile {
                 }
             }
             return;
+        }
+        {
+            let begin = Arc::new(Barrier::new(2));
+            let complete = Arc::new(Barrier::new(2));
+            let foreign_begin = Arc::clone(&begin);
+            let foreign_complete = Arc::clone(&complete);
+            let foreign = thread::spawn(move || {
+                foreign_begin.wait();
+                foreign_complete.wait();
+                foreign_begin.wait();
+                let original = black_box(Box::new([11_u8; 4096]));
+                foreign_complete.wait();
+                original
+            });
+            // Warm these exact gates before either measured allocation.
+            begin.wait();
+            complete.wait();
+            let (original, requested) = requested_thread_allocations(|| {
+                begin.wait();
+                let original = black_box(Box::new([13_u8; 128]));
+                complete.wait();
+                original
+            });
+            let foreign = foreign.join().expect("actual foreign allocation thread");
+            assert_eq!(
+                requested,
+                (1, 128),
+                "only the caller's requested allocation belongs to its reservation"
+            );
+            assert_eq!(original.as_ref(), &[13; 128]);
+            assert_eq!(foreign.as_ref(), &[11; 4096]);
         }
         let host = Builder::new_current_thread()
             .enable_all()
@@ -9761,3 +9798,7 @@ mod provider_receipt_custody {
 
 #[cfg(all(test, feature = "protected-transport"))]
 mod public_node;
+
+#[cfg(all(test, feature = "protected-transport"))]
+#[path = "live_requester.rs"]
+mod live_requester;

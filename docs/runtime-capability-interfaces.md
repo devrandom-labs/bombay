@@ -22,7 +22,7 @@ The new opt-in `remote::Metadata` is a shared untrusted fifteen-field Serde
 declaration for concrete protocols. It does not issue authority or select a
 target. Its raw decoding accepts positional structs as well as objects; the
 receiving boundary must enforce the chosen object layout and all policy.
-The implementation branch supplies `remote::json::check` for borrowed protected
+Merged PR368 supplies `remote::json::check` for borrowed protected
 JSON and separate proof bytes. Its explicit Limits select input/proof bytes,
 decoded token bytes, logical nesting and native parser states, without defaults.
 Bombay's check uses the selected parser to enforce the outer object and decoded
@@ -38,7 +38,7 @@ mailbox, lifetime authority or permission policy. Startup profile checks preserv
 actual SDK and root/child integration remain separate verification gates.
 Native transport fixtures remain scoped verification consumers.
 
-The export-client implementation branch adds remote-only
+Merged PR370 adds remote-only
 `ApplicationHandle::export_client` over an existing EstablishedRecipient. Actual
 native actor issuance retains a weak association with its Application's existing
 allocation source; external reply endpoints retain none. The constructor checks
@@ -47,11 +47,24 @@ original target on either ownership or native allocation refusal. Root and
 descendant actors share this rule; target closure does not change association.
 This adds no address registry, actor lifecycle, network declaration, readiness or
 authorization policy. Existing local `client_to` remains unrestricted.
-The same branch adds remote-only `ApplicationClient::try_send` for an exact
+The same merged contribution adds remote-only `ApplicationClient::try_send` for an exact
 EstablishedRecipient target. It reuses the existing caller/target and native
 Full/Closed originals without awaiting capacity. The local service retains its
 permission/time snapshot and retry policy; client construction and attempted
 mailbox admission remain separate facts. Stable Entity resolution still awaits.
+
+The unmerged export contribution composes those existing owners through
+`ApplicationHandle::export`. Only Node execution attaches its own native Session
+to the live handle; there is no public arbitrary handle/Session pairing.
+`remote::Export` retains protected bytes, proof and opaque provider receipt with
+one independent existing reply client per request. It compares stable provider
+identities, preserves duplicate/conflicting originals, and checks explicit count
+limits before allocating a new endpoint. Final permission/time loans cover one
+nonwaiting mailbox attempt and native result storage. Only a retained native
+Full permits explicit retry; interrupted return remains uncertain. Protocol
+authentication, native reply validation, publication permission, retry waiting
+and full resource/security acceptance remain distinct uncompleted obligations.
+This candidate does not introduce another local mailbox or Behavior algebra.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The

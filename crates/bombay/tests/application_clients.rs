@@ -910,3 +910,7 @@ async fn certified_reply_client_uses_the_application_capacity() {
     assert!(custody.terminal_report.is_none() && custody.unread_owner_cancellation.is_none());
     assert!(custody.retirement_failures.is_empty());
 }
+
+#[cfg(feature = "remote")]
+#[path = "application_clients/network_replay.rs"]
+mod network_replay;

@@ -558,8 +558,9 @@ this primitive is recorded in PR363.
 
 The new `remote::Metadata` provides fifteen required raw declarations for the
 concrete protocol's `bombay` field. Its Serde traits reject unknown/duplicate
-object fields, but decoding alone accepts positional structs too. The pending
-bounded receiving boundary must establish the selected JSON object shape and
+object fields, but decoding alone accepts positional structs too. Merged
+`remote::json::check` establishes the selected bounded JSON object shape; concrete
+protocol schemas and the receiving service must still
 check versions, profiles, SDK identities, replay and permission. Metadata neither
 authenticates input nor grants actor access. Providers protect the exact original
 transmitted bytes; deserializing and reserializing is not proof verification.
@@ -595,8 +596,12 @@ host. Trusted work can clone or close the native Session and must honor the SDK
 host/custody contract; exposing that advanced API does not enforce all remote
 policy. Whole operation disposal is surrender, not proof of joined retirement.
 
-Typed remote exports, authentication/admission and the ordinary multi-node API
-remain pending. The developer experience coordination record tracks joined-node verification.
+`ApplicationHandle::export` uses its Node's private Session and actual
+Application ownership. Each request retains its originals with an independent
+reply client and preserves native nonwaiting admission results. This is an
+advanced API; authenticated remote operations and the ordinary multi-node API
+remain pending. The developer experience coordination tracks joined-node
+verification.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 

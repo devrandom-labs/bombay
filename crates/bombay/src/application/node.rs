@@ -395,7 +395,8 @@ where
     {
         let (application, work) = self.take_application(work)?;
         let session = &self.session;
-        match application.execute_with_invocation(work, move |work: Work, application| {
+        match application.execute_with_invocation(work, move |work: Work, mut application| {
+            application.session = Some(session.clone());
             work(application, session)
         }) {
             Ok(products) => Ok(products),
