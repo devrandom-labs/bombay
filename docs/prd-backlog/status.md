@@ -43,20 +43,22 @@ commit, annotated tag and267 Rust files match the reviewed merged tree.
 Its packaged graph retains SDK1.10.9, TLS1.10.3 and Rustls0.23.46. No new
 registry-consumer execution or complete remote support is claimed.
 
-The unmerged crate-owned export retains one existing native client per request;
+The merged crate-owned export retains one existing native client per request;
 20 focused consumer tests pass in both profiles. Two native Full-retry cases
 also pass with the narrow loan-release-panic extension. Dispatch removal,
 authority bypass and late storage fail their intended assertions in both
 profiles, followed by exact restored controls. Scoped interface minimization
-and independent source reviews are recorded. Ready PR372 contains the candidate
+and independent source reviews are recorded. PR372 delivers the primitive
 and the corrected allocation measurement: restored plain55/0/0 and protected
 70/0/1 suites pass in both profiles. Workspace Nextest passes703/one skipped;
-five current CI checks pass, including independently reviewed native TLS debug
-and release campaigns. Required Nix remains live and actual PR delivery remains
-required. An isolated dependent contribution adds concurrent query/native
+all six final CI checks pass, including independently reviewed native TLS debug
+and release campaigns and required Nix38726056219. The normal exact-head guarded
+merge ise2a4e7f3; its tree matches reviewed663ac970. Publication remains separate.
+An isolated dependent contribution adds concurrent query/native
 receiving to the existing export: its three extended Counter/Ledger cases pass
-in debug and optimized profiles. Intended causal failures, restored controls
-and final delivery remain required for that contribution. These results do not change any
+in debug and optimized profiles. All six current-source cuts reach intended
+assertions in both profiles; exact-restored affected debug406 passes. Optimized
+combined checks and final delivery remain required. These results do not change any
 full R01–R25, AUTH1 or NET1 state.
 
 An isolated test-only composition now runs two actual Nodes with both protocols

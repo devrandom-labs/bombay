@@ -16,20 +16,22 @@ the earlier timed-out required job remains uncredited. Actual bombay-rs0.1.3
 publication is verified against its registry archive, tag and merged source.
 Complete remote delivery remains outstanding.
 
-The unmerged crate-owned export now retains an independent existing native client
-per request. Its20 focused consumer tests pass in debug and optimized builds,
-including the actual late-A/B isolation defect and cancellation with native
-Stash custody. Explicit Full retry has two passing native pressure cases in
-both profiles; dispatch-removal and permission-refusal inversions fail their
-intended assertions in both profiles. The narrow permission-loan release-panic
-witness also passes both profiles, with intended late-storage failures and
-fresh restored controls. Standard diagnostic/source custody and scoped
-minimization are independently qualified. PR372 contains the candidate; its
-corrected allocation measurement passes the full plain and protected suites
-in both profiles. Final combined gates, execution review and actual delivery
-remain required. These scoped results do not establish complete remote support.
-All full R01–R25, AUTH1 and NET1 gates, protected Node-owned exports and the
-separate remote-counter application remain open.
+PR372 mergede2a4e7f3 after all six checks and scoped source/native/required-Nix
+reviews passed. Its merged tree exactly matches reviewed663ac970. The crate-owned
+export retains each request's original bytes, proof and provider receipt with an
+independent existing native client. Native admission, Full-only retry, late-reply
+isolation, cancellation custody and permission-loan release-panic witnesses are
+qualified. Required run38726056219 passes, including406 remote cases per profile,
+703 optimized workspace passes/one ignored and actual bounded fuzz campaigns.
+Conditional Miri is skipped. This new API is merged, not yet registry-published.
+
+The dependent concurrent receive contribution remains unmerged. Its three
+extended Counter/Ledger cases pass in both profiles; all six current-source cuts
+reach their intended assertions in both profiles, followed by exact restoration.
+The restored complete affected debug suite passes406; optimized and final
+delivery checks remain required. All full R01–R25, AUTH1 and NET1 gates,
+authenticated Node-owned exports and the separate remote-counter application
+remain open. These primitives do not establish complete remote support.
 See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
 for exact commits, tests, scope and limitations. The following earlier
 checkpoints preserve their historical source and gate states.
@@ -26153,3 +26155,67 @@ oracle precedes the old A assertions. Actual focused controls again execute
 three cuts qualified to their earlier test bytes. Recheck all six cuts against
 this final extended source, then restore and execute the complete affected
 20-case export suite in both profiles before accepting the operation.
+
+### Request-isolation prerequisite — restored local full gate
+
+The original pinned local flake command on clean immutableedfeec1 now actually
+exits0: all24 aarch64-darwin checks pass. Reviewdb75d2a8/result9f769cc1 bind the
+raw logc0cdf254 to that exact source;663ac970 differs only in the PRD/backlog
+prose, not Rust/manifests/locks/flake/workflow. This is non-documentation equality,
+not whole-tree equality or execution on the final submitted commit.
+
+Remote debug/optimized checks execute406 passed/zero failed/zero ignored each;
+the optimized workspace executes703 passed/zero failed/one ignored across86
+summaries. Four owning coverage floors pass. Native subprocess controls and
+allocation inversions retain their separate scopes; repeated printed summaries
+do not create additional executions. No workflow fuzz or conditional Miri result
+is inferred from this local flake run. Earlier15edf ENOSPC remains incomplete.
+The independent terminal inspection/receipt programs add42 physical tooling
+lines, with no new retained controller or local rebuild. Required GitHub Nix on
+663ac970 remains live and actual merge is still required. No full remote row
+closes from this successful prerequisite check.
+
+### Verification accounting before request-isolation delivery
+
+Actual final CI review adds59 inline inspection-source introductions, including
+its rejected trybuild/name-attribution adapter, and no retained controller.
+The parallel reviewer spent42 ordinary read/seal/download input lines after its
+healthy-source seal, including five duplicate CI metadata/log reads stopped
+before archive acquisition. The separate provider follow-up adds three. Record
+those costs; neither rejected inspection nor duplicate download creates tests.
+Conservatively allocate the two terminal inspection owner lineages explicitly:
+104 identified software owners plus five unresolved-history slots gives109/110.
+
+The known subtotal is15350 before coordinator direct inputs: prior15009 plus
+148 boundary-extension introductions,23 temporary Rust-cut introductions,
+four manifest/lock introductions,20 census lines,42 local inspection lines,
+59 CI inspection lines,42 parallel review inputs and three provider reads.
+Reserving225 coordinator direct-input lines gives15575; this deliberately
+overcounts shared/reused commands and is not a unique-history certificate.
+Under standing recommendation delegation, select16000 cumulative verification/
+tooling lines before further production edits or delivery, retaining1100 net
+production Rust,10 public types and110 software slots. Historical gaps remain
+unproved rather than reset. This funds the same causal verification and actual
+CI delivery, with no additional capability, dependency, API or resource default.
+
+### Request-isolation prerequisite — actual reviewed merge
+
+[PR372](https://github.com/devrandom-labs/bombay/pull/372) actually merged
+e2a4e7f3f1392d3a64013f3df1a4800022360fa0 at2026-10-15T12:48:34Z through a
+normal squash guarded by exact663ac970. Fresh rules require the PR and passing
+Nix; zero approvals are required. All six checks pass. Submitted, synthetic CI
+and actual merged trees are9f3c528d, with full fetched Git diff returning0.
+Required run38726056219/job116392187099 completesSUCCESS at12:37:15Z.
+
+Final execution reviewab81d700/receipt6caa83d5 qualifies actual Linux remote406
+per profile, workspace703/0/1, four coverage floors, allocation controls and
+the owning inversions/restorations. Driver2048 and four Observe1024 campaigns
+finish their actual bounded budgets;108 Driver plus337 shared Observe files
+are445 unique retained fuzz files, rehashed twice with ZIP/API digest matches.
+Miri steps are actually skipped. The separate native reviewf649bdbe qualifies
+64 protected cases/160 roles and retains ordinary uncertainty cases separately.
+No copied CI executable or production identity proof is claimed.
+
+This delivers the scoped request-isolation primitive and its minimization,
+not a full remote acceptance row or registry publication. The concurrent-input
+branch must integrate this actual merged prerequisite before its own delivery.

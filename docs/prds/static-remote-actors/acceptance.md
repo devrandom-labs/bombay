@@ -487,8 +487,12 @@ Current release result: PR371 actually merged75c8db4f with all six checks and
 scoped final source/native/Nix reviews passing. The registry archive, tag and267
 Rust files for bombay-rs0.1.3 match that reviewed tree; publication is verified.
 Earlier failures above retain their original scope and are not overwritten.
-The current unmerged export candidate adds per-request native clients and
-explicit Full-only retry. Its20 focused tests and combined406 tests pass in
-debug and optimized builds before release-main integration. Current-source
-inversions, post-integration combined gates, final review and PR delivery remain
-required. No full R01–R25, AUTH1 or NET1 obligation closes from these results.
+PR372 actually mergede2a4e7f3 after all six checks and final scoped reviews passed.
+Its per-request native clients and explicit Full-only retry retain focused
+controls, intended inversions and exact-restored results in both profiles.
+Required Nix38726056219 executes406 remote cases per profile, workspace703/0/1
+and bounded Driver/Observe fuzz; conditional Miri is skipped. The separate
+concurrent-receive contribution remains unmerged: six current-source cuts fail
+their intended assertions in both profiles and the restored affected debug406
+passes. Optimized combined checks and its own delivery remain required.
+No full R01–R25, AUTH1 or NET1 obligation closes from these results.
