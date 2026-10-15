@@ -1430,3 +1430,58 @@ its22 variants. Native Application witness is intentionally RED on this design
 branch; it is not merged into the passing delivery branch or credited as a
 runtime result. Request sources and exact measurements are preserved in
 SERVICES-CUSTODY-CHECKPOINT.json; no new chronological audit document is created.
+
+Named interpreter configuration (DX15), pre-edit probe: the existing callable
+factory test does not prove that a nameable configuration can satisfy the same
+request-owner equation. A family reference must keep one nominal type while
+configuration values vary. Test a non-Clone Config returning the same separately
+owned non-Clone/non-Sync Services, with two different Config values and an actual
+child instance, using real file/environment requests beside native timers. The
+existing ServiceFactory port already owns sharing and construction; no new
+factory trait, request wrapper or state is proposed by this probe. First show
+that the present external dispatch's Fn-only bound rejects this otherwise valid
+construction port, then select the existing ServiceFactory<Service =
+Request::Interpreter> equation for dispatch. Preserve callable factories,
+zero-sized absence and compile denial of unsupported requests. This is isolated
+constructor/dispatch evidence only: it cannot claim to fix NativeEntityHost or
+EntityRef. Ordinary applications must remain inferred. Topology/family ownership
+and the pending user preference about named configuration remain independent
+requirements. Expected changes: the isolated probe's one dispatch bound and one
+focused test; native production/API +0/-0, no new control state or lifecycle owner.
+
+Configuration-probe falsifier: its four positive/current-MSRV profiles and four
+negative examples pass, but independent review finds the negative only proves
+Service type inequality. A real local OpenFile request can choose Interpreter=()
+and implement File-opening InterpretItem for unit. The generalized guard then
+admits it through the ordinary absence factory. SERVICE-CONFIG-ABSENCE-FALSIFIER
+executes that actual unsolicited File acquisition successfully; the model is
+reopened and is not lowered to native code. Frozen service-configurations source
+is retained separately, with no native production representation to remove.
+
+Next isolated hypothesis, before edits: explicit supplied construction must own
+an operation distinct from internal absence. A public constructor port may
+accept both ordinary Fn()->S and a named Config with create(&self)->S, while the
+private sharing equation still has separate zero-sized absence and Arc<Factory>
+cases. Unit may be the returned service, but ordinary absence must not implement
+the supplied-constructor port. The actual unit File interpreter must be rejected
+under absence and work under an explicit ||() constructor. Config authors state
+only real construction; they do not supply markers or no-op policies. Reuse the
+existing private shared representation and per-actor service storage; add no
+state, wrapper, fallback or clone/sync requirement on services. Prove the concrete
+absence counterexample and lawful explicit-unit control before crediting the
+constructor model. This still does not select a native host projection.
+
+Supplied-constructor probe result: the explicit InterpreterFactory operation
+(Fn blanket plus named Config) remains separate from private sharing/absence.
+Sixteen pinned current1.99/MSRV1.96 debug/release commands pass their exact
+expectations: four four-test positive runs, four original absence denials,
+four real unit-interpreter File denials, and four explicit ||() File controls.
+The last controls prove actual file content after acquisition; unit can be a
+stateless interpreter without granting authority to absent construction. All
+seven source/lock hashes and both independent review passes are retained in
+SERVICE-CONSTRUCTOR-MATRIX.json. No native production or public API changes
+are retained. Actor control states and all22 native retirement alternatives
+remain unchanged; native projection, constructor ordering/panic, root/child/
+cold/Entity installation, cancellation and full retirement remain open. Do not
+require existing manual hosts to provide a no-op service policy to lower this
+probe. Disposition: pass only for the isolated constructor/dispatch law.
