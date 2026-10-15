@@ -925,6 +925,131 @@ its raw log remains a failure, with no passing credit. After freeing inactive
 owned cache, the same current test binary passes in the pinned Nix environment.
 Selected trybuild ignores Cargo exit status when no matching JSON diagnostic is
 parsed, so the infrastructure cause is plausible but not independently proven.
-No production signature or capability changes. MSRV native debug also passes65
-tests with its one existing controlled-subprocess ignore; optimized MSRV and all
-final repository gates remain required.
+No production signature or capability changes in that diagnostic correction.
+The2e21756 current/MSRV debug/release combined corpora each pass360 tests and
+each native corpus passes65 with one existing controlled-subprocess ignore.
+Final repository gates for that frozen integration remain required; later sender
+changes have their separate evidence below.
+
+One-way sender storage, pre-edit (DX06/20): deliberate Bombay capability policy.
+A bound one-way sender owns one fresh application address and its exact target.
+It grants neither a reply recipient nor receiving/lifecycle authority. Current
+ApplicationSender privately establishes ExternalActor<Never>, allocating a
+mailbox, admission state and termination observation that cannot be exposed.
+ApplicationAddresses.allocate already reserves its never-reused identity without
+heap allocation. ExternalTarget.send_from and ActorRef.try_send_from already
+accept that identity directly; reply clients keep their complete ExternalActor.
+
+Desired syntax stays application.sender(), sender_to(target), and exported
+interface.sender_to(target). Ownership equation: (target, allocator) -> either
+(target, fresh address) or (original target, exact AllocationRejection). Sending
+still preserves the original command and truthful sender; sender destruction
+must not close its selected target or consume accepted commands. The private
+Never mailbox has no obtainable observer/recipient and supplies no observable
+contract to preserve. No actor allocation or lifecycle law changes.
+
+Before production, add one public dhat witness for all three constructor paths,
+measured synchronously on a current-thread host: no sender-owned mailbox/storage
+allocations. Complete actual root increment/read, exact-origin peer delivery,
+original Closed-command rejection and every normal retirement/notification lane
+before checking the allocation law. Existing application_clients additionally
+prove original Full/retry/closed-prefix values and exhaustion returns the original
+Entity target. Both compile-denial fixtures continue to deny receiving/lifecycle.
+
+Expected production edit interface.rs only: replace the private ExternalActor
+field with MailAddr, remove the unused capacity input at three constructors, and
+reuse the same native send methods. Expected net reduction0–15 lines; public
+spelling/type/trait/bound/dependency additions0. Test and canonical guidance update
+together after RED. Control-state sum unchanged (sender is an immutable product);
+no subordinate states/outcomes added. Remove its hidden mailbox/admission/observe
+state only; those owners remain for real reply clients. Count the exact diff and
+prove both compilers/profiles, allocation-exhaustion custody, existing native
+consumers, static denials and inverse before mechanical migration. The frozen
+2e21756 full-gate run is independent of this next isolated stage.
+Selected registry owners for this record: bombay-address0.3.0, bombay-behavior0.26.0, bombay-behavior-actors0.26.0, bombay-behavior-macros0.14.2, bombay-communication0.1.5, bombay-timers0.2.0. No patches.
+Reviewed RED completes the full public journey and fails only its final storage
+law: every sender constructor allocates8 blocks and retains16880 heap bytes;
+each sender value is176 bytes on this host. Record SENDER-HEAP-REVIEWED-RED.
+Review corrections compare all senders to the actual root and exercise sender
+destruction before target admission/Counter reply; original accepted commands and
+exact sender identities survive. This is the pre-production falsifier.
+
+Auto-trait checkpoint before retaining the representation: Communication Consumer
+contains a private raw queue cursor and is Send but not Sync. Removing the
+unused receiver therefore also permits immutable one-way senders to be borrowed
+by multiple producing threads. This follows the selected address+target model
+and existing thread-safe mailbox producer; no receive/lifecycle authority is
+granted. Prove it explicitly instead of silently changing that public promise
+or adding a meaningless non-Sync marker. Restore original production first,
+add a real scoped two-thread Counter journey (both commands processed; exact
+reply and complete retirement), and obtain its focused Sync denial before
+reapplying the no-reply representation. Existing affine receiving denials remain.
+The earlier memory GREEN remains scoped evidence, not final retention.
+The scoped-thread RED now fails specifically E0277 at borrowing the one-way
+sender: its hidden Consumer<Never> raw cursor is not Sync. Original production is
+byte-identical to2e21756 at that falsifier (SENDER-SHARING-RED). Reapply only the
+already reviewed address+target representation; no marker, unsafe impl or new
+trait/bound is needed. Both receiving denials remain independent requirements.
+
+Current sender checkpoint: production +16/-19/net-3 in interface.rs; no public
+spelling/type/trait/bound/dependency additions. Owner production802→799 lines,
+six matches/nine arms, six structs, one enum and35 public functions unchanged;
+no module/state/result alternatives added. Private sender fields remain a
+product of two values, now exact target and fresh address; they are the only
+values later delivery needs. Remove its private reply recipient/admission/control/
+consumer/termination values; actual clients retain those legitimate owners.
+No arrival history, repeated cause, false cardinality, transition authority,
+semantic boolean or structural caller syntax added. SENDER-MODEL-CHECKPOINT
+records the complete law/reuse/residue review. Both independent reviews approve
+the memory/drop/origin and shared-producer witnesses, including original-source
+REDs before retained production. Current debug/release focused witnesses pass:
+each constructor0 allocations/0 retained heap bytes and sender48 bytes, compared
+with8 allocations/16880 retained bytes and176-byte values. These are constructor
+measurements on this host, not whole-application/RSS or throughput claims. The
+first broad current-debug corpus passes369 tests and ten diagnostic fixtures;
+other profiles/MSRV, original-source comparisons and final gates remain open.
+
+HTTP diagnostic portability, pre-edit (DX19/25): the MSRV sender-consumer run
+passes owner336, accounts7 and client9 tests plus all client denials, then its
+HTTP target passes six runtime cases but fails the existing wrong-root snapshot.
+Both compilers emit E0631 for the same invalid callback;1.99 shortens imported
+paths while1.96 prints complete paths (SENDER-CONSUMERS-msrv-debug). Preserve
+that failed harness result. Remove the fixture's glob/type imports and name the
+same public types explicitly, including the existing ActorExt call. This changes
+no type equation, callback shape, behavior, capability or bound. Require both
+compilers to reject the same wrong root with one identical reviewed snapshot;
+run the six independent HTTP runtime cases unchanged. No production edits.
+The fully qualified fixture hypothesis does not stabilize the inner event
+paths: both compilers still reject the exact wrong root with E0631, but print
+those paths differently. Preserve both attempted outputs, restore the original
+fixture and pinned snapshot unchanged, and keep the MSRV snapshot obligation
+open. Do not alter application types or weaken the negative program to hide
+formatting. Continue independent runtime witnesses with no-fail-fast so one
+known harness mismatch cannot prevent later ownership tests from executing;
+the full MSRV run still reports failure and receives no whole-suite credit.
+
+Final sender result: both focused tests pass pinned1.99/1.96 debug/release;
+all three constructors measure0 blocks/0 retained bytes and48-byte sender values.
+Exact original production in a separate build directory fails the final heap
+oracle in all four builds (8 blocks/16880 bytes;176-byte values) after completing
+the entire delivery/retirement journey, and independently rejects thread sharing
+with E0277 in all four builds. One shared-cache comparison executed an apparently
+stale candidate binary and is excluded; separate build artifacts supply evidence.
+Current debug/release consumer runs each pass369 tests plus ten static fixtures.
+MSRV debug/release no-fail-fast runs each pass368 tests and fail only the unchanged
+HTTP snapshot (same E0631; different qualification); retain exit101, no suite pass.
+
+Commands inside pinned Nix: cargo test --locked -p bombay-rs --features axum
+--test sender_allocations --test sender_sharing [--release] -- --nocapture;
+broad corpus additionally --lib and --test application_clients/accounts/axum/
+event_fairness/orders/processor, with separate --test arguments. Strict workspace
+all-target/all-feature Clippy, fmt, warning-denied rustdoc and actual counter,
+actor-templates and Entity binaries pass. New tests receive two independent
+reviews; the final four assertion changes only expose existing Vec<Never> values
+on failure. Both existing receiving/lifecycle denials remain unchanged.
+
+Checkpoint: production+16/-19/net-3; tests+268/-0; public types+0/-0, no new
+traits/bounds/dependencies/modules or spellings. This reduces sender storage;
+reply clients and all actor/control phases stay unchanged. Disposition: pass for
+the focused sender law and consumer stage. Full new-source Nix/archive gates and
+remaining DX06/20 obligations stay open; frozen2e21756 gates test their own source.

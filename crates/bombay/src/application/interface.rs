@@ -10,8 +10,7 @@ use crate::observe::{Observation, Publisher, pair};
 use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
 use behavior::{
-    AllocationRejection, EstablishedRecipient, Ingress, InjectEvent, MessageProtocol, Never,
-    Protocol, User,
+    AllocationRejection, EstablishedRecipient, Ingress, InjectEvent, Never, Protocol, User,
 };
 use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
 use communication::{Consumer, ControlSender, Received, TrySendError, mailbox_channel};
@@ -117,7 +116,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     where
         Target: ExternalTarget,
     {
-        ApplicationSender::establish(target, &self.allocations, self.client_capacity)
+        ApplicationSender::establish(target, &self.allocations)
     }
 
     /// Project lifecycle authority without exposing topology ownership.
@@ -258,12 +257,8 @@ where
     /// # Errors
     /// Returns the existing allocation rejection, leaving this handle untouched.
     pub fn sender(&self) -> Result<ApplicationSender<EstablishedRecipient<P>>, ExternalActorError> {
-        ApplicationSender::establish(
-            self.root.established_recipient(),
-            &self.allocations,
-            self.client_capacity,
-        )
-        .map_err(|(_, error)| error)
+        ApplicationSender::establish(self.root.established_recipient(), &self.allocations)
+            .map_err(|(_, error)| error)
     }
 }
 
@@ -334,28 +329,28 @@ where
 }
 
 /// One external identity bound to a selected typed target for one-way commands.
-/// Its uninhabited reply protocol exposes no receiving or lifecycle authority.
+/// Owns a fresh address without allocating a reply mailbox. The selected target
+/// retains its own admission and lifecycle; dropping this sender does not close it.
 pub struct ApplicationSender<Target> {
     target: Target,
-    caller: ExternalActor<MessageProtocol<MailAddr, Never>>,
+    address: MailAddr,
 }
 
 impl<Target> ApplicationSender<Target> {
     fn establish(
         target: Target,
         allocations: &ApplicationAddresses,
-        capacity: MailboxCapacity,
     ) -> Result<Self, (Target, ExternalActorError)> {
-        match ExternalActor::establish(allocations, capacity) {
-            Ok(caller) => Ok(Self { target, caller }),
-            Err(error) => Err((target, error)),
+        match allocations.allocate() {
+            Ok(address) => Ok(Self { target, address }),
+            Err(error) => Err((target, ExternalActorError::Allocation(error))),
         }
     }
 
     /// The real allocated sender identity supplied with each command.
     #[must_use]
     pub const fn address(&self) -> MailAddr {
-        self.caller.address()
+        self.address
     }
 
     /// Admit a one-way command to the selected typed target.
@@ -369,7 +364,7 @@ impl<Target> ApplicationSender<Target> {
     where
         Target: ExternalTarget,
     {
-        self.caller.send(&self.target, command)
+        self.target.send_from(self.address, command)
     }
 }
 
@@ -386,7 +381,9 @@ where
     /// Returns Full or Closed with the complete original command, preserving
     /// the admission contract of [`ExternalActor::try_send`].
     pub fn try_send(&self, command: P::Msg) -> Result<(), TrySendError<P::Msg>> {
-        self.caller.try_send(&self.target, command)
+        let mut interpreter = ExtractLocalEndpoint;
+        let endpoint = self.target.clone().interpret(&mut interpreter);
+        endpoint.try_send_from(self.address, command)
     }
 }
 
@@ -587,7 +584,7 @@ impl<Api> ActorInterface<Api> {
     where
         Target: ExternalTarget,
     {
-        ApplicationSender::establish(target, &self.allocations, self.client_capacity)
+        ApplicationSender::establish(target, &self.allocations)
     }
 
     /// Establish one real external actor for a concrete reply protocol.
