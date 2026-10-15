@@ -1,6 +1,17 @@
 # Static remote actors and typed admission
 
-## Current delivery repair — 2026-10-14
+## Current delivery (2026-10-15 UTC)
+
+Fairness PR366 and hosting PR365 have merged after all required CI and scoped
+reviews passed. Both source locks now select corrected SDK 1.10.9. Release
+PR367 carries the fixture lock correction and delivery records; its fresh CI,
+merge and publication remain pending. All full R01–R25, AUTH1 and NET1 gates,
+Node-owned exports and the separate remote-counter application remain open.
+See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
+for exact commits, tests, scope and limitations. The following earlier
+checkpoints preserve their historical source and gate states.
+
+## Historical delivery repair — 2026-10-14
 
 External-state change: release PR360 was merged outside this coordinator at
 20:44:33Z as `c1d5b2bde866aeee28e8c83d57b9c05198e50f5c`, while native
@@ -896,7 +907,7 @@ the SDK. Child must use the existing installed target and sibling, observe
 both joined reports and preserve their complete parent-owned results. Listener
 startup proves no TLS handshake and earns no remote authorization acceptance.
 
-## Current Node implementation checkpoint — incomplete
+## Historical Node implementation checkpoint — incomplete
 
 Final typed ingress equality receives second-review PASS at source8f36b140;
 merged startup-test paired patterns receive second-review PASS at5523adeb.
@@ -1904,7 +1915,7 @@ removed under the user's cleanup instruction: about8.7MiB. Other old trees
 retain local changes or lack merge proof. No shared target or evidence archive
 was deleted.
 
-## Current integration contract — 2026-10-13
+## Historical integration contract — 2026-10-13
 
 Merged mainb2beaa9 and the coordinator's current feature branch select
 Behavior/Actors0.25.0 at2bb4510, macros0.14.1, registry Timers0.2.0 at9369d1f
@@ -22788,7 +22799,7 @@ must rerun required CI; prior26b/24c native pairs pass independently but do not
 qualify the changed head. Current retained HTTP delta is test+5/-3/net2;
 production/API0 added, combined20paths/fairness16.
 
-### Reviewed prerequisite delivery — 2026-10-15 UTC
+### Reviewed prerequisite delivery (2026-10-15 UTC)
 
 Fairness PR366 merged `b652cd703f5e06b72d0b535d9e0c531081fda8c8` at
 00:00:40Z; hosting PR365 merged
@@ -22854,3 +22865,20 @@ types remain +0/-0; no API, dependency choice or resource limit changes.
 Cargo owns the narrow lock update. Preserve complete unaffected lock records,
 run the locked control on the integrated head, review the final source and run
 all required CI before any release merge or publication. No gate is waived.
+
+The integrated `c4496e3` source preserves all three graphs from refreshed
+`e641077b` before correction. Its original locked metadata command exits 101.
+Cargo's offline update changes only the local fixture version to 0.1.2; the
+resulting lock is byte-identical to the independently reviewed isolated fix.
+All 323 other fixture records and complete root/fuzz locks remain unchanged.
+Fresh corrected/stale/restored metadata controls again return 0/101/0;
+the stale failure is the intended lock refusal, and source restoration is
+verified. Root and fixture formatting checks pass through pinned Nix.
+These are package-resolution and source checks, not runtime execution credit.
+Final combined source review, updated-head CI, release merge and publication
+remain mandatory. Earlier generated-head failures are retained.
+
+Final integrated release record against `ed22995`: eight paths, production
+Rust +0/-0/net0, tests +0/-0/net0 and public types +0/-0. Documents/changelog
++164/-17/net147, manifest +1/-1/net0 and locks +2/-2/net0 account for the whole
+delta. The release worktree has no untracked files; required CI remains pending.

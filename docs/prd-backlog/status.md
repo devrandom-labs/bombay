@@ -16,8 +16,9 @@ and [hosting PR365](https://github.com/devrandom-labs/bombay/pull/365) merged `e
 after all six checks and independent source/native/Nix reviews passed. Their
 merged trees match the reviewed trees. The corrected SDK is adopted in both
 locks; local fairness and explicitly hosted child isolation are delivered.
-All full R01–R25, AUTH1 and NET1 obligations remain open. Release PR367 must
-correct its separate fixture lock and pass fresh CI before Bombay0.1.2 delivery.
+All full R01–R25, AUTH1 and NET1 obligations remain open. Release PR367 carries
+the fixture lock correction; fresh CI, merge and publication remain required
+before Bombay0.1.2 delivery.
 Original native failures, HTTP uncertainty and cancelled runs remain recorded.
 PR360 was externally mergedc1d5b2bd at2026-10-14T20:44:33Z with native debug
 still failing; its three crates were published. Bombay0.1.1 still pins SDK1.10.8,
