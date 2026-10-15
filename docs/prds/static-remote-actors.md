@@ -26,6 +26,49 @@ must become private implementation/test details. Public errors must remain
 Bombay contracts preserving actual causes without requiring SDK types. An extra
 facade over publicly retained internals would not meet this requirement.
 
+### Selected connection inputs — implementation still required
+
+Under the user's standing recommendation delegation, select the ordinary Rust
+input product compared in3691c39f: `Network` contains deployment roots, explicit
+native retained-query quota and `NetworkLayout`. Peer layout contains optional
+connecting/listening `ConnectionEndpoints`; RouterClient contains a required
+connecting direction and no listening input. Each supplied direction contains
+an explicit all-of address list, certificate and private key. `CredentialSource`
+selects File(PathBuf) or Base64(Box<str>) independently for all five sources.
+Empty supplied directions and a peer with neither direction are refused with
+the original input. Router deployment itself remains external infrastructure.
+
+These four types group actual required inputs and alternatives. Plain positional
+arguments obscure credential/direction distinctions; a builder or opaque
+validated wrapper adds an owner without proving connectivity or deleting an
+obligation. This product has no runtime, parser, transport callback, supplied
+native identity, security-policy boolean or options pass-through. Fixed TLS,
+mTLS, private deployment roots, name checking and disabled discovery remain
+the already approved policy. Native DNS/IPv6 text stays supported without a
+Bombay hostname parser. Reject injected endpoint metadata/options and non-UTF-8
+file paths without lossy conversion; preserve original strings/paths/secrets.
+There is no automatic shared identity between directions and no default quota.
+
+This selects input representation only. A public consumer and private mapping
+must be proved through real Application startup/work/retirement before retaining
+their API. No Node/Session-valued execution, provider trait, schema or final error
+signature follows. Native typed setters and the executed Value::String adapter
+are the selected construction path; Config must not be JSON-normalized.
+Cancellation, file contents, reachability, readiness and later retirement are
+independent facts, not properties established by these input products.
+
+Pre-edit scope for that mapping: remote/connection.rs, remote/mod.rs, startup
+and actual Application integration plus focused owning/compile tests and
+guidance; at most220 introduced production lines for the mapping, not the whole
+service. Expect four added public input types, no new dependency/crate selection;
+the approved serializer may need its normal remote-only manifest edge. Current
+cumulative production972 and public additions8 carry. Select1400 net production
+lines and14 cumulative public additions, replacing1100/10, before implementing
+this stage;18000 verification lines and115 software slots remain, with all
+historical/other-repository extents retained. Reconcile actual service expansion
+separately before exceeding these bounds. Do not publish this as another
+finished primitive while the Application boundary remains incomplete.
+
 ### Pending protection — ordinary Rust comparison before implementation
 
 The next law is concurrent immutable consumption of one authenticated receipt:
