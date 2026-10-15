@@ -1,6 +1,7 @@
 # Local event fairness
 
-Status: active verification. Branch: `fix/event-fairness`, based on current `main`.
+Status: merged through [PR #366](https://github.com/devrandom-labs/bombay/pull/366).
+Merge: `b652cd703f5e06b72d0b535d9e0c531081fda8c8` on 2026-10-15 UTC.
 Selected scope: PERF-07 local event-selection prerequisite, named FAIR1.
 Blocked by: none after the source verification below. Unblocks: no full
 backlog requirement; overload, latency measurement and broadcaster policies
@@ -507,7 +508,7 @@ old production sources and on either fixed priority. It does not infer fairness
 from a timeout or require a particular rotation string. These were manual
 reviews; no independent reviewer is claimed.
 
-## Verification after the test audit
+## Historical verification after the test audit
 
 All commands use `nix develop -c`, with `CARGO_PROFILE_DEV_DEBUG=0`,
 `CARGO_PROFILE_TEST_DEBUG=0` and `CARGO_INCREMENTAL=0` for local storage limits.
@@ -539,7 +540,7 @@ patch leaves its probability unchanged. No assertion, timeout or retry policy
 was weakened. Comparison logs and receipts are in
 `/tmp/bombay-http-suite-comparison/` and `/tmp/bombay-http-comparison/`.
 
-Submission is [draft PR #366](https://github.com/devrandom-labs/bombay/pull/366).
+Historical submission was [draft PR #366](https://github.com/devrandom-labs/bombay/pull/366).
 At production revision `73f53ed`, native TLS release, CodeQL and cargo-deny pass;
 Nix flake verification is still running. Native TLS debug fails on a scheduled
 query with closed reply receiving and a recorded publication timeout. The
@@ -547,8 +548,8 @@ query with closed reply receiving and a recorded publication timeout. The
 also fails native TLS on closed reply receiving, but in different campaign
 cases. That is evidence of an existing failure family, not proof that every
 new failure is unrelated. The late-exit `-9` records are expected negative
-controls, not CI failures. These gates remain unresolved; the PR is not ready
-to merge and FAIR1 remains active.
+controls, not CI failures. At that checkpoint these gates remained unresolved;
+the PR was not ready to merge and FAIR1 remained active.
 
 Detailed local receipts are in `/tmp/bombay-fairness-causal-{debug,release}/`
 and `/tmp/bombay-fairness-public-{debug,release}/`. They retain exact commands,
@@ -665,3 +666,33 @@ failed full run remains recorded, not converted to a pass. New submitted heads
 must rerun required CI; prior26b/24c native pairs pass independently but do not
 qualify the changed head. Current retained HTTP delta is test+5/-3/net2;
 production/API0 added, combined20paths/fairness16.
+
+## Reviewed delivery
+
+The accepted FAIR1 scope was distilled and merged through PR366 at
+2026-10-15T00:00:40Z. All six checks passed on submitted
+`cec6240a44d8ac90fe70cfc90f87612136c61d54`, including
+[required CI38650631535](https://github.com/devrandom-labs/bombay/actions/runs/38650631535).
+The merge tree is exactly the reviewed submitted tree
+`52364b3709ef6f370bbf67e8c7d5fbf28429c5ce`; no direct main push or bypass was used.
+
+Independent source review `a4d780a3` confirms the retained private service
+entitlements reuse existing runtime owners, preserve child control FIFO and
+original facts, and add no public API. Exact-head native review `d7f0a83b`
+and Nix review `df31b358` pass. Nix actually executes 703 passing tests with
+one ignored test in each optimized-workspace and debug-coverage campaign,
+including all 13 owning fairness cases and the public actor witness. Driver
+2048 and four Observe 1024 fuzz campaigns complete. Conditional Miri steps
+are skipped and receive no credit. Native late-exit uncertainty stays explicit.
+
+The corrected combined remote workspace run passes 732 tests with four ignored;
+the original failed run remains retained. Both complete seven-test Axum suites
+pass; the staging case's one-argument inversion fails in both profiles, as
+recorded separately above.
+The original uncontrolled HTTP failure remains unclassified.
+
+As merged against `c1d5b2b`, the complete 16-path contribution retains production
+Rust +192/-44/net148, test source +1092/-55/net1037 and public types +0/-0.
+Delivery-record edits are documentation only. PERF-07 overload and elapsed-time
+latency policy, hosting PR365 and full remote acceptance are separate scopes;
+this merge does not complete them.
