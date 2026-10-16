@@ -17,7 +17,7 @@ The last control catches its original allocated panic and acquires native actor,
 both notification and joined connection-close results before asserting output
 custody. Delaying Completed publication past producer disposal fails its intended
 post-cleanup oracle in both profiles; exact production source is restored. This
-proves no recovery of future-local service rows from Interrupted Work.
+does not prove recovery of future-local service rows from Interrupted Work.
 Restoring the old coupled cold/prepared Work mapper fails compilation at the
 intended outcome projection in both profiles. This is static denial only.
 These local Counter controls establish no remote admission, handshake, service
