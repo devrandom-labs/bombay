@@ -6,6 +6,26 @@ locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
 
+Communication0.1.6 adoption PR377 merged76dbd849 at2026-10-16T00:31:25Z after
+all six checks and scoped reviews passed. Reviewed, tested and main trees match
+25bc63d2; required38820049280 succeeds, with primitive fuzz passing and Miri
+skipped. Both locks preserve every other package. Capacity readiness observes,
+without reserving capacity or granting authority. Fresh-authority retries and
+the complete remote Application service remain required; full remote rows stay
+open. [The PRD](../prds/static-remote-actors.md#current-dependency-delivery-2026-10-16-utc)
+records exact source and execution scope.
+
+[Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
+mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks passed onfc85ec10, including required Nix38807714831;
+reviewed, tested and merged trees equal54451654. Independent required/native
+reviews9ce15cf1/ba0e2a35 and merge receipt095a3c42 retain actual execution and
+source attribution. Six provider cases execute per profile: two finite refusals,
+two actual two-Node TLS requester flows and two local pending-protection cases.
+Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
+adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
+privacy remain open. PR373 release and PR374 API delivery remain held.
+
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.
 All nine archives and fresh SDK1.10.9 consumer/owning Query/Config cases are
@@ -133,9 +153,9 @@ isolation and separate doctests. The earlier allocation failure's exact source
 remains unattributed. Release PR14 merged963067e0 with all five checks passing;
 registry/archive/tag verification passes for published0.1.6. The coordinator
 selects that package alone and348 library/38 Application cases pass per profile.
-Independent main-based adoption PR377 is ready after all eight actual local
-checks and both independent source/execution reviews pass; required CI/merge
-remain pending. Actual main controls are333 library/36 Application and70/0/1
+Independent main-based adoption PR377 merged76dbd849 after all eight actual
+local checks, six CI checks and scoped reviews passed. Actual main controls
+are333 library/36 Application and70/0/1
 protected-counter per profile, distinct from coordinator348/38.
 Existing Full-only caller-triggered retries retain their
 narrower scope; the automatic capacity-wait/fresh-permission witness is open.
@@ -147,10 +167,10 @@ merged trees equal54451654; merge receipt095a3c42 binds reviews9ce15cf1 and
 ba0e2a35. Required Nix38807714831 executes six requester cases per profile;
 primitive fuzz passes and conditional Miri is skipped. Full local74/0/1 stays
 separate from controlled native transport campaigns. No full row closes.
-PR377 now integrates that main through3299340, resolving three documentation
+PR377 integrated that main through3299340, resolving three documentation
 conflicts without changing its narrow dependency adoption. Both actual main
 locks remain44b9daf8/8090a793 and every399/324 neighbor record is unchanged.
-Fresh combined checks and exact-head CI38820049280 run; oldd9b CI was cancelled
+Fresh combined checks and exact-head CI38820049280 pass; oldd9b CI was cancelled
 by the genuine integration push and supplies no combined-source credit.
 
 The private cold-startup handoff now transfers its actual acquired Connection

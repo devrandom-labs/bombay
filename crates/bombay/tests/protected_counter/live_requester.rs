@@ -815,7 +815,6 @@ async fn live_read<Receipt>(
     assert_eq!(declared.operation, CounterOperation::Read);
     assert_eq!(declared.value, native.message);
     assert_receipt(reply_verification.as_ref(), evidence, &[13, 17]);
-    assert!(matches!(&delivered, Some(Ok(()))));
     assert!(additional_reply.is_none());
     let acknowledged = acknowledged.as_ref().unwrap();
     assert_eq!(acknowledged.from, requester_address);

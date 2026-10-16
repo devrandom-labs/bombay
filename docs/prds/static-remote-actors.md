@@ -1,5 +1,26 @@
 # Static remote actors and typed admission
 
+## Current dependency delivery (2026-10-16 UTC)
+
+[PR377](https://github.com/devrandom-labs/bombay/pull/377) merged normally as
+76dbd84999f1e51e9ba95eec702b66361a0c0d77 at00:31:25Z after all six checks and
+scoped independent source/local/required-Nix/native reviews passed. Submitted3299340,
+actual CI checkout4294193 and merged main have the same25bc63d2 source tree.
+Required38820049280/job116714551308 succeeds at00:28:27Z: workspace703/0/1,
+remote406 per profile and six requester cases per profile. Driver/Observe fuzz
+passes; conditional Miri is skipped. Reviews005a8147/98d0443b and actual merge
+receiptcf93122f retain exact attribution in /tmp/bombay-pr377-ci-review.
+This delivers the verified Communication0.1.6 adoption only. PR379's separate
+startup correction still requires its own CI/delivery. PR378 release and PR374
+API delivery remain held pending the public transport boundary and service.
+Every full R01–R25/AUTH1/NET1 obligation remains open.
+
+The research branch integrates that actual main early. Preserve both the private
+service research and the historical main-delivery records in the two document
+conflicts. Main contributes the already reviewed provider selector in flake.nix
+and one duplicate-test-assertion deletion; no production source or dependency
+graph changes during this merge. The selected private locks remain unchanged.
+
 ## Ordinary remote composition boundary
 
 The user reaffirmed on 2026-10-15 that Zenoh sessions are Bombay's concern.
@@ -1325,7 +1346,70 @@ error/kind pair has no demonstrated need. This costs15 direct inputs and adds
 no code, dependency, public type or selected final error signature. All shipping
 private integration and complete acceptance gates remain outstanding.
 
-## Current delivery (2026-10-15 UTC)
+
+## Earlier Communication capacity preparation
+
+This historical preparation predates the PR377 merge recorded above.
+Its pending-delivery statements do not describe current delivery.
+
+Select the recommended narrow registry adoption under the user's standing
+delegation: raise the existing Communication minimum to0.1.6 and update only
+its version/checksum in both locks. A lock-only change would still let consumers
+select0.1.5, which lacks the verified capacity operation. A broad dependency
+refresh is unnecessary. Every other dependency, frozen Behavior/Actors0.25.0
+and the absence of repository patches remain unchanged.
+
+Owning [PR13](https://github.com/devrandom-labs/bombay-communication/pull/13)
+merged39fd717e after all five checks and independent source/actual-log reviews
+passed. Release [PR14](https://github.com/devrandom-labs/bombay-communication/pull/14)
+merged963067e0 after all five checks passed; its reviewed and merged trees
+equalb33455208db74cf25245cda40175269d15033434. Automatic release38811968998
+succeeded. The published un-yanked0.1.6 archive has checksum
+e5d5a581c47408d64234b7e89a229b63a333584cfe5c10b6fe656daa2c1e4853;
+all15 packaged Rust files match reviewed source, and VCS/tag resolve963067e0.
+
+Communication owns no-payload capacity observation and exact payload custody
+through notification failure. Available observes capacity; it reserves no slot
+and grants no permission. Bombay must recheck current authority before each
+nonwaiting attempt. Progress assumes normal executor wakers: arbitrary foreign
+waker-panic sibling progress is unsupported, with failed broader research
+retained. The owning change accepts measured workload cost increases; it claims
+no speedup. Existing final admission, retry and uncertainty laws remain intact.
+
+This independent branch starts from latest main e2a4e7f3. Planned surface is
+three existing dependency files and eight current documentation records:
+production Rust+0/-0; tests+0/-0; public types+0/-0. It reuses existing controls
+without adding implementation-mirroring tests. All earlier cumulative scope
+and unknown historical extents carry. Compare every locked package record;
+execute affected debug/optimized tests, strict checks and required CI on the
+actual main-based source before review/merge. Those checks are pending here.
+This delivers dependency adoption only: full R01–R25/AUTH1/NET1, Application
+networking and the required private transport boundary remain open.
+
+## Provider conservation delivery (2026-10-15 UTC)
+
+[Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
+mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks passed onfc85ec10, including required Nix38807714831;
+reviewed, tested and merged trees equal54451654. Independent required/native
+reviews9ce15cf1/ba0e2a35 and merge receipt095a3c42 retain actual execution and
+source attribution. Six provider cases execute per profile: two finite refusals,
+two actual two-Node TLS requester flows and two local pending-protection cases.
+Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
+adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
+privacy remain open. PR373 release and PR374 API delivery remain held.
+
+The contribution retains source07e3a096 (+702/-13 test lines), removing only
+one duplicate assertion from reviewede090227f. It preserves the original
+finite-failure and independent native actor oracles. Original main locks were
+e058fe21/2d25fab9 with Communication0.1.5; that main-based adoption intentionally
+uses44b9daf8/8090a793 with0.1.6. No old-head CI proves that combined source.
+The merge from current main carries the provider tests and explicit six-case
+Nix loop unchanged. Re-run affected checks, review the actual combined head
+and let required CI pass before this adoption PR merges. Earlier local d9b
+verification remains exact-source evidence, not a combined execution claim.
+
+## Earlier delivery snapshot (before PR372)
 
 Fairness PR366, hosting PR365 and release PR367 have merged after all required
 CI and scoped reviews passed. PR367 merged81dc1448; bombay-rs0.1.2 publication

@@ -9,7 +9,16 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
-Current private composition adds actual missing-host and executor-loss controls
+Communication adoption [PR377](https://github.com/devrandom-labs/bombay/pull/377)
+merged76dbd849 at2026-10-16T00:31:25Z after all six checks and scoped reviews
+passed. Reviewed/submitted329, actual CI429 and merged main share tree25bc63d2.
+Required Nix38820049280 succeeds: workspace703/0/1, remote406/profile,
+requester6/profile, primitive fuzz passing and Miri skipped. Required/native
+reviews005a8147/98d0443b and actual merge receiptcf93122f preserve attribution.
+This delivers the dependency prerequisite, not a full remote witness. Below,
+older preparation facts retain their historical source and execution scope.
+
+Earlier private composition adds actual missing-host and executor-loss controls
 and generated reply protection for both Counter/Ledger provider families.
 Restored combined library348 and application38 cases pass in both profiles;
 the intended failure-erasure, literal-proof, metadata and bound cuts fail their
@@ -64,6 +73,28 @@ outer debug/release test invocations return101 for that intended reason.
 Trybuild uses dev compilation in either outer profile. This is an intentional
 red acceptance gate, not a passing witness. Actual Application replacement and
 a complete public-surface audit must establish privacy before delivery.
+
+### Earlier main-delivery evidence
+
+The following preparation snapshot predates the PR377 merge recorded above.
+Its pending-delivery statements retain their original source qualification.
+
+Communication0.1.6 publication is verified after reviewed owning PR13 and release
+PR14 merges with passing CI. Narrow Bombay adoption is selected; its main-based
+tests and PR delivery remain pending. Capacity observation neither reserves a
+slot nor substitutes for fresh permission checks. Arbitrary foreign-waker-panic
+sibling progress is unsupported. This prerequisite closes no full row.
+
+[Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
+mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
+All six checks passed onfc85ec10, including required Nix38807714831;
+reviewed, tested and merged trees equal54451654. Independent required/native
+reviews9ce15cf1/ba0e2a35 and merge receipt095a3c42 retain actual execution and
+source attribution. Six provider cases execute per profile: two finite refusals,
+two actual two-Node TLS requester flows and two local pending-protection cases.
+Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
+adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
+privacy remain open. PR373 release and PR374 API delivery remain held.
 
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
