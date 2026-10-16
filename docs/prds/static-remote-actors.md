@@ -25931,3 +25931,23 @@ feature, dependency, default, service API or abstraction is selected here.
 Final CI/artifact review and a normal exact-head guarded merge remain required.
 Record their actual results and merge in the next delivery checkpoint; no full
 R01–R25, AUTH1 or NET1 gate closes from this prerequisite.
+
+### Replacement release fixture repair (PR380)
+
+The release bot closed PR378 unmerged after main advanced and opened PR380 at
+31ed72bb. Its manifest again declares0.2.0 while the isolated transport fixture
+lock retains0.1.3. All three affected CI jobs fail locked setup before their
+fixture tests execute; these are not native transport test failures. Reapply
+only the local Bombay package version correction in that fixture lock. Preserve
+every dependency record, checksum and selected Communication0.1.6 revision.
+No production/test/API change or new dependency selection is made. The release
+continues to be held for the full public Application service and transport
+privacy replacement; repaired or passing CI alone cannot authorize publication.
+The earlier PR378 correction and checks remain historical evidence only.
+
+Pinned Nix cargo metadata --offline --locked on the corrected fixture returns0:
+325 resolved packages, local Bombay0.2.0. Independent two-pass review verifies
+all324 other lock records and local dependency edges unchanged. Complete
+repair delta: production+0/-0/net0; tests+0/-0/net0; public API+0/-0;
+fixturelock+1/-1 and this PRD only. Metadata validates graph consistency,
+not fixture runtime behavior. Fresh required/native CI must run after push.
