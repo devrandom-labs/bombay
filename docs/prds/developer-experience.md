@@ -7,20 +7,32 @@ Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 Behavior/Actors0.26.0, macros0.14.2, Communication0.1.6 and Timers0.2.0
 without repository patches.
 
-
 PR375 merge repair, before editing: capture upstream67a286c (PR374) and
 retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native
 check snapshot untouched. Preserve simultaneous native-reply/query receiving,
 occupied outside slots, acquired User/EOF custody, exact query/count permits
 and cancellation wake registration. This is integration of existing transport
 policy, not a new actor-model law. Keep Node work callbacks actor-only and
-complete Application outcomes. Keep the verified feature selection Behavior/Actors0.26.0 and macros0.14.2;
-main still selects0.25.0/0.14.1. PR375-INTEGRATION-INPUTS.json records both graphs. Expected integration introduces no
+complete Application outcomes. Keep verified Behavior/Actors0.26.0 and
+macros0.14.2; main still selects0.25.0/0.14.1.
+PR375-INTEGRATION-INPUTS.json records both graphs. Integration introduces no
 new public type, actor state, runtime owner or policy; retain upstream assertions
 and shared receipt-cost ownership. Compile the combined source before any
 call-site correction, then verify the affected native cases and final gates.
 Update the existing PR head after resolving its conflict; this does not authorize
 merging PR375 to main or implement the separate remote actor product.
+
+The merge at cfaf86b resolves only a lockfile http-body-util edge and the
+export documentation. Its Export source is byte-identical to main67a286c;
+all107 incoming assertions survive in the moved private Node consumers, with
+three existing DevX connection-closure checks added. Root lock400 packages
+are byte-conserved from06d6fd2; the isolated325-package graph adds only the
+existing futures-util dependency edge. Combined library compilation passes
+in36.294s; all13 affected native replay cases pass debug/release in7.127s and
+165.852s, including cancellation, independent reply owners and closed requests.
+Workspace formatting passes. These are integration proofs, not final acceptance:
+the separate full native run still covers06d6fd2, and fresh checks are required
+on this PR head. The earlier optimized retry hang remains unexplained.
 
 Latest-main integration, pre-edit (2026-10-15): isolate upstream8d809b3 on
 `codex/devx-client-integration` from fully gated ea2b5b4; keep the unfinished
