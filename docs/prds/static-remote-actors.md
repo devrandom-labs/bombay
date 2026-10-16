@@ -11,8 +11,10 @@ remote406 per profile and six requester cases per profile. Driver/Observe fuzz
 passes; conditional Miri is skipped. Reviews005a8147/98d0443b and actual merge
 receiptcf93122f retain exact attribution in /tmp/bombay-pr377-ci-review.
 This delivers the verified Communication0.1.6 adoption only. PR379's separate
-startup correction still requires its own CI/delivery. The bot closed PR378 unmerged and replaced it with PR380; PR380 release and
-PR374 API delivery remain held pending the public transport boundary and service.
+startup correction now has a resolved main integration6e6f304 with fresh CI
+running. PR374 merged67a286c after all six checks passed. Superseded release
+PR380 is closed; replacement PR381 remains held for service/privacy and its
+isolated fixture-lock prerequisite.
 Every full R01–R25/AUTH1/NET1 obligation remains open.
 
 The research branch integrates that actual main early. Preserve both the private
@@ -29340,3 +29342,82 @@ authoritatively live; its two native campaigns passed. PR380 and374 retain their
 full-service/privacy release holds. Continue to one actor-wide operation/replay
 service, actual inbound and outbound Actions, provider/cancellation/resource
 proofs and reviewed PR delivery; every full R01-R25/AUTH1/NET1 gate remains open.
+
+
+### PRD goal resumption and actual-main integration (2026-10-16 UTC)
+
+The user resumes the complete PRD goal from session
+01a11bae-c00c-78a3-8c7e-d5da5f1e099a here, retaining the existing automatic
+recommended-choice delegation and instructions to merge completed slices after
+review and required CI. This research owner remains /tmp/bombay-remote-service;
+the separate startup correction stays in /tmp/bombay-startup-delivery.
+Actual main67a286c is merged into research; all Rust sources, manifests and locks
+remain byte-identical to9b6588b. The sole pre-record merge delta was a current
+status correction. No prior private service research is discarded.
+
+Startup PR3796e6f304 has fresh focused debug/optimized1/0/0 controls, and its
+combined all-feature workspace commands pass:764 tests,0 failures,4 ignored
+across91 sections, build, strict all-target Clippy and formatting. This is the
+startup/main source, not the research source whose enabled transport privacy
+acceptance remains red. Updated-head CI and actual startup merge remain open.
+Source/minimization and independent two-pass test review pass on9308f768.
+
+The user also requests removal of obsolete worktrees. Exact-head/source/dirty/
+ignored/process-descendant review identifies26 superseded checkouts. All are
+removed after retaining branches or archive refs; dirty patches, actual changed
+files and ignored evidence are independently restorable with SHA256-checked
+archives in /tmp/bombay-prd-resumption. Twenty-two invalid registrations are
+pruned without deleting their remaining source/target directories. The
+otherwise unreferenced ae4396d8 is retained in refs/archive/worktrees. Current
+research, startup integration, live DevX sessions and unfinished work remain.
+The release automation still omits isolated path-package lock refreshes; retain
+narrow fixture/fuzz correction and exact-head CI as release prerequisites.
+PR381 currently omits the fixture correction. Archiving its superseded PR380
+checkout does not clear publication or privacy holds.
+
+Fresh native-row compiler comparison uses the current locked Cargo-produced
+Bombay metadata: actual Export<Counter,CounterValue,Receipt> compiles, replacing
+only the Replies argument with the unchanged concrete CounterNative fails at
+exactly one E0277 Protocol requirement, and the unchanged fixed control compiles
+again. No function executes and no consumer dependency graph is created. Exact
+argv/source/artifact/log records are retained in
+/tmp/bombay-shipping-export-review/resumption/export-seam-receipt.json
+(280f800e3f47e01f0e3e7fbd26f59d34f2eb497381a0a483521d47c2e91b39fe).
+The two38-line sources and seven-line macro-resolution manifest total83 new
+external source lines; orchestration and all previous historical reservations
+remain additional. Initial setup errors get no law credit. This isolates the
+fixed-reply composition gap; no native type/signature is selected by the error.
+
+Independent lifecycle comparison favors transfer of actual Connection through
+the existing cleanup task result over Arc of its close Sender. A44-line pinned
+compiler witness proves only ordinary non-Send outside borrowing and existing
+JoinHandle handoff syntax. It executes no runtime ownership law. Neither option
+recovers consumed Work-local rows automatically; retained rows/provider futures
+must outlive borrowed Work. Connection must remain alive through actual native
+consumer retirement, and retained handles cannot gain fresh service admission
+during retirement. No production lifecycle representation is selected yet.
+
+### Retained service lifetime — failing regression selection before authoring
+
+Under the existing delegation, select the next minimal research witness for
+R18's service/connection ordering, separate from PR379 and the shared-native
+representation. Retain an actual Export and original-bearing request outside
+borrowed Work. Acquire a real query/count permit and native reply endpoint, stop
+the root, interrupt only Work, then acquire actual Application/family cleanup.
+The future service contract requires the connection remain open through
+undeclaration and retirement of the retained query/native owners. Existing
+cleanup closes it at the Work barrier, so the new openness oracle should fail.
+This proves a missing shipping-service law, not a violation of the provisional
+Export's documented Work-bound contract. Do not weaken that existing control.
+
+Expected test-only surface: existing remote/export.rs test declaration, one
+owning test module and the three current project records; at most250 retained
+test lines, production+0/-0 and public types+0/-0. Reuse real Counter, existing
+Application execution, typed Export and Connection/oneshot receipts. No new
+provider trait, runtime, channel service, default, lease API or publication
+policy is selected. Review the complete test twice before executing; preserve
+actual debug/optimized intended failure and all cleanup outputs. A timeout or
+setup failure proves no lifetime law. Only after that evidence may a precise
+production ownership choice and its separate change record be selected.
+Carry2500 net production/18 public additions/125 owners/20000 verification
+windows, known combined1892 production and every external/history reservation.

@@ -28,8 +28,9 @@ fails after cleanup in both profiles; restored Application/completed-receiving
 controls pass81 cases per profile. This establishes the scoped local family
 composition law only. The owning connection association/surrender test retains
 its separate execution record in the PRD.
-PR378 was closed unmerged by the release bot; replacement PR380 and API PR374
-remain held for complete public service and transport privacy correction.
+PR378 and replacement PR380 were closed unmerged by the release bot; PR381
+is the current successor. PR374 merged67a286c; the full service and private
+transport API remain open.
 
 Communication adoption [PR377](https://github.com/devrandom-labs/bombay/pull/377)
 merged76dbd849 at2026-10-16T00:31:25Z after all six checks and scoped reviews
@@ -116,7 +117,7 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 release and PR374 API delivery remain held.
+privacy remain open. PR373 was superseded; PR374 merged67a286c. Full service/privacy remains open.
 
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at

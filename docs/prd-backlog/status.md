@@ -15,7 +15,7 @@ witness also passes in debug/release, detects deliberate shutdown-result loss
 after cleanup, and has81 restored affected controls per profile. The actor-wide three-operation
 replay service, outbound Actions and transport privacy replacement remain open.
 The bot closed release PR378 unmerged and replaced it with PR380; that release
-and API PR374 remain held. Finished prerequisites merge independently through
+remains held through replacement PR381; PR374 merged67a286c. Finished prerequisites merge independently through
 reviewed, passing PRs; no full remote requirement advances from these controls.
 
 Communication0.1.6 adoption PR377 merged76dbd849 at2026-10-16T00:31:25Z after
@@ -36,7 +36,7 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 release and PR374 API delivery remain held.
+privacy remain open. PR373 was superseded; PR374 merged67a286c. Full service/privacy remains open.
 
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.
@@ -91,9 +91,9 @@ receiving to the existing export: its three extended Counter/Ledger cases pass
 in debug and optimized profiles. All six current-source cuts reach intended
 assertions in both profiles; exact-restored affected406 passes in both profiles
 before lint-only corrections. Final source has fresh focused controls, strict
-workspace Clippy and formatting passing. PR374's six exact9747c90 checks pass,
-including required Nix38740611634; actual delivery is held for the public
-transport-boundary correction. These results do not change any
+workspace Clippy and formatting passing. PR374 merged67a286c after all six
+checks passed, including required Nix38740611634. The complete remote service
+and public transport privacy remain open. These results do not change any
 full R01–R25, AUTH1 or NET1 state.
 
 An isolated test-only composition now runs two actual Nodes with both protocols
