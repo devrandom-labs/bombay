@@ -4,7 +4,12 @@ Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.
 Every full R01–R25 witness is **unexecuted** until its evidence record is
-populated. Executed prerequisite probes do not close a full witness. The PRD's
+populated. The shared-native replay design stage is now recorded in the
+PRD: real Counter processing/value/Stop and unrelated Ledger native consumers
+must pass focused controls and intended inversions before caller migration.
+Cold retention, entered-constructor uncertainty, permission loans and permanent
+native-acquisition suppression are independent gates; no executed service or
+full-row credit follows from the existing compiler-only comparison. Executed prerequisite probes do not close a full witness. The PRD's
 profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
@@ -28,6 +33,8 @@ fails after cleanup in both profiles; restored Application/completed-receiving
 controls pass81 cases per profile. This establishes the scoped local family
 composition law only. The owning connection association/surrender test retains
 its separate execution record in the PRD.
+The startup-acquisition prerequisite PR379 merged38774de with all six checks
+and required/native execution reviews passing. It closes no full remote row.
 PR378 and replacement PR380 were closed unmerged by the release bot; PR381
 is the current successor. PR374 merged67a286c; the full service and private
 transport API remain open.

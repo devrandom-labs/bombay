@@ -1,5 +1,11 @@
 # Backlog status and dependencies
 
+
+Current private service design work is the bounded shared-native replay stage
+in the static remote PRD. Focused actual Counter/Ledger controls, construction
+unwind and receiving laws are required before migration. All full remote rows
+and public transport privacy remain open. PR379 merged38774de after all six
+checks and required/native execution reviews passed.
 Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence

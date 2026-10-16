@@ -29444,3 +29444,331 @@ The proposed task-result handoff is still unselected; public service
 construction, admission closure and returned native-owner lifetime must remain
 coherent with it. No production, retained test or public interface is changed
 by this diagnostic.
+
+
+### Shared request ownership — bounded native-operation stage (2026-10-16 UTC)
+
+Select the ordinary concrete native product compared above, before production
+edits. This is deliberate Bombay service policy: one export compares provider
+logical identity across operations before allocating a native endpoint. The
+existing fixed Replies parameter cannot contain both actual CounterProcessed
+and CounterValue clients or exact lifecycle/report authority. The recorded
+unchanged CounterNative substitution fails solely at that Protocol restriction;
+it proves the representation gap, not an executed admission law.
+
+Retain the existing declaration, certified target, query channel/count owner,
+append-only request vector, original protected/proof buffers and opaque receipt.
+Replace each row's fixed client/admission/reply fields with one concrete native
+value. That value is cold at retention: it contains operation inputs, never a
+preallocated reply client. Duplicate, conflict and request-count refusal return
+the supplied cold value beside every original. The trusted private interpreter
+borrows the accepted row and receipt, obtains current permission, constructs its
+actual operation-specific capability and stores the exact admission/result.
+No native/provider trait, registry, erased reply, adapter actor or extra request
+owner is selected. Existing Admission remains the mailbox result law; exact
+shutdown admission remains a distinct existing lifecycle cause.
+
+Runtime-issued keys use the exact declaration's existing query-count allocation
+and row, with Target typing. Weak pointer identity is checked before projecting
+a row or invoking native work; retaining keys must neither extend the count
+owner nor allow same-target exports to accept each other's keys. No sequence
+arithmetic supplies identity. Native-first receiving borrows each eligible
+concrete native operation with ordinary AsyncFn and stores acquired originals
+inside that native value before disposable producer teardown. Eligibility and
+once-acquired suppression remain explicit responsibilities of the concrete
+interpreter. These are trusted internal ports, not new public application API.
+
+Focused before-production syntax and runtime witness: one real Counter export
+retains Increment A, its exact duplicate, conflicting Read A and independent
+Read B under opaque non-Send receipts. Only accepted cold operations allocate
+actual clients. Attempt A/B once, acquire genuine correlated processing and
+value replies through the common receive path, then undeclare, drain native
+owners, stop the root and acquire application/notification/connection cleanup
+before assertions. Preserve exact duplicate/conflict allocations and receipts,
+actual constructor count and complete reply trace. An owning-source identity
+comparison inverse must fail the post-cleanup trace in debug and optimized
+builds. A separate unrelated Ledger native consumer and exact Stop witness are
+required before accepting or migrating the generalized representation.
+
+Expected design-stage files: export.rs, its owning request tests, the existing
+Application export construction signature and current PRD records. Expected
+production +60/-180 (net -120), at most500 new owning test lines, public types
++0/-0. Existing provisional public Export signatures may change during this
+unmerged design stage; no compatibility facade or broad caller migration is
+permitted until focused laws pass in both profiles. A crate-private mutable
+projection is sufficient for the eventual Bombay-owned service. The old public
+Node/Session/Query path remains explicitly provisional and the enabled privacy
+gate remains red. Full R01–R25/AUTH1/NET1 acceptance stays open.
+
+Fresh lock/source inspection retains Behavior/Actors0.25.0 at2bb4510077bfa,
+Address0.3.0, Communication0.1.6, Timers0.2.0, private Observe and Tokio1.53.1,
+without patches. Behavior owns all pure Actions; its Actors own shutdown policy;
+Address owns typed endpoint allocation, Communication owns mailbox admission,
+Observe owns independent completion, and Connection retains current retirement
+policy. No owning dependency contract or lock changes. Entry source remains
+1892 known combined net production/12 public additions before this stage. Carry
+all2500/18/125/20000 cumulative windows, historical reservations and unfinished
+lifetime work. This stage closes no full remote requirement.
+
+
+Native-stage refinement before production: move the existing mailbox transition
+algorithm unchanged into crate-private inherent Admission::attempt/retry methods.
+Concrete Counter/Ledger interpreters supply real command construction and
+nonwaiting send operations, retaining their coherent current permission borrow
+through returned result storage. This moves the existing semantic owner rather
+than repeating Full/Closed/Uncertain branching in every operation. Endpoint
+construction refusal remains separate; lifecycle control never uses mailbox
+Admission. Commands are constructed while Unattempted; Uncertain is installed
+immediately before the actual send. Only the exact retained Full is retried.
+The forecast includes this movement; no new public spelling or callback port is
+introduced. Review public naming and borrowed/consuming contracts against the
+official Rust API Guidelines for [naming](https://rust-lang.github.io/api-guidelines/naming.html),
+[type safety](https://rust-lang.github.io/api-guidelines/type-safety.html) and
+[future proofing](https://rust-lang.github.io/api-guidelines/future-proofing.html).
+
+
+Independent pre-edit review qualifies two obligations. An entered native
+endpoint constructor must leave an explicit uncertain construction state before
+its effect; retaining a cold state across unwind would license a second
+constructor. This is separate from a pure command constructor and from the
+mailbox's retained Full/Closed/Uncertain result. The concrete native enum owns
+that distinction and exact operation inputs. A/B success alone cannot authorize
+migration without its refusal/unwind witness. Likewise, a unit AsyncFn result
+cannot prove once-only acquisition: the concrete interpreter must permanently
+make the row ineligible after storing its actual User, EOF or joined report.
+The generic native-first bound is conditional on that trusted contract. It
+must not be advertised as a property enforced by the generic row's type.
+
+
+The first shared-row syntax regression is authored before production (466 raw
+owning test lines,2a8d204b). Pinned `cargo check --offline --locked -p bombay-rs
+--features remote --lib --tests` returns101 with21 E0277/E0599 diagnostics for
+the fixed CounterNative-as-Protocol restriction and absent selected ports.
+No test executes. The subsequent selected row/Admission reshaping compiles as a
+library through pinned Nix, with expected unused-private-port warnings while
+shipping service integration remains absent. No warning is suppressed and no
+public forwarding method is added to bypass that gate. Whole caller migration
+and strict lint remain blocked. The first actual Counter witness is limited to
+positive same-handle root control; it proves no foreign-lifecycle pairing rule,
+mutable authority freshness, constructor failure/unwind or producer Drop-panic
+law. Independent review requires complete retained-row originals and order.
+Exact argv/source/log receipts are in
+/tmp/bombay-prd-resumption/shared-requests/{prior,library}.json.
+
+
+First actual native-operation control passes1/0/0 in both debug and optimized
+profiles (354 filtered), with477-line test4426e01c and production4dd1a8c3 /
+a7469414. Both author reviews and independent two-pass source reviews pass:
+ordered keys and all originals, actual processing/value trace, two constructor
+entries, repeated grant/refusal and real SessionLocal query progress are checked
+after actual root/notification/connection/host cleanup. This is positive same-root
+Stop only. Current authority closures prove invocation/refusal and exact receipt
+identity, not mutable permission freshness. Formatting passes. The selected
+conflict-comparison omission is now running; no inverse result is credited yet.
+
+Complete current stage census versus8fd1931 includes its untracked owning test:
+six paths, production+126/-249/net-123, tests+481/-0/net481, public types+0/-0.
+The gross source forecast was smaller; actual reshaping replaces the fixed
+request/client methods and their documentation with the selected concrete native
+projection and query-count identity. No additional owner or public type arose.
+Complete cumulative delta versus81dc1448:66 paths, production+1709/-44/net1665,
+tests+13060/-14/net13046, applying the prior188/3 inline-test reclassification
+once and the four new test-mount lines. Separate Communication104 makes known
+combined net production1769/2500. Twelve public additions remain retained or
+reserved; all historical/external verification extents and2500/18/125/20000
+windows carry. No full feature gate advances and no catalogue migration occurs.
+
+### Unrelated native consumer — scoped send-only Ledger witness before edits
+
+After the Counter debug/optimized checkpoint, select the existing cfg(test)
+crate::ShutdownLedger as a second real Target/native consumer. It records actual
+Vec<u64> User originals in native terminal custody. Reusing it avoids duplicating
+or relocating the separate MailLedger actor fixture. This is a send-only custody
+witness, not MailLedger business processing or terminal wire reply acceptance.
+Use the existing ExternalActor<MessageProtocol<MailAddr,Never>> sending identity
+and its nonwaiting try_send, which underlies the ordinary ApplicationSender;
+ApplicationSender currently has no try_send. Do not add production API for this
+test or allocate a dummy business reply client.
+
+Retain a cold Copy command array before constructing its sending identity;
+construct its actual Vec once immediately before the actual send and record that
+allocation/address. After shutdown, exactly one original User must exist across
+ShutdownLedger's recorded inputs and unread native user custody, preserving
+which actual lane owned it. Shutdown control may overtake admitted mail, so
+neither lane is assumed. Existing Application native/notification/connection
+cleanup remains independent and precedes assertions. A simulated owning send
+omission that stores false Ok must fail this original-custody oracle in both
+profiles. Do not require an empty native-receive callback for a send-only row.
+
+Expected additional scope: one owning export/ledger.rs test module and its mount,
+at most220 retained test lines; total shared-row envelope now750 verification
+lines instead of500. Production+0/-0 and public types+0/-0; existing Actors,
+Address, Communication, Observe, Timers and Connection remain unchanged. This
+adds no actor/protocol definition or other reusable abstraction. Author only the
+unmounted file while the Counter inverse holds the source verification lease;
+review it twice before execution. Actual MailLedger terminal reply, foreign/
+redeclaration keys, Full retry, constructor refusal/unwind, lifecycle authority
+and complete shipping service remain gates before broad migration.
+
+
+The conflict-comparison omissionc6810fa7 fails the actual Counter post-cleanup
+conflict-original oracle in both profiles (each0/1/0, exit101), with no timeout
+or setup failure. Production restores exactly4dd1a8c3; the structured inverse
+receipt checks restored source equality. This is a simulated omission of the
+shared identity-conflict law, not a claim the previous per-reply Export violated
+its documented scope. Both correctly typed native protocols and same-root Stop
+remain actual runtime evidence; no full remote witness closes.
+
+Independent aggregate/surface audit60ec4d85 approves the bounded design, with
+one replay Vec and no aggregate control enum before/after. Request6fields→4;
+Export7fields→8 adds only existing-quota Weak identity; key2fields→3 replaces
+reply identity with exact export Weak+Target marker+row. Admission retains three
+variants/five dispositions. Public definitions6→6, Export public methods8→4,
+crate-private ports1→5. Conditional-site counts11→10 if and11→9 match are source
+diagnostics only; one select remains. Moved native/permission alternatives are
+not globally deleted semantics. No new actor algebra, runtime, trait, erasure,
+registry, macro, duplicated replay store, arrival history or semantic bool is
+introduced. RequestRefusal remains an obsolete public-contract residue to
+remove during scoped minimization; old catalog/unused-port/full privacy gates
+remain open. This is not feature distillation.
+
+The second Ledger witness is220 lines, initiallybed7924d. Its initial compile
+returns101 only for E0596: captured Vec.pop makes its observation FnMut.
+Consuming the owned sole row with into_iter().next(), after the unchanged exact
+length oracle, produces e7bc366c without changing any model or API. Both
+independent review passes are repeated and pass; the previous source reconstructs
+byte-for-byte by reversing that expression. The failed compile has no runtime
+credit. Native-stage tests are now executing together with the healthy core plus
+this four-line cfg(test) mount; no production or public type was added for the
+unrelated existing Ledger. All permission/unwind/full-Mailedger/key-matrix and
+shipping lifetime obligations remain open.
+
+
+Both native controls now pass together2/0/0 in debug and optimized profiles
+(354 filtered), with core67a007ba (4dd1a8c3 plus the Ledger-only test mount),
+Counter4426e01c, Ledgere7bc366c and unchanged interfacea7469414. Native sources
+receive both author and independent two-pass reviews. Ordinary formatter asks
+only to wrap the new consuming Ledger projection onto a second line: select221
+retained Ledger lines rather than220, within the750 stage window. No semantic
+or public surface change follows. The next inverse omits actual send while
+storing false Ok; its result and final restored checks remain pending.
+
+
+### Exact export identity — next bounded owning witness before edits
+
+Select a test-only matrix after both native controls pass debug/optimized.
+Use two actual exports of the same Counter with row-zero keys, then undeclare
+one and redeclare its same native key while retaining its old request reference.
+The live other export and the redeclaration must refuse both immutable and
+mutable projection of the foreign/retired key before permission or native
+construction. Row-zero alignment is essential: an out-of-range denial would not
+prove declaration identity. Preserve each original retained request through
+undeclaration. Keep native operations genuinely cold until a recognized request
+is intentionally interpreted; erroneous foreign acceptance must exercise real
+Counter increment capability and be observable through an independent ordinary
+Counter value read, construction count and exact request projection.
+
+After real root, native, notification, connection and host cleanup, assert the
+complete expected denial/zero-value/original-custody trace. A source inverse
+removing only request_row's Weak identity rejection must fail those oracles in
+both profiles; do not simulate a forged public key or rely on predicted address
+allocation. Quota allocation identity remains the existing owner, without a new
+brand allocation, registry, generation or public type.
+
+Expected additional source: an unmounted child of the existing Counter request
+test module, at most200 retained lines and one test-only mount. Existing private
+CounterNative may be reused by its descendant without widened visibility or
+another fixture actor. Shared-row verification window becomes1000 instead of750;
+production+0/-0, public types+0/-0 and all2500/18/125/20000 cumulative limits carry.
+The current send-omission inverse holds the production verification lease;
+author only the unmounted child until exact restoration. Review twice before
+execution. Full count/refusal/unwind/authority/terminal MailLedger and shipping
+service/privacy gates remain separate; no catalogue migration is selected.
+
+
+The key witness freezes659f9737 (174 lines) after two author and two independent
+reviews. Domain names identify issuer/neighbor/replacement; the three fixed byte
+fixtures use checked conversions. Own-key projections before/after probes defeat
+vacuous always-None implementations. Place this unchanged source at
+export/requests/keys.rs and use ordinary mod keys inside requests.rs, so filesystem
+and module ownership match without a special path attribute or widened visibility.
+This is a test-only path/mount correction; no model or production change.
+
+
+The initial key mount compile returns101 for E0753/E0583 only: the coordinator
+placed a module between inner documentation lines and assumed a normal module
+directory despite the ancestor's path override. No test executes. Keep both
+inner documentation lines first and use #[path = "requests/keys.rs"] for the
+selected physical/module hierarchy. This corrects only source location, not any
+public interface or native law; keys-debug.log preserves the failed setup.
+
+
+Current key source659f9737 passes alongside both prior native controls3/0/0
+in debug and optimized builds (354 filtered). The nested test mount is the only
+change to Counter4426e01c. No new public/production types or logic accompany
+this test. Own-before/after projections and exact originals pass; removing only
+request_row's Weak-identity rejection is now the owning-source inverse. Native
+send-omission e649ad98 separately fails its intended0-versus1 original User
+custody oracle in both profiles, and restoresbb24a892 byte-exact. Independent
+inverse/source reviewef5bfc16 verifies the first four failing log hashes and
+scoped restored controls. Ledger22640b3c differs frome7bc366c by formatting only;
+current source execution now includes that formatted body. All feature-wide
+service, privacy, lifetime, permission/unwind/count and full MailLedger gates
+remain open. No catalogue migration or feature-complete state is selected.
+
+
+The exact-export Weak check omission801886ca fails the post-cleanup key oracle
+in both profiles, each0/1/0 and exit101: all four foreign/stale projections
+incorrectly return Some, two native clients are constructed and the ordinary
+Counter read observes2 instead of0. Healthy exportbb24a892 restores byte-exact.
+The outer receipt initially reports intended_failure=false because its text
+matcher omitted the actual MailAddr(0) wrapper; both original logs and that
+receipt are preserved. Independent reviewe2296add verifies their hashes and
+actual typed trace and qualifies both intended failures. This reporting
+correction receives no extra execution credit and requires no test rerun.
+
+Restored complete remote-enabled library debug control passes357/0/0 and
+formatting passes, with the same six source hashes recorded in
+/tmp/bombay-prd-resumption/shared-requests/restored-library-debug.json and
+restored-format.json. The optimized library control now also passes357/0/0;
+restored-library-release.json records its actual argv and source/log hashes. All three
+owning tests retain two author and two independent source reviews; source
+inversions prove conflict rejection, exact original send custody and declaration
+identity independently. Unexecuted permission/unwind/count/service/privacy
+obligations remain open. This bounded research composition is not eligible for
+a main-targeting PR while its old consumer catalogue and private-service
+replacement remain incomplete.
+
+
+Final owning-source census (including all three untracked test files): eight
+paths versus8fd1931; production+131/-254/net-123; tests+883/-0/net883;
+public API+0/-0 types. Cumulative versus81dc1448:68 paths; production
++1709/-44/net1665; tests+13462/-14/net13448. All export test modules and
+eight mount lines count as verification; the earlier188/3 inline-test
+reclassification applies once. Separate Communication+129/-25/net104 makes
+known combined production1769/2500. Twelve public additions remain reserved
+or retained under18. The shared-row883 verification lines remain under1000;
+all historical/external reservations and125/20000 windows carry unchanged.
+Per-file hashes, raw counts and classifications are in the independently
+reviewed shared-requests/final-census.json. Documentation edits do not alter
+these software counts. The earlier records counts retain their snapshot scope.
+
+
+### Interrupted startup delivery — actual reviewed merge (2026-10-16 UTC)
+
+[PR379](https://github.com/devrandom-labs/bombay/pull/379) merged through its
+normal head-guarded PR operation at2026-10-16T04:08:55Z as
+38774dec2434cc111ee31e64f3d5451a2d848491. All six checks pass on6e6f3043;
+required Nix run38840996661/job116780793964 completes successfully. Reviewed
+head, CI checkout7666bdae and merged main share exact tree9e5b828b.
+Independent required reviewbc052e4f verifies704/0/1 owner-coverage and optimized
+workspace results,407 remote cases per profile, four named startup-regression
+executions, Driver2048 and four Observe1024 fuzz completions. Miri is skipped.
+The independent native review retains actual profile/source/log attribution
+and qualified late-exit uncertainty. Actual merge receipt251c62d6 and both
+reviews are retained in /tmp/bombay-prd-resumption/ci379.
+
+This delivers the affine startup-acquisition correction, not the remaining
+remote service, private transport API, distillation or full R01–R25/AUTH1/NET1.
+The research branch retains its separate shared-native and Application-entry
+changes and must integrate this actual main before further production edits.
