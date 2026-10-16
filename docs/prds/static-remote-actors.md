@@ -1,5 +1,9 @@
 # Static remote actors and typed admission
 
+Current delivery: Communication0.1.6 adoption merged through PR377. Startup
+PR379 integrates actual main and requires fresh exact-head CI before merge.
+Earlier preparation sections retain their historical source/execution scope.
+
 ## Communication capacity dependency (2026-10-15 UTC)
 
 Select the recommended narrow registry adoption under the user's standing
@@ -26072,3 +26076,18 @@ head CI will verify its actual combined source; no old-head gate is reused.
 Complete scope remains four paths relative329, production+10/-4/net6,
 verification+193/-0/net193, public types+0/-0; annotation correction adds no
 production or public surface. Required CI and both actual merges remain open.
+
+### Startup delivery integrates actual main (2026-10-16 UTC)
+
+PR377 actually merged76dbd849 at00:31:25Z with all six checks and scoped
+reviews passing; actual source tree25bc63d2 equals its reviewed/CI trees.
+Required38820049280 succeeds and actual merge receiptcf93122f records custody.
+PR379's fresh conflict check finds one documentation-only conflict in status.md:
+keep its startup prerequisite and record actual dependency delivery. The PRD
+and acceptance merge cleanly. Actual production/test files, manifests and both
+locks remain byte-identical to17fec54; execution.rs remains9308f768. This is
+integration of already verified main, not another production correction.
+Its old required38826374588 run and native reviews retain their exact17fec
+qualification; push the resolved head and require its fresh CI before merging.
+No completed full remote row or published remote service is claimed. Release
+PR378 was closed unmerged by the bot; replacement PR380 and API PR374 stay held.

@@ -9,11 +9,12 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
-Communication0.1.6 publication is verified after reviewed owning PR13 and release
-PR14 merges with passing CI. Narrow Bombay adoption is selected; its main-based
-tests and PR delivery remain pending. Capacity observation neither reserves a
-slot nor substitutes for fresh permission checks. Arbitrary foreign-waker-panic
-sibling progress is unsupported. This prerequisite closes no full row.
+Communication0.1.6 adoption PR377 merged76dbd849 with all six checks passing;
+required38820049280 succeeds and reviewed/tested/main tree25bc63d2 matches.
+PR379 integrates that actual main with production/tests/graph unchanged from
+17fec54; its documentation conflict is resolved and fresh head CI is required.
+The startup correction remains unmerged. Capacity observation reserves no slot
+and cannot replace fresh permission checks; no full remote row advances.
 
 [Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
 mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
