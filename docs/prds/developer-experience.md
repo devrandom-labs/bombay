@@ -307,9 +307,29 @@ reviews verify exact case sets, custody scope, source and process evidence;
 these unchanged tests do not establish a new complete-custody theorem or
 explain the historical retry hang.
 
-Expected retained scope is the nested lock and this coordination record;
+Retained scope is the nested lock and this coordination record;
 production/tests/public types+0, no state/module/transition change. This follows
-the owning pre-edit law at Behaviord419486. The refreshed exact-source Nix gate
-and final programme delivery remain pending. The original e629464 full run
+the owning pre-edit law at Behaviord419486. The protected Nix gate passes on
+clean dbefc2b in526.250s, with624 source files and HEAD conserved. It executes132
+outer tests; the two child-stop cases and controlled TLS query campaigns have
+the separate matrix evidence above. Formatting and both strict Clippy phases
+pass. Registered output, exact derivation and raw commands/results pass both
+independent audits, with no reported signing, disk or classifier failure.
+Final programme delivery remains pending. The original e629464 full run
 continues unchanged in its own worktree; no in-flight dependency repair can
 turn that failed run into a pass.
+
+The combined branch includes mainf4aa3b3: its three landed timer-custody commits
+were already ancestors, so merge6c0361 changes no tree bytes. Focused mailbox
+and lock commits are applied without replacing the candidate timer, adapter,
+inventory or root dependency graph. Five paths differ atd272d637; mailbox source,
+capacity tests and nested lock are byte-identical to the independently reviewed
+repairs. Both coordination records and the newer usage guide are retained.
+
+At that exact combined source, packaged owner7644735 consumers pass Rust1.99/
+1.96 debug/release:13 native journeys, three pure capacity cases and11 inventory
+checks per configuration,108 total executions. All1498 bound inputs remain
+exact through testing, current formatting and strict Clippy for all five targets;
+both independent source/terminal reviews pass. This is combined archive evidence,
+not registry adoption or full-programme acceptance. Documentation updates follow
+the frozen-source checkpoint; earlier source receipts are not relabelled.
