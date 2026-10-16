@@ -725,7 +725,7 @@ timed termination without application code implementing `Behavior`:
 
 ```text
 let root = Machine::new(state, phase, transition)
-    .with_one_shot(TimerId(1), Duration::from_secs(1), stop)
+    .with_one_shot(Duration::from_secs(1), stop)
     .stop_on_shutdown();
 
 Application::new(root).run().await

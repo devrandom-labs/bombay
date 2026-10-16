@@ -1,12 +1,11 @@
-use behavior_actors::{ScheduleAfter, TimerElapsed, TimerId};
+use behavior_actors::{OwnedScheduleAfter, OwnedTimerElapsed, TimerGeneration};
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{
-    Actions, Behavior, BehaviorActed, BehaviorBase, Delivery, InterpreterRequests, MessageProtocol,
-    Never, NoBirths, Recipient, SendLayer, Step, User,
+    Actions, Behavior, BehaviorActed, BehaviorBase, Delivery, EventLayer, InterpreterRequests,
+    MessageProtocol, Never, NoBirths, Recipient, SendLayer, Step, User,
 };
 use bombay::composition::StashRoute;
 use bombay::prelude::{Activate as _, MailAddr};
-use bombay::timing::TimedEvent;
 use core::time::Duration;
 
 #[derive(Debug)]
@@ -94,8 +93,8 @@ fn journey<B>(worker: B)
 where
     B: Behavior<
             Protocol = Worker,
-            Event = TimedEvent<User<MailAddr, Command>>,
-            Sends = SendLayer<InterpreterRequests<ScheduleAfter>, <Worker as Behavior>::Sends>,
+            Event = EventLayer<OwnedTimerElapsed, User<MailAddr, Command>>,
+            Sends = SendLayer<InterpreterRequests<OwnedScheduleAfter>, <Worker as Behavior>::Sends>,
             Ph = Never,
             Error = Never,
             Birth = NoBirths,
@@ -106,15 +105,17 @@ where
     assert!(actions.sends.inner.replies.is_empty());
     assert!(actions.creates.is_empty());
     assert!(matches!(actions.become_, Step::Continue));
-    let [schedule]: [ScheduleAfter; 1] = actions
+    let [schedule]: [OwnedScheduleAfter; 1] = actions
         .sends
         .owned
         .into_requests()
         .try_into()
         .expect("one authored timer request");
-    assert_eq!(schedule.id, TimerId(7));
-    assert_eq!(schedule.after, Duration::from_secs(3));
-    let elapsed = TimerElapsed::new(schedule.id, schedule.generation);
+    assert_eq!(
+        schedule,
+        OwnedScheduleAfter::new(TimerGeneration(0), Duration::from_secs(3))
+    );
+    let elapsed = OwnedTimerElapsed::new(schedule.generation);
     let mut active = initialized.behavior;
     let customer = active.base().customer;
     assert_eq!(customer.address(), MailAddr(59));
@@ -218,14 +219,14 @@ fn stash_before_reminder_preserves_original_invoices_and_one_reminder() {
     journey(
         worker()
             .with_stash(route)
-            .with_one_shot(TimerId(7), Duration::from_secs(3), reminder),
+            .with_one_shot(Duration::from_secs(3), reminder),
     );
 }
 #[test]
 fn reminder_before_stash_preserves_original_invoices_and_one_reminder() {
     journey(
         worker()
-            .with_one_shot(TimerId(7), Duration::from_secs(3), reminder)
+            .with_one_shot(Duration::from_secs(3), reminder)
             .with_stash(route),
     );
 }

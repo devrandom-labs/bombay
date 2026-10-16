@@ -10,7 +10,7 @@ mod processor;
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let actor = Machine::new(ProcessorState::new(), ProcessorPhase::Closed, transition)
-        .with_receive_timeout(TimerId(1), Duration::from_millis(50), |processor| {
+        .with_receive_timeout(Duration::from_millis(50), |processor| {
             if processor.state().completed(7) {
                 Actions::stop()
             } else {

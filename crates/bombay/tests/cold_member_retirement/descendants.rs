@@ -6,7 +6,7 @@ use bombay::behavior::{
     RetirementBirths, Step, User, UserEvent,
 };
 use bombay::lifecycle::StopOnShutdown;
-use bombay::prelude::{Exit, TimerId};
+use bombay::prelude::Exit;
 use bombay::timing::OneShot;
 use bombay::{ActorNotificationReceipts, ActorRetirement, Application, MailAddr};
 use core::time::Duration;
@@ -196,14 +196,14 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
         payload: first,
     }
     .stop_on_shutdown()
-    .with_one_shot(TimerId(1), Duration::ZERO, |worker| {
+    .with_one_shot(Duration::ZERO, |worker| {
         Actions::cont().with_send(ReportToParent::new(worker.base().order))
     });
     let worker = TimedWorker {
         order: WrapperOrder::ShutdownOutside,
         payload: second,
     }
-    .with_one_shot(TimerId(1), Duration::ZERO, |worker| {
+    .with_one_shot(Duration::ZERO, |worker| {
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();

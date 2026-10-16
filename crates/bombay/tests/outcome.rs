@@ -884,14 +884,12 @@ async fn natural_root_expiry_returns_http_serving_beside_complete_timer_retireme
     let address = available.local_addr().expect("the real address exists");
     drop(available);
     let outcome =
-        Application::new(
-            Root.with_one_shot(TimerId(41), Duration::from_millis(1), |_| Actions::stop()),
-        )
-        .run_axum(address, |_| {
-            Router::new().route("/ready", get(|| async { "ready" }))
-        })
-        .await
-        .unwrap_or_else(|_| panic!("the caller hosts actual local HTTP serving"));
+        Application::new(Root.with_one_shot(Duration::from_millis(1), |_| Actions::stop()))
+            .run_axum(address, |_| {
+                Router::new().route("/ready", get(|| async { "ready" }))
+            })
+            .await
+            .unwrap_or_else(|_| panic!("the caller hosts actual local HTTP serving"));
     let (serving, retirement) = outcome.try_into_completed().unwrap_or_else(|_| {
         panic!("natural root completion retains serving and independent cleanup")
     });

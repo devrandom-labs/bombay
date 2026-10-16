@@ -903,7 +903,7 @@ async fn outer_finalization_keeps_its_notice_through_inner_timer() {
         (),
     ) = Application::new(
         FinalizationProbe { observer: None }
-            .with_one_shot(TimerId(7), Duration::from_secs(60), |_| Actions::stop())
+            .with_one_shot(Duration::from_secs(60), |_| Actions::stop())
             .finalize_on_shutdown(|root, _request| {
                 let observer = root
                     .base()
@@ -974,7 +974,7 @@ async fn inner_finalization_keeps_its_notice_through_outer_timer() {
     ) = Application::new(
         FinalizationProbe { observer: None }
             .finalize_on_shutdown(record_finalization)
-            .with_one_shot(TimerId(7), Duration::from_secs(60), |_| Actions::stop()),
+            .with_one_shot(Duration::from_secs(60), |_| Actions::stop()),
     )
     .run_with(|application| async move {
         let mut observer = application
@@ -1033,7 +1033,7 @@ async fn timer_expiry_stops_without_running_shutdown_finalization() {
     ) = Application::new(
         FinalizationProbe { observer: None }
             .finalize_on_shutdown(record_finalization)
-            .with_one_shot(TimerId(7), Duration::ZERO, |_| Actions::stop()),
+            .with_one_shot(Duration::ZERO, |_| Actions::stop()),
     )
     .run_with(|application| async move { application.lifecycle().termination().await })
     .await

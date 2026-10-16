@@ -142,11 +142,7 @@ impl Behavior for Node {
                 Leaf {
                     payload: Box::from([13]),
                 }
-                .with_one_shot(
-                    bombay::prelude::TimerId(41),
-                    Duration::from_secs(60),
-                    leaf_deadline_reached,
-                )
+                .with_one_shot(Duration::from_secs(60), leaf_deadline_reached)
                 .stop_on_shutdown(),
             )),
         ));
@@ -387,11 +383,7 @@ async fn recursive_reports_return_full_native_retirement() {
             trace: None,
             readiness: Vec::new(),
         }
-        .with_one_shot(
-            bombay::prelude::TimerId(37),
-            Duration::from_secs(10),
-            root_deadline_reached,
-        )
+        .with_one_shot(Duration::from_secs(10), root_deadline_reached)
         .stop_on_shutdown(),
         Arc::new(Spaces::new()),
     )
@@ -475,11 +467,7 @@ async fn recursive_reports_keep_custody_with_outer_timer() {
             readiness: Vec::new(),
         }
         .stop_on_shutdown()
-        .with_one_shot(
-            bombay::prelude::TimerId(37),
-            Duration::from_secs(10),
-            stopped_root_deadline_reached,
-        ),
+        .with_one_shot(Duration::from_secs(10), stopped_root_deadline_reached),
         Arc::new(Spaces::new()),
     )
     .run_with(|application| async move {

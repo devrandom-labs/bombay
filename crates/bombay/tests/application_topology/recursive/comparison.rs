@@ -10,7 +10,7 @@ use bombay::behavior::{
     SettledItem, SettlementStatus,
 };
 use bombay::lifecycle::StopOnShutdown;
-use bombay::prelude::{Exit, TimerId};
+use bombay::prelude::Exit;
 use bombay::{
     ActorCustody, ActorRetirement, ActorSpace, Application, ApplicationTopology, ChildFailure,
     ChildOrigin, Completion, EstablishNativeChild, MailAddr, NativeChild, NativeHost, PendingChild,
@@ -438,7 +438,7 @@ fn growing_garden_root() -> Root {
 async fn generated_recursive_garden_matches_manual_native_custody() {
     let generated = Application::with_topology(
         growing_garden_root()
-            .with_one_shot(TimerId(37), Duration::from_secs(10), root_deadline_reached)
+            .with_one_shot(Duration::from_secs(10), root_deadline_reached)
             .stop_on_shutdown(),
         garden::Topology::new(),
     )
@@ -446,7 +446,7 @@ async fn generated_recursive_garden_matches_manual_native_custody() {
     .await;
     let manual = Application::with_topology(
         growing_garden_root()
-            .with_one_shot(TimerId(37), Duration::from_secs(10), root_deadline_reached)
+            .with_one_shot(Duration::from_secs(10), root_deadline_reached)
             .stop_on_shutdown(),
         GardenSpaces {
             root: ActorSpace::new(),
@@ -544,21 +544,17 @@ fn compare_garden_retirements<B>(
 #[tokio::test(flavor = "current_thread")]
 async fn generated_outer_timer_matches_manual_native_custody() {
     let generated = Application::with_topology(
-        growing_garden_root().stop_on_shutdown().with_one_shot(
-            TimerId(37),
-            Duration::from_secs(10),
-            stopped_root_deadline_reached,
-        ),
+        growing_garden_root()
+            .stop_on_shutdown()
+            .with_one_shot(Duration::from_secs(10), stopped_root_deadline_reached),
         garden::Topology::new(),
     )
     .run_with(|application| async move { application.termination().await })
     .await;
     let manual = Application::with_topology(
-        growing_garden_root().stop_on_shutdown().with_one_shot(
-            TimerId(37),
-            Duration::from_secs(10),
-            stopped_root_deadline_reached,
-        ),
+        growing_garden_root()
+            .stop_on_shutdown()
+            .with_one_shot(Duration::from_secs(10), stopped_root_deadline_reached),
         GardenSpaces {
             root: ActorSpace::new(),
         },

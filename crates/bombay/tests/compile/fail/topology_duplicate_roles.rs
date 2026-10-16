@@ -62,7 +62,7 @@ fn main() {
     let second = vec![10].into_boxed_slice();
     let third = vec![20].into_boxed_slice();
     let originals = BTreeSet::from([first.as_ptr() as usize, second.as_ptr() as usize, third.as_ptr() as usize]);
-    let application = Application::with_topology(Root { born: Some(Worker { original: first }.stop_on_shutdown()) }.with_one_shot(TimerId(53), Duration::from_secs(60), |_| Actions::stop()).stop_on_shutdown(), workshop::Topology::new())
+    let application = Application::with_topology(Root { born: Some(Worker { original: first }.stop_on_shutdown()) }.with_one_shot(Duration::from_secs(60), |_| Actions::stop()).stop_on_shutdown(), workshop::Topology::new())
         .child(BackgroundWorker, Worker { original: second }.stop_on_shutdown())
         .child(BackgroundWorker, Worker { original: third }.stop_on_shutdown());
     let host = Builder::new_current_thread().enable_all().build().expect("caller-owned host");

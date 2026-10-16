@@ -59,11 +59,10 @@ fn actor_facade_preserves_the_owning_fold_and_enters_exact_templates() {
 
     let actor = ActorCounter { value: 0 };
     let fluent = actor
-        .with_receive_timeout(TimerId(1), Duration::from_millis(1), stop_counter)
+        .with_receive_timeout(Duration::from_millis(1), stop_counter)
         .stop_on_shutdown();
     let direct = StopOnShutdown::new(ReceiveTimeout::new(
         ActorCounter { value: 0 },
-        TimerId(1),
         Duration::from_millis(1),
         stop_counter,
     ));

@@ -11,7 +11,6 @@ use communication::TrySendError;
 #[path = "../../../examples/counter/src/counter.rs"]
 mod counter;
 
-use bombay::prelude::TimerId;
 use core::future::Future;
 use core::pin::pin;
 use core::task::{Context, Poll, Waker};
@@ -327,7 +326,7 @@ async fn sender_and_client_keep_distinct_origins_and_exact_closed_root_rejection
 #[tokio::test(flavor = "current_thread")]
 async fn root_client_protocol_survives_both_timer_shutdown_orders() {
     let actor = Counter::new()
-        .with_one_shot(TimerId(13), Duration::from_secs(3600), |_| Actions::stop())
+        .with_one_shot(Duration::from_secs(3600), |_| Actions::stop())
         .stop_on_shutdown();
     let outcome = Application::new(actor)
         .mailbox_capacity(bombay::MailboxCapacity::new(2).expect("two bounded actor slots"))
@@ -365,11 +364,9 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
     cleanup.expect("actual application cleanup completes");
     let (_, retirement) = native.expect("timer and shutdown retirement retained");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let actor = Counter::new().stop_on_shutdown().with_one_shot(
-        TimerId(17),
-        Duration::from_secs(3600),
-        |_| Actions::stop(),
-    );
+    let actor = Counter::new()
+        .stop_on_shutdown()
+        .with_one_shot(Duration::from_secs(3600), |_| Actions::stop());
     let outcome = Application::new(actor)
         .mailbox_capacity(bombay::MailboxCapacity::new(2).expect("two bounded actor slots"))
         .client_capacity(bombay::MailboxCapacity::new(2).expect("two bounded reply slots"))

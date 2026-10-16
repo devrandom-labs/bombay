@@ -93,7 +93,7 @@ fn cold_children_keep_original_root_through_timer_outer() {
             born: Some(Worker { original: first }.stop_on_shutdown()),
         }
         .stop_on_shutdown()
-        .with_one_shot(TimerId(53), Duration::from_secs(60), |_| Actions::stop()),
+        .with_one_shot(Duration::from_secs(60), |_| Actions::stop()),
         workshop::Topology::new(),
     )
     .child(

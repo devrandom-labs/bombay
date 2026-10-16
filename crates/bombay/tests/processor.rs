@@ -16,7 +16,7 @@ use processor::{ProcessorMessage, ProcessorPhase, ProcessorState, transition};
 #[test]
 fn receive_timeout_replays_deferred_work_and_preserves_retirement() {
     let actor = Machine::new(ProcessorState::new(), ProcessorPhase::Closed, transition)
-        .with_receive_timeout(TimerId(1), Duration::from_millis(50), |processor| {
+        .with_receive_timeout(Duration::from_millis(50), |processor| {
             if processor.state().completed(7) {
                 Actions::stop()
             } else {

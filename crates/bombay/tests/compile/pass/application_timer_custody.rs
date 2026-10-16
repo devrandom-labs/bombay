@@ -7,7 +7,7 @@ use bombay::behavior::{
     CreationSequence, EventIngress, InterpreterRequests, MessageProtocol, Never, NoBirths, NoSends,
     ReportToParent, Step, User, UserEvent,
 };
-use bombay::prelude::{Exit, TimerId};
+use bombay::prelude::{Exit, };
 use bombay::{ActorRetirement, Application, MailAddr};
 use core::time::Duration;
 use std::collections::BTreeSet;
@@ -153,14 +153,14 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         payload: timer_payload,
     }
     .stop_on_shutdown()
-    .with_one_shot(TimerId(1), Duration::ZERO, |worker| {
+    .with_one_shot(Duration::ZERO, |worker| {
         Actions::cont().with_send(ReportToParent::new(worker.base().order))
     });
     let shutdown = TimedWorker {
         order: WrapperOrder::ShutdownOutside,
         payload: shutdown_payload,
     }
-    .with_one_shot(TimerId(1), Duration::ZERO, |worker| {
+    .with_one_shot(Duration::ZERO, |worker| {
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();

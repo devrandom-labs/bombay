@@ -98,7 +98,7 @@ where
 #[tokio::test(flavor = "current_thread")]
 async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
     let root = Counter::new()
-        .with_one_shot(TimerId(71), Duration::from_secs(60), |_| Actions::stop())
+        .with_one_shot(Duration::from_secs(60), |_| Actions::stop())
         .stop_on_shutdown();
     let outcome = Application::with_topology(root, ActorSpace::new())
         .run_with(|application| async move {
@@ -139,11 +139,9 @@ async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn timer_outside_shutdown_infers_the_actual_lifecycle_lane() {
-    let root = Counter::new().stop_on_shutdown().with_one_shot(
-        TimerId(71),
-        Duration::from_secs(60),
-        |_| Actions::stop(),
-    );
+    let root = Counter::new()
+        .stop_on_shutdown()
+        .with_one_shot(Duration::from_secs(60), |_| Actions::stop());
     let outcome = Application::with_topology(root, ActorSpace::new())
         .run_with(|application| async move {
             let lifecycle = increment_counter(application).await;
