@@ -425,6 +425,7 @@ dependencies = [
  "bombay-address",
  "bombay-behavior",
  "bombay-behavior-actors",
+ "bombay-behavior-macros",
  "bombay-communication",
  "bombay-engine",
  "bombay-macros",

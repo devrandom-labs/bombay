@@ -482,3 +482,8 @@ passes. Temporary mount removed; no production/API or runtime acceptance added.
 Cold declaration comparison proves only public caller type composition and the
 wrong-reply encoder denial; exact source/mount restoration independently reviewed.
 No service API or full requirement state changes; SDK PR14 CI is still pending.
+
+SDK PR14 now merged asc34eb350 after required38934862637 passed; exact-main
+38943726658 is live before publication. Latest Bombay mainf4aa/PR383 integrates
+with remote371+timer2 passing in both profiles, source laws11 and strict checks.
+These prerequisite deliveries do not change any full AUTH1/NET1 requirement state.

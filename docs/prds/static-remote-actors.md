@@ -31458,7 +31458,7 @@ and family tasks, and the SDK's connection/TLS/routing resources.
 The full service has three concrete unresolved edges. Fixed-Replies Export
 cannot hold Counter Increment/Read/Stop under one actor-wide replay owner or
 Ledger Append/terminal Read without changing its row contract. Existing
-SendProduct supplies ordered actor effects, not arbitrary non-Send provider
+behavior_macros::SendProduct supplies ordered actor effects, not arbitrary non-Send provider
 execution or independent service progress. Genuine absent Work never calls
 Invoke; a supplied unit callback would misrepresent absence. Ordinary functions,
 concrete native owners and the existing presence sum remain the comparison
@@ -33033,3 +33033,46 @@ Measured Rust history201+275+3visibility+1inverse=480; mount3, existing compiler
 reused. These root records total60lines across two existing documents; production
 +0/-0/net0, retained tests +0/-0/net0, public API +0/-0types. Four hypothetical
 public declarations remain unselected. No native, replay or service law is proved.
+
+### Current main integration — timer custody and Nix reference checks
+
+Integrate reviewed mainf4aa3b3d/PR383 into the clean research declaration checkpoint
+fcc27d8 before further service implementation. Its nine paths contain the owning
+timer panic-custody correction, two native regressions, source-law checks and Nix
+reference auditing. The only lock change adds a direct development edge to the
+already selected Behavior macros0.14.2; all selected package versions/checksums
+remain unchanged. Complete selected Behavior instructions and current timer
+source/tests were inspected. No new service contract or public type is selected.
+Keep earlier compiler receipts scoped to pre-integration7e980/fcc27 sources.
+
+Forecast: reuse the nine reviewed main paths and these PRD/status records;
+runtime timer source +6 net lines, reference automation +227, no public types.
+Record those main-owned changes separately from zero-production declaration work;
+all prior cumulative/historical unknown charges remain, never a reset or claimed
+headroom. Before accepting the merge, run the two actual native timer regressions
+and remote library in both profiles, source-law tests, formatting and the owning
+reference audit. No fresh workspace/privacy or full remote acceptance is presumed.
+
+Combined verification is terminal: remote library371 plus the two actual timer
+regressions pass in each profile with the same373 names. Source-law checks pass11,
+formatting and strict workspace/all-target/all-feature Clippy pass, and the actual
+reference audit passes50 controls. Original source-law execution rejected one
+old unqualified owner-macro reference in this PRD; qualifying its owning path
+fixes that documentation failure without changing tests or runtime. The first
+12-input receipt omits that guide; its exact Git/patch reconstruction is retained.
+Restored/later13-input receipts include it. Actual main runtime delta is +6/-2/
+net4, reference automation +227, tests +372/-1/net371, metadata +2, main guidance
++178; no public types. Remote contracts stay byte-identical. Full remote/privacy
+gates remain open; this is verified integration of already reviewed main work.
+
+### Incoming TLS successor — reviewed source merged
+
+SDK PR14 merged normally at2026-10-16T17:58:11Z as
+c34eb350faad3d8d103aa383091d85502b67a898 after required run38934862637/
+job117087843305 passed all nine steps. Exact tested PR checkout6d7f1759 has
+the same tree as selected823f6204; original artifact ZIP00729a56 is retained
+and matches GitHub's digest. All nine crate bytes and167 artifact files survive.
+This records source delivery only. New exact-main run38943726658/
+job117117495161 is confirmed live on c34eb350. Guarded four-package publication,
+registry-only consumer verification and Bombay adoption remain pending. No new
+source/API change or full-service acceptance is claimed from this merge.
