@@ -35,7 +35,7 @@ axum = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 futures-util = { version = "0.3.34", default-features = false, features = ["alloc"], optional = true }
 json-event-parser = { version = "=0.2.3", default-features = false, optional = true }
-zenoh = { package = "bombay-zenoh", version = "=1.10.9", default-features = false, features = ["transport_tls"], optional = true }
+zenoh = { package = "bombay-zenoh", version = "=1.10.10", default-features = false, features = ["transport_tls"], optional = true }
 zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-features = false, optional = true }
 zenoh_protocol = { package = "zenoh-protocol", version = "=1.10.1", default-features = false, optional = true }
 
