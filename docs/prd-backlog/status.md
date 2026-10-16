@@ -1,5 +1,17 @@
 # Backlog status and dependencies
 
+A focused main-based declaration diagnostic correction is active: omit native
+ExportError::Declaration text from outer Display/Debug while preserving the
+actual original error source and constructor/cleanup custody. Fresh selected
+contracts, the pre-edit regression and six-path budget are recorded in the
+[remote PRD](../prds/static-remote-actors.md#declaration-diagnostics--focused-main-contribution-2026-10-16).
+Main-specific prior failures reach the intended actual format oracle in both
+profiles; fixed focused1/0/0 and full-client21/0/0 controls pass per profile.
+Default workspace773/0/2 plus7/0/3 docs, all-features840/0/2 plus7/0/3 docs,
+strict Clippy and formatting pass. Final independent review, PR and required CI
+remain pending. This includes no separate Network/family research and closes no
+full remote row; service, transport privacy and API/release delivery stay held.
+
 Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence

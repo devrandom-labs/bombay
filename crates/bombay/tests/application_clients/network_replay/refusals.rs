@@ -320,6 +320,13 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                 ptr::from_ref(cause.source().unwrap()).addr(),
                 ptr::from_ref(native.as_ref()).addr()
             );
+            assert_eq!(
+                (cause.to_string(), format!("{cause:?}")),
+                (
+                    "network declaration was refused".to_owned(),
+                    "ExportError(network declaration was refused)".to_owned(),
+                )
+            );
             assert!(refusals.lock().unwrap().is_empty());
         });
 }

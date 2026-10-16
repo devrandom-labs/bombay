@@ -1,5 +1,109 @@
 # Static remote actors and typed admission
 
+## Declaration diagnostics — focused main contribution (2026-10-16)
+
+Status: active scoped correction on mainfbb5c742. Full remote service, SDK privacy,
+API/release delivery and every full R01–R25/AUTH1/NET1 obligation remain open.
+This contribution changes only an existing error's public diagnostics; private
+Network input and Node family research are not included. Earlier sections retain
+their original source, execution and delivery scope.
+
+Fresh pre-edit verification selects Behavior/Actors0.26.0 at98983b4 and
+macros0.14.2; complete selected instructions2b7a9195; Address0.3.0/9f058dc,
+Communication0.1.6/963067e, private Observe and Timers0.2.0/9369d1f;
+SDK1.10.9, Config1.10.2/result1.10.1, Tokio1.53.1; lock3caba2a6 and no patches.
+Current main owner APIs, relevant tests and documentation were rechecked against
+fresh receipts behaviorf04dc310, primitives38310cc6 and transport0b734781;
+main comparison is retained in declaration-main/before-source-verification.json.
+Registry owners and current private Observe/native endpoint/error/test sources
+match; research-only Node/execution/configuration/document differences are
+explicitly excluded. Behavior owns pure Actions; Actors owns shutdown policy;
+Address owns exact registrations; Communication owns payload admission;
+Observe owns independent terminal facts; Timers owns generations; Entity owns
+native family fencing and shutdown. None changes in this diagnostic stage.
+
+Blocker: ExportError::Declaration Display and derived Debug expose the actual
+native declaration text. Keep the same owned native error, original returned
+target and exact Error::source address. Display must be the fixed statement
+"network declaration was refused"; Debug uses the existing startup-error tuple
+pattern, intentionally across all nine error alternatives. The declaration
+field names the identical standard Box<dyn Error + Send + Sync> already selected
+by SDK/result; no allocation, new erasure, conversion, variant or compatibility
+layer. Error::source and runtime behavior remain unchanged. This is ordinary
+Display/Debug/Error composition; no wrapper, trait, macro or new owner is needed.
+
+The smallest regression adds seven observable lines to the existing actual
+seven-constructor refusal test. Its genuine invalid-key SDK cause, original
+target, all three actual Application Work/native/notification outcomes and Node
+close precede the paired outer Display/Debug oracle. Existing source-data-address
+identity remains the sole cause-preservation oracle. No Query traffic or
+synthetic cause is added. Author and independent two-pass reviews accept exact
+test2c16483b; production review accepts export91b7562. Current main's original
+export135bc702, testdfb2a66d and lock3caba2a6 are byte-identical to those reviewed
+originals. Establish intended actual main failures in both debug and optimized
+before copying production; earlier research executions do not prove this tree.
+
+Pre-edit forecast: two software paths, remote/export.rs at most20 net production
+lines and existing application_clients/network_replay/refusals.rs seven added
+test lines; four records (this PRD, backlog status, acceptance and public API
+audit), six paths total. Public types+0/-0; same nine variants and standard traits;
+no dependency/lock change. Reuse exact native error box and startup formatter;
+delete automatic native text disclosure. This is a net-positive privacy change,
+not code reduction. Carry production1589/2500 and12/18 public reservations,
+including this same owning patch charged once; every125-owner/20000-verification
+historical/external extent remains carried and is not presumed measured or free.
+
+Actual main prior-source runs now fail the intended paired format assertion at
+refusals.rs323 in both profiles,0/1/0 with20filtered, return101. Original
+export135bc702/test2c16483b/lock3caba2a6 are bound in before-debug/release.json;
+raw logs1cf64b02/c3ca1cec show the genuine Invalid Key Expr text in both old
+outer formatters. All preceding original target/source/native/notification/
+cleanup oracles completed; the final post-tuple assertion was not reached.
+No compiler/setup failure receives privacy credit. Exact reviewed production
+91b7562 was copied only after those actual failures. Healthy focused controls
+pass1/0/0 per profile; the complete application_clients target passes21/0/0
+per profile. Default workspace passes773/0/2 tests and7/0/3 doctests;
+all-feature workspace passes840/0/2 and7/0/3, each111test and six doctest
+summaries. Strict all-target/all-feature Clippy and formatting return0. All
+command receipts confirm unchanged sources across execution. These main-only
+results do not import or credit separate Network/family service research or its
+privacy gates. Native isolated fixture, fuzz, Miri, CI and merge are not executed
+by this contribution's local sequence.
+
+Raw main logs: focused debug3e388b1d/release48711e3c; full clients6f02fce9/
+32f03ee8; default d0ed2821; all-features25d9265c; Clippybf927352;
+format6051423a. Exact argv/source/log hashes and counts are in
+/tmp/bombay-prd-resumption/declaration-main/results.json and per-command receipts.
+All use `nix develop --profile
+/tmp/bombay-pr365-ci-review/pinned-bombay-shell -c` with the unchanged selected
+lock and serialized shared target. Actual commands after `cargo` are:
+
+```sh
+test --offline --locked -p bombay-rs --features remote --test application_clients network_replay::refusals::public_exports_preserve_constructor_refusals_and_original_targets -- --exact
+test --release --offline --locked -p bombay-rs --features remote --test application_clients network_replay::refusals::public_exports_preserve_constructor_refusals_and_original_targets -- --exact
+test --offline --locked -p bombay-rs --features remote --test application_clients
+test --release --offline --locked -p bombay-rs --features remote --test application_clients
+test --offline --locked --workspace
+test --offline --locked --workspace --all-features --no-fail-fast
+clippy --offline --locked --workspace --all-targets --all-features -- -D warnings
+fmt --all -- --check
+```
+
+The two exact-test commands first returned101 at the intended prior-source
+oracle and later returned0 with reviewed production; all other listed commands
+return0. Final tracked/untracked census: exactly six modified tracked paths,
+no untracked files; production+13/-5/net8, tests+7/-0/net7, public types+0/-0.
+All declaration/retention/admission/native/lifetime code and Error::source are
+unchanged. Nine error alternatives remain; runtime/control/product states are unchanged.
+No wrapper, registry, provider bound or service API is added.
+The retained patch removes only its two native-text disclosure paths; all Debug
+alternatives deliberately use the same existing startup formatter pattern.
+This is the same owning net8 change already carried in1589/2500, charged once;
+12/18 public reservations and all125/20000 historical/external extents carry.
+Final independent candidate review, PR and all required CI checks remain pending;
+no commit, push, PR or merge occurs before coordinator review. Full service,
+SDK privacy and API/release delivery stay held; no full acceptance row closes.
+
 Current delivery: Communication0.1.6 adoption merged through PR377; concurrent
 query/native receiving merged through PR374 at67a286c. Startup PR379 integrates
 that actual main and requires fresh exact-head CI before merge.
