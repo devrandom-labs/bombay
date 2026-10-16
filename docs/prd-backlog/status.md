@@ -498,7 +498,7 @@ Historical release pointers (not the current selection): Behavior Core/Actors
 `5ca96444f0a66e9a013b6989e3e53d345cbabf65`. The Driver and template
 manifests retain revision-bound evidence. Earlier EXEC notes selected 0.17.0:
 their hashes, source inventories and open representation experiments are
-historical; EXEC's published selection and current manifests now use
+historical; at that checkpoint EXEC's published selection and manifests used
 Core/Actors 0.23.0 and Macros 0.14.0 at
 `d69f992b371c12ab34e73b18e45b8112c90a1508`.
 

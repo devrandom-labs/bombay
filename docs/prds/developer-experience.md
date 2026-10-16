@@ -24,7 +24,8 @@ Compiler friction cannot invent bounds, no-op inputs or structural caller work.
 
 ## Ownership and delivery
 
-Work stays isolated on `codex/devx-registry-027`, currentlyf244566; other AI
+Work stays isolated on `codex/devx-registry-027`; verified integration1cc0953
+includes current mainf25e4a0. Other AI
 worktrees remain untouched. It selects registry Behavior/Actors0.27.0,
 macros0.15.0, Address0.3.0, Communication0.1.6 and Timers0.2.0 without repository
 patches. All397 original root nonowner package records remain exact.
@@ -51,14 +52,21 @@ cannot certify the newer catalogue graph or an automatic-timer API. The
 unimplemented no-ID timer model and named-port falsifiers remain in the owning
 PRD. Native panic custody and automatic timer ownership are separate laws.
 
-Upstreamf25e4a0/PR384 now bounds declaration-error Display/Debug while preserving
-the original standard Error source. Integration and caller review of that new
-main are next; the earlier imported PR382 startup repair is already byte-identical
-here. This imports six paths (production+13/-5, tests+7/-0, public types+0/-0),
-reusing the identical native error box and original source pointer, with no
-actor/protocol/dependency change. Original formatter source must fail the new
-oracle; actual combined consumers must pass before acceptance. New main features
-must improve ordinary caller experience as they integrate.
+Mainf25e4a0/merged PR384 is integrated at1cc0953. Declaration-error Display/Debug
+hide native text while the original standard Error source and returned target
+remain owned. All21 remote client tests and nine compile denials pass actual
+registry270/150 on1.99/1.96 debug/release; restoring the original formatter fails
+at the exact new assertion in both current profiles. Both independent reviews,
+strict owner/client Clippy and whole-workspace formatting pass. All1876 bound
+inputs were conserved before these documentation updates; all400 lock records
+remain exact. Two stale-binary attempts were rejected, never counted as passes.
+This six-path import adds production+13/-5 and tests+7/-0, with public types+0/-0;
+it does not complete SDK hiding or verify every Debug variant by execution.
+
+A fresh no-ID timer consumer fails against this actual registry graph at three
+missing-ID sites. Its unchanged named control records today's baseline; the
+future API must prove named-request replacement rather than overload one method
+with two arities. No automatic-timer production change is retained yet.
 
 ## Verification
 
