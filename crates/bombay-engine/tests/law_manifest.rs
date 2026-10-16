@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 use std::process::Command;
+use std::{env, fs};
 
 use serde::Deserialize;
 use serde_json::Value;
@@ -75,12 +76,94 @@ fn audit_obsolete_api(path: &std::path::Path, violations: &mut Vec<std::path::Pa
             path.extension().and_then(|value| value.to_str()),
             Some("rs" | "md")
         ) && std::fs::read_to_string(&path).is_ok_and(|source| {
-            source.contains(concat!("Send", "Product"))
+            source
+                .split(|character: char| {
+                    !(character.is_alphanumeric() || matches!(character, '_' | ':'))
+                })
+                .any(|name| {
+                    name.contains(concat!("Send", "Product"))
+                        && name.trim_start_matches(':') != "behavior_macros::SendProduct"
+                })
                 || source.contains(concat!("Inner", "<Path>"))
         }) {
             violations.push(path);
         }
     }
+}
+
+#[test]
+fn owner_send_derive_remains_distinct_from_retired_runtime_products() {
+    let directory = env::temp_dir().join(format!("bombay-owner-products-{}", std::process::id()));
+    fs::create_dir(&directory).expect("create one source-policy fixture directory");
+    let derive = directory.join("derive.rs");
+    let guide = directory.join("guide.md");
+    let product = directory.join("product.rs");
+    let route = directory.join("route.md");
+    let foreign = directory.join("foreign.rs");
+    let products = directory.join("products.rs");
+    let routes = directory.join("routes.md");
+    fs::write(
+        &derive,
+        concat!(
+            "#[derive(behavior_macros::Send",
+            "Product)]\nstruct Notices<A, R> { absolute: A, relative: R }\n"
+        ),
+    )
+    .expect("write the selected owner's real derive spelling");
+    fs::write(
+        &guide,
+        concat!(
+            "Use `behavior_macros::Send",
+            "Product` for named effect lanes.\n"
+        ),
+    )
+    .expect("write qualified owner guidance");
+    fs::write(
+        &product,
+        concat!(
+            "struct Send",
+            "Product<Own, Inner> { own: Own, inner: Inner }\n"
+        ),
+    )
+    .expect("write the retired runtime product");
+    fs::write(
+        &route,
+        concat!("The obsolete route is `Inner", "<Path>`.\n"),
+    )
+    .expect("write the retired positional route");
+    fs::write(
+        &foreign,
+        concat!(
+            "#[derive(foreign_behavior_macros::Send",
+            "Product)]\nstruct Notices;\n"
+        ),
+    )
+    .expect("write a similarly named foreign derive");
+    fs::write(
+        &products,
+        concat!(
+            "#[derive(behavior_macros::Send",
+            "Product)]\nstruct Notices<A, R> { absolute: A, relative: R }\nstruct Send",
+            "Product<Own, Inner> { own: Own, inner: Inner }\n"
+        ),
+    )
+    .expect("keep a retired product visible beside the legitimate owner derive");
+    fs::write(
+        &routes,
+        concat!(
+            "Use `behavior_macros::Send",
+            "Product`; the obsolete route is `Inner",
+            "<Path>`.\n"
+        ),
+    )
+    .expect("keep a retired route visible beside legitimate owner guidance");
+    let mut violations = Vec::new();
+    audit_obsolete_api(&directory, &mut violations);
+    fs::remove_dir_all(&directory).expect("release the source-policy fixture directory");
+    violations.sort();
+    let mut expected = vec![product, route, foreign, products, routes];
+    expected.sort();
+    assert_eq!(violations, expected);
 }
 
 fn rust_source_contains(path: &std::path::Path, excluded: Option<&str>, needle: &str) -> bool {

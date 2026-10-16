@@ -402,6 +402,184 @@ The owning PRD and DEAD_ENDS record the falsifier and counts. Automatic and
 explicit names need separate meaning before production/migration; DX13 remains
 open. These focused tests do not replace the final repository gates.
 
+Timer panic custody prerequisite (pre-edit): current merged Bombay5e9bcd1
+selects registry Core/Actors0.26.0, macros0.14.2, Address0.3.0,
+Communication0.1.6 and Timers0.2.0, without patches. Both native schedule
+interpreters remove the request before open InjectEvent conversion. Derived
+D-RETIRE-1/affine custody law: until a receipt or complete rejection exists,
+the original request remains in outside interpretation custody. A panic must
+return the completed accepted prefix, interrupted original, untouched suffix,
+independent lanes, original actor and independent work/cleanup/notifications.
+Desired ordinary Application syntax and named scheduling ports do not change.
+First add native active-turn regressions for both absolute and relative
+scheduling; no initialization-panic substitute. Reuse the existing request
+Copy contract, ActionItem outside custody, TimerQueue, Driver panic guard and
+ActorRetirement; add no ownership traits or runtime registry. Expected change:
+one production file, about+6/-2 lines; one focused test and this coordination;
+zero public types, bounds, signatures, visibility or resolved dependencies changed.
+The focused fixture uses the existing owner `behavior_macros::SendProduct` derive for two named
+lanes through a test-only dependency on the already locked macros0.14.2;
+no handwritten routing or settlement algebra is introduced.
+Before checkpoint: one LocalTimers queue; TimerError3 alternatives; two
+InterpretItem bodies, no independent actor control state or subordinate engine.
+Focused native RED executes both cases in debug/release (5.551/8.895s),
+failing exactly at the interrupted original-request assertions. Both source/oracle
+reviews pass after checking the actual independent-lane receipt and distinct ID4.
+Before lowering: 186 production lines, two interpreter methods/eight settlement
+arms, one TimerQueue, TimerError3 alternatives, no actor control-state additions.
+The existing public ScheduleAt/After are Copy. Preserve each outside input until
+its complete settlement exists, then clear input and receive settlement with no
+await, user callback or destructor between. Existing generic InjectEvent and
+named schedule ports remain open. No queue rollback or original panic-payload
+identity claim is added. Raw pre-edit binding: TIMER-CUSTODY-PREEDIT.json.
+Retained implementation: both methods copy the existing Copy request, preserving
+its outside slot through conversion, and clear input only immediately before
+receiving the complete settlement. Production +6/-2/net4 in one file;
+186→190 production lines (235→239 file lines), one queue, TimerError3,
+three matches/ten arms/two if guards unchanged. Public types/spellings +0/-0;
+no new state, bound, visibility, signature or scheduling policy.
+Final seven-case matrix passes current1.99 and minimum1.96 debug/release
+(1.056/3.288/1.511/3.705s), with418 frozen Rust/manifest/Nix/driver hashes exact.
+The two new cases, real timer/shutdown orders, mailbox fairness and both
+Stash/reminder orders all execute. Lint-only fixture spelling changes preserve
+the same panic condition,24-hour duration and empty Never lanes; strict final
+Clippy passes0.885s. Earlier lint failure is retained without passing credit.
+Tests +288/-0 in one file; configuration +2/-0 adds only the already-locked
+macro dependency edge. Five changed files include this coordination record.
+No arrival history, duplicated cause, false cardinality, nested authority,
+semantic boolean or structural application syntax is added. Existing named
+schedule ports, Copy request/receipt products, D-RETIRE-1 and outside
+interpretation custody remain the authority. Two source/oracle reviews pass;
+final gate review and all24 native repository Nix checks remain pending.
+Full a54a303 check exits1/1456.385s with621 frozen hashes conserved:15
+check rows succeed and9 fail. It exposes two prerequisite test-contract failures. Incoming
+main adds a cfg(test) startup-disposal regression whose scope literal omits both
+current capacity fields and whose Unstarted match names the former outer sum.
+The unchanged original file in5e9bcd1 reproduces those two compiler errors.
+Separately, the repository surface guard rejects any occurrence of the send
+product name, conflating the selected owner derive with the retired runtime
+product. The new native test and this record expose that false positive.
+
+Pre-edit test conservation law: use the existing production default-capacity
+scope equation for this unconfigured Application and match the actual WorkOutcome;
+retain every original startup action, pointer/cause/disposal/call/retirement
+assertion. Change only the cfg(test) module, with no production API or behavior.
+Prove the focused unit reference and its original-startup-disposal inversion.
+For source policy, first write a filesystem regression that permits the exact
+owning qualified derive and its qualified guidance, while rejecting the retired
+product, old route and foreign similarly named derive. Keep the existing source
+scan and forbidden-surface inversion; no filename exemptions or disabled checks.
+Expected three additional files including this record, production delta0,
+public types/spellings0, no actor state, branch, module or protocol change.
+The original full Nix source stays frozen while this repair uses another
+isolated feature worktree. Its Darwin classifier crash remains a separate
+verification failure, not evidence against timer semantics.
+Retained test repair: every original startup action and ownership assertion
+is conserved; production execution is byte-identical. Seven filesystem artifacts
+separate the owning qualified derive from obsolete products/routes, including
+both mixed-file cases and the foreign prefix. Token-local recognition replaces
+the blanket substring veto; no file exemption or other scan changes.
+Eight references pass current1.99/minimum1.96 debug/release: the same11 source-policy
+tests plus the exact startup unit case in every configuration. Three actual
+inversions (original startup disposal, whole-file exemption, substring exemption)
+fail at their intended assertions in both profiles; six restored controls pass.
+The actual repository scan separately rejects a mixed products.md fixture in
+both profiles, then all11 tests pass after its removal. All622 frozen hashes
+are conserved; two independent source and gate/oracle reviews pass. Initial
+V1 rejects before Cargo on a trailing-blank-line comparison and has no passing
+credit. Strict focused Clippy passes21.162s and pinned formatting passes.
+
+Repair checkpoint: production+0/-0, tests+92/-5/net87, public types+0/-0;
+three additional changed files including this record. Driver control states
+before/after remain Prepared, Activating, Initializing, SettlingInitialization,
+Active, Retiring and RetirementAttempted; settlement states Offer/AwaitSource/
+Retained and action Continue/Stop are unchanged. No production branch, module,
+state alternative or protocol spelling changes; LocalTimers retains one queue.
+Residue scan finds no new arrival history, repeated cause, false cardinality,
+nested authority, semantic boolean or structural caller syntax. Cross-check
+D-RETIRE-1, the existing default-capacity scope and WorkOutcome custody, selected
+owner derive and Driver source-policy law. Disposition: pass the bounded test
+repair. The prior axum classifier crash remains disclosed; all24 fresh native
+Nix gates and exact-head CI must pass on the repaired source before delivery.
+Evidence: TIMER-GATES-V2-REPAIR-{SOURCES,RESULTS}, TIMER-GATES-REPAIR-MATRIX-V2
+and TIMER-GATES-REPOSITORY-SURFACE receipts under the existing evidence root.
+Build-reference law, pre-edit: the fresh d265bdc native check again reports
+classifier SIGSEGV44674 while fixup continues, at exact output fq4n4gf/target.tar.zst.
+The pinned audit hook does not wait for its classifier. A successful check must
+establish both complete file enumeration/classification and the existing ELF
+RPATH/wrapped-script reference rules; a crashed or refused producer is failure.
+This is tooling verification policy, not actor semantics. No root cause for the
+Bash crash is claimed. Do not reclassify the original run or disable its audit.
+
+Before production, retain a black-box failed-find37 regression against the exact
+pinned hook, plus independent healthy/forbidden script, ELF, byte-header and tool
+failure controls. Compare ordinary serial checked enumeration with the copied
+parallel hook. The proposed serial form uses checked find, a temporary NUL file
+list, byte-exact od headers and the same searched TMPDIR prefix, avoiding binary
+read-n and the entire background/FIFO coordination graph. Retain .build-id and
+unwrapped-script exclusions. Byte headers deliberately reject near-magic NUL/
+newline prefixes: unlike Bash character read-n, they mean the actual leading
+ELF/shebang bytes. Test that correction explicitly; do not call the malformed-
+header behavior identical. This replacement covers commonArgs workspace
+derivations, not upstream dependency hooks. Explicitly check all producers and tools even when
+called in an if/OR context. Reuse pinned shell/coreutils/find/grep/patchelf; add no
+Rust dependency, locale change, pin update or actor API. Primary Bash contracts:
+https://www.gnu.org/software/bash/manual/bash.html#Bash-Builtins and
+https://www.gnu.org/software/bash/manual/bash.html#Bash-Variables.
+
+Expected four additional files: the owning reference scan, its black-box tests,
+flake wiring and this existing record; zero Rust production/state/public-type
+changes. The new focused Nix check supplements all24 existing gates. The original
+full run remains frozen; this isolated tooling stage must prove the failure law,
+compare actual output and controls, measure its scan cost, pass two independent
+reviews and rerun the complete gates before any retained clean-gate claim.
+The executed exact-hook failed-find37 regression reports success instead, after
+its healthy control passes (NIX-REFERENCES-PINNED-RED, 5.272s). Two preproduction
+reviews require NUL-safe space/newline filenames, verified UTF-8 charmap, exact
+near-ELF headers, first-component/lookalike RPATHs and a separate list-open fault;
+these controls are added before production. ELF fixtures mock the patchelf port,
+not its binary parser. Cleanup-fault residue is isolated between cases.
+NIX-REFERENCES-INPUTS.json freezes source and the pinned hook before edits.
+The first serial candidate passes46 black-box controls and all five tool/header
+inversions, but an independent reader-failure cut exposes another masked error:
+read43 ends a while-condition with status0 (NIX-REFERENCES-READER-RED,4.670s).
+Reopen that loop before retention. The completed NUL list must end with an empty
+record, which a find filename cannot contain; append it only after checked find
+success, then require the reader to reach it. Any read error or premature EOF
+fails and still cleans the list. This is finite-list completeness, not another
+actor state or authority. Add error43 and early-EOF1 controls before replacing
+the loop; preserve the first failed candidate and receipts as counterevidence.
+The revised scan passes50 controls (25 under each verified C/UTF-8 locale),
+and six isolated inversions fail at their intended find/header/search/cleanup/
+reader/magic oracles. All624 frozen inputs are conserved through that run. The focused native
+Nix check passes8.517s after declaring the test's pinned locale executable;
+its initial missing-tool result is not a passing gate. Actual default stdenv
+fixup accepts healthy output1.170s and rejects the real forbidden wrapper1.059s
+with the complete filename. All626 integration inputs are conserved through that run; an earlier
+host-path setup rejection receives no semantic credit. No second hook is added.
+
+The exact181863512-byte output archive is classified three times per locale by
+both old and new scans without a reported crash. Serial21.19–23.88ms versus
+pinned22.60–23.30ms is only this tiny output-directory sample, not a performance
+or root-cause claim; compressed contents are outside the reference audit.
+Source/oracle and gate reviews pass independently twice. Only this record is
+amended after those runs; production and executable proof inputs stay frozen. References:
+NIX-REFERENCES-COMPLETE-{SOURCES,RESULTS}, FOCUSED-BUILD-V2 and
+NIX-REFERENCES-INTEGRATION-V2-{SOURCES,RESULTS}. The full replacement check is
+pending; original d265bdc reports three masked classifier crashes so far.
+
+Drift: actor production/state/branches/public types+0/-0. Tooling+91/-0/net91
+(two files:65-line owning scan,26-line Nix wiring), tests+136/-0 in one file,
+four files including this record; cumulative timer PR10 files, actor production
++6/-2. Existing audit eligibility and search policy have one owner; binary
+headers are byte-exact and completion is one framed finite file list. Delete
+use of the pinned parallel/FIFO audit within commonArgs workspace derivations;
+retain upstream dependency audits. No actor state, subordinate sum, transition
+authority, cause, history, semantic boolean or user syntax changes. Cross-check
+pinned stdenv fixup ordering, Bash read/locale rules and unchanged Driver custody.
+Disposition: pass this bounded tooling proof; full native/CI acceptance remains open.
+Automatic identity, wrapper migration and complete DX13 acceptance remain open.
+
 Exact termination decoration (DX09): ActorExt::observe_termination returns the
 existing registry EstablishedTerminationMonitor with the complete original
 request and reaction. The owning PRD contains the pre-edit law and native
