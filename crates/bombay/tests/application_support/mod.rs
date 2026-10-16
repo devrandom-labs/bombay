@@ -2,6 +2,34 @@ use bombay::ActorCustody;
 
 use bombay::behavior::{BehaviorSettlements, Never, Protocol};
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
+#[cfg(feature = "remote")]
+use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
+#[cfg(feature = "remote")]
+use std::num::NonZeroUsize;
+#[cfg(feature = "remote")]
+use std::path::PathBuf;
+
+#[cfg(feature = "remote")]
+#[allow(
+    dead_code,
+    reason = "integration tests compile their shared support independently"
+)]
+pub(crate) fn listening_network(address: String) -> Network {
+    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
+    Network {
+        layout: NetworkLayout::Peer {
+            connect: None,
+            listen: Some(ConnectionEndpoints {
+                addresses: vec![address],
+                certificate: CredentialSource::File(certificates.join("recipient-certificate.pem")),
+                private_key: CredentialSource::File(certificates.join("recipient-private-key.pem")),
+            }),
+        },
+        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
+        max_retained_queries: NonZeroUsize::new(2).unwrap(),
+    }
+}
 
 pub(crate) type RootTerminal<R> = (RootOrigin<R>, ActorRetirement<R, Never, Vec<Never>>);
 

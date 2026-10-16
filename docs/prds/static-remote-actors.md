@@ -29048,3 +29048,141 @@ unchanged. Two-pass independent source/execution review finds no weakened law.
 This is a verified private connection-entry checkpoint, not a delivered
 remote-service feature, distillation, required-CI pass or merge. Keep both
 public-service holds and every open acceptance obligation.
+
+### Remote Application — actual family composition witness before edits
+
+The preceding goal turn made progress:54e0d75 implements and verifies the public
+connection entry;379c640 resolves actual-main documentation and3803aee431 fixes
+the replacement release lock. None completes the full service or privacy gate.
+Fresh graph hashes remain manifestfc87c97e/rootd4ab9a6f/fixture95986a62, no
+patches; Behavior/Actors0.25.0 at2bb4510 with complete instructions2b7a9195.
+Fresh family.rs source and completed_application_receiving.rs fixtures confirm
+real receptionists, shutdown publications and native callback ownership.
+
+The new entry's nonempty-family contract is still unproved. Reuse the existing
+LiveAccounts/LiveAccount/typed Accepted(value) fixture, actual ReceivingAccount
+root, existing live_application topology and native root checker. Do not add an
+actor, topology, runtime or Entity/durability feature. Receive two actual account
+replies on the same Entity: one before root stop, one after its joined-retirement
+report while Work is live. Park Work; connection receiving must remain Pending
+and no family retirement has yet been acquired. Then release Work and acquire
+all native root, both notifications, exact family shutdown and connection
+producer/close results. Check one hydration, same actual reply source, values
+283/293, complete retired account state and original payload, and every metric,
+refusal/failure/disposal axis. Preserve Completed versus same-lease OwnerCancelled
+as the existing family fence allows. No sleep/predicted generation or assertion
+with an effect is eligible. Watchdogs only fail the test and never certify a
+native fact. An empty-family compile/run cannot prove this law.
+
+Use one ordinary shared listening-network input constructor in the existing
+application_support test module; move the existing public-entry fixture there
+and reuse it, rather than duplicate configuration or create another fixture
+framework. Expected edits: that module, application_clients/remote.rs and the
+existing completed_application_receiving.rs target (including its remote-only
+shared module import), plus PRD/acceptance/status. Zero production/API/dependency
+changes; up to400 net new retained verification lines, counting the moved fixture
+once. Before authoring, select1000 cumulative entry-verification lines instead
+of600; keep450 gross entry production,2500 known cumulative production,18
+cumulative public additions,125 software-owner slots and20000 verification/
+tooling lines. Carry all existing/external histories and reservations.
+
+The intended runtime inversion suppresses the existing family's actual result
+publication after full shutdown, while still performing tail shutdown and all
+cleanup. The witness must fail at missing family receiving after complete
+application/network cleanup. This is simulated authoritative-fact loss, not a
+new production fix. Replacing nonempty families/receptionists with unit is only
+a static type-denial candidate and gets no runtime credit. Run debug and
+optimized controls/cut and exact restoration before retaining the witness.
+Public transport privacy, real remote serving and publication policy remain
+unfixed; no full R01-R25/AUTH1/NET1 acceptance row advances.
+
+### Ordinary Rust native-operation comparison — experiment only
+
+Before any generalized Export edit, select a compiler-only experiment under the
+standing recommendation delegation. Compare the existing original-bearing row
+with one concrete native parameter, populated by closed Counter processing/value/
+root-stop/child-stop capabilities and an unrelated terminal Ledger client.
+An inherent async function plus a stable lending AsyncFn(&mut Native)->() is
+eligible to drive the existing FuturesUnordered borrowing pattern without a new
+trait, erased/named future or Send/static receipt bound. Synchronous attempt/
+retry functions must keep actual authority loans and exact native results; no
+async call belongs inside nonwaiting admission. Concrete native variants keep
+correlated outcomes together; a generic unit callback alone cannot enforce
+permanent acquisition eligibility or the finite native-first law.
+
+Compare private weak identity from the already allocated query-custody quota
+with a synthetic identity allocation. Prefer reusing that real owning allocation
+if the exact-export/redeclaration witnesses succeed; this is only a comparison,
+not a selected RequestKey signature. Target+row is insufficient for two exports
+of one actor; no dummy Stop reply endpoint or second replay table is eligible.
+The standard Weak documentation states that weak references preserve allocation
+identity without retaining its value; AsyncFn is the existing language port:
+https://doc.rust-lang.org/std/sync/struct.Weak.html#method.ptr_eq
+https://doc.rust-lang.org/std/ops/trait.AsyncFn.html
+These live docs describe1.99.1; the actual compiler experiment remains pinned
+Nix Rust1.99.0 and does not borrow a newer library contract.
+
+Prepare at most300 lines of temporary research Rust outside the repository,
+using existing application_clients fixtures through a temporary owning-module
+attachment only when root holds the verification lease. Compile positive and
+wrong-reply/target inversions, then restore the attachment byte-for-byte. No
+new Cargo package, manifest, dependency or retained production/public symbol.
+Charge this external research to the carried20000 verification/tooling window;
+do not count compile eligibility as runtime replay, cancellation, authority,
+source, processing, Stop or transport proof. Do not implement another replay
+algorithm merely to make a probe pass. Actual shared replay-before-factory,
+complete milestones, both providers, typed outbound Actions and Ledger remain
+the subsequent shipping witnesses. The family test substage remains separate.
+
+The family witness source7b1dcbd1 passes1/0/0 in debug and release (38filtered).
+The selected lost-head-publication cut852625e8 fails with0 passed/1 failed in both profiles at
+family.expect with actual RecvError after cleanup; it is simulated loss only.
+Restore owning family.rs3d6d0bb7 byte-for-byte. Restored affected controls pass
+42 Application clients plus39 completed-receiving cases in both profiles (81
+per profile); no other workspace gate is credited. Shared fixture relocation
+changes no credential/address/quota values. Formatted test delta is+361/-27/
+net334, entry verification892/1000; production/API/dependency delta remains0.
+Compiler-only native.rs848b535f is221 raw external research lines; no function
+executes and no new trait/API is selected. Its upcoming positive/negative
+commands will use a temporary module attachment only after these controls.
+
+
+The family substage's final strict command is `cargo clippy --offline --locked
+--workspace --all-targets --all-features -- -D warnings`, and formatting is
+`cargo fmt --all -- --check`; both execute through the pinned Nix profile and
+return0. Actual logs6fdf3082/f63de623 retain the commands' output; restored
+affected debug3528690b and releasefefb22a1 each pass81 cases. Positive focused
+logsa007dee3/b9cb045b and intended cut logsdd40aacc/cf756457 preserve the
+separate execution. Owning family source is restored to3d6d0bb7; no production
+change is retained. Two independent source-review passes cover the formatted
+witness and its original-bearing family/native/notification/connection oracles.
+The full workspace privacy gate remains red from the separately recorded
+actual743-pass/1-failure execution; this fixture stage does not claim a full
+workspace pass, feature completion, distillation, required CI or merge.
+
+Compiler comparison actual observations are narrower than runtime evidence:
+healthy848b535f compiles in the dev profile; replacing only the Increment reply
+protocol with CounterValue fails with one intendedE0308 in dev and release.
+Replacing only the Ledger target with Counter fails with one intendedE0308 in
+dev. The target release inversion and healthy release control have not executed
+at this checkpoint. Independent two-pass review confirms the real typed native
+variants and lending callback composition without a new trait; no function in
+this research module executes. Restore the external source to848b535f and
+temporary owning module to260f6a56 exactly before retained-source lint. Do not
+credit request eligibility, replay, fresh authority, source identity, native
+processing or retirement from these compile observations.
+
+
+Final retained family checkpoint versus54e0d75: six paths (three test files
+and PRD/acceptance/status), production+0/-0/net0, tests+361/-27/net334,
+public API+0/-0 and no dependency change. Complete tracked/untracked census
+versus81dc1448 remains65 tracked paths and zero untracked paths: production
++1832/-44/net1788; tests+12439/-14/net12425. Apply the existing188/3 test
+reclassification once; separately owning Communication104 keeps known combined
+production1892/2500. Cumulative entry verification892/1000 and all prior external
+history/reservations carry. The author reviewed the final witness twice, and a
+separate reviewer checked the source twice; author census review is not counted
+as independent authorship. Cargo argv is not printed in earlier family raw
+logs, so the evidence identifies actual targets/profile/result inventory without
+reconstructing unrecorded invocation metadata. Retained manifest/root/fixture
+hashes remainfc87c97e/d4ab9a6f/95986a62.

@@ -14,9 +14,14 @@ in debug and release: original cold input recovery, actual startup-refusal
 custody, cancelled borrowed execution waiting, and run_remote result products.
 Restoring the old coupled cold/prepared Work mapper fails compilation at the
 intended outcome projection in both profiles. This is static denial only.
-These local Counter controls establish no remote admission, handshake, service,
-nonempty Entity family or whole-PRD witness. The separate owning connection
-association/surrender test retains its own execution record in the PRD.
+These local Counter controls establish no remote admission, handshake, service
+or whole-PRD witness. A separate actual nonempty Entity-family control now
+receives before and after root retirement while Work remains live, then acquires
+the exact family shutdown after Work completes. Its missing-publication cut
+fails after cleanup in both profiles; restored Application/completed-receiving
+controls pass81 cases per profile. This establishes the scoped local family
+composition law only. The owning connection association/surrender test retains
+its separate execution record in the PRD.
 PR378 was closed unmerged by the release bot; replacement PR380 and API PR374
 remain held for complete public service and transport privacy correction.
 

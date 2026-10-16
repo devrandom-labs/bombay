@@ -9,7 +9,9 @@ Historical inventory marks and research snapshots are not current eligibility.
 The remote connection-entry stage adds Application::execute_remote/run_remote
 using the existing execution owner and Bombay Network inputs. Four public
 caller controls pass in debug and release; these are local startup/custody
-controls, not authenticated remote service proof. The actor-wide three-operation
+controls, not authenticated remote service proof. The actual nonempty-family
+witness also passes in debug/release, detects deliberate shutdown-result loss
+after cleanup, and has81 restored affected controls per profile. The actor-wide three-operation
 replay service, outbound Actions and transport privacy replacement remain open.
 The bot closed release PR378 unmerged and replaced it with PR380; that release
 and API PR374 remain held. Finished prerequisites merge independently through

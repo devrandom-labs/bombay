@@ -5,17 +5,13 @@ use super::{Counter, CounterMessage};
 use bombay::actors::ActorExt;
 use bombay::behavior::Behavior;
 use bombay::prelude::{Application, StopOnShutdown};
-use bombay::remote::{
-    ConnectionEndpoints, CredentialSource, Network, NetworkLayout, NodeStartupRefusal,
-};
+use bombay::remote::{CredentialSource, NetworkLayout, NodeStartupRefusal};
 use bombay::{ActorFailureAssessment, ApplicationHandle, ApplicationOutcome, RetirementAssessment};
 use core::future::{Future, poll_fn};
 use core::pin::pin;
 use core::task::{Context, Poll, Waker};
 use std::cell::Cell;
 use std::error::Error;
-use std::num::NonZeroUsize;
-use std::path::PathBuf;
 use std::ptr;
 use std::rc::Rc;
 use std::time::Duration;
@@ -23,27 +19,10 @@ use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 
-use super::application_support::assert_completed;
+use super::application_support::{assert_completed, listening_network};
 
 // Failure-only test watchdog; this is not an Application deadline or success oracle.
 const WATCHDOG: Duration = Duration::from_secs(5);
-
-fn listening(address: String) -> Network {
-    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
-    Network {
-        layout: NetworkLayout::Peer {
-            connect: None,
-            listen: Some(ConnectionEndpoints {
-                addresses: vec![address],
-                certificate: CredentialSource::File(certificates.join("recipient-certificate.pem")),
-                private_key: CredentialSource::File(certificates.join("recipient-private-key.pem")),
-            }),
-        },
-        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
-        max_retained_queries: NonZeroUsize::new(2).unwrap(),
-    }
-}
 
 #[test]
 fn missing_host_returns_the_original_application_network_and_callable() {
@@ -51,7 +30,7 @@ fn missing_host_returns_the_original_application_network_and_callable() {
     let allocation = ptr::from_ref(original.as_ref());
     let credential: Box<str> = "original unconsumed deployment credential".into();
     let credential_allocation = credential.as_ptr();
-    let mut network = listening("localhost:0".into());
+    let mut network = listening_network("localhost:0".into());
     network.deployment_roots = CredentialSource::Base64(credential);
     let calls = Rc::new(Cell::new(0));
     let entered = Rc::clone(&calls);
@@ -125,7 +104,7 @@ async fn configured_refusal_keeps_unstarted_inputs_and_its_independent_cause() {
     let allocation = ptr::from_ref(original.as_ref());
     let address = "a".repeat(256);
     let address_allocation = address.as_ptr();
-    let network = listening(address);
+    let network = listening_network(address);
     let calls = Rc::new(Cell::new(0));
     let entered = Rc::clone(&calls);
     let work = move |application: ApplicationHandle<
@@ -226,7 +205,7 @@ async fn borrowed_execution_wait_can_end_while_the_same_work_and_connection_rema
     let (release, released) = oneshot::channel();
     let (execution, receiving, closing) = Application::new(Counter::new().stop_on_shutdown())
         .execute_remote(
-            listening("localhost:0".into()),
+            listening_network("localhost:0".into()),
             move |application: ApplicationHandle<
                 <Counter as Behavior>::Protocol,
                 <StopOnShutdown<Counter> as Behavior>::Event,
@@ -357,7 +336,7 @@ async fn run_remote_returns_the_same_independent_application_and_connection_resu
     let allocation = ptr::from_ref(original.as_ref());
     let result = Application::new(Counter::new().stop_on_shutdown())
         .run_remote(
-            listening("localhost:0".into()),
+            listening_network("localhost:0".into()),
             move |application: ApplicationHandle<
                 <Counter as Behavior>::Protocol,
                 <StopOnShutdown<Counter> as Behavior>::Event,
