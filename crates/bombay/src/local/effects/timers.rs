@@ -32,7 +32,8 @@ where
             if received.is_some() {
                 return;
             }
-            let Some(request) = input.take() else {
+            // Conversion may panic; retain the outside request until settlement.
+            let Some(request) = *input else {
                 return;
             };
             let settlement = {
@@ -58,6 +59,7 @@ where
                     }
                 }
             };
+            *input = None;
             *received = Some(settlement);
         }
     }
@@ -86,7 +88,8 @@ where
             if received.is_some() {
                 return;
             }
-            let Some(request) = input.take() else {
+            // Conversion may panic; retain the outside request until settlement.
+            let Some(request) = *input else {
                 return;
             };
             let settlement = {
@@ -115,6 +118,7 @@ where
                     }
                 }
             };
+            *input = None;
             *received = Some(settlement);
         }
     }

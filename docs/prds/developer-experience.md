@@ -392,6 +392,57 @@ The owning PRD and DEAD_ENDS record the falsifier and counts. Automatic and
 explicit names need separate meaning before production/migration; DX13 remains
 open. These focused tests do not replace the final repository gates.
 
+Timer panic custody prerequisite (pre-edit): current merged Bombay5e9bcd1
+selects registry Core/Actors0.26.0, macros0.14.2, Address0.3.0,
+Communication0.1.6 and Timers0.2.0, without patches. Both native schedule
+interpreters remove the request before open InjectEvent conversion. Derived
+D-RETIRE-1/affine custody law: until a receipt or complete rejection exists,
+the original request remains in outside interpretation custody. A panic must
+return the completed accepted prefix, interrupted original, untouched suffix,
+independent lanes, original actor and independent work/cleanup/notifications.
+Desired ordinary Application syntax and named scheduling ports do not change.
+First add native active-turn regressions for both absolute and relative
+scheduling; no initialization-panic substitute. Reuse the existing request
+Copy contract, ActionItem outside custody, TimerQueue, Driver panic guard and
+ActorRetirement; add no ownership traits or runtime registry. Expected change:
+one production file, about+6/-2 lines; one focused test and this coordination;
+zero public types, bounds, signatures, visibility or resolved dependencies changed.
+The focused fixture uses the existing owner SendProduct derive for two named
+lanes through a test-only dependency on the already locked macros0.14.2;
+no handwritten routing or settlement algebra is introduced.
+Before checkpoint: one LocalTimers queue; TimerError3 alternatives; two
+InterpretItem bodies, no independent actor control state or subordinate engine.
+Focused native RED executes both cases in debug/release (5.551/8.895s),
+failing exactly at the interrupted original-request assertions. Both source/oracle
+reviews pass after checking the actual independent-lane receipt and distinct ID4.
+Before lowering: 186 production lines, two interpreter methods/eight settlement
+arms, one TimerQueue, TimerError3 alternatives, no actor control-state additions.
+The existing public ScheduleAt/After are Copy. Preserve each outside input until
+its complete settlement exists, then clear input and receive settlement with no
+await, user callback or destructor between. Existing generic InjectEvent and
+named schedule ports remain open. No queue rollback or original panic-payload
+identity claim is added. Raw pre-edit binding: TIMER-CUSTODY-PREEDIT.json.
+Retained implementation: both methods copy the existing Copy request, preserving
+its outside slot through conversion, and clear input only immediately before
+receiving the complete settlement. Production +6/-2/net4 in one file;
+186→190 production lines (235→239 file lines), one queue, TimerError3,
+three matches/ten arms/two if guards unchanged. Public types/spellings +0/-0;
+no new state, bound, visibility, signature or scheduling policy.
+Final seven-case matrix passes current1.99 and minimum1.96 debug/release
+(1.056/3.288/1.511/3.705s), with418 frozen Rust/manifest/Nix/driver hashes exact.
+The two new cases, real timer/shutdown orders, mailbox fairness and both
+Stash/reminder orders all execute. Lint-only fixture spelling changes preserve
+the same panic condition,24-hour duration and empty Never lanes; strict final
+Clippy passes0.885s. Earlier lint failure is retained without passing credit.
+Tests +288/-0 in one file; configuration +2/-0 adds only the already-locked
+macro dependency edge. Five changed files include this coordination record.
+No arrival history, duplicated cause, false cardinality, nested authority,
+semantic boolean or structural application syntax is added. Existing named
+schedule ports, Copy request/receipt products, D-RETIRE-1 and outside
+interpretation custody remain the authority. Two source/oracle reviews pass;
+final gate review and all24 native repository Nix checks remain pending.
+Automatic identity, wrapper migration and complete DX13 acceptance remain open.
+
 Exact termination decoration (DX09): ActorExt::observe_termination returns the
 existing registry EstablishedTerminationMonitor with the complete original
 request and reaction. The owning PRD contains the pre-edit law and native
