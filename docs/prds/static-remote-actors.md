@@ -33379,3 +33379,61 @@ This adds capability. Known1829 production/12 public reservations and every
 historical/rejected/external2500/18/125/20000 extent carry without a reset.
 Node-owned cold declarations, mixed rows, providers, drain/close, public privacy,
 reviewed main delivery and all full R01–R25/AUTH1/NET1 acceptance remain open.
+### Published TLS dependency adoption — focused main contribution (2026-10-16)
+
+Pre-edit blocker: mainf4aa3b3d still pins Zenoh1.10.9 and Link/TLS/Transport1.10.3,
+so its native consumers cannot exercise the released bounded TLS listener and
+accepted-link queue. Fresh main-specific reviewafd6a254 rechecks selected
+Behavior/Actors0.26.0 and macros0.14.2 at98983b4, complete760-line instructions,
+Address0.3.0, Communication0.1.6, private Observe, Timers0.2.0 and Entity APIs,
+tests and documentation. All18 manifests have no patch/replace. Their ownership
+laws remain unchanged. This contribution includes no research Network, family
+Node or private invocation-kernel changes and inherits no research runtime proof.
+
+Select the actual published Zenoh1.10.10 and Link/TLS/Transport1.10.4 archives
+from SDKmainc34eb350, delivered by SDK PR14, exact-mainCI38943726658 and
+publication38952470805. Five controlled packages remain byte-identical. Preserve
+the existing optional remote feature, TLS-only/default-features=false selection,
+Config1.10.2, Protocol1.10.1 and every unrelated complete package/edge record.
+The sole allowed removal is tls-listener0.11.2, referenced only by old TLS.
+Expected root400→399 and fixture325→324 nodes, with395/320 untouched records.
+Preserve main fixture's absent normal serde_json edge and all Windows selections.
+
+Forecast: only the two existing manifests, their two locks and this PRD/status,
+six paths, at most160 metadata and80 record lines changed; production/tests
++0/-0/net0, public types+0/-0. Reuse current Node/open/export and native fixtures;
+no new runtime, policy, wrapper or semantic law. Main-only locked graph resolution,
+public/library and native debug/optimized consumers, strict workspace lint,
+formatting, source laws and required exact-head CI/review precede normal PR merge.
+The listener serializes one handshake per listener and bounds accepted links;
+active and queued limits remain independent, with additional dispatcher/listener
+ownership. This is no aggregate memory/task bound or completed remote service.
+All R01–R25/AUTH1/NET1 and SDK privacy gates remain open. Carry known1759 production,
+12/18 reservations and all2500/18/125/20000 historical/external charges unchanged;
+this focused delivery creates no new budget or certified headroom.
+
+
+Main-specific local qualification passes422 public/library tests per profile
+(the existing flake remote cohort), plus20 inner compile fixtures separately.
+Native TLS protected-counter passes68/0/1 per profile; the existing controlled
+subprocess is unexecuted locally. Both locked metadata commands, root and fixture
+strict all-target lint, root/fixture formatting and source laws11 pass. All571
+bound inputs remain exact through these eleven commands; runtime bytes are frozen
+before this result-only record update. Candidate review2e3d5b36 confirms the
+four-owner-only graph and minimal six-path scope. Complete production/tests
++0/-0/net0, metadata+18/-46/net-28, public types+0/-0. Required exact-head CI,
+review and normal main merge remain pending; no full remote row closes.
+
+
+Focused dependency delivery is merged through reviewed PR385 at49cc8971 on
+2026-10-16T21:40:07Z. Submitted head5fabf813 had all six contexts successful;
+required CI38961104927 checked actual synthetic b8912a71 with exact f4aa+5fab
+parents and the submitted tree. Required source/artifact review3c2645eb and
+separate native review95dc33c6 pass. Actual remote422/0 per profile, default
+workspace776/0/2 and docs7/0/3 retain their main-specific scope. Driver2048 and
+Observe four1024-run ASAN campaigns pass with verified artifact digests; Miri
+was skipped. Native debug/release jobs independently run all32 controlled cases
+and80 role executions per profile. Required logs, archives and inventories are
+retained under sdk-adoption/delivery/ci-required and ci-native. Normal merge
+49cc8971 is now integrated here; research Rust and both lock files remain exact
+to9e305892. No research runtime or full-service/privacy acceptance is inferred.

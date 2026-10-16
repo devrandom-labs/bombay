@@ -508,3 +508,18 @@ profiles pass471 cases; intended omission inversions, strict lint, format and
 source laws pass with exact restoration. Eleven paths add70 production lines and
 no public type. Next: Node-owned cold Export/replay, provider and close custody;
 all full remote/service/privacy acceptance remains open.
+Published TLS dependency adoption is selected as a focused six-path main update.
+Fresh exact-main owner verification and the pre-edit scope are recorded in the
+remote PRD; main-specific execution, review, CI and merge remain pending.
+No research-only runtime or full remote acceptance is transferred.
+
+Main dependency candidate passes422 public/library and68 native TLS tests per
+profile, with one existing subprocess skipped. Locked graphs, strict lint,
+formatting and source laws pass; six paths change no Rust/API. Exact-head CI,
+review and focused PR merge remain pending. Full remote requirements stay open.
+
+
+Focused published TLS dependency adoption merged through PR385 at49cc8971.
+All six contexts pass; required/native logs and artifacts were independently
+reviewed. Research integrates that actual main merge without Rust or lock drift.
+Full service, privacy and all remote acceptance gates retain their own scope.
