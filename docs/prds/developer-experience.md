@@ -2769,14 +2769,42 @@ storage and sends; independent supervisor query generics must not require an
 unconstrained Status route for capability-only work. Production/API/state delta0.
 
 
-Current isolated owner proof: ordinary queue/roster construction fixes exact
-reply endpoints; optional logical routing selects only the requested operation.
-Six real native archive-consumer tests pass1.99 debug/release, including FIFO
-original-payload rejection, retirement and both worker wrapper orders. Four
-logical-query hosting combinations compile; each missing selected host remains
-denied. The shared all-query supervisor choice was removed after an unused-host
-falsifier. Owner focused tests pass1.95 both profiles. These are explicit local
-three-owner path patches, not changes to this branch's native production or a
-registry release. The canonical Behavior PRD holds counts, reviews, source/log
-bindings and limitations. Worker aliases, complete logical failure custody,
-portable fixture adoption, costs, consumer migration and full gates remain open.
+Current owner integration: exact reply endpoints are inferred for ordinary
+queue/roster construction. Logical routing opts in independently per operation;
+four genuine host combinations compile and each missing selected host remains
+denied. The discarded combined query choice required an unused host. Startup
+uses with_startup(worker, move || async move {...}) through existing StartupPlan;
+no worker alias or named plan is required. Measured stored plans16bytes named,
+32anonymous future,16deferred closure; inline pools256bytes each. These unpublished
+owner changes use explicit three-owner path patches in native archive consumers:
+16focused owner tests and7native tests pass both profiles/current and minimum
+compilers. Frozen730-file evidence, full failure-path limits, migration and costs
+remain in the canonical Behavior PRD. This is not registry or combined-source
+acceptance; old Stash/shutdown layouts do not execute inner shutdown and receive
+no genuine two-policy credit.
+
+Independent rejected-reply correction184354b (draft Behavior PR101) changes only
+existing source custody (+33 production lines, public API0) with6regressions.
+All970 nextest tests, ten native Nix gates, four-workspace release preflight,
+packaged consumer and all14exact-head GitHub checks pass. Unmodified6c5c18a with
+all59 original registry selections preserves complete logical Status/Capability
+rejections beside normal retirement; locked debug/release pass, original owner
+fails retained rows1 versus3. This proves neither per-action row partition nor
+new panic/cancellation laws. Merge/publication authorization is pending.
+
+The retained public regression crates/bombay/tests/policies.rs exercises genuine
+Stash and OneShot policies in both fluent orders with registry Behavior/Actors
+0.26.0, no patch. Raw closed-worker rejection controls the business law. Both
+original boxed invoices, origins, FIFO balances, original destination, once-only
+reminder, every Actions lane and terminal Stop are checked. Two independent
+reviews pass after tying the destination oracle to input MailAddr59. Real
+Bombay debug/release pass all3tests (13.820/33.352seconds); final lint-only edits
+merge equivalent route arms and explain the complete-trace function's length.
+Final debug/release pass (1.161/1.187seconds), strict Clippy passes (0.787seconds),
+formatting passes (0.631seconds). Isolated exact owner inversions dropping timer
+Actions or reversing FIFO each fail both orders while the raw control passes;
+restored702source hashes and forced recompilation pass all3. One stale mutated
+Cargo artifact after preserved-mtime restoration stayed red and is not passing
+evidence. Production/public API0; tests+266/-0 in onefile. Empty inner init,
+native scheduling acceptance and joint startup remain unproven by this fixture.
+The canonical Behavior PRD retains full commands, source/log bindings and drift.
