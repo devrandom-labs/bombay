@@ -28725,8 +28725,9 @@ SDK1.10.9 ReplyBuilder::into_future executes ready(self.wait()); wait enters
 Query::_reply_sample/send_response before a future is returned. Get similarly
 registers and sends during IntoFuture. Selected transport1.10.3 can synchronously
 wait for queue batches. Reply congestion_control is deprecated and ineffective;
-the reply inherits request QoS, and Drop still permits configured waiting and
-locking. Do not infer nonblocking service execution from async syntax or Drop.
+the reply inherits request congestion control and priority. Drop still permits
+configured waiting and locking. Do not infer nonblocking execution from async
+syntax or Drop.
 A logical reply-permission decision, any authority loan across that call, task
 ownership and cancellation/uncertainty require an explicit shipping contract.
 The approved nonwaiting actor-mailbox admission decision does not select those
