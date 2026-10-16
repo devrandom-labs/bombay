@@ -24,6 +24,20 @@ target. Export Query/Session exposure and full service/privacy
 acceptance remain open. PR382's test-only startup compatibility repair merged
 after all six CI checks and final independent review; it closes no full remote row.
 
+The input stage is committed/pushed asc1eed5e with immutable evidence; the broad
+results above describe that checkpoint. The following family-composition WIP
+reuses the existing family invocation and complete receiving through the same
+Node path. Its real nonempty-family witness and50-case original-Work consumer
+cohorts pass both profiles; the deliberate report-loss check and exact restored
+controls are qualified. Default workspace passes773/0/2 tests plus7/0/3 doctests;
+all-feature workspace passes848 tests and7 doctests, failing only the kept Query
+privacy target. Strict lint and formatting pass. The full isolated native fixture
+passes68/0/1 per profile; the controlled subprocess remains ignored. Two pure
+assertion spelling changes receive independent review and focused reruns in both
+profiles. It adds no public type or
+second runtime. The remote PRD records the pre-edit comparison, exact output
+changes, extra allocation and source budget.
+
 Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence

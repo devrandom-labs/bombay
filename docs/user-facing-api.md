@@ -572,7 +572,7 @@ The `remote` feature uses `application.open_node(network).await`. Supply Bombay'
 all-of plain-address list, its certificate and private key. `CredentialSource`
 selects each file or base64 value independently. There are no implicit
 credentials, shared identities or query limits, and no public SDK Config input.
-Build root/child topology with ordinary Application first. The returned
+Build topology, children and Entity families with ordinary Application first. The returned
 `remote::Node` owns that declaration and one private fresh network connection.
 Await the complete application with
 `node.run_with(|application| async move { ... }).await`.
@@ -584,6 +584,10 @@ the independent close result.
 For independently driven operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
+
+Declared Entity families use that same Node path. Work selects their existing
+receptionists with `application.entities(role)`; receiving retains the actual
+family shutdown results alongside the root, Work and notifications.
 
 Transport hiding remains unfinished: exported query custody, declarations and
 native receive/retirement results still expose SDK objects. These are

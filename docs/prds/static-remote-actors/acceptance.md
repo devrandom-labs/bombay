@@ -21,6 +21,19 @@ failing only the kept Query privacy target. Query privacy, peer
 handshake and full service acceptance remain open. Historical raw
 Config/Session/privacy statements below retain their original source scope.
 
+The following family-composition checkpoint uses the same Node owner and
+existing family invocation, with a real reply before and after root retirement
+while Work remains live, exact family receiving and original borrowed/non-Send
+Work. Both50-case consumer cohorts and the report-loss/restored controls pass
+their intended profile-specific checks. Default workspace773/0/2 and all-feature
+848/1/2 (only the known Query privacy failure), plus7/0/3 doctests in each run,
+bind its unchanged production. Two later equivalent test assertion spellings
+receive independent two-pass review and focused1/0/0 reruns in both profiles.
+Strict lint/format pass; isolated native fixture68/0/1 per profile leaves its
+controlled subprocess unexecuted. Node's existing public type gains Families;
+empty-Node staging and prepared Arc products change explicitly. No additional
+runtime, service/privacy acceptance or full witness is established.
+
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.

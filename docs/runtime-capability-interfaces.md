@@ -34,6 +34,8 @@ transport owner, reusing ordinary Application execution with its privately owned
 Session. Node::run_with awaits its complete outcome; execute_with keeps separate
 execution and receiving operations. Both callbacks receive only the ordinary
 Application handle and retain caller-local borrows and non-Send outputs. Both
+carry declared Entity family receptionists and exact family shutdown receiving
+through the existing family-capable invocation owner. They
 preserve original Work on refusal through the existing invocation spine. It owns no new actor trait,
 mailbox, lifetime authority or permission policy. Startup consumes explicit
 Bombay Network inputs, constructs the fixed private configuration, and returns

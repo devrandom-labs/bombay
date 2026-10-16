@@ -26,6 +26,14 @@ lint passes after correcting one documentation backtick. SDK service/query priva
 shipping integration and mutation-baseline migration remain unfinished.
 All full R01-R25/AUTH1/NET1 rows remain open.
 
+Those broad input-stage results are bound to committed checkpointc1eed5e.
+The later family-composition checkpoint has its own verification at the end of
+this record: default workspace773/0/2 plus7/0/3 doctests, all-feature848/1/2
+plus7/0/3 (only the known Query privacy failure), strict lint/format and isolated
+native68/0/1 per profile. These are separate executions, not inherited results.
+Two later test assertion spelling changes have exact equivalence review and
+focused reruns in both profiles; production bytes remain unchanged.
+
 Earlier checkpoints below retain their source/version/execution scope.
 
 ## Current dependency delivery (2026-10-16 UTC)
@@ -30795,3 +30803,295 @@ later terminal record prose changes only non-Rust counts. The generated duplicat
 diagnostic and its ignore file are archived by exact hash and removed; canonical
 expected Config stderr remains. This is a verified research checkpoint with an
 enabled failing Query privacy gate, not main delivery or full PRD completion.
+
+### Current Application family composition — research before production
+
+The input checkpoint is committed and pushed asc1eed5e. Its exact28-path source,
+completed evidence, initial unqualified orchestration and resumption checkpoint
+are sealed in the298-file immutable session archive
+remote-network-input-c1eed5e-20261016T063758Z, manifest06a28185. Unfinished
+future design drafts are explicitly excluded. PR382's final921-payload archive
+is separately sealed aspr382-final-eeb8dc66; neither archive changes feature status.
+
+The next full-service preparation exposes a concrete composition gap: current
+Node/open_node/run_with/execute_with accept only Application's Families=(). The
+existing ordinary Application family path already owns actual receptionists,
+installed Entity families and independent shutdown results. A root-only service
+witness cannot establish that those owners survive network composition. The
+retired0.25 execute_remote path is historical evidence, not a replacement API.
+
+Fresh c1eed5e lock3caba2a6 selects Behavior/Actors0.26.0 at98983b4 with its
+complete selected instructions, macros0.14.2, Address0.3.0, Communication0.1.6,
+Timers0.2.0, private Observe, SDK1.10.9/Config1.10.2 and Tokio1.53.1, no patches.
+Current Node, invocation, WorkOutcome, family installation/shutdown, public
+receiving fixtures and Driver laws are reinspected; family-contract-inputs
+d09589c9 binds the graph and owning source hashes. Behavior Actions and templates,
+Address leases, Communication admission, Observe publication and Timers retain
+their current contracts; Entity owns actual family preparation and retirement.
+Application alone must join those facts. No owning contract is replaced.
+
+Research first: use the existing LiveAccounts/LiveAccount/ReceivingAccount
+fixture and ordinary Network input to ask the current public Node path to carry
+a nonempty family. Establish the intended missing-method compile failure on
+current source before selecting production. Drafts remain external until their
+two author/independent reviews pass. No new domain actor, provider, topology,
+runtime, macro or copied family model is allowed. The eventual observable law
+must retain a real Entity reply before root stop and another after root retirement
+while Work remains live, then complete original Work/root/notifications/family
+receiving and network cleanup. Empty-family success is not that proof.
+
+Compare ordinary functions and inherent invocation methods over existing
+products. An opaque closure wrapping Work cannot return captured original Work
+on cold or host refusal; an additional six-case mapper or interior-mutability
+owner only to recover it is rejected. The existing family invocation already
+passes original Work separately and uses the owning into_supplied mapper. A
+private generalization of that existing invocation is eligible to compare, not
+permission for a second execution owner. Retaining separate empty/family paths
+versus one family-capable path has real public and allocation costs: family
+Prepared contains Arc<Spaces> and staging includes Families, while the current
+empty path contains Spaces. Family preparation and kernel currently allocate
+two nested Arc owners rather than one. Record these differences; do not hide
+them behind aliases, infer a new abstraction from diagnostics, or broaden this
+blocker into an unproved allocation refactor.
+
+This is a bounded research selection only: expected repository edits now are
+the owning receiving test and PRD/status/acceptance records, production0/0 and
+public types0/0. A production alternative requires its own explicit forecast,
+accepted output equation, focused failing regression and measured comparison
+before edits. Keep the verified input checkpoint separate. All carried budgets,
+actual Query/service/privacy blockers and full acceptance obligations remain.
+
+The focused family draft passes two author and two independent source reviews
+before mounting. The first151-line draft is rejected without execution: one
+reply did not prove post-root family survival, and Completed alone excluded
+the existing lawful same-lease OwnerCancelled retirement. Revised formatted
+source is329 lines plus a four-line remote-only child-module mount. It retains
+both283/293 replies around actual root retirement, same native source, zero
+family retirements before Work completion, one hydration, exact native accepted
+trace, full failure/settlement/custody axes and the original borrowed Cell/Rc.
+Normal scope disposes the completed owners; only the live observation Mutex
+guard is explicitly released. No example or production source changes.
+
+Mount only this paired healthy witness now; pinned-Nix compilation must fail
+at the current missing open_node on the nonempty-family Application. No runtime
+or semantic credit follows until the owning implementation is selected and
+debug/optimized controls plus an intended fact-loss inversion execute. Missing
+imports, unrelated inference errors and watchdog expiration are not that oracle.
+This test-only research adds333 lines across two test paths; cumulative scope
+and all prior reservations carry. Joined/refusal/cancellation witnesses remain
+separate and no production API has yet been selected.
+
+The first actual debug compiler run reaches the expected E0599 opener gap and
+also E0614 on the later family represented-count reference. Preserve this
+receipt as unqualified body typing; do not credit it as an isolated denial or
+change that oracle just to remove the diagnostic. Before production, compare a
+temporary test-only ordinary Application control: use the existing
+execute_with_entities method with the same complete two-reply family trace,
+omit only Network construction/open/close and their claims, and execute it in
+both profiles. This independently checks the inferred family/report body against
+its actual current owner. Restore the exact reviewed Node witness afterward.
+No fake successful close value, production mutation or new runtime is allowed.
+Only this new uncommitted test file changes during the experiment; retain exact
+base/control/log hashes. A compiler/setup failure receives no runtime credit.
+
+The ordinary family control actually passes1/0/0 in debug and optimized builds
+on unchanged Work/oracle bodies, including *represented. Logsfe4231fc/d315523e
+and the exact restored Node sourcec0bd709c are retained. Restoring that source
+again reaches the original E0599 opener gap and dependent E0614 diagnostic;
+this is not claimed as an isolated single-diagnostic denial. The body is proved
+only through the existing typed family owner until the Node implementation
+executes it. No Node/TLS/close execution credit follows from the local control.
+
+Select the contained ordinary-Rust implementation now: Node retains the same
+Application/Session fields and carries Application's existing Families product
+as its fourth generic parameter. The default unit family has the same meaning
+as Application's existing empty declaration. Both Node execution spellings use
+the existing family-capable preparation/installation/receiving body, with bare
+original Work separate from the private Session-association callable. Factor
+that body into a private inherent invocation method; the existing public local
+family method supplies the identity callable. Reuse the same into_supplied
+mapper, execute_application_with kernel, family installation and shutdown.
+Do not add another owner, sum, trait, callback API, result mapper or runtime.
+
+The output equation is explicit: Work receives
+ApplicationHandle<Root::Protocol,Actor::Event,Families::Receptionists> and its
+own output remains unchanged. Receiving contains the original Work phases,
+exact root/notification results and Families::Shutdowns. Staging retains
+(Root,Spaces,Families,Work,StagingFailure,ApplicationScope); Prepared retains
+(Actor,Arc<Spaces>,ApplicationScope). Host refusal restores the exact complete
+Application and bare original Work. No Send/static/Clone bound is added to Work
+or WorkFuture. SDK objects remain private in Node and its invocation callable.
+
+This deliberately changes existing empty-Node prepared/staging types and uses
+the family path's extra Arc allocation. It is not allocation-neutral or source
+compatible for explicit old partial-input annotations. Local empty execution,
+HTTP, absent execution and kernel Arc ownership remain unchanged; no failing
+law requires their redesign in this blocker. The private method owns real
+family preparation and complete receiving, rather than forwarding an opaque
+closure. Its two concrete invocation substitutions are the existing identity
+and Node's Session association. It deletes the family public method's embedded
+implementation and Node's use of the family-free invocation without inventing
+a new semantic construction.
+
+Pre-production forecast: node.rs and execution.rs only; at most200 net new
+production lines (expected about170, primarily explicit method signatures).
+Existing public Node gains the truthful Families parameter; public types+0/-0.
+The owning329-line test/four-line mount and current guidance/PRD/status/acceptance
+are the remaining paths, at most ten paths for this stage. Current cumulative
+production1540 leaves room within2500; carry12/18 public reservations and all
+125/20000 historical/external extents. Measure the actual patch before further
+production edits if this forecast fails. This adds family composition; do not
+describe a positive production delta as cleanup.
+
+Before broadening, run the exact new family witness in both profiles, plus
+existing original-Work Node and current local family regressions. Then qualify
+one deliberate actual family-report publication omission after real shutdown:
+receiving must preserve the genuine missing-report error and the positive
+oracle must fail after cleanup/close acquisition. No timeout or skipped native
+cleanup earns fact-loss credit. Restore exact owning source and rerun controls.
+Review the complete changed tests twice, check public naming/ownership against
+the official [Rust naming](https://rust-lang.github.io/api-guidelines/naming.html),
+[type-safety](https://rust-lang.github.io/api-guidelines/type-safety.html) and
+[future-proofing](https://rust-lang.github.io/api-guidelines/future-proofing.html)
+guidelines and selected Behavior instructions, then remeasure the complete tree.
+No full service, Query privacy, release or full-row state advances here.
+
+First family production measurement: node.rs+62/-32 and execution.rs+111/-2,
+total production+173/-34/net139, within the200-line forecast. The working tree
+contains six paths including the333 test lines and current records; public
+types+0/-0. Known combined production is1679/2500; the same12/18 public
+reservations and all historical/external extents carry. This is added family
+composition capability, not production reduction.
+
+Aggregate checkpoint: Node's fields remain its optional original declaration
+and private Session; its three refusal alternatives and declaration-transfer
+branches are unchanged. Application's six Work outcome states, original products,
+cleanup, notifications and family shutdown alternatives are unchanged. The
+existing family implementation moves into one private method with a distinct
+invocation argument; no family or actor transition branch, production module,
+public spelling or semantic boolean is added. Only the existing Families product
+now travels through Node. The ordinary identity and private Session callables
+reuse one body and owning mapper. The first actual focused Node-family debug
+run passes1/0/0 on the exact reviewed test, including the previously unresolved
+represented-count body. Optimized execution and broader regression gates remain
+pending. The Driver/fold and capability ownership laws remain unchanged.
+
+The exact Node-family witness now passes1/0/0 in each profile. Independent
+production/test source review7294a2d1 verifies the family extraction byte-for-byte
+except its explicit invocation argument, all six Work outcomes and unchanged
+kernel/15 startup assertions. The first broader command passes39 receiving
+cases and4 public Network cases, then stops at three expected diagnostic-text
+mismatches. Their actual E0593/E0499 denials remain intact: Node's family generic
+only changes callback-bound notes and a lifetime capture help list. No fixture
+source or privacy law changes. Two author/independent reviewsd7877591 approve
+only those exact three actual-output blocks; copy them explicitly rather than
+using blanket overwrite. This adds three diagnostic paths (+33/-21 text), no
+production/API/test-body change. Rerun the previously unreached targets too.
+
+Direct minimization before further checks: routing Node through the family
+owner leaves the old private empty invocation with exactly one identity caller.
+Its invocation generic and stale Node comment no longer own a second use.
+Independent recommendation8834ec3d confirms the only caller and exact original
+input products. Inline that unchanged empty preparation body into its existing
+public execute_with, supplying the same identity callable at the kernel argument,
+and delete only the unused private signature/bounds/comment. Keep bare Spaces,
+all original local outcome types and the kernel unchanged. This removes about110
+production lines in the same execution.rs, within the200-net stage bound; it is
+direct retirement of plumbing made unnecessary by this blocker. Do not turn it
+into local/HTTP/family Arc unification or add a replacement wrapper. The family
+invocation still owns its two real substitutions. Final capability growth and
+this deletion are measured separately before another production edit.
+
+Minimized source2ae39543 retains the exact old empty body with its existing
+identity callable inlined; independent reviewb80e6e27 verifies unchanged local
+signatures/products, family body, kernel and startup assertions. The deletion
+step is net-98 production lines. Final current production+174/-133/net41
+(Node+62/-32; execution+112/-101); known combined1581/2500. The complete family
+change remains net-positive capability. Both minimized consumer cohorts execute
+50/0/0 (39 receiving,4 Network,1 borrowing harness,5 Node outcome,1 diagnostics).
+Trybuild's inner compiler remains dev-profile even in the optimized outer run.
+The three accepted gold changes retain the same Session and borrow denials.
+
+Now execute the one independently reviewed report-loss qualification a3c25025:
+actual entity/family.rs471b5438 becomes67bbd7b7 by dropping only the existing
+head publication and constructed FamilyRetirement after real shutdown/disposal,
+retaining tail shutdown. The unchanged Node-family oracle must fail at its
+family receiving expect in each profile, after execution/receiving and native
+close have returned. The negative cannot credit later native-row, root, two-User,
+metrics or close-success assertions, which follow that expect. Restore exact
+owning source in a finally path and run healthy controls in both profiles.
+Compiler/setup failures, a different panic or watchdog expiration are unqualified.
+Allow at most80 additional external orchestration lines including the18-line
+command runner within the carried verification window; no retained production
+or test-source change is selected for this experiment. Broader gates follow.
+
+The report experiment is terminal and restored. Both deliberate omissions fail
+only at family.expect162:37 with the actual RecvError; unchanged healthy controls
+pass1/0/0 in each profile after exact471b5438 restoration. Independent executed
+reviewdb6a04c3 verifies source/test/log hashes, both50-case cohorts and all stated
+negative-order limits. The27-line local-control and35-line report scripts use
+the18-line runner; the report experiment is53/80 authored orchestration lines.
+No source lease remains. All broad workspace/lint/native-fixture gates are still
+pending for the minimized working source; default workspace execution has begun.
+
+The contract-guidance audit updates the existing module, runtime, public API
+and user guidance for the same family-capable Node, not another entry. Together
+with the three reviewed diagnostics the actual stage has13 paths rather than
+the initial ten-path forecast, still within carried scope. Production remains
+two paths/net41, public type additions0; no further production expansion follows
+from these record/diagnostic changes. The complete tracked/untracked census and
+working resumption archive retain their own exact snapshot and pending gates.
+
+The minimized default workspace run now succeeds:773/0/2 tests and7/0/3
+documentation tests, counted separately across113 and six summaries. Receipt
+family-workspace-default/loge650733a binds the current source. The all-feature
+no-fail-fast workspace run has begun; strict lint and full isolated native
+fixture verification remain pending. The known Query privacy gate stays enabled.
+
+The full-feature workspace finishes848/1/2 tests and7/0/3 doctests; the
+only failed target remains remote_surface because the intended Query denial
+still compiles. Config denial and all family controls pass. No new runtime
+failure is inferred from that known open interface gate. Initial strict lint
+finds two assertion-style warnings in the new test, not a production failure:
+replace only those two empty checks with the existing owning test's len()==0
+assertion spelling. Their observable conditions and ordering remain identical;
+retain the original c0bd709c evidence and review the exact revised source before
+focused reruns. Production source stays frozen. Native-fixture gates remain
+pending; no full acceptance row advances.
+
+Final family verification uses execution2ae39543 and Node845115ec throughout.
+The revised329-line test599c38f1 differs from c0bd709c only in two equivalent
+zero-cardinality assertions; author and independent two-pass review6750bed4
+prove that exact transformation. Original omission evidence stays bound to
+c0bd709c. Revised focused controls pass1/0/0 in debug and optimized builds,
+logs5665c3dd/4881ab53. Both full isolated protected_counter runs pass68/0/1,
+logs3395e470/d9fd5ccb; the controlled TLS subprocess remains ignored and no
+Linux subprocess campaign is inferred. Strict all-target/all-feature lint passes
+08f1d491; final formatting passes. The earlier default and all-feature workspace
+runs bind unchanged production and c0bd709c, not a relabeled revised test run.
+The revised test runs cover the only intervening test changes.
+
+Exact commands are recorded in their hashed receipts, run through
+`nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c`:
+
+```sh
+cargo test --offline --locked --workspace
+cargo test --offline --locked --workspace --all-features --no-fail-fast
+cargo clippy --offline --locked --workspace --all-targets --all-features -- -D warnings
+cargo test --offline --locked --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --features protected-transport --test protected_counter -- --test-threads=1
+cargo test --release --offline --locked --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --features protected-transport --test protected_counter -- --test-threads=1
+cargo test --offline --locked -p bombay-rs --features remote --test completed_application_receiving network::node_keeps_live_family_receiving_and_caller_local_work -- --exact
+cargo test --release --offline --locked -p bombay-rs --features remote --test completed_application_receiving network::node_keeps_live_family_receiving_and_caller_local_work -- --exact
+cargo fmt --all -- --check
+```
+
+The full-feature command returns101 solely for the enabled Query privacy test;
+all others listed return0. No complete flake/CI/merge, full-service or release
+claim follows while that gate remains red. The production delta remains
++174/-133/net41, tests+333/-0, public defined types+0/-0. The final record adds
+the current acceptance companion as the fourteenth path, without another
+software owner. Known combined production1581/2500 and12/18 public reservations
+carry, as do every125-owner/20000-verification historical/external extent. Final
+independent counts, review and the durable research checkpoint must bind this
+complete14-path tracked/untracked delta. This is a scoped prerequisite, with all
+fullR01-R25/AUTH1/NET1 obligations still open.

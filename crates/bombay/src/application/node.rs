@@ -5,6 +5,7 @@ use super::execution::RootInterpreter;
 use super::{Application, ApplicationHandle, ApplicationOutcome, ApplicationScope, WorkOutcome};
 use crate::NativeHost;
 use crate::address::MailAddr;
+use crate::entity::InstallEntityFamilies;
 use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
@@ -20,21 +21,22 @@ use behavior::{
 use core::fmt;
 use core::future::Future;
 use std::error::Error;
+use std::sync::Arc;
 use tokio::runtime::{Handle, RuntimeFlavor, TryCurrentError};
 use zenoh::Session;
 
 /// One finalized ordinary Application and its fresh owned native Session.
 ///
-/// Construct topology and children on Application before opening. Node issues
+/// Construct topology, children and Entity families on Application before opening. Node issues
 /// that declaration once; it adds no actor lifecycle or replacement policy.
 /// Borrowed execution waits leave this owner and its Session outside the wait.
 /// Dropping an entire operation is surrender, not a joined retirement fact.
-pub struct Node<Root, Spaces, Members = ()> {
-    application: Option<Application<Root, Spaces, Members>>,
+pub struct Node<Root, Spaces, Members = (), Families = ()> {
+    application: Option<Application<Root, Spaces, Members, Families>>,
     session: Session,
 }
 
-impl<Root, Spaces, Members> fmt::Debug for Node<Root, Spaces, Members> {
+impl<Root, Spaces, Members, Families> fmt::Debug for Node<Root, Spaces, Members, Families> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         let application = match &self.application {
             Some(_) => "declared",
@@ -98,7 +100,7 @@ impl<Work> fmt::Debug for NodeExecutionRefusal<Work> {
     }
 }
 
-impl<Root, Spaces, Members> Application<Root, Spaces, Members> {
+impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families> {
     /// Open one private network connection for this Application.
     ///
     /// Network inputs explicitly supply each direction, its credentials, deployment
@@ -118,7 +120,7 @@ impl<Root, Spaces, Members> Application<Root, Spaces, Members> {
     pub async fn open_node(
         self,
         network: Network,
-    ) -> Result<Node<Root, Spaces, Members>, (Self, Network, NodeStartupRefusal)> {
+    ) -> Result<Node<Root, Spaces, Members, Families>, (Self, Network, NodeStartupRefusal)> {
         let config = match network.to_configuration() {
             Ok(config) => config,
             Err(cause) => return Err((self, network, cause)),
@@ -141,7 +143,7 @@ impl<Root, Spaces, Members> Application<Root, Spaces, Members> {
     }
 }
 
-impl<Root, Spaces, Members> Node<Root, Spaces, Members> {
+impl<Root, Spaces, Members, Families> Node<Root, Spaces, Members, Families> {
     #[expect(
         clippy::type_complexity,
         reason = "return the original declaration and callable together without a wrapper or a self loan"
@@ -149,7 +151,8 @@ impl<Root, Spaces, Members> Node<Root, Spaces, Members> {
     fn take_application<Work>(
         &mut self,
         work: Work,
-    ) -> Result<(Application<Root, Spaces, Members>, Work), NodeExecutionRefusal<Work>> {
+    ) -> Result<(Application<Root, Spaces, Members, Families>, Work), NodeExecutionRefusal<Work>>
+    {
         if self.application.is_none() {
             return Err(NodeExecutionRefusal::ExecutionIssued { work });
         }
@@ -184,17 +187,18 @@ impl<Root, Spaces, Members> Node<Root, Spaces, Members> {
     private_bounds,
     reason = "reuse the existing private Application installation proof"
 )]
-impl<Root, Spaces, Members> Node<Root, Spaces, Members>
+impl<Root, Spaces, Members, Families> Node<Root, Spaces, Members, Families>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
     Members: ComposeApplication<Root>,
+    Families: InstallEntityFamilies<Spaces> + Send,
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
     /// Await caller-local work and the complete joined application retirement.
     ///
     /// Work receives the ordinary Application handle for typed actor clients,
     /// lifecycle requests and composition, using the same callback contract as
-    /// `Application::run_with`. Work and its result may borrow caller-local values
+    /// `Application::run_with_entities`. Work and its result may borrow caller-local values
     /// and need not be Send. This operation is cold until polled. Canceling a borrowed wait
     /// leaves the owned operation available; dropping the whole operation
     /// surrenders it.
@@ -211,12 +215,19 @@ where
     ) -> Result<
         ApplicationOutcome<
             WorkOutcome<
-                Application<Root, Spaces, Members>,
+                Application<Root, Spaces, Members, Families>,
                 Work,
                 WorkFuture::Output,
                 (),
-                (Root, Spaces, Work, StagingFailure, ApplicationScope),
-                (Actor, Spaces, ApplicationScope),
+                (
+                    Root,
+                    Spaces,
+                    Families,
+                    Work,
+                    StagingFailure,
+                    ApplicationScope,
+                ),
+                (Actor, Arc<Spaces>, ApplicationScope),
             >,
             (
                 RootOrigin<Root>,
@@ -226,7 +237,7 @@ where
                     ChildFailures,
                 >,
             ),
-            (),
+            Families::Shutdowns,
         >,
         NodeExecutionRefusal<Work>,
     >
@@ -255,7 +266,7 @@ where
             Actor,
             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             Members::Origins,
-        >: ChildBindingsIn<Actor, Spaces>
+        >: ChildBindingsIn<Actor, Arc<Spaces>>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
                 Failures = ChildFailures,
@@ -263,7 +274,7 @@ where
             + 'static,
         RootInterpreter<
             Actor,
-            Spaces,
+            Arc<Spaces>,
             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             Members::Origins,
         >: CommitActions<
@@ -279,15 +290,21 @@ where
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
-        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
+        Families::Installed: 'static,
+        Work: FnOnce(
+            ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
+        ) -> WorkFuture,
         WorkFuture: Future,
     {
         let (application, work) = self.take_application(work)?;
         let session = &self.session;
-        match application.execute_with_invocation(work, move |work: Work, mut application| {
-            application.session = Some(session.clone());
-            work(application)
-        }) {
+        match application.execute_with_entities_invocation(
+            work,
+            move |work: Work, mut application| {
+                application.session = Some(session.clone());
+                work(application)
+            },
+        ) {
             Ok((execution, receiving)) => {
                 execution.await;
                 Ok(receiving.await)
@@ -323,12 +340,19 @@ where
             impl Future<
                 Output = ApplicationOutcome<
                     WorkOutcome<
-                        Application<Root, Spaces, Members>,
+                        Application<Root, Spaces, Members, Families>,
                         Work,
                         <WorkFuture as Future>::Output,
                         (),
-                        (Root, Spaces, Work, StagingFailure, ApplicationScope),
-                        (Actor, Spaces, ApplicationScope),
+                        (
+                            Root,
+                            Spaces,
+                            Families,
+                            Work,
+                            StagingFailure,
+                            ApplicationScope,
+                        ),
+                        (Actor, Arc<Spaces>, ApplicationScope),
                     >,
                     (
                         RootOrigin<Root>,
@@ -338,7 +362,7 @@ where
                             ChildFailures,
                         >,
                     ),
-                    (),
+                    Families::Shutdowns,
                 >,
             >,
         ),
@@ -369,7 +393,7 @@ where
             Actor,
             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             Members::Origins,
-        >: ChildBindingsIn<Actor, Spaces>
+        >: ChildBindingsIn<Actor, Arc<Spaces>>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
                 Failures = ChildFailures,
@@ -377,7 +401,7 @@ where
             + 'static,
         RootInterpreter<
             Actor,
-            Spaces,
+            Arc<Spaces>,
             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
             Members::Origins,
         >: CommitActions<
@@ -393,15 +417,21 @@ where
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
-        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
+        Families::Installed: 'static,
+        Work: FnOnce(
+            ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
+        ) -> WorkFuture,
         WorkFuture: Future,
     {
         let (application, work) = self.take_application(work)?;
         let session = &self.session;
-        match application.execute_with_invocation(work, move |work: Work, mut application| {
-            application.session = Some(session.clone());
-            work(application)
-        }) {
+        match application.execute_with_entities_invocation(
+            work,
+            move |work: Work, mut application| {
+                application.session = Some(session.clone());
+                work(application)
+            },
+        ) {
             Ok(products) => Ok(products),
             Err((application, work, cause)) => {
                 self.application = Some(application);

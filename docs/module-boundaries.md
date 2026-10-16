@@ -39,7 +39,9 @@ they are tests rather than a second production receiver. The optional remote gra
 owners. Private application/node.rs owns one finalized Application and one fresh
 Session; Application::open_node consumes Network and constructs private
 configuration through remote/network.rs. Original Network inputs survive refusal.
-Node::run_with joins the existing Application execution and receiving operations;
+Node carries the ordinary declaration's root, children and Entity families.
+Its Work receives the existing family receptionists and its outcome retains
+their exact shutdown results. Node::run_with joins the existing Application execution and receiving operations;
 Node::execute_with retains separate execution and receiving operations.
 Both pass only the ordinary Application handle to work through the same
 invocation owner. Caller-local borrows and non-Send outputs remain supported.
@@ -132,7 +134,7 @@ tree:
 | `application/composition.rs` | static declaration-to-Behavior composition and exact origin selection | canonical `ApplicationBehavior`, `ApplicationDefinitionError` and `ApplicationStagingError`; implementation traits remain private |
 | `application/execution.rs` | one paired execution/result owner, supplied Work, cleanup custody and configured blocking entry | `ApplicationOutcome`, `ApplicationCleanupError` and `RunError`; async, owned blocking and Entity execution share this owner. |
 | `application/interface.rs` | application capability construction, fixed-target communication and explicit lifecycle projection | ApplicationHandle is the entry; ApplicationClient owns fixed-target replies and ApplicationSender owns one-way sending. Both reuse ExternalActor. Merged PR370 adds remote-only Application-certified actor construction and native nonwaiting client attempts. ApplicationLifecycle owns shutdown/termination/joined-report observation. ActorInterface exports named capabilities without lifecycle authority; no receiving is cloned. |
-| `application/node.rs` | opt-in fresh native Session and one finalized Application declaration; reuse the existing execution/receiving owner | `remote::Node`, `NodeExecutionRefusal`; no replacement actor lifecycle or forwarding topology builders |
+| `application/node.rs` | opt-in fresh native Session and one finalized Application declaration, including its Entity families; reuse the existing family execution/receiving owner | `remote::Node`, `NodeExecutionRefusal`; no replacement actor lifecycle or forwarding topology builders |
 | `remote/network.rs` | explicit Network inputs and private fixed TLS configuration construction | Network, NetworkLayout, ConnectionEndpoints and CredentialSource; no public native Config conversion or alternate runtime |
 | `remote/startup.rs` | exact original-input mapping/host/open refusal causes | `remote::NodeStartupRefusal`; actual native causes remain accessible through standard Error sources |
 | `remote/export.rs` | one Node-associated query declaration, retained request originals and independent existing native clients | Merged PR372 delivers `Export`, explicit `ExportLimits`, runtime-issued `RequestKey`, `Admission`, `RequestRefusal` and existing `ExportError`; Application supplies its private Session and certified interface. The dependent concurrent-receive candidate retains actual native waits with the selected futures-util collection and stores acquired originals in the existing owners. Permission providers and native protocol validation retain their own contracts. No default capacity, retry schedule or second mailbox. |
