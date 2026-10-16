@@ -68,6 +68,24 @@ missing-ID sites. Its unchanged named control records today's baseline; the
 future API must prove named-request replacement rather than overload one method
 with two arities. No automatic-timer production change is retained yet.
 
+The Engine inventory follows the actual registry270/150 ownerb8307d1 and its
+supervisor, pool, proxy and worker names. It preserves45 templates,19 capability
+families, eight Driver laws, exact commands, ownership checks and invalid-record
+controls. All24 historical evidence records remain byte-identical; selected
+package identities and historical evidence have separate test constants. Both
+source reviews pass, and all76 referenced source/test paths exist atb830.
+
+The existing11 inventory tests pass1.99/1.96 debug/release (44 executions), with
+625 inputs conserved through the runs. Restoring the obsolete package version or
+relabeling one historical record causes its exact assertion to fail in current
+debug/release; each copied control first passes all11 tests and restores all624
+source files. Source text presence and asserted revision labels are inventory
+checks, not runtime correctness, VCS attestation or new execution credit for
+historical records. Scope: two JSON manifests, existing Rust checks, Driver test
+strategy and this record; production/public types unchanged. Candidate timers
+have a separately source-bound inventory; their unpublished contracts are not
+part of the actual registry graph. Full programme gates remain open.
+
 ## Verification
 
 The owning PRD's current table separates exact source, selected owners, compiler,

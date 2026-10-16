@@ -2,10 +2,10 @@
   "schema": 2,
   "law_source": "docs/driver-law.md",
   "behavior": {
-    "core": "0.26.0",
-    "actors": "0.26.0",
-    "macros": "0.14.2",
-    "revision": "98983b456c4a8f7cd0911982eaf9488455b6d8bc"
+    "core": "0.27.0",
+    "actors": "0.27.0",
+    "macros": "0.15.0",
+    "revision": "b8307d1a763dfd2998ef140dba488f32eb15d010"
   },
   "gate": {
     "command": "nix build path:.#driver-law-evidence --no-link",

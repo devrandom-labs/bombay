@@ -5,7 +5,9 @@ use std::{env, fs};
 use serde::Deserialize;
 use serde_json::Value;
 
-const BEHAVIOR_REVISION: &str = "98983b456c4a8f7cd0911982eaf9488455b6d8bc";
+const BEHAVIOR_REVISION: &str = "b8307d1a763dfd2998ef140dba488f32eb15d010";
+const ACTORS_REVISION: &str = "b8307d1a763dfd2998ef140dba488f32eb15d010";
+const EVIDENCE_BEHAVIOR_REVISION: &str = "98983b456c4a8f7cd0911982eaf9488455b6d8bc";
 
 #[derive(Deserialize)]
 struct Manifest {
@@ -478,9 +480,9 @@ fn manifest_exactly_matches_canonical_law_index() {
     let manifest = manifest();
     assert_eq!(manifest.schema, 2);
     assert_eq!(manifest.law_source, "docs/driver-law.md");
-    assert_eq!(manifest.behavior.core, "0.26.0");
-    assert_eq!(manifest.behavior.actors, "0.26.0");
-    assert_eq!(manifest.behavior.macros, "0.14.2");
+    assert_eq!(manifest.behavior.core, "0.27.0");
+    assert_eq!(manifest.behavior.actors, "0.27.0");
+    assert_eq!(manifest.behavior.macros, "0.15.0");
     assert_eq!(manifest.behavior.revision, BEHAVIOR_REVISION);
     assert_eq!(
         manifest.gate.command,
@@ -516,7 +518,7 @@ fn manifest_exactly_matches_canonical_law_index() {
             &row.inversion.revision,
         ] {
             assert_eq!(
-                revision, BEHAVIOR_REVISION,
+                revision, EVIDENCE_BEHAVIOR_REVISION,
                 "{} has stale evidence",
                 row.law
             );
@@ -592,7 +594,7 @@ fn manifest_evidence_is_revision_bound_and_executable() {
             if !evidence_ids.insert(id.to_owned()) {
                 defects.push(format!("{law_id} reuses evidence id {id}"));
             }
-            if evidence["revision"] != BEHAVIOR_REVISION {
+            if evidence["revision"] != EVIDENCE_BEHAVIOR_REVISION {
                 defects.push(format!("{law_id} {kind} evidence is not revision-bound"));
             }
             if evidence["claim"].as_str().is_none_or(str::is_empty) {
@@ -648,11 +650,11 @@ fn engine_does_not_mirror_actor_template_laws() {
     )
     .expect("parse template boundary manifest");
     let expected_templates = BTreeSet::from([
-        "atomic.dynamic-supervisor",
-        "atomic.fifo-pool",
-        "atomic.fixed-supervisor",
-        "atomic.keyed-pool",
-        "atomic.stable-proxy",
+        "supervisor.directory",
+        "pool.queue",
+        "supervisor.roster",
+        "pool.router",
+        "proxy",
         "composition.machine",
         "composition.message-adapter",
         "composition.stash",
@@ -695,7 +697,7 @@ fn engine_does_not_mirror_actor_template_laws() {
         "workflow.workflow",
     ]);
     let expected_capabilities = BTreeSet::from([
-        "request.begin-activation",
+        "request.start-worker",
         "request.cancel-observation",
         "request.customer-delivery",
         "request.diagnostic-action",
@@ -722,8 +724,8 @@ fn engine_does_not_mirror_actor_template_laws() {
     }
     for (field, expected) in [
         ("package", "bombay-behavior-actors"),
-        ("version", "0.26.0"),
-        ("revision", BEHAVIOR_REVISION),
+        ("version", "0.27.0"),
+        ("revision", ACTORS_REVISION),
     ] {
         if manifest["owner"][field] != expected {
             defects.push(format!("owner {field} is not {expected}"));
