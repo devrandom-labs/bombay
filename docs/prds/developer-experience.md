@@ -164,6 +164,26 @@ CALLER-CONSERVATION, PRODUCTION-CONSERVATION and FINAL-FORMAT. Only this evidenc
 record is amended after the frozen runs; executable proof inputs remain exact.
 
 
+Catalogue migration is reopened at the first real unannotated FIFO factory
+failure. Its17-file candidate was archived and every caller restored byte-exact
+to69e4a3b, preserving original business inputs, policies, refusal values and
+retirement assertions. No runtime/API change or caller annotation is retained.
+The owning roster/FIFO constructor candidate now passes7 focused cases,15 real
+native cases on both compilers/profiles, plus10 actual extracted-archive cases
+per compiler/profile. Breaking-source costs and a masked owner Nix-audit crash
+remain explicit release blockers. Broad migration resumes after owner delivery.
+
+Directory/router mixed reply contracts remain unchanged until separately proved;
+unused exact roster/FIFO hosts may then be removed. Ordinary startup closure
+migration must preserve its real source-failure and retirement journey. Originals
+and the rejected candidate remain in REGISTRY-027-CATALOGUE-INPUTS and
+UNRETAINED-{SOURCES.json,patch}; the original compile failure is CATALOGUE-CHECK.
+The existing worker-factory Stash oracle is also proven weak: bypassing Stash
+passes it. A same-worker Released assertion passes both compilers/profiles and
+makes that bypass fail in debug/release; retain it with the eventual caller
+migration. This does not prove inner shutdown independently of the proxy.
+
+
 PR375 merge repair, before editing: capture upstream67a286c (PR374) and
 retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native
 check snapshot untouched. Preserve simultaneous native-reply/query receiving,
