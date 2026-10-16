@@ -34,7 +34,7 @@ is held, without starting a replacement, and preserves exact source custody.
 | Behavior Actors | bombay-behavior-actors 0.25.0, same registry archive revision | Owns existing supervision, pools and template policies. |
 | Behavior macros | bombay-behavior-macros 0.14.1, same registry archive revision | Owns syntax generation; Bombay must not replace its semantics. |
 | Address | bombay-address 0.3.0 | Owns local claims/leases and opaque resolution; its process-local representation is not a wire address. |
-| Communication | bombay-communication 0.1.5 | Owns bounded user delivery, separate control delivery, closure, payload recovery and original custody before mapped delivery. |
+| Communication | bombay-communication 0.1.6 | Owns bounded user delivery, separate control delivery, closure, capacity observation and exact payload recovery through notification failure. |
 | Observe | Private Bombay implementation | Owns completion publication and waiting; is not a missing external dependency. |
 | Timers | Registry 0.2.0, archive revision `9369d1f6c7fcda91e7de5bf3c19e6769f92145bd` | Owns volatile actor scheduling/generations and complete typed exhaustion return, not persistent reminders. |
 | Tokio | 1.53.1 in this lockfile | Caller-host async execution and configured Builder-only owned current-thread/multithread execution share one paired owner; final acceptance remains separate. |

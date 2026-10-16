@@ -58,9 +58,12 @@ Broadcaster camera replacement, commentary expiry, replay/speech concurrency,
 explicit overload rejection, and separate queue-age/timer-lateness/actor-turn/
 worker-duration metrics belong in the application, which is absent here.
 
-## Fresh locked-contract verification
+## Locked-contract verification at fairness delivery
 
-Cargo.lock selects registry packages, with no workspace patch entries:
+The delivered fairness source selected registry packages without workspace
+patches. This table retains that execution's exact versions. The later
+[Communication0.1.6 adoption](static-remote-actors.md#communication-capacity-dependency-2026-10-15-utc)
+has separate integration gates; it does not rewrite the earlier witnesses.
 
 | Owner | Version / archive revision | Inspected contract and witnesses |
 | --- | --- | --- |
