@@ -64,6 +64,8 @@
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/child_preparation_retirement_evidence.py)
               (pkgs.lib.fileset.maybeMissing ./tools/verify-owner-coverage.py)
+              ./nix/references.sh
+              ./tools/references.sh
               ./flake.nix
               (pkgs.lib.fileset.maybeMissing ./mutants-baseline.json)
             ];
@@ -100,6 +102,9 @@
           env.CARGO_PROFILE_DEV_DEBUG = "0";
           env.CARGO_PROFILE_TEST_DEBUG = "0";
           env.CARGO_INCREMENTAL = "0";
+          preFixup = ''
+            source ${./nix/references.sh}
+          '';
           # trybuild replaces RUSTFLAGS; keep registry diagnostics independent
           # of Nix store hashes without remapping repository coverage paths.
           preBuild = ''
@@ -134,6 +139,27 @@
       in
       {
         checks = {
+          bombay-output-references =
+            pkgs.runCommand "bombay-output-references"
+              (
+                {
+                  nativeBuildInputs = [
+                    pkgs.bash
+                    pkgs.coreutils
+                    pkgs.findutils
+                    pkgs.gnugrep
+                    pkgs.unixtools.locale
+                  ];
+                  inherit (commonArgs) preFixup;
+                }
+                // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+                  LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+                }
+              )
+              ''
+                bash ${src}/tools/references.sh ${src}/nix/references.sh
+                mkdir "$out"
+              '';
           bombay-build = craneLib.cargoBuild (
             commonArgs
             // {
