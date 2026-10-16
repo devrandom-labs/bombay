@@ -4,7 +4,7 @@ Status: active. Work is isolated on `codex/developer-experience-docs`;
 the other Bombay checkout is untouched. Initial inspected baselines were
 Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 `d69f992b371c12ab34e73b18e45b8112c90a1508`; current Bombay uses published
-Behavior/Actors0.25.0, macros0.14.1, Communication0.1.5 and Timers0.2.0
+Behavior/Actors0.25.0, macros0.14.1, Communication0.1.6 and Timers0.2.0
 without repository patches.
 
 The frozen committed c3b74ab is being integrated on
