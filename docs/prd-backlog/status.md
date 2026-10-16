@@ -58,13 +58,16 @@ Fresh full-service comparisons identify the shared mixed-operation replay row
 and genuine absent-Work attachment as open ownership edges. Separately scoped
 private native proofs cover handshake pressure, handoff cancellation and the
 selected accepted-queue count/recovery law in both approved layouts. Earlier
-owning proofs retain their source epochs. The current private SDK's complete
-supported TLS/test target set passes 69 tests with two existing ignored tests
-in both profiles; strict all-target lint and formatting pass. The current queue
-regressions detect the original constructor defect in both profiles and pass
-with exact bounded source restored. The SDK is unadopted.
-Whole byte/backing/task limits, universal close, expiry/error discharge,
-arbitrary drain, full SDK CI, service ownership and privacy remain open.
+owning proofs retain their source epochs. SDK PR13 merged as456cf3b8 after
+required Linux CI passed71 tests with two existing ignored tests in both
+profiles, strict lint, Rust1.88, Miri and archive checks. Its sealed source and
+merge evidence are recorded in the remote PRD. Publication and Bombay adoption
+remain open. Target-specific declaration keys now pass scoped local static,
+native and intended-defect controls; the final remote-library runs pass371
+in both profiles with strict all-target lint and formatting. These keys retain
+cross-target static denial while removing reply-endpoint identity. Full mixed
+operation storage and service lifetime remain open, alongside whole byte/backing/
+task limits, universal close, expiry/error discharge, arbitrary drain and privacy.
 No production service API or narrowed acceptance is selected.
 
 Updated: 2026-10-16 UTC. This is the implementation index for the
@@ -139,7 +142,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | SELO1 | blocked | AUTH1, NET1, MNE1; external: Selo KERI runtime | — | [Downstream identity](identity-and-placement.md): run the admission contract suite against Selo, then prove rotation, delegation, revocation and deployment scenarios. |
 
 
-Current private resource comparison (2026-10-16): the unadopted SDK candidate
+Earlier source-bound resource comparison (before PR13 delivery): the then-private SDK candidate
 passes full native Peer/Peer and Router/Client pressure, live traffic, actual
 timeout, same-owner fresh retry and cleanup in debug and optimized builds.
 Full-channel producer cancellation also passes while preserving bidirectional
@@ -407,7 +410,8 @@ PR371 head, not required CI, TLS campaigns, merge or publication. The earlier
 144-byte excess remains unattributed and all full remote acceptance stays open.
 
 
-The private SDK's supported-target cleanup retires seven obsolete test targets
+Earlier checkpoint, before CI and Config restoration: supported-target cleanup
+retired seven obsolete test targets
 and preserves every genuine TLS case. It removes net 3712 test lines; the full
 private SDK test delta is now net -1924, with production still net +43. All 19
 listed current-host TLS cases are preserved. Both full debug and optimized
@@ -417,14 +421,14 @@ still omits these queue/pressure executions and most owning test lint; its
 separate correction, full SDK release/adoption and all remote rows remain open.
 
 
-A separate CI-only correction is now selected before authoring: explicitly
+At that pre-authoring checkpoint, a separate CI-only correction selected: explicitly
 preserve TLS doctests and the exact mTLS case, then execute/lint all supported
 owning targets in both existing profiles. The concrete 27-path repository
 checkpoint introduces no production, public type, dependency or feature change.
 Actual target-list evidence, source reviews and required CI remain gates.
 
 
-The supported-target CI correction is locally qualified and submitted in SDK
+Earlier submitted checkpoint: the supported-target CI correction was locally qualified in SDK
 [PR13](https://github.com/devrandom-labs/bombay-zenoh/pull/13). Actual old/new
 selectors demonstrate the missing eight regressions and complete new selection.
 A separate exact-archive check exposed a comment-only Config custody mismatch;
@@ -432,3 +436,21 @@ restoring that immutable source passes its owning check while Transport retains
 the full limit contract. Current SDK production is net +40, tests net -1924,
 24 SDK paths plus these two records. Required CI must qualify the amended head;
 merge, publication, Bombay adoption and every full remote row remain open.
+
+
+A separate service-key prerequisite is selected before authoring: replace the
+reply-dependent key with RequestKey<Target>, preserving the PRD's cross-target
+static denial and exact per-declaration row ownership. Fresh59-input source
+verification and the seven-root-path change forecast are in the remote PRD.
+No code is implemented or verified at selection. Mixed-operation dispatch,
+service lifetime, SDK privacy and all full remote acceptance remain open.
+
+
+SDK [PR13](https://github.com/devrandom-labs/bombay-zenoh/pull/13) is now merged
+as456cf3b8 with required exact-head CI38919549507 passing. Publication of the
+successor four-owner release and registry-only Bombay adoption remain open.
+The service-key prerequisite is locally verified with the Target protocol and
+per-declaration identity; current production grows10 lines and adds no public
+type. The remote PRD records static denial, real native D/R, intended source
+inversions, minimization and final complete tracked/untracked census. This does
+not change AUTH1, NET1, or any full R01–R25 state.

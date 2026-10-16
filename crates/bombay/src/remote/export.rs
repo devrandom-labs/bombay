@@ -6,6 +6,7 @@ use crate::application::{ActorInterface, ApplicationClient, ExternalActorError};
 use behavior::{EstablishedRecipient, Protocol, User};
 use core::fmt;
 use core::future::{Future, poll_fn};
+use core::marker::PhantomData;
 use core::mem;
 use core::pin::pin;
 use core::task::Poll;
@@ -14,7 +15,7 @@ use futures_util::stream::FuturesUnordered;
 use std::collections::TryReserveError;
 use std::error::Error;
 use std::num::NonZeroUsize;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc};
 use zenoh::query::{Query, Queryable};
 use zenoh::{Error as ZenohError, Session};
@@ -98,21 +99,23 @@ pub struct ExportLimits {
     pub retained_queries: NonZeroUsize,
     pub retained_requests: NonZeroUsize,
 }
-/// One runtime-issued request reference; fields and construction stay private.
-pub struct RequestKey<Replies: Protocol<Addr = MailAddr>> {
-    recipient: EstablishedRecipient<Replies>,
+/// One runtime-issued request reference for its target protocol and issuing export.
+/// Fields and construction stay private; a key carries no reply or lifecycle authority.
+pub struct RequestKey<Target: Protocol<Addr = MailAddr>> {
+    issuer: Weak<Semaphore>,
     row: usize,
+    protocol: PhantomData<fn() -> Target>,
 }
 
-impl<Replies: Protocol<Addr = MailAddr>> PartialEq for RequestKey<Replies> {
+impl<Target: Protocol<Addr = MailAddr>> PartialEq for RequestKey<Target> {
     fn eq(&self, other: &Self) -> bool {
-        self.recipient == other.recipient && self.row == other.row
+        Weak::ptr_eq(&self.issuer, &other.issuer) && self.row == other.row
     }
 }
 
-impl<Replies: Protocol<Addr = MailAddr>> Eq for RequestKey<Replies> {}
+impl<Target: Protocol<Addr = MailAddr>> Eq for RequestKey<Target> {}
 
-impl<Replies: Protocol<Addr = MailAddr>> fmt::Debug for RequestKey<Replies> {
+impl<Target: Protocol<Addr = MailAddr>> fmt::Debug for RequestKey<Target> {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.debug_struct("RequestKey").finish_non_exhaustive()
     }
@@ -182,6 +185,7 @@ where
 {
     session: Session,
     queryable: Queryable<()>,
+    issuer: Weak<Semaphore>,
     incoming: mpsc::Receiver<(Query, OwnedSemaphorePermit)>,
     target: ActorInterface<EstablishedRecipient<Target>>,
     maximum_entries: NonZeroUsize,
@@ -267,6 +271,7 @@ where
         }
         let (incoming, received) = mpsc::channel(limits.queued_queries.get());
         let capacity = Arc::new(Semaphore::new(limits.retained_queries.get()));
+        let issuer = Arc::downgrade(&capacity);
         let declaration = session
             .declare_queryable(key)
             .callback(move |query| {
@@ -282,6 +287,7 @@ where
         Ok(Self {
             session,
             queryable,
+            issuer,
             incoming: received,
             target,
             maximum_entries: limits.retained_requests,
@@ -316,11 +322,12 @@ where
     pub async fn receive(
         &mut self,
         query: &mut Option<Option<(Query, OwnedSemaphorePermit)>>,
-        completed: &mut Option<RequestKey<Replies>>,
+        completed: &mut Option<RequestKey<Target>>,
     ) {
         if query.is_some() || completed.is_some() {
             return;
         }
+        let issuer = &self.issuer;
         let mut replies = self
             .entries
             .iter_mut()
@@ -328,8 +335,9 @@ where
             .filter(|(_, request)| request.awaits_reply())
             .map(|(row, request)| {
                 let key = RequestKey {
-                    recipient: request.client.recipient(),
+                    issuer: issuer.clone(),
                     row,
+                    protocol: PhantomData,
                 };
                 async move {
                     request.receive().await;
@@ -356,7 +364,7 @@ where
     )]
     pub fn request(
         &self,
-        key: &RequestKey<Replies>,
+        key: &RequestKey<Target>,
     ) -> Option<(
         &[u8],
         &[u8],
@@ -388,7 +396,7 @@ where
         mpsc::Receiver<(Query, OwnedSemaphorePermit)>,
         impl ExactSizeIterator<
             Item = (
-                RequestKey<Replies>,
+                RequestKey<Target>,
                 Box<[u8]>,
                 Box<[u8]>,
                 Receipt,
@@ -401,6 +409,7 @@ where
         let Self {
             session,
             queryable,
+            issuer,
             incoming,
             target: _,
             entries,
@@ -410,8 +419,9 @@ where
         let undeclared = queryable.undeclare().await;
         let requests = entries.into_iter().enumerate().map(move |(row, entry)| {
             let key = RequestKey {
-                recipient: entry.client.recipient(),
+                issuer: issuer.clone(),
                 row,
+                protocol: PhantomData,
             };
             (
                 key,
@@ -426,18 +436,18 @@ where
         (undeclared, session, incoming, requests)
     }
 
-    fn request_key(&self, row: usize) -> RequestKey<Replies> {
+    fn request_key(&self, row: usize) -> RequestKey<Target> {
         RequestKey {
-            recipient: self.entries[row].client.recipient(),
+            issuer: self.issuer.clone(),
             row,
+            protocol: PhantomData,
         }
     }
-    fn request_row(&self, request: &RequestKey<Replies>) -> Option<usize> {
-        let retained = self.entries.get(request.row)?;
-        if request.recipient != retained.client.recipient() {
+    fn request_row(&self, request: &RequestKey<Target>) -> Option<usize> {
+        if !Weak::ptr_eq(&self.issuer, &request.issuer) {
             return None;
         }
-        Some(request.row)
+        self.entries.get(request.row).map(|_| request.row)
     }
 
     /// Retain authenticated request originals under the provider's logical identity.
@@ -464,7 +474,7 @@ where
         proof: Box<[u8]>,
         receipt: Receipt,
     ) -> Result<
-        (RequestKey<Replies>, Option<(Box<[u8]>, Box<[u8]>, Receipt)>),
+        (RequestKey<Target>, Option<(Box<[u8]>, Box<[u8]>, Receipt)>),
         ((Box<[u8]>, Box<[u8]>, Receipt), ExportError),
     > {
         let existing = self
@@ -517,7 +527,7 @@ where
     /// Uncertain admission may still have produced a reply; waiting does not prove it did.
     /// Returns None only for a key not issued by this export; Some does not promise
     /// a business reply when this row has no receivable native operation.
-    pub async fn receive_native(&mut self, request: &RequestKey<Replies>) -> Option<()> {
+    pub async fn receive_native(&mut self, request: &RequestKey<Target>) -> Option<()> {
         let row = self.request_row(request)?;
         let retained = &mut self.entries[row];
         if retained.awaits_reply() {
@@ -544,7 +554,7 @@ where
     /// originals remain in Admission rather than becoming permission failures.
     pub fn attempt<'entry, Guard, AuthorityError>(
         &'entry mut self,
-        request: &RequestKey<Replies>,
+        request: &RequestKey<Target>,
         current: impl FnOnce(&'entry Receipt) -> Result<Guard, AuthorityError>,
         command: impl FnOnce(EstablishedRecipient<Replies>) -> Target::Msg,
     ) -> Result<&'entry Admission<Target::Msg>, RequestRefusal<AuthorityError>> {
@@ -582,7 +592,7 @@ where
     /// Native Full/Closed originals remain in the returned admission fact.
     pub fn retry<'entry, Guard, AuthorityError>(
         &'entry mut self,
-        request: &RequestKey<Replies>,
+        request: &RequestKey<Target>,
         current: impl FnOnce(&'entry Receipt) -> Result<Guard, AuthorityError>,
     ) -> Result<&'entry Admission<Target::Msg>, RequestRefusal<AuthorityError>> {
         let row = self

@@ -32575,3 +32575,217 @@ finished cancelled: verification cancelled, compiler-floor and Miri skipped,
 archive-upload step failed. It supplies no acceptance evidence. The reviewed
 PR body explicitly separates earlier local runtime proof from amended-head CI.
 No SDK merge, publication, Bombay adoption or full remote acceptance is claimed.
+
+
+### Service request keys — target protocol and declaration identity
+
+This is a separate prerequisite for the accepted actor-wide mixed-operation
+service, not a replacement for that service or the full R01–R25/AUTH1/NET1 scope.
+Fresh feature-local source verification cbf46440 resolves unchanged lock
+3caba2a6, with no patches: Behavior/Actors 0.26.0 at98983b4, macros0.14.2,
+Address0.3.0, Communication0.1.6, private Observe, Timers0.2.0, Entity,
+Tokio1.53.1 and published SDK1.10.9. Its 59 API/source/test/document inputs
+remain byte-exact at selection. Complete selected Behavior instructions were
+read and verified. The pending private SDK PR13 is not this build contract.
+Behavior owns pure Actions; native primitives retain delivery, lease, result,
+timer and family laws. Bombay Export alone owns declaration-issued row identity.
+No actor algebra, lifecycle, authorization, mailbox or native SDK change is needed.
+
+Exact blocker: RequestKey<Replies> identifies a retained row through its reply
+endpoint. A one-way operation must not allocate a dummy reply endpoint merely
+to obtain identity. The existing PRD requirement for Counter-versus-Ledger
+static denial remains binding. Independent pre-edit review caught that a plain
+nongeneric key would weaken it; that candidate is rejected, with no code authored.
+The selected experiment is RequestKey<Target>, independent of Replies and still
+restricted to its exact target protocol. Different declarations of one Target
+must additionally remain unequal and reject before permission or construction.
+
+Compare two ordinary concrete representations before production selection:
+retain the certified Target recipient, or use the established type-only
+PhantomData<fn()->Target> pattern plus existing declaration allocation Weak and
+append-only row. A type-only marker owns no Target value or control capability;
+its variance and auto traits must match the existing owning recipient precedent.
+The Weak is derived from the existing fresh retained-query semaphore before its
+Arc moves into the callback. Every issuance and lazy undeclare iterator must
+reuse that issuer. Compare allocation identity, never upgrade/liveness/counts.
+No fresh marker allocation, empty Weak, row reuse, counter, registry, new public
+type, trait, macro or compatibility spelling is permitted. Outstanding keys
+retain existing allocation backing storage; no whole-memory or zero-cost claim.
+Actual callback/value retirement is not inferred from native undeclare.
+
+Smallest intended failing regression: actual Counter IncrementAndReply uses
+CounterProcessed while Read uses CounterValue. Their issued keys must share
+Vec<RequestKey<Counter>>; old Replies-key source fails for that precise static
+coupling. One private two-variant Increment/Read protected-request fixture enum
+in keys.rs uses the unchanged generic recorded provider and parent receipt/
+permission functions. The inherited read-only wire enum must not mislabel an
+Increment. This is test input, not a new actor/native protocol or shipping wire
+contract; existing actor/protocol sources remain unchanged. Real Counter and
+MailLedger declarations remain separate target key families. Cross-target use must fail to compile after the change. Runtime
+proof must retain own/duplicate keys, same-target foreign keys, old keys after
+actual undeclare and same-path redeclaration, lazy returned keys and exact
+original buffers/receipts through complete native/two-notification cleanup.
+Foreign/stale keys must not invoke current-permission or command construction;
+own projections and existing real processing controls remain positive. Omitting
+only issuer comparison in the owning source must fail the independent foreign
+oracle in debug and optimized builds. No shadow identity table is evidence.
+
+Pre-edit change record: one production file remote/export.rs; mechanical
+Replies-to-Target key annotations, replacing ReadAcquisition's key-only Replies
+axis with Target while retaining ReadStudy's actual native Replies axis, in
+application/node/tests/replay.rs and replay/permissions.rs; one child
+replay/permissions/keys.rs regression; current public-api-audit.md key row and
+these same PRD/status records. Seven selected root paths, 31 with the existing 24 SDK paths. The COMPLETE
+unmerged comparison is 42 current Bombay paths versus actual mainf25 plus24
+SDK paths versus1ea4:66 total, forecast at most70 after the four new software
+paths (the three records already differ). This does not reset the older task
+owner ledger. Expected production +20/-20/net0, hard forecast at most net+16;
+at most320 new test lines plus50 mechanical test lines; public types +0/-0,
+no dependencies/features/versions or new command-recorder program. Two external
+static fixtures may add at most60 verification lines; preserve their exact
+compiler inputs and distinguish expected denials from runtime proof.
+Keep the current fixed native client and constructor-refusal policy unchanged.
+Full mixed-operation storage, real one-way dispatch, provider/service lifetime,
+AbsentWork attachment and privacy remain distinct required implementation work.
+
+The concrete expanded checkpoint is selected before authoring under the user's
+standing recommended-answer delegation and selected2500/18/125/20000 windows.
+Known working1629 = retained1589 + private SDK40, with at most16 additional
+production lines forecast; 12/18 public reservations and all uncertified
+historical/external owner and verification extents carry without reset or
+certified global headroom. Run focused static and runtime controls first in both
+profiles, review each test twice and establish the intended owning inverse before
+retaining production. Compiler errors may reject a model, not invent surface.
+This selection gives no implementation, CI, merge, publication or full-goal credit.
+
+Verification custody reuses service-attachment/execute.py in place: at most20
+added lines for new owning inputs, source snapshots, overwrite refusal and exact
+current head. Preserve its prior bytes/receipts; add no new recorder program.
+The two external static fixtures currently total21 lines within the60-line cap.
+
+
+The original compiler comparison is now executed against a fresh pinned-Nix
+Cargo-built library, with unchanged owning Export91b7562e and lock3caba2a6.
+The prior Reply-key control compiles; the desired Target-key consumer fails
+only E0308 expecting CounterValue; the unrelated Ledger consumer fails only
+E0308 expecting Receipts. This establishes the old static coupling, not runtime
+or issuer-identity semantics. Exact compiler/artifact/source receipts are in
+service-operations/key-candidate/old-static; actual outer command returns0 with
+nested compiler statuses0/1/1. No production edit has occurred.
+
+Before mounting, select the recommended readable regression forecast under the
+standing delegated choice: the249-line raw candidate formats to444 lines, so
+raise the320-line forecast to at most480 formatted new test lines. Scope remains
+seven root paths, at most70 complete unmerged paths, production forecast net0
+with ceiling+16, public types0 and unchanged dependencies. This is an explicit
+verification forecast increase, not certified20k historical headroom or a reset.
+Keep all existing external/historical extents and the separate36-line static
+fixture versions/manifest plus recorder+12/-2 within their selected bounds.
+
+Two source review findings must be resolved before acceptance: run foreign cold
+Read probes only after the genuine processed Increment, so omission of issuer
+comparison preserves the independent Read1/cleanup prefix and fails the final
+foreign-key oracle. Original receipt observations must cover the complete
+provider scope (Metadata, purpose, operation) and Binding, plus exact original
+buffers and owned string allocations. Reuse the existing ReadRequestRef codec
+and provider projection; add no wrapper or actor protocol. Native undeclare
+still supplies no callback/semaphore-value-death claim. No source is mounted
+and no runtime or corrected-key result is credited by this forecast decision.
+
+
+The external formatted production candidate is530ed849: +41/-31/net+10 in the
+single existing Export owner, with no new public types. This exceeds the gross
++20/-20 estimate but remains below the preselected net+16 ceiling. It is
+production growth and is not yet mounted or accepted. All three key issuance
+sites, Eq and lookup use the same declaration Weak; Target uses the existing
+owning type-only marker. Source/model review and corrected static/runtime proof
+remain gates. The two fixture bodies have three exact source versions plus a
+six-line macro-resolution-only manifest,36 physical verification lines total;
+no independent consumer graph or dependency lock is resolved.
+
+
+Regression-first execution now records the old-source failure. The first
+no-run compile failed only E0583 because the explicitly loaded permissions
+module required an explicit child path; it supplies no key-law evidence.
+After that one-line test-path correction, the unchanged old Export produces
+only16 intended E0308/E0277 Reply-versus-Target key diagnostics in the new
+regression. Receipt key-old-regression-compile-path is101 with unchanged source
+and log67902c33. The451-line fixture plus3-line module mount totals454 within
+the selected480 forecast. Runtime declaration identity remains unverified.
+
+
+### SDK ingress delivery — required CI and normal merge
+
+SDK PR13 merged normally at2026-10-16T16:10:03Z as
+456cf3b8f3b60966c9040e3ac03dc277a06a7596, with parents1ea4bd16 andc94186cb.
+Required run38919549507/job117035795021 passed on the selectedc941 head;
+its tested merge5919fb82 has the same entire0882ce78 tree. Linux actually
+executes71 passing tests and two existing ignored tests in each profile;
+the prior local69+2 remains scoped to that host. All supported-target lint,
+Rust1.88 compiler-floor, actual Miri2/0 and release/archive gates pass.
+Fresh two-pass review3fcecfd5 verifies all24 source paths and required check
+app15368, strict current base, zero required approvals and zero conversations.
+Normal merge uses exact-head matching, with no bypass or branch deletion.
+Independent merge reviewe8d37725 confirms actual main, both parents and tree.
+
+Durable CI/merge proof is
+native-tls-CI-merged-456c-20261016T161149Z under the repository's session-archives:
+56 payloads, manifest4e8bad5e, seal4594fc76. Two complete source/copy passes,
+fsync and read-only modes are independently rechecked, along with the unchanged
+247-payload submitted parent. Raw job logs, downloaded artifact, package/source
+inventory, checks, reviews, final body and actual merge action are preserved.
+These are dry-run archives of already published identities, not new publications.
+Successor version selection, unused listener dependency retirement, publication,
+registry-only Bombay adoption and full remote/service/privacy acceptance remain open.
+
+### Service request keys — local verification and minimization
+
+The retained candidate530ed849 changes only the existing Export owner.
+RequestKey<Target> reuses its declaration's existing allocation Weak, exact
+append-only row and established type-only marker. All three issuance paths, including
+lazy returned keys, share that issuer; lookup denies another issuer before row
+selection, permission or command construction. No reply endpoint, strong
+admission owner, second identity table, new public definition or compatibility
+spelling is added. Fixed native clients, constructor-refusal disposition and
+all acquired originals remain unchanged. Existing allocation backing survives
+outstanding keys; actual callback/value death and whole-memory bounds are not
+claimed. Existing aggregate states, native alternatives, branch count and
+transition authority remain unchanged; the one key axis changes from Replies
+to Target, with Counter/Ledger still distinct. Source/API/ownership audit passes.
+
+Final448-line regressiona272540c (plus3-line module attachment) follows the
+independently reviewed451-line23a source. Strict lint found four test-only
+annotation/diagnostic issues; their exact correction is +3/-6, with no native
+operation, loan, Ready storage, cleanup or final oracle changed. Both source
+reviewsab49c202 pass. Original23a receipts remain their original version.
+Final actual current-source evidence, independently reviewed twice in5f6eaa53:
+
+- Both intended issuer-check inversions fail only the final440 call-count
+  assertion, actual[4,2,3,2] against[4,4,0,0], after the complete native,
+  originals and cleanup prefix. The later UnknownRequest loop is unexecuted
+  in that failing source. Exact530ed849 is restored before broader controls.
+- Restored remote-feature library tests pass371/0/0 in debug and optimized
+  builds, with identical named tests. This includes both providers, Counter,
+  Ledger, replay/permissions and receiving controls. These are library runs,
+  not a claim of workspace, public Query privacy or full-service acceptance.
+- Fresh actual Cargo metadata gives Target compile0; the same foreign fixture
+  fails only E0308 expecting RequestKey<MailLedger>. Prior Reply-key control0
+  and intended old Target failure remain distinct source-bound comparisons.
+- Strict remote all-target Clippy and workspace formatting check pass. Exact
+  commands and immutable input versions are preserved by the reused recorder;
+  final runtime logs are368280d7/48981057, inversions93af328e/bf0fa73e,
+  Clippybb773240 and formatd0c9ee04. No new command recorder was introduced.
+
+Final scoped change: production +33/-23/net+10; tests +458/-7/net+451;
+public API +0/-0 types. Production grows10 lines; earlier external unified
+comparison41/-31 uses different line matching with the same net. Seven root
+paths include all tracked/untracked changes. Complete actual unmerged paths
+are46 Bombay paths versus fetched mainf25e4a0c and zero SDK paths versus actual
+merged main456cf3b8 (same tree as its cleanc941 checkout). The prior70-path
+forecast/comparison against original SDK1ea4 is retained as historical task
+scope; merging SDK24 paths does not reset cumulative ceilings or owner history.
+Known working1639 = retained1589 + SDK40 + key10; 12/18 public reservations,
+2500/125/20000 ceilings and every uncertified historical/external extent carry.
+No certified global headroom is inferred. Lock3caba2a6, features, versions and
+dependencies remain unchanged. This is a locally verified prerequisite on the
+research branch, not merged delivery or completion of the active full goal.

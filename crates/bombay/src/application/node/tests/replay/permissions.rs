@@ -174,7 +174,7 @@ fn retain_verified<Target, Replies, Receipt>(
     verified: &mut Option<Result<Receipt, VerificationError>>,
 ) -> Option<
     Result<
-        (RequestKey<Replies>, Option<(Box<[u8]>, Box<[u8]>, Receipt)>),
+        (RequestKey<Target>, Option<(Box<[u8]>, Box<[u8]>, Receipt)>),
         ((Box<[u8]>, Box<[u8]>, Receipt), ExportError),
     >,
 >
@@ -202,7 +202,7 @@ async fn undeclare<Target, Replies, Receipt>(
 ) -> (
     Session,
     Vec<(
-        RequestKey<Replies>,
+        RequestKey<Target>,
         Box<[u8]>,
         Box<[u8]>,
         Receipt,
@@ -1720,3 +1720,6 @@ fn admission_diagnostics_preserve_opaque_commands_and_native_permission_causes()
     assert_eq!(displayed, expected_display);
     assert!(ptr::eq(source, cause));
 }
+
+#[path = "permissions/keys.rs"]
+mod keys;

@@ -37,7 +37,7 @@ use application_support::assert_completed;
 mod protocol;
 use protocol::*;
 
-struct ReadAcquisition<Operation, Receipt, WireValue, Replies: Protocol<Addr = MailAddr>> {
+struct ReadAcquisition<Operation, Receipt, WireValue, Target: Protocol<Addr = MailAddr>> {
     invocation: Result<(), ZenohError>,
     query_publication: Option<IngressError<Query>>,
     #[expect(
@@ -57,7 +57,7 @@ struct ReadAcquisition<Operation, Receipt, WireValue, Replies: Protocol<Addr = M
     )]
     retained: Option<
         Result<
-            (RequestKey<Replies>, Option<(Box<[u8]>, Box<[u8]>, Receipt)>),
+            (RequestKey<Target>, Option<(Box<[u8]>, Box<[u8]>, Receipt)>),
             ((Box<[u8]>, Box<[u8]>, Receipt), ExportError),
         >,
     >,
@@ -89,13 +89,13 @@ where
     batch: Option<User<MailAddr, TaskResult<Vec<ProtectedMessage>>>>,
     batch_allocations: Vec<(*const u8, *const u8)>,
     begun: Result<(), SendError<BatchCommand>>,
-    acquisitions: Vec<ReadAcquisition<Operation, Receipt, WireValue, Replies>>,
+    acquisitions: Vec<ReadAcquisition<Operation, Receipt, WireValue, Target>>,
     #[expect(
         clippy::type_complexity,
         reason = "retain every affine request original, native client and drained tail without another owner"
     )]
     requests: Vec<(
-        RequestKey<Replies>,
+        RequestKey<Target>,
         Box<[u8]>,
         Box<[u8]>,
         Receipt,
@@ -150,7 +150,7 @@ where
 
     fn request_original<'a>(
         &'a self,
-        acquired: &'a ReadAcquisition<Operation, Receipt, WireValue, Replies>,
+        acquired: &'a ReadAcquisition<Operation, Receipt, WireValue, Target>,
     ) -> Option<(&'a [u8], &'a [u8], &'a Receipt)> {
         match acquired.retained.as_ref()? {
             Ok((key, None)) => {
