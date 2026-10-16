@@ -27,9 +27,9 @@ Compiler friction cannot invent bounds, no-op inputs or structural caller work.
 Finite holding is isolated on `codex/devx-stash-limits`. The ordinary spelling
 is `actor.with_stash(limit, refused, route)`; overflow returns the complete
 original input and sender through Actions. Explicit UnlimitedStash serves
-advanced unbounded/Never callers. Source-selected owner a863633 (draft Behavior
+advanced unbounded/Never callers. Source-selected owner aafd1e9 (draft Behavior
 PR114, including common send-product PR113) passes all11 native Nix gates,
-1,016 tests/123 doctests, package preflight and its failure controls. Those APIs
+1,035 tests/123 doctests, package preflight and its failure controls. Those APIs
 are unpublished; actual published0.28.0 does not contain finite holding.
 
 The focused Bombay source-selected matrix passes Rust1.99/1.96 debug/release:
@@ -45,7 +45,16 @@ registry027/150: these proofs use isolated source selection, not an actual
 registry build of the new facade. Catalogue migration, diagnostic inventory,
 reviewed breaking release/registry adoption and final whole-repository gates
 remain open. No new runtime or protocol surface is introduced by this facade.
-Latest main f4aa3b3d is already an ancestor of this isolated branch.
+Latest main49cc897 is merged without conflicts. Its internal TLS dependency,
+locks and remote records change no Rust source; older graph proofs do not
+certify this newer lock. The prepared caller patch still applies unchanged.
+It preserves255 original assertions and all compile denials; both compiler
+corpora pass128 cases and its private workspace passes791 tests/two controlled
+child skips. Actual migration remains pending the separate14→24 native-file
+budget approval. Common owner PR113/809e7b3 also preserves caller generic/type
+names without reserving private macro spellings, adding public types or runtime
+storage. Its1,022 owner tests,11 Nix checks and real two-lane failure/retirement
+proofs are separate from registry publication and full-programme acceptance.
 
 The registry delivery stays isolated on `codex/devx-registry-027`; verified
 integration1cc0953 includes current mainf25e4a0. The timer implementation is
