@@ -29421,3 +29421,26 @@ setup failure proves no lifetime law. Only after that evidence may a precise
 production ownership choice and its separate change record be selected.
 Carry2500 net production/18 public additions/125 owners/20000 verification
 windows, known combined1892 production and every external/history reservation.
+
+
+Resumption archive persistence: all removed dirty tracked snapshots are also
+stored as native Git commits under refs/archive/changes, each parented by its
+original HEAD. All original/patch/ignored evidence archives and receipts have
+verified copies in the common .git/worktree-archives/2026-10-16 directory;
+temporary-directory loss cannot erase those preserved changes. No archive
+commit is a feature delivery or a change to main.
+
+The draft outside-Work lifetime diagnostic remains external and unapplied in
+/tmp/bombay-prd-resumption/lifecycle/retained.patch. Two author reviews find
+that awaiting current premature close is a deterministic historical gap oracle,
+but would wait indefinitely under correct service deferral. Therefore it is
+not accepted as the future positive regression and receives no compile/runtime
+credit; only pinned formatting ran. Before production, select a positive
+ownership oracle that receives the actual Connection after application cleanup
+and retains it through native service retirement. Its inverse must restore
+today's actual early retirement. Do not substitute a timeout-based absence
+assertion or a fabricated optional-owner label for actual resource custody.
+The proposed task-result handoff is still unselected; public service
+construction, admission closure and returned native-owner lifetime must remain
+coherent with it. No production, retained test or public interface is changed
+by this diagnostic.
