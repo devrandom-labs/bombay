@@ -99,7 +99,11 @@ hang remains open; later passing checks do not explain it.
 ## Documentation change record
 
 Current contracts and open limits replace chronological experiment/release
-narratives; immutable commitf244566 preserves their full provenance. The owning
+narratives; immutable commitf244566 preserves their full provenance. Runtime
+capability, module and public-API references now match both actor-only Node
+callback signatures and the existing node_borrowing static denials; their old
+Session-callback descriptions were stale. This documentation-only correction
+changes no source, tests, dependencies or public interfaces. The owning
 PRD retains every acceptance requirement and current falsifier, including partial
 custody/readiness evidence, SDK privacy, memory-first costs and final gates.
 This file introduces no second checklist or acceptance authority.
