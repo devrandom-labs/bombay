@@ -143,8 +143,12 @@ use of the queued original and natively closing the untransferred rejection.
 Actual prior-source comparisons fail only their intended final checks. Owning
 TLS20/0 per profile and focused lint/format pass. Full SDK test lint remains
 blocked by unchanged stale feature consumers. Manager queue/bytes/close/drain,
-SDK delivery and all full remote acceptance remain open. Exact scopes and
-source-bound evidence belong in the
+SDK delivery and all full remote acceptance remain open. A private input-policy
+prerequisite now rejects only unsupported usize::MAX through the existing
+fallible native builder; supported values/default, owning library and both
+native layouts pass debug/optimized controls. The actual accepted queue remains
+unbounded. No SDK adoption or full queue/remote acceptance follows. Exact scopes
+and source-bound evidence belong in the
 [owning change record](../prds/static-remote-actors.md#accepted-link-handoff--cancellation-before-receiver-release).
 
 Latest research prerequisite delivery: [PR335](https://github.com/devrandom-labs/bombay/pull/335)

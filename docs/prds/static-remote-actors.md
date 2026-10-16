@@ -31941,3 +31941,234 @@ across two files; production+0/-0/net0 and public types+0/-0. SDK production
 Both selected worktrees have zero untracked files. Known1606/2500 working,
 1589 retained,12/18 and all125/20000 historical/external extents carry.
 This private checkpoint adds no SDK delivery or full-feature acceptance.
+
+
+### Accepted-link queue — actual manager pressure and recovery
+
+Fresh verificationfb769087 at researche006059 records62 exact current source/
+API/test/documentation inputs. Root lock3caba2a6 has no patch; Behavior/Actors
+0.26.0 and macros0.14.2 select98983b4 with complete instructions2b7a9195.
+Address0.3.0, Communication0.1.6, private Observe, Timers0.2.0 and Entity retain
+their existing ownership. Native SDK1.10.9/TLS+transport1.10.3 select1ea4; the
+private producer isdba48a75, TLS testsfe55 and native integration4e1. No actor
+fold, primitive, interpreter or public actor interface changes in this stage.
+
+Select a deliberate queue policy: the EXISTING accept_pending=N continues to
+limit active incoming establishment and also supplies accepted queue capacityN.
+These are separate coexisting terms, not a totalN claim: at mostN active and
+N queued globally across this manager's listeners, plus one dispatcher/reserved
+handoff and one current TLS operation per selected TLS listener, separately
+from established sessions and caller-owned outgoing work. This is no
+per-listener isolation or fairness guarantee. Other native protocol producers
+can retain originals outside the queue; no cross-protocol retention or
+nonwaiting guarantee follows from this selected TLS profile.
+Do not erase those distinctions. N=0 retains no incoming transport admission;
+Flume rendezvous may temporarily store its receiver-reserved original even
+with physical capacity0, so zero never promises len<=0 at every observation.
+That original belongs to the dispatcher/handoff term. Overflow uses the already
+verified exact-original refusal/native-close policy, with no waiting producer.
+This deliberately reuses one selected input and adds no config field/default.
+
+Smallest actual regression: preserve a live full native connection, then use a
+genuine incomplete incoming transport to occupy the configured active budget.
+Obtain a real separate TLS original; its independent concurrent writer must
+produce an actual peer prefix and remain Pending in the SAME write_all future.
+Keep that future unpolled while its mutex guard survives. Enqueue the original
+through the real manager sender; its overload-close cannot pass that guard.
+This controlled native insertion is explicit and supplies no fake Link or
+production hook. Subsequent pressure links MUST use the manager's ordinary
+mTLS listener. Observe actual queue count, actual refusal/retention originals,
+continued live traffic and fresh full open on the SAME manager/endpoint after
+release. Release the SAME writer through actual draining/completion; close and
+join real native owners before final assertions. Failed setup, buffer guard,
+expired genuine acceptance, watchdog or failed cleanup earns no law evidence.
+Both Peer/Peer and Router/Client are required. A separate zero-input native
+open control must preserve actual rejection and empty transport membership.
+
+First isolate test fixture relocation: reuse the existing counted native
+consumer in ONE tests/fixtures/deliveries.rs shared by integration and owning
+unicast unit tests. Name its existing factory Deliveries and private per-peer
+consumer Receiver, replacing legacy SHRouter/SCRouter spellings consistently;
+executable bodies remain equivalent modulo those names and visibility. Export
+only Deliveries/get_count to the private parent. Keep the old client fixture
+unchanged; unit clients reuse existing DummyTransportEventHandler. This is a
+mechanical move of two existing test types, no new semantic owner or public
+interface. Source proposalac67081e verifies both path mounts and privacy; gate
+new owning unit with the existing test and TLS features. First verify the
+relocated integration controls in debug/optimized before queue test authoring.
+
+Pre-edit complete scope: existing six SDK paths plus tests/fixtures/deliveries.rs,
+src/unicast/queue.rs and src/unicast/mod.rs for the tests; later src/manager.rs
+for constructor/example, src/unicast/manager.rs for field/setter docs,
+commons/zenoh-config/src/lib.rs and DEFAULT_CONFIG.json5 for contract comments.
+This totals13 SDK paths plus the same two Bombay records,15 selected paths.
+At most700 additional formatted queue-test lines and a <=90-line shared fixture
+replacing its old integration block; no added test framework, port, trait,
+runtime, callback, macro, default, erased interface or public type. Expected
+new production <=15 net lines, primarily documentation, after actual original
+D/R failure; constructor itself replaces one unbounded channel expression.
+Keep the later shutdown/drain and stale-test cleanup separate; do not edit
+other production for this blocker. Known1606/2500 working,1589 retained,12/18
+and all125/20000 unknown historical/external extents carry without reset.
+Full byte/backing/close/expiry/error/drain/alltests/service/privacy, every full
+R01-R25/AUTH1/NET1 and release gate remain open.
+
+
+Pre-production policy review found a prospective regression in the direct
+bounded(N) expression: the owning builder accepts usize::MAX unchanged, while
+selected Flume0.11.1 receive arithmetic uses capacity+1. Original unbounded
+queue lacks that arithmetic. This is a source finding against the proposed
+change, not a newly reproduced defect in main. Leave the constructor unedited
+and its implementation blocked until the accepted input contract and exact
+dependency arithmetic are resolved with an owning regression; do not silently
+clamp or substitute a default. Mechanical fixture relocation and its unchanged
+native controls remain independent and may proceed. No runtime credit or
+production/API expansion follows from this source finding.
+
+
+Fixture relocation is now mounted as integration4f3f24c8 and sharedb63af3fe
+(89 lines including the preserved license). Author/root/independent55ef181e
+source reviews prove exact reverse-equivalence to4e, with only recorded names,
+visibility, imports and local alpha rename changed. Actual native controls pass
+both layouts in debug2/0 and optimized2/0 (6cc25cc6/5e5ecbbc); scoped strict
+lint443ab16c and workspace formatf11076df exit0. Four source-bound receipts
+retain unchanged before/after maps. An orchestration receipt-name collision
+refused to overwrite the external format log before Cargo; the distinct actual
+workspace-format command passed. This adds no queue-law or SDK delivery credit.
+Mechanical stage tests+100/-71/net29, production+0/-0 and public types+0/-0.
+
+Select an explicit supported-input policy before further queue code: existing
+accept_pending remains usize, accepts0 through usize::MAX-1 unchanged, and
+rejects usize::MAX through its existing fallible unicast builder. This is a
+deliberate compatibility change for that one previously accepted configuration;
+never silently clamp, substitute a default or change active/queued limits.
+TransportManagerParams has private fields and is constructed through that
+builder, so its existing validation owner precedes manager task creation.
+Flume's extra receive slot explains the excluded value; it is not a second
+quota or new public wrapper. Default100 and all represented valid limits stay.
+
+Smallest owning failing regression: call the existing unicast builder with MAX
+and retain its ORIGINAL result; prior success must fail the final rejection
+oracle, with no native runtime/listener/task started. A distinct control builds
+0,1,the authoritative default and MAX-1 and observes unchanged configured values.
+Run both in debug/optimized before a three-line validation change; independently
+review twice and keep any setup/compiler failure separate from law evidence.
+Use the already forecast src/unicast/queue.rs and test/TLS-gated mod.rs mount;
+no empty module or shared native fixture imports until the real pressure test.
+No new metadata/dependency/public type. The existing unicast/manager.rs path
+will own the validation and its exact native ZResult rejection.
+
+This necessary input-validation stage is separate from the later queue
+constructor edit: actual original ordinary-ingress queue growth/recovery D/R
+remains required before that edit. Same13 SDK+2 record paths forecast. Revised
+new production forecast <=25 net lines INCLUDING this validation and complete
+configuration documentation, rather than the earlier <=15 forecast; existing
+2500/18/125/20000 ceilings and all unknown extents carry. Queue test forecast
+700 additional lines includes these small configuration controls. Keep whole
+bytes/native close/drain/alltests/service/privacy/fullremote/release gates open.
+
+
+Actual original configuration regressions now qualify in BOTH profiles:
+validation-prior-debug/release each1 passed/1 failed/26 filtered, only final
+queue.rs37 rejection oracle fails (eaaf0209/fd999c9f). MAX first retains its
+unchanged successful configuration; all normal/default/frontier controls pass.
+No compile, setup, native timeout or cleanup error supplies this evidence.
+
+Smallest production candidate is confined to existing unicast/manager.rs:
+insert the explicit MAX rejection AFTER the existing qos/lowlatency validation
+so its prior rejection precedence remains, before config/state construction.
+Reuse its existing bail/ZResult error and exact selected message/platform value.
+Add only supported-input comments to that field/setter and the two native
+configuration documentation owners (configsrc/lib.rs, DEFAULT_CONFIG.json5).
+Expected production <=12 new net lines in this input stage; no public type,
+dependency, default or constructor change. Independent baseline/source reviews
+precede mounting, and the SAME two tests must pass D/R before broader native
+controls. Every representable supported input remains assigned unchanged by
+the existing owning builder. Full actual queue/refusal/recovery/zero native
+acceptance is still unproved; do not select the bounded constructor yet.
+
+
+Input validation candidate28ab6044 and its two input-documentation cuts
+1793768d/bdcf6a44 now pass the SAME3ec465dc tests in debug/optimized2/0 each
+(cabeef60/47fd2f3d). Supported0/1/authoritative default/MAX-1 and the unchanged
+default builder all retain their actual configured values; the previously
+unexecuted original-native Err diagnostic now qualifies. Both source/ownership
+reviews12a7da1e pass. Source equality rejects onlyMAX after the unchanged prior
+qos/lowlatency error, with no clamp, new field/default/interface/error type.
+
+Owning transport library runs27 passed/1 ignored/0 failed per profile
+(5b33e895/5ebbc342), NOT28 passed. Both full-native pressure layouts pass2/0
+per profile (5eeb4a59/b7d581fe). Production-library strict Clippyec2d1f83,
+changed native test-target strict Clippyea61c121 and workspace formatting
+f11076df exit0. The library Clippy command checks production, not the unit-test
+harness. These scoped checks do not replace full SDK test lint: the earlier
+unchanged E0599/unused-code consumers remain open. All actual command receipts
+retain exact argv/environment/source maps;15 terminal commands cover this
+fixture/input stage, with33 selected inputs for the fixture epoch and39 for
+the input epoch. Baseline versus candidate legitimately changes the three
+input-contract files and pre-edit PRD record; old source receipts are not
+relabeled. No Flume-overflow probe or new full queue-pressure test has executed.
+
+The MAX source blocker is resolved for this explicitly restricted supported
+input contract, privately. This is a deliberate compatibility change and
+preparation for queue capacity, not an existing-main runtime defect or SDK
+delivery. The actual manager constructor remains original/unboundedf3cd3e2f.
+Ordinary ingress growth, finite refusal/recovery and real zero admission still
+require their owning native regressions before that constructor may change.
+All byte/backing/close/expiry/internal-error/drain/alltests/service/privacy/full
+R01-R25/AUTH1/NET1 and release gates remain open.
+
+Exact focused configuration commands, from the controlled SDK checkout:
+
+```sh
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo test --offline --locked -p bombay-zenoh-transport --lib --no-default-features --features transport_tls,test unicast::queue:: -- --test-threads=1
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo test --release --offline --locked -p bombay-zenoh-transport --lib --no-default-features --features transport_tls,test unicast::queue:: -- --test-threads=1
+```
+
+
+Complete current fixture/input working-tree record (private, before archive):
+SDK production+38/-10/net28; tests+1229/-79/net1150; metadata+6/-0; public
+API types+0/-0 across12 paths, including the two new private test files. Relative
+to the previous handoff epoch, this stage adds11 production lines and92 net
+test lines; this is new input policy and test sharing, not production reduction.
+Bombay documentation+203/-2/net201 across the same
+two record files; production+0/-0 and API types+0/-0. Total14 current paths
+versus15 forecast; the existing manager constructor path is still untouched.
+Known1589 retained+28 private SDK =1617/2500 working;12/18 public reservations
+and all125/20000 historical/external extents carry. Unmounted/unexecuted future
+queue-pressure source is separate from this verified milestone. Full goal
+remains active; no SDK/main delivery or full remote acceptance is recorded.
+
+
+The fixture/input milestone proof is sealed at
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-16/native-fixture-input-private-1ea4-20261016T123110Z`. It preserves330 payloads,15 actual Cargo command receipts,
+96 exact input versions including62 fresh neighbor inputs, and no missing
+versions. Manifest`fa88ad5fe3ee0cbc19e78bacf82972134a4922f5424d9f33294bbb148a4150f6`;
+seal`7b7e1d5bafaed22dcfd9cd837588a486bf4bc2e451257653c2cca975474af2d6`.
+The helper verified two complete copy/hash/inventory passes, fsync and read-only
+modes; root independently rechecked the complete inventory, bytes, hashes,
+modes, all96 source versions and current working files. Earlier handoff,
+pressure, handshake and actual CI/merge proofs remain separate immutable links.
+The future unmounted queue-pressure subtree is explicitly excluded. This
+records private verification, not SDK adoption or any full remote delivery.
+
+Measured next-test forecast adjustment BEFORE further authoring or mounting:
+the native queue draft first stopped at717 source lines plus2 mount lines.
+Removing a reconstructed refusal summary, retaining original native results,
+using a passive Poll observation and separating owned products through existing
+standard collections leaves699 source lines plus2 mount lines. Select701 total
+verification lines instead of700; all native qualifiers and both zero-role
+health controls remain. This adds no production line, file, public type,
+dependency or interface and stays within the standing verification scope.
+The draft remains unmounted/unexecuted pending WHOLE-test two-pass author and
+independent reviews. Its original pure validation test bodies remain exact.
+Prior budgets and all unknown historical/external extents carry without reset.
+
+Final record checkpoint: Bombay documentation+237/-2/net235
+across two files, production+0/-0, public types+0/-0. SDK complete tracked and
+untracked delta remains production+38/-10/net28, tests+1229/-79/net1150,
+metadata+6/-0, API types+0/-0 across12 paths including two new private test
+files. These14 current paths are within15 forecast. Known1617/2500 working
+production versus1589 retained,12/18 public reservations and all125/20000
+historical/external extents carry. No full queue, SDK delivery, service/privacy,
+R01-R25/AUTH1/NET1 or release completion follows.
