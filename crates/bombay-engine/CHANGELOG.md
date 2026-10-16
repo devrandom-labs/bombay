@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.3...bombay-engine-v0.2.4) - 2026-10-16
+
+### Added
+
+- *(application)* unify composition and preserve complete custody ([#375](https://github.com/devrandom-labs/bombay/pull/375))
+
+### Other
+
+- *(devx)* preserve startup and source-policy checks
+
 ## [0.2.3](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.2...bombay-engine-v0.2.3) - 2026-10-14
 
 ### Other
