@@ -112,11 +112,11 @@ case per profile:112 executions (96 native/application,16 pure), alongside16
 actual counter/template/supervision/pool example runs. All1501 bound inputs and
 397 nonowner lock records remain exact through those runs. These unpublished
 packages prove the combined changes, rather than transferring earlier timer-only
-archive results. Normal registry release, final nested locks, remote/minimal-feature
+archive results. Normal registry release, final nested locks, protected downstream
 and authoritative Bombay full gates remain required.
 
 Complete feature Rust delta againstbf1921b, including inventory reconciliation:
-production+143/-39/net104; tests+623/-175/net448; public types+0/-0, across29
+production+143/-39/net104; tests+623/-191/net432; public types+0/-0, across31
 Rust files. Four existing ActorExt signatures lose IDs. Three private runtime
 contracts own the disjoint timer key, occurrence proof and destination port;
 there is no new production module, lifecycle phase, transition authority,
@@ -142,11 +142,29 @@ the complete original Counter journey. Both local-only pressure tests now use
 SDK-selected ports and disclose the original startup source on failure. Their
 Work bodies and all61 assertions remain unchanged; shared two-node fixtures,
 runtime code, public types and policies are untouched. Runner, socket-guard
-and initial format failures keep their outcomes. Minimum-compiler feature
-verification stops at an existing child-fixture diagnostic mismatch (one
-E0277 versus two expected), before executing the remaining stages. Current
-passing checks do not certify that failed minimum run or recover either old
-failure cause.
+and initial format failures keep their outcomes. The first minimum-compiler run
+failed at an existing child-fixture diagnostic mismatch before later stages.
+Its byte-identical feature twin is now removed: one unchanged bare program and
+canonical stderr serve both feature configurations; the existing reviewed
+minimum patch changes four filename references only. Compiler metadata binds
+that same denial. Production APIs, bounds and diagnostic parsers stay unchanged.
+
+Fresh1.96 verification passes seven commands in823.460s:426 exact remote outer
+tests and20 separate UI fixtures per debug/release profile, both child harnesses
+with six fixtures each, and all-feature docs. All2080 inputs remain exact through
+execution;397 nonowner records and21 reviewed minimum expectations are unchanged.
+No minimum Clippy ran; docs emitted no warnings but did not deny them. Final
+unchanged strict verification passes1.99/1.96 in170.998/176.449s:124 unique fixtures
+(19 positive/105 negative),29 suites,25 targets,107 outer passes and the exact
+parent-invoked child ignore, with2080 inputs conserved. Five verifier unit methods
+and both independent reviews pass. All trybuild arguments remain intact through
+three exact owner-root remaps. The first strict stale-index copy attempt failed
+before Rust; a draft audit's missing fixture-mode literal was corrected without
+changing verifier, snapshots or raw evidence. Neither earns gate credit.
+The five-path canonical batch is+11/-80, including metadata/deleted stderr;
+Rust tests0/-16, production/public-types0. Source-selected acceptance does not
+certify registry delivery, protected nested consumers, authoritative flake gates
+or either old failure cause. The owning PRD retains the pre-edit law atcb9ad32.
 
 ## Verification
 

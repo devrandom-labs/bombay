@@ -11,7 +11,7 @@
       "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
     }
   },
-  "patch_sha256": "8f6d9d1fe3f85accd5f75d2c4c37d6c6809de5f6c229f21e37a525f71dbed9da",
+  "patch_sha256": "01e42e64a768de21e4c9c57ed53915087035de752d55ef7569d54bc458fc6b19",
   "snapshots": {
     "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
       "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
@@ -83,11 +83,6 @@
       "minimum_sha256": "38fbe5ca0143de09a0b734d4aee015e3606bb4ce868c043dbf87d8363c515851",
       "fixture_sha256": "b3b079b46b475cc21da4028c27fa8c6cdf55c0afd988cdaf78f7f153026af462"
     },
-    "crates/bombay/tests/compile/fail/application_child_must_be_behavior_feature_unified.stderr": {
-      "canonical_sha256": "0d53aebbd57697dee0fea0b9161cbc4de86eae1e27bc279422352c2e7be50783",
-      "minimum_sha256": "73738ea433eebee37bed595b55181491dbc4f5d69ea837120d53c75d34716803",
-      "fixture_sha256": "31411f50f93a79ef584cafafee4ca345ba4b76045a34acdd125e56c20aa15565"
-    },
     "crates/bombay/tests/compile/fail/application_scope_cannot_declare_second_root.stderr": {
       "canonical_sha256": "1b1fdbe85771351be92efc8b1f4b63d108fe3065d5cba116c2e285d80f6c7378",
       "minimum_sha256": "80be9d615fae03b9f59cb855034a7a2f328965c9888ee6bdbfcfab6454cb8839",
@@ -117,6 +112,11 @@
       "canonical_sha256": "1ca84d774e6d126f92dc8a585adc29c7eb42bdacc3b214e969d488fd7d601087",
       "minimum_sha256": "1a7141c5523b1ca7506dc7ef3bb6f7c9cc9397d1ce66ad9ff1ad2cc9ded7c9e0",
       "fixture_sha256": "979c4981d51be2124d11f9daa59f2d8da1258efc680aa57a51daa8b155d64451"
+    },
+    "crates/bombay/tests/compile/fail/application_child_must_be_behavior.stderr": {
+      "canonical_sha256": "e7b1a90222f717de646f2c80837fd24288ec2a4ec375ff3750a48d3abd03eeb9",
+      "minimum_sha256": "97ffc0232142eb02f25cc3d7a0e1815a9fa4900d994d9e5678cb0c833d8554e2",
+      "fixture_sha256": "31411f50f93a79ef584cafafee4ca345ba4b76045a34acdd125e56c20aa15565"
     }
   },
   "cases": [
@@ -136,7 +136,7 @@
     "tests/compile/fail/actor_spaces_wrong_field.rs",
     "tests/compile/fail/actor_unknown_argument.rs",
     "tests/compile/fail/application_actor_projection_requires_attribute.rs",
-    "tests/compile/fail/application_child_must_be_behavior_feature_unified.rs",
+    "tests/compile/fail/application_child_must_be_behavior.rs",
     "tests/compile/fail/application_client_forged_root.rs",
     "tests/compile/fail/application_client_has_no_lifecycle.rs",
     "tests/compile/fail/application_client_receiver_is_affine.rs",

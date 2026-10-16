@@ -1529,21 +1529,21 @@
     |          expected `&bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Orders>>` because of return type
     |
     = note: expected reference `&bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Orders>>`
---- a/crates/bombay/tests/compile/fail/application_child_must_be_behavior_feature_unified.stderr
-+++ b/crates/bombay/tests/compile/fail/application_child_must_be_behavior_feature_unified.stderr
+--- a/crates/bombay/tests/compile/fail/application_child_must_be_behavior.stderr
++++ b/crates/bombay/tests/compile/fail/application_child_must_be_behavior.stderr
 @@ -29,25 +29,3 @@
  ...
     |         Actor: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Application::<Root, Spaces, Members, Families>::child`
 -
 -error[E0277]: the trait bound `NotBehavior: behavior::Behavior` is not satisfied
--  --> tests/compile/fail/application_child_must_be_behavior_feature_unified.rs:12:13
+-  --> tests/compile/fail/application_child_must_be_behavior.rs:12:13
 -   |
 -12 |     let _ = bombay::Application::new(Root).child(Workers, NotBehavior);
 -   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
 -   |
 -help: the trait `behavior::Behavior` is not implemented for `NotBehavior`
--  --> tests/compile/fail/application_child_must_be_behavior_feature_unified.rs:9:1
+-  --> tests/compile/fail/application_child_must_be_behavior.rs:9:1
 -   |
 - 9 | struct NotBehavior;
 -   | ^^^^^^^^^^^^^^^^^^
