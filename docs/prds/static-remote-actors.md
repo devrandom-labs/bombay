@@ -31642,3 +31642,140 @@ History-stage census: production+0/-0/net0; tests+0/-0/net0; public types+0/-0;
 records+130/-7/net123 across four tracked paths, no untracked files. The separate
 SDK experiment retains its exact four-path+17 production/+271 test net delta
 and all open adoption gates; cumulative budgets do not reset.
+
+
+### Native transport pressure — full owning connection before adoption
+
+Fresh comparison at researcha6202de retains lock3caba2a6 with no patches:
+Behavior/Actors0.26.0 at98983b4 and selected complete instructions2b7a9195;
+Address0.3.0, Communication0.1.6, private Observe, Timers0.2.0 and current
+Entity remain unchanged. They retain their existing algebra/runtime/primitive
+ownership; this mechanism test invokes no actor fold or Bombay interpreter.
+SDK1.10.9/TLS+transport1.10.3 select1ea4bd16; the privateSDK checkout retains
+that base and the reviewed unadopted TLS candidate1fa83b68. Fresh source reads
+cover the actual native listener, full open timeout, manager cleanup, endpoint
+configuration, transport callback and existing receive-counter tests; exact
+inputs and unchanged dependency versions are in transport-pressure/contract-before.json.
+
+The remaining blocker is full native progress after finite handshake pressure,
+including a real open deadline and an established traffic consumer. Earlier H1
+raw-connector success bypasses the full open deadline. Prototype both Peer/Peer
+and Router/Client using the same native managers, existing counted native
+message consumer and existing mTLS certificates, private roots/name checks and
+TLS1.3. Derive ports/endpoints from the actual issued listener locator. Keep
+client Finished withheld after authenticated server flight; obtain the actual
+second full open result at an explicit test open deadline while that peer stays
+live and before its native handshake expiry. Preserve the original native
+result, establish real traffic on a preexisting connection during pressure,
+then release pressure and execute a fresh full open with the same manager and
+endpoint. Check original peer IDs, exact transport membership and actual native
+cleanup before law assertions. A setup/watchdog/cleanup failure supplies no
+semantic evidence; borrowed observations must preserve acquired results.
+
+Pre-edit scope: existing transport tests/unicast_transport.rs, at most360 added
+Rust test lines, plus one already selected workspace tokio-rustls development
+edge in its Cargo.toml and the SDK lock. Reuse that owner reexport of Rustls and
+PemObject for existing static certificates; add no direct transitive import or
+new package. Reuse SHRouter/SCRouter and TransportManager rather than inventing
+a callback, factory, test runtime or observation type. Production+0/-0/net0 and
+public types+0/-0 for this stage; prior SDK+17 remains unadopted. Total selected
+SDK working paths become six, plus the same two Bombay records. No native
+production visibility, timeout/default, queue, macro or actor policy changes.
+Author and independent two-pass review precede mounting; run actual D/R
+controls and original-source comparison before adoption or dependency cleanup.
+Carry all1606/2500 working,1589 retained,12/18 and125/20000 historical/external
+extents without reset. Global accepted queue, complete bytes, full service,
+privacy, R01-R25/AUTH1/NET1 and release remain open.
+
+
+Pinned SDK rustfmt expands the reviewed298-line native test addition to428
+introduced lines, deleting none of the original owning test file. Revise the
+self-imposed forecast from360 to450 before mounting, preserving readable
+formatting and complete cleanup rather than compressing the trace. Formatted
+owner706f9242 changes no original source line. No production, API, dependency
+kind or path is added beyond the prior scope. Combined SDK tests would become
++705/-6/net699 if retained; production remains+23/-6/net17 and public types0.
+
+
+The first native-pressure debug command stops during compilation: two new
+configuration calls supplied arrays where the existing ConfigMut contract
+requires Iterator+Clone. Correct only those calls to array.into_iter(); no
+architecture or interface is inferred from the diagnostic. Preserve its exact
+706f source/log as nonsemantic compiler evidence. The selected TLS-only target
+also exposes an existing unused UDP-port import; guard that existing import by
+its UDP/QUIC feature owners before strict lint. Every original test body remains
+unchanged. The same450-line forecast and eight-path scope apply before mounting
+the corrected formatted source; original D/R semantic baselines remain required.
+
+
+Corrected native test113545fc now has four qualified actual commands. Original
+concurrent TLS source fails both Peer/Peer and Router/Client in debug and
+optimized builds solely at the final refusal assertion3749; all authentication,
+live traffic, topology, fresh retry and cleanup checks precede that failure.
+Candidate1fa83b68 passes both cases in each profile. Independent runtime review
+1c05675a confirms22 unchanged inputs per command and the original native timeout
+result. These tests cover finite pressure at an explicit500ms open deadline,
+not accepted-link queue saturation, byte bounds or default deadline suitability.
+
+Before mounting the final warning correction, revise the native-test forecast
+from450 to460 introduced lines. Source review77a641cb maps all six old unused
+helpers to their existing feature-owned callers. Fourteen cfg lines guard the
+low-latency runner and QUIC/UDP multi-receive chain, including both existing
+impls. Existing bodies, public callback and callers remain unchanged. Expected
+native target+455/-1/net454; combined SDK tests+732/-7/net725; production remains
++23/-6/net17, public types+0/-0 and metadata+6/-0 across six SDK paths. The same
+two Bombay record paths remain in scope. Both final-source original D/R and
+candidate D/R comparisons and strict owning lint remain required;113 receipts
+retain their own exact source. All cumulative budgets and open gates carry.
+
+
+Final guarded native source4e1e5da3 passes root and independent two-pass source
+reviews (b77398bc). Actual original D/R commands fail both cases only at final
+3763, after complete native trace/cleanup; logs774801e8/e326894c. Exact restored
+candidate1fa passes both layouts2/0 in each profile, logsc03d079c/ad234d6d.
+All22 per-command inputs remain unchanged. Owning TLS library/security/IO
+controls pass19/0 in both profiles; strict changed native target Clippy, TLS
+library/tests Clippy and pinned workspace formatting exit0. Commands and exact
+source variants remain in transport-pressure receipts;706 compile-only and113
+earlier epochs retain their actual source boundaries.
+
+The first combined Clippy command accidentally selected all transport tests
+through --tests. It fails on unchanged old unicast_simultaneous test calls to
+max_links (twoE0599), an unused import, and thirteen unused-code diagnostics in
+unicast_intermittent. Preserve this actual failure, log9d5f0ce1; focused lint
+success does not qualify the full SDK test surface or CI. No unrelated source
+was edited and no warning/error was suppressed. Retirement or correction of
+those stale feature consumers is a separate prerequisite before SDK delivery.
+
+Accepted-link source review60d28bb0 identifies the actual unbounded manager
+queue before establishment admission; this handshake comparison does not bound
+it. Handoff proposal4aadf394 finds no noninterfering pre-cancel observation of
+the second original blocked in a full channel through the existing spawned
+listener APIs. No queue capacity, refusal/close policy, production hook or new
+interface is selected. Complete backing bytes, native close/stop ordering and
+actual-manager queue saturation remain unverified. Both Peer/Peer and
+Router/Client remain required. No SDK adoption, publication, full service/privacy,
+release or R01-R25/AUTH1/NET1 acceptance follows from these local comparisons.
+
+Checkpoint before final record audit: Bombay production+0/-0/net0; private SDK
+production+23/-6/net17; SDK tests+732/-7/net725; public types+0/-0; metadata+6/-0
+across six SDK paths with no untracked files. The same two Bombay records are
+the entire local root scope. Carry known1606/2500 working,1589 retained,12/18
+and all125/20000 historical/external extents without reset. The owning finite
+pressure regression is qualified; remaining accepted-resource and application
+requirements stay open.
+
+
+Independent final execution reviewe5ff7d92 verifies all ten final guarded
+commands,22 matching before/after source inputs, both intended old failures
+and exact restored controls. Both reviews retain the actual broader lint
+failure and confirm its failed targets equal selected1ea4 source. Runtime
+inputs were frozen before these documentation-only result updates. No
+software source changed after the final verified commands.
+
+
+Final complete two-worktree change record: Bombay records+148/-0/net148
+across two files; no Bombay software change. SDK production+23/-6/net17,
+tests+732/-7/net725, metadata+6/-0 across six files; public types+0/-0.
+Both selected worktrees have zero untracked files. Source retention remains
+private/unadopted; scoped proof is not full CI, delivery or acceptance.
