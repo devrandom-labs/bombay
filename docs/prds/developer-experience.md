@@ -650,6 +650,81 @@ repair. The prior axum classifier crash remains disclosed; all24 fresh native
 Nix gates and exact-head CI must pass on the repaired source before delivery.
 Evidence: TIMER-GATES-V2-REPAIR-{SOURCES,RESULTS}, TIMER-GATES-REPAIR-MATRIX-V2
 and TIMER-GATES-REPOSITORY-SURFACE receipts under the existing evidence root.
+Build-reference law, pre-edit: the fresh d265bdc native check again reports
+classifier SIGSEGV44674 while fixup continues, at exact output fq4n4gf/target.tar.zst.
+The pinned audit hook does not wait for its classifier. A successful check must
+establish both complete file enumeration/classification and the existing ELF
+RPATH/wrapped-script reference rules; a crashed or refused producer is failure.
+This is tooling verification policy, not actor semantics. No root cause for the
+Bash crash is claimed. Do not reclassify the original run or disable its audit.
+
+Before production, retain a black-box failed-find37 regression against the exact
+pinned hook, plus independent healthy/forbidden script, ELF, byte-header and tool
+failure controls. Compare ordinary serial checked enumeration with the copied
+parallel hook. The proposed serial form uses checked find, a temporary NUL file
+list, byte-exact od headers and the same searched TMPDIR prefix, avoiding binary
+read-n and the entire background/FIFO coordination graph. Retain .build-id and
+unwrapped-script exclusions. Byte headers deliberately reject near-magic NUL/
+newline prefixes: unlike Bash character read-n, they mean the actual leading
+ELF/shebang bytes. Test that correction explicitly; do not call the malformed-
+header behavior identical. This replacement covers commonArgs workspace
+derivations, not upstream dependency hooks. Explicitly check all producers and tools even when
+called in an if/OR context. Reuse pinned shell/coreutils/find/grep/patchelf; add no
+Rust dependency, locale change, pin update or actor API. Primary Bash contracts:
+https://www.gnu.org/software/bash/manual/bash.html#Bash-Builtins and
+https://www.gnu.org/software/bash/manual/bash.html#Bash-Variables.
+
+Expected four additional files: the owning reference scan, its black-box tests,
+flake wiring and this existing record; zero Rust production/state/public-type
+changes. The new focused Nix check supplements all24 existing gates. The original
+full run remains frozen; this isolated tooling stage must prove the failure law,
+compare actual output and controls, measure its scan cost, pass two independent
+reviews and rerun the complete gates before any retained clean-gate claim.
+The executed exact-hook failed-find37 regression reports success instead, after
+its healthy control passes (NIX-REFERENCES-PINNED-RED, 5.272s). Two preproduction
+reviews require NUL-safe space/newline filenames, verified UTF-8 charmap, exact
+near-ELF headers, first-component/lookalike RPATHs and a separate list-open fault;
+these controls are added before production. ELF fixtures mock the patchelf port,
+not its binary parser. Cleanup-fault residue is isolated between cases.
+NIX-REFERENCES-INPUTS.json freezes source and the pinned hook before edits.
+The first serial candidate passes46 black-box controls and all five tool/header
+inversions, but an independent reader-failure cut exposes another masked error:
+read43 ends a while-condition with status0 (NIX-REFERENCES-READER-RED,4.670s).
+Reopen that loop before retention. The completed NUL list must end with an empty
+record, which a find filename cannot contain; append it only after checked find
+success, then require the reader to reach it. Any read error or premature EOF
+fails and still cleans the list. This is finite-list completeness, not another
+actor state or authority. Add error43 and early-EOF1 controls before replacing
+the loop; preserve the first failed candidate and receipts as counterevidence.
+The revised scan passes50 controls (25 under each verified C/UTF-8 locale),
+and six isolated inversions fail at their intended find/header/search/cleanup/
+reader/magic oracles. All624 frozen inputs are conserved through that run. The focused native
+Nix check passes8.517s after declaring the test's pinned locale executable;
+its initial missing-tool result is not a passing gate. Actual default stdenv
+fixup accepts healthy output1.170s and rejects the real forbidden wrapper1.059s
+with the complete filename. All626 integration inputs are conserved through that run; an earlier
+host-path setup rejection receives no semantic credit. No second hook is added.
+
+The exact181863512-byte output archive is classified three times per locale by
+both old and new scans without a reported crash. Serial21.19–23.88ms versus
+pinned22.60–23.30ms is only this tiny output-directory sample, not a performance
+or root-cause claim; compressed contents are outside the reference audit.
+Source/oracle and gate reviews pass independently twice. Only this record is
+amended after those runs; production and executable proof inputs stay frozen. References:
+NIX-REFERENCES-COMPLETE-{SOURCES,RESULTS}, FOCUSED-BUILD-V2 and
+NIX-REFERENCES-INTEGRATION-V2-{SOURCES,RESULTS}. The full replacement check is
+pending; original d265bdc reports three masked classifier crashes so far.
+
+Drift: actor production/state/branches/public types+0/-0. Tooling+91/-0/net91
+(two files:65-line owning scan,26-line Nix wiring), tests+136/-0 in one file,
+four files including this record; cumulative timer PR10 files, actor production
++6/-2. Existing audit eligibility and search policy have one owner; binary
+headers are byte-exact and completion is one framed finite file list. Delete
+use of the pinned parallel/FIFO audit within commonArgs workspace derivations;
+retain upstream dependency audits. No actor state, subordinate sum, transition
+authority, cause, history, semantic boolean or user syntax changes. Cross-check
+pinned stdenv fixup ordering, Bash read/locale rules and unchanged Driver custody.
+Disposition: pass this bounded tooling proof; full native/CI acceptance remains open.
 Automatic identity, wrapper migration and complete DX13 acceptance remain open.
 
 Exact termination decoration (DX09): ActorExt::observe_termination returns the
