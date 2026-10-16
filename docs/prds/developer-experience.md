@@ -342,16 +342,22 @@ the frozen-source checkpoint; earlier source receipts are not relabelled.
 
 ### Stash recovery
 
-The owning law at Behavior641d44d selects `let pending = stash.take();` for
-original held inputs, leaving its actor and route intact. Owner5068f6a adds
+The owning law at Behavior 641d44d selects `let pending = stash.take();` for
+original held inputs, leaving its actor and route intact. Owner 5068f6a adds
 one method and no stored state, bound or type. The native invoice
 journey accounts for a nonempty held FIFO plus unread mailbox suffix, original
 senders and move-only allocations, every retirement lane, cleanup and both
-notifications. Rust1.99/1.96 debug/release pass with private owner selection;
+notifications. Rust 1.99/1.96 debug/release pass with private owner selection;
 the actual root stays registry-only. Pure owner cases cover both shutdown
 orders and independent machine deferrals plus future outer replay. Three
 isolated broken-body controls are rejected in both profiles; the first shared
 build-directory control campaign remains failed and uncredited. No production
-Bombay code changes; capacity/overflow and final owner/archive/registry gates remain
-separate obligations. Sources, failed preliminary controls and twice-reviewed
-receipts stay with the owning PRD; these bounded proofs do not close DX14.
+Bombay code changes. Owner 5068f6a passes all 11 native Nix gates: 996 tests,
+120 doctests and 50 reference controls; nine gates build and two are cached.
+Its packaged crates pass the same native journey on both compilers/profiles;
+all 2,342 frozen inputs survive current strict Clippy and workspace formatting.
+Two independent reviews pass. The earlier generated-guide link failure remains
+recorded separately. Linux CI, registry delivery, final Bombay programme gates
+and capacity/overflow remain open. The tested source is 95499e2; this later
+coordination update changes no Rust or dependency byte. Exact receipts and
+requirement dispositions remain in the owning PRD; this does not close DX14.
