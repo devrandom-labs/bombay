@@ -28646,3 +28646,43 @@ live. Neither PR is recorded merged here. Existing PR373/374 privacy holds
 remain, and complete public Application inbound/outbound service, strict
 remote lint, public minimization and every full R01–R25/AUTH1/NET1 gate remain
 open. Private startup progress is not remote-feature delivery.
+
+
+### Private startup — fresh lint checkpoint before mechanical correction
+
+Actual strict private command69149 returns101. Library diagnostics are eight
+known declarations awaiting a production service consumer plus one unfulfilled
+factory too_many_lines expectation. Test-library diagnostics are one
+single_match_else, one unfulfilled surrender-test too_many_lines and the same
+factory expectation repeated. Do not describe this as only eight unused items
+or a passing full lint gate. No dead-code allowance is selected.
+
+Before correction, remove the two unused too_many_lines expectations and
+express the same acquired-custody pattern using if let/else. Preserve both
+complete branch products, original report/error, separate forced-close result,
+all operations and every oracle; this changes no policy, state, type, bound or
+production behavior. Expected production delta-1 annotation line, test-only
+syntax/attribute edits otherwise. Use pinned formatting and recheck strict
+lint, preserving any remaining production-consumer blocker. Main PR379's
+separate exact boxed-borrow annotation correction now passes actual strict
+Clippy+format and is submitted as17fec54; its new required CI remains pending.
+
+
+Mechanical correction83d10f1e/6789139e passes independent two-pass source
+review: identical branch products, original results, receiving/disposal order
+and all oracles; only two unused expectations and equivalent conditional
+syntax change. Fresh strict50425 remains101, now reporting exactly the eight
+known unused production declarations and no additional test-style diagnostics.
+This is still a failing full gate; actual production service integration is
+required, with no suppression. Fresh focused debug/optimized commands each
+execute3/0/0,350filtered,0.01s. Earlier353-case controls and four report inversions
+retain their exact earlier source attribution; they are not claimed rerun.
+
+This mechanical patch is production+0/-1/net-1 and verification+17/-23/net-6,
+public+0/-0. Updated complete61-path endpoint is production+1454/-40/net1414;
+verification Rust+11548/-14/net11534, with188/3 reclassification once and no
+untracked paths. Stage vsd2f remains net68 production and465 verification;
+main's separate193-line witness keeps retained stage verification658/800.
+Known combined production including owning104 is1518/1600. Historical/external
+ledgers and unproved extents remain carried. No feature/public-service state
+advances from this mechanical patch.

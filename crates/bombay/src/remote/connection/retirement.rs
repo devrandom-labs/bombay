@@ -24,7 +24,6 @@ impl Connection {
     /// An absent Connection never substitutes for the separately owned cause.
     #[expect(
         clippy::type_complexity,
-        clippy::too_many_lines,
         reason = "preserve the actual startup publication, unique connection and independent native close receipts without another owner"
     )]
     pub(crate) fn startup() -> (

@@ -54,10 +54,6 @@ fn refused_startup_report_survives_ready_producer_disposal() {
 }
 
 #[test]
-#[expect(
-    clippy::too_many_lines,
-    reason = "receiving surrender returns the actual close handles or original native refusal without reconstructing either"
-)]
 fn surrendered_receiving_returns_the_original_startup_report() {
     let observations = {
         let host = Builder::new_multi_thread()
@@ -317,25 +313,23 @@ fn startup_disposal(startup: Startup) {
             let output_custody = acquired_custody.try_recv();
             let observed_session = observed_session.await;
             let (outcome, native, notifications) = receiving.await;
-            let (startup_report, forced_close) = match &output_custody {
-                Err(TryRecvError::Closed) => {
-                    let original = report.await;
-                    let forced_close = match (&original, &observed_session) {
-                        (Err(_), Ok(Some(session))) => Some(session.close().await),
-                        (Ok(_) | Err(_), _) => None,
-                    };
-                    (Some(original), forced_close)
-                }
-                _ => {
-                    // Failure cleanup is separate from the missing original join/result.
-                    let forced_close = if let Ok(Some(session)) = &observed_session {
-                        Some(session.close().await)
-                    } else {
-                        None
-                    };
-                    drop(report);
-                    (None, forced_close)
-                }
+            let (startup_report, forced_close) = if let Err(TryRecvError::Closed) = &output_custody
+            {
+                let original = report.await;
+                let forced_close = match (&original, &observed_session) {
+                    (Err(_), Ok(Some(session))) => Some(session.close().await),
+                    (Ok(_) | Err(_), _) => None,
+                };
+                (Some(original), forced_close)
+            } else {
+                // Failure cleanup is separate from the missing original join/result.
+                let forced_close = if let Ok(Some(session)) = &observed_session {
+                    Some(session.close().await)
+                } else {
+                    None
+                };
+                drop(report);
+                (None, forced_close)
             };
             // The original close is acquired only when custody permits waiting.
             // Any failed-custody producer is cancelled by runtime retirement.
