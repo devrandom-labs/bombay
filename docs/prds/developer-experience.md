@@ -100,6 +100,21 @@ Evidence: REGISTRY-027-SUPERVISOR-{MIGRATION,SOURCES,RESULTS}, CURRENT-DEBUG and
 REMAINING receipts under the existing evidence root.
 
 
+The ordinary worker-pool example now uses queue::new(factory, roles, Config)
+with six named, unchanged policies and an inferred client. Remove the unused
+CustomerProtocol alias and topology host; worker business code is byte-identical
+apart from its owning import. Both example files keep their original line counts
+(90/34): the gain is readable policy and deleted structural types, not fewer
+lines. Two source reviews pass. Actual pinned-Nix execution exits0 in7.706s,
+printing search matches3 and successful retirement/cleanup/notifications; these
+prints are demonstration, not independent complete-custody assertions. Strict
+all-target example Clippy passes7.637s, formatting5.502s. Existing five native
+pool oracles retain their separately recorded proof scope. Production example
++18/-18/net0, tests/public types+0/-0; no state, transition, policy or runtime
+changes. Disposition: pass this mechanical example adoption. Evidence:
+REGISTRY-027-POOL-EXAMPLE-{INPUTS,CLIPPY,FORMAT} and execution receipts.
+
+
 PR375 merge repair, before editing: capture upstream67a286c (PR374) and
 retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native
 check snapshot untouched. Preserve simultaneous native-reply/query receiving,
