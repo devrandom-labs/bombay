@@ -9,9 +9,15 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
-The connection-entry stage now executes four public Application caller tests
+The connection-entry stage now executes five public Application caller tests
 in debug and release: original cold input recovery, actual startup-refusal
-custody, cancelled borrowed execution waiting, and run_remote result products.
+custody, cancelled borrowed execution waiting, run_remote result products, and
+acquired Ready output preservation when actual Work producer disposal panics.
+The last control catches its original allocated panic and acquires native actor,
+both notification and joined connection-close results before asserting output
+custody. Delaying Completed publication past producer disposal fails its intended
+post-cleanup oracle in both profiles; exact production source is restored. This
+proves no recovery of future-local service rows from Interrupted Work.
 Restoring the old coupled cold/prepared Work mapper fails compilation at the
 intended outcome projection in both profiles. This is static denial only.
 These local Counter controls establish no remote admission, handshake, service

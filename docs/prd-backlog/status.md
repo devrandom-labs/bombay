@@ -7,8 +7,9 @@ in `docs/prds/`. Recheck the current lock and affected owners when selecting wor
 Historical inventory marks and research snapshots are not current eligibility.
 
 The remote connection-entry stage adds Application::execute_remote/run_remote
-using the existing execution owner and Bombay Network inputs. Four public
-caller controls pass in debug and release; these are local startup/custody
+using the existing execution owner and Bombay Network inputs. Five public
+caller controls pass in debug and release, including actual Ready-output
+preservation across Work producer disposal panic; these are local startup/custody
 controls, not authenticated remote service proof. The actual nonempty-family
 witness also passes in debug/release, detects deliberate shutdown-result loss
 after cleanup, and has81 restored affected controls per profile. The actor-wide three-operation

@@ -29201,3 +29201,142 @@ These observations supersede only the earlier unexecuted release-control
 qualification, not the absence of all runtime service proofs. Family verification
 checkpoint8412604 is committed and pushed on research/remote-service; its
 required full-service/privacy delivery hold remains.
+
+
+### Remote entry — acquired Work output survives producer disposal
+
+Before authoring, select a focused entry verification substage under the
+standing recommendation delegation. Derived conservation law: after an actual
+Work future returns Ready, disposing that producer may panic but cannot erase
+the already acquired output, actual root result, both notification receipts or
+independent joined connection-close result. This extends existing kernel custody
+evidence through the actual new remote Application composition; it does not
+claim recovery of future-local Export rows after Work is Interrupted.
+
+Reuse the existing public remote caller fixture, Counter, real typed Read,
+root shutdown/report and original-bearing output. An ordinary private test
+Future forwards polling to that actual Work future and raises one original
+allocated panic on disposal. Keep all returned execution/receiving/closing
+owners outside disposable waits. Catch the execution poll's actual unwind,
+then dispose execution, acquire all Application/native/notification/connection
+results and retire the host before assertions. Check original output allocation,
+complete native reply origin/value and tail, exact original panic allocation,
+Completed rather than Interrupted, both notifications and actual close join.
+Watchdogs fail only; they prove no missing native completion. No direct effects
+belong in a Behavior fold. No extra production owner or public API is selected.
+
+Expected retained change: existing application_clients/remote.rs plus these
+project records, zero production/public/dependency edits, up to220 net test
+lines. Raise cumulative entry verification from1000 to1200 before authoring;
+retain450 gross entry production and2500/18/125/20000 review windows and all
+older reservations. Run focused debug/release, an intended acquired-output-loss
+simulation in both profiles, restore exact production bytes, then affected
+controls and strict formatting/lint. A passing control alone does not close the
+producer-disposal law. Keep every full remote witness open.
+
+
+Service lifecycle source findings remain proposals, not selections. Actual
+ApplicationOutcome::Interrupted explicitly does not recover a consumed Work
+future's local Export rows. The existing entry cleanup waits root/work/families
+and then retires Connection; its Session clone does not defer explicit close.
+A bare independent channel captured beside an Export neither publishes rows on
+unwind nor orders query/client cleanup before connection close. Do not label
+that arrangement an existing Export borrowed-wait regression.
+
+Compare two existing-primitive ownership constructions before any service edit:
+(1) move the actual Connection token through independent local service receiving
+after root/family shutdown, checking whether existing cleanup receiving can
+express the handoff before adding a channel; (2) share the existing retirement
+Sender through Arc, letting Connection and actual active services hold the same
+close permission while handles carry only Weak. The latter adds one allocation
+per connection and no new close task/channel, but Weak alone does not deny new
+upgrades after Application retirement starts while a service still owns a strong
+reference. Neither candidate is selected. Both must preserve non-Send receipts,
+complete query/permit prefixes, pending provider operations, actual native clients
+and refused originals through teardown. Current undeclare returns prefix/client
+owners, so dropping a lease there would close too early. Exposing its lease in
+public SDK tuples is ineligible. Legacy Node closes Session directly and cannot
+be silently treated as covered. Scope only constructs endpoints; actor-owned
+ActivationTasks requires Send/static and cannot become a remote service runtime.
+
+The single-row native generalization is likewise unselected pending concrete
+runtime tests. Preserve one existing replay owner, common protected/proof/receipt
+and cold operation before endpoint construction; entered construction cannot
+license retry after unwind. Concrete closed natives retain actual factory
+refusal, mailbox Full/Closed/uncertainty, processing/value acquisition, distinct
+control acceptance and joined retirement. Root/child control must match the
+actual certified target; protocol agreement alone does not prove that.
+An unparameterized RequestKey proposal is rejected before edits because it
+would erase Counter-versus-Ledger static denial. Compare RequestKey<Target>
+owning its existing certified recipient, the existing quota Weak identity and
+row. Exact-export comparison precedes row lookup and authority callbacks;
+no dummy Stop endpoint or separate replay owner is eligible. These source
+comparisons select no new public signature, native trait, resource limit,
+publication scheduling or service-report owner. The remaining runtime laws
+and full public inbound/outbound service remain the delivery target.
+
+
+Work-disposal source review: frozen author patchb8ae9d38 receives two author
+passes and two independent passes before application. Formatted caller source
+6cd93083 receives two additional independent passes; measured retained test
+delta is+141/-1/net140, not142 added lines. The forwarding Future owns a pinned
+Box without requiring Work:Unpin; its single disposal raises the actual original
+Box211 after real Counter Work returns Ready. All independent results and host
+retirement precede the oracles; no assertion performs a required effect.
+
+Actual focused debug and release each pass1/0/0 with42 filtered. The exact
+43e3423d scope-order cut delays Completed publication until after the pinned
+producer is disposed, retaining the actual call/poll and all cleanup code. It
+fails in both profiles with0 passed/1 failed: the genuine original disposal panic
+is caught, the native/two-notification/joined-close prefix passes, then the
+Completed-output oracle fails. It is simulated acquired-fact loss, not an
+already-existing defect claimed in this remote entry. Structured inverse receipt
+records actual argv/status/source/log hashes, including debug319aa01c and
+release83782d1b. Owning execution source is restored byte-exact to19e0be18
+before further commands. Fresh restored affected checks and strict lint/format
+are running; this paragraph gives them no passing credit.
+
+
+Key comparison precision: both RequestKey<Target> representations remain
+unselected. Export already retains its actual certified target. A type-only
+PhantomData<fn()->Target> plus existing quota Weak and row can express the
+static protocol restriction without cloning that target into every key; the
+selected Behavior Recipient and Bombay ActorRef already use that standard
+marker. A recipient-bearing key clones actual capabilities and has different
+lifetime/auto-trait consequences. Compare variance, auto traits, typed denial
+and same-target foreign/redeclared exports before choosing either; neither
+compiler eligibility nor preference for an actual field establishes a new law.
+
+Work-disposal checkpoint census: four retained paths (existing remote caller
+and PRD/acceptance/status), production+0/-0/net0, tests+141/-1/net140, public
+API+0/-0 and dependencies unchanged. Entry verification1032/1200. Complete
+tracked/untracked census versus81dc1448:65 changed tracked paths,0 untracked;
+production+1832/-44/net1788, tests+12579/-14/net12565, after the188/3 inline
+test reclassification exactly once. Twelve added public definitions remain the
+prior8 plus4 reserved Network inputs; none are added here. Separate owning
+Communication104 keeps known combined production1892/2500. All previous
+external/historical reservations and2500/18/125/20000 windows carry. Actual
+manifest/root/fixture hashes remainfc87c97e/d4ab9a6f/95986a62.
+
+
+Final restored Work-disposal verification returns0 for all four commands. Actual
+Application clients43 plus completed receiving39 pass in each profile (82 total
+per profile) on unchanged final6cd93083 with execution19e0be18/family3d6d0bb7.
+Debug log2792f37c and optimized6c41f944 retain these inventories; strict workspace
+all-target/all-feature Clippy02363371 and formattingf63de623 pass. Structured
+final receipt629771a1 in /tmp/bombay-remote-entry records exact pinned-Nix argv,
+exit statuses and source/log hashes; the earlier running qualification is now
+resolved only for these commands. Formatting introduces no further changes.
+The complete tracked/untracked delta remains the four-path/net140 test stage
+above, with no retained production/API/dependency change. Author and independent
+reviewers each check the final source twice; actual inverse/source/execution
+review confirms the selected post-cleanup failure in both profiles.
+
+This is verified remote-entry producer-disposal evidence, not full remote service
+completion, distillation, required CI or delivery to main. The separately stopped
+workspace run still has the known public-SDK privacy failure; do not turn these
+82 affected controls into a workspace pass. PR379c640's required Nix job remains
+authoritatively live; its two native campaigns passed. PR380 and374 retain their
+full-service/privacy release holds. Continue to one actor-wide operation/replay
+service, actual inbound and outbound Actions, provider/cancellation/resource
+proofs and reviewed PR delivery; every full R01-R25/AUTH1/NET1 gate remains open.
