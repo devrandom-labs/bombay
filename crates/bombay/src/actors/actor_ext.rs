@@ -5,7 +5,7 @@ use behavior::{Behavior, BehaviorAddr, BehaviorMessage, EndpointAddress, Never, 
 use behavior_actors::{
     Deadline, DeadlineReaction, EstablishedTerminationMonitor, EstablishedTerminationReaction,
     FinalizeOnShutdown, ObserveEstablished, OneShot, Periodic, ReceiveTimeout, ShutdownReaction,
-    Stash, StashRoute, StaticallyInfallible, StopOnShutdown, TimedReaction, TimerId,
+    Stash, StashRoute, StaticallyInfallible, StopOnShutdown, TimedReaction,
 };
 
 /// Discover and compose reusable wrappers from any concrete actor behavior.
@@ -31,46 +31,34 @@ pub trait ActorExt: Behavior + Sized {
 
     /// React once after the relative delay.
     #[must_use]
-    fn with_one_shot(
-        self,
-        id: TimerId,
-        after: Duration,
-        on_elapsed: TimedReaction<Self>,
-    ) -> OneShot<Self> {
-        OneShot::new(self, id, after, on_elapsed)
+    fn with_one_shot(self, after: Duration, on_elapsed: TimedReaction<Self>) -> OneShot<Self> {
+        OneShot::new(self, after, on_elapsed)
     }
 
     /// React after each relative interval while the behavior continues.
     #[must_use]
-    fn with_periodic(
-        self,
-        id: TimerId,
-        every: Duration,
-        on_elapsed: TimedReaction<Self>,
-    ) -> Periodic<Self> {
-        Periodic::new(self, id, every, on_elapsed)
+    fn with_periodic(self, every: Duration, on_elapsed: TimedReaction<Self>) -> Periodic<Self> {
+        Periodic::new(self, every, on_elapsed)
     }
 
     /// React once at an optional absolute deadline.
     #[must_use]
     fn with_deadline(
         self,
-        id: TimerId,
         at: Option<Instant>,
         on_reached: DeadlineReaction<Self>,
     ) -> Deadline<Self> {
-        Deadline::new(self, id, at, on_reached)
+        Deadline::new(self, at, on_reached)
     }
 
     /// React after one idle period, rearmed by successful user messages.
     #[must_use]
     fn with_receive_timeout(
         self,
-        id: TimerId,
         after: Duration,
         on_elapsed: TimedReaction<Self>,
     ) -> ReceiveTimeout<Self> {
-        ReceiveTimeout::new(self, id, after, on_elapsed)
+        ReceiveTimeout::new(self, after, on_elapsed)
     }
 
     /// React once to the exact selected recipient's terminal report.
