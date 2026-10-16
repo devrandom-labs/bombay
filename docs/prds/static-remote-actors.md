@@ -33437,3 +33437,133 @@ and80 role executions per profile. Required logs, archives and inventories are
 retained under sdk-adoption/delivery/ci-required and ci-native. Normal merge
 49cc8971 is now integrated here; research Rust and both lock files remain exact
 to9e305892. No research runtime or full-service/privacy acceptance is inferred.
+
+
+### Cold declarations — complete caller comparison before retention
+
+The family-Absent prerequisite is complete at9e305892. Fresh source audit
+cold-prerequisites.json (aaec2193) binds105 current owner/API/test/document
+inputs,399 locked packages and18 manifests without patch/replace. Behavior and
+Actors0.26.0/macros0.14.2 select98983b4; the complete selected instructions were
+reread. Address0.3.0, Communication0.1.6, private Observe, Timers0.2.0, Entity
+and Engine retain their existing responsibilities. The published TLS selection
+is unchanged. Old RequestKey<Replies> and family-Absent diagnoses are historical.
+
+Exact blocker: the current Export row fixes one Replies protocol and eagerly
+allocates its client before an operation is selected. One actor cannot retain
+IncrementProcessed, ReadValue and exact-root Stop in that row, nor original
+move-only Ledger Append and terminal Read, without splitting replay or inventing
+reply endpoints. The existing Export remains the sole declaration/replay owner.
+No new Service wrapper, actor, effect language, runtime, registry or Native port
+is selected. These are Bombay service-composition policies, not new actor laws.
+
+Compare ordinary concrete functions and opaque sealed declaration composition.
+The prior concrete-private-return privacy failure does not test return-position
+impl Trait: that alternative needs its own actual complete caller. A declaration
+owns pure command projections and concrete reply encoders; runtime-owned closed
+native storage owns actual constructor Results, admissions and acquired replies.
+The application must never construct or interpret Native. Stop control and its
+recipient must be bound from the same actual startup handle; protocol equality
+alone is insufficient. Append and Stop allocate no reply endpoint.
+
+Custody equation: original cold Application/Network/declaration/provider intent
+and genuine Work presence enter the existing Invoke. Successful startup binds
+actual capabilities, then yields bare Work presence and optional exporting work.
+Missing host, cold surrender, staging failure, native declaration refusal and
+service panic retain distinct original products. Retain exact request/proof/
+receipt originals on duplicate, conflict, count or constructor refusal. Preserve
+the existing policy of returning originals rather than silently installing a row
+whose constructor was refused. For a fresh row, identity/conflict/count lookup
+precedes native construction; a fresh current-permission loan covers construction,
+mailbox/control attempt and storage of its actual Result. Interrupted construction
+and interrupted admission stay distinct. A duplicate cannot repeat the effect.
+
+Smallest complete comparison: one actual Counter declaration with Increment,
+Read1 and exact-root Stop; one actual Ledger declaration with original Box Append
+and terminal Read. Both use the SAME existing retain/key/duplicate/conflict path,
+not a second table. Bind identity+sequence across operations and refuse conflicting
+protected bytes before allocation. Observe the actual source and correlation,
+full root/child/family custody, both notifications and Session close. Borrowed
+non-Send provider results remain in outside slots. Native receiving must continue
+while another provider is pending. An omitted export poll, replay-before-lookup,
+wrong-control binding or close-before-drain must fail independent final oracles.
+A type alias, empty collection or constructed-and-dropped declaration is not this
+comparison; compile-only evidence earns no runtime or complete-service credit.
+
+Before any production edit, execute the concrete candidate and review its complete
+ownership/refusal/retirement equations. Retire ingress, retain accepted Query and
+refusal prefixes, close/drain actual native clients including late tails, join
+root/children/families and notifications, then close the actual Session. No
+indefinite exporting future or caller drop sequence is a retirement policy.
+SDK Get/Reply/FINAL still synchronously publish; Drop with zero refill wait removes
+only that wait. No cooperative publication, whole-call bound or policy has been
+selected. Keep that dependency explicitly unresolved rather than infer safety
+from async syntax or introduce a worker pool without a separate failing law.
+
+Forecast for this comparison only: PRD/status, one temporary test-module mount,
+and at most three isolated candidate/consumer/recorder files; no retained
+production edit or public type (+0/-0). At most900 authored verification Rust,
+80 recorder and100 record lines, counting rejected candidates. The copied
+unchanged Export source must be distinguished from authored changes, frozen and
+charged honestly. Production lowering requires a further bounded pre-edit record
+and the actual intended regression, not compiler-driven generic machinery.
+Known1829 production and12 public reservations carry every2500/18/125/20000
+historical/rejected/external extent; no reset or headroom claim. Cold input and
+mixed-row composition, drain/close, publication, privacy and all full remote
+acceptance remain open until their own gates pass.
+
+
+Before the larger candidate, falsify one precise RPIT privacy counterexample:
+a generic caller bounded only by public Declaration may inherit Commands methods
+and obtain its Native even when Commands lives in a private module. Compile an
+outside caller invoking actual client construction through that bound. A pass
+rejects this particular supertrait design; it is not service/replay/runtime
+success. This small preflight stays within the recorded external comparison
+budget and avoids constructing a larger model whose privacy equation is false.
+
+
+Actual privacy preflight rejects the public-supertrait candidate. Pinned Nix
+Cargo --lib --no-run exits0 with588 unchanged inputs: an outside generic caller
+bounded only by Declaration invokes establish and obtains the actual native
+client constructor Result for both existing protocols, without importing Commands.
+This is compile-only evidence of the unwanted API access, not a runtime test.
+The Rust Reference supertrait rule and API Guidelines future-proofing section
+support this reading. Frozen privacy-source retains every bound input before
+restoring the exact original test-module mount. No production/public type is
+retained. Do not conceal the inherited methods with a dummy private token.
+Reopen the model at ordinary public pure products and a private interpreter;
+module sealing alone did not hide native construction from generic consumers.
+
+
+The rejected privacy form adds the existing DEAD_ENDS record to the comparison
+forecast. Reopen only its record allowance to150 lines across three guides;
+production remains0, public types0, external Rust900/scripts80 and all cumulative
+charges unchanged. The122-line falsifier and27-line recorder are fully charged;
+no larger retained-row candidate or shipping API was authored.
+
+
+Select the smaller privacy comparison next: three concrete public pure products
+(Reply, Submission, Stop) and ordinary tuples, with crate-private Commands and
+compatible crate-private native owners. The owning concrete fields/operations
+stay private. Existing private-bound precedent is Node187/execution49/interface306;
+no public supertrait entails Commands. Compare actual select/construct/attempt/
+receive bodies and an outside attempted native call. This is the privacy portion
+of the larger comparison only: actual Export replay/Node cold attachment remain
+blocked until linked and executed. No shipping production/API selection follows.
+
+
+Use actual separately compiled library/consumer sources for this privacy portion,
+linked to the fresh pinned remote library build. Compare the concrete private
+interpreter behind public pure products, then deliberately import/call it from
+the consumer. Allow three candidate Rust files plus the recorder and one small
+consumer manifest; keep900 authored Rust/80 script/150 record ceilings. Actual
+Counter and Ledger sources are reused; no second replay model is introduced.
+
+Named products pass the separate-crate compiler comparison after two owning-import
+corrections; the initial E0432 remains setup-only. Corrected library406 and consumer108
+lines typecheck all five native paths. The attempted private Commands import fails
+with E0603 and dependent E0599; exact restoration passes with the same597 inputs.
+Frozen sources, actual linked artifacts, logs and limits are in cold-comparison/.
+The initial public-supertrait form stays rejected. No runtime, actual Export replay,
+cold Node, permission or retirement evidence follows. Three guide paths retain
+production/tests+0/-0, public types+0/-0; all historical and external charges carry.

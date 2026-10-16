@@ -523,3 +523,13 @@ Focused published TLS dependency adoption merged through PR385 at49cc8971.
 All six contexts pass; required/native logs and artifacts were independently
 reviewed. Research integrates that actual main merge without Rust or lock drift.
 Full service, privacy and all remote acceptance gates retain their own scope.
+
+
+Next remote stage records fresh105-input prerequisites and a bounded complete
+ordinary-Rust cold-declaration/mixed-operation comparison. Reuse one Export
+replay owner; exact cold originals, constructor refusal, same-handle Stop and
+joined drain/close remain required. SDK publication policy stays unresolved.
+No new production/API or full remote acceptance follows from the comparison plan.
+
+Named pure products pass a separate-crate static privacy comparison; the public
+supertrait form is rejected. Actual Export/Node/replay/lifetime integration is open.
