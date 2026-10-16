@@ -469,3 +469,12 @@ Incoming TLS successor preparation now has the intended actual old-ledger failur
 source/public types unchanged. Local verifier tests6/0, historical cohort4/0 and
 locked offline metadata pass. Archive/native/CI/publication/adoption gates remain
 open, as do the full remote-service and privacy requirements.
+
+SDK final-source local native debug/optimized pass69/0/2 each; independent review
+confirms all69actual names. PR14 requiredCI remains pending. A bounded compile-
+only Counter/Ledger composition comparison is selected after fresh49-scope owner
+verification; it changes no production/API or constructor-refusal policy.
+
+The bounded corrected328-line ordinary-Rust comparison compiles after exactly
+two source-known constructor-bound corrections; independent execution review
+passes. Temporary mount removed; no production/API or runtime acceptance added.

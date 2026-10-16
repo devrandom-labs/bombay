@@ -32931,3 +32931,49 @@ Linux required CI is independent and still pending. Counts are host/source scope
 At this checkpoint root records add157 lines/remove0; both roots have
 zero untracked source files, and the selected stage remains20SDK+2rootrecords.
 The runtime Rust/public-type delta is0; no full service or privacy gate closes.
+
+Local SDK native verification is now terminal0:12 harnesses,69passed/0failed/
+2existingignored in each profile. Independent review85e7d56f confirms all69
+actual success names, including eight split tracing/ok lines; initial61-name
+extraction is preserved and corrected without changing raw logs or counts.
+
+### Heterogeneous operation composition — compile comparison
+
+Select only the bounded ordinary-Rust comparison under standing delegation and
+two-pass scope reviewb6d99984. Fresh prerequisites607cafb4 re-resolve lock3ca,
+no patches, Behavior/Actors0.26.0 at98983b4/macros0.14.2; Address0.3.0/9f058dc,
+Communication0.1.6/963067e, private Observe and Timers0.2.0/9369d1f. Fresh API,
+tests/docs and actual client/sender/lifecycle reads cover49 current source scopes.
+Behavior owns pure Actions, Actors shutdown policy, Address claims, Communication
+exact payloads, Observe terminal facts and Timers generations; none changes.
+The selected SDK remains published1.10.9; PR14 successor/adoption are pending.
+
+Blocker: existing Export fixes all rows to one Replies type. Before selecting
+production storage/API, compile exact external selection.rs55822a49 (273rawlines)
+as a temporary private child of existing Node tests with their actual Counter/
+Ledger fixtures. It compares concrete reply/sender/stop leaves in closed sums.
+Fresh source already proves both establish methods omit the owning sealed
+ExternalTarget requirement Target::Msg:Send+'static; obtain actual unchanged
+compiler diagnostics before adding only those method bounds. No provider/Work/
+receiving bound, trait, macro, key change or public generic Native surface.
+
+Forecast: production +0/-0/net0; public API +0/-0types. Temporary existing
+node/tests/mod.rs mount at most8lines, corrected/formatted external comparison
+at most420lines; new verification source at most500lines, these records at
+most55lines. Original273 remains charged; known1668,12/18 and all2500/125/20000
+historical/external uncertainty carry without reset/headroom certification.
+Current66 unmerged/86 historical paths do not grow: mount reuses an existing
+root path and is removed after compile evidence. Keep originals and exact Nix
+commands/results. Compile acceptance selects no constructor-refusal/count law,
+replay integration, native lifecycle/public privacy or full-service behavior.
+
+Actual unchanged273-line baseline returns101 with exactly two E0277 errors at
+client_to39/sender_to85, citing the existing sealed constructor requirement.
+Corrected328-line comparisona9aca5eb adds only those two method-local bounds
+and ordinary formatting; pinned Cargo --lib --no-run rebuilds successfully,
+zero errors and unchanged input hashes. No runtime test executes. Independent
+two-pass source3f53a171 and executedac13adf3 reviews pass; the temporary3-line
+mount is removed and its original committed bytes restored exactly.
+Measured new source:328external Rust+21tool+3temporary mount; root records
++55/-0. Production/public API remain0; original273history stays charged.
+Shared replay, refusal/count policy, service lifetime/public privacy remain open.
