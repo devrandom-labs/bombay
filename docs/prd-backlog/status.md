@@ -25,7 +25,7 @@ acceptance remain open. PR382's test-only startup compatibility repair merged
 after all six CI checks and final independent review; it closes no full remote row.
 
 The input stage is committed/pushed asc1eed5e with immutable evidence; the broad
-results above describe that checkpoint. The following family-composition WIP
+results above describe that checkpoint. The following family-composition checkpoint1cd40a9
 reuses the existing family invocation and complete receiving through the same
 Node path. Its real nonempty-family witness and50-case original-Work consumer
 cohorts pass both profiles; the deliberate report-loss check and exact restored
@@ -37,6 +37,12 @@ assertion spelling changes receive independent review and focused reruns in both
 profiles. It adds no public type or
 second runtime. The remote PRD records the pre-edit comparison, exact output
 changes, extra allocation and source budget.
+
+The separate declaration diagnostic correction has fresh owner verification and
+an actual pre-edit debug/optimized regression. It preserves the original cause
+while bounding outer Display/Debug. Healthy focused and all21 Application-client
+controls pass in both profiles; strict lint and formatting pass. Service ownership
+and Query privacy remain open; focused main delivery still requires review and CI.
 
 Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,

@@ -31095,3 +31095,140 @@ carry, as do every125-owner/20000-verification historical/external extent. Final
 independent counts, review and the durable research checkpoint must bind this
 complete14-path tracked/untracked delta. This is a scoped prerequisite, with all
 fullR01-R25/AUTH1/NET1 obligations still open.
+
+
+### Declaration diagnostics — actual native refusal before production
+
+At clean pushed1cd40a9, fresh feature-local verification reopens the current
+owners rather than importing a retired prototype: Behavior/Actors0.26.0 at
+98983b4 and complete instructions2b7a9195; macros0.14.2; Address0.3.0/9f058dc,
+Communication0.1.6/963067e, Timers0.2.0/9369d1f; private Observe and current
+Entity; SDK1.10.9/Config1.10.2/result1.10.1, Tokio1.53.1; root lock3caba2a6,
+no patches. Fresh behaviorf04dc310 (70 sources), primitives38310cc6 (36 sources)
+and transport0b734781 (36 sources) record API/tests/docs, exact hashes, owners,
+dependency edges and their bounded limits. They are source verification, not
+new test execution or full-service clearance. Behavior Actions/Actors templates,
+Address claims, Communication original refusals, Observe independent facts,
+Timers scheduling and Entity/native lifetime owners require no change here.
+
+The concrete R25/public-privacy blocker is current ExportError::Declaration:
+Display interpolates the actual native error and derived Debug prints it too.
+Keep the same actual owned native cause, exact standard Error::source pointer,
+original returned target and all constructor/cleanup results. Public outer
+Display becomes the bounded statement "network declaration was refused";
+Debug uses the same existing startup-error tuple formatting pattern. Name the
+existing native Box through its exact standard Error type in this public field,
+as NodeStartupRefusal already does. Selected zenoh-result1.10.1 defines the
+SDK alias as that very Box; move it unchanged, without boxing, reconstruction,
+new erasure, error conversion, variant or compatibility layer.
+
+The smallest end-to-end regression extends the existing actual seven-constructor
+refusal test in application_clients/network_replay/refusals.rs. It already
+obtains the genuine invalid-key SDK error and original target, then receives
+all three actual Applications' native/notification/Work outcomes and Node close
+before inspecting refusals. Add one complete pair of expected public Display
+and Debug strings beside its existing native source allocation check. Keep that
+allocation oracle as the single proof of native source identity. No synthetic error,
+new actor/protocol/endpoint, native Query traffic or timeout oracle is needed.
+Review the complete changed test twice before mounting; run the intended prior
+source failure in debug and optimized builds before the production edit.
+
+Selected smallest implementation reuses ordinary fmt::Display/Debug/Error
+implementations and the current startup formatter. No wrapper, trait, helper,
+macro, new source module, service port or second failure owner is needed.
+The nine existing error alternatives/source paths remain nine; the runtime,
+protocols, actor control states and output products remain unchanged. Debug's
+existing public trait is implemented manually instead of derived. Check naming
+and errors against the official [Rust error guidelines](https://rust-lang.github.io/api-guidelines/interoperability.html#c-good-err)
+and [Error::source](https://doc.rust-lang.org/std/error/trait.Error.html).
+
+Pre-edit change record: production only remote/export.rs, at most20 net new
+lines; existing test at most12 net new lines; current PRD/status/acceptance and
+public API table, at most six paths. Public types+0/-0, no new variants, dependency
+or lock change. Reuse the current declaration/actual native error box and delete
+its two automatic text-disclosure paths. This is a positive source addition
+for privacy, not code reduction. Carry known1581/2500 production,12/18 public
+reservations and every125-owner/20000-verification historical/external extent.
+The actual tracked/untracked delta is measured at the next checkpoint.
+
+The service startup/retirement, multi-operation replay and Query privacy gates
+remain independent. Publication commitment/cancellation/resource policies are
+still being compared; no worker pool, Send provider bound, new lifecycle or
+public service API follows from this diagnostic correction. All fullR01-R25,
+AUTH1 and NET1 stay open, and API/release delivery remains held.
+
+
+The selected7-line test extension2c16483b passes two author and two independent
+source reviews061305b2 before mount. A redundant proposed source-text equality
+was rejected before execution because the original pointer oracle already
+expresses that fact once. Actual prior-production runs fail0/1 in both debug
+and optimized builds, logs076e9d27/a43381eb, only at the new format pair after
+all earlier original-target/source/native/cleanup observations. Actual output
+contains both the native invalid-key text and its source location. No compiler,
+setup or earlier cleanup failure is credited. Production remains135bc702 until
+the selected ordinary formatter change is reviewed and applied.
+
+
+Independent source reviewb8504a53 approves the selected ordinary formatter91b7562
+before application: production+13/-5/net8, same nine alternatives, public types
++0/-0. The selected SDK standard-feature chain proves its native Error alias is
+exactly the same standard boxed type; no new erasure or allocation occurs.
+Error::source and the entire declaration/retention/admission/native runtime tail
+are byte-identical. Debug's tuple style applies to all variants intentionally;
+Display changes only native Declaration. Actual baseline reviewd6f8f4cb also
+records that the final refusals.is_empty assertion follows the failing tuple
+and receives no negative-run credit. The first healthy debug control passes
+1/0/0 on the unchanged reviewed test. Optimized and broader controls remain
+pending. At this checkpoint the complete tree has five paths including current guidance:
+production+13/-5/net8, tests+7/-0, public types+0/-0; known combined1589/2500,
+12/18 public reservations and all125/20000 historical/external extents carry.
+
+
+Healthy focused declaration controls now pass1/0/0 in both profiles, followed by
+all21 Application-client cases in each profile. Strict workspace/all-target/
+all-feature Clippy and formatting pass. Production stays91b7562, test2c16483b,
+root lock3caba2a6; Error::source identity and all original constructor outcomes
+are checked on actual native errors. The complete six-path change is
+production+13/-5/net8, tests+7/-0, public types+0/-0. Current public guidance and
+acceptance describe only this outer-diagnostic policy. Known combined1589/2500,
+12/18 reservations and all125/20000 historical/external extents carry.
+
+The same affected formatter135bc702, refusal-test bodydfb2a66d and lock3caba2a6
+exist byte-identically on fresh mainfbb5c742. Prepare a focused main contribution
+for this existing disclosure, with fresh main-context verification and its own
+local/CI/review results before normal merge. Do not carry private Network/family
+work or unselected service designs into that contribution. This adds no public
+capability or type and does not waive the unfinished service/API/release hold.
+Only actual reviewed CI-passing merge establishes delivery; private research
+verification and its eventual checkpoint are not that claim. The separate Query
+privacy gate remains enabled and must be observed independently.
+
+
+Final local diagnostic receipts bind export91b7562/test2c16483b: focused
+D/R1/0 logs3d44da9a/6289f6a8, consumers D/R21/0 logs49396709/6b4398d9,
+strict lintf6351f0b and formatd0c9ee04. The current remote_surface rerun returns101
+solely because remote_query still compiles; remote_configuration denial passes.
+No current whole-workspace test result is inferred from these scoped runs.
+All actual pre/post source/commands/raw-log hashes remain in declaration
+verification.json for the final immutable checkpoint and independent review.
+
+Commands run through the same pinned Nix profile as the preceding stage:
+
+```sh
+cargo test --offline --locked -p bombay-rs --features remote --test application_clients network_replay::refusals::public_exports_preserve_constructor_refusals_and_original_targets -- --exact
+cargo test --release --offline --locked -p bombay-rs --features remote --test application_clients network_replay::refusals::public_exports_preserve_constructor_refusals_and_original_targets -- --exact
+cargo test --offline --locked -p bombay-rs --features remote --test application_clients
+cargo test --release --offline --locked -p bombay-rs --features remote --test application_clients
+cargo clippy --offline --locked --workspace --all-targets --all-features -- -D warnings
+cargo fmt --all -- --check
+cargo test --offline --locked -p bombay-rs --features remote --test remote_surface
+```
+
+The first two commands execute once on actual old production (intended failure)
+and once on fixed production (success); no retagged evidence or synthetic cause.
+The final command retains its explicit known privacy failure. The complete
+six-path tracked/untracked census, independent review and durable research
+checkpoint must retain production+13/-5/net8, tests+7/-0 and public types+0/-0,
+plus all record changes and carried1589/2500/12-of18/125/20000 extents. This is a
+privacy correction with positive source delta, not code reduction. Full service,
+full R25/R01-R25/AUTH1/NET1, Query hiding and release gates remain open.

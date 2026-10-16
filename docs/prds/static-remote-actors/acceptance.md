@@ -34,6 +34,13 @@ controlled subprocess unexecuted. Node's existing public type gains Families;
 empty-Node staging and prepared Arc products change explicitly. No additional
 runtime, service/privacy acceptance or full witness is established.
 
+The separate declaration-diagnostic correction keeps the exact native error
+source and original target while bounding outer Display/Debug. Its real native
+constructor-refusal oracle fails on prior source in both profiles; fixed focused
+and all21 Application-client controls pass in each profile. Strict lint and
+formatting pass. This is scoped local diagnostic evidence; it establishes no
+Query privacy, full R25, service lifecycle or merged-delivery claim.
+
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.
