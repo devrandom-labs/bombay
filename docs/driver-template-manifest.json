@@ -3,10 +3,10 @@
   "owner": {
     "package": "bombay-behavior-actors",
     "version": "0.27.0",
-    "revision": "648896595e45e9d97db3c87d1e72e2d6205e8a1d"
+    "revision": "7644735358a338b4574ac81982d68b2450bad53c"
   },
   "engine_contract": "universal Behavior execution only",
-  "inventory_contract": "Source-selected candidate 648896595e45e9d97db3c87d1e72e2d6205e8a1d over published270 base b8307d1; actual registry manifest/lock adoption remains pending the normal breaking release. Event/effect families name the tested typed contracts, not Engine policy or runtime correctness certification.",
+  "inventory_contract": "Source-selected candidate 7644735358a338b4574ac81982d68b2450bad53c over published270 base b8307d1; actual registry manifest/lock adoption remains pending the normal breaking release. Event/effect families name the tested typed contracts, not Engine policy or runtime correctness certification.",
   "templates": [
     {"id":"supervisor.directory","public":["supervisor::directory::DynamicSupervisor","supervisor::directory::new"],"source":"src/templates/supervisor/directory/mod.rs","event":"DynamicSupervisorEvent<Key, Worker, Plan>","lanes":["ObserveChild","ProxyOperation","ScheduleAfter","start/replace/stop/query/cancel replies","lifecycle delivery","DiagnosticAction"],"composition":"Births<StableProxy<Worker, Plan>> with DynamicSupervisorRequests in declared order","evidence":["tests/dynamic.rs","tests/atomic_request_product.rs"]},
     {"id":"pool.queue","public":["pool::queue::FifoPool","pool::queue::new"],"source":"src/templates/pool/queue/mod.rs","event":"FifoEvent<Role, W, P, Job, WorkerResult, ActionItemResult<PrepareWorkers>, WorkerPreparation, Replies>","lanes":["ObserveChild","InitializeWorker","StartWorker","customer outcome delivery","AssignWorker","PrepareWorkers","ScheduleAfter","ShutdownEstablished","DiagnosticAction"],"composition":"Births<StopOnShutdown<W>> with FifoRequests in declared order","evidence":["tests/fifo_pool.rs","tests/fifo_pool/retirement.rs"]},
@@ -15,7 +15,7 @@
     {"id":"proxy","public":["proxy::StableProxy"],"source":"src/templates/proxy/mod.rs","event":"ProxyEvent<W, P>","lanes":["ObserveChild","InitializeWorker","StartWorker","ShutdownEstablished","EstablishedDelivery","ReportToParent<ProxyOutcome>","ReportToParent<ProxyDiagnostic>"],"composition":"Births<StopOnShutdown<W>> with ProxyEffects in declared order","evidence":["tests/proxy.rs","tests/stable_proxy_shutdown_model.rs"]},
 
     {"id":"composition.machine","public":["Machine"],"source":"src/machine.rs","event":"User<A, M>","lanes":["none (Vec<Never>)"],"composition":"standalone finite-state transition Behavior with NoBirths","evidence":["tests/algebra.rs"]},
-    {"id":"composition.message-adapter","public":["MessageAdapter","MessageAdapterWithRoute"],"source":"src/composition/message_adapter.rs","event":"User<Route::Protocol::Addr, Input>","lanes":["Route::Sends delivery"],"composition":"standalone input-to-message adapter with NoBirths","evidence":["src/composition/message_adapter.rs#[cfg(test)]"]},
+    {"id":"composition.message-adapter","public":["MessageAdapter"],"source":"src/composition/message_adapter.rs","event":"User<Route::Protocol::Addr, Input>","lanes":["Route::Sends delivery"],"composition":"standalone input-to-message adapter with NoBirths","evidence":["src/composition/message_adapter.rs#[cfg(test)]"]},
     {"id":"composition.stash","public":["Stash"],"source":"src/stash.rs","event":"B::Event","lanes":["inner B::Sends"],"composition":"transparent wrapper preserving B protocol and births while deferring selected events","evidence":["tests/algebra.rs"]},
 
     {"id":"discovery.presence","public":["Presence"],"source":"src/discovery/presence.rs","event":"TimedEvent<User<A, PresenceMessage<K, Route>>>","lanes":["reply delivery","ScheduleAfter"],"composition":"standalone presence policy with NoBirths","evidence":["src/discovery/presence.rs#[cfg(test)]"]},

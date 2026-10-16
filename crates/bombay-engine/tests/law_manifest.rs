@@ -6,7 +6,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 const BEHAVIOR_REVISION: &str = "b8307d1a763dfd2998ef140dba488f32eb15d010";
-const ACTORS_REVISION: &str = "648896595e45e9d97db3c87d1e72e2d6205e8a1d";
+const ACTORS_REVISION: &str = "7644735358a338b4574ac81982d68b2450bad53c";
 const EVIDENCE_BEHAVIOR_REVISION: &str = "98983b456c4a8f7cd0911982eaf9488455b6d8bc";
 
 #[derive(Deserialize)]

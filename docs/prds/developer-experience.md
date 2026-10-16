@@ -227,3 +227,29 @@ Keep native transport tests in their private owner. HTTP/Entity and remote
 callbacks preserve independent work, cleanup, notifications and original refusals.
 No source-line reduction, happy-path example or selected test pass completes
 the programme.
+
+The adapter follow-up is isolated on `codex/devx-adapters`, selecting owner
+7644735 in private verification only. Its one canonical
+`MessageAdapter::new(destination, map)` replaces the route-aware long name and
+logical-only alias. Existing bodies, bounds and interpreters are unchanged;
+explicit logical types become `MessageAdapter<Input, Recipient<Protocol>>`.
+The pre-edit short-name failure and identifier-only control precede the owner
+edit. Both retained native journeys account for complete allocations, unread
+inputs, exact mapped rejections, all retirement fields, one empty terminal Stop,
+cleanup and both notifications. They pass Rust1.99/1.96 debug/release, strict
+current Clippy and formatting. Engine's11 inventory checks pass each compiler/
+profile separately. The initial strict lint failure and equivalent assertion
+repairs remain recorded in the owning PRD; both independent reviews pass.
+
+Owner7644735 passes eleven native Nix gates (993 nextest,120 doctests and50
+reference controls) and a separate online audit. Actual extracted archives match
+223 shipped Rust files and247 archive members; both native journeys pass all
+four configurations with fresh compilation of all three extracted owners and
+Bombay. All2332 bound inputs stay unchanged through those runs. The four-file
+Bombay delta is production+0/-0, tests+341/-1/net340, public types+0/-0;
+metadata names the exact candidate without relabelling historical evidence.
+No control state, transition authority, protocol or structural user path is
+added; checkpoint:pass. These source/archive proofs do not publish an owner.
+Normal registry adoption and complete Bombay gates remain required; ready
+PR107/108/109 keep their reviewed heads. The owning PRD retains the sole
+requirement checklist and the bounded evidence.
