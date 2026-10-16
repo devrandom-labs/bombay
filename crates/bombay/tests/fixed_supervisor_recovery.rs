@@ -12,11 +12,16 @@ use std::mem;
 use std::sync::{Arc, Mutex, PoisonError};
 use tokio::runtime::Builder;
 
-use behavior_actors::atomic::{
-    ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticAccepted,
-    DiagnosticDisposition, FailureReaction, FixedCommand, FixedDiagnostic, FixedSnapshot,
-    FixedSupervisor, FixedSupervisorEvent, OrderedRoles, Recovery, RestartLimit, RestartRelease,
-    Strategy, WorkerPreparationFailureReason, WorkerSource, WorkerSubmission, fixed,
+use behavior_actors::composition::replies::ExactReplies;
+use behavior_actors::diagnostic::{DiagnosticAccepted, DiagnosticDisposition};
+use behavior_actors::lifecycle::ActorDrainPolicy;
+use behavior_actors::supervisor::roster::{
+    self, CapabilityResult, FailureReaction, FixedCommand, FixedDiagnostic, FixedSupervisor,
+    FixedSupervisorEvent, Recovery, RecoveryPolicy, Strategy, WorkerPreparationFailureReason,
+};
+use behavior_actors::worker::{
+    OrderedRoles, RestartLimit, RestartRelease, StartupLimit, StartupPlan, WorkerSource,
+    WorkerSubmission,
 };
 use behavior_actors::{Exit, ShutdownRequested, StopOnShutdown};
 use bombay::actors::ActorExt as _;
@@ -62,7 +67,7 @@ struct ActivationNotice {
     activated: mpsc::UnboundedSender<WorkerRole>,
 }
 
-impl ActivationPlan for ActivationNotice {
+impl StartupPlan for ActivationNotice {
     type Ready = ();
     type Rejection = Never;
 
@@ -70,7 +75,7 @@ impl ActivationPlan for ActivationNotice {
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
+    async fn start(self) -> Result<Self::Ready, Self::Rejection> {
         self.activated
             .send(self.role)
             .unwrap_or_else(|_| panic!("the application observes each activation"));
@@ -134,7 +139,7 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(*role);
-        WorkerPreparationStart::Submitted(WorkerSubmission::activated(
+        WorkerPreparationStart::Submitted(WorkerSubmission::with_startup(
             Worker.stop_on_shutdown(),
             ActivationNotice {
                 role: *role,
@@ -156,7 +161,7 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
             .unwrap_or_else(PoisonError::into_inner)
             .push(*role);
         match self.policy {
-            PreparationPolicy::SubmitBoth => Ok(WorkerSubmission::activated(
+            PreparationPolicy::SubmitBoth => Ok(WorkerSubmission::with_startup(
                 Worker.stop_on_shutdown(),
                 ActivationNotice {
                     role: *role,
@@ -168,10 +173,17 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
     }
 }
 
-type Supervisor =
-    FixedSupervisor<WorkerRole, ManagedWorker, ActivationNotice, Workshop, Infallible, Infallible>;
+type Supervisor = FixedSupervisor<
+    WorkerRole,
+    ManagedWorker,
+    ActivationNotice,
+    Workshop,
+    Infallible,
+    Infallible,
+    ExactReplies,
+    ExactReplies,
+>;
 type RootSupervisor = StopOnShutdown<Supervisor>;
-type Status = MessageProtocol<MailAddr, FixedSnapshot<Worker>>;
 type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, Worker>>;
 
 bombay::topology! {
@@ -179,7 +191,6 @@ bombay::topology! {
         root { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts { status: Status; capability: Capability; }
     }
 }
 
@@ -192,9 +203,9 @@ fn prepared_supervisor(
     let roles = OrderedRoles::new(WorkerRole::Primary, [WorkerRole::Secondary])
         .expect("the two declared roles are unique");
     let initial_activated = activated.clone();
-    fixed(
+    roster::new(
         move |role: &WorkerRole| {
-            WorkerSubmission::activated(
+            WorkerSubmission::with_startup(
                 Worker.stop_on_shutdown(),
                 ActivationNotice {
                     role: *role,
@@ -203,21 +214,25 @@ fn prepared_supervisor(
             )
         },
         roles,
-        ActivationPolicy::new(2).expect("two workers fit the activation policy"),
-        Recovery::permanent(
-            Workshop {
-                prepared,
-                activated,
-                policy,
-                preparation,
-            },
-            Strategy::OneForAll,
-            RestartLimit::new(2, Duration::from_secs(30)),
-            RestartRelease::immediate(),
-        ),
-        FailureReaction::StopSupervisor,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        roster::Config {
+            startup: StartupLimit::new(2).expect("two workers fit the activation policy"),
+            recovery: Recovery::permanent(
+                Workshop {
+                    prepared,
+                    activated,
+                    policy,
+                    preparation,
+                },
+                RecoveryPolicy {
+                    strategy: Strategy::OneForAll,
+                    limit: RestartLimit::new(2, Duration::from_secs(30)),
+                    delay: RestartRelease::immediate(),
+                },
+            ),
+            failure: FailureReaction::StopSupervisor,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
     .build()
     .unwrap_or_else(|_| panic!("both initial workers are prepared"))
@@ -1055,7 +1070,7 @@ bombay::topology! {
         supervisor { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts { status: Status; capability: Capability; exports: PreparationExports; }
+        hosts { exports: PreparationExports; }
     }
 }
 #[derive(Default)]

@@ -53,6 +53,53 @@ Evidence: REGISTRY-027-INPUTS, REGISTRY-027-CURRENT-CALLER-RED-EXACT and
 registry-027-current-consumer/{inputs,metadata,sources,results}.json.
 
 
+Current270 caller migration, pre-edit: the preceding four-adapter real pool
+journey is independently accepted. First migrate the existing fixed supervisor
+startup and recovery suites using the published roster Config/RecoveryPolicy,
+StartupPlan and exact reply defaults. Preserve all original actions, failure,
+retirement and authority assertions; remove unused status/capability host rows,
+retaining actual logical exports. No new semantic type, policy, bound, wrapper
+or interpreter. Run complete native startup, coordinated recovery, preparation
+rejection and joined cancellation before broad catalogue migration.
+
+The measured inventory finds38 files containing old API names (including
+historical records and generated diagnostics); only current contracts migrate.
+The expanded2026-10-09 budget covers this bounded application stage. Subsequent
+library fixtures, examples, compile denials, guide/coverage manifests and current
+documentation use only the already-proven owner syntax. Public types/states/
+branches added0; retained signatures and every independent oracle must conserve
+ownership. Ordinary examples use inferred clients, named Config fields and
+startup closures; advanced fixtures retain real logical reply choices explicitly.
+Regenerate diagnostics from actual denied programs on supported compilers; no
+weakened expected failures. REGISTRY-027-MIGRATION-BASE.json freezes all original
+tracked files before caller edits. Costs and exact deltas remain measured outputs,
+not claims inferred from shorter examples.
+
+Focused supervisor migration passes the exact five existing startup, coordinated
+recovery, second-role rejection and independently joined root/child retirement
+cases on current1.99 debug/release17.073/47.214s and minimum1.96 debug/release
+13.283/53.452s. All207 original assertion invocations (19/188) and actions remain
+byte-identical. The three remaining runs conserve624 frozen inputs; initial debug
+has its separate saved receipt, bound afterwards rather than retrospectively
+credited as pre-run-frozen. Two source/oracle and two gate reviews pass.
+
+Only the published names, Config/RecoveryPolicy grouping and exact reply choices
+change; every original startup/recovery/failure/drain/diagnostic value survives.
+Four unused aliases and six unnecessary host entries disappear; actual capability
+mailboxes and the PreparationExports host remain. Production+0/-0; tests+89/-58/
+net31, public types+0/-0, three changed files including this record. No actor
+state sum, subordinate alternative, transition branch, policy default or runtime
+module changes. Existing startup and Driver ownership laws still govern; no new
+arrival history, repeated cause, false cardinality, nested authority, semantic
+boolean or structural ordinary-user syntax. Disposition: pass this mechanical
+adoption. Existing partial retirement helpers, startup notices that do not alone
+prove readiness and unbounded receives are bounded oracle limitations; the remote
+export case is preserved but not executed by this default-feature matrix.
+Catalogue, remote, complete custody and final repository acceptance remain open.
+Evidence: REGISTRY-027-SUPERVISOR-{MIGRATION,SOURCES,RESULTS}, CURRENT-DEBUG and
+REMAINING receipts under the existing evidence root.
+
+
 PR375 merge repair, before editing: capture upstream67a286c (PR374) and
 retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native
 check snapshot untouched. Preserve simultaneous native-reply/query receiving,
