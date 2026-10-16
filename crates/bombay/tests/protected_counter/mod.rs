@@ -7,13 +7,12 @@
 #[cfg(test)]
 use alloc_count::AllocCounter;
 use bombay::behavior::{
-    Behavior, BehaviorSettlements, ClassifySettlement, Here, Ingress, MessageProtocol,
-    SettlementStatus,
+    Behavior, BehaviorSettlements, Here, Ingress, MessageProtocol, SettlementStatus,
 };
 use bombay::prelude::*;
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport,
-    ApplicationLifecycle, ApplicationOutcome, InstalledActor, RetirementAssessment, TrySendError,
+    ApplicationLifecycle, InstalledActor, RetirementAssessment, TrySendError, WorkOutcome,
 };
 use core::ops::AsyncFn;
 use futures_util::FutureExt;
@@ -52,43 +51,25 @@ mod protected;
 mod counter;
 use counter::{Counter, CounterMessage, CounterProcessed, CounterSends, CounterValue};
 
+#[cfg(all(test, feature = "protected-transport"))]
+#[expect(
+    dead_code,
+    reason = "sharing costs use verification from the complete provider source also exercised by private Node tests"
+)]
+mod providers;
+#[cfg(all(test, feature = "protected-transport"))]
+#[path = "providers/sharing.rs"]
+mod sharing;
+
+mod requester;
+use requester::*;
+
+mod custody;
+use custody::completed_actor;
+
 struct CounterRequest {
     protected: Box<[u8]>,
     proof: Box<[u8]>,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterOperation {
-    Increment,
-    Read,
-    Stop,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Binding {
-    deployment: &'static str,
-    caller: &'static str,
-    controller: &'static str,
-    actor: &'static str,
-    host: &'static str,
-    protocol: &'static str,
-    runtime_generation: u64,
-    actor_generation: u64,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Identity {
-    binding: Binding,
-    sequence: u64,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Scope {
-    identity: Identity,
-    operation: CounterOperation,
-    grant_issuer: &'static str,
-    authority_generation: u64,
-}
-#[derive(Clone, Copy)]
-enum Permission {
-    Granted,
-    Revoked,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg(test)]
@@ -205,23 +186,6 @@ impl fmt::Debug for VerificationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, formatter)
     }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterRefusal {
-    Invalid,
-    Stale,
-    Unavailable,
-    Binding,
-    Grant,
-    Conflict,
-    RetentionFull,
-    Revoked,
-    Expired,
-    Count,
-    IndividualBytes,
-    TotalBytes,
-    Accounting,
-    Exhausted,
 }
 // Trusted finite authority survives the actual local Application executions.
 // It proves only this explicit profile contract; no cold restart durability.
@@ -370,21 +334,6 @@ struct CounterAuthorization<R> {
     retained: Vec<CounterReplayRecord>,
     reserved_bytes: usize,
     next_correlation: Option<u64>,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterStatus {
-    IncrementAdmitted,
-    ReadAdmitted,
-    StopAccepted,
-    StopRejected(ShutdownRejection),
-    PossiblyAdmitted,
-    Closed,
-    Refused(CounterRefusal),
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct CounterReport {
-    correlation: u64,
-    status: CounterStatus,
 }
 // Full products never become actor messages; only the outside caller consumes.
 struct CounterAdmission<R> {
@@ -835,56 +784,6 @@ impl CounterProofProfile {
         match self {
             Self::RecordedTest => "counter-record-test-v1",
             Self::ScheduledTest => "counter-scheduled-test-v1",
-        }
-    }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterProofPurpose {
-    Request,
-    Refused,
-    MailboxAdmitted,
-    IncrementProcessed,
-    ReadReply,
-    StopAccepted,
-    RetirementReport,
-}
-impl CounterProofPurpose {
-    fn name(self) -> &'static str {
-        match self {
-            Self::Request => "request",
-            Self::Refused => "refused",
-            Self::MailboxAdmitted => "mailbox_admitted",
-            Self::IncrementProcessed => "increment_processed",
-            Self::ReadReply => "read_reply",
-            Self::StopAccepted => "stop_accepted",
-            Self::RetirementReport => "retirement_report",
-        }
-    }
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CounterProtectedMeaning {
-    Request,
-    Refused(CounterRefusal),
-    IncrementAdmitted,
-    ReadAdmitted,
-    IncrementProcessed,
-    ReadReply(u64),
-    StopAccepted,
-    RetirementReport {
-        retirement: RetirementAssessment,
-        failures: ActorFailureAssessment,
-    },
-}
-impl CounterProtectedMeaning {
-    fn purpose(self) -> CounterProofPurpose {
-        match self {
-            Self::Request => CounterProofPurpose::Request,
-            Self::Refused(_) => CounterProofPurpose::Refused,
-            Self::IncrementAdmitted | Self::ReadAdmitted => CounterProofPurpose::MailboxAdmitted,
-            Self::IncrementProcessed => CounterProofPurpose::IncrementProcessed,
-            Self::ReadReply(_) => CounterProofPurpose::ReadReply,
-            Self::StopAccepted => CounterProofPurpose::StopAccepted,
-            Self::RetirementReport { .. } => CounterProofPurpose::RetirementReport,
         }
     }
 }
@@ -1598,334 +1497,10 @@ mod scheduled_provider {
     }
 }
 
-enum CounterServiceInput {
-    Verify(u64),
-    #[cfg(test)]
-    ReportConsumed(u64),
-    #[cfg(test)]
-    ReadObserved {
-        correlation: u64,
-        value: u64,
-    },
-    ProtectedConsumed {
-        correlation: u64,
-        purpose: CounterProofPurpose,
-    },
-}
-type CounterRequests = MessageProtocol<MailAddr, CounterServiceInput>;
-enum CounterRequesterMessage {
-    BeginProtected {
-        correlation: u64,
-        scope: Scope,
-    },
-    ProtectedReply {
-        correlation: u64,
-        scope: Scope,
-        meaning: CounterProtectedMeaning,
-    },
-    #[cfg(test)]
-    Begin(u64),
-    #[cfg(test)]
-    VerificationCompleted(CounterReport),
-    #[cfg(test)]
-    ReadObserved {
-        correlation: u64,
-        value: u64,
-    },
-}
-enum CounterRequesterState {
-    Protected {
-        correlation: u64,
-        scope: Scope,
-        receipts: Vec<CounterProtectedMeaning>,
-    },
-    Ready,
-    #[cfg(test)]
-    Verifying(u64),
-    #[cfg(test)]
-    WaitingRead(CounterReport),
-    #[cfg(test)]
-    Complete {
-        report: CounterReport,
-        observation: Option<u64>,
-    },
-}
-#[derive(thiserror::Error)]
-enum CounterRequesterError {
-    #[error("unexpected {kind}", kind = match .0.as_ref() {
-        CounterRequesterMessage::BeginProtected { .. } => "protected verification trigger",
-        CounterRequesterMessage::ProtectedReply { .. } => "protected completion",
-        #[cfg(test)]
-        CounterRequesterMessage::Begin(_) => "verification trigger",
-        #[cfg(test)]
-        CounterRequesterMessage::VerificationCompleted(_) => "verification completion",
-        #[cfg(test)]
-        CounterRequesterMessage::ReadObserved { .. } => "Counter snapshot",
-    })]
-    UnexpectedMessage(Box<CounterRequesterMessage>),
-}
-impl fmt::Debug for CounterRequesterError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "CounterRequesterError({self})")
-    }
-}
-struct CounterRequester {
-    service: EstablishedRecipient<CounterRequests>,
-    #[cfg(test)]
-    counter: EstablishedRecipient<Counter>,
-    #[cfg(test)]
-    replies: EstablishedRecipient<CounterValue>,
-    state: CounterRequesterState,
-}
-#[bombay::actor(
-    sends = {
-        verification: Vec<EstablishedDelivery<CounterRequests>>,
-        reads: Vec<EstablishedDelivery<Counter>>,
-    },
-    error = CounterRequesterError,
-)]
-impl CounterRequester {
-    fn receive(&mut self, message: CounterRequesterMessage) -> BehaviorActed<Self> {
-        match message {
-            CounterRequesterMessage::BeginProtected { correlation, scope } => {
-                if !matches!(self.state, CounterRequesterState::Ready) {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::BeginProtected { correlation, scope },
-                    )));
-                }
-                self.state = CounterRequesterState::Protected {
-                    correlation,
-                    scope,
-                    receipts: Vec::new(),
-                };
-                Ok(Actions::cont().send_verification(EstablishedDelivery::new(
-                    self.service.clone(),
-                    CounterServiceInput::Verify(correlation),
-                )))
-            }
-            CounterRequesterMessage::ProtectedReply {
-                correlation,
-                scope,
-                meaning,
-            } => {
-                let CounterRequesterState::Protected {
-                    correlation: expected,
-                    scope: captured,
-                    receipts,
-                } = &mut self.state
-                else {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::ProtectedReply {
-                            correlation,
-                            scope,
-                            meaning,
-                        },
-                    )));
-                };
-                let compatible = matches!(
-                    (scope.operation, meaning),
-                    (_, CounterProtectedMeaning::Refused(_))
-                        | (
-                            CounterOperation::Increment,
-                            CounterProtectedMeaning::IncrementAdmitted
-                                | CounterProtectedMeaning::IncrementProcessed,
-                        )
-                        | (
-                            CounterOperation::Read,
-                            CounterProtectedMeaning::ReadAdmitted
-                                | CounterProtectedMeaning::ReadReply(_),
-                        )
-                        | (
-                            CounterOperation::Stop,
-                            CounterProtectedMeaning::StopAccepted
-                                | CounterProtectedMeaning::RetirementReport { .. },
-                        )
-                );
-                let contradicted = receipts.iter().any(|prior| {
-                    matches!(
-                        (prior, meaning),
-                        (CounterProtectedMeaning::Refused(_), _)
-                            | (_, CounterProtectedMeaning::Refused(_))
-                    )
-                });
-                if *expected != correlation
-                    || *captured != scope
-                    || !compatible
-                    || contradicted
-                    || receipts
-                        .iter()
-                        .any(|prior| prior.purpose() == meaning.purpose())
-                {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::ProtectedReply {
-                            correlation,
-                            scope,
-                            meaning,
-                        },
-                    )));
-                }
-                receipts.push(meaning);
-                Ok(Actions::cont().send_verification(EstablishedDelivery::new(
-                    self.service.clone(),
-                    CounterServiceInput::ProtectedConsumed {
-                        correlation,
-                        purpose: meaning.purpose(),
-                    },
-                )))
-            }
-            #[cfg(test)]
-            admission => self.receive_admission_report(admission),
-        }
-    }
-}
-#[cfg(test)]
-impl CounterRequester {
-    fn receive_admission_report(
-        &mut self,
-        message: CounterRequesterMessage,
-    ) -> BehaviorActed<Self> {
-        match message {
-            CounterRequesterMessage::Begin(correlation) => {
-                if !matches!(self.state, CounterRequesterState::Ready) {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::Begin(correlation),
-                    )));
-                }
-                self.state = CounterRequesterState::Verifying(correlation);
-                Ok(Actions::cont().send_verification(EstablishedDelivery::new(
-                    self.service.clone(),
-                    CounterServiceInput::Verify(correlation),
-                )))
-            }
-            CounterRequesterMessage::VerificationCompleted(report) => {
-                if !matches!(self.state, CounterRequesterState::Verifying(expected) if expected == report.correlation)
-                {
-                    return Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                        CounterRequesterMessage::VerificationCompleted(report),
-                    )));
-                }
-                self.state = match report.status {
-                    CounterStatus::IncrementAdmitted | CounterStatus::ReadAdmitted => {
-                        CounterRequesterState::WaitingRead(report)
-                    }
-                    CounterStatus::StopAccepted | CounterStatus::StopRejected(_) => {
-                        CounterRequesterState::Complete {
-                            report,
-                            observation: None,
-                        }
-                    }
-                    CounterStatus::PossiblyAdmitted
-                    | CounterStatus::Closed
-                    | CounterStatus::Refused(_) => CounterRequesterState::Complete {
-                        report,
-                        observation: None,
-                    },
-                };
-                let actions = Actions::cont().send_verification(EstablishedDelivery::new(
-                    self.service.clone(),
-                    CounterServiceInput::ReportConsumed(report.correlation),
-                ));
-                match report.status {
-                    // Read is an independent native snapshot, never an Increment acknowledgement.
-                    CounterStatus::IncrementAdmitted => {
-                        Ok(actions.send_reads(EstablishedDelivery::new(
-                            self.counter.clone(),
-                            CounterMessage::Read(self.replies.clone()),
-                        )))
-                    }
-                    CounterStatus::ReadAdmitted
-                    | CounterStatus::StopAccepted
-                    | CounterStatus::StopRejected(_)
-                    | CounterStatus::PossiblyAdmitted
-                    | CounterStatus::Closed
-                    | CounterStatus::Refused(_) => Ok(actions),
-                }
-            }
-            CounterRequesterMessage::ReadObserved { correlation, value } => {
-                let prior = replace(&mut self.state, CounterRequesterState::Ready);
-                match prior {
-                    CounterRequesterState::WaitingRead(report)
-                        if report.correlation == correlation =>
-                    {
-                        self.state = CounterRequesterState::Complete {
-                            report,
-                            observation: Some(value),
-                        };
-                        Ok(Actions::cont().send_verification(EstablishedDelivery::new(
-                            self.service.clone(),
-                            CounterServiceInput::ReadObserved { correlation, value },
-                        )))
-                    }
-                    retained => {
-                        self.state = retained;
-                        Err(CounterRequesterError::UnexpectedMessage(Box::new(
-                            CounterRequesterMessage::ReadObserved { correlation, value },
-                        )))
-                    }
-                }
-            }
-            message => Err(CounterRequesterError::UnexpectedMessage(Box::new(message))),
-        }
-    }
-}
 #[cfg(test)]
 fn complete_counter(report: CounterReport) -> CounterRequesterMessage {
     CounterRequesterMessage::VerificationCompleted(report)
 }
-// Actual native custody, not a reduced shadow outcome. Every native field is inspected.
-fn completed_actor<B>(origin: RootOrigin<B>, retirement: ActorRetirement<B, Never, Vec<Never>>) -> B
-where
-    B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
-    B::Settlements: ClassifySettlement,
-{
-    let ActorRetirement::Completed {
-        custody:
-            ActorCustody {
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                behavior,
-                control,
-                user,
-                descendants,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-            },
-        settlements,
-        completion,
-        interpretation,
-        source,
-    } = retirement
-    else {
-        panic!("actual native actor failed; no clean result is synthesized");
-    };
-    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    assert_eq!(child_failures.as_slice(), []);
-    assert!(capability_failures.is_empty());
-    assert!(unread_owner_cancellation.is_none());
-    assert!(interpretation.is_none());
-    assert!(source.is_none());
-    assert!(additional_failures.is_empty());
-    assert!(received_interpretation.is_none());
-    assert!(received_source.is_none());
-    assert!(source_index.is_none());
-    assert!(acquired_ingress.is_none());
-    assert!(retirement_failures.is_empty());
-    assert!(terminal_report.is_none());
-    let assessment = settlements.settlement_status();
-    assert_eq!(assessment, SettlementStatus::Accepted);
-    assert!(control.is_empty());
-    assert!(user.is_empty());
-    assert_eq!(descendants.as_slice(), [] as [Never; 0]);
-    assert_eq!(completion, Completion::Stopped);
-    behavior
-}
-
 #[cfg(test)]
 fn assert_cancelled_actor<B>(
     origin: RootOrigin<B>,
@@ -2277,7 +1852,7 @@ async fn run_counter_profile<R>(
                                 .as_mut()
                                 .take_output()
                                 .expect("acquired execution output");
-                            let product = receiving.await;
+                            let product = receiving.await.into_parts();
                             requester_products.push((
                                 requester_result,
                                 product,
@@ -2316,7 +1891,7 @@ async fn run_counter_profile<R>(
             .as_mut()
             .take_output()
             .expect("acquired execution output");
-        let counter_product = counter_receiving.await;
+        let counter_product = counter_receiving.await.into_parts();
         (
             counter_execution,
             counter_product,
@@ -2361,12 +1936,13 @@ async fn run_counter_profile<R>(
                     | (CounterWorkCase::CounterAfterPublication, Some(Ok(())))
             ));
             let (
-                ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+                WorkOutcome::Interrupted { cleanup: Ok(()) },
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = counter_product
             else {
                 panic!("original failed Work coexists with native and both notifications");
@@ -2375,7 +1951,7 @@ async fn run_counter_profile<R>(
             for (execution, product, handoff, _) in &requester_products {
                 assert!(execution.is_ok());
                 let (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         cleanup: Ok(()),
                         output: (publication, permission),
                     },
@@ -2384,6 +1960,7 @@ async fn run_counter_profile<R>(
                         termination: Ok(()),
                         retirement: Ok(()),
                     }),
+                    (),
                 ) = product
                 else {
                     panic!("outer Work fault retains requester native and notifications");
@@ -2439,12 +2016,13 @@ async fn run_counter_profile<R>(
                     | (CounterWorkCase::RequesterAfterPublication, Some(Ok(())))
             ));
             let (
-                ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+                WorkOutcome::Interrupted { cleanup: Ok(()) },
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = product
             else {
                 panic!("failed requester original native and both notifications");
@@ -2465,7 +2043,7 @@ async fn run_counter_profile<R>(
             assert_eq!(pending.original.protected.as_ref(), byte.as_ref());
             assert_eq!(pending.original.proof.as_ref(), &[41]);
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     cleanup: Ok(()),
                     output: counter_work_receipts,
                 },
@@ -2474,6 +2052,7 @@ async fn run_counter_profile<R>(
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = counter_product
             else {
                 panic!("remaining Counter cleanup conserves all acquired facts");
@@ -2507,7 +2086,7 @@ async fn run_counter_profile<R>(
     // Every native product/full raw+R/native error is outside Work before assertions.
     assert!(counter_execution.is_ok());
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (publication, permission),
             cleanup: Ok(()),
         },
@@ -2516,6 +2095,7 @@ async fn run_counter_profile<R>(
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = counter_product
     else {
         panic!("actual Counter Work/native/notification outcomes remain distinct");
@@ -2548,7 +2128,7 @@ async fn run_counter_profile<R>(
         assert!(matches!(handoff, Some(Ok(()))));
         assert!(execution.is_ok());
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -2557,6 +2137,7 @@ async fn run_counter_profile<R>(
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = product
         else {
             panic!("original requester native and both notifications are required");
@@ -3298,7 +2879,7 @@ async fn run_protected_counter_profile<R>(
                 if requester_receipts.is_empty() {
                     first_requester_repeated_execution = Some(execution.as_mut().take_output());
                 }
-                let native = receiving.await;
+                let native = receiving.await.into_parts();
                 if handoff.is_none() {
                     let _observed = ports.as_mut().now_or_never();
                     handoff = ports.as_mut().take_output();
@@ -3392,8 +2973,8 @@ async fn run_protected_counter_profile<R>(
         AssertUnwindSafe(sibling_execution).catch_unwind(),
         service
     );
-    let counter_native = counter_receiving.await;
-    let sibling_native = sibling_receiving.await;
+    let counter_native = counter_receiving.await.into_parts();
+    let sibling_native = sibling_receiving.await.into_parts();
     #[cfg(test)]
     if execution_case == CounterWorkCase::CounterBeforePublication {
         let payload = counter_execution
@@ -3404,19 +2985,20 @@ async fn run_protected_counter_profile<R>(
             counter_fault_pointer
         );
         let (
-            ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+            WorkOutcome::Interrupted { cleanup: Ok(()) },
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = &counter_native
         else {
             panic!("original Counter native and both notifications");
         };
         assert_cancelled_actor(*origin, retirement);
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -3425,6 +3007,7 @@ async fn run_protected_counter_profile<R>(
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = sibling_native
         else {
             panic!("original sibling native and both notifications");
@@ -3462,12 +3045,13 @@ async fn run_protected_counter_profile<R>(
             .as_ref()
             .expect_err("original Counter Work panic");
         let (
-            ApplicationOutcome::Interrupted { cleanup: Ok(()) },
+            WorkOutcome::Interrupted { cleanup: Ok(()) },
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = &counter_native
         else {
             panic!("original Counter native and both notifications");
@@ -3508,7 +3092,7 @@ async fn run_protected_counter_profile<R>(
             panic!("one original requester receiving owner");
         };
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -3517,12 +3101,13 @@ async fn run_protected_counter_profile<R>(
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = native
         else {
             panic!("original requester Work/native/two notifications");
         };
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (sibling_publication, sibling_permission),
                 cleanup: Ok(()),
             },
@@ -3531,6 +3116,7 @@ async fn run_protected_counter_profile<R>(
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = sibling_native
         else {
             panic!("original sibling Work/native/two notifications");
@@ -3687,13 +3273,14 @@ async fn run_protected_counter_profile<R>(
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = native
         else {
             panic!("original requester native and both notifications");
         };
         if execution_case == CounterWorkCase::RequesterCompletedAfterPublication {
             assert!(execution.is_ok());
-            let ApplicationOutcome::Completed {
+            let WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             } = outcome
@@ -3712,7 +3299,7 @@ async fn run_protected_counter_profile<R>(
             assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), fault_pointer);
             assert!(matches!(
                 outcome,
-                ApplicationOutcome::Interrupted { cleanup: Ok(()) }
+                WorkOutcome::Interrupted { cleanup: Ok(()) }
             ));
         }
         match execution_case {
@@ -3757,7 +3344,7 @@ async fn run_protected_counter_profile<R>(
             .zip([audit_recipient, sibling_audit_recipient])
         {
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
@@ -3766,6 +3353,7 @@ async fn run_protected_counter_profile<R>(
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = native
             else {
                 panic!("remaining actual actor native and notifications");
@@ -4044,7 +3632,7 @@ async fn run_protected_counter_profile<R>(
     };
     let counters = [counter_native, sibling_native].map(|native| {
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -4053,6 +3641,7 @@ async fn run_protected_counter_profile<R>(
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = native
         else {
             panic!("full Counter Work/native/two-notification outcomes");
@@ -4085,7 +3674,7 @@ async fn run_protected_counter_profile<R>(
                     acquired, begun, triggered, produced, delivered, stopped, permitted,
                 );
                 let (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         output: (publication, permission),
                         cleanup: Ok(()),
                     },
@@ -4094,6 +3683,7 @@ async fn run_protected_counter_profile<R>(
                         termination: Ok(()),
                         retirement: Ok(()),
                     }),
+                    (),
                 ) = native
                 else {
                     panic!("full requester Work/native/two-notification outcomes");
@@ -4755,9 +4345,9 @@ mod pending_verification {
                     })
                     .unwrap_or_else(|_| panic!("entered host"));
                 let execution = AssertUnwindSafe(execution).catch_unwind().await;
-                let native = receiving.await;
+                let native = receiving.await.into_parts();
                 let (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         output: stopped,
                         cleanup: Ok(()),
                     },
@@ -4766,6 +4356,7 @@ mod pending_verification {
                         termination: Ok(()),
                         retirement: Ok(()),
                     }),
+                    (),
                 ) = native
                 else {
                     panic!("actual native and both notification products");
@@ -5056,9 +4647,9 @@ mod full_retry {
                     panic!("entered explicit host");
                 });
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let acquired = receiving.await;
+            let acquired = receiving.await.into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: stopped,
                     cleanup: Ok(()),
                 },
@@ -5067,6 +4658,7 @@ mod full_retry {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = acquired
             else {
                 panic!("actual native and both notification products");
@@ -6186,9 +5778,9 @@ mod allocation_profile {
                 })
                 .unwrap_or_else(|_| panic!("entered host"));
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: stopped,
                     cleanup: Ok(()),
                 },
@@ -6197,6 +5789,7 @@ mod allocation_profile {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = native
             else {
                 panic!("actual full native and both notification products");
@@ -7131,9 +6724,9 @@ mod proof_rotation {
             };
             let (execution, acquired) =
                 tokio::join!(AssertUnwindSafe(execution).catch_unwind(), rotation);
-            let counter_product = receiving.await;
+            let counter_product = receiving.await.into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
@@ -7142,6 +6735,7 @@ mod proof_rotation {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = counter_product
             else {
                 panic!("actual Counter native and both notification products");
@@ -7395,9 +6989,9 @@ mod closed_counter {
                 release = Some(permitted.send(()));
             };
             let (execution, ()) = tokio::join!(AssertUnwindSafe(execution).catch_unwind(), service);
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
@@ -7406,6 +7000,7 @@ mod closed_counter {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = native
             else {
                 panic!("full original Work/native/two-notification products");
@@ -7738,8 +7333,8 @@ mod stop_admission {
                 AssertUnwindSafe(sibling_execution).catch_unwind(),
                 service
             );
-            let target_native = target_receiving.await;
-            let sibling_native = sibling_receiving.await;
+            let target_native = target_receiving.await.into_parts();
+            let sibling_native = sibling_receiving.await.into_parts();
             (
                 target_work,
                 sibling_work,
@@ -7766,7 +7361,7 @@ mod stop_admission {
         ) = service;
         let [target_retired, sibling_retired] = [target_native, sibling_native].map(|product| {
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, continued),
                     cleanup: Ok(()),
                 },
@@ -7775,6 +7370,7 @@ mod stop_admission {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = product
             else {
                 panic!("complete original Work/native/two-notification product");
@@ -8135,7 +7731,7 @@ mod stop_admission {
             };
             let (execution, observations) =
                 tokio::join!(AssertUnwindSafe(execution).catch_unwind(), service);
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             (execution, native, observations)
         });
         let (execution, native, observations) = acquired;
@@ -8161,7 +7757,7 @@ mod stop_admission {
             values,
         ) = observations;
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, continued),
                 cleanup: Ok(()),
             },
@@ -8170,6 +7766,7 @@ mod stop_admission {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = native
         else {
             panic!("complete parent Work/native/two-notification product");
@@ -8608,13 +8205,13 @@ mod protected_application {
                 })
                 .unwrap_or_else(|_| panic!("actual host entered"));
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             (execution, native)
         });
         let (
             execution,
             (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output:
                         (receipt, expired_receipt, stale, unavailable, authorization, outcomes, stopped),
                     cleanup: Ok(()),
@@ -8624,6 +8221,7 @@ mod protected_application {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ),
         ) = acquired
         else {
@@ -9236,13 +8834,13 @@ mod protected_application {
                 })
                 .unwrap_or_else(|_| panic!("entered actual host"));
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             (execution, native)
         });
         let (
             execution,
             (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output:
                         (
                             outcomes,
@@ -9262,6 +8860,7 @@ mod protected_application {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ),
         ) = acquired
         else {
@@ -9774,7 +9373,3 @@ mod provider_receipt_custody {
 
 #[cfg(all(test, feature = "protected-transport"))]
 mod public_node;
-
-#[cfg(all(test, feature = "protected-transport"))]
-#[path = "live_requester.rs"]
-mod live_requester;

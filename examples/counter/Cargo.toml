@@ -11,10 +11,5 @@ workspace = true
 
 [dependencies]
 bombay-rs = { path = "../../crates/bombay" }
-tokio.workspace = true
+tokio = { workspace = true, features = ["macros"] }
 thiserror.workspace = true
-
-[dev-dependencies]
-futures-util = { version = "0.3.34", default-features = false, features = [
-  "std",
-] }

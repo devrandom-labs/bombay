@@ -56,14 +56,16 @@ impl Behavior for CompletionActor {
 
 #[tokio::test]
 async fn fairness_ready_observations_and_startup_results_alternate_without_loss() {
+    let mailbox_capacity = MailboxCapacity::new(2).expect("the actual two-slot test mailbox");
     let (control, owner, mailbox, consumer) =
-        mailbox_channel::<CompletionEvent, ()>(Config::new(2));
+        mailbox_channel::<CompletionEvent, ()>(Config::new(mailbox_capacity.get()));
     let (terminal, terminal_receiver) = oneshot::channel();
     let mut capabilities = ApplicationCapabilities::<CompletionActor, ()>::new_with_bindings(
         ApplicationCapabilityInputs {
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
             address: MailAddr(1),
+            mailbox_capacity,
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -117,14 +119,16 @@ async fn fairness_ready_observations_and_startup_results_alternate_without_loss(
 
 #[tokio::test]
 async fn fairness_delayed_startup_survives_losing_selection_and_pending_cancellation() {
+    let mailbox_capacity = MailboxCapacity::new(2).expect("the actual two-slot test mailbox");
     let (control, owner, mailbox, consumer) =
-        mailbox_channel::<CompletionEvent, ()>(Config::new(2));
+        mailbox_channel::<CompletionEvent, ()>(Config::new(mailbox_capacity.get()));
     let (terminal, terminal_receiver) = oneshot::channel();
     let mut capabilities = ApplicationCapabilities::<CompletionActor, ()>::new_with_bindings(
         ApplicationCapabilityInputs {
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
             address: MailAddr(1),
+            mailbox_capacity,
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -185,14 +189,16 @@ async fn fairness_delayed_startup_survives_losing_selection_and_pending_cancella
 
 #[tokio::test]
 async fn fairness_observation_flood_yields_to_the_executor() {
+    let mailbox_capacity = MailboxCapacity::new(2).expect("the actual two-slot test mailbox");
     let (control, owner, mailbox, consumer) =
-        mailbox_channel::<CompletionEvent, ()>(Config::new(2));
+        mailbox_channel::<CompletionEvent, ()>(Config::new(mailbox_capacity.get()));
     let (terminal, terminal_receiver) = oneshot::channel();
     let mut capabilities = ApplicationCapabilities::<CompletionActor, ()>::new_with_bindings(
         ApplicationCapabilityInputs {
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
             address: MailAddr(1),
+            mailbox_capacity,
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),
@@ -233,14 +239,16 @@ async fn fairness_observation_flood_yields_to_the_executor() {
 
 #[tokio::test]
 async fn fairness_child_stop_follows_admitted_reports() {
+    let mailbox_capacity = MailboxCapacity::new(2).expect("the actual two-slot test mailbox");
     let (control, owner, mailbox, mut consumer) =
-        mailbox_channel::<CompletionEvent, ()>(Config::new(2));
+        mailbox_channel::<CompletionEvent, ()>(Config::new(mailbox_capacity.get()));
     let (terminal, terminal_receiver) = oneshot::channel();
     let mut capabilities = ApplicationCapabilities::<CompletionActor, ()>::new_with_bindings(
         ApplicationCapabilityInputs {
             actor_spaces: Arc::new(()),
             allocations: ApplicationAddresses::new(),
             address: MailAddr(1),
+            mailbox_capacity,
             control,
             timers: LocalTimers::new(),
             observations: TerminationObservations::new(),

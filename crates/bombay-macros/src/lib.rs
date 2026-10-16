@@ -495,7 +495,8 @@ fn expand_actor_spaces(input: &DeriveInput) -> syn::Result<TokenStream2> {
 /// Singleton finite chains can use `root { Worker => worker; } worker {}`.
 /// Cold members or multiple root roles require a nominal root declaration,
 /// `root: Root { ... }`; actual root decorations remain inferred. Cold classes
-/// use the actual actors supplied by `.child(role, actor)` without annotations. A class
+/// use the actual actors supplied by `.child(role, actor)` without annotations.
+/// Their finite descendants are inferred from the actual birth types too. A class
 /// can name its nominal role owner with `node for Node { Next(Next) => node; }`,
 /// preserving recursive inference on the supported Rust version without naming
 /// the wrapped child type. Its selected actor must have exactly that Base.

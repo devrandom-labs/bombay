@@ -168,7 +168,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications) = Application::with_topology(
+    let (outcome, native, notifications, ()) = Application::with_topology(
         TimedParent::new().stop_on_shutdown(),
         timed_application::Topology::new(),
     )
@@ -183,7 +183,8 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
     .unwrap_or_else(|original| {
         drop(original);
         panic!("entered the actual application host");
-    });
+    })
+    .into_parts();
     let (termination, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("work returns only after both real elapsed reports");

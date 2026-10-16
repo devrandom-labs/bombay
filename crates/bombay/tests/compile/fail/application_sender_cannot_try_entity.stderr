@@ -1,0 +1,11 @@
+error[E0599]: no method named `try_send` found for struct `ApplicationSender<EntityRef<D>>` in the current scope
+  --> tests/compile/fail/application_sender_cannot_try_entity.rs:11:29
+   |
+11 |     let _admission = sender.try_send(command);
+   |                             ^^^^^^^^
+   |
+help: there is a method `send` with a similar name
+   |
+11 -     let _admission = sender.try_send(command);
+11 +     let _admission = sender.send(command);
+   |

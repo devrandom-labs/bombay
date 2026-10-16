@@ -1,0 +1,5 @@
+error[E0599]: no method named `retire_entity` found for struct `ActorInterface<Api>` in the current scope
+ --> tests/compile/fail/actor_interface_has_no_entity_retirement.rs:2:33
+  |
+2 |     let _retirement = interface.retire_entity((), &7_u64);
+  |                                 ^^^^^^^^^^^^^ method not found in `ActorInterface<()>`

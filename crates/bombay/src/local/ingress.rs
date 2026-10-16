@@ -173,8 +173,6 @@ impl<U> Admission<U> {
     }
 }
 
-pub(crate) const DEFAULT_USER_CAPACITY: usize = 1_024;
-
 /// Shared access to one affine Communication admission owner.
 ///
 /// The active environment holds the only strong reference. Actor references

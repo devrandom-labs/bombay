@@ -103,7 +103,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         .enable_all()
         .build()
         .expect("caller host");
-    let (outcome, native, notifications) = host
+    let (outcome, native, notifications, ()) = host
         .block_on(
             scope
                 .with_topology(root, service_application::Topology::new())
@@ -313,7 +313,8 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         .unwrap_or_else(|original| {
             drop(original);
             panic!("application starts");
-        });
+        })
+        .into_parts();
     let (_work, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("work and independent cleanup retained");

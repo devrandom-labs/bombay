@@ -10,7 +10,7 @@ use bombay::behavior::{
     NoSends, SettlementStatus, Step,
 };
 use bombay::prelude::*;
-use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::VecDeque,
@@ -807,7 +807,7 @@ async fn recipient(
     .await;
     let session_close = session.close().await;
     let receiving = match receiving {
-        Ok(acquired) => acquired,
+        Ok(acquired) => acquired.into_parts(),
         Err((cold_application, original_work, cause)) => {
             // Explicit terminal fixture discharge after actual session close; no actor was acquired.
             drop((cold_application, original_work));
@@ -823,7 +823,7 @@ async fn recipient(
             (&receiving, &session_close),
             (
                 (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         cleanup: Ok(()),
                         ..
                     },
@@ -831,7 +831,8 @@ async fn recipient(
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
                         retirement: Ok(())
-                    })
+                    }),
+                    ()
                 ),
                 Ok(())
             )
@@ -839,7 +840,7 @@ async fn recipient(
         "complete original Application/native/notification/close products required"
     );
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output:
                 (
                     work,
@@ -863,6 +864,7 @@ async fn recipient(
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = receiving
     else {
         unreachable!("the complete original receiving product was checked by borrow");
@@ -1178,7 +1180,7 @@ async fn caller(
         .await;
     let session_close = session.close().await;
     let receiving = match receiving {
-        Ok(acquired) => acquired,
+        Ok(acquired) => acquired.into_parts(),
         Err((cold_application, original_work, cause)) => {
             // Explicit terminal fixture discharge after actual session close; no actor was acquired.
             drop((cold_application, original_work));
@@ -1194,7 +1196,7 @@ async fn caller(
             (&receiving, &session_close),
             (
                 (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         cleanup: Ok(()),
                         ..
                     },
@@ -1202,7 +1204,8 @@ async fn caller(
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
                         retirement: Ok(())
-                    })
+                    }),
+                    ()
                 ),
                 Ok(())
             )
@@ -1210,7 +1213,7 @@ async fn caller(
         "complete original Application/native/notification/close products required"
     );
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output:
                 (
                     work,
@@ -1233,6 +1236,7 @@ async fn caller(
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = receiving
     else {
         unreachable!("the complete original receiving product was checked by borrow");

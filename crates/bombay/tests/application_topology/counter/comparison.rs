@@ -1,10 +1,18 @@
 use super::{Counter, CounterMessage, CounterValue, counter_application};
 use bombay::behavior::{ClassifySettlement, Never, SettlementStatus};
 use bombay::prelude::*;
-use bombay::{ActorSpace, ApplicationTopology, RootRegistration};
+use bombay::{ActorSpace, ApplicationTopology, NativeHost, RootRegistration, Runtime};
 
 struct CounterSpaces {
     counter: ActorSpace<Counter>,
+}
+
+impl NativeHost for CounterSpaces {
+    type Runtime = Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: Runtime = Runtime::new();
+        &RUNTIME
+    }
 }
 impl RootRegistration<Counter> for CounterSpaces {
     fn root_space(&self) -> &ActorSpace<Counter> {
@@ -48,15 +56,18 @@ async fn generated_leaf_matches_manual_counter_custody() {
     })
     .await;
     // Both complete receiving products are acquired before any comparison.
-    let (generated_work, generated_native, generated_notifications) =
-        generated.unwrap_or_else(|original| {
+    let (generated_work, generated_native, generated_notifications, ()) = generated
+        .unwrap_or_else(|original| {
             drop(original);
             panic!("the generated explicit leaf starts");
-        });
-    let (manual_work, manual_native, manual_notifications) = manual.unwrap_or_else(|original| {
-        drop(original);
-        panic!("the handwritten explicit leaf starts");
-    });
+        })
+        .into_parts();
+    let (manual_work, manual_native, manual_notifications, ()) = manual
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("the handwritten explicit leaf starts");
+        })
+        .into_parts();
     let (generated_originals, generated_cleanup) = generated_work
         .try_into_completed()
         .unwrap_or_else(|original| {

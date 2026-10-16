@@ -1,6 +1,10 @@
 #![cfg(feature = "remote")]
 
 #[path = "../../../examples/counter/src/counter.rs"]
+#[expect(
+    dead_code,
+    reason = "startup refusals retain the real Counter before its messages execute"
+)]
 mod counter;
 
 use bombay::Application;

@@ -1,4 +1,4 @@
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::convert::Infallible;
 use core::time::Duration;
@@ -163,10 +163,11 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the pool runs its worker and shuts down");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -175,6 +176,7 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -289,10 +291,11 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the pool returns the full-backlog job and shuts down");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -301,6 +304,7 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -373,4 +377,152 @@ fn assert_orderly_pool_terminal(
     assert!(unread_owner_cancellation.is_none());
     assert_eq!(completion, Completion::Stopped);
     assert_eq!(descendants, []);
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete FIFO business, shutdown and retirement trace preserves every custody oracle"
+)]
+#[test]
+fn fifo_search_completes_and_drains_its_worker() {
+    let pool = {
+        let roles =
+            OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
+        fifo(
+            |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
+            roles,
+            ActivationPolicy::new(1).expect("one activation is positive capacity"),
+            PoolRecovery::temporary(PoolFailureReaction::RetireRole),
+            BacklogCapacity::new(8),
+            Interruption::Retry,
+            ActorDrainPolicy::WaitForActorGraph,
+            DiagnosticDisposition::terminate(),
+        )
+        .unwrap_or_else(|_| panic!("the declared search worker is prepared"))
+    };
+    let spaces = pool_application::Topology::new();
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            Application::with_topology(pool, spaces).run_with(|application| async move {
+                let mut customer = application
+                    .client()
+                    .expect("the search customer is established");
+                let reply = customer.recipient();
+                customer
+                    .send(FifoCommand::submit(
+                        SubmissionId::new(7),
+                        SearchJob {
+                            document: String::from("bombay behavior"),
+                            needle: 'b',
+                        },
+                        reply,
+                    ))
+                    .await
+                    .expect("the pool accepts the search submission");
+                let accepted = customer
+                    .receive()
+                    .await
+                    .expect("the pool reports accepted admission")
+                    .message;
+                let (submission, job) = accepted
+                    .into_accepted()
+                    .unwrap_or_else(|_| panic!("the first customer outcome accepts the job"));
+                assert_eq!(submission, SubmissionId::new(7));
+                let completed = customer
+                    .receive()
+                    .await
+                    .expect("the worker returns its search result")
+                    .message;
+                assert_eq!(completed.role(), Some(&WorkerRole::Primary));
+                let (completed_job, result) = completed
+                    .into_completed()
+                    .unwrap_or_else(|_| panic!("the second customer outcome completes the job"));
+                assert_eq!(completed_job, job);
+                assert_eq!(result.matches, 3);
+                customer
+                    .send(FifoCommand::shutdown())
+                    .await
+                    .expect("the pool accepts orderly shutdown");
+                application.termination().await
+            }),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the pool runs its worker and shuts down");
+        })
+        .into_parts();
+    drop(application_host);
+    let (
+        WorkOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+        (),
+    ) = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
+    assert_eq!(termination, Ok(Exit::Normal));
+    let origin = root_origin;
+    let terminal = match joined_actor {
+        ActorRetirement::ActorTaskFailed(failure) => {
+            panic!("the actual application actor task failed: {failure}")
+        }
+        retirement => retirement,
+    };
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::Completed {
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
+        completion,
+        ..
+    } = terminal
+    else {
+        panic!("the pool completes after its worker graph");
+    };
+    assert_eq!(capability_failures.len(), 0);
+    assert!(unread_owner_cancellation.is_none());
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!(descendants.len(), 1);
+    let pool_application::RootRetirements {
+        origin,
+        retirement: terminal,
+    } = descendants
+        .into_iter()
+        .next()
+        .expect("the primary role retains one worker");
+    let terminal = *terminal;
+    assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::Completed {
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
+        completion,
+        ..
+    } = terminal
+    else {
+        panic!("orderly shutdown completes the exact worker");
+    };
+    assert_eq!(capability_failures.len(), 0);
+    assert!(unread_owner_cancellation.is_none());
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!(descendants.len(), 0);
 }

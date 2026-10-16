@@ -38,7 +38,7 @@ bombay::topology! {
 async fn main() {
     let entries: Box<[u8]> = Box::from([3, 7]);
     let allocation = entries.as_ptr();
-    let (outcome, native, notifications) = Application::with_topology(
+    let (outcome, native, notifications, ()) = Application::with_topology(
         Counter::new().stop_on_shutdown(),
         counter_application::Topology::new(),
     )
@@ -67,7 +67,7 @@ async fn main() {
     .unwrap_or_else(|original| {
         drop(original);
         panic!("the caller entered a host");
-    });
+    }) .into_parts();
     let (value, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("work must return with independent cleanup");

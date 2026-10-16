@@ -284,9 +284,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22943da890f10d41c3dd17f87cf372e850cfa25defef25f8dafc3dd505b7f8f5"
+checksum = "1c3a8988ead92a6772aa3c9aa012cb66cad3021d6fffd9cdfe6eeaf90d63cb01"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
@@ -294,9 +294,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-actors"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa37fb8e901fead9da724df7afd0e89c26e9b97995c9f1970a24588876cabb12"
+checksum = "78662d4f467c193b77b82b885b17459ea77fb892f22b876e269a20321dbb0959"
 dependencies = [
  "bombay-behavior",
  "bombay-behavior-macros",
@@ -305,9 +305,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-macros"
-version = "0.14.1"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10b3e7f4abb386f036c02b5e66c785c896fc2bd197d419458c7f1e529433a594"
+checksum = "ed0c7ca28319afeb7d199bdfc76ae778b0b7a9bf28bea7aa6f0ca851a8487e54"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -362,11 +362,8 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "bombay-rs",
- "http-body-util",
  "serde",
- "serde_json",
  "tokio",
- "tower",
 ]
 
 [[package]]
@@ -374,7 +371,6 @@ name = "bombay-example-counter"
 version = "0.1.0"
 dependencies = [
  "bombay-rs",
- "futures-util",
  "thiserror",
  "tokio",
 ]
@@ -437,6 +433,7 @@ dependencies = [
  "bombay-zenoh-config",
  "dhat",
  "futures-util",
+ "http-body-util",
  "json-event-parser",
  "loom",
  "parking_lot",
@@ -445,6 +442,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
+ "tower",
  "triomphe",
  "trybuild",
  "zenoh-protocol",

@@ -3,7 +3,7 @@ use bombay::behavior::{
     SettlementStatus, Step,
 };
 use bombay::prelude::*;
-use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
 use core::{
     future::Future,
     pin::pin,
@@ -162,10 +162,11 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the Application retains its completed Work and root join");
-        });
+        })
+        .into_parts();
     drop(host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (original_cause, acquired, root_address, source_address),
             cleanup: Ok(()),
         },
@@ -174,6 +175,7 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = receiving
     else {
         panic!("Work, native root and both notification receipts remain independently acquired")

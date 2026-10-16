@@ -7,8 +7,8 @@ use bombay::composition::StashRoute;
 use bombay::prelude::{Completion, Exit, MailAddr, StopOnShutdown};
 use bombay::routing::{WorkQueue, WorkQueueMessage, WorkQueueOutcome, WorkQueueRejection};
 use bombay::{
-    ActorNotificationReceipts, ActorSpace, ApplicationCleanupError, ApplicationOutcome,
-    ApplicationTopology, RootRegistration,
+    ActorNotificationReceipts, ActorSpace, ApplicationCleanupError, ApplicationTopology,
+    NativeHost, RootRegistration, Runtime, WorkOutcome,
 };
 use core::future::{Future, poll_fn};
 use core::task::Poll;
@@ -29,6 +29,14 @@ type Queue = WorkQueue<
 struct QueueRegistration {
     queues: ActorSpace<Queue>,
     failure: Mutex<Option<String>>,
+}
+
+impl NativeHost for QueueRegistration {
+    type Runtime = Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: Runtime = Runtime::new();
+        &RUNTIME
+    }
 }
 
 impl RootRegistration<Queue> for QueueRegistration {
@@ -189,12 +197,13 @@ fn work_queue_preserves_exact_dispatch_and_full_rejection_through_shutdown() {
     let Err((application, work, _missing_host)) = unstarted else {
         panic!("missing host returns the entire scope, root and uninvoked work");
     };
-    let (outcome, native, notifications) = host
+    let (outcome, native, notifications, ()) = host
         .block_on(application.run_with(work))
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the original queue application retries");
-        });
+        })
+        .into_parts();
     let (work, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("complete queue custody");
@@ -241,81 +250,83 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
         .enable_all()
         .build()
         .expect("caller host");
-    let (outcome, native, notifications) = host.block_on(async {
-        let (execution, receiver) = scope
-            .with_topology(root, spaces)
-            .execute_with(|application| async move {
-                let caller = application.sender().expect("retried sender");
-                assert_ne!(caller.address(), worker.address());
-                assert_ne!(caller.address(), admissions.address());
-                caller
-                    .send(WorkQueueMessage::Available {
-                        worker: worker.recipient(),
-                    })
-                    .await
-                    .expect("retried availability");
-                caller
-                    .send(WorkQueueMessage::Submit {
-                        value,
-                        reply_to: admissions.recipient(),
-                    })
-                    .await
-                    .expect("original work submitted");
-                let admitted = admissions
-                    .receive()
-                    .await
-                    .expect("original admission reply")
-                    .message;
-                assert_eq!(admitted, WorkQueueOutcome::Dispatched { queued: 0 });
-                let value = worker
-                    .receive()
-                    .await
-                    .expect("original early worker")
-                    .message;
-                let shutdown = application.request_shutdown();
-                assert_eq!(shutdown, Ok(()));
-                let termination = application.termination().await;
-                assert_eq!(termination, Ok(Exit::Normal));
-                value
+    let (outcome, native, notifications, ()) = host
+        .block_on(async {
+            let (execution, receiver) = scope
+                .with_topology(root, spaces)
+                .execute_with(|application| async move {
+                    let caller = application.sender().expect("retried sender");
+                    assert_ne!(caller.address(), worker.address());
+                    assert_ne!(caller.address(), admissions.address());
+                    caller
+                        .send(WorkQueueMessage::Available {
+                            worker: worker.recipient(),
+                        })
+                        .await
+                        .expect("retried availability");
+                    caller
+                        .send(WorkQueueMessage::Submit {
+                            value,
+                            reply_to: admissions.recipient(),
+                        })
+                        .await
+                        .expect("original work submitted");
+                    let admitted = admissions
+                        .receive()
+                        .await
+                        .expect("original admission reply")
+                        .message;
+                    assert_eq!(admitted, WorkQueueOutcome::Dispatched { queued: 0 });
+                    let value = worker
+                        .receive()
+                        .await
+                        .expect("original early worker")
+                        .message;
+                    let shutdown = application.request_shutdown();
+                    assert_eq!(shutdown, Ok(()));
+                    let termination = application.termination().await;
+                    assert_eq!(termination, Ok(Exit::Normal));
+                    value
+                })
+                .unwrap_or_else(|original| {
+                    drop(original);
+                    panic!("host entered");
+                });
+            let mut execution = Box::pin(execution);
+            let failed_setup = poll_fn(|context| {
+                Poll::Ready(catch_unwind(AssertUnwindSafe(|| {
+                    execution.as_mut().poll(context)
+                })))
             })
-            .unwrap_or_else(|original| {
-                drop(original);
-                panic!("host entered");
-            });
-        let mut execution = Box::pin(execution);
-        let failed_setup = poll_fn(|context| {
-            Poll::Ready(catch_unwind(AssertUnwindSafe(|| {
-                execution.as_mut().poll(context)
-            })))
+            .await;
+            drop(execution);
+            assert!(failed_setup.is_err());
+            let (outcome, native, notifications, ()) = receiver.await.into_parts();
+            assert!(native.is_err());
+            assert!(notifications.is_err());
+            let WorkOutcome::Prepared {
+                inputs: (root, spaces, scope),
+                work,
+                cleanup,
+            } = outcome
+            else {
+                panic!("original root, topology, namespace and uninvoked work returned");
+            };
+            assert!(matches!(
+                &cleanup,
+                Err(ApplicationCleanupError::PublicationClosed(_))
+            ));
+            drop(cleanup);
+            scope
+                .with_topology(root, spaces)
+                .run_with(work)
+                .await
+                .unwrap_or_else(|original| {
+                    drop(original);
+                    panic!("same namespace retries");
+                })
         })
-        .await;
-        drop(execution);
-        assert!(failed_setup.is_err());
-        let (outcome, native, notifications) = receiver.await;
-        assert!(native.is_err());
-        assert!(notifications.is_err());
-        let ApplicationOutcome::Prepared {
-            inputs: (root, spaces, scope),
-            work,
-            cleanup,
-        } = outcome
-        else {
-            panic!("original root, topology, namespace and uninvoked work returned");
-        };
-        assert!(matches!(
-            &cleanup,
-            Err(ApplicationCleanupError::PublicationClosed(_))
-        ));
-        drop(cleanup);
-        scope
-            .with_topology(root, spaces)
-            .run_with(work)
-            .await
-            .unwrap_or_else(|original| {
-                drop(original);
-                panic!("same namespace retries");
-            })
-    });
+        .into_parts();
     let (value, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("retry completes");
@@ -360,7 +371,7 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
             }
         })
         .stop_on_shutdown();
-    let (outcome, native, notifications) = scope
+    let (outcome, native, notifications, ()) = scope
         .with_root(root)
         .run_with(|application| async move {
             let caller = application.sender().expect("live root sender");
@@ -400,7 +411,8 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
         .unwrap_or_else(|original| {
             drop(original);
             panic!("wrapped application starts");
-        });
+        })
+        .into_parts();
     let (value, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("complete wrapped custody");
@@ -443,7 +455,7 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
                 StashRoute::Deliver
             }
         });
-    let (outcome, native, notifications) = scope
+    let (outcome, native, notifications, ()) = scope
         .with_root(root)
         .run_with(|application| async move {
             let caller = application.sender().expect("live root sender");
@@ -483,7 +495,8 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
         .unwrap_or_else(|original| {
             drop(original);
             panic!("wrapped application starts");
-        });
+        })
+        .into_parts();
     let (value, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("complete wrapped custody");

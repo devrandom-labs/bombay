@@ -568,7 +568,7 @@ async fn counter_native_applications<R>(
                         };
                         let (local_execution, local_exchange) =
                             tokio::join!(local_execution, local_exchange);
-                        local_requester_native = Some(local_receiving.await);
+                        local_requester_native = Some(local_receiving.await.into_parts());
                         local_receipts = Some((local_execution, local_exchange));
 
                         if matches!(&pending, Some(None))
@@ -696,7 +696,7 @@ async fn counter_native_applications<R>(
                     (begun, triggered, stopped, released)
                 };
                 let ((), request) = tokio::join!(requester_execution, request);
-                let native = requester_receiving.await;
+                let native = requester_receiving.await.into_parts();
                 requester_receipts.push((ordinal, sequence, native, request));
             }
             invocations.push(querier.undeclare().await);
@@ -1146,10 +1146,10 @@ async fn counter_native_applications<R>(
                 )
             };
             let ((), work) = tokio::join!(execution, work);
-            let native = receiving.await;
+            let native = receiving.await.into_parts();
             let (service, exported, children, stopped, released, exports, child_retirements) = work;
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
@@ -1158,6 +1158,7 @@ async fn counter_native_applications<R>(
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = native
             else {
                 panic!("all original parent Work/native/two-notification products");
@@ -1309,7 +1310,7 @@ async fn counter_native_applications<R>(
             let (service, released, sibling_released) = work;
             for actual in [native, sibling_native] {
                 let (
-                    ApplicationOutcome::Completed {
+                    WorkOutcome::Completed {
                         output: (publication, permission),
                         cleanup: Ok(()),
                     },
@@ -1318,7 +1319,8 @@ async fn counter_native_applications<R>(
                         termination: Ok(()),
                         retirement: Ok(()),
                     }),
-                ) = actual
+                    (),
+                ) = actual.into_parts()
                 else {
                     panic!("all original root Work/native/two-notification products");
                 };
@@ -1380,7 +1382,7 @@ async fn counter_native_applications<R>(
     let mut retired_requesters = Vec::new();
     for (ordinal, sequence, native, original) in requester_receipts {
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -1389,6 +1391,7 @@ async fn counter_native_applications<R>(
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = native
         else {
             panic!("all original Requester Work/native/two-notification products");
@@ -1650,7 +1653,7 @@ async fn counter_native_applications<R>(
     }
     if let Some(local) = local_requester_native {
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
@@ -1659,6 +1662,7 @@ async fn counter_native_applications<R>(
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = local
         else {
             panic!("independent local requester native and notifications")
@@ -1953,7 +1957,7 @@ fn counter_child_stop<R>(
         };
         let (execution, observations) =
             tokio::join!(AssertUnwindSafe(execution).catch_unwind(), service);
-        let native = receiving.await;
+        let native = receiving.await.into_parts();
         (execution, native, observations)
     });
     let (execution, native, observations) = acquired;
@@ -1982,7 +1986,7 @@ fn counter_child_stop<R>(
         values,
     ) = observations;
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (publication, continued),
             cleanup: Ok(()),
         },
@@ -1991,6 +1995,7 @@ fn counter_child_stop<R>(
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = native
     else {
         panic!("all original parent Work/native/two-notification products");
@@ -2472,7 +2477,7 @@ fn counter_query_count<R>(
         };
         let (execution, observations) =
             tokio::join!(AssertUnwindSafe(execution).catch_unwind(), service);
-        let native = receiving.await;
+        let native = receiving.await.into_parts();
         (issued, execution, native, observations)
     });
     let (issued, execution, native, observations) = acquired;
@@ -2500,7 +2505,7 @@ fn counter_query_count<R>(
         _values,
     ) = observations;
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (publication, continued),
             cleanup: Ok(()),
         },
@@ -2509,6 +2514,7 @@ fn counter_query_count<R>(
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = native
     else {
         panic!("all original Counter Work/native/two-notification products");

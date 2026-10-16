@@ -1,7 +1,7 @@
 //! Finite assignment/deadline evidence; raw serial equality is not caller authentication or KERI proof.
 use bombay::behavior::{Behavior, BehaviorBase, EstablishedDelivery, MessageProtocol, User};
 use bombay::prelude::*;
-use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
 use std::time::{Duration, Instant};
 use tokio::{runtime::Builder, sync::oneshot};
 mod application_support;
@@ -276,9 +276,10 @@ fn authorized_assignments_survive_application_replacement() {
                     )
                 })
                 .await
-                .unwrap_or_else(|_| panic!("Application owns its execution"));
+                .unwrap_or_else(|_| panic!("Application owns its execution"))
+                .into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: observed,
                     cleanup: Ok(()),
                 },
@@ -287,6 +288,7 @@ fn authorized_assignments_survive_application_replacement() {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = received
             else {
                 panic!("complete first Work/native/notification custody");
@@ -367,9 +369,10 @@ fn authorized_assignments_survive_application_replacement() {
                     )
                 })
                 .await
-                .unwrap_or_else(|_| panic!("Application owns its replacement"));
+                .unwrap_or_else(|_| panic!("Application owns its replacement"))
+                .into_parts();
             let (
-                ApplicationOutcome::Completed {
+                WorkOutcome::Completed {
                     output: observed,
                     cleanup: Ok(()),
                 },
@@ -378,6 +381,7 @@ fn authorized_assignments_survive_application_replacement() {
                     termination: Ok(()),
                     retirement: Ok(()),
                 }),
+                (),
             ) = received
             else {
                 panic!("complete replacement Work/native/notification custody");
@@ -504,9 +508,10 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
                 },
             ),
         )
-        .unwrap_or_else(|_| panic!("Application owns expiry execution"));
+        .unwrap_or_else(|_| panic!("Application owns expiry execution"))
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: observed,
             cleanup: Ok(()),
         },
@@ -515,6 +520,7 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = received
     else {
         panic!("complete expiry Work/native/notification custody");
@@ -605,9 +611,10 @@ async fn export_assignment(
             )
         })
         .await
-        .unwrap_or_else(|_| panic!("every actual export still cleaned up"));
+        .unwrap_or_else(|_| panic!("every actual export still cleaned up"))
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: observed,
             cleanup: Ok(()),
         },
@@ -616,6 +623,7 @@ async fn export_assignment(
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = received
     else {
         panic!("complete startup export native and both notifications");

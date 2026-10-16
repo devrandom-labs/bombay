@@ -19,7 +19,7 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
-    let (application_outcome, native, notifications) = application_host
+    let (application_outcome, native, notifications, ()) = application_host
         .block_on(
             Application::with_topology(
                 Counter::new().stop_on_shutdown(),
@@ -51,7 +51,8 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the counter application retains exact cold or joined failure inputs");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let ((), cleanup) = application_outcome
         .try_into_completed()

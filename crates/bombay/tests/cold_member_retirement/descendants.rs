@@ -179,6 +179,10 @@ bombay::topology! {
     }
 }
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete heterogeneous timer journey proves both wrapper orders and exact original nested actor custody"
+)]
 async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_custody() {
     replayed_elapsed_report_cannot_discharge_the_other_wrapper_order();
     let first = Box::<[u8]>::from([3, 7]);
@@ -203,7 +207,7 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications) = Application::with_topology(
+    let (outcome, native, notifications, ()) = Application::with_topology(
         TimedParent::new().stop_on_shutdown(),
         timed_application::Topology::new(),
     )
@@ -218,7 +222,8 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
     )
     .run_with(|application| async move { application.termination().await })
     .await
-    .unwrap_or_else(|_| panic!("the native host is entered"));
+    .unwrap_or_else(|_| panic!("the native host is entered"))
+    .into_parts();
     let (termination, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("both actual report journeys complete"));

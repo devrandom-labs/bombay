@@ -1,0 +1,147 @@
+{
+  "compilers": {
+    "current": {
+      "release": "1.99.0",
+      "commit": "b940084d7eb6a299eb4bfeb8e34901bc051e7ac4",
+      "cargo": "cargo 1.99.0 (5f94df478 2026-08-27)"
+    },
+    "msrv": {
+      "release": "1.96.0",
+      "commit": "ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96",
+      "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
+    }
+  },
+  "patch_sha256": "95c19b5b1f3a41f542f294b1c1f20f1779904bac0e99f8030ddbd0b144a80e11",
+  "snapshots": {
+    "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
+      "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
+      "minimum_sha256": "deefe05e352eea1d57d44814cc7f5883e10d05bb6296c7d50972c1782f5b38ea",
+      "fixture_sha256": "90c6c3f3987b27f8ce4282d974604f840b13150854f33276b27c1df301a4eb59"
+    },
+    "crates/bombay/tests/compile/fail/topology_cold_extra_birth.stderr": {
+      "canonical_sha256": "c4e8f9ab02b594e0dce5eca570933e3a1b3f0c8f9c12c7d2692a9c2583c9687f",
+      "minimum_sha256": "92163c4169096f5d81fa42ea24ff3beba55e7bddf9ea503584ff0d6efac28f55",
+      "fixture_sha256": "75d93ffa72412a72aa28b3d848b71f1b5d259ba628866fdde263fbc07336aa96"
+    },
+    "crates/bombay/tests/compile/fail/topology_cold_wrong_host.stderr": {
+      "canonical_sha256": "ce2798b47f67a54c5e72d9288d0ab03c33ea55ff7dbd9e8c206552fe9ed28818",
+      "minimum_sha256": "7ce13ada39fe8776562710414712caf5dc9bb19e5dbf44a11abf8eeacabf7f13",
+      "fixture_sha256": "a7b0514d676229ceb1e337c47624e14d8477ebb5d2a8facfc44f541cc608cc19"
+    },
+    "crates/bombay/tests/compile/fail/topology_cold_wrong_role.stderr": {
+      "canonical_sha256": "a38edb57f0dc5407a6807a0d5149950597cbc6fae7813edf2526075bf4e5cbf9",
+      "minimum_sha256": "603bc5f9c9db84726a95f4bfb2d90e9b337a24f55a087aef830cc0b649c51c6f",
+      "fixture_sha256": "f0c55546143d8196589c76d56ab15456522f2fefdba0c2f3f1a9b669c6f2d7e8"
+    },
+    "crates/bombay/tests/compile/fail/topology_duplicate_roles.stderr": {
+      "canonical_sha256": "8f03cd257435f412d429c496eed0a7f2b3f8f44cb1ec87286119ae5b1383c3f8",
+      "minimum_sha256": "73b6893c117e50ccdb8e7bca7349b56127a69b7a3fea4a637302a0ad2be65244",
+      "fixture_sha256": "06ccc8b704c338d0c5e316fc050b42780207e43cf1174628362be0d4113249fd"
+    },
+    "crates/bombay/tests/compile/fail/topology_erased_cold_origin.stderr": {
+      "canonical_sha256": "1a82ff5b49a5721013408c9579c2fb6dfc7247308e233ddd3cebeacc571f37c7",
+      "minimum_sha256": "1b3f9669266dd677806d42f97a019a5189da411993f60720bef14e5b65967528",
+      "fixture_sha256": "0c422e499e5b2a1f83190b127fcb1495c6c1a8b44eeb55355e6632c7b5ae3d88"
+    },
+    "crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr": {
+      "canonical_sha256": "381298fd1fb41be7b6e19c234c3e039d9840fdb7eb6ff19068098043c7bc3058",
+      "minimum_sha256": "485a75c8eeb2c94bf20ae3b70972ed4152bf3b835cc7de6af0ce1747451b73cc",
+      "fixture_sha256": "b734feaa270862259d11afbd438fb0abc226a4a65369dba2d4bdf500d0046824"
+    },
+    "crates/bombay/tests/compile/fail/topology_inferred_forged_position.stderr": {
+      "canonical_sha256": "9a7802a9a87c6671ee8353b5febbcddbc26dec9eb8652cbaf3bc41d665fc2e4f",
+      "minimum_sha256": "8af984a894a2b73675189e3c91fa9cf99ad46b2e72c7441d4f1033c0de5d79bc",
+      "fixture_sha256": "96b8b5f8482c18d9394c33a9aa06bb9377730d467b10cae860ef0f71c530636d"
+    },
+    "crates/bombay/tests/compile/fail/topology_inferred_forged_role.stderr": {
+      "canonical_sha256": "7ac3e5730734010e287fd7f4cc0ac5fe7452f9d424b1549380a97a7343c3bd2f",
+      "minimum_sha256": "8a697263581f29b4c0ad7fdb11897eb20430df21605de6f948d6696b1fb5e9c4",
+      "fixture_sha256": "9f9b1cfa9d6dbf605daa08ee356e85a1a31c30b1035f79c100a949c01a4f7251"
+    },
+    "crates/bombay/tests/compile/fail/topology_inferred_inconsistent_child.stderr": {
+      "canonical_sha256": "b64d19c1443481627c010d980c3da1a465e005a66c7de486193bb9a88f29828d",
+      "minimum_sha256": "972568f4d529edc1014c554b6cd9a24d0750c53ac9c5135f8ecb756d80cca1f2",
+      "fixture_sha256": "e6fc97451a240916b72fa5c85ebf333a5fa38393978e1f0da6bffd50f2bafc9f"
+    },
+    "crates/bombay/tests/compile/fail/topology_inferred_wrong_role_parent.stderr": {
+      "canonical_sha256": "b77fea0fd02261544bf447e12c07a149039ebf0b8df3016387309aeb909f6d28",
+      "minimum_sha256": "aefa04e8b1eaf56ceb7f96be9d108c59a13798ea3d704deb24f4e2ef2f47a4ad",
+      "fixture_sha256": "f07f122b9853377b3b07fcf48db3f5f1bac6a8a9d92a50064f7486284a278860"
+    },
+    "crates/bombay/tests/compile/fail/topology_swapped_roles.stderr": {
+      "canonical_sha256": "dcd9df98c886e4e83d3754bab6b428565ea213458a0f7607e722290944440bf5",
+      "minimum_sha256": "48d6eeea1102f65b78d7c71102dc6a16e8a5a0dbc799f408ff65706a3185ae2d",
+      "fixture_sha256": "6beed97507e989884df13c1a04df721a820f962af81a1059c8d0644414619179"
+    },
+    "crates/bombay/tests/compile/fail/worker_factory_not_callable.stderr": {
+      "canonical_sha256": "df0f015bb3e2c67168334356bab6488d7cdc9f0a6daddbf4f112c62d4f7b0109",
+      "minimum_sha256": "0b389cfd3432ce8749361acf8f2dd56928a9be86713db6efd1bcc674b5d03fc6",
+      "fixture_sha256": "1cca36456928fcebe254528aae7b4c769401ef18447c22207f809cc05574c8e8"
+    }
+  },
+  "cases": [
+    "tests/compile/fail/axum_wrong_root_protocol.rs",
+    "tests/compile/fail/discarded_actor_policy_and_terminal.rs",
+    "tests/compile/fail/fluent_template_order_is_static.rs",
+    "tests/compile/fail/interpreter_missing.rs",
+    "tests/compile/fail/interpreter_owner.rs",
+    "tests/compile/fail/stash_requires_closed_phase.rs",
+    "tests/compile/fail/stash_requires_infallible_error.rs",
+    "tests/compile/fail/topology_cold_extra_birth.rs",
+    "tests/compile/fail/topology_cold_recursive_owner.rs",
+    "tests/compile/fail/topology_cold_wrong_host.rs",
+    "tests/compile/fail/topology_cold_wrong_role.rs",
+    "tests/compile/fail/topology_duplicate_roles.rs",
+    "tests/compile/fail/topology_erased_cold_origin.rs",
+    "tests/compile/fail/topology_family_duplicate_class.rs",
+    "tests/compile/fail/topology_family_missing_class.rs",
+    "tests/compile/fail/topology_family_missing_effect_host.rs",
+    "tests/compile/fail/topology_family_root_class.rs",
+    "tests/compile/fail/topology_family_wrong_definition.rs",
+    "tests/compile/fail/topology_forged_constructor.rs",
+    "tests/compile/fail/topology_inferred_cold_root.rs",
+    "tests/compile/fail/topology_inferred_extra_birth.rs",
+    "tests/compile/fail/topology_inferred_forged_position.rs",
+    "tests/compile/fail/topology_inferred_forged_role.rs",
+    "tests/compile/fail/topology_inferred_inconsistent_child.rs",
+    "tests/compile/fail/topology_inferred_missing_anchor.rs",
+    "tests/compile/fail/topology_inferred_missing_readiness.rs",
+    "tests/compile/fail/topology_inferred_missing_trace.rs",
+    "tests/compile/fail/topology_inferred_multiple_root.rs",
+    "tests/compile/fail/topology_inferred_recursive_anchor.rs",
+    "tests/compile/fail/topology_inferred_root_role_parent.rs",
+    "tests/compile/fail/topology_inferred_unused_role_parent.rs",
+    "tests/compile/fail/topology_inferred_wrong_role_parent.rs",
+    "tests/compile/fail/topology_missing_readiness.rs",
+    "tests/compile/fail/topology_missing_trace.rs",
+    "tests/compile/fail/topology_swapped_roles.rs",
+    "tests/compile/fail/worker_factory_clone.rs",
+    "tests/compile/fail/worker_factory_not_callable.rs",
+    "tests/compile/fail/worker_factory_not_send.rs",
+    "tests/compile/fail/worker_factory_reuse.rs",
+    "tests/compile/fail/worker_factory_source_refusal.rs",
+    "tests/compile/fail/worker_factory_wrong_output.rs",
+    "tests/compile/pass/fluent_template_stack.rs",
+    "tests/compile/pass/stash_machine.rs",
+    "tests/compile/pass/topology_inferred_cold_classes.rs"
+  ],
+  "suites": [
+    "topology_rejects_missing_capabilities_and_invalid_custody",
+    "topology_inference_rejects_forged_roles_and_incomplete_declarations",
+    "topology_rejects_invalid_entity_class_sources",
+    "axum_protocol_inversion_is_compile_checked",
+    "behavior_layer_authoring_contract",
+    "worker_factory_rejects_invalid_capabilities",
+    "native_interpreter_rejects_absence_and_wrong_owner",
+    "cold_topology_rejects_incomplete_births_hosts_and_roles",
+    "cold_topology_accepts_actual_member_types_without_annotations"
+  ],
+  "targets": {
+    "application_topology": 18,
+    "axum": 7,
+    "template_authoring": 1,
+    "worker_factory": 4,
+    "interpreter_selection": 2,
+    "cold_member_retirement": 7
+  }
+}

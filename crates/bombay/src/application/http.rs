@@ -1,16 +1,18 @@
-use super::ApplicationScope;
+use super::{ApplicationScope, MailboxCapacity};
+use crate::NativeHost;
 use crate::address::MailAddr;
 use crate::application::composition::ComposeApplication;
 use crate::application::execution::{
     ApplicationWorkCustody, ApplicationWorkPresence, ApplicationWorkPublication, RootInterpreter,
     execute_application_with,
 };
-use crate::application::{Application, ApplicationHandle, ApplicationOutcome};
+use crate::application::{Application, ApplicationHandle, ApplicationOutcome, WorkOutcome};
 use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::local::effects::CommitActions;
-use crate::terminal::{ActorNotificationReceipts, ActorRetirement, RetirementSchema, RootOrigin};
+use crate::local::effects::services::NativeConstruction;
+use crate::terminal::{ActorRetirement, RetirementSchema, RootOrigin};
 use crate::topology::{ApplicationTopology, RootRegistration};
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -21,7 +23,6 @@ use std::io;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tokio::runtime::{Handle, TryCurrentError};
-use tokio::sync::oneshot::error::RecvError;
 
 #[allow(
     private_bounds,
@@ -65,8 +66,8 @@ where
         (
             impl Future<Output = ()>,
             impl Future<
-                Output = (
-                    ApplicationOutcome<
+                Output = ApplicationOutcome<
+                    WorkOutcome<
                         (Self, Router, SocketAddr),
                         (Router, TcpListener),
                         Result<(), io::Error>,
@@ -85,25 +86,23 @@ where
                         (Actor, Spaces, ApplicationScope),
                         (),
                     >,
-                    Result<
-                        (
-                            RootOrigin<Root>,
-                            ActorRetirement<
-                                Actor,
-                                <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                                ChildFailures,
-                            >,
-                        ),
-                        RecvError,
-                    >,
-                    Result<ActorNotificationReceipts, RecvError>,
-                ),
+                    (
+                        RootOrigin<Root>,
+                        ActorRetirement<
+                            Actor,
+                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                            ChildFailures,
+                        >,
+                    ),
+                    (),
+                >,
             >,
         ),
         ((Self, Router, SocketAddr), TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -242,7 +241,11 @@ where
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,
-                    None => ApplicationScope { allocations },
+                    None => ApplicationScope {
+                        allocations,
+                        client_capacity: MailboxCapacity::default(),
+                        mailbox_capacity: MailboxCapacity::default(),
+                    },
                 };
                 let root = match members.compose(root) {
                     Ok(actor) => actor,
@@ -275,7 +278,7 @@ where
         );
         let receiving = async move {
             let (work, root, termination_notification) = receiving.await;
-            (work.into_http(), root, termination_notification)
+            ApplicationOutcome::new(work.into_http(), root, termination_notification, ())
         };
         Ok((execution, receiving))
     }
@@ -296,8 +299,8 @@ where
         address: SocketAddr,
         router: Router,
     ) -> Result<
-        (
-            ApplicationOutcome<
+        ApplicationOutcome<
+            WorkOutcome<
                 (Self, Router, SocketAddr),
                 (Router, TcpListener),
                 Result<(), io::Error>,
@@ -316,23 +319,21 @@ where
                 (Actor, Spaces, ApplicationScope),
                 (),
             >,
-            Result<
-                (
-                    RootOrigin<Root>,
-                    ActorRetirement<
-                        Actor,
-                        <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                        ChildFailures,
-                    >,
-                ),
-                RecvError,
-            >,
-            Result<ActorNotificationReceipts, RecvError>,
-        ),
+            (
+                RootOrigin<Root>,
+                ActorRetirement<
+                    Actor,
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    ChildFailures,
+                >,
+            ),
+            (),
+        >,
         ((Self, Router, SocketAddr), TryCurrentError),
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>

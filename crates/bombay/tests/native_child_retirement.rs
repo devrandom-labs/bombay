@@ -5,8 +5,8 @@ use bombay::behavior::{
 };
 use bombay::lifecycle::StopOnShutdown;
 use bombay::{
-    ActorCustody, ActorNotificationReceipts, ActorRetirement, Application, ApplicationOutcome,
-    Completion, MailAddr,
+    ActorCustody, ActorNotificationReceipts, ActorRetirement, Application, Completion, MailAddr,
+    WorkOutcome,
 };
 
 struct Worker {
@@ -70,7 +70,7 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
         second_id,
         Worker { payload: second }.stop_on_shutdown(),
     ));
-    let (outcome, native, notifications) = Application::with_topology(
+    let (outcome, native, notifications, ()) = Application::with_topology(
         Creator {
             children: Some(children),
         }
@@ -82,8 +82,9 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
     .unwrap_or_else(|original| {
         drop(original);
         panic!("the native host is entered");
-    });
-    let ApplicationOutcome::NotInvoked {
+    })
+    .into_parts();
+    let WorkOutcome::NotInvoked {
         work: None,
         startup_error: Some(_),
         cleanup: Ok(()),

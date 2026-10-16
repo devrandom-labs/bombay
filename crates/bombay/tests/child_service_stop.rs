@@ -8,8 +8,8 @@ use bombay::behavior::{
 };
 use bombay::prelude::*;
 use bombay::{
-    ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ApplicationOutcome,
-    InstalledActor, RetirementAssessment,
+    ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, InstalledActor,
+    RetirementAssessment, WorkOutcome,
 };
 use core::{
     future::Future,
@@ -350,10 +350,11 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the exact native Application remains available")
-        });
+        })
+        .into_parts();
     drop(host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output:
                 (
                     target_address,
@@ -372,6 +373,7 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = originals
     else {
         panic!("all original actor and notification products remain independent")

@@ -61,7 +61,7 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                 })
                 .await
                 .unwrap_or_else(|_| panic!("local Application enters the actual host"));
-            let (local_outcome, local_native, local_notifications) = local;
+            let (local_outcome, local_native, local_notifications, ()) = local.into_parts();
             let ((local_declaration, local_target, local_stopped, local_report), local_cleanup) =
                 local_outcome
                     .try_into_completed()
@@ -74,7 +74,7 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                 .unwrap_or_else(|_| panic!("configured owning Node starts"));
             let node_refusals = Arc::clone(&refusals);
             let (execution, receiving) = node
-                .execute_with(|application, _session| async move {
+                .execute_with(|application| async move {
                     let target = application.root().established_recipient();
                     let foreign = Application::new(Counter::new().stop_on_shutdown())
                         .run_with(|foreign_application| async move {
@@ -85,7 +85,8 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                         })
                         .await
                         .unwrap_or_else(|_| panic!("independent Application enters the host"));
-                    let (foreign_outcome, foreign_native, foreign_notifications) = foreign;
+                    let (foreign_outcome, foreign_native, foreign_notifications, ()) =
+                        foreign.into_parts();
                     let ((foreign_target, foreign_stopped, foreign_report), foreign_cleanup) =
                         foreign_outcome
                             .try_into_completed()
@@ -170,7 +171,8 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                     )
                 })
                 .unwrap_or_else(|_| panic!("actual owning Node execution enters"));
-            let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+            let ((), outcome) = tokio::join!(execution, receiving);
+            let (outcome, native, notifications, ()) = outcome.into_parts();
             let (
                 (
                     application,

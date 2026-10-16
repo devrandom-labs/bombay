@@ -2905,6 +2905,7 @@ mod ordinary_owner_retirement {
 #[cfg(test)]
 mod transitive_source_cancellation {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use super::ActorExecution;
     use crate::ActorExecutionOutcome;
@@ -3186,6 +3187,7 @@ mod transitive_source_cancellation {
                             address,
                             actor_spaces: Arc::new(()),
                             allocations: ApplicationAddresses::new(),
+                            mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
@@ -3409,8 +3411,8 @@ mod independent_actor_execution {
         ActorFailureAssessment, ActorRetirementReport, LocalOutcome, RetirementAssessment,
     };
     use crate::{
-        ActorExecutionOutcome, ActorRetirement, Application, ApplicationOutcome, ChildOrigin,
-        MailAddr, ProjectTerminal, actor,
+        ActorExecutionOutcome, ActorRetirement, Application, ChildOrigin, MailAddr,
+        ProjectTerminal, WorkOutcome, actor,
     };
 
     #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -4916,21 +4918,24 @@ mod independent_actor_execution {
         let mut joined = None;
         let started = Instant::now();
         let controller = allocations_during(|| {
-            joined = Some(runtime.block_on(async { tokio::join!(execution, result).1 }));
+            joined = Some(runtime.block_on(async {
+                tokio::join!(execution, async { result.await.into_parts() }).1
+            }));
         });
         let elapsed = started.elapsed();
         drop(runtime);
         let stale = CHILD_EXECUTION_COMPLETION.lock().unwrap().take();
         assert!(stale.is_none());
-        let (application_outcome, root_retirement, notifications) =
-            joined.expect("whole original application result remains");
+        let (application_outcome, root_retirement, notifications, ()) = joined
+            .expect("whole original application result remains")
+            .into_parts();
         if matches!(
             &root_retirement,
             Ok((_, ActorRetirement::ActorTaskFailed(_)))
         ) {
             panic!("the measured application owns completed work and both native joins");
         }
-        let ApplicationOutcome::Completed {
+        let WorkOutcome::Completed {
             output: (projector, projected_origin, termination),
             cleanup: Ok(()),
         } = application_outcome

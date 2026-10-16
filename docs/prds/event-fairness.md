@@ -75,6 +75,12 @@ has separate integration gates; it does not rewrite the earlier witnesses.
 | Timers | 0.2.0 / 9369d1f6c7fcda91e7de5bf3c19e6769f92145bd | TimerQueue schedule/next_deadline/pop_due and semantics tests; existing generation/order ownership retained. |
 | Tokio | 1.53.1 | Select cancellation safety and JoinSet; original task handles remain outside selection futures. |
 
+The original fairness proof above used Behavior/Actors0.25.0. The developer
+experience integration selects registry0.26.0/macros0.14.2 without patches, plus
+Bombay0.1.2 and the paired SDK1.10.9 locks. Its separate combined-source evidence
+belongs in [the coordination record](developer-experience.md); original0.25
+results do not certify the integrated source.
+
 Bombay owns selection in ActiveLocalEnvironment and ApplicationCapabilities.
 Engine's causal Driver, initialization, complete action interpretation and
 retirement retain their existing owners. Entity uses the same environment;

@@ -1,0 +1,278 @@
+//! Source-backed supervisor startup, replacement and complete retirement laws.
+//! The supervisor owns recovery policy; Bombay interprets its typed actions.
+
+use bombay::WorkOutcome;
+use bombay::{ActorCustody, ActorNotificationReceipts};
+use core::time::Duration;
+use tokio::runtime::Builder;
+
+use bombay::actors::ActorExt as _;
+use bombay::atomic::{
+    ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition, FailureReaction,
+    FixedCommand, FixedSnapshot, OrderedRoles, Recovery, RestartLimit, RestartRelease, Strategy,
+    fixed,
+};
+use bombay::behavior::MessageProtocol;
+use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr};
+use bombay::{Application, WorkerFactory};
+use tokio::sync::mpsc;
+
+#[path = "../../../examples/supervision/src/worker.rs"]
+mod worker;
+use worker::{Worker, WorkerCommand, WorkerRole, worker_submission};
+
+type Status = MessageProtocol<MailAddr, FixedSnapshot<Worker>>;
+type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, Worker>>;
+
+bombay::topology! {
+    supervisor_application {
+        root { Proxy => proxy; }
+        proxy { Worker => worker; }
+        worker {}
+        hosts { status: Status; capability: Capability; }
+    }
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete replacement and drain trace preserves original incarnation and terminal custody"
+)]
+#[test]
+fn supervisor_replaces_worker_and_preserves_complete_retirement() {
+    let (activated, mut activations) = mpsc::unbounded_channel();
+    let supervisor = {
+        let roles =
+            OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role roster is distinct");
+        let initial_activated = activated.clone();
+        fixed(
+            move |role: &WorkerRole| worker_submission(*role, &initial_activated),
+            roles,
+            ActivationPolicy::new(1).expect("one worker fits the activation policy"),
+            Recovery::permanent(
+                WorkerFactory::new(move |role| worker_submission(*role, &activated)),
+                Strategy::OneForOne,
+                RestartLimit::new(1, Duration::from_secs(30)),
+                RestartRelease::immediate(),
+            ),
+            FailureReaction::StopSupervisor,
+            ActorDrainPolicy::WaitForActorGraph,
+            DiagnosticDisposition::terminate(),
+        )
+        .build()
+        .unwrap_or_else(|_| panic!("the declared worker is prepared"))
+    };
+    let spaces = supervisor_application::Topology::new();
+    let application_host = Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("the synchronous caller owns its explicit current-thread host");
+    let application_outcome = application_host
+        .block_on(
+            Application::with_topology(supervisor.stop_on_shutdown(), spaces).run_with(
+                move |application| async move {
+                    let first = tokio::time::timeout(Duration::from_secs(5), activations.recv())
+                        .await
+                        .expect("the first worker activates")
+                        .expect("the first activation has a role");
+                    assert_eq!(first, WorkerRole::Primary);
+
+                    let supervisor = application.root().established_recipient();
+                    let mut caller = application
+                        .external::<Capability>()
+                        .expect("the capability caller is established");
+                    caller
+                        .send(
+                            &supervisor,
+                            FixedCommand::capability(WorkerRole::Primary, caller.recipient()),
+                        )
+                        .await
+                        .expect("the supervisor accepts the capability query");
+                    let reply = caller
+                        .receive()
+                        .await
+                        .expect("the primary capability is returned");
+                    let CapabilityResult::Ready { role, proxy } = reply.message else {
+                        panic!("the primary proxy is ready")
+                    };
+                    assert_eq!(role, WorkerRole::Primary);
+                    caller
+                        .send(&proxy, WorkerCommand::Stop)
+                        .await
+                        .expect("the first worker accepts its stop command");
+
+                    let replacement =
+                        tokio::time::timeout(Duration::from_secs(5), activations.recv())
+                            .await
+                            .expect("the replacement activates")
+                            .expect("the replacement activation has a role");
+                    assert_eq!(replacement, WorkerRole::Primary);
+                    caller
+                        .send(&supervisor, FixedCommand::shutdown())
+                        .await
+                        .expect("the supervisor accepts shutdown");
+                    tokio::time::timeout(Duration::from_secs(5), application.termination())
+                        .await
+                        .expect("the supervisor retires after replacement and shutdown")
+                },
+            ),
+        )
+        .unwrap_or_else(|failed| {
+            drop(failed);
+            panic!("the supervisor runs its recovery policy");
+        })
+        .into_parts();
+    drop(application_host);
+    let (
+        WorkOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+        (),
+    ) = application_outcome
+    else {
+        panic!("the original completed Work and joined root remain independently owned");
+    };
+    assert_eq!(termination, Ok(Exit::Normal));
+    let origin = root_origin;
+    let terminal = match joined_actor {
+        ActorRetirement::ActorTaskFailed(failure) => {
+            panic!("the actual application actor task failed: {failure}")
+        }
+        retirement => retirement,
+    };
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::Completed {
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
+        completion,
+        ..
+    } = terminal
+    else {
+        panic!("the supervisor returns completed terminal custody")
+    };
+    assert_eq!(capability_failures.len(), 0);
+    assert!(unread_owner_cancellation.is_none());
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!(descendants.len(), 1);
+    let supervisor_application::RootRetirements {
+        origin,
+        retirement: terminal,
+    } = descendants
+        .into_iter()
+        .next()
+        .expect("the primary role retains its proxy");
+    let terminal = *terminal;
+    assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::Completed {
+        custody:
+            ActorCustody {
+                capability_failures,
+                unread_owner_cancellation,
+                descendants,
+                ..
+            },
+        completion,
+        ..
+    } = terminal
+    else {
+        panic!("the proxy returns both worker incarnations")
+    };
+    assert_eq!(capability_failures.len(), 0);
+    assert!(unread_owner_cancellation.is_none());
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!(descendants.len(), 2);
+    for descendant in descendants {
+        let supervisor_application::ProxyRetirements {
+            origin,
+            retirement: terminal,
+        } = descendant;
+        let terminal = *terminal;
+        assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
+        let ActorRetirement::Completed {
+            custody:
+                ActorCustody {
+                    capability_failures,
+                    unread_owner_cancellation,
+                    descendants,
+                    ..
+                },
+            completion,
+            ..
+        } = terminal
+        else {
+            panic!("the worker returns completed terminal custody")
+        };
+        assert_eq!(capability_failures.len(), 0);
+        assert!(unread_owner_cancellation.is_none());
+        assert_eq!(completion, Completion::Stopped);
+        assert_eq!(descendants.len(), 0);
+    }
+}
+
+mod tests {
+    use super::{WorkerFactory, WorkerRole, worker_submission};
+    use bombay::atomic::ProxyPhase;
+    use bombay::atomic::{
+        ActivationPolicy, ActorDrainPolicy, DiagnosticDisposition, FailureReaction, OrderedRoles,
+        Recovery, RestartLimit, RestartRelease, Strategy, fixed,
+    };
+    use bombay::behavior::{CreationKind, Step};
+    use bombay::prelude::Activate as _;
+    use core::time::Duration;
+    use tokio::sync::mpsc;
+
+    #[test]
+    fn fixed_supervisor_initialization_preserves_role_and_correlation() {
+        let (activated, _) = mpsc::unbounded_channel();
+        let supervisor = {
+            let roles = OrderedRoles::new(WorkerRole::Primary, [])
+                .expect("the one-role roster is distinct");
+            let initial_activated = activated.clone();
+            fixed(
+                move |role: &WorkerRole| worker_submission(*role, &initial_activated),
+                roles,
+                ActivationPolicy::new(1).expect("one worker fits the activation policy"),
+                Recovery::permanent(
+                    WorkerFactory::new(move |role| worker_submission(*role, &activated)),
+                    Strategy::OneForOne,
+                    RestartLimit::new(1, Duration::from_secs(30)),
+                    RestartRelease::immediate(),
+                ),
+                FailureReaction::StopSupervisor,
+                ActorDrainPolicy::WaitForActorGraph,
+                DiagnosticDisposition::terminate(),
+            )
+            .build()
+            .unwrap_or_else(|_| panic!("the declared worker is prepared"))
+        };
+        let initialized = supervisor
+            .initialize()
+            .unwrap_or_else(|_| panic!("the fixed supervisor initializes its stable proxy"));
+        assert_eq!(initialized.actions.creates.len(), 1);
+        let proxy = initialized
+            .actions
+            .creates
+            .iter()
+            .next()
+            .expect("the primary role owns one stable proxy");
+        let creation = proxy.id();
+        assert_eq!(proxy.kind(), CreationKind::Birth);
+        assert_eq!(proxy.child().phase(), ProxyPhase::Dormant);
+        assert_eq!(initialized.actions.sends.proxy_observations.len(), 1);
+        assert_eq!(
+            initialized.actions.sends.proxy_observations[0].child,
+            creation
+        );
+        assert_eq!(initialized.actions.become_, Step::Continue);
+    }
+}

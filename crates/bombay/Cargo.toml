@@ -40,6 +40,11 @@ zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-f
 zenoh_protocol = { package = "zenoh-protocol", version = "=1.10.1", default-features = false, optional = true }
 
 [dev-dependencies]
+http-body-util = "0.1.5"
+tower = { version = "0.5.3", features = ["util"] }
+futures-util = { version = "0.3.34", default-features = false, features = [
+  "std",
+] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 trybuild = "1"

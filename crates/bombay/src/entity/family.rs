@@ -22,6 +22,7 @@ use behavior_actors::ShutdownRequested;
 use tokio::runtime::Handle;
 
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::application::MailboxCapacity;
 use crate::launch::SpawnError;
 use crate::local::endpoint::ActorRef;
 use crate::topology::Hosts as LocalHosts;
@@ -32,8 +33,8 @@ use super::bombay::{
 };
 use super::runtime::EntityReceptionist;
 use super::{
-    ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityId, EntityRuntime,
-    EntityShutdown, Passivation,
+    ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityId, EntityRetirementError,
+    EntityRuntime, EntityShutdown, FamilyRetirement, Passivation, RetirementMode,
 };
 
 /// One nominal, asynchronously hydrated native Entity family.
@@ -393,6 +394,18 @@ where
         }
     }
 
+    pub(crate) async fn retire_entity(
+        &self,
+        id: &D::Id,
+    ) -> Result<RetirementMode, EntityRetirementError>
+    where
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    {
+        self.receptionist
+            .retire_entity(&EntityId::new(id.clone()))
+            .await
+    }
+
     pub(crate) fn passivate(&self, id: &D::Id) -> Passivation
     where
         D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
@@ -586,17 +599,7 @@ where
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (
-        Result<
-            (
-                Role,
-                (
-                    EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
-                    EntityMetrics,
-                    Option<Box<dyn Any + Send>>,
-                ),
-            ),
-            RecvError,
-        >,
+        Result<(Role, FamilyRetirement<D::Id>), RecvError>,
         Tail::Shutdowns,
     );
 }
@@ -685,6 +688,7 @@ pub(crate) trait InstallEntityFamilies<Hosts>: EntityApplicationFamilies<Hosts> 
         hosts: Arc<Hosts>,
         allocations: ApplicationAddresses,
         executor: Handle,
+        mailbox_capacity: MailboxCapacity,
     ) -> Self::Installed;
 }
 
@@ -694,7 +698,14 @@ where
 {
     type Installed = ();
 
-    fn install(self, _: Arc<Hosts>, _: ApplicationAddresses, _: Handle) -> Self::Installed {}
+    fn install(
+        self,
+        _: Arc<Hosts>,
+        _: ApplicationAddresses,
+        _: Handle,
+        _: MailboxCapacity,
+    ) -> Self::Installed {
+    }
 }
 
 impl<Hosts, Role, D, Tail> InstallEntityFamilies<Hosts>
@@ -713,6 +724,7 @@ where
         hosts: Arc<Hosts>,
         allocations: ApplicationAddresses,
         executor: Handle,
+        mailbox_capacity: MailboxCapacity,
     ) -> Self::Installed {
         let (role, definition, directory, capacity, tail) = self;
         let definition = Arc::new(definition);
@@ -724,6 +736,7 @@ where
             capacity,
             Arc::clone(&metrics),
             executor.clone(),
+            mailbox_capacity,
         );
         let runtime = EntityRuntime::new(directory, runtime);
         let entities = Entities::from_runtime(&runtime, definition);
@@ -732,7 +745,7 @@ where
             entities,
             metrics,
         };
-        let tail = tail.install(hosts, allocations, executor);
+        let tail = tail.install(hosts, allocations, executor, mailbox_capacity);
         (role, family, tail)
     }
 }
@@ -778,29 +791,12 @@ where
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
     type Shutdowns = (
-        Result<
-            (
-                Role,
-                (
-                    EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
-                    EntityMetrics,
-                    Option<Box<dyn Any + Send>>,
-                ),
-            ),
-            RecvError,
-        >,
+        Result<(Role, FamilyRetirement<D::Id>), RecvError>,
         Tail::Shutdowns,
     );
 
     type ShutdownPublications = (
-        oneshot::Sender<(
-            Role,
-            (
-                EntityShutdown<JoinError, EntityRetirementFailure, D::Id>,
-                EntityMetrics,
-                Option<Box<dyn Any + Send>>,
-            ),
-        )>,
+        oneshot::Sender<(Role, FamilyRetirement<D::Id>)>,
         Tail::ShutdownPublications,
     );
 
@@ -831,7 +827,10 @@ where
         let (head_publication, tail_publications) = publications;
         let (shutdown, metrics) = family.shutdown().await;
         let family_disposal_failure = catch_unwind(AssertUnwindSafe(|| drop(family))).err();
-        match head_publication.send((role, (shutdown, metrics, family_disposal_failure))) {
+        match head_publication.send((
+            role,
+            FamilyRetirement::new(shutdown, metrics, family_disposal_failure),
+        )) {
             Ok(()) => {}
             // Only the final receiver's surrender permits this exact one-time discharge.
             Err(head) => drop(head),

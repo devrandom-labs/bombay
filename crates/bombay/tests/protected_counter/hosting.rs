@@ -9,7 +9,7 @@ use bombay::actors::ActorExt;
 use bombay::behavior::{ClassifySettlement, EstablishedRecipient, SettlementStatus};
 use bombay::prelude::Completion;
 use bombay::remote::ExportError;
-use bombay::{ActorRetirement, ApplicationOutcome, ApplicationScope, Hosts};
+use bombay::{ActorRetirement, ApplicationScope, Hosts, WorkOutcome};
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 
@@ -111,8 +111,7 @@ fn same_address_foreign_child_keeps_its_owning_application() {
             .unwrap_or_else(|_| panic!("actual ordinary B execution"));
         let (output_a, cleanup_a, native_a, notifications_a, received_b) = {
             let (execution_a, receiving_a) = node
-                .execute_with(move |application, session| async move {
-                    let runtime_scope = session.zid();
+                .execute_with(move |application| async move {
                     let export = exports_a
                         .send(
                             &application.root().established_recipient(),
@@ -165,7 +164,6 @@ fn same_address_foreign_child_keeps_its_owning_application() {
                     let advanced = advance.send(());
                     let stopped = application.request_shutdown();
                     (
-                        runtime_scope,
                         export,
                         published,
                         root_address,
@@ -187,8 +185,8 @@ fn same_address_foreign_child_keeps_its_owning_application() {
                 })
                 .unwrap_or_else(|_| panic!("actual Node A execution"));
             tokio::join!(execution_a, execution_b);
-            let (outcome_a, native_a, notifications_a) = receiving_a.await;
-            let ApplicationOutcome::Completed { output, cleanup } = outcome_a else {
+            let (outcome_a, native_a, notifications_a, ()) = receiving_a.await.into_parts();
+            let WorkOutcome::Completed { output, cleanup } = outcome_a else {
                 panic!("actual A Work output");
             };
             (
@@ -196,12 +194,11 @@ fn same_address_foreign_child_keeps_its_owning_application() {
                 cleanup,
                 native_a,
                 notifications_a,
-                receiving_b.await,
+                receiving_b.await.into_parts(),
             )
         };
         let closed = node.close().await;
         let (
-            _runtime_scope,
             export_a,
             published_a,
             root_address_a,
@@ -220,8 +217,8 @@ fn same_address_foreign_child_keeps_its_owning_application() {
             exports_a,
             values_a,
         ) = output_a;
-        let (outcome_b, native_b, notifications_b) = received_b;
-        let ApplicationOutcome::Completed {
+        let (outcome_b, native_b, notifications_b, ()) = received_b;
+        let WorkOutcome::Completed {
             output,
             cleanup: cleanup_b,
         } = outcome_b
@@ -470,8 +467,7 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
             .unwrap_or_else(|_| panic!("actual ordinary B execution"));
         let (output_a, cleanup_a, native_a, notifications_a, received_b) = {
             let (execution_a, receiving_a) = node
-                .execute_with(move |application, session| async move {
-                    let runtime_scope = session.zid();
+                .execute_with(move |application| async move {
                     let export = exports_a
                         .send(
                             &application.root().established_recipient(),
@@ -521,7 +517,6 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
                     let advanced = advance.send(());
                     let stopped = application.request_shutdown();
                     (
-                        runtime_scope,
                         export,
                         published,
                         root_address,
@@ -544,8 +539,8 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
                 })
                 .unwrap_or_else(|_| panic!("actual Node A execution"));
             tokio::join!(execution_a, execution_b);
-            let (outcome_a, native_a, notifications_a) = receiving_a.await;
-            let ApplicationOutcome::Completed { output, cleanup } = outcome_a else {
+            let (outcome_a, native_a, notifications_a, ()) = receiving_a.await.into_parts();
+            let WorkOutcome::Completed { output, cleanup } = outcome_a else {
                 panic!("actual A Work output");
             };
             (
@@ -553,12 +548,11 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
                 cleanup,
                 native_a,
                 notifications_a,
-                receiving_b.await,
+                receiving_b.await.into_parts(),
             )
         };
         let closed = node.close().await;
         let (
-            _runtime_scope,
             export_a,
             published_a,
             root_address_a,
@@ -578,8 +572,8 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
             exports_a,
             values_a,
         ) = output_a;
-        let (outcome_b, native_b, notifications_b) = received_b;
-        let ApplicationOutcome::Completed {
+        let (outcome_b, native_b, notifications_b, ()) = received_b;
+        let WorkOutcome::Completed {
             output,
             cleanup: cleanup_b,
         } = outcome_b

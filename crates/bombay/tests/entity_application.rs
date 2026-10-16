@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use behavior_actors::StopOnShutdown;
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, ClassifySettlement, CreateChild, CreationSequence,
@@ -469,7 +469,8 @@ fn application_runs_two_native_entity_families() {
         .unwrap_or_else(|(application, work, error)| {
             drop((application, work));
             panic!("the explicit application host must be entered: {error}");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let notifications = notification_receiving
         .expect("the existing cleanup owner transferred both original notifications");
@@ -479,7 +480,7 @@ fn application_runs_two_native_entity_families() {
     notifications
         .retirement
         .expect("joined root report notification succeeded");
-    let ApplicationOutcome::Completed {
+    let WorkOutcome::Completed {
         output: (),
         cleanup: Ok(()),
     } = outcome
@@ -499,11 +500,15 @@ fn application_runs_two_native_entity_families() {
     );
 
     let (profile_receiving, tail) = shutdowns;
-    let (ProfilesRole, (profile_shutdown, profile_metrics, profile_family_disposal_failure)) =
+    let (ProfilesRole, family_retirement) =
         profile_receiving.expect("the whole profile family retirement is acquired");
+    let (profile_shutdown, profile_metrics, profile_family_disposal_failure) =
+        family_retirement.into_parts();
     let (account_receiving, ()) = tail;
-    let (AccountsRole, (account_shutdown, account_metrics, account_family_disposal_failure)) =
+    let (AccountsRole, family_retirement) =
         account_receiving.expect("the whole account family retirement is acquired");
+    let (account_shutdown, account_metrics, account_family_disposal_failure) =
+        family_retirement.into_parts();
     assert!(profile_family_disposal_failure.is_none());
     assert!(account_family_disposal_failure.is_none());
     let EntityShutdown::Settled {

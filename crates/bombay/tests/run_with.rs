@@ -1,9 +1,12 @@
+use core::time::Duration;
+
 use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
 use bombay::behavior::{NoSends, Step, Stopped};
 use std::error::Error;
 use std::future::Future;
 use std::io;
+use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
 use std::pin::pin;
 use std::sync::{
     Arc,
@@ -15,15 +18,14 @@ use std::{env, fs::File, process::Command};
 use tokio::runtime::Builder as TokioBuilder;
 
 use behavior_actors::{
-    FinalizeOnShutdown, ReportTerminalOutcome, RestartDenial, ShutdownRequested,
-    SupervisionFailureReason,
+    ReportTerminalOutcome, RestartDenial, ShutdownRequested, SupervisionFailureReason,
 };
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, EventLayer, InitializationTurn, InterpreterRequests,
-    NoBirths, User,
+    NoBirths, SendLayer, User,
 };
 use bombay::prelude::*;
-use bombay::{ActorSpace, Application, ApplicationOutcome};
+use bombay::{ActorSpace, Application, WorkOutcome};
 
 mod application_support;
 
@@ -350,7 +352,7 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
     let observed = Arc::clone(&calls);
 
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: rejected,
             cleanup: Ok(()),
         },
@@ -359,6 +361,7 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(Root.stop_on_shutdown())
         .run_with(move |application| async move {
             observed.fetch_add(1, Ordering::SeqCst);
@@ -382,6 +385,7 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
             drop(failed);
             panic!("the root terminates normally");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -403,7 +407,7 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
 #[tokio::test(flavor = "current_thread")]
 async fn boundary_owned_error_remains_an_unaggregated_output() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output,
             cleanup: Ok(()),
         },
@@ -412,6 +416,7 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(Root.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -426,6 +431,7 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
             drop(failed);
             panic!("the root terminates normally");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -456,8 +462,9 @@ fn run_is_the_unit_boundary_specialization() {
                 drop(application);
                 panic!("the caller owns the application's live entered host: {error}");
             });
+        let application_outcome = application_outcome.into_parts();
         let (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work: None,
                 startup_error: Some(_startup_error),
                 cleanup: Ok(()),
@@ -467,6 +474,7 @@ fn run_is_the_unit_boundary_specialization() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = application_outcome
         else {
             drop(application_outcome);
@@ -489,9 +497,10 @@ fn run_is_the_unit_boundary_specialization() {
             .unwrap_or_else(|failed| {
                 drop(failed);
                 panic!("the actual supplied-work caller host is entered");
-            });
+            })
+            .into_parts();
         let (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work,
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
@@ -501,6 +510,7 @@ fn run_is_the_unit_boundary_specialization() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = returned
         else {
             panic!("the generic boundary must withhold the unpublished root");
@@ -514,7 +524,7 @@ fn run_is_the_unit_boundary_specialization() {
 #[tokio::test(flavor = "current_thread")]
 async fn application_handle_separates_shutdown_request_from_exact_termination() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -523,6 +533,7 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(WaitsForApplicationShutdown.stop_on_shutdown())
         .run_with(|application| async move {
             assert_eq!(application.root().address(), MailAddr(0));
@@ -556,6 +567,7 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
             drop(failed);
             panic!("the requested application shutdown terminates normally");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -577,7 +589,7 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
 #[tokio::test(flavor = "current_thread")]
 async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -586,6 +598,7 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(ReportsTerminalOutcome.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -600,6 +613,7 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
             drop(failed);
             panic!("the reported terminal outcome commits before the root stops");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -620,7 +634,7 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
 #[tokio::test(flavor = "current_thread")]
 async fn continuing_report_cannot_select_the_later_stop_outcome() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -629,6 +643,7 @@ async fn continuing_report_cannot_select_the_later_stop_outcome() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(ContinuingTerminalReport.stop_on_shutdown())
         .run_with(|application| async move {
             let root = application.root();
@@ -645,6 +660,7 @@ async fn continuing_report_cannot_select_the_later_stop_outcome() {
             drop(failed);
             panic!("the later stop publishes its own normal outcome");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -670,7 +686,7 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
         maximum_restarts: 2,
     };
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -679,6 +695,7 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(
         ReportsSupervisionOutcome {
             commitment: ReportCommitment::Stop,
@@ -698,6 +715,7 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
         drop(failed);
         panic!("the supervision failure commits before the root stops");
     })
+    .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -723,7 +741,7 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
 #[tokio::test(flavor = "current_thread")]
 async fn supervision_report_from_a_continuing_action_cannot_override_later_shutdown() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: termination,
             cleanup: Ok(()),
         },
@@ -732,6 +750,7 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(
         ReportsSupervisionOutcome {
             commitment: ReportCommitment::Continue,
@@ -751,6 +770,7 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
         drop(failed);
         panic!("the continuing report is discarded before the later shutdown action");
     })
+    .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -771,7 +791,7 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
 #[tokio::test(flavor = "current_thread")]
 async fn run_delegates_shutdown_to_the_explicit_root_policy() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: finalization,
             cleanup: Ok(()),
         },
@@ -780,10 +800,10 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
-    ) = Application::new(FinalizeOnShutdown::new(
-        FinalizationProbe { observer: None },
-        record_finalization,
-    ))
+        (),
+    ) = Application::new(
+        FinalizationProbe { observer: None }.finalize_on_shutdown(record_finalization),
+    )
     .run_with(|application| async move {
         let interface = application.interface(application.root().established_recipient());
         let lifecycle = application.lifecycle();
@@ -813,6 +833,115 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
         drop(failed);
         panic!("the explicit finalization policy receives shutdown and terminates normally");
     })
+    .into_parts()
+    else {
+        panic!("the original completed output and both cleanup join boundaries remain exact");
+    };
+    let terminal: ApplicationTerminal<_> = (
+        root_origin,
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
+    );
+    assert_eq!(finalization, Some(FinalizationEvent::Finalized));
+    assert_completed_root(terminal, None);
+}
+
+#[test]
+fn outer_shutdown_policy_selects_whether_the_final_reaction_runs() {
+    let mut outer_stop = Root
+        .finalize_on_shutdown(|_, _| panic_any(313_u64))
+        .stop_on_shutdown()
+        .initialize()
+        .expect("the two explicit policies initialize without running the final reaction")
+        .behavior;
+    // A pure policy test selects the outer typed event directly. Application
+    // lifecycle inference still rejects two indistinguishable shutdown lanes.
+    let actions = outer_stop
+        .transition(EventLayer::Owned(ShutdownRequested))
+        .expect("the outer stop owns this request before the final reaction");
+    assert_eq!(
+        actions.sends,
+        SendLayer::new(NoSends, SendLayer::new(NoSends, NoSends))
+    );
+    assert!(actions.creates.is_empty());
+    assert_eq!(actions.become_, Step::Stop(Stopped));
+
+    let mut outer_finalization = Root
+        .stop_on_shutdown()
+        .finalize_on_shutdown(|_, _| panic_any(313_u64))
+        .initialize()
+        .expect("initialization never invokes either shutdown policy")
+        .behavior;
+    let reaction = catch_unwind(AssertUnwindSafe(|| {
+        outer_finalization.transition(EventLayer::Owned(ShutdownRequested))
+    }));
+    let Err(payload) = reaction else {
+        panic!("the outer final reaction must run before the inner stop");
+    };
+    let payload = payload
+        .downcast::<u64>()
+        .unwrap_or_else(|_| panic!("the exact native reaction payload survives"));
+    assert_eq!(*payload, 313);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn outer_finalization_keeps_its_notice_through_inner_timer() {
+    let (
+        WorkOutcome::Completed {
+            output: finalization,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+        (),
+    ) = Application::new(
+        FinalizationProbe { observer: None }
+            .with_one_shot(TimerId(7), Duration::from_secs(60), |_| Actions::stop())
+            .finalize_on_shutdown(|root, _request| {
+                let observer = root
+                    .base()
+                    .observer
+                    .as_ref()
+                    .expect("the domain installed its shared notice recipient")
+                    .clone();
+                Actions::cont().with_send(EstablishedDelivery::new(
+                    observer,
+                    FinalizationEvent::Finalized,
+                ))
+            }),
+    )
+    .run_with(|application| async move {
+        let mut observer = application
+            .client()
+            .expect("the finalization observer is established");
+        observer
+            .send(FinalizationCommand::Observe(observer.recipient()))
+            .await
+            .expect("the root accepts its finalization observer");
+        let ready = observer.receive().await.map(|event| event.message);
+        assert!(matches!(ready, Some(FinalizationEvent::Ready)));
+        let shutdown = application.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        let repeated = application.request_shutdown();
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+        let finalization = observer.receive().await.map(|event| event.message);
+        let termination = application.termination().await;
+        assert_eq!(termination, Ok(Exit::Normal));
+        finalization
+    })
+    .await
+    .unwrap_or_else(|failed| {
+        drop(failed);
+        panic!("the explicit finalization policy receives shutdown and terminates normally");
+    })
+    .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -830,6 +959,159 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
 }
 
 #[tokio::test(flavor = "current_thread")]
+async fn inner_finalization_keeps_its_notice_through_outer_timer() {
+    let (
+        WorkOutcome::Completed {
+            output: finalization,
+            cleanup: Ok(()),
+        },
+        Ok((root_origin, joined_actor)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+        (),
+    ) = Application::new(
+        FinalizationProbe { observer: None }
+            .finalize_on_shutdown(record_finalization)
+            .with_one_shot(TimerId(7), Duration::from_secs(60), |_| Actions::stop()),
+    )
+    .run_with(|application| async move {
+        let mut observer = application
+            .client()
+            .expect("the finalization observer is established");
+        observer
+            .send(FinalizationCommand::Observe(observer.recipient()))
+            .await
+            .expect("the root accepts its finalization observer");
+        let ready = observer.receive().await.map(|event| event.message);
+        assert!(matches!(ready, Some(FinalizationEvent::Ready)));
+        let shutdown = application.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        let repeated = application.request_shutdown();
+        assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+        let finalization = observer.receive().await.map(|event| event.message);
+        let termination = application.termination().await;
+        assert_eq!(termination, Ok(Exit::Normal));
+        finalization
+    })
+    .await
+    .unwrap_or_else(|failed| {
+        drop(failed);
+        panic!("the explicit finalization policy receives shutdown and terminates normally");
+    })
+    .into_parts()
+    else {
+        panic!("the original completed output and both cleanup join boundaries remain exact");
+    };
+    let terminal: ApplicationTerminal<_> = (
+        root_origin,
+        match joined_actor {
+            ActorRetirement::ActorTaskFailed(failure) => {
+                panic!("the actual application actor task failed: {failure}")
+            }
+            retirement => retirement,
+        },
+    );
+    assert_eq!(finalization, Some(FinalizationEvent::Finalized));
+    assert_completed_root(terminal, None);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn timer_expiry_stops_without_running_shutdown_finalization() {
+    let (
+        WorkOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok(terminal),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+        (),
+    ) = Application::new(
+        FinalizationProbe { observer: None }
+            .finalize_on_shutdown(record_finalization)
+            .with_one_shot(TimerId(7), Duration::ZERO, |_| Actions::stop()),
+    )
+    .run_with(|application| async move { application.lifecycle().termination().await })
+    .await
+    .unwrap_or_else(|_| panic!("the real expiry policy stops the actor"))
+    .into_parts()
+    else {
+        panic!("timer expiry retains work and completed cleanup");
+    };
+    assert_eq!(termination, Ok(Exit::Normal));
+    assert_completed_root(terminal, None);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn finalization_panic_keeps_its_payload_actor_and_independent_work_result() {
+    let (
+        WorkOutcome::Completed {
+            output: termination,
+            cleanup: Ok(()),
+        },
+        Ok((origin, retirement)),
+        Ok(ActorNotificationReceipts {
+            termination: Ok(()),
+            retirement: Ok(()),
+        }),
+        (),
+    ) = Application::new(
+        FinalizationProbe { observer: None }.finalize_on_shutdown(|_, _| {
+            panic_any(Box::new(vec![251_u8, 241, 239]));
+        }),
+    )
+    .run_with(|application| async move {
+        let shutdown = application.request_shutdown();
+        assert_eq!(shutdown, Ok(()));
+        application.lifecycle().termination().await
+    })
+    .await
+    .unwrap_or_else(|_| panic!("the native host runs the fallible finalization policy"))
+    .into_parts()
+    else {
+        panic!("the work result and independent cleanup join survive the panic");
+    };
+    assert_eq!(termination, Err(Crash::Panicked));
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let ActorRetirement::TransitionPanicked {
+        custody,
+        payload,
+        interpretation,
+        source,
+        settlements,
+    } = retirement
+    else {
+        panic!("finalization is one pure event transition, not an activation failure");
+    };
+    let payload = payload
+        .downcast::<Box<Vec<u8>>>()
+        .unwrap_or_else(|_| panic!("retain the native finalization payload"));
+    assert_eq!(**payload, [251_u8, 241, 239]);
+    assert!(custody.behavior.base().observer.is_none());
+    assert!(custody.control.is_empty());
+    assert!(custody.user.is_empty());
+    assert_eq!(custody.descendants, []);
+    assert_eq!(custody.child_failures, []);
+    assert!(custody.additional_failures.is_empty());
+    assert!(custody.capability_failures.is_empty());
+    assert!(custody.unread_owner_cancellation.is_none());
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.retirement_failures.is_empty());
+    assert!(custody.terminal_report.is_none());
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    // A panic emits no successful transition Actions or fictional settlement.
+    assert!(settlements.is_empty());
+}
+
+#[tokio::test(flavor = "current_thread")]
 async fn activation_failure_does_not_invoke_the_boundary() {
     let calls = Arc::new(AtomicUsize::new(0));
     let observed = Arc::clone(&calls);
@@ -842,10 +1124,11 @@ async fn activation_failure_does_not_invoke_the_boundary() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the actual caller runtime is entered");
-        });
+        })
+        .into_parts();
 
     let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work,
             startup_error: Some(startup_error),
             cleanup: Ok(()),
@@ -855,6 +1138,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = result
     else {
         panic!("startup refusal returns the unpublished complete root retirement");
@@ -915,7 +1199,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
 #[tokio::test(flavor = "current_thread")]
 async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -924,6 +1208,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(FailsAfterActivation.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -937,6 +1222,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
             drop(failed);
             panic!("failure after activation is an exact root terminal, not a launch error");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -1001,7 +1287,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
 #[tokio::test(flavor = "current_thread")]
 async fn application_delegates_to_the_explicit_single_space_app() {
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: ordinary,
             cleanup: Ok(()),
         },
@@ -1010,6 +1296,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(Root.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -1031,6 +1318,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             drop(failed);
             panic!("the ordinary application terminates normally");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -1045,7 +1333,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
     );
 
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: explicit,
             cleanup: Ok(()),
         },
@@ -1054,6 +1342,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::with_topology(Root.stop_on_shutdown(), ActorSpace::new())
         .run_with(|application| async move {
             application
@@ -1075,6 +1364,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             drop(failed);
             panic!("the explicit application terminates normally");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -1238,9 +1528,10 @@ fn public_run_blocking_returns_entered_host_inputs_and_retries_both_configuratio
         let retried = application
             .run_blocking(builder)
             .unwrap_or_else(|_| panic!("the exact returned inputs retry outside the entered host"))
-            .unwrap_or_else(|_| panic!("the owned host supplies the actual async executor"));
+            .unwrap_or_else(|_| panic!("the owned host supplies the actual async executor"))
+            .into_parts();
         let (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work: None,
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
@@ -1250,6 +1541,7 @@ fn public_run_blocking_returns_entered_host_inputs_and_retries_both_configuratio
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = retried
         else {
             panic!(
@@ -1319,9 +1611,10 @@ fn public_run_blocking_recovers_real_build_error_in_limited_child() {
             .unwrap_or_else(|_| {
                 panic!("the same declaration and Builder retry after descriptor recovery")
             })
-            .unwrap_or_else(|_| panic!("the owned retry enters its actual executor"));
+            .unwrap_or_else(|_| panic!("the owned retry enters its actual executor"))
+            .into_parts();
         let (
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work: None,
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
@@ -1331,6 +1624,7 @@ fn public_run_blocking_recovers_real_build_error_in_limited_child() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = retried
         else {
             panic!("the finite original root retains its whole native cleanup after retry");
