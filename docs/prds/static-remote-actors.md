@@ -31232,3 +31232,102 @@ checkpoint must retain production+13/-5/net8, tests+7/-0 and public types+0/-0,
 plus all record changes and carried1589/2500/12-of18/125/20000 extents. This is a
 privacy correction with positive source delta, not code reduction. Full service,
 full R25/R01-R25/AUTH1/NET1, Query hiding and release gates remain open.
+
+
+### Ordinary service attachment — bounded existing-port comparison
+
+At research3471811, inspect the current locked contracts again for this exact
+comparison: Behavior/Actors0.26.0 at98983b4, macros0.14.2 and complete selected
+instructions2b7a9195; Address0.3.0/9f058dc, Communication0.1.6/963067e,
+private Observe, Timers0.2.0/9369d1f, current Entity and Tokio1.53.1; lock3caba2a6,
+no patches. Fresh current-contractb90af87e binds the current source reinspection
+and every unchanged or deliberately changed input from the70/36 owner records.
+The only changed software there is the reviewed declaration formatter/test;
+current invocation, endpoint, actor, family and primitive contracts are unchanged.
+Behavior owns pure Actions, Communication native delivery, Address exact leases,
+Observe existing independent reports, Timers generations and Entity its family
+barrier. No new primitive or ownership edge is inferred from those sources.
+
+Compare ordinary composition through the existing private
+execute_with_entities_invocation: retain bare Work in its current phase product,
+project only actual root interface/lifecycle through one existing Tokio oneshot
+at active invocation, return the unchanged actual WorkFuture, and drive the
+caller-local companion beside the same kernel execution. This is a transfer of
+existing capabilities, not a second mailbox, observation cell, actor or runner.
+No whole ApplicationHandle clone, asynchronous wrapper around Work, new kernel
+trait, extra preparation hook or public interface is selected. Work and service
+startup may overlap in this candidate; committed activation precedes any export.
+Known-invalid production provider configuration still requires cold preflight.
+No stronger Work-after-declaration-ready promise was found in the current laws.
+
+The smallest actual comparison obtains a genuine Counter processing reply,
+retains a borrowed/non-Send provider result, and transfers an original Rc to the
+user's actual future. That future returns Ready then deliberately panics during
+disposal. Independent receiving must still own the original Completed Work value
+beside actual root, both notifications and companion facts after cleanup.
+Changing only the invocation to an asynchronous Work wrapper is the rejected
+alternative: its intended failure must be the missing original Ready value,
+after independent cleanup. It is not a newly discovered production defect.
+A separate pre-invocation missing-host/retry control must return the original
+bare Work before any capability transfer or companion invocation. Both tests
+need author and independent two-pass review before execution, then debug and
+optimized controls and the intended alternative comparison.
+
+Pre-edit record: tests only, existing application/node/tests/mod.rs plus one
+attachment test module, this PRD and backlog status (four paths); at most260 new
+Rust test lines and no production change. The original250-line forecast was
+revised before mounting: pinned rustfmt expands the210-line reviewed draft to256
+lines without a semantic edit; retain its readable formatting. Public types+0/-0. Reuse current
+Application invocation/receiving, actual Counter protocol, remote::verify and
+ordinary typed oneshot transfer. No source model is retained from this forecast.
+Carry known production1589/2500,12/18 public reservations and every125-owner/
+20000-verification historical/external extent; measure drafts and complete delta.
+Actual native service startup, provider/native tail custody, ingress closure,
+root/child/export lifetime, Session close and public application syntax remain
+unimplemented. All full R01-R25/AUTH1/NET1 and privacy/release gates remain open.
+
+
+The bounded comparison is now verified, without production edits. Final source
+424fe0db passes both tests in debug and optimized builds (2 passed, 0 failed,
+0 ignored in each); logs bfb4a8bb and 7556b476 bind unchanged source before and
+after execution. Formatting and strict remote-crate test Clippy pass, logs
+d0c9ee04 and e745ebe3. The latter is not a fresh workspace/all-feature claim.
+
+Actual rejected-wrapper runs fail in both profiles, logs c301f369 and 8d2aeae4,
+only at the final Completed Work check after the preceding original provider,
+processing reply, root report, native custody, two notifications and panic
+identity checks. The final original-Rc assertions are not reached and receive
+no negative-run credit. The accepted bare-Work test body is unchanged across
+the comparison and final style correction. This proves a distinction between
+these two compositions; it does not establish a newly found defect in main.
+The root report precedes Work disposal; native custody and both notifications
+are observed after kernel cleanup. No post-disposal root-report timing law or
+native service lifetime is established.
+
+The first draft did not compile because a named Result extended an opaque
+future borrow (E0505); that run has no semantic credit. Consume the existing
+Result directly rather than clone capabilities or change ownership. A later
+Clippy run rejected only three style issues, resolved before the final runs.
+Author and independent two-pass reviews cover the source, ownership correction,
+intended failing comparison and final style change. Terminal receipt review
+and the complete final census are retained with this stage's evidence.
+
+All commands below were executed through
+`nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c`:
+
+```sh
+cargo test --offline --locked -p bombay-rs --features remote --lib application::node::tests::attachment::
+cargo test --release --offline --locked -p bombay-rs --features remote --lib application::node::tests::attachment::
+cargo test --offline --locked -p bombay-rs --features remote --lib application::node::tests::attachment::projected_handoff_keeps_ready_work_and_provider_result -- --exact
+cargo test --release --offline --locked -p bombay-rs --features remote --lib application::node::tests::attachment::projected_handoff_keeps_ready_work_and_provider_result -- --exact
+cargo clippy --offline --locked -p bombay-rs --features remote --tests -- -D warnings
+cargo fmt --all -- --check
+```
+
+The two exact-filter commands are the intended rejected-wrapper failures; the
+selected bare composition is restored. Final four-path delta, including the
+new test module: production +0/-0/net0; tests +258/-0/net258; public types +0/-0.
+The PRD and status changes record the comparison and its limits. Known combined
+production1589/2500,12/18 public reservations and every125/20000 historical or
+external extent carry unchanged. This stage selects no public service API and
+closes none of the full remote, Query privacy or release gates.

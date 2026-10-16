@@ -44,6 +44,13 @@ while bounding outer Display/Debug. Healthy focused and all21 Application-client
 controls pass in both profiles; strict lint and formatting pass. Service ownership
 and Query privacy remain open; focused main delivery still requires review and CI.
 
+The test-only invocation-attachment comparison passes both controls in debug
+and optimized builds using existing invocation and independent receiving owners.
+The rejected asynchronous wrapper fails at the intended Ready-result check in
+both profiles; this is comparison evidence, not a defect found in main. No
+public service API is selected. Production and public types are unchanged;
+actual service lifecycle, privacy and all full remote gates stay open.
+
 Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence

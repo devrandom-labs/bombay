@@ -8,6 +8,7 @@ mod ledger;
 use counter::{Counter, CounterMessage};
 use ledger::{LedgerCommand, MailLedger, Receipts};
 
+mod attachment;
 mod replay;
 
 mod json;
