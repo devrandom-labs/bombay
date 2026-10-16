@@ -1,11 +1,57 @@
 # Developer experience coordination
 
-Status: active. Work is isolated on `codex/devx-pr375-integration`;
-the other Bombay checkout is untouched. Initial inspected baselines were
+Status: active. Registry adoption is isolated on `codex/devx-registry-027`;
+timer custody and its full gates use `codex/devx-timer-custody`. The other
+Bombay checkouts are untouched. Initial inspected baselines were
 Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 `d69f992b371c12ab34e73b18e45b8112c90a1508`; current Bombay selects published
-Behavior/Actors0.26.0, macros0.14.2, Communication0.1.6 and Timers0.2.0
-without repository patches.
+Behavior/Actors0.27.0, macros0.15.0, Communication0.1.6 and Timers0.2.0
+without repository patches. Catalogue migration and final gates remain open.
+
+Registry270 adoption, pre-edit: isolate current main5e9bcd1 plus timer custody
+a54a303 on codex/devx-registry-027. Selected baseline remains registry Core/
+Actors026 and Macros142, Address030, Communication016, Observe local and Timers020;
+no patches. Published Core/Actors270 and Macros150 are checksum/tag/source verified
+atb8307d1; all220 shipped Rust files match, and the exact five pool completion,
+business-send, wrapper-order, rejection and retirement journeys pass both profiles
+on the disclosed adapted214d source. Reuse those unchanged caller/oracle files.
+This stage adopts the already-proven API, not a new actor-model or runtime law.
+
+First migrate only the five existing production adapter surfaces and dependency
+edges: lib exports, creation, delivery, effect composition and worker preparation.
+Use the exact previously tested namespace/startup renames; retain current timer
+custody and upstream startup-disposal production code. No new state, bound,
+capability, policy default or public type. Compile and execute the same smallest
+complete journey against this current source before migrating catalogue callers.
+Then apply only proven owning constructors, Config/recovery products, inferred
+exact replies and deferred startup closures; preserve every original independent
+failure/retirement assertion and each deliberate logical reply host. Compiler
+friction exposing a new semantic input reopens the owner design rather than
+adding placeholders or bounds. Expanded cumulative budget authorization remains
+2026-10-09. REGISTRY-027-INPUTS.json freezes the original tracked source and full
+lock graph; require every nonowner package record conserved. The separate timer
+gate-repair worktree and its active matrix remain untouched.
+The first current-source consumer rejects the missing owning namespaces on
+registry026/142 (Core0261 initially resolved; the exact026 replay also fails
+with those missing imports and a derivative macro diagnostic). After the four
+production adapter migrations, the same unchanged five native pool journeys
+pass debug/release7.283/32.433s on registry270/150. All592 frozen selected hashes,
+63 consumer nonowner records and220 installed owner Rust files remain exact.
+Root --locked metadata accepts all397 original nonowner records. The initial
+cargo-update rewrite of four Windows dependency edges is rejected and restored;
+it receives no conservation credit. Two independent source/consumer reviews pass.
+Root metadata is inspected separately; its governing manifests and lock are
+frozen, not that receipt itself. Production+29/-29/net0 across four Rust files;
+tests+0/-0, public types+0/-0; namespaces+5/-1 replace the retired umbrella.
+No control state, subordinate alternative, actor transition branch or authority
+changes. Exact startup and timer custody remain current-main source. No new
+history, repeated cause, false cardinality, nested authority, semantic boolean
+or caller path appears. Reuse published startup/request equations and existing
+native retirement. Disposition: pass this bounded current-production proof;
+repository tests/examples still require explicit migration before final gates.
+Evidence: REGISTRY-027-INPUTS, REGISTRY-027-CURRENT-CALLER-RED-EXACT and
+registry-027-current-consumer/{inputs,metadata,sources,results}.json.
+
 
 PR375 merge repair, before editing: capture upstream67a286c (PR374) and
 retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native

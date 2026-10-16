@@ -11,10 +11,11 @@ use behavior::{
     InjectEvent, InterpretItem, ItemSettlement, LogicalDeliveryReason, Never, Protocol, Recipient,
     ResolveChildOccurrence, ResolvedChild, ResolvedChildPosition,
 };
-use behavior_actors::atomic::{
-    ActivationPlan, AssignWorker, Assignment, CustomerDelivery, DiagnosticAccepted,
-    DiagnosticAction, InitializeWorker, ProxyControl, ProxyControlAdmission, ProxyOperation,
-    StableProxy, WorkerInitializationOutcome, WorkerInitializationReport,
+use behavior_actors::diagnostic::{DiagnosticAccepted, DiagnosticAction};
+use behavior_actors::pool::{AssignWorker, Assignment, CustomerDelivery};
+use behavior_actors::proxy::{ProxyControl, ProxyControlAdmission, ProxyOperation, StableProxy};
+use behavior_actors::worker::{
+    InitializeWorker, StartupPlan, WorkerInitializationOutcome, WorkerInitializationReport,
 };
 use behavior_actors::{ChildStopped, ReplyDelivery};
 use communication::ControlClosed;
@@ -600,7 +601,7 @@ where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
         + ResolveChildOccurrence<ChildHead, Child = StableProxy<Worker, Plan>>,
     Worker: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Plan: ActivationPlan,
+    Plan: StartupPlan,
     StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
     <StableProxy<Worker, Plan> as Behavior>::Event:
         ChildInputIngress<StableProxy<Worker, Plan>, ProxyControl<Worker, Plan>>,
@@ -665,7 +666,7 @@ impl<C, N, Parent, Bindings, Origins, Worker, Plan, RootEvent, Path, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Worker: Behavior<Protocol: Protocol<Addr = MailAddr>> + Send,
-    Plan: ActivationPlan,
+    Plan: StartupPlan,
     StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
     EstablishedActor<StableProxy<Worker, Plan>>: Send,
     Self: ProxyControlAdmission<Worker, Plan> + Send,
@@ -764,7 +765,7 @@ where
                         termination,
                         Instant::now(),
                     )),
-                    None => WorkerInitializationOutcome::ReadyForActivation,
+                    None => WorkerInitializationOutcome::ReadyForStartup,
                 };
                 self.inject_control_event::<_, Path>(request.resolve(outcome));
                 ItemSettlement::Accepted(())

@@ -5,8 +5,8 @@ use core::marker::PhantomData;
 use core::ops::ControlFlow;
 
 use behavior::{Behavior, Never};
-use behavior_actors::atomic::{
-    ActivationPlan, InitialWorkerPreparation, StartingWorkerPreparation, WorkerPreparation,
+use behavior_actors::worker::{
+    InitialWorkerPreparation, StartingWorkerPreparation, StartupPlan, WorkerPreparation,
     WorkerSource, WorkerSubmission,
 };
 
@@ -33,7 +33,7 @@ where
     Factory: FnMut(&Role) -> Preparation + Send,
     Preparation: InitialWorkerPreparation,
     Preparation::Worker: Behavior + Send,
-    Preparation::Plan: ActivationPlan,
+    Preparation::Plan: StartupPlan,
     Preparation::Rejection: Send,
 {
     /// Select the constructor without invoking it or starting an actor.
@@ -59,7 +59,7 @@ where
     Factory: FnMut(&Role) -> Preparation + Send,
     Preparation: InitialWorkerPreparation,
     Preparation::Worker: Behavior + Send,
-    Preparation::Plan: ActivationPlan,
+    Preparation::Plan: StartupPlan,
     Preparation::Rejection: Send,
 {
     type WorkerRejection = Preparation::Rejection;
@@ -74,7 +74,7 @@ where
     Factory: FnMut(&Role) -> Preparation + Send,
     Preparation: InitialWorkerPreparation,
     Preparation::Worker: Behavior + Send,
-    Preparation::Plan: ActivationPlan,
+    Preparation::Plan: StartupPlan,
     Preparation::Rejection: Send,
 {
     #[expect(
@@ -111,7 +111,7 @@ where
 pub enum WorkerPreparationStart<Worker, Plan, WorkerRejection, SourceRejection>
 where
     Worker: Behavior + Send,
-    Plan: ActivationPlan,
+    Plan: StartupPlan,
 {
     /// The source supplied the requested worker and activation plan.
     Submitted(WorkerSubmission<Worker, Plan>),
@@ -132,7 +132,7 @@ pub trait WorkerPreparationSource<Role, Worker, Plan>: WorkerSource<Role, Worker
 where
     Role: Sync,
     Worker: Behavior + Send,
-    Plan: ActivationPlan,
+    Plan: StartupPlan,
 {
     /// Prepare the first role or reject the entire, still-owned source.
     fn prepare_first(
@@ -153,7 +153,7 @@ impl<Role, Worker, Plan> WorkerPreparationSource<Role, Worker, Plan> for Never
 where
     Role: Sync,
     Worker: Behavior + Send,
-    Plan: ActivationPlan,
+    Plan: StartupPlan,
 {
     #[expect(
         clippy::unused_async_trait_impl,
@@ -182,7 +182,7 @@ where
     Source: WorkerPreparationSource<Role, Worker, Plan>,
     Role: Send + Sync,
     Worker: Behavior + Send,
-    Plan: ActivationPlan,
+    Plan: StartupPlan,
 {
     let (source, role) = request.source_and_role();
     let first = source.prepare_first(role).await;
