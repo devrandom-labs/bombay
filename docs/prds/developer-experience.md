@@ -27,7 +27,7 @@ Compiler friction cannot invent bounds, no-op inputs or structural caller work.
 Finite holding is isolated on `codex/devx-stash-limits`. The ordinary spelling
 is `actor.with_stash(limit, refused, route)`; overflow returns the complete
 original input and sender through Actions. Explicit UnlimitedStash serves
-advanced unbounded/Never callers. Source-selected owner aafd1e9 (draft Behavior
+advanced unbounded/Never callers. Source-selected owner aafd1e9 (review-ready Behavior
 PR114, including common send-product PR113) passes all11 native Nix gates,
 1,035 tests/123 doctests, package preflight and its failure controls. Those APIs
 are unpublished; actual published0.28.0 does not contain finite holding.
