@@ -32328,3 +32328,133 @@ production+57/-14/net43, tests+1867/-79/net1788, metadata+6/-0, public types
 Known1632/2500 working versus1589 retained,12/18 public reservations and all
 125/20000 historical/external extents carry. This is private proof preservation;
 no SDK commit/PR/publication/adoption or full remote delivery is claimed.
+
+
+### SDK tests — supported TLS targets
+
+Fresh verification04af7c57 reads the exact selected six owners plus Entity and
+all760 Behavior instructions at98983b4; root lock3caba2a6 has no patches.
+Behavior/Actors0.26.0, macros0.14.2, Address0.3.0, Communication0.1.6, private
+Observe and Timers0.2.0 retain their owners. SDK1.10.9/TLS+transport1.10.3
+select1ea4; current private queue sourcesd599/11b1/1df2/f5a8 and unitb58 retain
+their verified prior scope. Exactly56 old locator inputs are unchanged and six
+current owner/document changes are explicitly reviewed. This stage changes no
+production contract, actor algebra, runtime or public interface.
+
+Current selected-package --all-targets strict Clippy first exits101 with13
+intermittent unused/dead-code diagnostics (6d29ac8f,59 unchanged inputs). The
+same supported package-qualified TLS/test profile with --keep-going exposes
+all independent failures (5136d660,73 unchanged inputs): bind2, intermittent13,
+priorities14, fragmentation11, authenticator6 including its absent auth module,
+endpoints1, time2, whitelist3, concurrent3, simultaneous3, and two new queue
+unit len_zero style findings. These are compile/lint failures, not runtime
+actor failures. Older source-only leads and historical lint remain separate.
+
+Complete inventory08955480 records all17 targets/191 declarations and all831
+tracked-reference consumers. Seven whole targets have no real supported TLS
+law: whitelist, authenticator, concurrent, fragmentation, intermittent,
+priorities and simultaneous. The cfg-TLS authenticator entry calls no selected
+authentication algorithm and its target imports an absent module; it is not
+the retained mutual-TLS suite. Five already properly guarded optional targets
+remain outside this blocker. Openclose has correct multiline feature guards
+and stays byte-exact, including its actual CI mTLS selector.
+
+Recommended bounded choice, selected under the user's standing instruction
+"from now on autoselect the recommended answer everytime there is a question
+for me till I say otherwise": retire these seven obsolete targets rather than
+retain2952 lines behind more guards. In endpoints/bind/time, remove excluded
+non-TLS leaves and their orphan items/imports while preserving real TLS code
+and moving retained inline imports to module scope. Remove only the two
+intermittent terms in the existing Nextest OR filter. Correct the two existing
+queue test predicates with Flume's ordinary is_empty; original results, native
+qualifiers and complete cleanup stay. No feature widening, missing-method
+restoration, blanket lint allow, test-discovery disablement or new abstraction.
+
+This is the required expanded review checkpoint BEFORE authoring or mounting:
+carried13 SDK paths +10 new test paths +1 Nextest metadata +2 same Bombay
+records =26 selected paths, replacing the earlier15-path forecast explicitly.
+Production+0/-0, public types+0/-0, dependencies+0/-0 for this stage; at most100
+introduced verification lines and at least2952 retired legacy target lines.
+Standing2500/18/125/20000 bounds and all unknown historical/external extents
+carry. Scope reviewa6f944b8/181be86e recovers the user's actual delegation and
+PRD29052 selection; old104 identified+5 unresolved owner allocations do not
+certify present125/20000 headroom. This concrete test-only review reservation
+does not reset history or authorize production growth. Known1632/2500 working
+versus1589 retained and12/18 public reservations remain unchanged.
+
+Actual pre-edit case listing0862a081 succeeds for the five genuine TLS targets:
+19 current-host entries, including the same ignored timing case; listing is
+not execution credit. The candidate must preserve those names and actual TLS
+body effects/attributes, preserve the Linux-only cases, and remove only the
+broken/vacuous authentication entry from profile eligibility. Both reviews,
+full same-profile lint, case-list comparison and debug/optimized execution
+remain required. The changed queue test source also requires fresh original
+unbounded negatives and restored bounded positives in both profiles. Exact
+selection-before.json names every retired/current owner and acceptance gate.
+SDK delivery/adoption and all full remote/service/privacy gates remain open.
+
+
+#### Supported-target cleanup — actual verification
+
+The reviewed patch f8fd042d / manifest 196eaa1f is mounted only in the private
+SDK checkout. Author, root and independent reviews each check the retained
+TLS bodies, attributes, certificates, typed results and native cleanup. The
+three protected openclose/native-transport/shared-fixture files remain byte
+exact. All 19 current-host TLS case names are unchanged, including the ignored
+timing case. Seven obsolete targets are absent and their exact original bytes
+are preserved. Five already guarded optional targets remain outside this stage.
+
+The source-counting script initially excluded removed certificate marker lines
+as if they were diff headers. Root caught this before mounting. Git's actual
+numstat establishes tests +16/-3728/net -3712 and Nextest metadata +0/-2;
+the software patch did not change. Superseded census/review bytes remain retained.
+The command recorder also rejects unexpected missing or newly discovered test
+targets, retains the entire original 17-target roster, and verifies all seven
+retired originals before invoking Cargo. Both recorder reviews pass.
+
+All commands run through the pinned SDK Nix shell with the locked graph. The
+current unit source is 43913d90; both original f3cd constructor runs produce
+four passing controls and exactly two failures at the final queue-bound
+assertion, line 593, after native qualifiers and complete cleanup. Both restored
+d599 candidate runs pass all six cases. Debug and optimized execution agree.
+The 69 current input maps differ only in the constructor; seven retired-source
+maps remain explicit. This is an original-constructor inversion under current
+private prerequisites, not an execution of the entire published SDK baseline.
+Exact bounded source is restored and independently verified.
+
+The complete supported TLS/test target set for bombay-zenoh-link-tls and
+bombay-zenoh-transport passes in both profiles: 69 passed, zero failed and two
+existing ignored tests across two libraries and ten integration targets.
+This includes the genuine mTLS/name/private-PKI cases and both native pressure
+layouts. Five excluded-feature targets contain zero eligible tests and receive
+no semantic execution credit. Same-profile strict all-target Clippy passes in
+debug and optimized builds; workspace formatting passes. The full commands,
+raw output and before/after source maps are in service-resources/test-targets.
+Doctests, Linux execution, compiler-floor verification and full release CI are
+not established by these local commands.
+
+Actual complete SDK census d81898bc, including both untracked test sources:
+production +57/-14/net +43; tests +1881/-3805/net -1924; metadata +6/-2/net +4;
+public types +0/-0 across 24 paths. This stage adds no production or public type.
+The same two Bombay records bring the repository union to 26 paths. Three
+external recorder/comparison programs total 258 current lines, separately
+recorded by tooling-extent.json; this is not a certified net-new total. Known
+working production 1632 versus retained 1589, the 2500 production ceiling,
+12/18 public reservations and all 125-owner/20000-verification historical and
+external extents carry. External comparison/recorder sources are recorded
+separately; their complete tooling extent was missing from the 100-line
+forecast. No overall historical budget headroom is certified or reset.
+Final Bombay record delta: +145/-2/net +143 across two files.
+
+Two source audits identify the recurring CI gap precisely: release lint selects
+one transport integration target, and runtime checks execute TLS-owner tests
+plus one exact transport mTLS case. They do not execute the six queue or two
+native pressure regressions. The separate CI follow-up must cover the supported
+owning targets in both profiles, preserve doctest selection and the exact mTLS
+case, and retain compiler-floor, Miri, packaging and publication gates. No CI
+file changes in this checkpoint. SDK PR/release/adoption, service ownership,
+Query privacy and every full remote requirement remain open. Bombay production
+source remains byte-identical to fe803ace.
+
+Durable proof destination: `/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-16/native-supported-tls-tests-private-1ea4-20261016T140950Z`.
+The archive retains exact command inputs and original retired sources.

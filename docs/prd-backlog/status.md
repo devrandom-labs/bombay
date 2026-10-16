@@ -58,8 +58,11 @@ Fresh full-service comparisons identify the shared mixed-operation replay row
 and genuine absent-Work attachment as open ownership edges. Separately scoped
 private native proofs cover handshake pressure, handoff cancellation and the
 selected accepted-queue count/recovery law in both approved layouts. Earlier
-owning TLS20 runs retain their own source epoch. The current queue cohort and
-controls pass debug/optimized checks, as recorded below. The SDK is unadopted.
+owning proofs retain their source epochs. The current private SDK's complete
+supported TLS/test target set passes 69 tests with two existing ignored tests
+in both profiles; strict all-target lint and formatting pass. The current queue
+regressions detect the original constructor defect in both profiles and pass
+with exact bounded source restored. The SDK is unadopted.
 Whole byte/backing/task limits, universal close, expiry/error discharge,
 arbitrary drain, full SDK CI, service ownership and privacy remain open.
 No production service API or narrowed acceptance is selected.
@@ -402,3 +405,13 @@ isolated all-target/all-feature Clippy and format. Independent source5474865f /
 execution6dcc69da reviews pass twice. This qualifies submission of a corrected
 PR371 head, not required CI, TLS campaigns, merge or publication. The earlier
 144-byte excess remains unattributed and all full remote acceptance stays open.
+
+
+The private SDK's supported-target cleanup retires seven obsolete test targets
+and preserves every genuine TLS case. It removes net 3712 test lines; the full
+private SDK test delta is now net -1924, with production still net +43. All 19
+listed current-host TLS cases are preserved. Both full debug and optimized
+cohorts pass 69/0/2, with strict all-target lint and formatting passing. Actual
+old/new queue regressions and both source reviews are qualified. Recurring CI
+still omits these queue/pressure executions and most owning test lint; its
+separate correction, full SDK release/adoption and all remote rows remain open.
