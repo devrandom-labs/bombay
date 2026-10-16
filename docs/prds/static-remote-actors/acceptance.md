@@ -1,6 +1,6 @@
 # Static remote actor acceptance
 
-Current-main reconciliation (2026-10-16): mainfbb5c742 includes PR375 and
+Current-main reconciliation (2026-10-16): mainf25e4a0c includes PR375 and
 the reviewed, CI-passing PR382 test-only compatibility repair. It selects
 Behavior/Actors0.26.0 and complete Application/Work outcomes. The earlier
 connection-entry prototype is retired from current source. Its distinct
@@ -38,8 +38,10 @@ The separate declaration-diagnostic correction keeps the exact native error
 source and original target while bounding outer Display/Debug. Its real native
 constructor-refusal oracle fails on prior source in both profiles; fixed focused
 and all21 Application-client controls pass in each profile. Strict lint and
-formatting pass. This is scoped local diagnostic evidence; it establishes no
-Query privacy, full R25, service lifecycle or merged-delivery claim.
+formatting pass. Focused main delivery merged through PR384 asf25e4a0c after
+all six CI checks and independent review; its exact main-specific evidence is
+in the [owning record](../static-remote-actors.md#declaration-diagnostics--focused-main-contribution-2026-10-16).
+This closes no Query privacy, full R25 or service lifecycle requirement.
 
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of

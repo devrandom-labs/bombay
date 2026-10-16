@@ -1,10 +1,11 @@
 # Backlog status and dependencies
 
-Current integration: user-requested latest mainfbb5c742 (PR382) selects
+Current integration: user-requested latest mainf25e4a0c (PR384) selects
 Behavior/Actors0.26.0 and the complete Application/Work outcomes. Superseded
 0.25 remote-entry research is retired; historical evidence below retains
 its original source scope. Full service, SDK privacy and all full remote rows
-remain open. Fresh current-main consumer verification is required.
+remain open. This main-history integration changes no Rust source; full-service
+consumer verification is still required.
 
 The superseded0.25 connection-entry prototype has been removed from active
 source, including its unused runtime and public configuration types. Distinct
