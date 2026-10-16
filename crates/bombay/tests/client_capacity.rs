@@ -230,3 +230,38 @@ fn missing_host_returns_the_configured_application_and_original_work_for_retry()
     assert!(ptr::eq(identity, original.as_ptr()));
     assert!(retirement.cleanup().is_ok());
 }
+
+#[test]
+fn unsupported_mailbox_minimums_return_the_original_request() {
+    for minimum in [
+        (1_usize << 30) + 1,
+        (1_usize << 31) - 1,
+        1_usize << 31,
+        (1_usize << 31) + 1,
+        usize::MAX - 1,
+        usize::MAX,
+        0,
+    ] {
+        let rejection = MailboxCapacity::new(minimum)
+            .expect_err("an unsupported minimum is refused before mailbox construction");
+        assert_eq!(rejection.minimum, minimum);
+    }
+}
+
+#[test]
+fn supported_mailbox_minimums_preserve_the_rounded_capacity() {
+    for (minimum, effective) in [
+        (1, 2),
+        (2, 2),
+        (3, 4),
+        (1_023, 1_024),
+        (1_024, 1_024),
+        ((1_usize << 29) + 1, 1_usize << 30),
+        ((1_usize << 30) - 1, 1_usize << 30),
+        (1_usize << 30, 1_usize << 30),
+    ] {
+        let capacity = MailboxCapacity::new(minimum)
+            .expect("the native capacity range includes this rounded minimum");
+        assert_eq!(capacity.get(), effective);
+    }
+}
