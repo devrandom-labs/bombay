@@ -10,7 +10,7 @@ use crate::{
     ActorFailureAssessment, ActorNotificationReceipts, Application, ApplicationHandle,
     RetirementAssessment, WorkOutcome,
 };
-use core::future::{Future, poll_fn};
+use core::future::{Future, Ready, poll_fn};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use std::cell::{Cell, RefCell};
@@ -75,7 +75,7 @@ fn projected_handoff_keeps_ready_work_and_provider_result() {
                             application.interface(application.root().established_recipient());
                         let lifecycle = application.lifecycle();
                         transferred = Some(handoff.send((interface, lifecycle)));
-                        work(application)
+                        (work(application), None::<Ready<()>>)
                     })
                     .unwrap_or_else(|_| panic!("the actual host is entered"));
                 let companion = async {
@@ -202,7 +202,7 @@ fn missing_host_returns_original_work_before_handoff() {
             let interface = application.interface(application.root().established_recipient());
             let lifecycle = application.lifecycle();
             *transfer = Some(handoff.send((interface, lifecycle)));
-            work(application)
+            (work(application), None::<Ready<()>>)
         })
     else {
         panic!("no host is entered before the actual invocation");
@@ -255,3 +255,5 @@ fn missing_host_returns_original_work_before_handoff() {
     };
     observations();
 }
+
+mod invocation;

@@ -27,6 +27,7 @@ use core::fmt;
 use core::future::{Future, Ready, poll_fn};
 use core::ops::AsyncFnOnce;
 use core::pin::pin;
+use core::task::Poll;
 use std::io;
 use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::sync::Arc;
@@ -164,7 +165,9 @@ where
         ) -> WorkFuture,
         WorkFuture: Future,
     {
-        self.execute_with_entities_invocation(work, |work: Work, application| work(application))
+        self.execute_with_entities_invocation(work, |work: Work, application| {
+            (work(application), None::<Ready<()>>)
+        })
     }
 
     // Preserve original Work independently from the concrete invocation callable.
@@ -180,6 +183,7 @@ where
         Work,
         Invoke,
         WorkFuture,
+        Exporting,
     >(
         self,
         work: Work,
@@ -271,8 +275,9 @@ where
         Invoke: FnOnce(
             Work,
             ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
-        ) -> WorkFuture,
+        ) -> (WorkFuture, Option<Exporting>),
         WorkFuture: Future,
+        Exporting: Future<Output = ()>,
     {
         let executor = match Handle::try_current() {
             Ok(executor) => executor,
@@ -299,19 +304,26 @@ where
             _,
             _,
             Never,
+            _,
         >(
             executor,
             self,
-            (work, invoke),
+            (
+                work,
+                move |work: ApplicationWorkPresence<Work, Never>, application| {
+                    let (work, exports) = invoke(work.into_supplied(), application);
+                    (ApplicationWorkPresence::Supplied(work), exports)
+                },
+            ),
             async |application: &Self| ((), application.allocations()),
             move |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
                   startup_inputs,
                   allocations| {
-                let (application, cold_work, publication) = original_work.into_unstarted();
+                let (application, (work, invoke), publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
                         ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Supplied(cold_work),
+                            (ApplicationWorkPresence::Supplied(work), invoke),
                             None,
                         ),
                         publication,
@@ -328,16 +340,18 @@ where
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
-                        let (work, invoke) = work.into_supplied();
-                        let _ = invoke;
-                        return Err(ApplicationWorkPublication {
+                        let (work, invoke) = work;
+                        let work = work.into_supplied();
+                        let rejection = ApplicationWorkPublication {
                             publication: Some((
                                 ApplicationWorkCustody::StagingRejected((
                                     root, spaces, families, work, failure, scope,
                                 )),
                                 publication,
                             )),
-                        });
+                        };
+                        drop(invoke);
+                        return Err(rejection);
                     }
                 };
                 let spaces = Arc::new(spaces);
@@ -611,19 +625,28 @@ where
             _,
             _,
             Never,
+            _,
         >(
             executor,
             self,
-            (work, |work: Work, application| work(application)),
+            (
+                work,
+                |work: ApplicationWorkPresence<Work, Never>, application| {
+                    (
+                        ApplicationWorkPresence::Supplied(work.into_supplied()(application)),
+                        None::<Ready<()>>,
+                    )
+                },
+            ),
             async |application: &Self| ((), application.allocations()),
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
              allocations| {
-                let (application, cold_work, publication) = original_work.into_unstarted();
+                let (application, (work, invoke), publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
                         ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Supplied(cold_work),
+                            (ApplicationWorkPresence::Supplied(work), invoke),
                             None,
                         ),
                         publication,
@@ -643,7 +666,8 @@ where
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
-                        let (work, invoke) = work.into_supplied();
+                        let (work, invoke) = work;
+                        let work = work.into_supplied();
                         let _ = invoke;
                         let inputs = (root, spaces, work, failure, scope);
                         return Err(ApplicationWorkPublication {
@@ -678,7 +702,7 @@ where
     /// Construct genuine absent work with original inputs and joined raw root facts.
     /// Descendant custody is selected by the same application topology as supplied work.
     /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
-    /// This comparison selects no terminal projection and constructs no callable value.
+    /// This constructs no Work callable or Work future and selects no terminal projection.
     /// The execution remains cold; only polling stages or starts the actor.
     ///
     /// # Errors
@@ -786,25 +810,33 @@ where
             _,
             _,
             Never,
-            fn(Never, ApplicationHandle<Root::Protocol, Actor::Event>) -> Ready<Never>,
+            _,
             Ready<Never>,
             _,
             _,
             (),
+            Ready<()>,
         >(
             executor,
             self,
-            (),
+            |work: ApplicationWorkPresence<Never, ()>, application| {
+                drop(application);
+                match work {
+                    ApplicationWorkPresence::Absent(absence) => {
+                        (ApplicationWorkPresence::Absent(absence), None::<Ready<()>>)
+                    }
+                    ApplicationWorkPresence::Supplied(never) => match never {},
+                }
+            },
             async |application: &Self| ((), application.allocations()),
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
              allocations| {
-                let (application, cold_work, publication) = original_work.into_unstarted();
-                let () = cold_work;
+                let (application, invoke, publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
                         ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Absent(()),
+                            (ApplicationWorkPresence::Absent(()), invoke),
                             None,
                         ),
                         publication,
@@ -824,9 +856,11 @@ where
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
+                        let (work, invoke) = work;
+                        let _ = invoke;
                         match work {
                             ApplicationWorkPresence::Absent(()) => {}
-                            ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
+                            ApplicationWorkPresence::Supplied(never) => match never {},
                         }
                         let inputs = (root, spaces, failure, scope);
                         return Err(ApplicationWorkPublication {
@@ -860,7 +894,7 @@ where
 
     /// Await genuine absent work with original inputs and joined raw root facts.
     /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
-    /// This comparison selects no terminal projection and constructs no callable value.
+    /// This constructs no Work callable or Work future and selects no terminal projection.
     /// The execution remains cold; only polling stages or starts the actor.
     ///
     /// # Errors
@@ -1339,6 +1373,7 @@ pub(in crate::application) fn execute_application_with<
     RetireUnstartedFamilies,
     ColdWork,
     NoWork,
+    Exporting,
 >(
     executor: Handle,
     application: Inputs,
@@ -1355,7 +1390,7 @@ pub(in crate::application) fn execute_application_with<
         Output = (
             WorkOutcome<
                 Inputs,
-                ApplicationWorkPresence<(Work, Invoke), NoWork>,
+                (ApplicationWorkPresence<Work, NoWork>, Invoke),
                 ApplicationWorkPresence<WorkFuture::Output, NoWork>,
                 (),
                 StagingInputs,
@@ -1412,7 +1447,7 @@ where
         ApplicationWorkPublication<
             Inputs,
             ColdWork,
-            ApplicationWorkPresence<(Work, Invoke), NoWork>,
+            (ApplicationWorkPresence<Work, NoWork>, Invoke),
             ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
             StagingInputs,
             (Actor, Spaces, ApplicationScope),
@@ -1424,7 +1459,7 @@ where
             ApplicationWorkPublication<
                 Inputs,
                 ColdWork,
-                ApplicationWorkPresence<(Work, Invoke), NoWork>,
+                (ApplicationWorkPresence<Work, NoWork>, Invoke),
                 ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
                 StagingInputs,
                 (Actor, Spaces, ApplicationScope),
@@ -1434,17 +1469,21 @@ where
         ApplicationWorkPublication<
             Inputs,
             ColdWork,
-            ApplicationWorkPresence<(Work, Invoke), NoWork>,
+            (ApplicationWorkPresence<Work, NoWork>, Invoke),
             ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
             StagingInputs,
             (Actor, Spaces, ApplicationScope),
         >,
     >,
     Invoke: FnOnce(
-        Work,
+        ApplicationWorkPresence<Work, NoWork>,
         ApplicationHandle<Actor::Protocol, Actor::Event, InstalledFamilies::Receptionists>,
-    ) -> WorkFuture,
+    ) -> (
+        ApplicationWorkPresence<WorkFuture, NoWork>,
+        Option<Exporting>,
+    ),
     WorkFuture: Future,
+    Exporting: Future<Output = ()>,
     RetireUnstartedFamilies: FnOnce(
         Handle,
         InstalledFamilies,
@@ -1627,6 +1666,7 @@ where
             Err(cleanup) => drop(cleanup),
         }
         let started = startup.await;
+        let mut exports = pin!(None);
         let Some((ApplicationWorkCustody::NotInvoked(work, None), publication)) =
             original_work.publication.take()
         else {
@@ -1634,41 +1674,48 @@ where
         };
         match started {
             Ok(actor) => {
+                let (work, invoke) = work;
+                let application = ApplicationHandle::new(
+                    actor,
+                    shutdown_control,
+                    retirement_observation,
+                    interface_allocations,
+                    client_capacity,
+                    receptionists,
+                );
+                let (work, exporting) = invoke(work, application);
+                exports.set(exporting);
                 match work {
-                    ApplicationWorkPresence::Supplied((work, invoke)) => {
-                        let application = ApplicationHandle::new(
-                            actor,
-                            shutdown_control,
-                            retirement_observation,
-                            interface_allocations,
-                            client_capacity,
-                            receptionists,
-                        );
-                        {
-                            let mut application_work = pin!(invoke(work, application));
-                            let output =
-                                poll_fn(|context| application_work.as_mut().poll(context)).await;
-                            original_work.publication = Some((
-                                ApplicationWorkCustody::Completed(
-                                    ApplicationWorkPresence::Supplied(output),
-                                ),
-                                publication,
-                            ));
-                        }
+                    ApplicationWorkPresence::Supplied(work) => {
+                        let mut application_work = pin!(work);
+                        let mut publication = Some(publication);
+                        poll_fn(|context| match application_work.as_mut().poll(context) {
+                            Poll::Ready(output) => {
+                                original_work.publication = Some((
+                                    ApplicationWorkCustody::Completed(
+                                        ApplicationWorkPresence::Supplied(output),
+                                    ),
+                                    publication.take().expect("one bare work result"),
+                                ));
+                                Poll::Ready(())
+                            }
+                            Poll::Pending => {
+                                if let Some(exporting) = exports.as_mut().as_pin_mut()
+                                    && exporting.poll(context).is_ready()
+                                {
+                                    exports.set(None);
+                                }
+                                Poll::Pending
+                            }
+                        })
+                        .await;
                     }
                     ApplicationWorkPresence::Absent(absence) => {
-                        // Discharge the genuine unused startup projections in their existing field order.
                         original_work.publication = Some((
                             ApplicationWorkCustody::Completed(ApplicationWorkPresence::Absent(
                                 absence,
                             )),
                             publication,
-                        ));
-                        drop((
-                            actor,
-                            shutdown_control,
-                            interface_allocations,
-                            receptionists,
                         ));
                     }
                 }
@@ -1684,9 +1731,26 @@ where
         match permission.send(()) {
             Ok(()) | Err(()) => {}
         }
-        match joined.await {
-            Ok(()) | Err(_) => {}
-        }
+        // Work releases its existing permission before exports can await family cleanup.
+        let mut joining = pin!(Some(joined));
+        poll_fn(|context| {
+            if let Some(exporting) = exports.as_mut().as_pin_mut()
+                && exporting.poll(context).is_ready()
+            {
+                exports.set(None);
+            }
+            if let Some(joined) = joining.as_mut().as_pin_mut()
+                && joined.poll(context).is_ready()
+            {
+                joining.set(None);
+            }
+            if exports.is_none() && joining.is_none() {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        })
+        .await;
         drop(authority);
     };
     let result = async move {
@@ -1753,7 +1817,7 @@ mod startup {
     use crate::behavior::{Behavior, BehaviorBase, Never};
     use crate::local::children::StructuralOrigins;
     use behavior_actors::StopOnShutdown;
-    use core::future::{Future, poll_fn};
+    use core::future::{Future, Ready, poll_fn};
     use std::cell::Cell;
     use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
     use std::ptr;
@@ -1783,6 +1847,7 @@ mod startup {
     #[expect(
         clippy::borrowed_box,
         clippy::too_many_lines,
+        clippy::type_complexity,
         reason = "startup borrows the original boxed cold Application; retain its owners, panic and custody in one trace"
     )]
     fn ready_startup_owner_is_released_when_its_producer_disposal_panics() {
@@ -1832,6 +1897,7 @@ mod startup {
                     _,
                     _,
                     Never,
+                    Ready<()>,
                 >(
                     Handle::current(),
                     application,
@@ -1862,22 +1928,31 @@ mod startup {
                             client_capacity: MailboxCapacity::default(),
                             mailbox_capacity: MailboxCapacity::default(),
                         });
-                        let invoke = move |work: Box<(u64, Rc<Cell<usize>>)>,
+                        let invoke = move |work: ApplicationWorkPresence<
+                            Box<(u64, Rc<Cell<usize>>)>,
+                            Never,
+                        >,
                                            application: ApplicationHandle<
                             <ShutdownLedger as Behavior>::Protocol,
                             <StopOnShutdown<ShutdownLedger> as Behavior>::Event,
-                        >| async move {
-                            work.1.set(work.1.get() + 1);
-                            let stopped = application.request_shutdown();
-                            let report = application.lifecycle().retirement().await;
-                            (work, owner, published, stopped, report)
+                        >| {
+                            let work = work.into_supplied();
+                            (
+                                ApplicationWorkPresence::Supplied(async move {
+                                    work.1.set(work.1.get() + 1);
+                                    let stopped = application.request_shutdown();
+                                    let report = application.lifecycle().retirement().await;
+                                    (work, owner, published, stopped, report)
+                                }),
+                                None::<Ready<()>>,
+                            )
                         };
                         Ok((
                             ApplicationWorkPublication {
                                 publication: Some((
                                     ApplicationWorkCustody::Prepared(
                                         (root, spaces, scope),
-                                        ApplicationWorkPresence::Supplied((work, invoke)),
+                                        (ApplicationWorkPresence::Supplied(work), invoke),
                                     ),
                                     publication,
                                 )),

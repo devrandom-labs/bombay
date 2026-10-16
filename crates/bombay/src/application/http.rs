@@ -18,7 +18,7 @@ use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
     ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
-use core::future::Future;
+use core::future::{Future, Ready};
 use std::io;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
@@ -183,6 +183,7 @@ where
             _,
             _,
             Never,
+            Ready<()>,
         >(
             executor,
             (self, router, address),
@@ -212,32 +213,42 @@ where
                         });
                     }
                 };
-                let original_work = ApplicationWorkPublication {
-                    publication: Some((
-                        ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Supplied((
-                                (router, listener),
-                                async |(router, listener): (Router, TcpListener),
-                                       application: ApplicationHandle<
-                                    Root::Protocol,
-                                    Actor::Event,
-                                >| {
-                                    let lifecycle = application.lifecycle();
-                                    let server_shutdown = lifecycle.termination();
-                                    axum::serve(listener, router(application.clone()))
-                                        .with_graceful_shutdown(async move {
-                                            match server_shutdown.await {
-                                                Ok(_) | Err(_) => {}
-                                            }
-                                        })
-                                        .await
-                                },
-                            )),
-                            None,
-                        ),
-                        publication,
-                    )),
-                };
+                let original_work =
+                    ApplicationWorkPublication {
+                        publication: Some((
+                            ApplicationWorkCustody::NotInvoked(
+                                (
+                                    ApplicationWorkPresence::Supplied((router, listener)),
+                                    |work: ApplicationWorkPresence<
+                                        (Router, TcpListener),
+                                        Never,
+                                    >,
+                                     application: ApplicationHandle<
+                                        Root::Protocol,
+                                        Actor::Event,
+                                    >| {
+                                        (
+                                            ApplicationWorkPresence::Supplied(async move {
+                                                let (router, listener) = work.into_supplied();
+                                                let lifecycle = application.lifecycle();
+                                                let server_shutdown = lifecycle.termination();
+                                                axum::serve(listener, router(application.clone()))
+                                                    .with_graceful_shutdown(async move {
+                                                        match server_shutdown.await {
+                                                            Ok(_) | Err(_) => {}
+                                                        }
+                                                    })
+                                                    .await
+                                            }),
+                                            None::<Ready<()>>,
+                                        )
+                                    },
+                                ),
+                                None,
+                            ),
+                            publication,
+                        )),
+                    };
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,
@@ -251,7 +262,8 @@ where
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
-                        let ((router, listener), invoke) = work.into_supplied();
+                        let (work, invoke) = work;
+                        let (router, listener) = work.into_supplied();
                         let _ = invoke;
                         let inputs = Err((root, spaces, router, failure, listener, scope));
                         return Err(ApplicationWorkPublication {

@@ -115,7 +115,7 @@ impl<Inputs, Work, Output, Cleanup, StagingInputs, PreparedInputs, ColdWork>
 impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
     WorkOutcome<
         Inputs,
-        ApplicationWorkPresence<(Work, Invoke), Never>,
+        (ApplicationWorkPresence<Work, Never>, Invoke),
         ApplicationWorkPresence<Output, Never>,
         Cleanup,
         StagingInputs,
@@ -140,7 +140,8 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
                 inputs,
                 cleanup,
             } => {
-                let (work, invoke) = work.into_supplied();
+                let (work, invoke) = work;
+                let work = work.into_supplied();
                 drop(invoke);
                 WorkOutcome::Prepared {
                     work,
@@ -153,7 +154,8 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
                 startup_error,
                 cleanup,
             } => {
-                let (work, invoke) = work.into_supplied();
+                let (work, invoke) = work;
+                let work = work.into_supplied();
                 drop(invoke);
                 WorkOutcome::NotInvoked {
                     work,
@@ -174,7 +176,7 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
 impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
     WorkOutcome<
         Inputs,
-        ApplicationWorkPresence<(Work, Invoke), Never>,
+        (ApplicationWorkPresence<Work, Never>, Invoke),
         ApplicationWorkPresence<Output, Never>,
         Cleanup,
         StagingInputs,
@@ -199,7 +201,8 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
                 inputs,
                 cleanup,
             } => {
-                let (work, invoke) = work.into_supplied();
+                let (work, invoke) = work;
+                let work = work.into_supplied();
                 drop(invoke);
                 WorkOutcome::Prepared {
                     work,
@@ -212,7 +215,8 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
                 startup_error,
                 cleanup,
             } => {
-                let (work, invoke) = work.into_supplied();
+                let (work, invoke) = work;
+                let work = work.into_supplied();
                 drop(invoke);
                 WorkOutcome::NotInvoked {
                     work,
@@ -232,12 +236,12 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
 impl<Inputs, Invoke, Cleanup, StagingInputs, PreparedInputs>
     WorkOutcome<
         Inputs,
-        ApplicationWorkPresence<(Never, Invoke), ()>,
+        (ApplicationWorkPresence<Never, ()>, Invoke),
         ApplicationWorkPresence<Never, ()>,
         Cleanup,
         StagingInputs,
         PreparedInputs,
-        (),
+        Invoke,
     >
 {
     pub(in crate::application) fn into_absent(
@@ -248,35 +252,46 @@ impl<Inputs, Invoke, Cleanup, StagingInputs, PreparedInputs>
             Self::StagingRejected { inputs } => WorkOutcome::StagingRejected { inputs },
             Self::Unstarted {
                 application,
-                work: (),
-            } => WorkOutcome::Unstarted {
-                application,
-                work: None,
-            },
+                work: invoke,
+            } => {
+                drop(invoke);
+                WorkOutcome::Unstarted {
+                    application,
+                    work: None,
+                }
+            }
             Self::Prepared {
                 work,
                 inputs,
                 cleanup,
-            } => match work {
-                ApplicationWorkPresence::Absent(()) => WorkOutcome::Prepared {
-                    work: None,
-                    inputs,
-                    cleanup,
-                },
-                ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
-            },
+            } => {
+                let (work, invoke) = work;
+                drop(invoke);
+                match work {
+                    ApplicationWorkPresence::Absent(()) => WorkOutcome::Prepared {
+                        work: None,
+                        inputs,
+                        cleanup,
+                    },
+                    ApplicationWorkPresence::Supplied(never) => match never {},
+                }
+            }
             Self::NotInvoked {
                 work,
                 startup_error,
                 cleanup,
-            } => match work {
-                ApplicationWorkPresence::Absent(()) => WorkOutcome::NotInvoked {
-                    work: None,
-                    startup_error,
-                    cleanup,
-                },
-                ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
-            },
+            } => {
+                let (work, invoke) = work;
+                drop(invoke);
+                match work {
+                    ApplicationWorkPresence::Absent(()) => WorkOutcome::NotInvoked {
+                        work: None,
+                        startup_error,
+                        cleanup,
+                    },
+                    ApplicationWorkPresence::Supplied(never) => match never {},
+                }
+            }
             Self::Completed { output, cleanup } => match output {
                 ApplicationWorkPresence::Absent(()) => WorkOutcome::Completed {
                     output: None,

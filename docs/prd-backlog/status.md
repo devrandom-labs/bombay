@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Current integration: user-requested latest mainf25e4a0c (PR384) selects
+Current integration: user-requested latest mainf4aa3b3d (PR383, including PR384) selects
 Behavior/Actors0.26.0 and the complete Application/Work outcomes. Superseded
 0.25 remote-entry research is retired; historical evidence below retains
 its original source scope. Full service, SDK privacy and all full remote rows
@@ -483,7 +483,16 @@ Cold declaration comparison proves only public caller type composition and the
 wrong-reply encoder denial; exact source/mount restoration independently reviewed.
 No service API or full requirement state changes; SDK PR14 CI is still pending.
 
-SDK PR14 now merged asc34eb350 after required38934862637 passed; exact-main
-38943726658 is live before publication. Latest Bombay mainf4aa/PR383 integrates
+SDK PR14 merged asc34eb350; exact-main38943726658 and publication38952470805
+passed. Four successors and registry-only consumers verify; Bombay adoption is open.
+Latest Bombay mainf4aa/PR383 integrates
 with remote371+timer2 passing in both profiles, source laws11 and strict checks.
 These prerequisite deliveries do not change any full AUTH1/NET1 requirement state.
+
+After fresh six-owner/Entity verification, private invocation drives genuine
+absent Work and independent Counter/Ledger operations through the existing kernel.
+Final library375 and ordinary Application/HTTP/Entity/Node90 pass each profile;
+strict lint/format/source laws11 pass. Intended runtime inversions fail both
+profiles with exact restoration. The remote PRD retains forecasts, exact source
+epochs and production+91/public0 totals. Node no-Work/service/privacy and all
+full remote requirements remain open.

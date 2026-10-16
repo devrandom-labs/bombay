@@ -19,7 +19,7 @@ use behavior::{
     ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
 use core::fmt;
-use core::future::Future;
+use core::future::{Future, Ready};
 use std::error::Error;
 use std::sync::Arc;
 use tokio::runtime::{Handle, RuntimeFlavor, TryCurrentError};
@@ -302,7 +302,7 @@ where
             work,
             move |work: Work, mut application| {
                 application.session = Some(session.clone());
-                work(application)
+                (work(application), None::<Ready<()>>)
             },
         ) {
             Ok((execution, receiving)) => {
@@ -429,7 +429,7 @@ where
             work,
             move |work: Work, mut application| {
                 application.session = Some(session.clone());
-                work(application)
+                (work(application), None::<Ready<()>>)
             },
         ) {
             Ok(products) => Ok(products),

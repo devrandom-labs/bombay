@@ -33072,7 +33072,116 @@ c34eb350faad3d8d103aa383091d85502b67a898 after required run38934862637/
 job117087843305 passed all nine steps. Exact tested PR checkout6d7f1759 has
 the same tree as selected823f6204; original artifact ZIP00729a56 is retained
 and matches GitHub's digest. All nine crate bytes and167 artifact files survive.
-This records source delivery only. New exact-main run38943726658/
-job117117495161 is confirmed live on c34eb350. Guarded four-package publication,
-registry-only consumer verification and Bombay adoption remain pending. No new
-source/API change or full-service acceptance is claimed from this merge.
+Exact-main run38943726658/job117117495161 passed all nine steps. Guarded release
+38952470805 published TLS/Link/Transport1.10.4 and Zenoh1.10.10 from exactc34.
+Independent official registry downloads match all nine reviewed archives; five
+immutable dependencies are unchanged. Review95f20b0b preserves receipts/checksums.
+The unchanged owning consumer passes default and maintainer-macro execution from
+a fresh registry-only Cargo home; independent review5ebac9be verifies all nine
+cached archives against official bytes. Bombay adoption remains pending;
+configuration/API consumer proof closes no full-service requirement.
+
+### Private invocation comparison — work and exports have separate progress
+
+Pre-edit law (Bombay composition policy): one actual startup grant invokes the
+existing private projection once for supplied OR genuinely absent work. Store
+`(ApplicationWorkPresence<Work, NoWork>, Invoke)` as one coexisting product;
+Invoke returns `(ApplicationWorkPresence<WorkFuture, NoWork>, Option<Exporting>)`.
+The kernel polls bare Work itself and stores its exact Ready value in the existing
+publication before producer disposal. Release the existing Work permission when
+Work completes/is absent, then keep polling actual export work alongside native
+joining. Never wrap Work in another async producer or await exports before that
+permission. No supplied placeholder represents absence. Ordinary public methods
+and their six custody dispositions stay unchanged; private ordinary adapters
+select the real empty export set with None, not a supplied empty future.
+
+Fresh prerequisites: HEAD70392c17, lock59f4864e; Behavior/Actors0.26.0 and
+macros0.14.2 at98983b4, Address0.3.0/9f058dc0, Communication0.1.6/963067e0,
+Timers0.2.0/9369d1f6, current private Observe and Entity, Tokio1.53.1 and
+futures-util0.3.34. Complete selected760-line instructions and all six owning
+API/tests/docs plus Entity installation/shutdown are freshly read and hashed.
+The53-input prerequisite JSONee276d73 already has the current lock; its initial
+Markdown's historical3caba shorthand is corrected in a separately preserved
+current receipt. All53 hashes and ten selected package entries agree; all18
+manifests have no patch/replace. Current published SDK1.10.9 remains selected.
+Behavior retains pure Actions and Actor templates retain policy; existing native
+communication, address allocation, observation and family shutdown remain owners.
+No Behavior, interpreter, protocol, dependency, runtime task or public type is added.
+
+Smallest pre-edit consumer: genuine Absent with Work=Never, actual correlated
+Counter IncrementAndReply, and independent native Read/Stop. A second consumer
+uses original Box MailLedger Append and independent terminal Read. Both retain
+outside outcomes, native actor custody and both notifications before assertions.
+The original kernel rejects cold absent Invoke storage; this is a compile-contract
+comparison, not a claimed runtime defect. The first format/compile overlap is
+excluded; only fixed-input receipts may qualify. A runtime inverse must still
+invoke and publish independent control, omit only export progression/dispose its
+producer, complete native cleanup, then fail at value0 or missing native Append.
+A watchdog/setup/compiler failure cannot qualify that runtime law.
+
+Forecast before any production edit: execution.rs, work.rs, http.rs and node.rs;
+existing attachment tests and temporary three-line test mount; these two records.
+At most180 net production lines,740 new verification Rust lines,110 verification
+script lines and110 record lines; zero public types added/removed. Existing
+WorkOutcome, work publication, Work presence, ApplicationHandle, native root/
+family tasks and permission channel are reused. The old supplied-only Invoke
+branch and duplicate absent projection-disposal branch are replaced. One private
+Exporting future parameter has two real native substitutions, never public Native.
+All2500/18/125/20000 approved ceilings, known1668 production and12 reservations,
+and unknown historical/external charges carry unchanged; no certified headroom.
+Temporary candidate source is not selected for delivery before both native
+consumers, bare Ready/Drop-panic, ordinary empty-export consumers, focused debug/
+optimized runs, intended source inversions and independent two-pass reviews pass.
+
+Aggregate checkpoint: no new actor control state, domain sum or subordinate
+transition authority. One optional actual unfinished export producer is removed
+on Ready to prevent repoll; original outcomes remain outside that producer.
+Existing cold/staging/prepared/uninvoked/completed/interrupted custody is retained.
+The private kernel comparison does not define an indefinitely listening service's
+retirement policy. Node-owned rows, cold service refusal, shared replay, provider/
+query custody, whole-owner surrender and Session-close ordering remain required
+before production service retention or any full R01–R25/AUTH1/NET1 acceptance.
+
+Private supplied invocation keeps its existing Work argument and returns the
+bare Work future beside optional exporting; its owning adapter embeds the result
+in the supplied presence. Ordinary absent invocation explicitly discharges the
+actual unused startup handle, then returns genuine absence and the empty export
+set. This preserves the existing ownership operation, not a fabricated Work
+callback. Private signatures gain one Exporting future parameter, bounded only
+by Future<Output=()>; all existing actor/family bounds remain at their owners.
+
+Both actual absent consumers pass debug/optimized2/0, and the internal supplied
+Some-exporting Ready/Drop-panic witness passes alongside them3/0 in each profile.
+Before inversions, extend the bounded verification-script forecast80 to110 lines;
+production180/public0 bounds stay unchanged. If retained, move the503 external
+test lines into two owning test modules and remove both temporary absolute mounts
+(ten repository paths total). No Node no-Work entry or service API exists yet.
+
+Historical candidate review restored old let ordering after an eager generic
+Invoke drop moved ahead of StagingRejected construction. Actual runtime then
+DISPROVED that return-place custody assumption: the first test hung and was
+terminated without credit. Its finite replacement observes the same receiver
+once after execution surrender; original3e7be source fails only the final Pending
+custody oracle (debug0/1, unchanged inputs, no timeout). Reviews86f25798/fefb5aaa
+are superseded on that assumption by independent source review5f604270.
+Before further production edits, select one initialized local existing publication
+containing exact rejected originals, then dispose Invoke, then return that local.
+No new type/state/interface/task is needed. This reuses the original publication
+owner and keeps constructor/drop panic outside the rejected inputs. Keep existing
+mapper policies separate; full service cold/refusal/cancellation remains open.
+Verification forecast740 Rust/110 script/110 record lines and eleven repository
+paths, production180/public0 limits and all cumulative unknown charges remain.
+
+Initialized rejection preserves original Work, invocation panic and independent
+role cause. Omitted exporting, old staging and delayed Work publication each
+fail the intended runtime oracles in both profiles, with exact source restoration;
+each inversion retains its original source epoch rather than a later test hash.
+
+Final styled source passes375 library tests and90 Application/HTTP/Entity/Node
+tests in each profile; the latter includes13 inner compile fixtures separately.
+Strict workspace/all-target/all-feature lint, formatting and source laws11 pass.
+Before correcting five test-only lint spellings/expectations, the record window
+was extended110 to130 lines; production/API/verification forecasts stayed fixed.
+Complete tracked/untracked change: eleven paths, production +208/-117/net91,
+tests +660/-11/net649, public API +0/-0types. These are private capability
+additions. Node no-Work/service/privacy and all full remote acceptance stay open.
