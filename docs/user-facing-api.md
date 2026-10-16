@@ -970,8 +970,9 @@ The intended ordinary public surface is:
 
 Explicit hosting uses `Application::with_topology` with deliberately imported
 `bombay::{ActorSpace, ActorSpaces, Hosts}`. `Application` remains in the ordinary
-prelude. One declared topology deriving hosting and retirement remains the target
-for complex graphs.
+prelude. For child graphs, one `topology!` declaration derives static hosting and
+complete native descendant custody. `TerminalProjection` remains an optional
+owned presentation of those results.
 
 Users never manually construct or implement:
 

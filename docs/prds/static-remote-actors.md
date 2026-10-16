@@ -2,15 +2,21 @@
 
 ## Current source after PR375 integration (2026-10-16 UTC)
 
-The user requested latest main and removal of superseded code. The research
-branch integrates main5e9bcd1, selecting Behavior/Actors0.26.0 at98983b4 and
-macros0.14.2. New main owns WorkOutcome, complete ApplicationOutcome and ordinary
-Node callbacks. The previous0.25 Application connection-entry prototype is
-being retired or reconciled; its historical evidence below does not establish
-current callers. Generic Native replay remains a separately qualified unmerged
-research contract. Production all-feature library checking passes after exact
-upstream conflict reconciliation; no current test, strict-lint, full service or
-transport-privacy completion is inferred. All full remote rows remain open.
+The user requested latest main, three complete repository scans, and one
+canonical way to compose, run and retire an application. The research branch
+integrates main5e9bcd1, selecting Behavior/Actors0.26.0 at98983b4 and macros0.14.2.
+Application owns the one executable composition and complete Work/root/retirement
+results. The disconnected0.25 connection-entry and generic Native prototypes
+have been removed from active source; exact source and unique law evidence
+remain archived. Active production owners now match main. The only source
+adaptation is the existing PR379 test's current WorkOutcome/capacity spelling;
+its original ownership oracle passes in debug and optimized builds.
+
+All three codebase scans are complete. No further competing production owner
+was found. Strict lint and formatting pass; current workspace coverage passes
+except the two retained raw Config/Query privacy denials. SDK privacy,
+shipping service integration and stale mutation-baseline migration remain
+unfinished. All full R01–R25/AUTH1/NET1 rows remain open.
 
 Earlier checkpoints below retain their source/version/execution scope.
 
@@ -30133,3 +30139,281 @@ new exact semantic-budget totals; carry previous exact1665+Communication104,
 public12 reservations and every historical extent until cleanup reconciliation.
 The user's explicit latest-main integration authorizes adopting that upstream
 reviewed surface; it does not justify new local abstractions or reset scope.
+
+
+### User-requested retirement of superseded connection-entry research
+
+Main5e9bcd1 now owns Application construction, WorkOutcome, full retirement,
+NativeHost and ordinary Node Work. The orphan370-line application/network.rs
+and965-line unmounted application/tests hierarchy no longer have a module.
+The private142-line Connection has no production caller except that orphan;
+its229-line configuration input owner and four public input types have no
+current consumer. Five mounted application_clients/remote.rs cases and the
+315-line remote-entry family case still call that retired entry contract.
+Independent reference/law audit confirms this exact deletion closure.
+
+Select deletion of that unconnected prototype, not another adaptation of its
+old kernel. Preserve every source and result under
+refs/archive/research/remote-before-main-cleanup (7f0e0fa), earlier reviewed
+commits and durable session-archives. The8 configuration,5 connection-retirement,
+3 handoff/association,3 startup-disposal,5 public entry and nonempty-family laws
+are distinct historical evidence, not automatically replaced by upstream tests.
+Their shipping counterparts remain explicit requalification obligations; no
+full R01–R25/AUTH1/NET1 row closes or loses its planned oracle.
+
+Expected source closure: remove application/network.rs, application/tests.rs
+and tests/startup.rs; remove remote/connection/* and tests/application_clients/
+remote.rs; restore main's remote module surface, startup errors, optional
+manifest edges, Application-client mounts, shared support's network-only
+fixture, and completed-receiving file. Keep upstream support's terminal
+assertions and every upstream test. About770 production lines and2910 research
+verification lines leave the active source; exact counts follow. Public types
+-4/+0; their earlier reservations remain in the carried12 until actual shipping
+selection. This deletion adds no semantic type, compatibility path or policy.
+Do not suppress unused code to retain it. Generic-Native replay is a separate
+research candidate and must be reconciled before current tests can pass.
+Update current owner/API/PRD/backlog guidance in the same stage. Cumulative
+2500/18/125/20000 and historical/external reservations remain explicit; reviewed
+upstream changes are attributed separately rather than silently resetting them.
+
+
+### Three repository scans and one canonical composition — user instruction
+
+The user requires three complete repository scans for obsolete/legacy code,
+removal of unnecessary code and one way to do things. Select three independent
+passes over the complete tracked code inventory: module/dependency ownership;
+public contracts and every caller/example; semantic-owner duplication and
+compatibility machinery. Each pass records its file inventory, evidence and
+confirmed removal candidates. Keyword occurrence alone is not evidence.
+After removals, repeat residue checks and execute whole-workspace verification.
+Application is the canonical composition owner; every retained lower-level
+capability must compose through that same executable and retirement ownership.
+Do not retain a second entry/lifecycle/replay implementation or a synonym-only
+facade. Distinct authoritative facts and actual failure/ownership operations
+remain distinct. Useful negative gates and full feature obligations are not
+obsolete code. Remove only confirmed residue; a missing replacement is recorded
+as unfinished work, never silently discharged. Actual scan outcomes, scoped
+changes and complete tracked/untracked deltas follow before completion credit.
+
+
+The first independent whole-code graph pass reaches all395 surviving Rust
+sources through18 Cargo manifests and explicit module/include/fixture selectors;
+all140 compile fixtures have owners. The selected orphan-entry deletion leaves
+no additional orphan Rust source. Identical feature-conditioned denial fixtures
+and Observe test-host source sharing are deliberate and retained. Three mutant
+exclusion expressions reference removed CoordinatedChild, ChildRuntime and
+LifecycleFactory<NoLifecycle> owners and are confirmed removable with their
+obsolete comments; keep the two current Observe exclusions. This is a
+verification-configuration deletion, production/API0. The mutation baseline
+separately contains71 floors,119 known-zero keys and2 equivalent records for
+deleted paths. Do not erase those coverage commitments to make the gate green;
+record their migration as an actual unfinished verification obligation.
+
+
+### Native comparison — reopen current production attachment before bulk migration
+
+The0.25 concrete-Native row laws remain qualified research evidence. They have
+no actual shipping service consumer: constructor/authority/eligibility functions
+were private test interpretations, and all three runtime witnesses use the now
+retired connection-entry contract. Current main owns the independently delivered
+fixed-reply prerequisite and its Node consumers. Keep that one active contract
+while selecting the shipping composition over0.26 Work/interpreter ownership.
+Do not adapt thousands of existing Node test lines to an unconnected private
+service candidate or add a compatibility spelling. The current86-error consumer
+check independently confirms the mismatch; compiler errors do not select the
+owning design or justify generic plumbing.
+
+Disposition: reopen the production attachment, park the Native comparison and
+its three witnesses in the existing exact archive refs/commits, then restore
+main's Export and associated handle signature. The actor-wide cross-operation
+replay, original-send custody, exact declaration identity and Full-retry laws
+remain required inputs to the actual shipping witness and retain all their
+source/inversion receipts. This is no disproof or erasure of those laws and no
+feature acceptance. The runtime interpreter/custody integration must select
+where that closed concrete state belongs before reintroducing it.
+
+Expected separate rollback: export.rs/interface.rs restore exact main;
+remove the three research witness files/mounts. This removes883 verification
+lines and reverses the earlier net-123 source refactor (+123 retained source
+relative to that candidate, not a code-reduction claim). Combined connection-
+entry retirement remains net-negative. No new public type, trait, runtime,
+actor, macro, receiver or callback is introduced. Exact old source is recoverable
+from ea7f836,01ea4ff,7f0e0fa and the durable session archive; retry candidatef174
+and negative receipts additionally remain in the saved stash/archive ref.
+Current full service/privacy/row gates remain open, with no new-main test credit.
+
+
+### Actual-main startup regression — preserve its owning Work contract
+
+After parking the unconnected Native comparison, the complete test compile
+finds two integration errors in main's imported PR379 regression itself. Its
+startup preparation still omits the two now-owned MailboxCapacity fields, and
+its cold-outcome assertion still names the old ApplicationOutcome enum instead
+of the exact kernel WorkOutcome. Production is already main's exact owner.
+Reuse its existing default-capacity policy exactly as in the three real
+preparation paths and pattern-match the actual WorkOutcome::Unstarted. Import
+both existing types at module scope. No test deletion, relaxed oracle, new
+model, type, bound, callback or compatibility branch is selected.
+
+The invariant remains original affine startup ownership when its Ready producer
+Drop panics. The actual main test is the preexisting regression; compilation
+fails for those two precise stale spellings before any runtime test. Adapt only
+that module, review twice independently and run the same named test in both
+profiles before broader verification. Expected production/API0; about7 added
+and2 removed test lines in execution.rs. All source, allocated panic, cold Work,
+startup closure, call counts and exact closed-oneshot oracles remain unchanged.
+
+
+### Retire SDK-only construction probes with their missing consumer
+
+The third whole-repository semantic pass independently inspected the two
+research tests at the start of tests/remote_node.rs. They call only native
+Config, SecretValue and EndPoint setters/getters, never a current Bombay owner.
+Their sole intended consumer was the deleted unconnected Network translator.
+Select their removal and unused research imports by restoring this test file
+to exact main. Preserve every original Node/profile/startup-refusal test and
+all three privacy negatives. Expected production/API0, approximately155 removed
+test lines. Exact source remains at7f0e0fa; future shipping configuration must
+re-establish all five credentials, independent directions and endpoint-injection
+laws at its actual Bombay consumer. This is retirement of unattached research,
+not evidence that its security laws have been discharged.
+
+
+### Three-scan outcome and current-owner regression qualification
+
+Three independent whole-repository passes are complete: pass1 maps module, Cargo
+and fixture ownership; pass2 maps public contracts to callers and every example;
+pass3 checks semantic owners, compatibility residue and SDK boundaries. Their
+complete inventories, hashes, findings and limitations live in the session's
+legacy/pass1, pass2 and pass3 records, copied to the durable common-Git session
+archive at this checkpoint. Pass1 reaches395 surviving Rust sources through18
+Cargo manifests,205 module/include edges and262 Cargo/compile roots; all140
+compile fixtures are owned. Pass3's broader code/config inventory reads558
+files/173525 lines; every retained production owner is main's existing owner.
+Snapshots are explicit: selected deletions and concurrent prose corrections
+mean these are coverage inventories, not interchangeable final-tree hashes.
+
+Removed only the confirmed disconnected research closure, its three concrete
+Native witnesses, two SDK-only construction probes, obsolete mutant exclusions
+and repeated status chronology. Kept feature-conditioned compile denials, shared
+Observe test hosts, manual differential compositions, client/sender/external
+recipient distinctions, no-Work/supplied-Work custody, independently retained
+execution/receiving, HTTP/Entity preparation and shutdown/termination/retirement
+facts. They all serve the same executable owner and preserve distinct laws.
+No replacement runtime, compatibility method or synonym facade was introduced.
+
+PR379's unchanged affine startup oracle is reviewed twice by its author and
+independently twice. Current pinned-Nix exact named debug and optimized tests
+each pass1/0/0,359 filtered; optimized receipt startup-026-release records source
+91b6299e, lock3caba2a6 and log1ab3db26. Production prefix is byte-identical main.
+Earlier source inversion and actual required-CI evidence keep their historical
+revision scope; no new semantic law is claimed from adapting test spelling.
+Current whole-workspace tests and strict Clippy are separate checks below.
+
+Worktree cleanup now removes28 obsolete clean/archived worktrees in total,
+with22 invalid registrations pruned previously. The additional PR375 integration
+checkout was clean, had no working-directory process, and its exact214d5b0 head
+was verified as merged. Branch/archive refs remain. Dirty timer/main worktrees,
+the live lionfish session and idle-shell worktrees remain protected. The original
+chat checkout can receive the research branch only after checks finish and this
+checkpoint is committed; do not remove a directory still used by a live process.
+
+
+Final residue review restores the isolated transport-custody lock to exact main: its sole research difference was the normal serde_json edge used by the deleted translator. No package version/checksum/node is regenerated. The current root lock correctly retains its separate dev-dependency edge. This one-line metadata deletion does not repair or certify the separately recorded isolated fixture-lock version prerequisite; that remains open until its own actual locked commands pass.
+
+
+### Cleanup measurement and independent source review
+
+The independent complete tracked/untracked census against pre-cleanup7f0e0fa
+records the exact source delta (non-Rust records are separate):
+
+```text
+production: +255 / -894 / net -639
+tests:      +9 / -3996 / net -3987
+public API: +0 types / -4 types
+```
+
+Four removed Network input types retain their historical12 public reservations
+until the actual shipping selection. Final retained production is byte-identical
+actual main5e9bcd1; the research delta against main is production0/0 and tests
++60/-4/net56 (existing startup adaptation plus three retained privacy denials).
+Fresh cumulative lexical attribution against81dc1448 is production+3710/-2320/
+net1390, tests+25516/-2294/net23222. Main alone contributes the same1390 production
+and23166 net verification lines; it is imported reviewed upstream delivery under
+the explicit latest-main instruction, not new local research surface. Adding the
+carried external Communication104 gives known combined1494 production, while
+all older reservations/extents remain carried. Preserve2500/18/125/20000 research
+limits and separately attributable upstream expansion; do not silently relabel
+the whole cumulative244-path/23222-test-line extent as the local cleanup window.
+
+The independent final source review passes for this checkpoint:82 retained
+production owners match main, the startup test preserves every original oracle,
+all ten deleted files exactly match the archive, original Node/support/profile
+tests are intact, and normative full-remote acceptance remains unchanged. The
+review additionally found and corrected two earlier Session-lending prose claims
+and qualified the historical2bb451 identity audit. Main was fetched again and
+remains5e9bcd1. Full service/privacy acceptance and reviewed remote delivery remain
+open; this is a code-reduction checkpoint only. Exact non-Rust/final-tree counts
+and hashes are stored in the final external receipt after this record is written.
+
+
+### Executed privacy gate: remove one proved duplicate denial
+
+The complete workspace run reaches the expected open privacy gate: raw Config
+and Query snippets still compile. The third research Session snippet now fails
+with E0593 but has no accepted diagnostic. Exact two-pass independent comparison
+proves it duplicates main's node_paired_work_cannot_receive_session fixture;
+main additionally covers run_with and accepts valid one-argument borrowed/non-Send
+Work. Restoring a Session callback makes the existing paired compile-fail oracle
+fail, so removing the duplicate does not weaken the law or make it vacuous.
+
+Revise the earlier keep-three disposition on this fresh evidence: delete only
+research remote_session.rs and its remote_surface mount (20 test lines). Keep
+both original main Session denials and their accepted diagnostics unchanged;
+keep both genuine Config/Query privacy negatives enabled and failing until the
+private service fixes them. Exact research source remains at7f0e0fa; archive the
+new diagnostic externally. No new expectation is added just to accept a second
+spelling of the same law. This changes neither production nor public types.
+
+
+### Final cleanup verification checkpoint
+
+Pinned-Nix complete workspace/all-feature test execution returns101 only at the
+kept transport-privacy target: raw configuration and query access unexpectedly
+compile. The initial command passes779 tests with1 ignored, but includes the
+two SDK-only probes compiled before their retirement; retain that exact receipt
+without counting those probes as current. A fresh current remote_node target
+passes all6 original tests. The14 integration targets not reached after the
+privacy failure pass55 with1 ignored; remaining workspace packages pass8; all
+workspace documentation tests pass7 with3 ignored. Thus current distinct test
+coverage is840 passing tests/2 ignored plus7 passing doctests/3 ignored, and
+one deliberately failing privacy target. This is not an all-green workspace.
+
+Strict workspace/all-target/all-feature Clippy passes with -D warnings. Final
+rustfmt check passes. The isolated transport-custody locked all-target check
+with protected-transport passes after restoring its exact-main metadata edge;
+this is compilation, not execution of the full shipping transport campaigns.
+All exact argv, source/log hashes and outcomes remain in shared-requests receipts
+canonical-workspace, canonical-current-node, canonical-unrun-integration,
+canonical-unrun-packages, canonical-docs, canonical-clippy, canonical-fixture,
+canonical-format-final and canonical-privacy-final. The final privacy rerun
+retains only the two actual open leaks; both upstream Session denials remain
+unchanged and passed in the complete run. Its old wip diagnostic is archived
+externally, not accepted as a new duplicate fixture.
+
+The final Session-duplicate retirement revises the immediately preceding source
+census by20 deleted test lines:
+
+```text
+production: +255 / -894 / net -639
+tests:      +9 / -4016 / net -4007
+public API: +0 types / -4 types
+```
+
+Final retained research versus main is production0/0, tests+40/-4/net36.
+Full remote requirements, genuine privacy failures and mutation coverage
+migration remain open. This checkpoint is committed as a reviewed source
+reduction, not feature acceptance or remote delivery. The isolated startup test
+repair is independently submitted as PR382 at eeb8dc66 against main5e9bcd1;
+its two files are the same verified startup regression and its owning DevX
+change record. Required CI and actual review/merge remain pending.

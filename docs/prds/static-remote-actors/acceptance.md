@@ -1,5 +1,13 @@
 # Static remote actor acceptance
 
+Current-main reconciliation (2026-10-16): PR375 main5e9bcd1 selects
+Behavior/Actors0.26.0 and complete Application/Work outcomes. The earlier
+connection-entry prototype is retired from current source. Its distinct
+configuration, startup-disposal, connection-retirement, public-entry and family
+controls below retain their historical source scope; upstream tests do not
+replace all of those laws. Current service ownership and consumer witnesses
+remain required. No full remote acceptance row closes from this cleanup.
+
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.
@@ -13,6 +21,11 @@ full-row credit follows from the existing compiler-only comparison. Executed pre
 profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
+
+## Historical prerequisite evidence
+
+The following checkpoints retain their exact earlier revisions and execution
+scope. Removed research is not a current API or current passing witness.
 
 The connection-entry stage now executes five public Application caller tests
 in debug and release: original cold input recovery, actual startup-refusal

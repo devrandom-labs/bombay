@@ -283,7 +283,6 @@ dependencies = [
  "loom",
  "parking_lot",
  "serde",
- "serde_json",
  "thiserror",
  "tokio",
  "triomphe",

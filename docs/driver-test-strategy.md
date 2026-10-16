@@ -63,7 +63,9 @@ proof. `ObserveEstablishedCreation` and `CancelObservation` are
 public capability contracts with no current public-template emitter and stay
 listed so a later emitter cannot appear outside the inventory.
 
-This identity is source-revalidated at `2bb4510077bfa5aed82e08d25453c146b3184285`.
+The earlier identity audit was source-revalidated at
+`2bb4510077bfa5aed82e08d25453c146b3184285`; that is historical evidence,
+not fresh revalidation of the current `98983b4` selection.
 The 45 template and 19 capability entries retain their declared boundaries;
 initial-factory preparation and creation-refusal custody changed within Actors.
 Conditional child membership, private-input recovery and composed send routing

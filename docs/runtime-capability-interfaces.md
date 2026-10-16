@@ -30,10 +30,11 @@ top-level metadata object; concrete Serde schemas retain field presence, uniquen
 meaning. Native syntax causes remain available. This checks acceptance after
 token materialization and proves neither a peak-heap bound nor authentication.
 The optional remote feature provides Application::open_node and remote::Node as a
-transport owner, reusing ordinary Application execution with a borrowed native
+transport owner, reusing ordinary Application execution with its privately owned
 Session. Node::run_with awaits its complete outcome; execute_with keeps separate
-operations and permits a Session-borrowing business result. Both preserve original
-Work on refusal through the existing invocation spine. It owns no new actor trait,
+execution and receiving operations. Both callbacks receive only the ordinary
+Application handle and retain caller-local borrows and non-Send outputs. Both
+preserve original Work on refusal through the existing invocation spine. It owns no new actor trait,
 mailbox, lifetime authority or permission policy. Startup profile checks preserve original declarations on refusal;
 actual SDK and root/child integration remain separate verification gates.
 Native transport fixtures remain scoped verification consumers.
@@ -60,11 +61,10 @@ permission/time snapshot and retry policy; client construction and attempted
 mailbox admission remain separate facts. Stable Entity resolution still awaits.
 
 Merged PR372 composes those existing owners through
-`ApplicationHandle::export`. The new remote Application entry also attaches its
-acquired private Connection through the existing execution owner; the provisional
-Node path does so too.
-Remote-entry Work receives only the ordinary typed ApplicationHandle;
-the provisional Node still lends its Session and remains a privacy defect.
+`ApplicationHandle::export`. Node execution attaches its private Session to
+the ordinary ApplicationHandle; its current Work callback receives no Session.
+The retired connection-entry prototype adds no second invocation path. Native
+configuration and query exposure remain unfinished public-interface work.
 There is no public arbitrary handle/Session pairing.
 `remote::Export` retains protected bytes, proof and opaque provider receipt with
 one independent existing reply client per request. It compares stable provider

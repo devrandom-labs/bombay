@@ -164,12 +164,12 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         }
     }
 
-    /// Declare an actor owned by this Application through its owned connection.
+    /// Declare an actor owned by this Application through its actual Node.
     ///
-    /// Application networking supplies the native Session. Local-only handles
-    /// and closed Sessions refuse before declaration. Exact native actor ownership
-    /// is checked without allocating a reply endpoint. Retained requests carry
-    /// concrete cold operations; only the private interpreter allocates clients.
+    /// Only Node invocation supplies the native Session. Local-only handles and
+    /// closed Sessions refuse before declaration. Exact native actor ownership
+    /// is checked without allocating a reply endpoint. Each new retained request
+    /// later owns one independently allocated native reply client.
     ///
     /// Limits are explicit counts, not byte or whole-service bounds. The supplied
     /// predicate compares provider-owned logical request identities; it does not
@@ -183,17 +183,19 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     /// callable are consumed. No native reply endpoint is allocated by construction.
     /// Cancelling the whole operation surrenders its inputs.
     #[cfg(feature = "remote")]
-    pub async fn export<Target, Native, Receipt>(
+    pub async fn export<Target, Replies, Receipt>(
         &self,
         target: EstablishedRecipient<Target>,
         key: &str,
         limits: ExportLimits,
         same_request: fn(&Receipt, &Receipt) -> bool,
         refused: impl Fn(IngressError<Query>) + Send + Sync + 'static,
-    ) -> Result<Export<Target, Native, Receipt>, (EstablishedRecipient<Target>, ExportError)>
+    ) -> Result<Export<Target, Replies, Receipt>, (EstablishedRecipient<Target>, ExportError)>
     where
         Target: Protocol<Addr = MailAddr>,
         Target::Msg: Send + 'static,
+        Replies: Protocol<Addr = MailAddr>,
+        Replies::Msg: Send,
     {
         let Some(session) = self.session.as_ref() else {
             return Err((target, ExportError::NodeAbsent));
