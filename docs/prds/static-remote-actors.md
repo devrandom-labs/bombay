@@ -25917,3 +25917,22 @@ feature, dependency, default, service API or abstraction is selected here.
 Final CI/artifact review and a normal exact-head guarded merge remain required.
 Record their actual results and merge in the next delivery checkpoint; no full
 R01–R25, AUTH1 or NET1 gate closes from this prerequisite.
+
+### Replacement release lock correction — publication remains held
+
+The release bot closed PR373 without merging and created PR378 at3bf03fa.
+Its version bump omitted the previously verified private fixture lock update.
+All three CI failures stop at locked resolution before the affected fixture tests.
+Pinned Nix `cargo metadata --offline --locked --format-version 1 --manifest-path
+docs/prds/static-remote-actors/transport-custody/Cargo.toml` independently fails101
+before the correction and succeeds0 afterward. Only the fixture's local
+Bombay version changes0.1.3→0.2.0; other package records remain identical.
+Raw before/after logs and resolved metadata are retained in
+/tmp/bombay-shipping-export-review/pr378-metadata-{before,after}.*.
+
+This correction is two paths: lock+1/-1 and this documentation record;
+production+0/-0, tests+0/-0, public types+0/-0. The complete release contribution
+against c249044 is five paths, with no Rust-source or public-API change.
+Fresh required CI remains necessary. PR378 inherits the existing release hold:
+merging it would trigger publication before the Bombay-owned remote Application
+surface replaces public native plumbing. No remote acceptance row closes here.
