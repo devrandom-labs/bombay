@@ -164,3 +164,32 @@ Driver laws cross-check unchanged; source/model checkpoint:pass. Pre-edit laws,
 independent reviews and immutable receipts remain in the sole owning PRD.
 The required full Nix gate and delivery remain pending; valid capacity does not
 promise that memory for an arbitrarily large mailbox is available.
+
+The protected consumer lock repair on `codex/devx-protected-lock` is separate
+build-coherence work. The fresh e629464 full Nix run vendors Behavior0.26.0
+while the path dependency requires0.27.0, and fails before any protected tests.
+Only the nested Cargo.lock changes Behavior/Actors026→027 and macros142→150;
+the three published records exactly match the root lock. All322 nonowner
+records, root Cargo files, Rust source, certificate fixtures and assertion sets
+remain unchanged. No patch or manifest change is used.
+
+The isolated refreshed graph passes53 default and68 protected cases on
+Rust1.99/1.96 in debug/release:484 executions. The existing controlled-query
+case stays ignored in those four protected runs, then executes explicitly in
+all20 original campaign modes across four compiler/profile configurations:
+128 topology/layout/provider combinations and320 successful exact-role
+processes. Router roles exercise their existing connection fixture, not an
+additional business query. Campaign sources, seven certificates, selected
+binaries and all child logs retain their recorded hashes. The binaries are
+reused from the preceding completed consumer builds; the320 processes are new.
+Strict current Clippy passes both feature configurations. Two independent
+reviews verify exact case sets, custody scope, source and process evidence;
+these unchanged tests do not establish a new complete-custody theorem or
+explain the historical retry hang.
+
+Expected retained scope is the nested lock and this coordination record;
+production/tests/public types+0, no state/module/transition change. This follows
+the owning pre-edit law at Behaviord419486. The refreshed exact-source Nix gate
+and final programme delivery remain pending. The original e629464 full run
+continues unchanged in its own worktree; no in-flight dependency repair can
+turn that failed run into a pass.
