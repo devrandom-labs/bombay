@@ -8,6 +8,12 @@ Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 Behavior/Actors0.27.0, macros0.15.0, Communication0.1.6 and Timers0.2.0
 without repository patches. Catalogue migration and final gates remain open.
 
+Upstream mainfbb5c74 contains merged [PR375](https://github.com/devrandom-labs/bombay/pull/375)
+and PR382's startup regression repair. That Rust repair is already byte-identical
+here. This refresh adds no Rust or registry graph change; upstream still selects
+Core/Actors026 and Macros142 while this isolated branch adopts270/150. Existing
+integration checkpoints retain their original source and verification limits.
+
 Registry270 adoption, pre-edit: isolate current main5e9bcd1 plus timer custody
 a54a303 on codex/devx-registry-027. Selected baseline remains registry Core/
 Actors026 and Macros142, Address030, Communication016, Observe local and Timers020;
@@ -3267,3 +3273,41 @@ Two test source files add three parent module declarations; one common cost
 equation has two actual provider substitutions. Cross-check Node-private close,
 Driver custody and authoritative-fact conservation. Both independent evidence
 reviews pass. Disposition: pass for this test-only batch; no programme completion or newer-main acceptance is claimed.
+
+
+## Current-main startup regression repair (2026-10-16)
+
+The combination of merged PR375 and PR379 leaves two stale spellings in the
+existing affine startup regression: its Scope literal lacks the now-owned
+client/mailbox capacities, and its cold assertion matches ApplicationOutcome
+instead of the actual WorkOutcome. Test compilation fails with E0063/E0223.
+Production already uses the correct single Application invocation owner.
+
+This focused repair selects Behavior/Actors0.26.0 at98983b456c4a8f7cd0911982eaf9488455b6d8bc,
+macros0.14.2, Address0.3.0, Communication0.1.6, private Observe and Timers0.2.0,
+without patches. The current-source/owner review retains Behavior folds, native
+Communication admission, Address leases, Observe completion and actor-owned
+Timers unchanged. Reuse the existing MailboxCapacity::default policy, exactly
+as the three current production preparation paths do, and actual WorkOutcome.
+No new runtime, type, contract, bound, callback or compatibility path is selected.
+
+Pre-edit scope: application/execution.rs cfg(test) startup module and this PRD;
+production+0/-0, tests+8/-4/net4, public types+0/-0. Preserve original cold
+Application and callable, allocation identity, allocated panic, preparation/work
+call counts and exact closed-oneshot outcome. Both author reviews and both
+independent reviews confirm unchanged assertion bodies, calls and order; only
+imports, two capacity fields and the actual owning enum name change. The
+existing PR379 intended-defect inversions retain their original revision scope.
+This spelling repair introduces no new law.
+
+Pinned-Nix validation on exact execution.rs91b6299e and Cargo.lock3caba2a6:
+
+- cargo test --offline --locked -p bombay-rs --features remote --lib application::execution::startup::ready_startup_owner_is_released_when_its_producer_disposal_panics -- --exact:1 passed.
+- The same command with --release:1 passed; original ownership oracle unchanged.
+- cargo fmt --all -- --check:passes.
+- cargo clippy --offline --locked --workspace --all-targets --all-features -- -D warnings:passes.
+
+Every command runs through nix develop and the repository's pinned shell.
+Source review separately proves the complete production prefix byte-identical
+main5e9bcd1. Focused PR delivery and required CI remain separate; neither this
+repair nor the earlier merge closes full remote service/privacy requirements.
