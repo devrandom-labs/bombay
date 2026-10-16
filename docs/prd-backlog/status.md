@@ -42,7 +42,9 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 was superseded; PR374 merged67a286c. Full service/privacy remains open.
+privacy remain open. PR373 was superseded; PR374 merged67a286c after all six
+checks passed.
+Full-service delivery and the private transport API remain open.
 
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.

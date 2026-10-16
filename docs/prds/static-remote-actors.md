@@ -11,8 +11,8 @@ remote406 per profile and six requester cases per profile. Driver/Observe fuzz
 passes; conditional Miri is skipped. Reviews005a8147/98d0443b and actual merge
 receiptcf93122f retain exact attribution in /tmp/bombay-pr377-ci-review.
 This delivers the verified Communication0.1.6 adoption only. PR379's separate
-startup correction now has a resolved main integration6e6f304 with fresh CI
-running. PR374 merged67a286c after all six checks passed. Superseded release
+startup correction merged38774de after all six checks and required/native
+reviews passed on6e6f304. PR374 merged67a286c after all six checks passed. Superseded release
 PR380 is closed; replacement PR381 remains held for service/privacy and its
 isolated fixture-lock prerequisite.
 Every full R01–R25/AUTH1/NET1 obligation remains open.
@@ -45,7 +45,8 @@ The user's latest clarification makes the lifecycle coupling explicit: native
 network objects must remain private throughout Application construction,
 execution and retirement, rather than being handed to a user-provided loop.
 Passing CI cannot authorize retaining PR374's native Query/permit signature;
-PR374 delivery and release PR373 merge/publication are held until the
+PR374's prerequisite delivery is recorded above; PR373 was superseded.
+Replacement release PR381 and full-service delivery remain held until the
 public-boundary correction is reconciled. Existing
 raw Config, Session, Query, Reply, SDK declaration and transport callback contracts
 must become private implementation/test details. Public errors must remain
@@ -1399,7 +1400,9 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 release and PR374 API delivery remain held.
+privacy remain open. PR373 was superseded; PR374 merged67a286c after all six
+checks passed.
+Full-service delivery and the private transport API remain open.
 
 The contribution retains source07e3a096 (+702/-13 test lines), removing only
 one duplicate assertion from reviewede090227f. It preserves the original
@@ -29772,3 +29775,288 @@ This delivers the affine startup-acquisition correction, not the remaining
 remote service, private transport API, distillation or full R01–R25/AUTH1/NET1.
 The research branch retains its separate shared-native and Application-entry
 changes and must integrate this actual main before further production edits.
+
+### Historical startup delivery preparation imported from PR379
+
+The following records describe preparation before its actual merged delivery
+recorded above; pending CI and merge statements retain that historical scope.
+
+
+
+### Application startup custody — isolated delivery stage (2026-10-15)
+
+A real startup producer can return an acquired affine value and then panic in
+Drop before the execution kernel binds that returned value. The unchanged main
+kernel then retains that value after execution is dropped. This violates the
+existing execution owner's custody; it is a Bombay ownership correction, not
+a new actor-model law or remote public API.
+
+The main-based regression reuses ShutdownLedger, StopOnShutdown, the actual
+execute_application_with kernel and native Tokio oneshot. A real Ready returns
+the original Sender while its original Receiver is independently transferred.
+After the original producer panic and execution/runtime disposal, the receiver
+must observe Closed. It also checks the original boxed panic allocation/value,
+cold Application and Work allocations, unchanged Ledger state, exactly one
+startup/Ready/disposal, no preparation/Work and absent native/notification
+receipts. No Zenoh, timeout, copied model or fabricated cleanup result is used.
+Two author and two independent source reviews pass on formatted88a64e0a.
+
+The actual debug old-source command executes one test and fails exactly at
+Empty-versus-Closed(332 filtered,0 ignored), after the original disposal panic.
+Optimized negative remains pending at this pre-production record. Preserve
+raw logs and source hashes in /tmp/bombay-startup-publication; compilation or a
+setup failure receives no executed-regression credit.
+
+Selected correction: store the complete actual Ready tuple in one local Option
+owned outside the startup producer's lexical scope, before executor-guard or
+producer disposal. Return unit from that poll; only after producer disposal
+move the same tuple into existing preparation. No new owner, type, API, bound,
+dependency, cloned cause or replacement runtime. Expected production change:
+execution.rs at most20 net lines; existing owning inline test at most250 lines.
+Update this PRD, its acceptance record and backlog status in the same delivery.
+
+This work uses branch fix/application-startup-custody created from latest main
+c249044a; the user's original working tree and DevX worktree remain untouched.
+Selected graph is locke058fe21, no patch: Behavior/Actors0.25.0@2bb4510077bfa5ae,
+Communication0.1.5@24ad2b9, Address0.3.0@9f058dc, Timers0.2.0@9369d1f, private
+Observe and Tokio1.53.1. Complete selected Behavior instructions2b7a9195 apply.
+Communication0.1.6 adoption remains the separate PR377; this stage does not
+refresh a dependency or presume that PR merged.
+
+The standing recommended-choice delegation selects this isolated delivery.
+Cumulative approved windows1600 net production,14 public types,20000 verification/
+tooling lines and115 software slots carry, including unresolved historical
+reservations. Known combined source1520 already includes this same six-line
+correction in remote research; integration never counts it as a second semantic
+implementation. The current stage allocation is800 retained/1800 authored
+verification lines plus100 inverse lines; this independent witness currently
+adds193 retained lines. No broader API/privacy/identity/default decision follows.
+All full R01–R25/AUTH1/NET1 obligations and the unfinished remote service remain
+open. Delivery still requires actual optimized negative, restored controls,
+affected combined checks, minimization, independent review, required CI and
+a normal exact-head guarded PR merge.
+
+
+The exact-main optimized negative now also returns101 for the one intended
+Empty-vs-Closed assertion(332 filtered,0 ignored,0.00s). Both negative profiles
+compiled and ran; original disposal panic precedes the custody failure. Fresh
+selected-owner source/tests/docs inspection confirms no prerequisite blocker.
+Private Observe deliberately leaves dropped publications pending; actual Tokio
+oneshot therefore remains the exact native closure oracle. Address leases,
+Communication closure/payload ownership, actor shutdown Actions and Timers
+generations remain with their owners. Entity's actual joined-family result
+and tail shutdown barrier must not move. Existing HTTP listener acquisition is
+an affected consumer and receives focused coverage. D-RETIRE-1 supplies the
+existing acquired-result law; this correction adds no Engine/Behavior semantics.
+Source audits: transitiona0d96f10, shutdown81bfd2eb, Addressd611f548, selected
+Communication122097c8, Timers08f56248, Observe40fb7d44, Entity3d6d0bb7. Normative
+runtime/module/Driver/strategy741b3dac/b8718ff7/ca687b0b/28942963.
+
+
+The unchanged193-line regression now passes on fixed sourced6cb7886 in debug
+and optimized builds(1/0/0,332 filtered,0.00s each). Original old-source88a64e0a
+D/R failures and actual fixed D/R controls qualify this exact custody law;
+no repeated artificial panic or compilation-only failure substitutes. Both
+source/minimization reviews pass independently. Aggregate control states and
+ApplicationWorkCustody alternatives are unchanged; one local Option stores
+exactly the absent-or-acquired startup tuple across producer disposal. Existing
+poll Pending/Ready alternatives, pinned producer, preparation and all existing
+lifecycle owners remain unchanged. Modules+0, public spellings+0, types+0/-0.
+No arrival history, repeated cause, semantic bool or new transition authority.
+Disposition: pass for scoped ownership minimization; combined gates remain.
+
+Complete delivery working-tree checkpoint:4 tracked paths,0 untracked paths;
+production+10/-4/net6; tests+193/-0/net193; public API+0/-0 types. PRD/acceptance/
+status are the other three paths. This is new ownership protection, not net
+code reduction. Required CI, broad affected-source checks and actual merge are
+still pending when this focused contribution is submitted.
+
+
+PR379 first submission0542801 commits the isolated correction and passing
+focused D/R evidence. Its actual pinned workspace all-feature debug command
+then completes0, including existing Application/HTTP/Entity, integration,
+compile-pass/compile-fail and documentation checks. That run selects the
+original Communication0.1.5 and is not attributed to a later combined graph.
+
+To verify integration early and avoid a serial CI wait, normally merge the
+reviewed PR377 head3299340 into this feature branch while PR377's required
+check still runs. The sole real status-document conflict retains both delivery
+records. The execution source and all193 test lines remain byte-exactd6cb7886.
+Cargo.toml and both locks are byte-exact329; complete other399/324 package
+records are unchanged, with Communication0.1.6 now selected. No new version,
+API, feature or source design is introduced. Fresh combined checks/CI receive
+new source attribution; original054 CI may be superseded naturally and does
+not prove the new head. PR379 must not merge before PR377 actually delivers.
+Relative to329, the kernel contribution remains exactly four paths, production
++10/-4/net6, verification+193/-0/net193, public types+0/-0. Against current
+c249 main the temporary stacked diff also includes the eleven-path separately
+reviewed dependency contribution; cumulative accounting is not reset.
+
+
+Fresh combined699 local verification completes all five commands. Workspace
+all-feature tests pass760/0/1 across86 pre-doc sections and4/0/3 across five
+documentation sections; owning optimized library334/0/0, formatting and full
+all-feature workspace build pass. Strict all-target/all-feature Clippy returns
+101 for two owning-test diagnostics: intentional &Box<Application> and an
+unfulfilled result_large_err expectation. Production and dependencies have no
+diagnostic. Preserve the actual failure, rather than claiming all five pass.
+
+Before correction, retain exactly the selected boxed cold-owner law: the
+existing kernel calls AsyncFnOnce(&Inputs), with Inputs=Box<Application>.
+Its actual borrow is &Box<Application>; unboxing changes the regression and
+&T does not match this existing contract. Replace only the unused expectation
+with a narrowly documented borrowed_box expectation on this one test. Keep
+too_many_lines, all original types, operations and assertions. Independent
+source review accepts this style exception. No new type, bound, wrapper,
+dependency or production-line change. Re-run strict Clippy on the correction;
+new-head required CI remains separate from old699 runtime evidence.
+
+
+Corrected source9308f768 changes exactly two lint-attribute lines; kernel and
+every test-body byte remain identical to699/d6cb. Independent two-pass review
+confirms the selected existing boxed-input law. Fresh pinned strict workspace
+all-target/all-feature Clippy completes0 in10.52s(log5435cf91); fresh format
+check completes0. Runtime/build results remain explicitly attributed to699,
+with functional body identity recorded instead of pretending they reran. New
+head CI will verify its actual combined source; no old-head gate is reused.
+Complete scope remains four paths relative329, production+10/-4/net6,
+verification+193/-0/net193, public types+0/-0; annotation correction adds no
+production or public surface. Required CI and both actual merges remain open.
+
+### Startup delivery integrates actual main (2026-10-16 UTC)
+
+PR377 actually merged76dbd849 at00:31:25Z with all six checks and scoped
+reviews passing; actual source tree25bc63d2 equals its reviewed/CI trees.
+Required38820049280 succeeds and actual merge receiptcf93122f records custody.
+PR379's fresh conflict check finds one documentation-only conflict in status.md:
+keep its startup prerequisite and record actual dependency delivery. The PRD
+and acceptance merge cleanly. Actual production/test files, manifests and both
+locks remain byte-identical to17fec54; execution.rs remains9308f768. This is
+integration of already verified main, not another production correction.
+Its old required38826374588 run and native reviews retain their exact17fec
+qualification; push the resolved head and require its fresh CI before merging.
+No completed full remote row or published remote service is claimed. Release
+PR378 was closed unmerged by the bot; replacement PR380 and API PR374 stay held.
+
+
+### Resumed startup integration (2026-10-16 UTC)
+
+Resume the interrupted PRD goal at the existing PR379 merge of main67a286c.
+Both documentation conflict resolutions already exist in the working files;
+the index still records them as unresolved. Preserve both the concurrent-input
+and startup-custody records, then stage those exact resolutions. All production,
+test, manifest and lock changes from main remain intact; execution.rs is
+byte-identical to the reviewed9308f768 correction. PR374's actual merge is
+67a286cf5dccf12f182d777c43d363e2aa0b1968 with all six checks passing.
+Its added futures-util edge belongs to that merged contribution, so the earlier
+17fec54 graph-identity statement applies only to its original checkpoint.
+
+The selected Behavior/Actors remains0.25.0 at2bb4510077bfa5aed82e08d25453c146b3184285;
+its complete instructions were read again. Communication0.1.6, Address0.3.0,
+Timers0.2.0, private Observe and Tokio1.53.1 remain the existing owners. No
+patch, new dependency selection, API, default or production correction is added
+by this integration. Original source inversions and controls retain their exact
+source qualification; fresh debug/optimized startup and combined checks, source
+review and actual updated-head CI are required before merge. Current receipts
+are kept in /tmp/bombay-prd-resumption. Full R01–R25/AUTH1/NET1 remain open.
+
+
+Resumed focused controls execute the exact owning startup regression once in
+each profile: debug and optimized both pass1/0/0 with333 filtered. Execution
+source remains9308f768; pinned argv, source/log SHA256 values and exit0 results
+are recorded in /tmp/bombay-prd-resumption/startup-focused.json. Two author
+passes and a fresh independent two-pass review map the native closure oracle
+to the law and challenge no-Ready/no-panic/substituted-owner/no-preparation
+counterexamples. The receiver samples closure after execution disposal; final
+assertions run after host disposal. No new inverse or changed test is claimed.
+Combined checks continue and updated-head CI is still required.
+
+The user's requested checkout audit removes19 clean merged/redundant worktrees,
+retaining their branches. Full process-descendant inspection excludes active
+Codex/Nix/build work; remaining idle terminal shells contain no running work.
+All128 ignored evidence files from three checkouts are archived and SHA256
+verified before removal under /tmp/bombay-prd-resumption. Pruning22 invalid
+worktree registrations leaves their source/target directories untouched; the
+otherwise unreferenced detached ae4396d8 is retained under
+refs/archive/worktrees/first-notification-consumers. Dirty, active and unfinished
+checkouts remain. The cleanup receipts list each exact path, original HEAD,
+retained branch and archive; no production or public surface changes follow.
+
+Final integration contribution against actual main67a286c: four tracked paths,
+zero untracked paths; production+10/-4/net6, tests+193/-0/net193, public API
++0/-0 types. Three existing documents account for the remaining source delta.
+All prior cumulative PRD windows and historical reservations carry; this merge
+does not reset the full-goal budget or close any full remote acceptance row.
+
+
+### Actual-main integration — owning startup test adaptation before edits
+
+Integrate actual main38774de into the committed research stageea7f836.
+The startup production correction is already present byte-for-byte in the
+research kernel; retain its existing PreparedApplication destructuring instead
+of reverting to main's earlier tuple. Main brings its actual193-line owning
+startup regression. Its successful preparation branch must construct the
+existing private PreparedApplication{work,families,connection} product, with
+connection=None because this local-only witness creates none. Import that
+existing owner at module scope. This is test-only adaptation to the already
+selected research contract, with no production/API/dependency change or new
+law. Keep all original panic/affine/cold-input oracles and run it in both
+profiles after two source reviews. Preserve both histories' evidence and
+qualify imported premerge CI statements as historical. All full-service holds
+and cumulative reservations remain unchanged; main CI does not cover the
+separate generic Native research source.
+
+
+The main integration resolves only the existing preparation-product seam.
+Production execution remains exactly19e0be18 before the appended cfg(test)
+module. Two author and independent reviews confirm the imported startup
+regression's sole adaptation is its existing PreparedApplication constructor
+and module-scope import; all original oracles remain unchanged. Fresh combined
+remote library debug passes358/0/0 with the named startup regression and three
+shared-native controls. Optimized combined execution now also passes358/0/0; formatting passes.
+main-integrated-library-debug/release.json retain exact argv, all source hashes
+and raw-log digests. The imported startup regression executes in both profiles.
+Three previously unqualified CI-running/held statements in current guidance
+are corrected to actual merged PR374/379 and replacement release381 status.
+The finished clean PR379 checkout is removed after merge; its branch and
+committed history remain. Cleanup now totals27 removed obsolete worktrees and
+22 invalid registrations pruned; live/unfinished unrelated work stays intact.
+
+
+### Moved Admission retry — bounded original-custody witness before edits
+
+Before any catalogue migration, qualify the existing retry transformation in
+its new owning Admission location. The earlier explicit-Full policy remains:
+only an actual Full original permits another nonwaiting send; repeated attempt
+and Unattempted/Uncertain/Ok/Closed retries cannot invent another command.
+Use selected Communication0.1.6's real channel, minimum/effective capacity2,
+actual try_send Full/Closed and owned receive/drain, with non-Clone Box payloads.
+No actor fixture, protocol, SDK or production interface is needed for this pure
+original-moving transformation. This does not prove concrete native authority,
+network retry, processed replies or current permission; those remain separate.
+
+Author one unmounted export/admission.rs module, at most200 lines, then review
+twice and mount only after the current integration verification lease ends.
+Expected production/API/dependency delta0; one four-line test mount plus the
+owning tests. Select1200 retained shared-row verification lines instead of1000,
+carrying883 already retained and every historical/cumulative reservation.
+Use real queue observations after full cleanup: Full-to-Full keeps the exact
+original, freeing one slot permits that original once, successful replay causes
+no extra send, and consumer teardown makes Full-to-Closed preserve its exact
+original. A retry-only false-Ok/no-send source cut must fail the final drained
+message trace in debug and optimized builds, without a timeout or assertion
+side effect. Distinguish test-only state controls from actual native results.
+All service-lifetime/privacy/full-row obligations and2500/18/125/20000 windows
+remain unchanged. No production abstraction is selected by this verification.
+
+
+Complete main-integration delta versusea7f836: four paths, no untracked files;
+production+0/-0/net0, tests+195/-0/net195, public API+0/-0 types.
+This includes the193-line delivered startup witness and its two-line existing-
+product adaptation. Cumulative versus81dc1448 remains68 paths: production
++1709/-44/net1665, tests+13657/-14/net13643. Separate Communication104 keeps
+known combined production1769/2500;12 public reservations,125 owner slots and
+20000 verification/tooling limits and every historical extent carry. Source
+hashes and exact classifications are in shared-requests/main-integration-census.json.
+The unmounted retry candidate is external research and receives no execution
+credit or retained-source reduction.

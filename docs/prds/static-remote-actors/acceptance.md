@@ -92,8 +92,9 @@ receipt can support concurrent immutable consumers while another native request
 progresses. It proves no Query traffic, current revocation, protected publication
 or finished public service. All full rows stay open. The public API must expose
 only Bombay contracts, with transport configuration, sessions, queries, replies,
-declarations and callbacks private even for advanced consumers. PR373 and PR374
-remain held pending that integration.
+declarations and callbacks private even for advanced consumers. PR374 merged
+its prerequisite and PR373 was superseded; release PR381 and full-service
+delivery remain held pending that integration.
 
 Current compiler counterexamples make the privacy defect executable:
 `remote_surface` fails its expected-denial assertions because ordinary Bombay
@@ -124,7 +125,9 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 was superseded; PR374 merged67a286c. Full service/privacy remains open.
+privacy remain open. PR373 was superseded; PR374 merged67a286c after all six
+checks passed.
+Full-service delivery and the private transport API remain open.
 
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
@@ -624,9 +627,15 @@ strict workspace Clippy and formatting. Its own CI and delivery remain required.
 No full R01–R25, AUTH1 or NET1 obligation closes from these results.
 
 
-Private startup checkpoint: original owner loss fails deterministically in
+Earlier private startup checkpoint (before PR379 delivery): original owner loss fails deterministically in
 both profiles; separate success/refusal publication omissions each fail their
 report oracle in both profiles. Exact restored source passes353 owning library
 tests per profile. Generic Application correction is submitted separately as
 PR379, with reviewed capacity dependency integrated early; actual required CI
 and merges remain pending. This closes no full remote acceptance or privacy gate.
+
+The generic startup law delivered in PR379 preserves the actual acquired
+affine owner when its Ready producer disposal panics. Prior source fails the
+release oracle in both profiles; the merged correction and193-line owning
+test preserve cold Application/Work and the allocated panic without a new API.
+All six CI checks pass; merged38774de is recorded above.
