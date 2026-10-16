@@ -13,15 +13,29 @@ use bombay::prelude::Application;
 use bombay::remote::{ExportLimits, IngressError, verify};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use core::future::{Future, poll_fn};
+use core::mem;
 use core::ops::AsyncFn;
 use core::pin::pin;
-use core::task::Poll;
+use core::task::{Context, Poll, Waker};
 use std::num::NonZeroUsize;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
+use std::task::Wake;
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::mpsc;
+use tokio::task::unconstrained;
+use zenoh::handlers::FifoChannelHandler;
 use zenoh::query::Query;
+use zenoh::sample::Locality;
+
+struct WakeCount(AtomicUsize);
+
+impl Wake for WakeCount {
+    fn wake(self: Arc<Self>) {
+        self.0.fetch_add(1, Ordering::SeqCst);
+    }
+}
 
 #[expect(
     clippy::too_many_lines,
@@ -202,15 +216,43 @@ async fn cancelled_ledger_read<Receipt>(
                 let mut receiving = pin!(export.receive_native(b));
                 poll_fn(|cx| Poll::Ready(receiving.as_mut().poll(cx))).await
             };
+            let wake_count = Arc::new(WakeCount(AtomicUsize::new(0)));
+            let waker = Waker::from(Arc::clone(&wake_count));
+            let mut query = None;
+            let mut completed = None;
+            let (pending_inputs, issued_query, query_ready) = {
+                let mut receiving = pin!(unconstrained(export.receive(&mut query, &mut completed)));
+                let pending = receiving.as_mut().poll(&mut Context::from_waker(&waker));
+                // The same Session runs its local callback before get returns.
+                let issued = session
+                    .get("bombay/cancellation/read")
+                    .allowed_destination(Locality::SessionLocal)
+                    .payload(records[0].protected.as_ref())
+                    .attachment(records[0].proof.as_ref())
+                    .await;
+                let ready = receiving.as_mut().poll(&mut Context::from_waker(&waker));
+                (pending, issued, ready)
+            };
+            let received_query = query.take();
+            let query_completion = completed.take();
             let original = Box::<[u8]>::from([59, 61]);
             let append_allocation = original.as_ptr();
-            let appended = sender.send(LedgerCommand::Append(original)).await;
-            let fallback_shutdown = if appended.is_err() {
-                Some(application.request_shutdown())
-            } else {
-                None
+            let (pending_native, appended, fallback_shutdown, report, before, after, native_ready) = {
+                let mut receiving = pin!(unconstrained(export.receive(&mut query, &mut completed)));
+                let pending = receiving.as_mut().poll(&mut Context::from_waker(&waker));
+                // Exclude the collection's initial self-wake from the producer oracle.
+                let before = wake_count.0.load(Ordering::SeqCst);
+                let appended = sender.send(LedgerCommand::Append(original)).await;
+                let fallback = if appended.is_err() {
+                    Some(application.request_shutdown())
+                } else {
+                    None
+                };
+                let report = application.lifecycle().retirement().await;
+                let after = wake_count.0.load(Ordering::SeqCst);
+                let ready = receiving.as_mut().poll(&mut Context::from_waker(&waker));
+                (pending, appended, fallback, report, before, after, ready)
             };
-            let report = application.lifecycle().retirement().await;
             let resumed_a = {
                 let mut receiving = pin!(export.receive_native(a));
                 poll_fn(|cx| Poll::Ready(receiving.as_mut().poll(cx))).await
@@ -259,6 +301,17 @@ async fn cancelled_ledger_read<Receipt>(
                 retired_b,
                 allocations,
                 publications,
+                pending_inputs,
+                issued_query,
+                query_ready,
+                received_query,
+                query_completion,
+                pending_native,
+                before,
+                after,
+                native_ready,
+                completed,
+                query,
             )
         })
         .unwrap_or_else(|_| panic!("actual local host"));
@@ -286,6 +339,17 @@ async fn cancelled_ledger_read<Receipt>(
         retired_b,
         allocations,
         publications,
+        pending_inputs,
+        issued_query,
+        query_ready,
+        received_query,
+        query_completion,
+        pending_native,
+        before,
+        after,
+        native_ready,
+        completed,
+        query,
     ) = output;
     let (undeclared, session, mut incoming, retained) = export.undeclare().await;
     let mut requests = Vec::new();
@@ -306,6 +370,23 @@ async fn cancelled_ledger_read<Receipt>(
             Err(cause) => break cause,
         }
     };
+    let query_observation = received_query.as_ref().map(|received| {
+        received.as_ref().map(|(query, _)| {
+            (
+                query.key_expr().as_str().to_owned(),
+                query.payload().map(|bytes| bytes.to_bytes().into_owned()),
+                query
+                    .attachment()
+                    .map(|bytes| bytes.to_bytes().into_owned()),
+            )
+        })
+    });
+    let unreceived_queries = query_drain.len();
+    let refused_queries = mem::take(&mut *publications.lock().unwrap());
+    let refusal_count = refused_queries.len();
+    // This readiness-only query has no reply policy; surrender its complete owners.
+    drop((received_query, query, query_drain, refused_queries));
+    let query_reply = issued_query.as_ref().ok().map(FifoChannelHandler::try_recv);
     drop(session);
     let closed = node.close().await;
     assert!(connection.is_closed());
@@ -313,6 +394,17 @@ async fn cancelled_ledger_read<Receipt>(
     let (Ok((a, None)), Ok((b, None))) = (&retained_a, &retained_b) else {
         panic!("two independent actual issued keys");
     };
+    assert!(matches!(pending_inputs, Poll::Pending));
+    assert!(issued_query.is_ok());
+    assert!(matches!(query_ready, Poll::Ready(())));
+    assert!(query_completion.is_none());
+    assert!(matches!(pending_native, Poll::Pending));
+    assert!(
+        after > before,
+        "the actual native producer must wake its retained wait"
+    );
+    assert!(matches!(native_ready, Poll::Ready(())));
+    assert_eq!(completed.as_ref(), Some(a));
     assert!(admitted_b.is_ok());
     assert!(matches!(pending_a, Poll::Pending));
     assert!(matches!(pending_b, Poll::Pending));
@@ -321,7 +413,7 @@ async fn cancelled_ledger_read<Receipt>(
     assert!(admitted_a.is_ok() && appended.is_ok() && replayed_b.is_ok());
     assert!(cleanup.is_ok() && undeclared.is_ok() && closed.is_ok());
     assert!(fallback_shutdown.is_none());
-    assert!(query_drain.is_empty());
+    assert_eq!(unreceived_queries, 0);
     assert!(matches!(query_end, mpsc::error::TryRecvError::Disconnected));
     let notifications = notifications.as_ref().unwrap();
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
@@ -340,6 +432,12 @@ async fn cancelled_ledger_read<Receipt>(
     assert_eq!(original.as_ref(), [59, 61]);
     let first = requests.iter().find(|entry| &entry.0 == a).unwrap();
     let second = requests.iter().find(|entry| &entry.0 == b).unwrap();
+    let Some(Some((query_key, query_payload, query_proof))) = &query_observation else {
+        panic!("the actual local query and permit were acquired");
+    };
+    assert_eq!(query_key, "bombay/cancellation/read");
+    assert_eq!(query_payload.as_deref(), Some(first.1.as_ref()));
+    assert_eq!(query_proof.as_deref(), Some(first.2.as_ref()));
     let Some(Some(reply)) = &first.5 else {
         panic!("A retains its actual User");
     };
@@ -362,9 +460,16 @@ async fn cancelled_ledger_read<Receipt>(
         assert_eq!(entry.1.as_ptr(), allocation.0);
         assert_eq!(entry.2.as_ptr(), allocation.1);
     }
-    assert!(publications.lock().unwrap().is_empty());
+    assert_eq!(refusal_count, 0);
     assert_completed((native_origin, retirement), None);
-    drop((requests, retained_a, retained_b, publications));
+    drop((
+        requests,
+        retained_a,
+        retained_b,
+        publications,
+        issued_query,
+        query_reply,
+    ));
 }
 
 #[test]

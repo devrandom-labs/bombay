@@ -599,12 +599,14 @@ host. Native SDK configuration and query access must move into their runtime
 owners before the network interface work is complete.
 Whole operation disposal is surrender, not proof of joined retirement.
 
-`ApplicationHandle::export` uses its Node's private Session and actual
-Application ownership. Each request retains its originals with an independent
-reply client and preserves native nonwaiting admission results. This is an
-advanced API; authenticated remote operations and the ordinary multi-node API
-remain pending. The developer experience coordination tracks joined-node
-verification.
+Node and `ApplicationHandle::export` are delivered on main. Export uses
+its Node's private Session and actual Application ownership. Each request
+retains its originals with an independent reply client and preserves native
+nonwaiting admission results. Concurrent receiving preserves query/native
+acquisitions independently of provider verification, reply protection and
+current permission. Authenticated remote operations and the ordinary multi-node
+API remain pending. The developer experience coordination tracks joined-node
+verification and the remaining SDK configuration/query interfaces to encapsulate.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 

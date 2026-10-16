@@ -14,8 +14,8 @@ check snapshot untouched. Preserve simultaneous native-reply/query receiving,
 occupied outside slots, acquired User/EOF custody, exact query/count permits
 and cancellation wake registration. This is integration of existing transport
 policy, not a new actor-model law. Keep Node work callbacks actor-only and
-complete Application outcomes. Selected registry owners are unchanged and
-verified in PR375-INTEGRATION-INPUTS.json. Expected integration introduces no
+complete Application outcomes. Keep the verified feature selection Behavior/Actors0.26.0 and macros0.14.2;
+main still selects0.25.0/0.14.1. PR375-INTEGRATION-INPUTS.json records both graphs. Expected integration introduces no
 new public type, actor state, runtime owner or policy; retain upstream assertions
 and shared receipt-cost ownership. Compile the combined source before any
 call-site correction, then verify the affected native cases and final gates.
