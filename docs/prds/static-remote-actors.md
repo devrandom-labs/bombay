@@ -29186,3 +29186,18 @@ as independent authorship. Cargo argv is not printed in earlier family raw
 logs, so the evidence identifies actual targets/profile/result inventory without
 reconstructing unrecorded invocation metadata. Retained manifest/root/fixture
 hashes remainfc87c97e/d4ab9a6f/95986a62.
+
+
+Native comparison completion: the later actual target-only release cut returns
+101 with exactly the intendedE0308 at the Ledger client target; healthy source
+848b535f then passes restored release and dev `cargo check --offline --locked
+-p bombay-rs --features remote --test application_clients` (release adds
+`--release`), each through the pinned Nix profile. The final structured receipt
+records exact argv, source/log hashes and statuses in
+/tmp/bombay-shipping-export-review/native-final-compiler-receipt.json. Target
+cut6f32188c and healthy releasef585cb94/dev66b2f551 logs retain attribution.
+Finally restores owning module260f6a56 and external probe848b535f byte-for-byte.
+These observations supersede only the earlier unexecuted release-control
+qualification, not the absence of all runtime service proofs. Family verification
+checkpoint8412604 is committed and pushed on research/remote-service; its
+required full-service/privacy delivery hold remains.
