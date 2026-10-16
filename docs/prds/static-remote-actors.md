@@ -32977,3 +32977,59 @@ mount is removed and its original committed bytes restored exactly.
 Measured new source:328external Rust+21tool+3temporary mount; root records
 +55/-0. Production/public API remain0; original273history stays charged.
 Shared replay, refusal/count policy, service lifetime/public privacy remain open.
+
+### Cold operation declarations — privacy comparison before API selection
+
+Select a bounded falsification comparison under standing delegation, following
+independent two-pass declaration review08c24429. Fresh declaration prerequisites
+re-resolve the same lock3ca and six primitive owners, reread their relevant APIs,
+tests/docs and complete selected Behavior instructions, and inspect the actual
+Node/Work/startup path. No dependency contract or version changes. Behavior owns
+Actions, primitives own delivery/leases/observations/timers, and Bombay retains
+the one native service owner. Entity is untouched. SDK PR14 remains pending.
+
+Compare ordinary functions/products and inherent declaration methods for actual
+Counter IncrementProcessed/ReadValue/Stop and Ledger Append/terminalRead. Each
+pure projection returns its cold constructor or the exact unmatched Input.
+Ordered first-match semantics are an explicitly unselected comparison policy;
+arbitrary projections do not prove disjointness. Only the selected leaf may
+later construct its genuine reply/sender/control owner. No second actor/effect
+algebra, new public operation trait, native callback, dummy reply endpoint,
+per-operation Export, fake supplied Work or application receive loop is eligible.
+
+Before execution, review the candidate twice. A caller outside the library's
+Rust privacy boundary must compose the declarations without spelling private
+native/sum types. Private return/associated-type leakage, a mandatory operation
+trait implementation or loss of original unmatched input falsifies the candidate;
+compiler errors cannot authorize additional surface. Compilation proves only
+the tested static composition, not native admission/replay/custody or lifetime.
+
+Forecast: production +0/-0/net0; retained public API +0/-0types. Preserve the
+uncompiled201-line first source08f1ce31 as rejected source history: its tuple
+padding has no domain meaning and its two encoders do not match the actual
+reply protocols. Before compilation, compare named private declaration products
+against the same three products with public visibility. Four public declarations
+in that hypothetical form are measured, never retained or authorized by errors.
+External Rust now at most590 cumulative lines including that rejected201 and
+at most4 lines of visibility changes; temporary existing test-module mount at
+most8, new orchestration
+at most50 and these root records at most60. Restore the exact original mount
+after execution. Carry known1668,12/18 and all2500/125/20000 historical/external
+unknown extents without reset or headroom claim. The preceding407-line comparison
+and its original273-line source remain separately charged. Actual Node attachment
+outside disposable Work, genuine absent Work, constructor-refusal/count policy,
+shared replay and full service/privacy acceptance remain unimplemented.
+Also compare the actual fluent Increment encoder replaced by the Read encoder:
+the intended static denial must cite its concrete reply type, then restore it.
+
+Actual private275-line sourceea50d378 returns101 with eight private-type errors
+at the genuine Counter/Ledger callers. Changing only three structs to public
+producesb78d5737 and exit0. One fluent encoder substitution6bd68d08 returns101:
+two E0631 errors cite CounterIncremented versus u64, plus dependent E0599.
+Byte-exact restoration tob78 passes again; all ten inputs stay unchanged per run.
+Independent two-pass executed review2df5e491 verifies all four raw logs/receipts.
+The three-line mount and private source are restored exactly. No tests execute.
+Measured Rust history201+275+3visibility+1inverse=480; mount3, existing compiler21
+reused. These root records total60lines across two existing documents; production
++0/-0/net0, retained tests +0/-0/net0, public API +0/-0types. Four hypothetical
+public declarations remain unselected. No native, replay or service law is proved.

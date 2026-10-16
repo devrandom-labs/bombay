@@ -478,3 +478,7 @@ verification; it changes no production/API or constructor-refusal policy.
 The bounded corrected328-line ordinary-Rust comparison compiles after exactly
 two source-known constructor-bound corrections; independent execution review
 passes. Temporary mount removed; no production/API or runtime acceptance added.
+
+Cold declaration comparison proves only public caller type composition and the
+wrong-reply encoder denial; exact source/mount restoration independently reviewed.
+No service API or full requirement state changes; SDK PR14 CI is still pending.
