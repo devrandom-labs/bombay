@@ -415,3 +415,20 @@ cohorts pass 69/0/2, with strict all-target lint and formatting passing. Actual
 old/new queue regressions and both source reviews are qualified. Recurring CI
 still omits these queue/pressure executions and most owning test lint; its
 separate correction, full SDK release/adoption and all remote rows remain open.
+
+
+A separate CI-only correction is now selected before authoring: explicitly
+preserve TLS doctests and the exact mTLS case, then execute/lint all supported
+owning targets in both existing profiles. The concrete 27-path repository
+checkpoint introduces no production, public type, dependency or feature change.
+Actual target-list evidence, source reviews and required CI remain gates.
+
+
+The supported-target CI correction is locally qualified and submitted in SDK
+[PR13](https://github.com/devrandom-labs/bombay-zenoh/pull/13). Actual old/new
+selectors demonstrate the missing eight regressions and complete new selection.
+A separate exact-archive check exposed a comment-only Config custody mismatch;
+restoring that immutable source passes its owning check while Transport retains
+the full limit contract. Current SDK production is net +40, tests net -1924,
+24 SDK paths plus these two records. Required CI must qualify the amended head;
+merge, publication, Bombay adoption and every full remote row remain open.

@@ -32458,3 +32458,120 @@ source remains byte-identical to fe803ace.
 
 Durable proof destination: `/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-16/native-supported-tls-tests-private-1ea4-20261016T140950Z`.
 The archive retains exact command inputs and original retired sources.
+
+
+### SDK CI — owning TLS targets
+
+Fresh verification 1055a24c re-resolves lock 3caba2a6 with no patches and reads
+the complete 760-line selected Behavior instructions at 98983b4. Behavior and
+Actors 0.26.0, macros 0.14.2, Address 0.3.0, Communication 0.1.6, private Observe,
+Timers 0.2.0 and Entity retain their owners. All 62 owning source/API/test/doc
+locators and 43 current SDK software inputs match the completed local proof.
+Only its two later Bombay result records differ. Eleven CI/toolchain inputs
+remain unchanged; SDK controlled main is still 1ea4, with no open SDK PR.
+
+Blocker: the existing CI loop selects TLS-package tests and one exact transport
+mTLS case; its transport lint also names only that one integration target.
+Queue unit tests and both native pressure tests are omitted. The invariant is
+recurring execution and lint of the complete supported TLS/test target set in
+both existing profiles. This changes verification selection, not actor or SDK
+runtime semantics. Original Cargo lists must demonstrate the eight omissions;
+the expanded owning list must include all eight. Existing identical-source
+runtime proof remains 69/0/2 per profile, not a new CI result.
+
+Recommended change, selected BEFORE authoring under the user's standing
+recommended-answer delegation: preserve TLS doctests explicitly with --doc,
+then run both owning packages with --all-targets and the already qualified
+package-specific TLS/test features. Broaden existing owning Clippy to the same
+targets. Keep the exact mTLS invocation, profile loop, credentials, macros,
+configuration, Zenoh, compiler-floor, Miri and release/archive gates unchanged.
+No feature widening, suppression, fake Cargo, new helper framework or runtime
+surface is needed.
+
+Concrete expanded checkpoint: existing 24 SDK paths plus ci/verify-release.sh
+and the same two Bombay records = 27 repository paths. Reuse the existing
+70-line external command recorder; add only CI source and fresh contract inputs.
+Forecast: CI at most 20 added verification lines, recorder at most 10 added
+lines, zero new retained programs, production +0/-0, public types +0/-0 and no
+Rust, dependency, feature or protocol edits. Scope review 9a42e502 verifies this
+selection under the recovered exact user delegation. Prior three external
+programs/258 current lines and the incomplete 100-line forecast remain explicit;
+all 125-owner/20000-verification historical/external uncertainty carries. Known
+1632 working versus 1589 retained, 2500 production and 12/18 public reservations
+are unchanged. This authorizes only the bounded verification correction; no
+overall historical headroom or SDK delivery is inferred.
+
+
+#### Archive custody — focused blocker before CI amendment
+
+Source inspection identifies a separate packaging prerequisite: the selected
+TLS-security release mode treats Config 1.10.2 as immutable, with archive
+checksum 53388443 and published source 5bebbcb0. The four-line Config Rustdoc
+clarification changes that owner's source inventory. Its existing archive
+verifier requires exact published source bytes, including documentation.
+This is source-derived; PR13 CI is still running and no CI failure is claimed.
+
+Smallest owning regression: invoke the existing verify_archive function on the
+actual cached, checksum-verified Config archive against current source; require
+its precise Rust-inventory mismatch. Restore only Config's published Rustdoc in
+an external copy and require that same verifier to pass. No fake archive,
+weaker checksum/inventory check or release-mode workaround is acceptable.
+
+Recommended bounded correction, before any repository edit: restore Config's
+exact published source, retaining the complete independent count/MAX contract
+in the interpreting Transport owner and DEFAULT_CONFIG. Config's original
+accept-phase description remains true; it does not own transport construction
+validation. This removes an unrelated mutable owner from the current native
+fix. A Config/plugin publication successor remains separate, if later needed.
+Expected edit: one already selected Config source file, documentation only;
+no production behavior, public type, dependency or version change. Removing its
++4/-1 hunk reduces the SDK production delta from net43 to net40 and the
+repository union from27 to26 after verification; historical budgets and all
+unknown extents carry. Do not amend the live PR head before the actual owning
+regression and independent source review qualify this correction.
+
+
+#### SDK PR13 — current verification and archive custody
+
+The actual old CI selectors list 20 TLS cases and one exact mTLS case, omitting
+all six queue cases and both native pressure cases. The reviewed expanded
+selector lists all 71 cases and preserves every previously selected case.
+Explicit TLS doctests pass in both profiles with zero current doctests; these
+commands receive no runtime-law credit. Pinned Bash syntax passes. CI changes
+are +8/-3 lines; the reused external recorder adds two lines, bringing the three
+current external programs to 260 lines without certifying a historical net total.
+
+SDK commit ea3493fa was pushed as [PR13](https://github.com/devrandom-labs/bombay-zenoh/pull/13).
+Required run 38917010497, job 117026956748, was observed running on that exact
+head. That result is pending and cannot qualify a later amended revision.
+
+The archive prerequisite is now reproduced through the unchanged owning
+verifier under pinned Nix: Config's changed comments fail the exact Rust-source
+inventory check, while the same complete external owner with only the published
+comments restored passes. Independent two-pass review 10cc55cc qualifies this
+bounded correction. The actual SDK source now restores exact published lib.rs
+71379d31; its pinned owning archive verification also passes against the real
+checksum-bound Config 1.10.2 archive. This changes no executable Rust, API,
+version, dependency, verifier rule or runtime policy. Full limit documentation
+remains with Transport and DEFAULT_CONFIG. Historical local runtime receipts
+retain their original Config-comment revision; current required CI must run on
+the amended submitted head.
+
+Current complete SDK delta after restoration: production +53/-13/net +40;
+tests +1881/-3805/net -1924; CI verification +8/-3/net +5; metadata +6/-2/net +4;
+public types +0/-0 across 24 SDK paths. The same two Bombay records bring the
+repository union to 26 paths. Known working production is 1629 versus retained
+1589 under the selected 2500 ceiling; 12/18 public reservations, 125-owner and
+20000-verification ceilings and all uncertified historical/external extents
+carry. This is production growth with separate test deletion, not production
+code reduction. PR amendment, exact-head required CI, merge, publication,
+registry-only Bombay adoption and full remote acceptance remain open.
+
+
+Submitted correction: SDK c94186cb1315933e4b71e1431b25796a61ef3198 is committed,
+pushed and clean; PR13 selects that exact head. Required run 38919549507,
+job 117035795021, is now running. The superseded run 38917010497 actually
+finished cancelled: verification cancelled, compiler-floor and Miri skipped,
+archive-upload step failed. It supplies no acceptance evidence. The reviewed
+PR body explicitly separates earlier local runtime proof from amended-head CI.
+No SDK merge, publication, Bombay adoption or full remote acceptance is claimed.
