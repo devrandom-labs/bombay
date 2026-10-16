@@ -454,3 +454,18 @@ per-declaration identity; current production grows10 lines and adds no public
 type. The remote PRD records static denial, real native D/R, intended source
 inversions, minimization and final complete tracked/untracked census. This does
 not change AUTH1, NET1, or any full R01–R25 state.
+
+
+The next SDK release is selected under the standing delegated choice: exactly
+four incoming-TLS successor packages, with five immutable existing owners.
+Its22-path/86-historical-path forecast, retained budgets, listener retirement,
+actual-ledger baseline and fresh prerequisite gates are recorded in the remote
+PRD. No source implementation or new package publication is credited here.
+Full remote requirement states and reciprocal dependency edges are unchanged.
+
+Incoming TLS successor preparation now has the intended actual old-ledger failure
+(Ran1/failures1/noerrors), independently reviewed before edits. Its selected
+20SDK paths add29 net release-automation lines and remove32 metadata lines; Rust
+source/public types unchanged. Local verifier tests6/0, historical cohort4/0 and
+locked offline metadata pass. Archive/native/CI/publication/adoption gates remain
+open, as do the full remote-service and privacy requirements.

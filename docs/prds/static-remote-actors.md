@@ -32789,3 +32789,145 @@ Known working1639 = retained1589 + SDK40 + key10; 12/18 public reservations,
 No certified global headroom is inferred. Lock3caba2a6, features, versions and
 dependencies remain unchanged. This is a locally verified prerequisite on the
 research branch, not merged delivery or completion of the active full goal.
+
+
+### SDK incoming TLS successor — pre-edit release selection
+
+The prior turn made verified progress: SDK PR13 merged as456cf3b8 after
+required CI, and the independently reviewed key checkpoint9ae5d81 is committed,
+pushed and clean. Its302-payload archive0b65e060 preserves17 Cargo receipts,
+five compiler invocations and all actual source variants; independent review
+7cc314d7 passes. Neither prerequisite closes the full remote goal.
+
+Select the recommended bounded successor under the standing user delegation
+(actual original response12752,2026-10-10T03:44:07.925Z). Fresh scope review
+161d8aa5 verifies that delegation and the existing2500/18/125/20000 window.
+The exact proposal3fc481a9 is retained in the key archive and current release
+records. Replace the prior70-path forecast with86 historical paths:46 Bombay
+plus40 SDK (the delivered24 plus16 new). Actual SDK unmerged scope was zero
+at selection. This is not86 software-owner slots or a cumulative headroom
+certificate: carry the old104+5 tally and all later unknown historical/external
+owners and verification. No merge, baseline reset or deletion erases a charge.
+
+Exact blocker: the existing TLS_SECURITY_SUCCESSOR release selection still
+packages five already-published candidates. The accepted incoming TLS changes
+require four new identities: TLS, Link and Transport1.10.4, then Zenoh1.10.10.
+Config/plugin1.10.2 and validated structs/macros2.2.0 remain immutable. Commons
+1.10.2 also becomes immutable with checksum06a80381 and source1ea4bd16;
+Config/plugin retain5bebbcb0 and validated owners retaine8248182. Current primary
+registry receipts report all nine existing identities/checksums unchanged and
+four future versions absent. Refresh before publication; absence reserves nothing.
+Actual prior CI archives show the retired listener only in the four candidate
+locks, with no listener in the five immutable owners.
+
+Reuse the existing ReleaseKind enum, version/published-owner maps, archive
+verifier, Cargo dry run, operation-bound credential owner, query source profile
+and manual publication workflow. Select TLS_INGRESS_SUCCESSOR
+(tls-ingress-successor) and its corresponding tls-ingress-cohort profile inside
+those owners. This variant owns the distinct four-candidate/five-immutable
+publication policy; it introduces no new release framework, actor/runtime,
+Rust public type, codec, wrapper or macro. Keep all existing historical kinds,
+partial-publication custody and resume semantics. Preserve all nine owners,
+29 transitive checksum edges, exact source/license/VCS custody, Rust1.88,
+Rustls0.23.46 and supported feature profiles.
+
+Selected22-path change record: SDK metadata Cargo.toml, Cargo.lock,
+io/zenoh-links/zenoh-link-tls/Cargo.toml, io/zenoh-link/Cargo.toml,
+io/zenoh-transport/Cargo.toml, zenoh/Cargo.toml,
+ci/configuration-consumer/Cargo.toml and Cargo.lock, and
+commons/zenoh-pinned-deps-1-75/Cargo.toml; automation ci/verify_archives.py,
+ci/verify_packaged_queries.py, ci/verify-release.sh, ci/publish-release.sh,
+ci/compiler-floor.sh and .github/workflows/publish.yml; existing tests
+ci/verify_configuration_cohort_tests.py and ci/verify_packaged_queries_tests.py;
+guidance README.md, zenoh/README.md and docs/dependency-delivery.md; these
+same Bombay PRD/status records. Remove only the unused listener's two active
+manifest edges, two lock package/reference sets and two dormant pin references.
+Its five shared dependencies retain their independent owners.
+
+Forecast: Rust production +0/-0/net0; Rust tests +0/-0/net0; public types +0/-0.
+Metadata +18/-50/net-32 if all unrelated lock records remain exact; automation
+at most120 net new lines, owning Python tests at most120, SDK guidance at most80.
+Root records and external verification are measured separately and remain
+charged. This adds release capability/verification and must not be called
+production reduction. Known working1639 remains charged once; even adding the
+full automation ceiling gives only known1759, never a full-history certificate.
+Any measured overrun requires a revised concrete record before further edits.
+
+Before production, establish the smallest actual old-ledger mismatch: the real
+CI artifact lists five old candidates where this selected policy requires four
+future versions. Qualify that as a new release-policy requirement, not another
+native runtime defect. Review the owning regression twice before use. Then
+require actual new archive manifests/locks to omit listener, and invert their
+real selection/version/checksum/closure observations through the existing
+verifier. Keep exact original archive bytes; do not use substitute tarballs as
+publication evidence. Fresh feature-local six-owner/API/source verification
+must be finalized before implementation; no prior audit waives that gate.
+New-source native D/R, lint/format, packaged query/config, compiler floor, Miri,
+source PR/required CI/normal merge precede guarded publication. Actual registry
+receipts and a clean registry-only consumer precede Bombay adoption. Full
+R01–R25/AUTH1/NET1, service storage/lifetime and privacy remain open.
+
+
+Fresh prerequisite receipt4d19ad76 is now finalized before implementation:
+106 exact whole-file copies, selected Behavior98983b4 instructions reread in
+full, all six primitives and private Observe/Entity inspected, and five actual
+immutable archives verified against their owning source. The nine SDK owners
+retain29 transitive edges. No owner blocker remains; test-first release-policy
+verification is next. The projected actual unmerged union is66 paths versus
+current mainf25/SDK456, while86 retains the original historical task comparison.
+
+Test-first baseline completed before release source edits: independent two-pass
+reviewc9c9cf3c accepted the12-line exact-ledger regression; pinned Nix execution
+receipt test-first-prior.json records exit1, Ran1/failures1/noerrors, solely the
+intended five-old/four-future version assertion. Original ledger4e50e0e2 and
+log407d8e84 are retained; this is a release-policy mismatch, not a native defect.
+
+The selected20 SDK paths are now authored on release/incoming-tls from actual
+main456cf3b8. First source census: Rust production +0/-0/net0; Rust tests
++0/-0/net0; public API +0/-0 types. Release automation +42/-13/net+29;
+metadata +18/-50/net-32; owning Python tests +87/-51/net+36; guidance
++60/-38/net+22. Metadata deletion and added release capability are separate.
+Known working1668=1639+29; all historical/external125-owner/20000 uncertainty
+and remaining2500/18 ceilings carry. Both lock comparisons preserve every
+unrelated parsed fact. Pinned offline locked full metadata resolves both
+workspaces; packaged-query verifier tests6/0 and historical cohort tests4/0
+pass; shell syntax and git diff whitespace checks pass. Independent source/test
+review, actual new Cargo archives, listener owning-source inversions, full
+new-source verification, CI/normal merge/publication/registry-only adoption
+remain pending. No full remote/service/privacy acceptance state changes.
+
+Independent two-pass full20-path reviewf8761629 passes the actual source and
+new tests. Commit9310ad48a9a698cd508b075373d3debd877b9e6b is pushed as release/incoming-tls;
+source PR14 (https://github.com/devrandom-labs/bombay-zenoh/pull/14) targets main.
+The clean committed source is generating its actual four Cargo archives. Required
+new-head CI and every remaining archive/native/publication gate stay pending;
+the prior SDK PR13 success is not credited to this successor.
+
+Follow-up source review caught a fixture defect before accepting the listener
+regression: its injected lock node lacked registry source, allowing the earlier
+owning-source check to mask the intended refusal. Corrected in823f6204ebac057cebee6f013f36936635ca4a71,
+pushed to PR14. Independent addendum0c2e9c4c explicitly qualifies the prior
+review and accepts the correction. Test totals are now +88/-51/net+37; complete
+SDK delta +208/-152/net+56; other categories and20paths unchanged.
+
+Actual final823f four-candidate Cargo dry run passes. The nine real final
+archives pass source/readme/license/VCS/checksum custody and all29 transitive
+checksum edges. Exact original bytes are retained in release-after-merge/archives-final.
+The actual-ledger owning suite passes2/0; removing only the manifest guard
+produces18 intended assertion failures/noerrors, and removing only the lock
+guard produces9/noerrors. Restoring both passes2/0. These inversions compile
+only the selected function in the same owning enum/global context and do not
+mutate repository source or substitute archive bytes. Independent execution
+review remains pending. Local native debug/optimized builds and required new-head
+CI38934862637/job117087843305 are running. No merge/publication/adoption claim.
+
+Independent executed-evidence reviewb1a0dc20 passes: all nine actual archive
+bytes/revisions and four-entry ledger rehashed, both single-guard mutations
+reconstructed exactly, only18/9 intended assertion failures and restored2/0.
+Local final-source debug all-targets now passes69/0 with2existing ignored tests
+across12 harnesses, including the six queue laws, two traffic-pressure laws and
+handshake/cancellation/full-handoff laws. Optimized execution remains running;
+Linux required CI is independent and still pending. Counts are host/source scoped.
+At this checkpoint root records add157 lines/remove0; both roots have
+zero untracked source files, and the selected stage remains20SDK+2rootrecords.
+The runtime Rust/public-type delta is0; no full service or privacy gate closes.
