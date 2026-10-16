@@ -23,7 +23,8 @@ use zenoh::{Error as ZenohError, Session};
 ///
 /// Construction returns its original target beside this cause. Retention returns
 /// the supplied protected bytes, proof and opaque receipt beside this cause.
-#[derive(Debug)]
+/// `Display` and `Debug` omit native declaration text; `Error::source` retains
+/// that actual original cause.
 pub enum ExportError {
     /// The target is not an actor associated with this exact Application.
     UnownedTarget,
@@ -38,7 +39,7 @@ pub enum ExportError {
     /// Request storage could not be reserved before declaration.
     Storage { cause: TryReserveError },
     /// The native declaration was refused.
-    Declaration { cause: ZenohError },
+    Declaration { cause: Box<dyn Error + Send + Sync> },
     /// A retained logical identity already protects different request bytes.
     Conflict,
     /// This export cannot retain another distinct request.
@@ -58,12 +59,19 @@ impl fmt::Display for ExportError {
             Self::SessionClosed => formatter.write_str("Node session is closed"),
             Self::QueryCapacity => formatter.write_str("query count exceeds native capacity"),
             Self::Storage { cause } => write!(formatter, "request storage was refused: {cause}"),
-            Self::Declaration { cause } => {
-                write!(formatter, "network declaration was refused: {cause}")
-            }
+            Self::Declaration { .. } => formatter.write_str("network declaration was refused"),
             Self::Conflict => formatter.write_str("request identity protects different bytes"),
             Self::RetentionCapacity => formatter.write_str("retained request capacity exhausted"),
         }
+    }
+}
+
+impl fmt::Debug for ExportError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_tuple("ExportError")
+            .field(&format_args!("{self}"))
+            .finish()
     }
 }
 

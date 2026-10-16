@@ -1,5 +1,18 @@
 # Static remote actor acceptance
 
+The focused main-based declaration diagnostic stage requires bounded outer
+ExportError Display/Debug plus the same exact native Error::source. Its existing
+actual seven-constructor test acquires original targets and all Application/Node
+cleanup before the paired format oracle. Actual main prior-source debug and
+optimized runs reach that intended assertion; fixed focused1/0/0 and full-client
+21/0/0 pass per profile. Main default773/0/2 plus7/0/3 docs, all-features840/0/2
+plus7/0/3 docs, strict Clippy and formatting pass on exact export91b7562/test2c16483b.
+The final post-tuple assertion is unexecuted only in the intended failing runs.
+Research runs are not relabeled as this tree. Final review/PR/required CI remain
+pending; this prerequisite closes no full R25 or other acceptance row and
+includes no separate Network/family service work. See the
+[pre-edit change record](../static-remote-actors.md#declaration-diagnostics--focused-main-contribution-2026-10-16).
+
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.
