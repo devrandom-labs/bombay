@@ -85,9 +85,9 @@ closure is not merge or credit for their original acceptance requirements.
 
 Current public-boundary requirement: networking belongs entirely to Bombay's
 Application lifecycle. Zenoh Config, Session, Query, Reply, declarations and
-transport callbacks must remain private even for advanced public APIs. PR373
-release and PR374 API delivery are held pending that correction; passing scoped
-CI does not satisfy the boundary. The remote PRD and acceptance matrix retain
+transport callbacks must remain private even for advanced public APIs. Release
+PR378 (replacing closed, unmerged PR373) and PR374 API delivery remain held;
+passing scoped CI does not satisfy the boundary. The PRD and acceptance matrix retain
 the session-free two-Application witness and all other open remote obligations.
 
 The active private connection stage now integrates explicit connection ownership

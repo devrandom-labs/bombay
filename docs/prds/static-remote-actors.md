@@ -28686,3 +28686,50 @@ main's separate193-line witness keeps retained stage verification658/800.
 Known combined production including owning104 is1518/1600. Historical/external
 ledgers and unproved extents remain carried. No feature/public-service state
 advances from this mechanical patch.
+
+### Delivery cadence and replacement release
+
+The user requires committing and merging each finished contribution promptly,
+without waiting for the whole PRD. Preserve required CI, review and exact-head
+merge checks. PR377 at3299340 and PR379 at17fec54 remain submitted with required
+Nix running; PR379 must follow actual PR377 delivery. Both17fec native profiles
+now pass their independently reviewed campaigns (review90030ce7); those selectors
+do not run the generic startup unit regression.
+
+The release bot closed PR373 unmerged and opened PR378 at3bf03fa. Its three red
+jobs fail locked fixture setup: the private fixture still named Bombay0.1.3
+after the public manifest became0.2.0. Reuse the previous approved correction,
+changing only that local package version. Pinned-Nix metadata independently
+returns101 before and0 afterward; all324 neighboring records remain unchanged
+and the corrected fixture is byte-identical to93a55de. Commit24b6881 is pushed
+to PR378, with its nineteen-line PRD record: two corrected paths,+20/-1,
+production/tests/public types+0/-0. Full release contribution againstc249044 is
+five paths,+32/-3. Fresh CI38828004158 runs. Earlier failures establish no
+affected transport-test failure; metadata success establishes no test pass.
+PR378 inherits the publication hold, independently of its eventual CI result.
+No native interface or full remote obligation becomes accepted by this repair.
+
+Read-only exact58a2d203 service review confirms the existing typed route:
+ApplicationScope establishes ExternalActor, its EstablishedRecipient travels
+in Actions, and the existing EstablishedDelivery interpreter reaches the actual
+endpoint. No external-router field or new send interpreter is needed.
+verification_service and live_requester are concrete consumers; the latter has
+an actual typed Counter requester. The current Ledger transport study sends
+already encoded bytes, so a typed Ledger requester remains missing. Application
+ownership of the actual inbound/outbound service, provider operations, native
+retirement and typed completion remains unimplemented. This inspection selects
+no new public declaration, provider trait, resource default or service API.
+
+Selected-source publication research adds a constraint, not a chosen policy.
+SDK1.10.9 ReplyBuilder::into_future executes ready(self.wait()); wait enters
+Query::_reply_sample/send_response before a future is returned. Get similarly
+registers and sends during IntoFuture. Selected transport1.10.3 can synchronously
+wait for queue batches. Reply congestion_control is deprecated and ineffective;
+the reply inherits request QoS, and Drop still permits configured waiting and
+locking. Do not infer nonblocking service execution from async syntax or Drop.
+A logical reply-permission decision, any authority loan across that call, task
+ownership and cancellation/uncertainty require an explicit shipping contract.
+The approved nonwaiting actor-mailbox admission decision does not select those
+network-publication policies. Native Ok alone proves neither remote execution
+nor delivery. Research inspected the exact selected transport after discarding
+an initial different-revision read; no production change or witness is claimed.
