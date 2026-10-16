@@ -115,6 +115,55 @@ changes. Disposition: pass this mechanical example adoption. Evidence:
 REGISTRY-027-POOL-EXAMPLE-{INPUTS,CLIPPY,FORMAT} and execution receipts.
 
 
+Library caller migration, pre-edit: the current270 downstream pool and supervisor
+journeys pass before broader migration. Apply only the same owning namespaces,
+StartupPlan/start request names and named queue/roster configuration to four
+existing cfg(test) owners: worker preparation, effect interpretation, delivery
+and Entity lifecycle. Existing fixtures keep their input transitions and complete
+assertions, including source rejection, initialization/startup failure, retirement
+and cancellation. No production prefix, semantic law, bound or policy changes.
+Pure preparation-only fixtures have no logical reply operations; use the proven
+exact reply capability. Keep genuinely logical protocol tests unchanged.
+
+Expected four test files plus this record, production/public types+0/-0;
+configuration grouping and test import counts determine the measured test delta.
+Reuse published worker/proxy/pool/supervisor/diagnostic/lifecycle owners and the
+existing interpreter witnesses; add no fixture capability or no-op input to
+satisfy compilation. Any such requirement reopens the abstraction. Frozen
+REGISTRY-027-LIBRARY-CALLER-INPUTS retains every original affected file; preserve
+all production sections and normalize only published field/type renames when
+comparing original assertions. Run all library tests, strict lint and relevant
+supported-compiler/profile startup/recovery regressions before retention.
+
+
+All338 default-feature library tests pass on current1.99 debug/release
+29.074/147.723s and minimum1.96 debug/release26.128/161.070s. Every row has the
+same338 unique case names, zero failed/ignored/filtered. Three final rows conserve
+all627 frozen inputs; the earlier current-debug receipt/log are explicitly bound
+after acquisition. Initial compilation missed the published Overlap.startup and
+StableProxy::new renames; that failed attempt receives no passing credit.
+
+Two source/oracle and two gate reviews pass. All1013 original assertion invocations
+(404/524/24/61) remain in order after only published names are normalized. Every
+production section is byte-identical, including the effect module's complete
+23630-byte prefix and4803-byte tail. Original pool and supervisor policy values
+are conserved; no event, request, retirement or source-refusal witness is removed.
+Final formatting passes; strict whole-catalogue lint is pending remaining
+integration/example migration, not credited by these library tests. Existing
+partial projections and unbounded waits keep their original bounded proof scope.
+
+Five files including this record: production+0/-0, tests+246/-261/net-15,
+public types+0/-0. Module/control-state/subordinate-sum/transition counts are
+unchanged after published startup names are substituted. No new history, repeated
+cause, false cardinality, nested authority, semantic boolean, caller structural
+path, bound or placeholder. Cross-check original worker preparation/initialization,
+proxy provenance, FIFO recovery and Driver custody laws. Disposition: pass this
+bounded mechanical test proof; complete catalogue/full-gate acceptance remains
+open. Evidence: REGISTRY-027-LIBRARY-{SOURCES,RESULTS}, CALLER-INPUTS,
+CALLER-CONSERVATION, PRODUCTION-CONSERVATION and FINAL-FORMAT. Only this evidence
+record is amended after the frozen runs; executable proof inputs remain exact.
+
+
 PR375 merge repair, before editing: capture upstream67a286c (PR374) and
 retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native
 check snapshot untouched. Preserve simultaneous native-reply/query receiving,

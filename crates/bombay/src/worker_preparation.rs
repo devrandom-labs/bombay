@@ -225,7 +225,8 @@ mod tests {
         ActionItem, Here, InterpretItem, InterpretSends, Interpretation, InterpretationProgress,
         SendEffects, SourceActions,
     };
-    use behavior_actors::atomic::{DiagnosticAction, StartingWorkerPreparation, WorkerPreparation};
+    use behavior_actors::diagnostic::DiagnosticAction;
+    use behavior_actors::worker::{StartingWorkerPreparation, WorkerPreparation};
     use tokio::runtime::Builder;
     use tokio::sync::{Mutex as AsyncMutex, OwnedSemaphorePermit, Semaphore, TryAcquireError};
     use tokio::task::{AbortHandle, JoinError, JoinHandle, spawn_blocking};
@@ -244,7 +245,7 @@ mod tests {
         SourceAdmission, SourceProgress, SourceSettlementCustody, UserEvent,
     };
     use behavior_actors::Crash;
-    use behavior_actors::atomic::WorkerPreparationStarted;
+    use behavior_actors::worker::WorkerPreparationStarted;
     use bombay_engine::{ActionsOf, Completion as EngineCompletion};
     use communication::{Config, ControlClosed, ControlSender};
     use std::convert::Infallible;
@@ -258,11 +259,17 @@ mod tests {
         EstablishedActor, InterpreterRequests, ItemSettlement, Never, NoBirths, Protocol,
         ReportToParent, SettledItem, Step, User,
     };
-    use behavior_actors::atomic::{
-        ActivationPolicy, ActorDrainPolicy, Assignment, BacklogCapacity, Completion,
-        DiagnosticDisposition, FifoCommand, FifoEvent, FifoPool, ImmediateActivation, Interruption,
-        OrderedRoles, PoolFailureReaction, PoolRecovery, PrepareWorkers, RestartLimit,
-        RestartRelease, WorkerInitializationOutcome, WorkerSource, WorkerSubmission, fifo,
+    use behavior_actors::composition::replies::ExactReplies;
+    use behavior_actors::diagnostic::DiagnosticDisposition;
+    use behavior_actors::lifecycle::ActorDrainPolicy;
+    use behavior_actors::pool::queue::{self, FifoCommand, FifoEvent, FifoPool};
+    use behavior_actors::pool::{
+        Assignment, BacklogCapacity, Completion, Interruption, PoolFailureReaction, PoolRecovery,
+        RecoveryPolicy,
+    };
+    use behavior_actors::worker::{
+        ImmediateStartup, OrderedRoles, PrepareWorkers, RestartLimit, RestartRelease, StartupLimit,
+        WorkerInitializationOutcome, WorkerSource, WorkerSubmission,
     };
     use behavior_actors::{Activate as _, Active, ChildStopped, Exit, StopOnShutdown};
     use tokio::sync::oneshot;
@@ -430,12 +437,12 @@ mod tests {
         Closed,
     }
 
-    impl WorkerSource<SearchRole, SearchWorker, ImmediateActivation> for WorkshopSelection {
+    impl WorkerSource<SearchRole, SearchWorker, ImmediateStartup> for WorkshopSelection {
         type WorkerRejection = WorkerRejection;
         type SourceRejection = WorkshopRejection;
     }
 
-    impl WorkerPreparationSource<SearchRole, SearchWorker, ImmediateActivation> for WorkshopSelection {
+    impl WorkerPreparationSource<SearchRole, SearchWorker, ImmediateStartup> for WorkshopSelection {
         #[expect(
             clippy::unused_async_trait_impl,
             reason = "Defer trait-port work and owned inputs until the future is polled."
@@ -445,7 +452,7 @@ mod tests {
             _: &SearchRole,
         ) -> WorkerPreparationStart<
             SearchWorker,
-            ImmediateActivation,
+            ImmediateStartup,
             WorkerRejection,
             WorkshopRejection,
         > {
@@ -469,7 +476,7 @@ mod tests {
         async fn prepare_next(
             &mut self,
             _: &SearchRole,
-        ) -> Result<WorkerSubmission<SearchWorker, ImmediateActivation>, WorkerRejection> {
+        ) -> Result<WorkerSubmission<SearchWorker, ImmediateStartup>, WorkerRejection> {
             Ok(WorkerSubmission::immediate(SearchWorker))
         }
     }
@@ -488,9 +495,9 @@ mod tests {
                 WorkshopSelection,
                 SearchRole,
                 SearchWorker,
-                ImmediateActivation,
+                ImmediateStartup,
             >,
-        ) -> WorkerPreparation<WorkshopSelection, SearchRole, SearchWorker, ImmediateActivation>
+        ) -> WorkerPreparation<WorkshopSelection, SearchRole, SearchWorker, ImmediateStartup>
         {
             let (_, role) = starting.source_and_role();
             self.roles
@@ -507,8 +514,16 @@ mod tests {
         }
     }
 
-    type SearchPool<Source = WorkshopSelection> =
-        FifoPool<SearchRole, SearchWorker, ImmediateActivation, Source, Infallible, u8, u16>;
+    type SearchPool<Source = WorkshopSelection> = FifoPool<
+        SearchRole,
+        SearchWorker,
+        ImmediateStartup,
+        Source,
+        Infallible,
+        u8,
+        u16,
+        ExactReplies,
+    >;
 
     #[expect(
         clippy::too_many_lines,
@@ -519,35 +534,40 @@ mod tests {
         source: Source,
     ) -> (
         Active<SearchPool<Source>>,
-        PrepareWorkers<Source, SearchRole, SearchWorker, ImmediateActivation>,
+        PrepareWorkers<Source, SearchRole, SearchWorker, ImmediateStartup>,
     )
     where
-        Source: WorkerSource<SearchRole, SearchWorker, ImmediateActivation>,
+        Source: WorkerSource<SearchRole, SearchWorker, ImmediateStartup>,
     {
         let roles =
             OrderedRoles::new(SearchRole::Primary, []).expect("one role is a valid worker roster");
-        let pool = fifo(
+        let pool = queue::new(
             |_: &SearchRole| WorkerSubmission::immediate(SearchWorker),
             roles,
-            ActivationPolicy::new(1).expect("one activation is valid capacity"),
-            PoolRecovery::permanent(
-                source,
-                RestartLimit::new(1, Duration::from_secs(30)),
-                RestartRelease::immediate(),
-                PoolFailureReaction::RetireRole,
-            ),
-            BacklogCapacity::new(0),
-            Interruption::Fail,
-            ActorDrainPolicy::WaitForActorGraph,
-            DiagnosticDisposition::<Infallible>::terminate(),
+            queue::Config {
+                startup: StartupLimit::new(1).expect("one activation is valid capacity"),
+                recovery: PoolRecovery::permanent(
+                    source,
+                    RecoveryPolicy {
+                        limit: RestartLimit::new(1, Duration::from_secs(30)),
+                        delay: RestartRelease::immediate(),
+                        failure: PoolFailureReaction::RetireRole,
+                    },
+                ),
+                backlog: BacklogCapacity::new(0),
+                interruption: Interruption::Fail,
+                shutdown: ActorDrainPolicy::WaitForActorGraph,
+                diagnostics: DiagnosticDisposition::<Infallible>::terminate(),
+            },
         )
+        .build()
         .unwrap_or_else(|_| panic!("the worker declaration constructs one pool"));
         let initialized = pool
             .initialize()
             .unwrap_or_else(|_| panic!("the pool initializes"));
         let mut pool = initialized.behavior;
         assert!(initialized.actions.sends.worker_initializations.is_empty());
-        assert!(initialized.actions.sends.worker_activations.is_empty());
+        assert!(initialized.actions.sends.worker_startups.is_empty());
         assert!(
             initialized
                 .actions
@@ -598,7 +618,7 @@ mod tests {
             .on(settled)
             .unwrap_or_else(|_| panic!("the direct worker is established"));
         assert!(committed.sends.worker_observations.is_empty());
-        assert!(committed.sends.worker_activations.is_empty());
+        assert!(committed.sends.worker_startups.is_empty());
         assert!(committed.sends.customer_outcomes.as_slice().is_empty());
         assert!(committed.sends.worker_assignments.is_empty());
         assert!(committed.sends.worker_preparations.is_empty());
@@ -614,7 +634,7 @@ mod tests {
             .expect("the new worker awaits initialization");
         let worker = initialization.worker().creation();
         let initialized_worker = pool
-            .on(initialization.resolve(WorkerInitializationOutcome::ReadyForActivation))
+            .on(initialization.resolve(WorkerInitializationOutcome::ReadyForStartup))
             .unwrap_or_else(|_| panic!("the worker initializes"));
         assert!(initialized_worker.sends.worker_observations.is_empty());
         assert!(initialized_worker.sends.worker_initializations.is_empty());
@@ -632,7 +652,7 @@ mod tests {
         assert!(initialized_worker.sends.diagnostics.is_empty());
         assert!(initialized_worker.creates.is_empty());
         assert!(matches!(initialized_worker.become_, Step::Continue));
-        let mut activations = initialized_worker.sends.worker_activations.into_requests();
+        let mut activations = initialized_worker.sends.worker_startups.into_requests();
         assert_eq!(activations.len(), 1);
         let activation = activations
             .pop()
@@ -643,7 +663,7 @@ mod tests {
             .unwrap_or_else(|_| panic!("the activation start is admitted"));
         assert!(activated.sends.worker_observations.is_empty());
         assert!(activated.sends.worker_initializations.is_empty());
-        assert!(activated.sends.worker_activations.is_empty());
+        assert!(activated.sends.worker_startups.is_empty());
         assert!(activated.sends.customer_outcomes.as_slice().is_empty());
         assert!(activated.sends.worker_assignments.is_empty());
         assert!(activated.sends.worker_preparations.is_empty());
@@ -652,13 +672,13 @@ mod tests {
         assert!(activated.sends.diagnostics.is_empty());
         assert!(activated.creates.is_empty());
         assert!(matches!(activated.become_, Step::Continue));
-        let ready = activation.activate().await;
+        let ready = activation.start().await;
         let activated = pool
             .on(ready)
             .unwrap_or_else(|_| panic!("the worker becomes ready"));
         assert!(activated.sends.worker_observations.is_empty());
         assert!(activated.sends.worker_initializations.is_empty());
-        assert!(activated.sends.worker_activations.is_empty());
+        assert!(activated.sends.worker_startups.is_empty());
         assert!(activated.sends.customer_outcomes.as_slice().is_empty());
         assert!(activated.sends.worker_assignments.is_empty());
         assert!(activated.sends.worker_preparations.is_empty());
@@ -672,7 +692,7 @@ mod tests {
             .unwrap_or_else(|_| panic!("the worker stop starts replacement preparation"));
         assert!(stopped.sends.worker_observations.is_empty());
         assert!(stopped.sends.worker_initializations.is_empty());
-        assert!(stopped.sends.worker_activations.is_empty());
+        assert!(stopped.sends.worker_startups.is_empty());
         assert!(stopped.sends.customer_outcomes.as_slice().is_empty());
         assert!(stopped.sends.worker_assignments.is_empty());
         assert!(stopped.sends.restart_schedules.is_empty());
@@ -839,7 +859,7 @@ mod tests {
         Closed,
     }
 
-    impl WorkerSource<SearchRole, SearchWorker, ImmediateActivation> for IndexSource {
+    impl WorkerSource<SearchRole, SearchWorker, ImmediateStartup> for IndexSource {
         type WorkerRejection = Never;
         type SourceRejection = IndexRejection;
     }
@@ -868,31 +888,19 @@ mod tests {
 
     enum IndexPreparation {
         Blocking {
-            starting: StartingWorkerPreparation<
-                IndexSource,
-                SearchRole,
-                SearchWorker,
-                ImmediateActivation,
-            >,
+            starting:
+                StartingWorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             task: JoinHandle<(Arc<Vec<u64>>, Vec<u64>)>,
         },
         Asynchronous {
-            starting: StartingWorkerPreparation<
-                IndexSource,
-                SearchRole,
-                SearchWorker,
-                ImmediateActivation,
-            >,
+            starting:
+                StartingWorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             permit: OwnedSemaphorePermit,
             release: oneshot::Receiver<()>,
         },
         Completed {
-            starting: StartingWorkerPreparation<
-                IndexSource,
-                SearchRole,
-                SearchWorker,
-                ImmediateActivation,
-            >,
+            starting:
+                StartingWorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             received: Result<(Arc<Vec<u64>>, Vec<u64>), JoinError>,
         },
     }
@@ -950,14 +958,13 @@ mod tests {
         admission: Arc<Semaphore>,
         operations: VecDeque<(IndexOperation, IndexContinuation)>,
         rows: Vec<Arc<AsyncMutex<Option<IndexPreparation>>>>,
-        rejected:
-            Vec<WorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateActivation>>,
+        rejected: Vec<WorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateStartup>>,
         tasks: Option<ActivationTasks<Never>>,
     }
 
     impl
         InterpretItem<
-            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             Never,
             Here,
         > for IndexCapabilities
@@ -968,11 +975,11 @@ mod tests {
         )]
         fn interpret_item<'a>(
             &'a mut self,
-            input: <PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation> as ActionItem>::Input<'a>,
-            received: &'a mut Option<<PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation> as ActionItem>::Reply>,
+            input: <PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup> as ActionItem>::Input<'a>,
+            received: &'a mut Option<<PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup> as ActionItem>::Reply>,
         ) -> impl Future<Output = ()> + Send + 'a
         where
-            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>: 'a,
+            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>: 'a,
         {
             async move {
                 if received.is_some() {
@@ -1076,10 +1083,10 @@ mod tests {
         type Event = Never;
         type Descendants = (
             Vec<(
-                WorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+                WorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
                 Result<(Arc<Vec<u64>>, Vec<u64>), JoinError>,
             )>,
-            Vec<WorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateActivation>>,
+            Vec<WorkerPreparation<IndexSource, SearchRole, SearchWorker, ImmediateStartup>>,
             Vec<(IndexOperation, IndexContinuation)>,
         );
 
@@ -1181,7 +1188,7 @@ mod tests {
     fn index_lanes(sends: &<SearchPool<IndexSource> as Behavior>::Sends) {
         assert!(sends.worker_observations.is_empty());
         assert!(sends.worker_initializations.is_empty());
-        assert!(sends.worker_activations.is_empty());
+        assert!(sends.worker_startups.is_empty());
         assert!(sends.customer_outcomes.as_slice().is_empty());
         assert!(sends.worker_assignments.is_empty());
         assert!(sends.worker_preparations.is_empty());
@@ -1501,7 +1508,7 @@ mod tests {
                 .on(returned)
                 .unwrap_or_else(|_| panic!("whole original preparation returns to its own FIFO"));
             assert!(actions.sends.worker_initializations.is_empty());
-            assert!(actions.sends.worker_activations.is_empty());
+            assert!(actions.sends.worker_startups.is_empty());
             assert!(actions.sends.customer_outcomes.as_slice().is_empty());
             assert!(actions.sends.worker_assignments.is_empty());
             assert!(actions.sends.worker_preparations.is_empty());
@@ -1630,7 +1637,7 @@ mod tests {
         assert_eq!(actions.creates.len(), 1);
         assert_eq!(actions.sends.worker_observations.len(), 1);
         assert!(actions.sends.worker_initializations.is_empty());
-        assert!(actions.sends.worker_activations.is_empty());
+        assert!(actions.sends.worker_startups.is_empty());
         assert!(actions.sends.customer_outcomes.as_slice().is_empty());
         assert!(actions.sends.worker_assignments.is_empty());
         assert!(actions.sends.worker_preparations.is_empty());
@@ -1747,7 +1754,7 @@ mod tests {
             assert!(actions.creates.is_empty());
             assert!(actions.sends.worker_observations.is_empty());
             assert!(actions.sends.worker_initializations.is_empty());
-            assert!(actions.sends.worker_activations.is_empty());
+            assert!(actions.sends.worker_startups.is_empty());
             assert!(actions.sends.customer_outcomes.as_slice().is_empty());
             assert!(actions.sends.worker_assignments.is_empty());
             assert!(actions.sends.worker_preparations.is_empty());
@@ -2078,7 +2085,7 @@ mod tests {
         assert!(actions.creates.is_empty());
         assert!(actions.sends.worker_observations.is_empty());
         assert!(actions.sends.worker_initializations.is_empty());
-        assert!(actions.sends.worker_activations.is_empty());
+        assert!(actions.sends.worker_startups.is_empty());
         assert!(actions.sends.customer_outcomes.as_slice().is_empty());
         assert!(actions.sends.worker_assignments.is_empty());
         assert!(actions.sends.worker_preparations.is_empty());
@@ -2139,7 +2146,7 @@ mod tests {
                 .unwrap_or_else(|_| panic!("completed original admission returns to its own FIFO"));
             assert!(matches!(actions.become_, Step::Continue));
             assert!(actions.sends.worker_initializations.is_empty());
-            assert!(actions.sends.worker_activations.is_empty());
+            assert!(actions.sends.worker_startups.is_empty());
             assert!(actions.sends.customer_outcomes.as_slice().is_empty());
             assert!(actions.sends.worker_assignments.is_empty());
             assert!(actions.sends.worker_preparations.is_empty());
@@ -2410,7 +2417,7 @@ mod tests {
                 });
                 assert!(matches!(actions.become_, Step::Continue));
                 assert!(actions.sends.worker_initializations.is_empty());
-                assert!(actions.sends.worker_activations.is_empty());
+                assert!(actions.sends.worker_startups.is_empty());
                 assert!(actions.sends.customer_outcomes.as_slice().is_empty());
                 assert!(actions.sends.worker_assignments.is_empty());
                 assert!(actions.sends.worker_preparations.is_empty());
@@ -2439,10 +2446,10 @@ mod tests {
     enum IndexDepotEvent {
         Started(
             ActionItemResult<
-                PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+                PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             >,
         ),
-        Requested(PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>),
+        Requested(PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>),
     }
 
     impl UserEvent for IndexDepotEvent {
@@ -2458,15 +2465,15 @@ mod tests {
 
     impl
         EventIngress<
-            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             ActionItemResult<
-                PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+                PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             >,
         > for IndexDepotEvent
     {
         fn ingress(
             input: ActionItemResult<
-                PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+                PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             >,
         ) -> Self {
             Self::Started(input)
@@ -2474,7 +2481,7 @@ mod tests {
     }
 
     struct IndexDepot {
-        requests: Vec<PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>>,
+        requests: Vec<PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>>,
         started: Vec<WorkerPreparationStarted>,
     }
 
@@ -2488,12 +2495,11 @@ mod tests {
     impl Behavior for IndexDepot {
         type Protocol = MessageProtocol<MailAddr, Never>;
         type Event = IndexDepotEvent;
-        type Sends = SourceActions<
-            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
-        >;
+        type Sends =
+            SourceActions<PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>>;
         type Ph = Never;
         type Error = ActionItemResult<
-            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
         >;
         type Birth = NoBirths;
         fn init(&mut self, _: InitializationTurn) -> BehaviorActed<Self> {
@@ -2531,9 +2537,9 @@ mod tests {
     impl
         SourceAdmission<
             IndexDepotEvent,
-            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+            PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             ActionItemResult<
-                PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+                PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
             >,
         > for IndexDepotCapabilities
     {
@@ -2541,14 +2547,14 @@ mod tests {
             &mut self,
             input: &mut Option<
                 ActionItemResult<
-                    PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+                    PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
                 >,
             >,
             reply: &mut Option<
                 Result<
                     (),
                     ActionItemResult<
-                        PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateActivation>,
+                        PrepareWorkers<IndexSource, SearchRole, SearchWorker, ImmediateStartup>,
                     >,
                 >,
             >,
@@ -3006,7 +3012,7 @@ mod tests {
         assert!(actions.creates.is_empty());
         assert!(actions.sends.worker_observations.is_empty());
         assert!(actions.sends.worker_initializations.is_empty());
-        assert!(actions.sends.worker_activations.is_empty());
+        assert!(actions.sends.worker_startups.is_empty());
         assert!(actions.sends.customer_outcomes.as_slice().is_empty());
         assert!(actions.sends.worker_assignments.is_empty());
         assert!(actions.sends.worker_preparations.is_empty());
@@ -3071,7 +3077,7 @@ mod tests {
                 .unwrap_or_else(|_| panic!("each joined actor operation returns to its own FIFO"));
             assert!(matches!(actions.become_, Step::Continue));
             assert!(actions.sends.worker_initializations.is_empty());
-            assert!(actions.sends.worker_activations.is_empty());
+            assert!(actions.sends.worker_startups.is_empty());
             assert!(actions.sends.customer_outcomes.as_slice().is_empty());
             assert!(actions.sends.worker_assignments.is_empty());
             assert!(actions.sends.worker_preparations.is_empty());
