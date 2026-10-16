@@ -316,8 +316,14 @@ the separate matrix evidence above. Formatting and both strict Clippy phases
 pass. Registered output, exact derivation and raw commands/results pass both
 independent audits, with no reported signing, disk or classifier failure.
 Final programme delivery remains pending. The original e629464 full run
-continues unchanged in its own worktree; no in-flight dependency repair can
-turn that failed run into a pass.
+finishes unchanged: exit1 in2598.452s,16 gates pass and nine fail. Eight fail on
+the existing supervisor/pool factory inference gaps awaiting owner publication;
+the ninth is the nested lock repaired separately above. All624 files and HEAD
+remain conserved. No signing or disk failure is reported, but this is still a
+failed full run. Completion-audit outputs agree with all25 explicit Nix verdicts;
+empty outputs or path-info exit0 alone earn no credit. Axum compiles zero tests,
+so its successful gate supplies no runtime execution evidence. The owning PRD
+retains exact per-gate receipts and remaining delivery obligations.
 
 The combined branch includes mainf4aa3b3: its three landed timer-custody commits
 were already ancestors, so merge6c0361 changes no tree bytes. Focused mailbox
