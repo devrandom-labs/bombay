@@ -453,7 +453,7 @@ Copy contract, ActionItem outside custody, TimerQueue, Driver panic guard and
 ActorRetirement; add no ownership traits or runtime registry. Expected change:
 one production file, about+6/-2 lines; one focused test and this coordination;
 zero public types, bounds, signatures, visibility or resolved dependencies changed.
-The focused fixture uses the existing owner SendProduct derive for two named
+The focused fixture uses the existing owner `behavior_macros::SendProduct` derive for two named
 lanes through a test-only dependency on the already locked macros0.14.2;
 no handwritten routing or settlement algebra is introduced.
 Before checkpoint: one LocalTimers queue; TimerError3 alternatives; two
@@ -487,6 +487,58 @@ semantic boolean or structural application syntax is added. Existing named
 schedule ports, Copy request/receipt products, D-RETIRE-1 and outside
 interpretation custody remain the authority. Two source/oracle reviews pass;
 final gate review and all24 native repository Nix checks remain pending.
+Full a54a303 check exits1/1456.385s with621 frozen hashes conserved:15
+check rows succeed and9 fail. It exposes two prerequisite test-contract failures. Incoming
+main adds a cfg(test) startup-disposal regression whose scope literal omits both
+current capacity fields and whose Unstarted match names the former outer sum.
+The unchanged original file in5e9bcd1 reproduces those two compiler errors.
+Separately, the repository surface guard rejects any occurrence of the send
+product name, conflating the selected owner derive with the retired runtime
+product. The new native test and this record expose that false positive.
+
+Pre-edit test conservation law: use the existing production default-capacity
+scope equation for this unconfigured Application and match the actual WorkOutcome;
+retain every original startup action, pointer/cause/disposal/call/retirement
+assertion. Change only the cfg(test) module, with no production API or behavior.
+Prove the focused unit reference and its original-startup-disposal inversion.
+For source policy, first write a filesystem regression that permits the exact
+owning qualified derive and its qualified guidance, while rejecting the retired
+product, old route and foreign similarly named derive. Keep the existing source
+scan and forbidden-surface inversion; no filename exemptions or disabled checks.
+Expected three additional files including this record, production delta0,
+public types/spellings0, no actor state, branch, module or protocol change.
+The original full Nix source stays frozen while this repair uses another
+isolated feature worktree. Its Darwin classifier crash remains a separate
+verification failure, not evidence against timer semantics.
+Retained test repair: every original startup action and ownership assertion
+is conserved; production execution is byte-identical. Seven filesystem artifacts
+separate the owning qualified derive from obsolete products/routes, including
+both mixed-file cases and the foreign prefix. Token-local recognition replaces
+the blanket substring veto; no file exemption or other scan changes.
+Eight references pass current1.99/minimum1.96 debug/release: the same11 source-policy
+tests plus the exact startup unit case in every configuration. Three actual
+inversions (original startup disposal, whole-file exemption, substring exemption)
+fail at their intended assertions in both profiles; six restored controls pass.
+The actual repository scan separately rejects a mixed products.md fixture in
+both profiles, then all11 tests pass after its removal. All622 frozen hashes
+are conserved; two independent source and gate/oracle reviews pass. Initial
+V1 rejects before Cargo on a trailing-blank-line comparison and has no passing
+credit. Strict focused Clippy passes21.162s and pinned formatting passes.
+
+Repair checkpoint: production+0/-0, tests+92/-5/net87, public types+0/-0;
+three additional changed files including this record. Driver control states
+before/after remain Prepared, Activating, Initializing, SettlingInitialization,
+Active, Retiring and RetirementAttempted; settlement states Offer/AwaitSource/
+Retained and action Continue/Stop are unchanged. No production branch, module,
+state alternative or protocol spelling changes; LocalTimers retains one queue.
+Residue scan finds no new arrival history, repeated cause, false cardinality,
+nested authority, semantic boolean or structural caller syntax. Cross-check
+D-RETIRE-1, the existing default-capacity scope and WorkOutcome custody, selected
+owner derive and Driver source-policy law. Disposition: pass the bounded test
+repair. The prior axum classifier crash remains disclosed; all24 fresh native
+Nix gates and exact-head CI must pass on the repaired source before delivery.
+Evidence: TIMER-GATES-V2-REPAIR-{SOURCES,RESULTS}, TIMER-GATES-REPAIR-MATRIX-V2
+and TIMER-GATES-REPOSITORY-SURFACE receipts under the existing evidence root.
 Automatic identity, wrapper migration and complete DX13 acceptance remain open.
 
 Exact termination decoration (DX09): ActorExt::observe_termination returns the

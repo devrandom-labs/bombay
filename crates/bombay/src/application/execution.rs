@@ -1733,8 +1733,8 @@ where
 #[cfg(test)]
 mod startup {
     use super::{
-        Application, ApplicationHandle, ApplicationOutcome, ApplicationScope,
-        ApplicationWorkCustody, ApplicationWorkPresence, ApplicationWorkPublication,
+        Application, ApplicationHandle, ApplicationScope, ApplicationWorkCustody,
+        ApplicationWorkPresence, ApplicationWorkPublication, MailboxCapacity, WorkOutcome,
         execute_application_with,
     };
     use crate::ShutdownLedger;
@@ -1846,7 +1846,11 @@ mod startup {
                         preparation_calls.set(preparation_calls.get() + 1);
                         let (application, work, publication) = original.into_unstarted();
                         let (root, spaces, (), (), scope) = (*application).into_parts();
-                        let scope = scope.unwrap_or(ApplicationScope { allocations });
+                        let scope = scope.unwrap_or(ApplicationScope {
+                            allocations,
+                            client_capacity: MailboxCapacity::default(),
+                            mailbox_capacity: MailboxCapacity::default(),
+                        });
                         let invoke = move |work: Box<(u64, Rc<Cell<usize>>)>,
                                            application: ApplicationHandle<
                             <ShutdownLedger as Behavior>::Protocol,
@@ -1887,7 +1891,7 @@ mod startup {
                     Err(cause) => Err(cause),
                 };
                 move || {
-                    let ApplicationOutcome::Unstarted { application, work } = outcome else {
+                    let WorkOutcome::Unstarted { application, work } = outcome else {
                         panic!("startup disposal must retain the original cold owners");
                     };
                     let Err(original_panic) = caught else {
