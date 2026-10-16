@@ -28,11 +28,13 @@ pub use ::behavior_actors::{
     workflow,
 };
 pub mod actors;
-pub use crate::application::{Application, ApplicationScope};
+pub use crate::application::{
+    Application, ApplicationScope, MailboxCapacity, MailboxCapacityError,
+};
 pub use crate::application::{
     ApplicationBehavior, ApplicationCleanupError, ApplicationClient, ApplicationDefinitionError,
-    ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationSender,
-    ApplicationStagingError, RunError,
+    ApplicationHandle, ApplicationLifecycle, ApplicationOutcome, ApplicationRetirement,
+    ApplicationSender, ApplicationStagingError, RunError, WorkOutcome,
 };
 pub use bombay_engine::{Completion, SettlementFailure};
 pub use bombay_macros::{ActorSpaces, TerminalProjection, actor, topology};
@@ -44,6 +46,7 @@ mod application;
 pub mod entity;
 mod launch;
 mod local;
+pub use local::effects::services::{ExternalRequest, InterpreterFactory, NativeHost, Runtime};
 #[allow(
     dead_code,
     reason = "Bombay uses pair publication while this same private source retains the separately verified keyed Observe API"
@@ -70,7 +73,9 @@ pub use crate::terminal::{
     RetirementNotificationError, RetirementSchema, RootOrigin,
 };
 pub use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
-pub use crate::worker_preparation::{WorkerPreparationSource, WorkerPreparationStart};
+pub use crate::worker_preparation::{
+    WorkerFactory, WorkerPreparationSource, WorkerPreparationStart,
+};
 
 /// Conventional imports for Bombay applications.
 pub mod prelude {

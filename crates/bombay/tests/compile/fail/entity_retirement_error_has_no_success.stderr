@@ -1,0 +1,5 @@
+error[E0599]: no variant, associated function, or constant named `Begun` found for enum `EntityRetirementError` in the current scope
+ --> tests/compile/fail/entity_retirement_error_has_no_success.rs:2:44
+  |
+2 |     bombay::entity::EntityRetirementError::Begun
+  |                                            ^^^^^ variant, associated function, or constant not found in `EntityRetirementError`

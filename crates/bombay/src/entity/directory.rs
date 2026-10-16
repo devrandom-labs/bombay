@@ -14,9 +14,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(not(bombay_entity_loom))]
 use std::sync::{Arc, Mutex};
 
+use crate::observe::{Observation, Publisher, pair};
+
 use super::{
-    ActivationId, DispatchId, DrainFailure, EntityId, EntitySlot, LifecyclePhase, Refusal,
-    RetirementMode, SlotEffect, SlotEvent, TransitionEvidence,
+    ActivationId, DispatchId, DrainFailure, EntityId, EntityRetirementError, EntitySlot,
+    LifecyclePhase, Refusal, RetirementMode, SlotEffect, SlotEvent, TransitionEvidence,
 };
 
 /// Validated fixed sizing and admission limits for a local directory.
@@ -166,6 +168,7 @@ struct SlotExecution<C, E, L> {
     state: SlotState<C, E, L>,
     pending: VecDeque<SlotEffect<C, E, L>>,
     dispatch: SlotDispatchPhase,
+    retirement: Option<(Publisher<RetirementMode>, Observation<RetirementMode>)>,
 }
 
 enum SlotState<C, E, L> {
@@ -189,6 +192,25 @@ struct InstalledSlotEvidence {
     activation_id: Option<ActivationId>,
 }
 
+impl<C, E: Clone, L> SlotExecution<C, E, L> {
+    fn submit(&mut self, event: SlotEvent<C, E, L>) -> InstalledSlotEvidence {
+        let SlotState::Ready(state) = mem::replace(&mut self.state, SlotState::Poisoned) else {
+            panic!("entity slot transition poisoned");
+        };
+        let decision = state.decide(event);
+        let installed = InstalledSlotEvidence {
+            evidence: decision.evidence,
+            phase: decision.state.phase(),
+            activation_id: decision.state.activation_id(),
+        };
+        self.state = SlotState::Ready(decision.state);
+        decision
+            .effects
+            .for_each(|effect| self.pending.push_back(effect));
+        installed
+    }
+}
+
 impl<C, E: Clone, L> Slot<C, E, L> {
     fn new() -> Self {
         Self {
@@ -196,6 +218,7 @@ impl<C, E: Clone, L> Slot<C, E, L> {
                 state: SlotState::Ready(EntitySlot::Inactive),
                 pending: VecDeque::new(),
                 dispatch: SlotDispatchPhase::Idle,
+                retirement: None,
             }),
         }
     }
@@ -205,21 +228,53 @@ impl<C, E: Clone, L> Slot<C, E, L> {
             .execution
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
-        let SlotState::Ready(state) = mem::replace(&mut execution.state, SlotState::Poisoned)
-        else {
-            panic!("entity slot transition poisoned");
+        execution.submit(event)
+    }
+
+    fn begin_retirement(
+        &self,
+    ) -> Result<(InstalledSlotEvidence, Observation<RetirementMode>), EntityRetirementError> {
+        let mut execution = self
+            .execution
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let activation = match &execution.state {
+            SlotState::Ready(state) => match state.phase() {
+                LifecyclePhase::Inactive | LifecyclePhase::Activating => {
+                    return Err(EntityRetirementError::NotActive);
+                }
+                LifecyclePhase::Active | LifecyclePhase::Draining | LifecyclePhase::Retiring => {
+                    state
+                        .activation_id()
+                        .ok_or(EntityRetirementError::NotActive)?
+                }
+            },
+            SlotState::Poisoned => panic!("entity slot transition poisoned"),
         };
-        let decision = state.decide(event);
-        let installed = InstalledSlotEvidence {
-            evidence: decision.evidence,
-            phase: decision.state.phase(),
-            activation_id: decision.state.activation_id(),
+        let observation = if let Some((_, observation)) = &execution.retirement {
+            observation.clone()
+        } else {
+            let (publication, observation) = pair();
+            execution.retirement = Some((publication, observation.clone()));
+            observation
         };
-        execution.state = SlotState::Ready(decision.state);
-        decision
-            .effects
-            .for_each(|effect| execution.pending.push_back(effect));
-        installed
+        let installed = execution.submit(SlotEvent::BeginDrain {
+            activation_id: activation,
+        });
+        Ok((installed, observation))
+    }
+
+    pub(super) fn complete_retirement(&self, mode: RetirementMode) {
+        let publication = self
+            .execution
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .retirement
+            .take()
+            .map(|(publication, _)| publication);
+        if let Some(publication) = publication {
+            publication.complete(mode);
+        }
     }
 
     fn activation_id(&self) -> Option<ActivationId> {
@@ -610,6 +665,35 @@ where
             }
         }
         None
+    }
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "the installed decision and its independent observation coexist without a second state or result type"
+    )]
+    pub(super) fn begin_retirement(
+        &self,
+        entity_id: &EntityId<I>,
+    ) -> Result<
+        (
+            InstalledSlotDecision<I, C, E, L>,
+            Observation<RetirementMode>,
+        ),
+        EntityRetirementError,
+    > {
+        let slot = self.shards[self.shard_index(entity_id)]
+            .lock()
+            .expect("directory shard lock poisoned")
+            .get(entity_id)
+            .cloned()
+            .ok_or(EntityRetirementError::NotActive)?;
+        let (installed, observation) = slot.begin_retirement()?;
+        let decision = installed_slot_decision(
+            entity_id.clone(),
+            installed,
+            InstalledEffectSource::Mapped(slot),
+        );
+        Ok((decision, observation))
     }
 
     pub(crate) fn current_activation(&self, entity_id: &EntityId<I>) -> Option<ActivationId> {

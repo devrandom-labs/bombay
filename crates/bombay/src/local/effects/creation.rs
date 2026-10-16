@@ -1,5 +1,8 @@
+use super::services::{NativeCapabilities, NativeConstruction};
 use crate::ActorExecutionOutcome;
+use crate::NativeHost;
 use crate::address::{ApplicationAddresses, MailAddr};
+use crate::application::MailboxCapacity;
 use crate::launch::{
     ActorSpace, OwnedActor, OwnedTask, ProjectedTask, SpawnError, spawn_owned_execution,
 };
@@ -10,11 +13,10 @@ use crate::local::children::{
 use crate::local::effects::reports::LocalParentReports;
 use crate::local::effects::{
     ActionInterpreter, ApplicationCapabilities, ApplicationCapabilityInputs, BindingTerminal,
-    CommitActions, NoParent,
+    CommitActions,
 };
 use crate::local::endpoint::InstalledActor;
 use crate::local::environment::{LocalActivationRejection, LocalResidual};
-use crate::local::ingress::DEFAULT_USER_CAPACITY;
 use crate::observe;
 use crate::terminal::{ActorRetirementReport, ProjectTerminal, RetirementSchema};
 use crate::worker_preparation::{WorkerPreparationSource, settle_worker_preparation};
@@ -37,9 +39,9 @@ use core::marker::PhantomData;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-impl<C, N, P, Bindings, Origins, New, RootEvent, Path>
+impl<C, N, P, Bindings, Origins, New, RootEvent, Path, Services>
     InterpretItem<Creations<CreateChild<MailAddr, New>>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     New: Send,
@@ -91,8 +93,8 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Source, Input> SourceAdmission<C::Event, Source, Input>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Source, Input, Services> SourceAdmission<C::Event, Source, Input>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: EventIngress<Source, Input>,
@@ -191,6 +193,7 @@ where
         let PendingChild {
             creations,
             creation_order,
+            mailbox_capacity,
             actors,
             actor_spaces,
             allocations,
@@ -202,6 +205,7 @@ where
         N::establish::<Origin, OriginFn>(PendingChild {
             creations,
             creation_order,
+            mailbox_capacity,
             actors,
             actor_spaces: Arc::clone(actor_spaces.as_ref()),
             allocations,
@@ -238,6 +242,7 @@ where
     actors: ActorSpace<Child::Protocol>,
     actor_spaces: Arc<N>,
     allocations: ApplicationAddresses,
+    mailbox_capacity: MailboxCapacity,
     control: ControlSender<C::Event>,
     creation: RoutedCreation<MailAddr, Child>,
     origin: OriginFn,
@@ -273,9 +278,12 @@ where
 /// exact child execution/source custody on acceptance. This port is sealed;
 /// only the runtime supplies standard-kernel execution authority.
 ///
+/// A recorded creator-local correlation ID is rejected before allocation with
+/// [`CreationRejection::CorrelationAlreadyRecorded`], returning the original
+/// request without changing the existing child binding.
+///
 /// # Panics
-/// Panics if the creator reuses an already recorded correlation ID or internal
-/// startup-row custody is inconsistent, matching the existing native kernel.
+/// Panics if internal startup-row custody is inconsistent.
 #[allow(private_bounds)]
 pub trait EstablishNativeChild<C, Child, Descendants>:
     NativeChildStartup<C, Child, Descendants>
@@ -325,7 +333,8 @@ where
     C: BehaviorBase + Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: Send + 'static,
     BehaviorMessage<C>: Send,
-    N: Send + Sync + 'static,
+    N: NativeHost + Send + Sync + 'static,
+    N::Runtime: NativeConstruction,
     <Child::Birth as BirthMode>::Child: behavior::ChildOccurrenceProduct<
             crate::local::children::RuntimeChildBindings<
                 Descendants,
@@ -352,7 +361,7 @@ where
         > + Send
         + 'static,
     ActionInterpreter<
-        ApplicationCapabilities<
+        NativeCapabilities<
             Child,
             N,
             LocalParentReports<C::Event, Child, C::Birth>,
@@ -387,6 +396,12 @@ where
     {
         let creation = pending.creation;
         let id = creation.id();
+        if pending.creations.contains_key(&id) {
+            return ItemSettlement::Rejected {
+                item: creation,
+                reason: CreationRejection::CorrelationAlreadyRecorded,
+            };
+        }
         let kind = creation.kind();
         let route = creation.route();
         let (request, _) = creation.into_parts();
@@ -406,13 +421,14 @@ where
                 };
             }
         };
+        let mailbox_capacity = pending.mailbox_capacity;
         let actors = pending.actors;
         let actor_spaces = pending.actor_spaces.clone();
         let allocations = pending.allocations.clone();
         let parent = pending.control.clone();
         let (startup, control, task) = spawn_owned_execution(
             actors,
-            communication::Config::new(DEFAULT_USER_CAPACITY),
+            communication::Config::new(mailbox_capacity.get()),
             address,
             child,
             #[cfg(feature = "remote")]
@@ -420,17 +436,17 @@ where
             move |control, terminal_reports, timers, observations| {
                 let bindings = NestedBindings::<Child, Descendants>::new_in(actor_spaces.as_ref());
                 ActionInterpreter::new(
-                    ApplicationCapabilities::<
+                    <N::Runtime as NativeConstruction>::capabilities::<
                         Child,
                         N,
-                        NoParent,
                         NestedBindings<Child, Descendants>,
                         StructuralOrigins<Child::Base>,
-                    >::new_with_bindings(
+                    >(
                         ApplicationCapabilityInputs {
                             address,
                             actor_spaces,
                             allocations,
+                            mailbox_capacity,
                             control,
                             timers,
                             observations,
@@ -886,8 +902,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Position, Child, Descendants> EstablishChild<Position, Child>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Position, Child, Descendants, Services>
+    EstablishChild<Position, Child>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + BehaviorBase,
     Child:
@@ -926,6 +943,7 @@ where
             creation_order,
             actors,
             actor_spaces: self.actor_spaces.clone(),
+            mailbox_capacity: self.mailbox_capacity,
             allocations: self.allocations.clone(),
             control: self.control.clone(),
             creation,
@@ -936,9 +954,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path>
+impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path, Services>
     InterpretItem<BeginActivation<Worker, Plan>, C::Event, Path>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<WorkerActivation<Worker, Plan>, Path> + Send + 'static,
@@ -986,9 +1004,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Source, Role, Worker, Plan, RootEvent, Path>
+impl<C, N, P, Bindings, Origins, Source, Role, Worker, Plan, RootEvent, Path, Services>
     InterpretItem<PrepareWorkers<Source, Role, Worker, Plan>, RootEvent, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<WorkerPreparation<Source, Role, Worker, Plan>, Path> + Send + 'static,
@@ -1051,6 +1069,7 @@ fn routed_creation<Child>(
 #[cfg(test)]
 mod child_projection_panic {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use std::any::Any;
     use std::future::Future;
@@ -1098,7 +1117,7 @@ mod child_projection_panic {
     };
     use crate::{
         ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport, ActorSpace,
-        ActorSpaces, LedgerProtocol, RetirementAssessment, ShutdownLedger,
+        ActorSpaces, LedgerProtocol, NativeHost, RetirementAssessment, Runtime, ShutdownLedger,
     };
 
     type ProjectionCustody = (oneshot::Sender<(Id, ChildTerminal)>, Box<dyn Any + Send>);
@@ -1196,6 +1215,14 @@ mod child_projection_panic {
     #[derive(ActorSpaces)]
     struct ProjectionSpaces {
         parents: ActorSpace<ProjectionParent>,
+    }
+
+    impl NativeHost for ProjectionSpaces {
+        type Runtime = Runtime;
+        fn runtime(&self) -> &Self::Runtime {
+            const RUNTIME: Runtime = Runtime::new();
+            &RUNTIME
+        }
     }
 
     impl RetirementSchema for ChildTerminal {
@@ -1398,6 +1425,14 @@ mod child_projection_panic {
         creators: ActorSpace<LedgerCreator>,
     }
 
+    impl NativeHost for LedgerSpaces {
+        type Runtime = Runtime;
+        fn runtime(&self) -> &Self::Runtime {
+            const RUNTIME: Runtime = Runtime::new();
+            &RUNTIME
+        }
+    }
+
     impl RetirementSchema for LedgerChildRetirement {
         type Failure =
             ChildFailure<ChildOrigin<LedgerCreator, ChildHead>, StopOnShutdown<ShutdownLedger>>;
@@ -1498,6 +1533,7 @@ mod child_projection_panic {
                 address: MailAddr::APPLICATION_ROOT,
                 actor_spaces: spaces.clone(),
                 allocations: ApplicationAddresses::new(), control,
+mailbox_capacity: MailboxCapacity::default(),
                 timers: LocalTimers::new(), observations: TerminationObservations::new(), terminal_reports: LocalTerminalReports::new(terminal_sender),
             }, ChildBinding::new_in(spaces.as_ref()));
             let mut routed = None;
@@ -1639,6 +1675,7 @@ mod child_projection_panic {
                     address: MailAddr::APPLICATION_ROOT,
                     actor_spaces: spaces.clone(),
                     allocations: ApplicationAddresses::new(),
+mailbox_capacity: MailboxCapacity::default(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -1937,6 +1974,7 @@ mod child_projection_panic {
                                 address: MailAddr::APPLICATION_ROOT,
                                 actor_spaces: actor_spaces.clone(),
                                 allocations: ApplicationAddresses::new(),
+                                mailbox_capacity: MailboxCapacity::default(),
                                 control,
                                 timers,
                                 observations,
@@ -2427,6 +2465,7 @@ mod child_projection_panic {
                             address: MailAddr::APPLICATION_ROOT,
                             actor_spaces,
                             allocations: ApplicationAddresses::new(),
+                            mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
@@ -2634,6 +2673,7 @@ mod child_projection_panic {
                     address: MailAddr::APPLICATION_ROOT,
                     actor_spaces: spaces.clone(),
                     allocations: ApplicationAddresses::new(),
+                    mailbox_capacity: MailboxCapacity::default(),
                     control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -2963,6 +3003,7 @@ mod child_projection_panic {
                 address: MailAddr::APPLICATION_ROOT,
                 actor_spaces: spaces.clone(),
                 allocations: ApplicationAddresses::new(),
+                mailbox_capacity: MailboxCapacity::default(),
                 control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
@@ -3207,7 +3248,7 @@ mod child_rejection_custody {
             )),
         }
         .stop_on_shutdown();
-        let (outcome, native, notifications) =
+        let (outcome, native, notifications, ()) =
             Application::with_topology(root, worker_application::Topology::new())
                 .run_with(move |application| async move {
                     application
@@ -3220,7 +3261,8 @@ mod child_rejection_custody {
                 .unwrap_or_else(|original| {
                     drop(original);
                     panic!("entered host");
-                });
+                })
+                .into_parts();
         let (work, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
             drop(original);
             panic!("work returned independently of cleanup");

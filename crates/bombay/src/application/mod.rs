@@ -3,32 +3,53 @@ mod execution;
 #[cfg(feature = "axum")]
 mod http;
 mod interface;
-#[cfg(feature = "remote")]
-mod network;
+mod mailbox;
 #[cfg(feature = "remote")]
 pub(crate) mod node;
+mod outcome;
 mod scope;
-#[cfg(all(test, feature = "remote"))]
-mod tests;
+mod work;
 
+pub use mailbox::{MailboxCapacity, MailboxCapacityError};
 pub use scope::ApplicationScope;
 
 pub use composition::{ApplicationBehavior, ApplicationDefinitionError, ApplicationStagingError};
-pub use execution::{ApplicationCleanupError, ApplicationOutcome, RunError};
+pub use execution::{ApplicationCleanupError, RunError};
 pub use interface::{
     ActorInterface, ApplicationClient, ApplicationHandle, ApplicationLifecycle, ApplicationSender,
     ExternalActor, ExternalActorError, ExternalTarget,
 };
+pub use outcome::{ApplicationOutcome, ApplicationRetirement};
+pub use work::WorkOutcome;
 
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::entity::EntityDefinition;
 use crate::launch::ActorSpace;
+use crate::{InterpreterFactory, Runtime};
 use behavior::{Behavior, Never, Protocol};
 
 impl<Root> Application<Root, ActorSpace<Root::Protocol>>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
+    /// Add actor-owned external interpreters beside standard local capabilities.
+    /// The constructor is borrowed after pure initialization, before commitment
+    /// or effects. Each actor owns its constructed service; retirement never
+    /// invokes the constructor.
+    #[must_use]
+    pub fn with_interpreter<F: InterpreterFactory>(
+        self,
+        factory: F,
+    ) -> Application<Root, (ActorSpace<Root::Protocol>, Runtime<F>)> {
+        Application {
+            root: self.root,
+            spaces: (self.spaces, Runtime::with_interpreter(factory)),
+            members: self.members,
+            families: self.families,
+            scope: self.scope,
+        }
+    }
+
     /// Declare one concrete root behavior in its local protocol space.
     #[must_use]
     pub fn new(root: Root) -> Self {
@@ -51,6 +72,39 @@ impl<Root, Spaces> Application<Root, Spaces> {
 }
 
 impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families> {
+    /// Select the bounded user mailbox size for every actor in this application.
+    /// The root, fresh children, cold members and Entity actors inherit this
+    /// limit; client reply endpoints keep their independent client capacity.
+    /// Admission refusal returns the original message. This limit does not bound
+    /// control events, waiting senders, actor state or retained terminal custody.
+    ///
+    /// Unvalidated integers cannot select an actor mailbox:
+    ///
+    /// ```compile_fail,E0308
+    /// let scope = bombay::ApplicationScope::new().mailbox_capacity(3);
+    /// ```
+    #[must_use]
+    pub fn mailbox_capacity(mut self, capacity: MailboxCapacity) -> Self {
+        let scope = self.scope.get_or_insert_with(ApplicationScope::new);
+        scope.mailbox_capacity = capacity;
+        self
+    }
+
+    /// Select the bounded reply mailbox size for clients established during execution.
+    /// Existing early endpoints retain their own previously selected capacity.
+    ///
+    /// Unvalidated integers cannot select a client mailbox:
+    ///
+    /// ```compile_fail,E0308
+    /// let scope = bombay::ApplicationScope::new().client_capacity(3);
+    /// ```
+    #[must_use]
+    pub fn client_capacity(mut self, capacity: MailboxCapacity) -> Self {
+        let scope = self.scope.get_or_insert_with(ApplicationScope::new);
+        scope.client_capacity = capacity;
+        self
+    }
+
     /// Append one application-owned actor under a nominal semantic role.
     ///
     /// The actor expression determines its complete concrete type. The role

@@ -1,0 +1,47 @@
+error[E0277]: the trait bound `u8: InitialWorkerPreparation` is not satisfied
+ --> tests/compile/fail/worker_factory_wrong_output.rs:1:27
+  |
+1 | fn main() { let _source = bombay::WorkerFactory::new(|role: &u8| *role); }
+  |                           ^^^^^^^^^^^^^^^^^^^^^ the trait `InitialWorkerPreparation` is not implemented for `u8`
+  |
+help: the following other types implement trait `InitialWorkerPreparation`
+ --> $CARGO/bombay-behavior-actors-$VERSION/src/atomic/worker/roster.rs
+  |
+  |   impl<Worker, Plan> InitialWorkerPreparation for WorkerSubmission<Worker, Plan> {
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `WorkerSubmission<Worker, Plan>`
+...
+  | / impl<Worker, Plan, Rejection> InitialWorkerPreparation
+  | |     for Result<WorkerSubmission<Worker, Plan>, Rejection>
+  | |_________________________________________________________^ `Result<WorkerSubmission<Worker, Plan>, Rejection>`
+note: required by a bound in `WorkerFactory`
+ --> src/worker_preparation.rs
+  |
+  | pub struct WorkerFactory<Role, Factory, Preparation>
+  |            ------------- required by a bound in this struct
+...
+  |     Preparation: InitialWorkerPreparation,
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `WorkerFactory`
+
+error[E0277]: the trait bound `u8: InitialWorkerPreparation` is not satisfied
+ --> tests/compile/fail/worker_factory_wrong_output.rs:1:27
+  |
+1 | fn main() { let _source = bombay::WorkerFactory::new(|role: &u8| *role); }
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `InitialWorkerPreparation` is not implemented for `u8`
+  |
+help: the following other types implement trait `InitialWorkerPreparation`
+ --> $CARGO/bombay-behavior-actors-$VERSION/src/atomic/worker/roster.rs
+  |
+  |   impl<Worker, Plan> InitialWorkerPreparation for WorkerSubmission<Worker, Plan> {
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `WorkerSubmission<Worker, Plan>`
+...
+  | / impl<Worker, Plan, Rejection> InitialWorkerPreparation
+  | |     for Result<WorkerSubmission<Worker, Plan>, Rejection>
+  | |_________________________________________________________^ `Result<WorkerSubmission<Worker, Plan>, Rejection>`
+note: required by a bound in `WorkerFactory::<Role, Factory, Preparation>::new`
+ --> src/worker_preparation.rs
+  |
+  |     Preparation: InitialWorkerPreparation,
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `WorkerFactory::<Role, Factory, Preparation>::new`
+...
+  |     pub const fn new(factory: Factory) -> Self {
+  |                  --- required by a bound in this associated function

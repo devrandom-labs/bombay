@@ -9,7 +9,8 @@ use bombay::behavior::{
 };
 use bombay::{
     ActorSpace, ApplicationTopology, ChildFailure, EstablishNativeChild, Hosts, MailAddr,
-    NativeChild, PendingChild, ProjectTerminal, RetirementSchema, RootRegistration,
+    NativeChild, NativeHost, PendingChild, ProjectTerminal, RetirementSchema, RootRegistration,
+    Runtime,
 };
 use core::future::Future;
 
@@ -18,6 +19,14 @@ type RootProtocol = <Root as Behavior>::Protocol;
 struct AccountHosts {
     root: ActorSpace<RootProtocol>,
     accounts: ActorSpace<AccountProtocol>,
+}
+
+impl NativeHost for AccountHosts {
+    type Runtime = Runtime;
+    fn runtime(&self) -> &Self::Runtime {
+        const RUNTIME: Runtime = Runtime::new();
+        &RUNTIME
+    }
 }
 impl AccountHosts {
     fn new() -> Self {

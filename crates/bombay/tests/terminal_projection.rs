@@ -1,6 +1,6 @@
 use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, ChildRole, Never};
 use bombay::prelude::{
@@ -99,9 +99,10 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
         .unwrap_or_else(|(application, error)| {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
-        });
+        })
+        .into_parts();
     if let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: _,
             startup_error: _,
             cleanup: Ok(()),
@@ -111,13 +112,14 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: None,
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
@@ -127,6 +129,7 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);

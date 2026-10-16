@@ -30,9 +30,9 @@ use std::sync::{Arc, PoisonError};
 use std::time::Instant;
 use tokio::sync::oneshot;
 
-impl<C, N, P, Bindings, Origins, ChildProtocol, Occurrence, Path>
+impl<C, N, P, Bindings, Origins, ChildProtocol, Occurrence, Path, Services>
     InterpretItem<ObserveCreation<ChildProtocol, Occurrence>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
     ChildProtocol: Protocol<Addr = MailAddr>,
@@ -92,9 +92,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Child, Occurrence, Path>
+impl<C, N, P, Bindings, Origins, Child, Occurrence, Path, Services>
     InterpretItem<ObserveEstablishedCreation<Child, Occurrence>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
         + ResolveChildOccurrence<Occurrence, Child = Child>,
@@ -162,8 +162,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Path> InterpretItem<ObservePeer<MailAddr>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Path, Services>
+    InterpretItem<ObservePeer<MailAddr>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<PeerStopped<MailAddr>, Path> + Send + 'static,
@@ -209,9 +210,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, ChildProtocol, Occurrence, Path>
+impl<C, N, P, Bindings, Origins, ChildProtocol, Occurrence, Path, Services>
     InterpretItem<ObserveChild<ChildProtocol, Occurrence>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>> + ResolveChildOccurrence<Occurrence>,
     ChildProtocol: Protocol<Addr = MailAddr>,
@@ -270,9 +271,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Child, Occurrence, Path>
+impl<C, N, P, Bindings, Origins, Child, Occurrence, Path, Services>
     InterpretItem<ShutdownChild<Child, Occurrence>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
         + ResolveChildOccurrence<Occurrence, Child = Child>,
@@ -354,10 +355,11 @@ impl<'a, Capabilities, Path> EstablishedObservationInterpreter<'a, Capabilities,
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Target, Path> InterpretEstablishedObservation<Target>
+impl<C, N, Parent, Bindings, Origins, Target, Path, Services>
+    InterpretEstablishedObservation<Target>
     for EstablishedObservationInterpreter<
         '_,
-        ApplicationCapabilities<C, N, Parent, Bindings, Origins>,
+        ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>,
         Path,
     >
 where
@@ -495,9 +497,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Target, Path>
+impl<C, N, P, Bindings, Origins, Target, Path, Services>
     InterpretItem<ObserveEstablished<Target>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr> + Send + 'static,
@@ -533,9 +535,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Target, Path>
+impl<C, N, P, Bindings, Origins, Target, Path, Services>
     InterpretItem<CancelObservation<Target>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Target: Protocol<Addr = MailAddr> + Send + 'static,
@@ -571,9 +573,9 @@ where
     }
 }
 
-impl<C, N, Parent, Bindings, Origins, Child, TargetPath>
+impl<C, N, Parent, Bindings, Origins, Child, TargetPath, Services>
     InterpretEstablishedShutdown<Child, TargetPath>
-    for ApplicationCapabilities<C, N, Parent, Bindings, Origins>
+    for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Child: Behavior<Protocol: Protocol<Addr = MailAddr>>,
@@ -589,9 +591,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Child, Path, TargetPath>
+impl<C, N, P, Bindings, Origins, Child, Path, TargetPath, Services>
     InterpretItem<ShutdownEstablished<Child, TargetPath>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<EstablishedShutdownResolved<Child::Protocol>, Path> + Send + 'static,
@@ -1015,6 +1017,7 @@ mod tests {
 #[cfg(test)]
 mod installed_shutdown_contract {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, ChildCreationOutcome,
@@ -1236,6 +1239,7 @@ mod installed_shutdown_contract {
                 address: MailAddr(501),
                 actor_spaces: Arc::new(()),
                 allocations: allocations.clone(),
+                mailbox_capacity: MailboxCapacity::default(),
                 control: direct_control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
@@ -1266,6 +1270,7 @@ mod installed_shutdown_contract {
                 address: MailAddr(503),
                 actor_spaces: Arc::new(()),
                 allocations,
+                mailbox_capacity: MailboxCapacity::default(),
                 control: nested_control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),
@@ -1347,6 +1352,7 @@ mod installed_shutdown_contract {
                 address: MailAddr(509),
                 actor_spaces: Arc::new(()),
                 allocations: ApplicationAddresses::new(),
+mailbox_capacity: MailboxCapacity::default(),
                 control: observer_control,
                 timers: LocalTimers::new(),
                 observations: TerminationObservations::new(),

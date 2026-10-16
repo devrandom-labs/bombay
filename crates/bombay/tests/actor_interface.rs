@@ -1,6 +1,6 @@
 use bombay::ActorNotificationReceipts;
-use bombay::ApplicationOutcome;
 use bombay::TrySendError;
+use bombay::WorkOutcome;
 use core::any::type_name;
 use core::ptr;
 #[cfg(feature = "remote")]
@@ -135,10 +135,11 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the application terminates normally");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -147,6 +148,7 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -223,10 +225,11 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the application terminates normally");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -235,6 +238,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -421,10 +425,11 @@ fn external_actor_try_send_keeps_full_and_closed_originals_and_truthful_origin()
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the application completes its actual native retirement");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -433,6 +438,7 @@ fn external_actor_try_send_keeps_full_and_closed_originals_and_truthful_origin()
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the Work, native actor and two actual notifications remain independent");
@@ -454,6 +460,8 @@ fn interface_denies_lifecycle_and_receive_authority_duplication() {
     let cases = trybuild::TestCases::new();
     cases.pass("tests/compile/pass/external_actor_error.rs");
     cases.compile_fail("tests/compile/fail/actor_interface_has_no_lifecycle.rs");
+    cases.compile_fail("tests/compile/fail/actor_interface_has_no_entity_retirement.rs");
+    cases.compile_fail("tests/compile/fail/entity_retirement_error_has_no_success.rs");
     cases.compile_fail("tests/compile/fail/external_actor_receiver_is_affine.rs");
     cases.compile_fail("tests/compile/fail/retirement_report_is_runtime_issued.rs");
     cases.compile_fail("tests/compile/fail/retirement_report_constructor_is_private.rs");
@@ -569,7 +577,7 @@ fn fixed_target_client_try_send_preserves_originals_and_origin() {
             ),
         )
         .unwrap_or_else(|_| panic!("the real Application starts"));
-    let (outcome, native, notifications) = receipts;
+    let (outcome, native, notifications, ()) = receipts.into_parts();
     let (output, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("Work retains each actual result"));

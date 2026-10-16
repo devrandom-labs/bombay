@@ -1,0 +1,63 @@
+error[E0271]: type mismatch resolving `<OpenFile as ExternalRequest>::Interpreter == Services`
+  --> tests/compile/fail/interpreter_owner.rs:72:45
+   |
+72 |     let outcome = host.block_on(application.run());
+   |                                             ^^^ type mismatch resolving `<OpenFile as ExternalRequest>::Interpreter == Services`
+   |
+note: expected this to be `Services`
+  --> tests/compile/fail/interpreter_owner.rs:13:24
+   |
+13 |     type Interpreter = ();
+   |                        ^^
+   = note: required for `bombay::local::effects::ApplicationCapabilities<Document, (bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>, bombay::Runtime<{closure@$DIR/tests/compile/fail/interpreter_owner.rs:71:25: 71:27}>), bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Document>, Option<Services>>` to implement `InterpretItem<OpenFile, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: required for `InterpreterRequests<OpenFile>` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Document, (bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>, bombay::Runtime<{closure@$DIR/tests/compile/fail/interpreter_owner.rs:71:25: 71:27}>), bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Document>, Option<Services>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: 1 redundant requirement hidden
+   = note: required for `DocumentSends` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Document, (bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>, bombay::Runtime<{closure@$DIR/tests/compile/fail/interpreter_owner.rs:71:25: 71:27}>), bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Document>, Option<Services>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<Document, (bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>, bombay::Runtime<{closure@$DIR/tests/compile/fail/interpreter_owner.rs:71:25: 71:27}>), bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Document>, Option<Services>>>` to implement `bombay::local::effects::CommitActions<Document>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                    --- required by a bound in this associated function
+...
+   |           >: CommitActions<
+   |  ____________^
+   | |                 Actor,
+   | |                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |             > + Send
+   | |_____________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+
+error[E0271]: type mismatch resolving `<OpenFile as ExternalRequest>::Interpreter == Services`
+  --> tests/compile/fail/interpreter_owner.rs:72:19
+   |
+72 |     let outcome = host.block_on(application.run());
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch resolving `<OpenFile as ExternalRequest>::Interpreter == Services`
+   |
+note: expected this to be `Services`
+  --> tests/compile/fail/interpreter_owner.rs:13:24
+   |
+13 |     type Interpreter = ();
+   |                        ^^
+   = note: required for `bombay::local::effects::ApplicationCapabilities<Document, (bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>, bombay::Runtime<{closure@$DIR/tests/compile/fail/interpreter_owner.rs:71:25: 71:27}>), bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Document>, Option<Services>>` to implement `InterpretItem<OpenFile, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: required for `InterpreterRequests<OpenFile>` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Document, (bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>, bombay::Runtime<{closure@$DIR/tests/compile/fail/interpreter_owner.rs:71:25: 71:27}>), bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Document>, Option<Services>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: 1 redundant requirement hidden
+   = note: required for `DocumentSends` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Document, (bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>, bombay::Runtime<{closure@$DIR/tests/compile/fail/interpreter_owner.rs:71:25: 71:27}>), bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Document>, Option<Services>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<Document, (bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>, bombay::Runtime<{closure@$DIR/tests/compile/fail/interpreter_owner.rs:71:25: 71:27}>), bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Document>, Option<Services>>>` to implement `bombay::local::effects::CommitActions<Document>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                    --- required by a bound in this associated function
+...
+   |           >: CommitActions<
+   |  ____________^
+   | |                 Actor,
+   | |                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |             > + Send
+   | |_____________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`

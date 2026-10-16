@@ -275,8 +275,10 @@ async fn counter_case<Receipt>(
         .open_node(configuration(&first_address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("actual first Counter Node setup"));
+    let connection = node.session.clone();
+    let session = &connection;
     let (execution, receiving) = node
-        .execute_with(|application, session| async move {
+        .execute_with(|application| async move {
             let target = application.root().established_recipient();
             let address = application.root().address();
             let callbacks = Arc::clone(refusals);
@@ -369,8 +371,10 @@ async fn counter_case<Receipt>(
                 .open_node(configuration(&second_address, &EndpointRole::Receiver))
                 .await
                 .unwrap_or_else(|_| panic!("actual foreign Counter Node setup"));
+            let foreign_connection = foreign.session.clone();
+            let foreign_session = &foreign_connection;
             let (foreign_execution, foreign_receiving) = foreign
-                .execute_with(|foreign_application, foreign_session| async move {
+                .execute_with(|foreign_application| async move {
                     let callbacks = Arc::clone(refusals);
                     let mut export = foreign_application
                         .export::<_, CounterValue, Receipt>(
@@ -401,8 +405,9 @@ async fn counter_case<Receipt>(
                     (export, retained, original, verified, stopped, report)
                 })
                 .unwrap_or_else(|_| panic!("foreign Counter execution"));
-            let ((), (foreign_outcome, foreign_native, foreign_notifications)) =
-                tokio::join!(foreign_execution, foreign_receiving);
+            let ((), foreign_outcome) = tokio::join!(foreign_execution, foreign_receiving);
+            let (foreign_outcome, foreign_native, foreign_notifications, ()) =
+                foreign_outcome.into_parts();
             let (
                 (
                     foreign_export,
@@ -418,6 +423,7 @@ async fn counter_case<Receipt>(
                 .unwrap_or_else(|_| panic!("foreign original Work"));
             let foreign_export = undeclare(foreign_export).await;
             let foreign_closed = foreign.close().await;
+            assert!(foreign_connection.is_closed());
             let current = metadata(
                 profile,
                 "counter",
@@ -675,7 +681,8 @@ async fn counter_case<Receipt>(
             )
         })
         .unwrap_or_else(|_| panic!("first Counter execution"));
-    let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+    let ((), outcome) = tokio::join!(execution, receiving);
+    let (outcome, native, notifications, ()) = outcome.into_parts();
     let (
         (
             first,
@@ -726,6 +733,7 @@ async fn counter_case<Receipt>(
     let first = undeclare(first).await;
     let other = undeclare(other).await;
     let closed = node.close().await;
+    assert!(connection.is_closed());
     let native = native.expect("first original Counter native tree");
     let foreign_native = foreign_native.expect("foreign original Counter native tree");
     assert_completed(native, None);
@@ -918,8 +926,10 @@ async fn ledger_case<Receipt>(
     .open_node(configuration(&first_address, &EndpointRole::Receiver))
     .await
     .unwrap_or_else(|_| panic!("actual first Ledger Node setup"));
+    let connection = node.session.clone();
+    let session = &connection;
     let (execution, receiving) = node
-        .execute_with(|application, session| async move {
+        .execute_with(|application| async move {
             let target = application.root().established_recipient();
             let address = application.root().address();
             let callbacks = Arc::clone(refusals);
@@ -1020,8 +1030,10 @@ async fn ledger_case<Receipt>(
             .open_node(configuration(&second_address, &EndpointRole::Receiver))
             .await
             .unwrap_or_else(|_| panic!("actual foreign Ledger Node setup"));
+            let foreign_connection = foreign.session.clone();
+            let foreign_session = &foreign_connection;
             let (foreign_execution, foreign_receiving) = foreign
-                .execute_with(|foreign_application, foreign_session| async move {
+                .execute_with(|foreign_application| async move {
                     let callbacks = Arc::clone(refusals);
                     let mut export = foreign_application
                         .export::<_, Receipts, Receipt>(
@@ -1052,8 +1064,9 @@ async fn ledger_case<Receipt>(
                     (export, retained, original, verified, stopped, report)
                 })
                 .unwrap_or_else(|_| panic!("foreign Ledger execution"));
-            let ((), (foreign_outcome, foreign_native, foreign_notifications)) =
-                tokio::join!(foreign_execution, foreign_receiving);
+            let ((), foreign_outcome) = tokio::join!(foreign_execution, foreign_receiving);
+            let (foreign_outcome, foreign_native, foreign_notifications, ()) =
+                foreign_outcome.into_parts();
             let (
                 (
                     foreign_export,
@@ -1069,6 +1082,7 @@ async fn ledger_case<Receipt>(
                 .unwrap_or_else(|_| panic!("foreign original Work"));
             let foreign_export = undeclare(foreign_export).await;
             let foreign_closed = foreign.close().await;
+            assert!(foreign_connection.is_closed());
             let current = metadata(
                 profile,
                 "ledger",
@@ -1337,7 +1351,8 @@ async fn ledger_case<Receipt>(
             )
         })
         .unwrap_or_else(|_| panic!("first Ledger execution"));
-    let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+    let ((), outcome) = tokio::join!(execution, receiving);
+    let (outcome, native, notifications, ()) = outcome.into_parts();
     let (
         (
             first,
@@ -1391,6 +1406,7 @@ async fn ledger_case<Receipt>(
     let first = undeclare(first).await;
     let other = undeclare(other).await;
     let closed = node.close().await;
+    assert!(connection.is_closed());
     let native = native.expect("first original Ledger native tree");
     let foreign_native = foreign_native.expect("foreign original Ledger native tree");
     let ledger = native

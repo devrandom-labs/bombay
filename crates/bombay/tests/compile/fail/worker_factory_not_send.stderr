@@ -1,0 +1,24 @@
+error[E0277]: `Rc<u8>` cannot be sent between threads safely
+  --> tests/compile/fail/worker_factory_not_send.rs:15:46
+   |
+15 |     let _source = bombay::WorkerFactory::new(move |_: &u8| worker(role.as_ref()));
+   |                   -------------------------- -------------^^^^^^^^^^^^^^^^^^^^^^
+   |                   |                          |
+   |                   |                          `Rc<u8>` cannot be sent between threads safely
+   |                   |                          within this `{closure@$DIR/tests/compile/fail/worker_factory_not_send.rs:15:46: 15:59}`
+   |                   required by a bound introduced by this call
+   |
+   = help: within `{closure@$DIR/tests/compile/fail/worker_factory_not_send.rs:15:46: 15:59}`, the trait `Send` is not implemented for `Rc<u8>`
+note: required because it's used within this closure
+  --> tests/compile/fail/worker_factory_not_send.rs:15:46
+   |
+15 |     let _source = bombay::WorkerFactory::new(move |_: &u8| worker(role.as_ref()));
+   |                                              ^^^^^^^^^^^^^
+note: required by a bound in `WorkerFactory::<Role, Factory, Preparation>::new`
+  --> src/worker_preparation.rs
+   |
+   |     Factory: FnMut(&Role) -> Preparation + Send,
+   |                                            ^^^^ required by this bound in `WorkerFactory::<Role, Factory, Preparation>::new`
+...
+   |     pub const fn new(factory: Factory) -> Self {
+   |                  --- required by a bound in this associated function

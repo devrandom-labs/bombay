@@ -1,10 +1,11 @@
 //! Public Application trace: preload ingress before arming already-due timers.
 use behavior_actors::{Exit, ScheduleAt, TimerElapsed, TimerGeneration, TimerId};
 use bombay::behavior::{
-    Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Here, InjectEvent,
-    InterpreterRequests, MessageProtocol, Never, NoBirths, User, UserEvent,
+    Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, ClassifySettlement, Here,
+    InjectEvent, InterpreterRequests, MessageProtocol, Never, NoBirths, SettlementStatus, User,
+    UserEvent,
 };
-use bombay::{ActorRetirement, Application, MailAddr};
+use bombay::{ActorRetirement, Application, Completion, MailAddr};
 use std::time::{Duration, Instant};
 
 #[derive(Debug)]
@@ -110,6 +111,10 @@ impl Behavior for Flood {
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete source-service trace proves all pressure balances, original payloads and independent retirement lanes together"
+)]
 async fn actual_actor_bounds_both_sources_and_returns_every_original_payload() {
     for counts in [[256, 256], [512, 1], [1, 512]] {
         let messages = (0..counts[0]).map(Box::new).collect::<Vec<_>>();
@@ -124,25 +129,20 @@ async fn actual_actor_bounds_both_sources_and_returns_every_original_payload() {
             messages: Vec::new(),
             timers: Vec::new(),
         };
-        let (work, native, notifications) = Application::new(flood)
+        let (work, native, notifications, ()) = Application::new(flood)
             .run_with(move |application| async move {
-                let recipient = application.root().established_recipient();
-                let interface = application.interface(());
-                let sender = interface
-                    .external::<MessageProtocol<MailAddr, Never>>()
-                    .unwrap();
+                let sender = application.sender().expect("the actual root sender");
                 // These synchronous admissions cannot yield to the actor on this
                 // current-thread host. Arm is first; the full flood follows it.
-                sender.try_send(&recipient, FloodInput::Arm).unwrap();
+                sender.try_send(FloodInput::Arm).unwrap();
                 for message in messages {
-                    sender
-                        .try_send(&recipient, FloodInput::Message(message))
-                        .unwrap();
+                    sender.try_send(FloodInput::Message(message)).unwrap();
                 }
                 tokio::time::timeout(Duration::from_secs(5), application.termination()).await
             })
             .await
-            .unwrap_or_else(|_| panic!("the entered application host is available"));
+            .unwrap_or_else(|_| panic!("the entered application host is available"))
+            .into_parts();
         let (termination, cleanup) = work
             .try_into_completed()
             .unwrap_or_else(|_| panic!("the finite workload completes"));
@@ -153,13 +153,34 @@ async fn actual_actor_bounds_both_sources_and_returns_every_original_payload() {
         let (_, retirement) = native.unwrap();
         let termination = termination.unwrap();
         assert_eq!(&termination, &Ok(Exit::Normal));
-        let ActorRetirement::Completed { custody, .. } = retirement else {
+        let ActorRetirement::Completed {
+            custody,
+            completion,
+            interpretation,
+            source,
+            settlements,
+        } = retirement
+        else {
             panic!("the actual actor returns its complete trace and original messages");
         };
-        let flood = custody.behavior;
+        assert_eq!(completion, Completion::Stopped);
+        assert!(interpretation.is_none());
+        assert!(source.is_none());
+        assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
+        assert_eq!(custody.child_failures.len(), 0);
+        assert_eq!(custody.descendants.len(), 0);
         assert!(custody.control.is_empty());
         assert!(custody.user.is_empty());
         assert!(custody.capability_failures.is_empty());
+        assert!(custody.additional_failures.is_empty());
+        assert!(custody.retirement_failures.is_empty());
+        assert!(custody.received_interpretation.is_none());
+        assert!(custody.received_source.is_none());
+        assert!(custody.source_index.is_none());
+        assert!(custody.acquired_ingress.is_none());
+        assert!(custody.terminal_report.is_none());
+        assert!(custody.unread_owner_cancellation.is_none());
+        let flood = custody.behavior;
         assert_eq!(flood.trace.len() as u64, counts.iter().sum::<u64>());
         // Independent oracle: measure distances in the completed actor trace,
         // without reproducing the selector's cursor or rotation order.

@@ -348,6 +348,9 @@ where
         if owner.residual.is_some() {
             return;
         }
+        if let Some(interpreter) = owner.interpreter.as_mut() {
+            interpreter.initialize();
+        }
         if owner.activation_rejection.is_none() && owner.reservation.is_none() {
             match owner.addresses.try_reserve(owner.address) {
                 Ok(reservation) => owner.reservation = Some(reservation),
@@ -1231,6 +1234,7 @@ pub(crate) struct ActiveLocalEnvironment<
 
 #[cfg(test)]
 mod tests {
+    use crate::MailboxCapacity;
     use core::task::{Context, Waker};
     use std::convert::Infallible;
     use std::mem::size_of;
@@ -2947,10 +2951,12 @@ mod tests {
         let (owner, cancellation) = oneshot::channel();
         let (terminal, _) = oneshot::channel();
         let deadline = Instant::now().checked_sub(Duration::from_secs(1)).unwrap();
+        let mailbox_capacity =
+            MailboxCapacity::new(1024).expect("the actual fairness mailbox capacity");
         let prepared = LocalEnvironment::<ReadyActor, _, StandardIngress>::prepare(
             MailAddr(1),
             ActorSpace::new(),
-            Config::new(1024),
+            Config::new(mailbox_capacity.get()),
             termination,
             cancellation,
             #[cfg(feature = "remote")]
@@ -2975,6 +2981,7 @@ mod tests {
                             actor_spaces: Arc::new(()),
                             allocations: ApplicationAddresses::new(),
                             address: MailAddr(1),
+                            mailbox_capacity,
                             control,
                             timers,
                             observations: pending,
@@ -3369,6 +3376,7 @@ mod tests {
                 let inputs = ApplicationCapabilityInputs::<ReadyActor, ()> {
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+                    mailbox_capacity: MailboxCapacity::default(),
                     address,
                     control,
                     timers,

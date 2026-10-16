@@ -8,7 +8,7 @@
 use bombay::behavior::{Behavior, ChildCons, ChildHead, NoChildren};
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport,
-    RetirementAssessment, RetirementSchema,
+    NativeHost, RetirementAssessment, RetirementSchema, Runtime,
 };
 use bombay::{
     ApplicationBehavior, ApplicationTopology, ChildFailure, ChildOrigin, Hosts, NativeChild,
@@ -29,7 +29,7 @@ use bombay::entity::{
     EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
 };
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown};
-use bombay::{Application, ApplicationOutcome, ApplicationScope};
+use bombay::{Application, ApplicationScope, WorkOutcome};
 use tokio::runtime::Builder;
 use tokio::sync::Semaphore;
 
@@ -191,6 +191,7 @@ fn run_cold_account_family<Spaces, Descendants>(
         + Send
         + 'static,
     Spaces: ApplicationTopology<ManagedRoot, ColdMembers, Descendants = Descendants>
+        + NativeHost<Runtime = Runtime>
         + RootRegistration<<Root as Behavior>::Protocol>
         + Hosts<<Account as Behavior>::Protocol>
         + NativeChild<ColdApplication, ChildHead, ManagedAccount, Descendants, Never>,
@@ -280,9 +281,10 @@ fn run_cold_account_family<Spaces, Descendants>(
         .unwrap_or_else(|(application, work, error)| {
             drop((application, work));
             panic!("the explicit application host must be entered: {error}");
-        });
+        })
+        .into_parts();
     drop(application_host);
-    let ApplicationOutcome::Completed {
+    let WorkOutcome::Completed {
         output: (),
         cleanup: Ok(()),
     } = outcome
@@ -307,8 +309,9 @@ fn run_cold_account_family<Spaces, Descendants>(
         },
     );
     let (head_receiving, ()) = shutdowns;
-    let (AccountsRole, (shutdown, metrics, family_disposal_failure)) =
+    let (AccountsRole, family_retirement) =
         head_receiving.expect("the complete original account family retirement is acquired");
+    let (shutdown, metrics, family_disposal_failure) = family_retirement.into_parts();
 
     assert!(family_disposal_failure.is_none());
     let EntityShutdown::Settled {
@@ -623,7 +626,8 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("entered host owns original application execution")
-        });
+        })
+        .into_parts();
     assert_eq!(invoked.load(Ordering::SeqCst), 0);
     assert_eq!(unexpected.load(Ordering::SeqCst), 0);
     assert!(
@@ -635,7 +639,7 @@ fn combined_staging_rejection_returns_original_family_and_work() {
     assert!(root.is_err());
     assert!(notifications.is_err());
     assert!(family.is_err());
-    let ApplicationOutcome::StagingRejected {
+    let WorkOutcome::StagingRejected {
         inputs: (root, spaces, (role, definition, directory, capacity, ()), work, failure, scope),
     } = outcome
     else {
@@ -663,7 +667,8 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("same original work runs after deliberate role replacement")
-        });
+        })
+        .into_parts();
     let (returned_payload, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("original recovered work completes")
@@ -692,7 +697,8 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .expect("retained root graph")
         .descendants;
     assert_ne!(descendants[0].origin.address(), early_address);
-    let (_, (shutdown, metrics, disposal)) = family.expect("real family retirement after rerun");
+    let (_, family_retirement) = family.expect("real family retirement after rerun");
+    let (shutdown, metrics, disposal) = family_retirement.into_parts();
     assert!(matches!(
         shutdown,
         EntityShutdown::Settled { represented: 0, .. }
@@ -752,7 +758,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
         });
     drop(entered);
     drop(execution);
-    let (outcome, root, notifications, (family, ())) = host.block_on(receiving);
+    let (outcome, root, notifications, (family, ())) = host.block_on(receiving).into_parts();
     assert!(root.is_err());
     assert!(notifications.is_err());
     assert!(family.is_err());
@@ -762,7 +768,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
             .unwrap_or_else(PoisonError::into_inner)
             .is_empty()
     );
-    let ApplicationOutcome::Unstarted { application, work } = outcome else {
+    let WorkOutcome::Unstarted { application, work } = outcome else {
         panic!("complete original cold declaration survives cancellation")
     };
     let (outcome, root, notifications, (family, ())) = host
@@ -770,7 +776,8 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("same complete original application reruns")
-        });
+        })
+        .into_parts();
     let (payload, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("original work completes")
@@ -808,7 +815,8 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
             .as_slice(),
         [109]
     );
-    let (_, (shutdown, metrics, disposal)) = family.expect("actual family retirement");
+    let (_, family_retirement) = family.expect("actual family retirement");
+    let (shutdown, metrics, disposal) = family_retirement.into_parts();
     assert!(matches!(
         shutdown,
         EntityShutdown::Settled { represented: 0, .. }
@@ -885,8 +893,9 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("entered caller host")
-        });
-    let ApplicationOutcome::NotInvoked {
+        })
+        .into_parts();
+    let WorkOutcome::NotInvoked {
         work,
         startup_error: Some(startup_error),
         cleanup: Ok(()),
@@ -936,8 +945,9 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
         &[131, 137]
     );
     assert_eq!(work_retained.strong_count(), 1);
-    let (_, (shutdown, metrics, disposal)) =
+    let (_, family_retirement) =
         family.expect("genuine independently joined zero-incarnation family");
+    let (shutdown, metrics, disposal) = family_retirement.into_parts();
     assert!(
         matches!(shutdown, EntityShutdown::Settled { represented: 0, entities } if entities.is_empty())
     );

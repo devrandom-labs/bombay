@@ -166,9 +166,18 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              env.RUSTDOCFLAGS = "--deny warnings";
+              env = commonArgs.env // {
+                RUSTDOCFLAGS = "--deny warnings";
+              };
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test remote_surface --test application_clients --test actor_interface --test fixed_supervisor_recovery
+                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1
+                cat "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::recorded_pending_protection_preserves_other_requests_and_replay ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_pending_protection_preserves_other_requests_and_replay ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';
@@ -178,7 +187,16 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              buildPhaseCargoCommand = "cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test remote_surface --test application_clients --test actor_interface --test fixed_supervisor_recovery";
+              buildPhaseCargoCommand = ''
+                cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-release.log" 2>&1
+                cat "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::recorded_pending_protection_preserves_other_requests_and_replay ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_pending_protection_preserves_other_requests_and_replay ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
+              '';
             }
           );
           bombay-fmt = craneLib.cargoFmt commonArgs;
@@ -193,7 +211,9 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              env.RUSTDOCFLAGS = "--deny warnings";
+              env = commonArgs.env // {
+                RUSTDOCFLAGS = "--deny warnings";
+              };
               cargoDocExtraArgs = "--workspace --no-deps";
             }
           );
@@ -327,9 +347,11 @@
                   cat "unhosted-$profile.log"
                   grep -F 'test public_node::hosting::unhosted_export_clients_preserve_exact_application_ownership ... ok' "unhosted-$profile.log"
                   grep -F 'test result: ok. 1 passed; 0 failed; 0 ignored;' "unhosted-$profile.log"
-                  cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter "''${profile_arguments[@]}" live_requester:: > "requester-$profile.log" 2>&1
-                  cat "requester-$profile.log"
-                  grep -F 'test result: ok. 6 passed; 0 failed; 0 ignored;' "requester-$profile.log"
+                  cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter "''${profile_arguments[@]}" sharing:: > "sharing-$profile.log" 2>&1
+                  cat "sharing-$profile.log"
+                  grep -Fx 'test sharing::recorded_receipt_sharing_preserves_originals ... ok' "sharing-$profile.log"
+                  grep -Fx 'test sharing::scheduled_receipt_sharing_preserves_originals ... ok' "sharing-$profile.log"
+                  grep -F 'test result: ok. 2 passed; 0 failed; 0 ignored;' "sharing-$profile.log"
                 done
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --test protected_counter remote_counter::native_ -- --test-threads=1
                 cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --features protected-transport --release --test protected_counter remote_counter::native_ -- --test-threads=1

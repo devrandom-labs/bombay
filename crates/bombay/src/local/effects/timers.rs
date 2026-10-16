@@ -9,8 +9,8 @@ use core::future::Future;
 use std::time::Instant;
 use timers::{ScheduleError, TimerQueue};
 
-impl<C, N, P, Bindings, Origins, Path> InterpretItem<ScheduleAt, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Path, Services> InterpretItem<ScheduleAt, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<TimerElapsed, Path>,
@@ -63,8 +63,8 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Path> InterpretItem<ScheduleAfter, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Path, Services> InterpretItem<ScheduleAfter, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: InjectEvent<TimerElapsed, Path>,

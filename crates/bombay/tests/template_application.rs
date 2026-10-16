@@ -12,7 +12,7 @@ use bombay::behavior::{
     Step, Stopped, User,
 };
 use bombay::timing::{Deadline, OneShot, Periodic, ReceiveTimeout};
-use bombay::{ActorRetirement, Application, ApplicationOutcome, MailAddr};
+use bombay::{ActorRetirement, Application, MailAddr, WorkOutcome};
 
 mod application_support;
 
@@ -83,9 +83,10 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
         .unwrap_or_else(|(application, error)| {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
-        });
+        })
+        .into_parts();
     if let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: _,
             cleanup: Ok(()),
         },
@@ -94,13 +95,14 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: None,
             cleanup: Ok(()),
         },
@@ -109,6 +111,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);
@@ -133,9 +136,10 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
         .unwrap_or_else(|(application, error)| {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
-        });
+        })
+        .into_parts();
     if let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: _,
             cleanup: Ok(()),
         },
@@ -144,13 +148,14 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: None,
             cleanup: Ok(()),
         },
@@ -159,6 +164,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);
@@ -183,9 +189,10 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
         .unwrap_or_else(|(application, error)| {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
-        });
+        })
+        .into_parts();
     if let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: _,
             cleanup: Ok(()),
         },
@@ -194,13 +201,14 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: None,
             cleanup: Ok(()),
         },
@@ -209,6 +217,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);
@@ -233,9 +242,10 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
         .unwrap_or_else(|(application, error)| {
             drop(application);
             panic!("the caller owns the application's live entered host: {error}");
-        });
+        })
+        .into_parts();
     if let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: _,
             cleanup: Ok(()),
         },
@@ -244,13 +254,14 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: None,
             cleanup: Ok(()),
         },
@@ -259,6 +270,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);
@@ -306,7 +318,7 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
     let root = Machine::<MailAddr, _, _, _, _>::new(0, MachinePhase::Closed, machine_transition);
 
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -315,6 +327,7 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = Application::new(root.stop_on_shutdown())
         .run_with(|application| async move {
             application
@@ -338,6 +351,7 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
             drop(failed);
             panic!("the machine reaches its statically defined terminal transition");
         })
+        .into_parts()
     else {
         panic!("the original completed output and both cleanup join boundaries remain exact");
     };
@@ -446,16 +460,16 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         .with_stash(deliver_never)
         .with_receive_timeout(TimerId(5), delay, stop_wrapped::<Stash<TimerRoot>>)
         .stop_on_shutdown();
-    let application_outcome =
-        Application::new(runtime)
-            .run()
-            .await
-            .unwrap_or_else(|(application, error)| {
-                drop(application);
-                panic!("the caller owns the application's live entered host: {error}");
-            });
+    let application_outcome = Application::new(runtime)
+        .run()
+        .await
+        .unwrap_or_else(|(application, error)| {
+            drop(application);
+            panic!("the caller owns the application's live entered host: {error}");
+        })
+        .into_parts();
     if let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: _,
             cleanup: Ok(()),
         },
@@ -464,13 +478,14 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = &application_outcome
     {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     }
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: None,
             cleanup: Ok(()),
         },
@@ -479,6 +494,7 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         drop(application_outcome);

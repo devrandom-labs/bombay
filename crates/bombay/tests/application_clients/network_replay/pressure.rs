@@ -43,7 +43,7 @@ fn counter_retries_only_its_original_full_request_with_current_permission() {
         let mut node = Application::new(Counter::new().stop_on_shutdown())
             .open_node(configuration(&address, &EndpointRole::Receiver)).await
             .unwrap_or_else(|_| panic!("configured actual Counter Node"));
-        let (execution, receiving) = node.execute_with(|application, _session| async move {
+        let (execution, receiving) = node.execute_with(|application| async move {
             let target = application.root().established_recipient();
             let target_address = application.root().address();
             let mut ordinary = application.export_client::<_, CounterValue>(target.clone())
@@ -154,7 +154,8 @@ fn counter_retries_only_its_original_full_request_with_current_permission() {
                 rows, queries, query_end, replies, ordinary, ordinary_tail, processing,
                 processing_tail, stopped, report)
         }).unwrap_or_else(|_| panic!("actual Counter host entry"));
-        let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+        let ((), outcome) = tokio::join!(execution, receiving);
+        let (outcome, native, notifications, ()) = outcome.into_parts();
         let (output, cleanup) = outcome.try_into_completed()
             .unwrap_or_else(|_| panic!("original Counter Work"));
         let closed = node.close().await;
@@ -240,7 +241,7 @@ fn ledger_full_retry_returns_the_same_allocation_when_the_exact_actor_has_retire
             .await
             .unwrap_or_else(|_| panic!("configured actual Ledger Node"));
             let (execution, receiving) = node
-                .execute_with(|application, _session| async move {
+                .execute_with(|application| async move {
                     let target = application.root().established_recipient();
                     let target_address = application.root().address();
                     let mut ordinary = application
@@ -383,7 +384,8 @@ fn ledger_full_retry_returns_the_same_allocation_when_the_exact_actor_has_retire
                     )
                 })
                 .unwrap_or_else(|_| panic!("actual Ledger host entry"));
-            let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+            let ((), outcome) = tokio::join!(execution, receiving);
+            let (outcome, native, notifications, ()) = outcome.into_parts();
             let (output, cleanup) = outcome
                 .try_into_completed()
                 .unwrap_or_else(|_| panic!("original Ledger Work"));

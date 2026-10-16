@@ -1,5 +1,19 @@
 # Static remote actors and typed admission
 
+## Current source after PR375 integration (2026-10-16 UTC)
+
+The user requested latest main and removal of superseded code. The research
+branch integrates main5e9bcd1, selecting Behavior/Actors0.26.0 at98983b4 and
+macros0.14.2. New main owns WorkOutcome, complete ApplicationOutcome and ordinary
+Node callbacks. The previous0.25 Application connection-entry prototype is
+being retired or reconciled; its historical evidence below does not establish
+current callers. Generic Native replay remains a separately qualified unmerged
+research contract. Production all-feature library checking passes after exact
+upstream conflict reconciliation; no current test, strict-lint, full service or
+transport-privacy completion is inferred. All full remote rows remain open.
+
+Earlier checkpoints below retain their source/version/execution scope.
+
 ## Current dependency delivery (2026-10-16 UTC)
 
 [PR377](https://github.com/devrandom-labs/bombay/pull/377) merged normally as
@@ -30060,3 +30074,62 @@ known combined production1769/2500;12 public reservations,125 owner slots and
 hashes and exact classifications are in shared-requests/main-integration-census.json.
 The unmounted retry candidate is external research and receives no execution
 credit or retained-source reduction.
+
+
+### User-requested latest-main integration — selected before conflict resolution
+
+The user explicitly requested pulling latest main. Fetch observes PR375 at
+5e9bcd19180ecbe67351309a4ecdb466f48f03a2 beyond the delivered startup38774de;
+`git pull --no-rebase origin main` starts its normal merge. Preserve the current
+retry witness and documentation in stash and durable
+refs/archive/changes/remote-retry-before-main-5e9bcd1; both intended retry cuts
+already fail the post-cleanup missing-original19 FIFO oracle in both profiles,
+and the captured stash independently proves exact3fcc2a9a restoration. Restored
+post-inversion controls remain pending and receive no new-main credit.
+
+Fresh main selects Behavior/Actors0.26.0, macros0.14.2, with registry VCS
+98983b456c4a8f7cd0911982eaf9488455b6d8bc; read its complete AGENTS.md from that
+exact revision. Address0.3.0, Communication0.1.6 and Timers0.2.0 remain selected;
+no patches are introduced. The new upstream AGENTS requires caller-experience
+review and private SDK ownership even for advanced APIs. Pinned-Nix fetch
+succeeds. Main owns the new WorkOutcome/complete ApplicationOutcome product,
+NativeHost/interpreter selection and Node's ordinary non-Send Work callback.
+Earlier0.25 research, source hashes and controls retain historical scope.
+
+Resolve the six textual conflicts using those exact upstream owning contracts:
+Application execution, module surface, Node callback, relocated replay tests,
+user API guidance and flake gate. This intentionally supersedes the old research
+cold/prepared mapper and the public Session callback; their earlier evidence
+remains in committed history. Keep generic Native replay research separately.
+Do not invent compatibility callbacks, new outcome owners or preserve parallel
+execution APIs to make the old connection-entry probes compile. Fresh ownership
+and consumer verification must identify and retire or migrate that research
+before current-main gate credit. New source changes beyond adopting main need
+separate laws and records; every cumulative scope/history reservation carries.
+
+
+First current-main production check returns101 at two automatically merged
+old-entry remnants: HTTP still constructs the retired PreparedApplication,
+and ApplicationHandle::new still requires the old Session argument. These are
+not new design gaps: adopt main's exact HTTP implementation and its existing
+six-input handle constructor, which initializes session=None before Node's
+private invocation attaches it. Preserve only the separately qualified Native
+export signature in interface.rs. No new type, parameter, visibility, callback
+or compatibility path is justified. The old Connection import remains unused
+pending its owning-source reconciliation; no strict-lint credit is claimed.
+
+
+Latest-main integration production check succeeds through pinned Nix with all
+features after selecting exact upstream HTTP and handle construction. Nine
+warnings identify unattached connection-entry research and the deliberately
+unconsumed Native ports; none are suppressed. `git diff --check --cached`
+reports only five context-space lines inside upstream's minimum.patch diagnostic
+fixture; that exact patch artifact is retained, not normalized as ordinary source.
+No textual conflicts remain. Independent census separates upstream delivery
+from research:231 upstream paths before rename pairing, raw Rust+3708/-3433
+including inline tests; research31paths/no untracked, raw Rust+910/-255 including
+inline tests and4028/-1 owning test lines. These are raw attribution counts, not
+new exact semantic-budget totals; carry previous exact1665+Communication104,
+public12 reservations and every historical extent until cleanup reconciliation.
+The user's explicit latest-main integration authorizes adopting that upstream
+reviewed surface; it does not justify new local abstractions or reset scope.

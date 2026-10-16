@@ -105,7 +105,7 @@ fn cold_children_keep_original_root_through_shutdown_outer() {
         .enable_all()
         .build()
         .expect("caller-owned host");
-    let (outcome, native, notifications) = host
+    let (outcome, native, notifications, ()) = host
         .block_on(application.run_with(|application| async move {
             let shutdown = application.lifecycle().request_shutdown();
             assert_eq!(shutdown, Ok(()));
@@ -115,7 +115,8 @@ fn cold_children_keep_original_root_through_shutdown_outer() {
         .unwrap_or_else(|original| {
             drop(original);
             panic!("original declaration retained on missing host");
-        });
+        })
+        .into_parts();
     drop(host);
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);

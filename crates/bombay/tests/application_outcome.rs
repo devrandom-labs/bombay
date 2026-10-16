@@ -4,7 +4,7 @@ use bombay::behavior::{
 };
 use bombay::{
     ActorCustody, ActorNotificationReceipts, ActorRetirement, Application, ApplicationCleanupError,
-    ApplicationOutcome,
+    WorkOutcome,
 };
 use core::ptr;
 use std::cell::Cell;
@@ -45,7 +45,7 @@ impl RejectedCounter {
     }
 }
 
-type CounterJourney = ApplicationOutcome<
+type CounterJourney = WorkOutcome<
     CounterSnapshot,
     CounterSnapshot,
     CounterSnapshot,
@@ -67,7 +67,7 @@ fn completed_work_borrows_then_returns_both_owned_values() {
     };
     let output_audit = output.audit.as_ptr();
     let cleanup_audit = cleanup.audit.as_ptr();
-    let outcome: CounterJourney = ApplicationOutcome::Completed {
+    let outcome: CounterJourney = WorkOutcome::Completed {
         output,
         cleanup: Ok(cleanup),
     };
@@ -93,7 +93,7 @@ async fn completed_work_preserves_cleanup_failure() {
     let (sender, receiver) = oneshot::channel::<()>();
     drop(sender);
     let cause = receiver.await.expect_err("publication closed");
-    let outcome: CounterJourney = ApplicationOutcome::Completed {
+    let outcome: CounterJourney = WorkOutcome::Completed {
         output: CounterSnapshot {
             value: 7,
             audit: vec![8].into_boxed_slice(),
@@ -121,13 +121,13 @@ async fn completed_work_preserves_cleanup_failure() {
 #[test]
 fn selecting_completed_work_returns_every_other_phase_untouched() {
     let phases: [CounterJourney; 5] = [
-        ApplicationOutcome::StagingRejected {
+        WorkOutcome::StagingRejected {
             inputs: CounterSnapshot {
                 value: 1,
                 audit: vec![11].into_boxed_slice(),
             },
         },
-        ApplicationOutcome::Unstarted {
+        WorkOutcome::Unstarted {
             application: CounterSnapshot {
                 value: 2,
                 audit: vec![12].into_boxed_slice(),
@@ -137,7 +137,7 @@ fn selecting_completed_work_returns_every_other_phase_untouched() {
                 audit: vec![13].into_boxed_slice(),
             },
         },
-        ApplicationOutcome::Prepared {
+        WorkOutcome::Prepared {
             inputs: CounterSnapshot {
                 value: 4,
                 audit: vec![14].into_boxed_slice(),
@@ -151,7 +151,7 @@ fn selecting_completed_work_returns_every_other_phase_untouched() {
                 audit: vec![16].into_boxed_slice(),
             }),
         },
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: CounterSnapshot {
                 value: 7,
                 audit: vec![17].into_boxed_slice(),
@@ -162,7 +162,7 @@ fn selecting_completed_work_returns_every_other_phase_untouched() {
                 audit: vec![18].into_boxed_slice(),
             }),
         },
-        ApplicationOutcome::Interrupted {
+        WorkOutcome::Interrupted {
             cleanup: Ok(CounterSnapshot {
                 value: 9,
                 audit: vec![19].into_boxed_slice(),
@@ -183,14 +183,14 @@ fn selecting_completed_work_returns_every_other_phase_untouched() {
             .map(|cleanup| cleanup.as_ref().expect("retained cleanup").audit.as_ptr());
         assert_eq!(before_cleanup, after_cleanup);
         let snapshots = match returned {
-            ApplicationOutcome::StagingRejected { inputs } => vec![inputs],
-            ApplicationOutcome::Unstarted { application, work } => vec![application, work],
-            ApplicationOutcome::Prepared {
+            WorkOutcome::StagingRejected { inputs } => vec![inputs],
+            WorkOutcome::Unstarted { application, work } => vec![application, work],
+            WorkOutcome::Prepared {
                 inputs,
                 work,
                 cleanup,
             } => vec![inputs, work, cleanup.expect("prepared cleanup")],
-            ApplicationOutcome::NotInvoked {
+            WorkOutcome::NotInvoked {
                 work,
                 startup_error,
                 cleanup,
@@ -198,10 +198,10 @@ fn selecting_completed_work_returns_every_other_phase_untouched() {
                 assert!(startup_error.is_none());
                 vec![work, cleanup.expect("uninvoked cleanup")]
             }
-            ApplicationOutcome::Interrupted { cleanup } => {
+            WorkOutcome::Interrupted { cleanup } => {
                 vec![cleanup.expect("interrupted cleanup")]
             }
-            ApplicationOutcome::Completed { .. } => panic!("rejection cannot forge completion"),
+            WorkOutcome::Completed { .. } => panic!("rejection cannot forge completion"),
         };
         for snapshot in snapshots {
             assert_eq!(
@@ -238,8 +238,9 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
             }
         })
         .await
-        .unwrap_or_else(|_| panic!("the caller entered a host"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("the caller entered a host"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -311,8 +312,9 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
             1_u64
         })
         .await
-        .unwrap_or_else(|_| panic!("a host is entered"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("a host is entered"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -357,7 +359,7 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
     let returned = outcome
         .try_into_completed()
         .expect_err("startup did not invoke work");
-    let ApplicationOutcome::NotInvoked {
+    let WorkOutcome::NotInvoked {
         work,
         startup_error,
         cleanup,
@@ -454,8 +456,8 @@ async fn independent_counter_execution_infers_custody_and_keeps_local_work() {
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     execution.await;
-    let outcome = receiving.await;
-    let (outcome, native, notifications) = outcome;
+    let outcome = receiving.await.into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -488,7 +490,7 @@ async fn independent_absent_work_infers_original_initialization_rejection() {
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     execution.await;
     let (
-        ApplicationOutcome::NotInvoked {
+        WorkOutcome::NotInvoked {
             work: None,
             startup_error: Some(_),
             cleanup: Ok(()),
@@ -505,7 +507,8 @@ async fn independent_absent_work_infers_original_initialization_rejection() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
-    ) = receiving.await
+        (),
+    ) = receiving.await.into_parts()
     else {
         panic!("absence and the original actor rejection remain independent");
     };
@@ -528,8 +531,8 @@ async fn independent_execution_cancellation_returns_original_cold_callable() {
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     drop(execution);
-    let (cold_outcome, cold_native, cold_notifications) = receiving.await;
-    let ApplicationOutcome::Unstarted { application, work } = cold_outcome else {
+    let (cold_outcome, cold_native, cold_notifications, ()) = receiving.await.into_parts();
+    let WorkOutcome::Unstarted { application, work } = cold_outcome else {
         panic!("the original callable remains cold after execution surrender");
     };
     assert!(cold_native.is_err());
@@ -538,8 +541,9 @@ async fn independent_execution_cancellation_returns_original_cold_callable() {
     let outcome = application
         .run_with(work)
         .await
-        .unwrap_or_else(|_| panic!("the same callable can be retried on this host"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("the same callable can be retried on this host"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -569,7 +573,7 @@ async fn independent_entity_execution_infers_root_custody_without_families() {
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     execution.await;
-    let (outcome, root, notifications, ()) = receiving.await;
+    let (outcome, root, notifications, ()) = receiving.await.into_parts();
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -602,7 +606,8 @@ async fn entity_runner_infers_rejected_root_and_preserves_uninvoked_work() {
                 calls.set(calls.get() + 1);
             })
             .await
-            .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+            .unwrap_or_else(|_| panic!("the caller owns the entered host"))
+            .into_parts();
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -610,7 +615,7 @@ async fn entity_runner_infers_rejected_root_and_preserves_uninvoked_work() {
     else {
         panic!("both original actor notifications succeed");
     };
-    let ApplicationOutcome::NotInvoked {
+    let WorkOutcome::NotInvoked {
         work,
         startup_error: Some(_),
         cleanup: Ok(()),
@@ -658,8 +663,8 @@ async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered HTTP host"));
     execution.await;
-    let (cold_outcome, cold_native, cold_notifications) = receiving.await;
-    let ApplicationOutcome::StagingRejected {
+    let (cold_outcome, cold_native, cold_notifications, ()) = receiving.await.into_parts();
+    let WorkOutcome::StagingRejected {
         inputs: Ok((application, router, returned_address, cause)),
     } = cold_outcome
     else {
@@ -674,8 +679,9 @@ async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
     let outcome = application
         .run_axum(returned_address, router)
         .await
-        .unwrap_or_else(|_| panic!("the same returned router is retryable"));
-    let (outcome, native, notifications) = outcome;
+        .unwrap_or_else(|_| panic!("the same returned router is retryable"))
+        .into_parts();
+    let (outcome, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),

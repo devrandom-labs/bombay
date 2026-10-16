@@ -6,12 +6,14 @@ downstream examples live under [`examples/`](examples/README.md).
 
 The optional `axum` feature consumes the same typed external boundary used by
 CLI, tests, and embedded clients. The [Axum example](examples/axum/src/main.rs)
-and its [HTTP integration tests](examples/axum/src/http.rs) execute that
+and its [HTTP integration tests](crates/bombay/tests/orders.rs) execute that
 boundary.
 
 `ActorInterface<Api>` contains only the application-defined static product of
 exported exact actor capabilities plus external-customer creation. Lifecycle
-authority is projected separately. No actor is wrapped in an HTTP state mutex,
+authority can be projected separately. The ordinary router receives its
+application handle directly, with messaging and shutdown available together.
+No actor is wrapped in an HTTP state mutex,
 no target address is fabricated as the sender, and no dynamic registry is
 introduced.
 
@@ -25,8 +27,8 @@ distributed hosting remain separate requirements. EXEC acceptance and delivery
 status are recorded in the selected PRD; source formation alone is not acceptance.
 
 The [application topology example](examples/application-topology/src/main.rs)
-executes the ordinary async root boundary and inspects its complete raw root
-retirement through an application-owned terminal projection.
+executes the ordinary async root boundary and receives its joined application
+outcome, with complete native retirement available for inspection.
 
 The [counter](examples/counter/src/main.rs) uses inferred `.run_with(work)`
 and consumes its complete raw retirement directly. A closed `topology!`

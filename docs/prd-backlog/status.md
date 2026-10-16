@@ -1,5 +1,11 @@
 # Backlog status and dependencies
 
+Current integration: user-requested latest main5e9bcd1 (PR375) selects
+Behavior/Actors0.26.0 and the complete Application/Work outcomes. Superseded
+0.25 remote-entry research is being retired; historical evidence below retains
+its original source scope. Full service, SDK privacy and all full remote rows
+remain open. Fresh current-main consumer verification is required.
+
 
 Current private service design work is the bounded shared-native replay stage
 in the static remote PRD. Focused actual Counter/Ledger controls, construction

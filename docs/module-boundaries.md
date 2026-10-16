@@ -38,8 +38,9 @@ reuse Counter and terminating MailLedger in application_clients/json_receiving.r
 they are tests rather than a second production receiver. The optional remote graph now names the pinned controlled SDK and configuration
 owners. Private application/node.rs owns one finalized Application and one fresh
 Session; Application::open_node checks private remote/startup.rs policy first.
-Node::execute_with uses the existing Application execution owner and lends the
-Session to trusted work. No remote command is authenticated or admitted by this
+Node::run_with joins the existing Application execution and receiving operations;
+Node::execute_with retains separate operations and Session-borrowing results.
+Both lend the original Session to trusted work through the same invocation owner. No remote command is authenticated or admitted by this
 transport foundation. Typed network exports and multi-node composition remain
 pending;
 transport fixtures do not establish that public surface. Protected Counter

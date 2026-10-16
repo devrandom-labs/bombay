@@ -27,7 +27,7 @@ use std::sync::{
 use axum::Router;
 use bombay::prelude::*;
 
-use bombay::{ApplicationOutcome, ApplicationScope};
+use bombay::{ApplicationScope, WorkOutcome};
 
 struct Root;
 
@@ -76,9 +76,10 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the actual caller HTTP host is entered");
-        });
+        })
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: serving,
             cleanup: Ok(()),
         },
@@ -87,6 +88,7 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = returned
     else {
         panic!("HTTP serving and the complete joined root must both return");
@@ -145,13 +147,15 @@ fn bind_failure_does_not_activate_or_build_the_router() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the actual caller HTTP host is entered");
-        });
+        })
+        .into_parts();
     let (
-        ApplicationOutcome::StagingRejected {
+        WorkOutcome::StagingRejected {
             inputs: Ok((application, router, rejected, bind_error)),
         },
         Err(_),
         Err(_),
+        (),
     ) = refused
     else {
         panic!("the occupied address must reject a second listener");
@@ -275,10 +279,10 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                 .execute_axum(address, router)
                 .unwrap_or_else(|_| panic!("the actual caller host is entered"));
             drop(execution);
-            let (ApplicationOutcome::Unstarted {
+            let (WorkOutcome::Unstarted {
                 application: (application, router, returned_address),
                 work: (),
-            }, Err(_), Err(_)) = receiving.await
+            }, Err(_), Err(_), ()) = receiving.await.into_parts()
             else {
                 panic!("unpolled HTTP execution must return all untouched cold inputs");
             };
@@ -287,10 +291,10 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             let refused = application
                 .run_axum(returned_address, router)
                 .await
-                .unwrap_or_else(|_| panic!("binding still uses the actual entered host"));
-            let (ApplicationOutcome::StagingRejected {
+                .unwrap_or_else(|_| panic!("binding still uses the actual entered host")).into_parts();
+            let (WorkOutcome::StagingRejected {
                 inputs: Ok((application, router, returned_address, bind_error)),
-            }, Err(_), Err(_)) = refused
+            }, Err(_), Err(_), ()) = refused
             else {
                 panic!(
                     "the real occupied address refuses before actor staging or router invocation"
@@ -312,9 +316,9 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                 });
                 tokio::select! {
                     returned = &mut completion => {
-                        let (ApplicationOutcome::StagingRejected {
+                        let (WorkOutcome::StagingRejected {
                             inputs: Ok((returned_application, returned_router, retry_address, error)),
-                        }, Err(_), Err(_)) = returned else {
+                        }, Err(_), Err(_), ()) = returned.into_parts() else {
                             panic!("an early HTTP result must retain the actual bind refusal and original inputs");
                         };
                         assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
@@ -407,7 +411,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     assert!(headers.starts_with(b"HTTP/1.1 200 OK\r\n"));
     assert_eq!(body, b"stopped");
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: Ok(()),
             cleanup: Ok(()),
         },
@@ -416,7 +420,8 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
-    ) = outcome
+        (),
+    ) = outcome.into_parts()
     else {
         panic!("actual graceful serving and all native cleanup facts must coexist");
     };
@@ -613,13 +618,15 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
             .unwrap_or_else(|original| {
                 drop(original);
                 panic!("the host is entered");
-            });
+            })
+            .into_parts();
         let (
-            ApplicationOutcome::StagingRejected {
+            WorkOutcome::StagingRejected {
                 inputs: Err((root, spaces, router, failure, listener, scope)),
             },
             native,
             notifications,
+            (),
         ) = rejected
         else {
             panic!("successful binding retains all inputs when child staging rejects");
@@ -642,7 +649,7 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
         assert_eq!(actor.base().entries.as_ptr(), entries_pointer);
         assert_eq!(actor.base().entries, [307, 311]);
         drop((blocked, id, children, cause));
-        let (outcome, native, notifications) = scope
+        let (outcome, native, notifications, ()) = scope
             .with_topology(root, spaces)
             .child(HttpWorkerRole::Declared, actor)
             .run_axum(requested_address, router)
@@ -650,7 +657,8 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
             .unwrap_or_else(|original| {
                 drop(original);
                 panic!("retry uses the original router and actor");
-            });
+            })
+            .into_parts();
         drop(listener);
         let (serving, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
             drop(original);
@@ -745,7 +753,7 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
                     panic!("the actual caller host is entered");
                 });
             execution.await;
-            let outcome = receiving.await;
+            let outcome = receiving.await.into_parts();
             returned.push((
                 original_serve,
                 original_payload,
@@ -761,7 +769,7 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
     for (original_serve, original_payload, original_carrier, original_task_id, outcome) in returned
     {
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (retained_serve, supplied_retirement),
                 cleanup: Ok(()),
             },
@@ -770,6 +778,7 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = outcome
         else {
             panic!("completed Work input and the separately joined root must both survive");
@@ -833,7 +842,7 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
     });
     drop(caller);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (serve, Ok(values)),
             cleanup: Ok(()),
         },
@@ -842,7 +851,8 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
-    ) = outcome
+        (),
+    ) = outcome.into_parts()
     else {
         panic!("the joined task returns its whole original outcome beside the real root");
     };

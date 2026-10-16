@@ -9,11 +9,12 @@ use bombay::prelude::{Application, Completion, StopOnShutdown};
 use bombay::remote::{NodeExecutionRefusal, NodeStartupRefusal};
 use bombay::{
     ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement, ApplicationHandle,
-    ApplicationOutcome, RetirementAssessment,
+    RetirementAssessment, WorkOutcome,
 };
 use core::future::Future;
 use core::pin::pin;
 use core::task::{Context, Poll, Waker};
+use std::cell::Cell;
 use std::error::Error;
 use std::fs;
 use std::io::ErrorKind;
@@ -23,7 +24,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::runtime::{Builder, Handle, TryCurrentError};
 use tokio::sync::oneshot;
-use zenoh::Session;
 use zenoh_config::Config;
 
 fn listening_configuration() -> Config {
@@ -57,12 +57,13 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
             .open_node(listening_configuration())
             .await
             .unwrap_or_else(|_| panic!("actual Node opens"));
+        let visits = Cell::new(0_u8);
         let (
             pending,
             observed_entry,
             released,
             published,
-            runtime_scope,
+            observed_visits,
             permitted,
             admitted,
             reply,
@@ -74,11 +75,13 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
         ) = {
             let (release, permission) = oneshot::channel();
             let (entered, entry) = oneshot::channel();
+            let visits = &visits;
             let (execution, receiving) = node
-                .execute_with(|application, session| async move {
-                    let published = entered.send(session.zid());
+                .execute_with(|application| async move {
+                    let published = entered.send(visits.get());
                     let permitted = permission.await;
-                    let runtime_scope = session.zid();
+                    visits.set(visits.get() + 1);
+                    let observed_visits = visits.get();
                     let mut client = application.client::<CounterValue>().unwrap();
                     let admitted = client.send(CounterMessage::Read(client.recipient())).await;
                     let reply = if admitted.is_ok() {
@@ -90,7 +93,7 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
                     let stopped = application.request_shutdown();
                     (
                         published,
-                        runtime_scope,
+                        observed_visits,
                         permitted,
                         admitted,
                         reply,
@@ -123,11 +126,11 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
                 }
                 (pending, observed_entry, released)
             };
-            let (outcome, native, notifications) = receiving.await;
-            let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+            let (outcome, native, notifications, ()) = receiving.await.into_parts();
+            let WorkOutcome::Completed { output, cleanup } = outcome else {
                 panic!("actual Work output");
             };
-            let (published, runtime_scope, permitted, admitted, reply, address, stopped, client) =
+            let (published, observed_visits, permitted, admitted, reply, address, stopped, client) =
                 output;
             drop(client);
             (
@@ -135,7 +138,7 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
                 observed_entry,
                 released,
                 published,
-                runtime_scope,
+                observed_visits,
                 permitted,
                 admitted,
                 reply,
@@ -153,7 +156,7 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
         let work_calls = Arc::clone(&calls);
         let (release, permission) = oneshot::channel::<()>();
         let (refused, retained, permission_before_disposal) = {
-            let attempted = node.execute_with(move |_, _| {
+            let attempted = node.execute_with(move |_| {
                 work_calls.fetch_add(1, Ordering::SeqCst);
                 async move { (original, permission) }
             });
@@ -192,8 +195,10 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
                 .as_ref()
                 .and_then(|entry| entry.as_ref().ok())
                 .copied(),
-            Some(runtime_scope)
+            Some(0)
         );
+        assert_eq!(observed_visits, 1);
+        assert_eq!(visits.get(), 1);
         assert!(matches!(pending, Poll::Pending));
         assert!(released.is_ok() && published.is_ok() && permitted.is_ok() && cleanup.is_ok());
         assert!(admitted.is_ok() && stopped.is_ok());
@@ -235,7 +240,7 @@ fn public_node_child_keeps_installed_target_and_complete_descendant_receipts() {
             .await
             .unwrap_or_else(|_| panic!("child Node opens"));
         let (execution, receiving) = node
-            .execute_with(|application, _session| async move {
+            .execute_with(|application| async move {
                 let mut exports = application.external::<CounterExports>().unwrap();
                 let exported = exports
                     .send(
@@ -311,8 +316,8 @@ fn public_node_child_keeps_installed_target_and_complete_descendant_receipts() {
             })
             .unwrap_or_else(|_| panic!("existing child topology is issued"));
         execution.await;
-        let (outcome, native, notifications) = receiving.await;
-        let ApplicationOutcome::Completed { output, cleanup } = outcome else {
+        let (outcome, native, notifications, ()) = receiving.await.into_parts();
+        let WorkOutcome::Completed { output, cleanup } = outcome else {
             panic!("child Work retained");
         };
         let (
@@ -526,8 +531,8 @@ fn public_node_native_open_refusal_preserves_usable_application_and_original_con
             })
             .unwrap_or_else(|_| panic!("original local declaration remains usable"));
         execution.await;
-        let (outcome, native, notifications) = receiving.await;
-        let ApplicationOutcome::Completed {
+        let (outcome, native, notifications, ()) = receiving.await.into_parts();
+        let WorkOutcome::Completed {
             output: (admitted, reply, address, stopped, client),
             cleanup,
         } = outcome
@@ -569,7 +574,7 @@ fn public_node_closed_session_preserves_original_move_only_work() {
         let work_calls = Arc::clone(&calls);
         let (release, permission) = oneshot::channel::<()>();
         let (refused, retained, permission_before_disposal) = {
-            let attempted = node.execute_with(move |application, _| {
+            let attempted = node.execute_with(move |application| {
                 work_calls.fetch_add(1, Ordering::SeqCst);
                 async move {
                     let permitted = permission.await;
@@ -639,8 +644,7 @@ fn public_node_missing_host_restores_the_declaration_for_original_work_retry() {
     let work = move |application: ApplicationHandle<
         Counter,
         <StopOnShutdown<Counter> as Behavior>::Event,
-    >,
-                     _session: &Session| {
+    >| {
         work_calls.fetch_add(1, Ordering::SeqCst);
         async move {
             let permitted = permission.await;
@@ -673,8 +677,8 @@ fn public_node_missing_host_restores_the_declaration_for_original_work_retry() {
                 .execute_with(work)
                 .unwrap_or_else(|_| panic!("actual restored declaration retries once"));
             execution.await;
-            let (outcome, native, notifications) = receiving.await;
-            let ApplicationOutcome::Completed {
+            let (outcome, native, notifications, ()) = receiving.await.into_parts();
+            let WorkOutcome::Completed {
                 output: (permitted, stopped, original),
                 cleanup,
             } = outcome
@@ -770,7 +774,7 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
         (Some(actual), Some(expected)) => ptr::eq(actual, expected),
         _ => false,
     };
-    let (outcome, native, notifications) = host.block_on(async {
+    let (outcome, native, notifications, ()) = host.block_on(async {
         let (execution, receiving) = application
             .execute_with(|application| async move {
                 let mut client = application.client::<CounterValue>().unwrap();
@@ -786,9 +790,9 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
             })
             .unwrap_or_else(|_| panic!("returned original local Application is usable"));
         execution.await;
-        receiving.await
+        receiving.await.into_parts()
     });
-    let ApplicationOutcome::Completed {
+    let WorkOutcome::Completed {
         output: (admitted, reply, address, stopped, client),
         cleanup,
     } = outcome

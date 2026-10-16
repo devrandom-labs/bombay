@@ -4,7 +4,7 @@ use bombay::behavior::{
     BehaviorSettlements, EstablishedDelivery, MessageProtocol, NoSends, Step, User,
 };
 use bombay::prelude::*;
-use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, SendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, SendError, WorkOutcome};
 use core::ops::AsyncFn;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -760,9 +760,10 @@ async fn run_counter(
             (address, verifier.address(), processor.address(), observed)
         })
         .await
-        .unwrap_or_else(|_| panic!("the explicit entered host owns the Application"));
+        .unwrap_or_else(|_| panic!("the explicit entered host owns the Application"))
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (address, verifier, processor, observed),
             cleanup: Ok(()),
         },
@@ -771,6 +772,7 @@ async fn run_counter(
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = received
     else {
         panic!("original Work/native/both notifications are acquired independently")
@@ -907,9 +909,10 @@ async fn run_arithmetic(
             (address, verifier.address(), processor.address(), observed)
         })
         .await
-        .unwrap_or_else(|_| panic!("the explicit entered host owns the Application"));
+        .unwrap_or_else(|_| panic!("the explicit entered host owns the Application"))
+        .into_parts();
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (address, verifier, processor, observed),
             cleanup: Ok(()),
         },
@@ -918,6 +921,7 @@ async fn run_arithmetic(
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = received
     else {
         panic!("original Work/native/both notifications are acquired independently")

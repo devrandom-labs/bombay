@@ -3,7 +3,7 @@ use bombay::behavior::{
     SettlementStatus, Step,
 };
 use bombay::prelude::*;
-use bombay::{ActorCustody, ActorNotificationReceipts, ApplicationOutcome, TrySendError};
+use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
 use core::ops::AsyncFn;
 use tokio::{runtime::Builder, sync::oneshot};
 
@@ -377,10 +377,11 @@ where
             .unwrap_or_else(|failure| {
                 drop(failure);
                 panic!("the native Application remains successful")
-            });
+            })
+            .into_parts();
         drop(host);
         let (
-            ApplicationOutcome::Completed {
+            WorkOutcome::Completed {
                 output: (actor_address, sender, allocation, initial, retried, verification, after),
                 cleanup: Ok(()),
             },
@@ -414,6 +415,7 @@ where
                 termination: Ok(()),
                 retirement: Ok(()),
             }),
+            (),
         ) = received
         else {
             panic!("Work, full native retirement and both notification receipts remain acquired")

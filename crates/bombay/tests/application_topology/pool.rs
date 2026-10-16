@@ -2,7 +2,7 @@
 //! The pool owns admission, assignment, completion, and orderly worker drain.
 
 use bombay::ActorCustody;
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use tokio::runtime::Builder;
 
 use super::search_worker::{SearchJob, SearchResult, SearchWorker};
@@ -55,7 +55,7 @@ fn run_search_pool() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
-    let (application_outcome, native, notifications) = application_host
+    let (application_outcome, native, notifications, ()) = application_host
         .block_on(
             Application::with_topology(pool, spaces).run_with(|application| async move {
                 let mut customer = application
@@ -103,9 +103,10 @@ fn run_search_pool() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the pool runs its worker and shuts down");
-        });
+        })
+        .into_parts();
     drop(application_host);
-    let ApplicationOutcome::Completed {
+    let WorkOutcome::Completed {
         output: termination,
         cleanup: Ok(()),
     } = application_outcome

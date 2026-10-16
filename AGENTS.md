@@ -245,6 +245,23 @@ ordinary Bombay spelling, or add a semantically irrelevant wrapper merely to
 exercise the extension trait. Every selected template in an executable example
 must perform its actual policy during the example or its tests.
 
+### Upstream developer experience
+
+Integrating main includes reviewing the developer experience of its new APIs.
+Exercise ordinary caller syntax and failure handling in real consumers, remove
+repeated setup at the owning layer, and keep lower-level capabilities available
+for power users. Preserve all original rejection and retirement values. A
+successful merge or passing feature tests do not complete this review; record
+remaining caller ceremony in the selected PRD rather than accepting it by default.
+
+Zenoh is Bombay's sole internal network transport. Application authors construct
+actors, write business logic and compose actor systems through typed Bombay
+contracts. Keep native Sessions, Queries, SDK configuration and raw connection
+access inside the runtime; power-user layers expose Bombay capabilities rather
+than a transport escape hatch. Existing public SDK surfaces are unfinished
+interface work, not precedent for new APIs. Preserve original transport failures
+and custody internally while simplifying the application surface.
+
 ### Public examples are user applications
 
 Examples teach users to construct clean, production-quality applications through

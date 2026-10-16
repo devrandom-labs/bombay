@@ -3,7 +3,7 @@ use behavior_actors::{
     CacheConfiguration, CacheMessage, CacheResult, Latch, LatchMessage, LatchReleased,
 };
 use bombay::ActorNotificationReceipts;
-use bombay::ApplicationOutcome;
+use bombay::WorkOutcome;
 use bombay::behavior::MessageProtocol;
 use bombay::prelude::*;
 use tokio::runtime::Builder;
@@ -74,10 +74,11 @@ fn cache_preserves_an_exact_external_customer() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the exact-customer cache application terminates normally");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -86,6 +87,7 @@ fn cache_preserves_an_exact_external_customer() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -172,10 +174,11 @@ fn barrier_releases_two_exact_external_participants() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the exact-customer barrier application terminates normally");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -184,6 +187,7 @@ fn barrier_releases_two_exact_external_participants() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");
@@ -245,10 +249,11 @@ fn latch_releases_exact_external_participants() {
         .unwrap_or_else(|failed| {
             drop(failed);
             panic!("the exact-route latch application terminates normally");
-        });
+        })
+        .into_parts();
     drop(application_host);
     let (
-        ApplicationOutcome::Completed {
+        WorkOutcome::Completed {
             output: (),
             cleanup: Ok(()),
         },
@@ -257,6 +262,7 @@ fn latch_releases_exact_external_participants() {
             termination: Ok(()),
             retirement: Ok(()),
         }),
+        (),
     ) = application_outcome
     else {
         panic!("the original completed Work and joined root remain independently owned");

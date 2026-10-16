@@ -2,14 +2,16 @@
 
 use super::composition::ComposeApplication;
 use super::execution::RootInterpreter;
-use super::{Application, ApplicationHandle, ApplicationOutcome, ApplicationScope};
+use super::{Application, ApplicationHandle, ApplicationOutcome, ApplicationScope, WorkOutcome};
+use crate::NativeHost;
 use crate::address::MailAddr;
 use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
 };
 use crate::local::effects::CommitActions;
+use crate::local::effects::services::NativeConstruction;
 use crate::remote::startup::{NodeStartupRefusal, check_node_configuration};
-use crate::terminal::{ActorNotificationReceipts, ActorRetirement, RetirementSchema, RootOrigin};
+use crate::terminal::{ActorRetirement, RetirementSchema, RootOrigin};
 use crate::topology::{ApplicationTopology, RootRegistration};
 use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
@@ -19,7 +21,6 @@ use core::fmt;
 use core::future::Future;
 use std::error::Error;
 use tokio::runtime::{Handle, RuntimeFlavor, TryCurrentError};
-use tokio::sync::oneshot::error::RecvError;
 use zenoh::{Error as ZenohError, Session};
 use zenoh_config::Config;
 
@@ -140,11 +141,31 @@ impl<Root, Spaces, Members> Application<Root, Spaces, Members> {
 }
 
 impl<Root, Spaces, Members> Node<Root, Spaces, Members> {
-    /// Close the native Session independently of Application retirement.
+    #[expect(
+        clippy::type_complexity,
+        reason = "return the original declaration and callable together without a wrapper or a self loan"
+    )]
+    fn take_application<Work>(
+        &mut self,
+        work: Work,
+    ) -> Result<(Application<Root, Spaces, Members>, Work), NodeExecutionRefusal<Work>> {
+        if self.application.is_none() {
+            return Err(NodeExecutionRefusal::ExecutionIssued { work });
+        }
+        if self.session.is_closed() {
+            return Err(NodeExecutionRefusal::SessionClosed { work });
+        }
+        match self.application.take() {
+            Some(application) => Ok((application, work)),
+            None => Err(NodeExecutionRefusal::ExecutionIssued { work }),
+        }
+    }
+
+    /// Close the Node connection independently of Application retirement.
     ///
     /// First acquire the execution's original work/outcome, native root and both
-    /// notifications. Retain this separate close Result. Borrowed output can keep
-    /// the Session borrowed and must be discharged before mutable close.
+    /// notifications. Retain this separate close Result. Paired execution and
+    /// receiving futures retain their Node borrow until their owners leave scope.
     /// Closing after surrendering an operation does not prove joined retirement.
     ///
     /// # Panics
@@ -168,54 +189,49 @@ where
     Members: ComposeApplication<Root>,
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
-    /// Issue the exact declared root/child application while lending this Session.
+    /// Await caller-local work and the complete joined application retirement.
     ///
-    /// Retain both returned operations outside disposable borrowed waits. Receiving
-    /// conserves the original Work/outcome, complete native root/descendants and
-    /// independently acquired termination and retirement notification results.
+    /// Work receives the ordinary Application handle for typed actor clients,
+    /// lifecycle requests and composition, using the same callback contract as
+    /// `Application::run_with`. Work and its result may borrow caller-local values
+    /// and need not be Send. This operation is cold until polled. Canceling a borrowed wait
+    /// leaves the owned operation available; dropping the whole operation
+    /// surrenders it.
     ///
     /// # Errors
-    /// Returns original Work for closed Session, already-issued declaration or
-    /// missing host; only the latter restores the original declaration for retry.
-    #[expect(
-        clippy::type_complexity,
-        reason = "retain existing independent native and notification products without a new receiving wrapper"
-    )]
-    pub fn execute_with<'node, Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
-        &'node mut self,
+    /// Returns the original callable when execution is refused. A missing host
+    /// also restores the original declaration for retry on this same Node.
+    ///
+    /// # Panics
+    /// Retains the existing application setup, work and native SDK contracts.
+    pub async fn run_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
+        &mut self,
         work: Work,
     ) -> Result<
-        (
-            impl Future<Output = ()>,
-            impl Future<
-                Output = (
-                    ApplicationOutcome<
-                        Application<Root, Spaces, Members>,
-                        Work,
-                        <WorkFuture as Future>::Output,
-                        (),
-                        (Root, Spaces, Work, StagingFailure, ApplicationScope),
-                        (Actor, Spaces, ApplicationScope),
-                    >,
-                    Result<
-                        (
-                            RootOrigin<Root>,
-                            ActorRetirement<
-                                Actor,
-                                <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                                ChildFailures,
-                            >,
-                        ),
-                        RecvError,
-                    >,
-                    Result<ActorNotificationReceipts, RecvError>,
-                ),
+        ApplicationOutcome<
+            WorkOutcome<
+                Application<Root, Spaces, Members>,
+                Work,
+                WorkFuture::Output,
+                (),
+                (Root, Spaces, Work, StagingFailure, ApplicationScope),
+                (Actor, Spaces, ApplicationScope),
             >,
-        ),
+            (
+                RootOrigin<Root>,
+                ActorRetirement<
+                    Actor,
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    ChildFailures,
+                >,
+            ),
+            (),
+        >,
         NodeExecutionRefusal<Work>,
     >
     where
-        Spaces: ApplicationTopology<Root, Members>,
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
         Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
@@ -262,27 +278,129 @@ where
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
         ChildFailures: Send + 'static,
-        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>, &'node Session) -> WorkFuture,
+        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
     {
-        if self.application.is_none() {
-            return Err(NodeExecutionRefusal::ExecutionIssued { work });
-        }
-        if self.session.is_closed() {
-            return Err(NodeExecutionRefusal::SessionClosed { work });
-        }
-        let Some(application) = self.application.take() else {
-            return Err(NodeExecutionRefusal::ExecutionIssued { work });
-        };
+        let (application, work) = self.take_application(work)?;
         let session = &self.session;
-        match application.execute_with_invocation(
-            work,
-            move |work: Work, mut application| {
-                application.session = Some(session.clone());
-                work(application, session)
-            },
-            None,
-        ) {
+        match application.execute_with_invocation(work, move |work: Work, mut application| {
+            application.session = Some(session.clone());
+            work(application)
+        }) {
+            Ok((execution, receiving)) => {
+                execution.await;
+                Ok(receiving.await)
+            }
+            Err((application, work, cause)) => {
+                self.application = Some(application);
+                Err(NodeExecutionRefusal::Host { work, cause })
+            }
+        }
+    }
+
+    /// Issue the declared application with ordinary typed actor work.
+    ///
+    /// Retain both returned operations outside disposable borrowed waits. Receiving
+    /// conserves the original Work/outcome, complete native root/descendants and
+    /// independently acquired termination and retirement notification results.
+    /// Work receives the same Application handle as joined execution and may
+    /// retain caller-local borrows and non-Send values.
+    ///
+    /// # Errors
+    /// Returns original Work for closed Session, already-issued declaration or
+    /// missing host; only the latter restores the original declaration for retry.
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain existing independent native and notification products without a new receiving wrapper"
+    )]
+    pub fn execute_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
+        &mut self,
+        work: Work,
+    ) -> Result<
+        (
+            impl Future<Output = ()>,
+            impl Future<
+                Output = ApplicationOutcome<
+                    WorkOutcome<
+                        Application<Root, Spaces, Members>,
+                        Work,
+                        <WorkFuture as Future>::Output,
+                        (),
+                        (Root, Spaces, Work, StagingFailure, ApplicationScope),
+                        (Actor, Spaces, ApplicationScope),
+                    >,
+                    (
+                        RootOrigin<Root>,
+                        ActorRetirement<
+                            Actor,
+                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                            ChildFailures,
+                        >,
+                    ),
+                    (),
+                >,
+            >,
+        ),
+        NodeExecutionRefusal<Work>,
+    >
+    where
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
+        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
+            + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Spaces>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Spaces,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
+        ChildFailures: Send + 'static,
+        Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
+        WorkFuture: Future,
+    {
+        let (application, work) = self.take_application(work)?;
+        let session = &self.session;
+        match application.execute_with_invocation(work, move |work: Work, mut application| {
+            application.session = Some(session.clone());
+            work(application)
+        }) {
             Ok(products) => Ok(products),
             Err((application, work, cause)) => {
                 self.application = Some(application);
@@ -291,3 +409,7 @@ where
         }
     }
 }
+
+#[cfg(test)]
+#[path = "node/tests/mod.rs"]
+mod tests;

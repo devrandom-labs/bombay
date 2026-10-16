@@ -1,0 +1,73 @@
+error[E0277]: the trait bound `bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>: InterpretItem<OpenFile, behavior::User<bombay::MailAddr, Never>, Here>` is not satisfied
+  --> tests/compile/fail/interpreter_missing.rs:72:45
+   |
+72 |     let outcome = host.block_on(application.run());
+   |                                             ^^^ unsatisfied trait bound
+   |
+   = help: the trait `InterpretItem<OpenFile, behavior::User<bombay::MailAddr, Never>, Here>` is not implemented for `bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>`
+   = help: the following other types implement trait `InterpretItem<Item, RootEvent, Path>`:
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Option<S>>` implements `InterpretItem<Request, Event, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<ChildDelivery<Target, Occurrence>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<ChildInput<Child, Source, Input, Occurrence>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<Creations<CreateChild<bombay::MailAddr, New>>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<Delivery<Target>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<EntityAdmission<D>, <C as behavior::Behavior>::Event, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<EstablishedDelivery<Target>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<PrepareWorkers<Source, Role, Worker, Plan>, RootEvent, Path>`
+           and $N others
+   = note: required for `InterpreterRequests<OpenFile>` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: 1 redundant requirement hidden
+   = note: required for `DocumentSends` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>>` to implement `bombay::local::effects::CommitActions<Document>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                    --- required by a bound in this associated function
+...
+   |           >: CommitActions<
+   |  ____________^
+   | |                 Actor,
+   | |                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |             > + Send
+   | |_____________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+
+error[E0277]: the trait bound `bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>: InterpretItem<OpenFile, behavior::User<bombay::MailAddr, Never>, Here>` is not satisfied
+  --> tests/compile/fail/interpreter_missing.rs:72:19
+   |
+72 |     let outcome = host.block_on(application.run());
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `InterpretItem<OpenFile, behavior::User<bombay::MailAddr, Never>, Here>` is not implemented for `bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>`
+   = help: the following other types implement trait `InterpretItem<Item, RootEvent, Path>`:
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Option<S>>` implements `InterpretItem<Request, Event, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<ChildDelivery<Target, Occurrence>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<ChildInput<Child, Source, Input, Occurrence>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<Creations<CreateChild<bombay::MailAddr, New>>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<Delivery<Target>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<EntityAdmission<D>, <C as behavior::Behavior>::Event, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<EstablishedDelivery<Target>, RootEvent, Path>`
+             `bombay::local::effects::ApplicationCapabilities<C, N, P, Bindings, Origins, Services>` implements `InterpretItem<PrepareWorkers<Source, Role, Worker, Plan>, RootEvent, Path>`
+           and $N others
+   = note: required for `InterpreterRequests<OpenFile>` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: 1 redundant requirement hidden
+   = note: required for `DocumentSends` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>, behavior::User<bombay::MailAddr, Never>, Here>`
+   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<Document, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Document>>>>` to implement `bombay::local::effects::CommitActions<Document>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                    --- required by a bound in this associated function
+...
+   |           >: CommitActions<
+   |  ____________^
+   | |                 Actor,
+   | |                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |             > + Send
+   | |_____________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`

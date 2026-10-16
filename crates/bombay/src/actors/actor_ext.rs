@@ -1,10 +1,11 @@
 use core::time::Duration;
 use std::time::Instant;
 
-use behavior::{Behavior, BehaviorMessage, Never};
+use behavior::{Behavior, BehaviorAddr, BehaviorMessage, EndpointAddress, Never, Protocol};
 use behavior_actors::{
-    Deadline, DeadlineReaction, OneShot, Periodic, ReceiveTimeout, Stash, StashRoute,
-    StopOnShutdown, TimedReaction, TimerId,
+    Deadline, DeadlineReaction, EstablishedTerminationMonitor, EstablishedTerminationReaction,
+    FinalizeOnShutdown, ObserveEstablished, OneShot, Periodic, ReceiveTimeout, ShutdownReaction,
+    Stash, StashRoute, StaticallyInfallible, StopOnShutdown, TimedReaction, TimerId,
 };
 
 /// Discover and compose reusable wrappers from any concrete actor behavior.
@@ -17,10 +18,13 @@ pub trait ActorExt: Behavior + Sized {
     /// Stash selected messages using a pure decision over the inner behavior and message.
     ///
     /// Replay observes the inner state returned by each preceding transition.
+    /// The inner transition must be statically infallible: replay cannot undo
+    /// actions already produced by earlier messages.
     #[must_use]
     fn with_stash(self, route: fn(&Self, &BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
     where
         Self: Behavior<Ph = Never>,
+        Self::Error: StaticallyInfallible,
     {
         Stash::new(self, route)
     }
@@ -69,10 +73,38 @@ pub trait ActorExt: Behavior + Sized {
         ReceiveTimeout::new(self, id, after, on_elapsed)
     }
 
+    /// React once to the exact selected recipient's terminal report.
+    ///
+    /// The existing monitor retains the original request, observation authority,
+    /// cancellation and rejection values. Its reaction owns the whole matching
+    /// report and returns explicit Actions; construction starts no observation.
+    /// Shutdown of this actor does not terminate the selected recipient.
+    #[must_use]
+    fn observe_termination<P>(
+        self,
+        request: ObserveEstablished<P>,
+        reaction: EstablishedTerminationReaction<Self, P>,
+    ) -> EstablishedTerminationMonitor<Self, P>
+    where
+        P: Protocol<Addr = BehaviorAddr<Self>>,
+        BehaviorAddr<Self>: EndpointAddress,
+    {
+        EstablishedTerminationMonitor::established(self, request, reaction)
+    }
+
     /// Stop normally when this wrapper receives the typed shutdown request.
     #[must_use]
     fn stop_on_shutdown(self) -> StopOnShutdown<Self> {
         StopOnShutdown::new(self)
+    }
+
+    /// Run a pure final transition on shutdown, then stop normally.
+    ///
+    /// The reaction's sends and fresh creations survive its continuation verdict.
+    /// An outer shutdown wrapper takes precedence over this reaction.
+    #[must_use]
+    fn finalize_on_shutdown(self, reaction: ShutdownReaction<Self>) -> FinalizeOnShutdown<Self> {
+        FinalizeOnShutdown::new(self, reaction)
     }
 }
 

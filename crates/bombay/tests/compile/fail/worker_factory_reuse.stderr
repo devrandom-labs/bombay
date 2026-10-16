@@ -1,0 +1,8 @@
+error[E0382]: use of moved value: `source`
+  --> tests/compile/fail/worker_factory_reuse.rs:13:81
+   |
+13 | fn main() { let source = bombay::WorkerFactory::new(worker); drop(source); drop(source); }
+   |                 ------                                            ------        ^^^^^^ value used here after move
+   |                 |                                                 |
+   |                 |                                                 value moved here
+   |                 move occurs because `source` has type `WorkerFactory<u8, for<'a> fn(&'a u8) -> WorkerSubmission<Worker, ImmediateActivation> {worker}, WorkerSubmission<Worker, ImmediateActivation>>`, which does not implement the `Copy` trait

@@ -392,7 +392,7 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
     };
     let (counter_result, spare) = match case {
         RequestCase::Retargeted => {
-            let (work, native, notices) = Box::pin(
+            let (work, native, notices, ()) = Box::pin(
                 Application::new(Counter::new().stop_on_shutdown()).run_with(
                     |application| async move {
                         let binding = request_authority(
@@ -411,7 +411,8 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
                 ),
             )
             .await
-            .unwrap_or_else(|_| panic!("entered spare host"));
+            .unwrap_or_else(|_| panic!("entered spare host"))
+            .into_parts();
             let ((counter, shutdown), cleanup) = work
                 .try_into_completed()
                 .unwrap_or_else(|_| panic!("original spare work"));
@@ -463,10 +464,12 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
     })
     .await;
     // Every actual Application receiving product is acquired before semantic oracles.
-    let (counter_work, counter_native, counter_notifications) =
-        counter_result.unwrap_or_else(|_| panic!("entered Counter host"));
-    let (ledger_work, ledger_native, ledger_notifications) =
-        ledger.unwrap_or_else(|_| panic!("entered Ledger host"));
+    let (counter_work, counter_native, counter_notifications, ()) = counter_result
+        .unwrap_or_else(|_| panic!("entered Counter host"))
+        .into_parts();
+    let (ledger_work, ledger_native, ledger_notifications, ()) = ledger
+        .unwrap_or_else(|_| panic!("entered Ledger host"))
+        .into_parts();
     let (
         (
             counter_checked,

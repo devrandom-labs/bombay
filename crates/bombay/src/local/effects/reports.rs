@@ -11,8 +11,8 @@ use core::future::Future;
 use core::mem;
 use tokio::sync::oneshot;
 
-impl<C, N, P, Bindings, Origins> TerminalReportTransaction
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Services> TerminalReportTransaction
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
 {
@@ -21,8 +21,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Report, Path> InterpretItem<ReportToParent<Report>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Report, Path, Services>
+    InterpretItem<ReportToParent<Report>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     P: ParentReporting<Report> + Send,
@@ -60,9 +61,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Path>
+impl<C, N, P, Bindings, Origins, Path, Services>
     InterpretItem<ReportTerminalOutcome<MailAddr>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Self: Send,
@@ -95,8 +96,9 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Plan, Path> InterpretItem<ReportShutdownPlan<Plan>, C::Event, Path>
-    for ApplicationCapabilities<C, N, P, Bindings, Origins>
+impl<C, N, P, Bindings, Origins, Plan, Path, Services>
+    InterpretItem<ReportShutdownPlan<Plan>, C::Event, Path>
+    for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     C::Event: EventIngress<Here, InstallShutdownPlan<Plan>>,
@@ -244,6 +246,7 @@ pub(crate) struct LocalParentReports<Event, Child, Position> {
 #[cfg(test)]
 mod parent_conversion_custody {
     use crate::ActorCustody;
+    use crate::MailboxCapacity;
 
     use core::ptr;
     use std::panic::resume_unwind;
@@ -688,6 +691,7 @@ mod parent_conversion_custody {
                             address: MailAddr::APPLICATION_ROOT,
                             actor_spaces: actor_spaces.clone(),
                             allocations: addresses,
+mailbox_capacity: MailboxCapacity::default(),
                             control,
                             timers,
                             observations,
@@ -1340,6 +1344,7 @@ mod parent_conversion_custody {
 
 #[cfg(test)]
 mod parent_report_custody {
+    use crate::MailboxCapacity;
     use crate::actor;
     use crate::actors::ActorExt;
     use crate::address::{ApplicationAddresses, MailAddr};
@@ -1507,6 +1512,7 @@ mod parent_report_custody {
                     address: MailAddr::APPLICATION_ROOT,
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+mailbox_capacity: MailboxCapacity::default(),
                     control: control.clone(),
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),
@@ -1554,6 +1560,7 @@ mod parent_report_custody {
                     address: MailAddr(17),
                     actor_spaces: Arc::new(()),
                     allocations: ApplicationAddresses::new(),
+mailbox_capacity: MailboxCapacity::default(),
                     control: child_control,
                     timers: LocalTimers::new(),
                     observations: TerminationObservations::new(),

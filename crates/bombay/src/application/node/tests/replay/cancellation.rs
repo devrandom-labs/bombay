@@ -66,8 +66,10 @@ async fn cancelled_ledger_read<Receipt>(
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("configured local export Session"));
+    let connection = node.session.clone();
+    let session = &connection;
     let (execution, receiving) = node
-        .execute_with(|application, session| async move {
+        .execute_with(|application| async move {
             let target = application.root().established_recipient();
             let origin = application.root().address();
             let publications = Arc::new(Mutex::new(Vec::<IngressError<Query>>::new()));
@@ -313,7 +315,8 @@ async fn cancelled_ledger_read<Receipt>(
             )
         })
         .unwrap_or_else(|_| panic!("actual local host"));
-    let ((), (outcome, native, notifications)) = tokio::join!(execution, receiving);
+    let ((), outcome) = tokio::join!(execution, receiving);
+    let (outcome, native, notifications, ()) = outcome.into_parts();
     let (output, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Work"));
@@ -386,6 +389,7 @@ async fn cancelled_ledger_read<Receipt>(
     let query_reply = issued_query.as_ref().ok().map(FifoChannelHandler::try_recv);
     drop(session);
     let closed = node.close().await;
+    assert!(connection.is_closed());
     // Observe both independent admissions and A cancellation only after full cleanup.
     let (Ok((a, None)), Ok((b, None))) = (&retained_a, &retained_b) else {
         panic!("two independent actual issued keys");
