@@ -51,7 +51,14 @@ certify this newer lock. The prepared caller patch still applies unchanged.
 It preserves255 original assertions and all compile denials; both compiler
 corpora pass128 cases and its private workspace passes791 tests/two controlled
 child skips. Actual migration remains pending the separate14→24 native-file
-budget approval. Common owner PR113/809e7b3 also preserves caller generic/type
+budget approval. A refreshed private copy of native e69c6dc with owner aafd1e9
+passes 791 default workspace tests on pinned 1.99 in 298.503s. The same two child
+skips are confirmed by the exact nextest listing; all 633 inputs in each native
+copy, 837 owner inputs and 396 current nonowner records remain exact. This newer-graph
+proof does not certify minimum, remote TLS runtime, protected nested, registry
+or authoritative native Nix gates. Its extra dependency/inventory bindings stay
+private and are outside the pending caller-only scope.
+Common owner PR113/809e7b3 also preserves caller generic/type
 names without reserving private macro spellings, adding public types or runtime
 storage. Its1,022 owner tests,11 Nix checks and real two-lane failure/retirement
 proofs are separate from registry publication and full-programme acceptance.
