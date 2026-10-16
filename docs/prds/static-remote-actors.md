@@ -28734,3 +28734,86 @@ The approved nonwaiting actor-mailbox admission decision does not select those
 network-publication policies. Native Ok alone proves neither remote execution
 nor delivery. Research inspected the exact selected transport after discarding
 an initial different-revision read; no production change or witness is claimed.
+
+### Shipping Application service — entry contract before production edits
+
+Under the user's standing recommended-choice delegation, select inherent
+Application::execute_remote and run_remote, reusing the actual family-capable
+execute_with_entities composition and the same private execution kernel.
+execute_with_invocation alone is unsuitable because its Families=() contract
+would omit real receptionists and family shutdown receipts. No new Application
+generic, runtime object, provider trait or send interpreter is selected.
+
+execute_remote takes the original Network and Work. Work receives only the
+ordinary typed ApplicationHandle, including its actual family receptionists.
+Return execution, Application receiving and independent connection receiving;
+the latter is created before startup is polled. This keeps actual startup/close
+causes available if execution unwinds. Bundling that receipt behind completion
+of another wait is shorter, but adds an unnecessary dependency between their
+availability. run_remote drives those same operations and returns their actual
+results as the existing four Application products plus the connection result.
+A borrowed wait may be cancelled; surrendering an entire receiving
+owner gives up its unread results under the previously selected policy.
+
+Reuse ApplicationOutcome: cold inputs=(Self,Network), original cold Work,
+prepared/uninvoked Work=(Network,Work), actual partial staging inputs including
+Families/Network/Work, prepared actor/spaces/scope, and unchanged Work output.
+On startup refusal return the cold Unstarted inputs; the independent connection
+receipt owns its one actual refusal cause. Immediate missing host returns the
+original Application/Network/Work and TryCurrentError. Native actor result,
+both notification results and family shutdowns keep their existing axes.
+No Session enters a public callback or any outcome branch. Expose the four
+already selected Network input declarations, using their existing owning
+translation; their earlier selected public-surface reservation is not counted
+again. Preserve the actual failed startup publication when the connection
+receiver is surrendered; demonstrate its deliberate disposition after resource
+custody is settled, rather than replacing it with an inferred error. Do not add
+a fallback result owner unless a focused failing law proves it necessary.
+
+The existing private into_supplied mapper currently equates cold and prepared
+Work types. Generalize that same mapper to preserve them independently: existing
+ordinary execution still substitutes the same Work, while remote execution has
+bare cold Work and prepared (Network,Work). Keep its exact six outcome cases,
+actual Invoke disposal and owned outputs; add no parallel mapper or public type.
+This distinction follows the recorded custody product, not a compiler diagnostic.
+The mapper stays owned by execution.rs; expose it only to its Application parent
+so the new sibling network composition can reuse that exact transformation.
+This deletes the need for a second six-case mapper and adds no public port.
+
+The exact blocker is the absent public Application-owned network startup and
+service lifecycle. First regressions construct the real public Application
+without SDK imports, retain cold originals on refusal, execute a real Counter
+request and prove joined root/notifications/connection results, cancel only a
+borrowed execution wait, and surrender connection receiving while actual
+cleanup continues. Audit real Entity-family support separately; an empty-family
+control cannot prove it. These entry witnesses establish no handshake, remote
+command authentication or complete service. Keep public service delivery held
+until actual inbound/outbound Actions, both providers and terminal Ledger work.
+
+Fresh graph remains manifestfc87c97e/rootd4ab9a6f/fixture95986a62, no patches:
+Behavior/Actors0.25.0 at2bb4510 with complete instructions2b7a9195, Address0.3.0,
+Communication0.1.6 at963067e0, Timers0.2.0, private Observe, Tokio1.53.1,
+serde_json1.0.151 and controlled SDK1.10.9/transport1.10.3. Existing Address,
+Communication, Observe, Timers, Behavior Actions and retirement owners remain
+unchanged. The kernel's acquired-startup correction is reused, not reimplemented.
+
+Change record: first entry substage expects application/network.rs plus owning
+module exports, the existing private supplied mapper, connection custody only
+if a failing witness requires
+it, owning public tests and PRD/acceptance/status: up to450 gross production
+lines, no new defined public type beyond the already selected four inputs,
+up to500 retained verification lines. The full inbound/outbound service stage
+forecasts +1400/-500/net900 production across at most ten additional software
+paths, subject to measured ownership minimization; deletions receive credit
+only after consumer migration. Plain service functions/AsyncFn are evaluated
+before any new public declaration product, builder or trait. No wire envelope,
+new crate, default limit or publication/retry/drain policy is selected here.
+
+Known cumulative production1518 plus forecast900 requires expanding the1600
+window. Automatically select2500 net production,18 cumulative public additions
+and125 software-owner slots, replacing1600/14/115; retain20000 verification/
+tooling lines. Carry every historical/external reservation and unproved extent;
+this forecast is not a historical upper-bound certificate or a scope reset.
+The prior startup stage remains charged at its measured contribution. Measure
+each retained substage; a missing contract or new abstraction still blocks its
+dependent edits despite this larger review window. No acceptance state advances.
