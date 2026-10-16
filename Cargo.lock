@@ -485,9 +485,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh"
-version = "1.10.9"
+version = "1.10.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "719887d8d158295dd8259ae1b6d35f33e390208fb0b28ba97eaf1a2f432b2263"
+checksum = "611fed7315bbfdded3b624e225e688c23ed15cd486507b529bd6fcb6cf20578b"
 dependencies = [
  "ahash",
  "arc-swap",
@@ -562,9 +562,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh-link"
-version = "1.10.3"
+version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf636ae28324c3ce73e18ec4a53742828718b916ef766ba6ef9d1886fd301d08"
+checksum = "b66ce85b0c251f501711316278e4d9e9b1f4d7e8f896bb4bc872880ebb27d7ae"
 dependencies = [
  "bombay-zenoh-config",
  "bombay-zenoh-link-commons",
@@ -601,9 +601,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh-link-tls"
-version = "1.10.3"
+version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ec6666b9f72da139610ffd4e9670464af1c26e2fa08089353a661fb30e16402"
+checksum = "66fdcaa60b410fdfca22d0b963bb7254049d0e31b3c6f4c0d2b815c41d4c4fe3"
 dependencies = [
  "async-trait",
  "base64",
@@ -615,7 +615,6 @@ dependencies = [
  "secrecy",
  "socket2 0.5.10",
  "time",
- "tls-listener",
  "tokio",
  "tokio-rustls",
  "tokio-util",
@@ -648,9 +647,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh-transport"
-version = "1.10.3"
+version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e0f735b4f4b5c5c6689e5fe2bfcece794e81c915a166dbfbb32ce596e72f9a9"
+checksum = "890898e979be84c066adf4ee248ea58d2bb331ecbd7cef917c843d8cb8535636"
 dependencies = [
  "async-trait",
  "bombay-zenoh-config",
@@ -3098,19 +3097,6 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
-
-[[package]]
-name = "tls-listener"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1461056cc1ef47003f7ee16e4cef3741068d4c7f6b627bfce49b7c00c120a530"
-dependencies = [
- "futures-util",
- "pin-project-lite",
- "thiserror",
- "tokio",
- "tokio-rustls",
-]
 
 [[package]]
 name = "token-cell"

@@ -33185,3 +33185,43 @@ was extended110 to130 lines; production/API/verification forecasts stayed fixed.
 Complete tracked/untracked change: eleven paths, production +208/-117/net91,
 tests +660/-11/net649, public API +0/-0types. These are private capability
 additions. Node no-Work/service/privacy and all full remote acceptance stay open.
+
+### Adopt the published TLS successor
+
+Pre-edit blocker: Bombay still selects Zenoh1.10.9/TLS-Link-Transport1.10.3,
+so its native tests do not exercise the published bounded listener/accepted queue.
+Fresh review3b69bf9f reopens84 owner/API/test/document inputs, selected Behavior
+98983b4/Actors0.26.0/macros0.14.2, Address0.3.0, Communication0.1.6, private
+Observe, Timers0.2.0 and Entity. All84 hashes still match after the separately
+verified kernel checkpointf8a65c38, now committed/pushed with a clean tree.
+No patch/replace exists in18 manifests. Actual source, CI, publication and clean
+registry-only consumer evidence selects exactc34 Zenoh1.10.10 and three1.10.4
+owners; Config/plugin/commons1.10.2 and validated owners2.2.0 stay unchanged.
+
+Forecast: change only the existing Bombay/isolated-fixture manifests and locks,
+plus this PRD/status (six paths, at most160 metadata/60 record lines changed).
+Production/test Rust +0/-0, public types +0/-0. Reuse the existing remote feature,
+TLS-only/default-features=false selection, Network lowering and native fixtures.
+Replace exactly four nodes; remove tls-listener0.11.2, whose sole incoming edge
+in both locks is the replaced TLS package. Expected counts400→399 and325→324;
+every other package/version/source/checksum/dependency edge must remain exact.
+Do not preserve that orphan or accept unrelated resolver drift. This is dependency
+adoption, not a new runtime or full remote acceptance. Capture old/new graphs
+before crediting native debug/optimized consumers and strict source/lint/format
+checks. SDK-only tests do not replace actual Bombay execution under the new lock.
+Known1668+91 research-retained production,12/18 public reservations and all
+2500/18/125/20000 ceilings/unknown historical charges carry; no headroom claim.
+
+Actual resolver output also changed four unrelated root Windows dependency edges.
+Owning errno/rustix/tempfile/winapi-util manifests still accept their old0.52
+selection. Reject that drift: retain its raw candidate, restore those four exact
+edges, then require Cargo's locked resolution and complete graph comparison.
+
+Adoption candidate now passes the same407 library/public tests and68 native TLS
+fixture tests in each profile; one existing controlled subprocess stays ignored.
+Both locked metadata commands, strict all-target/all-feature workspace lint,
+formatting and source laws11 pass. Graph review2f86b6e3 confirms395/320 unchanged
+complete records. Six paths: production/tests +0/-0, metadata +18/-46, public
+types +0/-0; exact runtime input bytes are frozen before this final record update.
+This verifies dependency adoption on the research branch, not main delivery or
+full service/privacy/resource acceptance. Prepare a focused main PR separately.

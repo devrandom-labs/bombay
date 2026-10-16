@@ -496,3 +496,8 @@ strict lint/format/source laws11 pass. Intended runtime inversions fail both
 profiles with exact restoration. The remote PRD retains forecasts, exact source
 epochs and production+91/public0 totals. Node no-Work/service/privacy and all
 full remote requirements remain open.
+
+SDK adoption passes407 library/public and68 native TLS tests per profile, with
+one controlled subprocess still ignored. Exact graph conservation, locked metadata,
+strict lint/format/source laws pass after fresh84-input owner verification. Six
+metadata/record paths change no Rust/API; focused main delivery remains pending.
