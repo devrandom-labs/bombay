@@ -51,6 +51,16 @@ mod protected;
 mod counter;
 use counter::{Counter, CounterMessage, CounterProcessed, CounterSends, CounterValue};
 
+#[cfg(all(test, feature = "protected-transport"))]
+#[expect(
+    dead_code,
+    reason = "sharing costs use verification from the complete provider source also exercised by private Node tests"
+)]
+mod providers;
+#[cfg(all(test, feature = "protected-transport"))]
+#[path = "providers/sharing.rs"]
+mod sharing;
+
 mod requester;
 use requester::*;
 

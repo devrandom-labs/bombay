@@ -2808,3 +2808,73 @@ Cargo artifact after preserved-mtime restoration stayed red and is not passing
 evidence. Production/public API0; tests+266/-0 in onefile. Empty inner init,
 native scheduling acceptance and joint startup remain unproven by this fixture.
 The canonical Behavior PRD retains full commands, source/log bindings and drift.
+
+
+Latest-main provider integration (DX20/23/25), pre-edit law: the recorded
+DEVX-LATEST-PROVIDER-MERGE-COMPILE-RED fails with13 errors: requests.rs imports
+an allocator from the isolated owner, uses the old two-input callback and old
+three-part result. Selected registry contracts are Behavior/Actors0.26.0,
+Address0.3.0, Communication0.1.5 and Timers0.2.0. This test-ownership correction
+changes no actor-model law or runtime capability. Reuse Node's existing private
+connection clone, actor-only callback, complete four-part ApplicationOutcome and
+existing Requester Scope; no Session reaches an application callback.
+
+Sharing-cost law (derived ownership measurement): verification precedes four
+Rc::new windows on original concrete Receipts. Each measures one alloc, no
+realloc, at least size_of Receipt bytes and equal size across four cases. A clone
+of the first Rc measures zero alloc/realloc/bytes. The same complete recorded/
+scheduled provider source is loaded by private Node and isolated allocator
+owners; Receipt fields remain private with the original projections. No SDK
+operation, JSON decoding, verification or Export lookup enters a cost window.
+The isolated parent alone expects unused protection/reply code because the
+complete native family executes in the Node owner. These measurements do not
+inspect the identical SDK-owned process objects or total native memory.
+
+Native pending/protection/replay, actual Export-owned sharing, original buffers,
+claims/proof pointers, reference counts, duplicate/conflict custody and complete
+cleanup assertions remain. New connection.is_closed observations check actual
+Node close authority. Current Clippy changes only assertion spelling, pointer
+method references and the local reply_proof name. Both source reviews conserve
+all original unaffected function bodies and native actions/assertions. Remote
+gates explicitly require all six original cases; featured isolated gates require
+the two sharing names and2/0failed/0ignored in both profiles, replacing an obsolete
+filter that selected no tests.
+
+Frozen593-file proof passes six native cases plus two sharing cases on Rust1.99
+and1.96, debug/release (32 executions). Four measurement calibrations fail both
+sharing cases: omitted Rc::new window and added live Box in the clone window,
+each profile. Node.close replaced by Ok fails both native cases at the new
+closed assertion in each profile. Byte restoration plus debug/release reruns
+pass16 further executions. The stronger post-run audit independently requires
+all18 command keys, canonical exact case names, exactly-once results, zero ignored tests,
+key-derived exit status and each failed case's own panic header at the
+source-bound primitive assertion.
+A first global-substring guard could not attribute both failures; it grants no
+credit independently. All593 original/restored source hashes match. Variant
+hashes are reconstructed from frozen originals/immutable driver, not sampled
+per-run inventories. Compiler versions are observed post-run. Raw argv/times,
+source/log hashes and scope are in provider-sharing/{final-sources,results,
+verified,verified-modes}.json. Final strict remote all-target/isolated Clippy and
+both formatting owners pass (38.551seconds). Measured Rc blocks are376bytes recorded/392scheduled;
+verification and transport memory are outside this cost claim.
+
+A fresh direct optimized featured suite passes68tests/one controlled TLS-child
+ignore; that child is exercised only by its controlled parent fixture. The exact
+missing-host retry passes debug; neither success explains the earlier optimized
+hang. Full combined gates and registry owner inference delivery remain open.
+Incoming main76dbd84 selects Communication0.1.6; its published archive checksum,
+VCS963067e and all21 packaged files match. Existing send_map is unchanged;
+capacity observation reserves no slot or permission, while Consumer retains the
+original through notification panic. Its integration and both complete graph
+comparisons follow this frozen0.1.5 checkpoint.
+
+Final drift: production+0/-0, public types/spellings+0/-0; tests+551/-389/net162 in
+five files; gates+13/-3/net10 in one file. Seven files including this record.
+Node still owns Some(Application)|None and an independently owned connection;
+provider sums remain four enums/nine alternatives, with unchanged products.
+No Behavior control state, transition branch, production module, cause, history,
+semantic boolean, nested actor authority or structural application syntax changes.
+Two test source files add three parent module declarations; one common cost
+equation has two actual provider substitutions. Cross-check Node-private close,
+Driver custody and authoritative-fact conservation. Both independent evidence
+reviews pass. Disposition: pass for this test-only batch; no programme completion or newer-main acceptance is claimed.

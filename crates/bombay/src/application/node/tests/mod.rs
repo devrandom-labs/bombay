@@ -19,14 +19,16 @@ mod json;
 )]
 mod requester;
 use requester::{
-    Binding, CounterOperation, CounterProofPurpose, CounterProtectedMeaning, CounterRequester,
-    CounterRequesterMessage, CounterRequesterState, CounterRequests, CounterServiceInput, Identity,
-    Permission, Scope,
+    CounterProofPurpose, CounterProtectedMeaning, CounterRequester, CounterRequesterMessage,
+    CounterRequesterState, CounterRequests, CounterServiceInput, Permission, Scope,
 };
 
 use counter::CounterValue;
 #[path = "../../../../tests/protected_counter/custody.rs"]
 mod custody;
 use custody::completed_actor;
+
+#[path = "../../../../tests/protected_counter/providers.rs"]
+mod providers;
 
 mod requests;
