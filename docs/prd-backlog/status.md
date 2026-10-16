@@ -135,15 +135,17 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | SELO1 | blocked | AUTH1, NET1, MNE1; external: Selo KERI runtime | — | [Downstream identity](identity-and-placement.md): run the admission contract suite against Selo, then prove rotation, delegation, revocation and deployment scenarios. |
 
 
-Current private resource comparison (2026-10-16): the unadopted SDK handshake
-candidate passes full native Peer/Peer and Router/Client pressure, live traffic,
-actual timeout, same-owner fresh retry and cleanup in debug and optimized
-builds. Original-source comparisons fail only the intended final check; owning
-TLS19/0 per profile and focused lint/format pass. Full SDK test lint remains
-blocked by unchanged stale feature consumers. Accepted-link queue/bytes/close
-contracts, SDK delivery and all full remote acceptance remain open. Exact
-scopes and source-bound evidence belong in the
-[owning change record](../prds/static-remote-actors.md#native-transport-pressure--full-owning-connection-before-adoption).
+Current private resource comparison (2026-10-16): the unadopted SDK candidate
+passes full native Peer/Peer and Router/Client pressure, live traffic, actual
+timeout, same-owner fresh retry and cleanup in debug and optimized builds.
+Full-channel producer cancellation also passes while preserving bidirectional
+use of the queued original and natively closing the untransferred rejection.
+Actual prior-source comparisons fail only their intended final checks. Owning
+TLS20/0 per profile and focused lint/format pass. Full SDK test lint remains
+blocked by unchanged stale feature consumers. Manager queue/bytes/close/drain,
+SDK delivery and all full remote acceptance remain open. Exact scopes and
+source-bound evidence belong in the
+[owning change record](../prds/static-remote-actors.md#accepted-link-handoff--cancellation-before-receiver-release).
 
 Latest research prerequisite delivery: [PR335](https://github.com/devrandom-labs/bombay/pull/335)
 merged `8cb82e5b785fcd04b0d991c51758fba6c75096f6` after review and all six

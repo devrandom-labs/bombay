@@ -31779,3 +31779,165 @@ across two files; no Bombay software change. SDK production+23/-6/net17,
 tests+732/-7/net725, metadata+6/-0 across six files; public types+0/-0.
 Both selected worktrees have zero untracked files. Source retention remains
 private/unadopted; scoped proof is not full CI, delivery or acceptance.
+
+
+### Accepted-link handoff — cancellation before receiver release
+
+Fresh source bindingf86dd29b at researchb35925c selects the unchanged registry
+Behavior/Actors0.26.0 at98983b4, complete instructions2b7a9195, Address0.3.0,
+Communication0.1.6, private Observe and Timers0.2.0. Root lock3caba2a6 has no
+patch. Native SDK1.10.9/TLS1.10.3 remain controlled1ea4; current private listener
+is1fa83b68 and owning TLS tests67f4e652. These owners retain their existing
+algebra, mailbox, address, completion and timer laws. This is native I/O
+mechanism evidence outside Behavior folds; no Bombay interpreter changes.
+
+The next blocker is stopping a TLS producer after an authenticated original
+reaches a full handoff. Capacity1 is an explicit test input only, not a selected
+TransportManager limit. Keep the first original in its sole connected receiver;
+qualify the actual second original through its existing Accepted event and
+Pending from that SAME caller-only poll. Source proposal5eda89d7 proves there
+is no await between that event and handoff. Only then cancel, transfer the SAME
+pinned native future to its existing Acceptor task owner, and observe its single
+JoinHandle through a disposable borrowed wait. Always release/drain exact
+originals and acquire the actual join before assertions. A watchdog, absent
+event, setup/IO/cleanup failure or reconstructed future supplies no law evidence.
+
+The selected desired law is that full handoff cannot indefinitely withhold
+listener cancellation. The first transferred original remains solely receiver
+owned and usable; the untransferred second original must be explicitly refused
+and natively closed exactly once by its producer. Preserve original close/join
+errors, rather than claiming successful closure from abandonment. The baseline
+may transfer that second original only after the test explicitly releases its
+queue; acquire it and close it normally before rejecting the final early-stop
+oracle. Native peer/endpoint/authentication and actual IO/EOF/close facts qualify
+all ownership branches. This is one bounded producer regression, not manager
+queue saturation, universal native-close progress, byte bounds or service proof.
+
+Pre-edit test scope: the EXISTING TLS unicast/tests.rs only, at most400 additional
+formatted test lines, with its aggregate introduced-line forecast raised from320
+to700 before authoring. Expect production+0/-0/net0, public types+0/-0, no new
+dependency/lock/path and the same six SDK plus two Bombay record paths. Reuse
+existing certificate fixtures, mTLS configuration, native accept_task, Flume,
+TLS streams, Acceptor task and exact error types. Compare existing fmt/file
+composition against one concrete observer of the existing tracing::Subscriber
+port; select the latter to avoid a dependency edge, filesystem lifecycle and
+downcast. Its sole private fixture owns recorded acceptance events for this
+causal observation; it supplies no actor/interface/runtime or new production
+semantic owner. Use a scoped dispatcher only around synchronous polls, never
+across await; reject disabled-span misuse rather than invent fake spans.
+
+Author and independent two-pass review precede mounting. Establish the actual
+prior handoff failure in debug and optimized builds before choosing the smallest
+production correction. A prospective existing-type try_send may return the
+exact original on Full/Disconnected; its close/error/cancellation law must be
+reviewed separately before production selection. The native producer output
+remains its existing ZResult. No new queue capacity, config, pool, task, public
+type, erased interface, timeout default, macro or actor policy is authorized by
+this test stage. Current SDK production+23/-6/net17 and all1606/2500 working,
+1589 retained,12/18 and125/20000 historical/external extents carry unchanged.
+Full SDK alltests, accepted manager queue/bytes/stop order, application service/
+privacy, R01-R25/AUTH1/NET1 and release remain open.
+
+
+Fresh neighbor verification924de590 records45 exact source/API/test/docs
+inputs and the complete selected Behavior instructions. It clears only this
+private native regression prerequisite. The first queued original must remain
+bidirectionally usable after listener stop. Require a recorded actual native
+Pending poll after cancellation before crediting the expected baseline failure;
+an unscheduled Acceptor task is not evidence that queue capacity blocked stop.
+
+Source comparisoncd7fd616 proves Flume0.11.1 TrySendError::into_inner exhaustively
+returns the original from Full or Disconnected. An explicit common refusal
+policy may discharge those two reasons identically: close only that returned
+original once, continue on successful close, return its exact existing error on
+failure. Existing inherent try_send/into_inner calls need no new dependency
+edge or enum import. If a later consumer needs the reasons to select different
+actions, reopen this discharge. After actual baseline D/R qualification, the
+prospective production scope is the already changed native unicast.rs only,
+about+4/-4/net0 relative1fa; public types+0/-0, no other production path. Native
+close still may wait, and its existing expiry winner path discards an internal
+join result. This stage cannot qualify arbitrary close progress, every internal
+failure, expiry races or exact close-call counts from EOF. Those full resource
+and preservation gates remain open; no production source has been edited yet.
+
+
+Handoff sourcefe55c75f passes author, root and independent two-pass reviews
+(f64ba593). Pinned rustfmt adds335/removes2 relative67; every prior test body
+remains byte-identical, within400 additional/700 aggregate forecast. Both
+original TLS clients complete before cancellation qualification. The original
+listener will now be mounted unchanged1fa for actual debug/optimized baseline
+commands; only a final early-stop failure after all IO/ownership/cleanup gates
+qualifies. No implementation or execution result is inferred from review.
+
+
+Actual1fa handoff baselines now fail only final830 in debug and optimized
+builds,0/1 with19 filtered; logs4bcfd45d/c71eb922. Both traces pass every
+preceding actual post-cancel Pending, same-listener join, both original native
+closure/EOF, endpoint/authentication and first-link bidirectional IO check.
+Independent baseline review2b5f719c verifies all27 matching inputs and excludes
+compiler/setup/watchdog/cleanup failures. This establishes the failing law.
+
+Select private candidate dba48a75 for the smallest producer correction, pending
+its independent concrete-source review before mounting. It replaces only the
+existing send_async block with existing try_send and recovers the exact rejected
+original via into_inner. Both rejection reasons deliberately share the same
+refusal/close policy; successful close continues the existing loop, native close
+error returns unchanged through existing ZResult, explicitly ending this
+listener. No transferred original or spare clone is closed. Pinned external
+format check passes. The exact candidate is+4/-4/net0 relative1fa; expected
+complete SDK production+27/-10/net17, tests+1067/-9/net1058, metadata+6/-0 and
+public types+0/-0 across the SAME six SDK paths. No queue capacity, defaults,
+public interface, dependency, macro, task or other production file is added.
+
+Mount only after author/root and independent two-pass source qualification,
+then require healthy same-source handoff D/R before broader owning TLS/native
+controls and strict scoped lint/format. Full native Peer/Peer and Router/Client
+pressure must retain live traffic/refusal/fresh retry after this producer cut.
+Global manager queue, backing bytes, arbitrary close progress/expiry/internal
+errors, broad stale-alltests, service/privacy, full remote and release gates
+remain open. All existing budgets and unknown historical/extents carry.
+
+
+Private candidate dba48a75 now passes the SAME handoff regression in debug and
+optimized builds,1/0 each (26e122fb/8dff550f), with the queue still full until
+after the actual listener join. The second original never transfers and its
+peer observes clean TLS EOF; the queued first original remains bidirectionally
+usable after stop. Expected baseline failures retain their exact1fa/fe55 source
+and final830 scope. All27 per-command source maps match before/after;
+only native production changes across software epochs, with the legitimate
+pre-edit PRD update separately retained.
+
+Owning TLS20/0 per profile and both native Peer/Peer, Router/Client pressure
+cases2/0 per profile pass. Existing real traffic, native deadline refusal,
+same-owner fresh open and cleanup remain qualified. Strict TLS library/tests
+Clippy, strict changed native test target Clippy and pinned workspace formatting
+exit0. Independent runtime review278bee6d verifies all11 actual terminal
+commands, raw logs, original-negative qualification and exact restored sources.
+The prior H1/f04 and113/4e epochs retain their original immutable scope; no
+receipt is relabeled to this source.
+
+This is a producer-capacity-wait correction, with production+4/-4/net0 relative
+the prior private candidate and one owning test addition+335/-2/net333. It is
+not SDK delivery or a global shutdown/resource guarantee. Actual Manager
+accepted queue remains unbounded; close IO, expiry/internal errors, final
+manager drain and byte/backing contracts remain unverified. The earlier broad
+alltests E0599/unused-code failures remain unresolved; scoped lint does not
+replace that gate. Public service/privacy, release and every full remote row
+remain open. Exact argv/environment/source snapshots are captured in the
+handoff command receipts; seal their complete proof before checkpoint commit.
+
+
+Exact focused commands, run from the controlled SDK checkout:
+
+```sh
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo test --offline --locked -p bombay-zenoh-link-tls --lib unicast::tests::listener_stop_retires_full_handoff_and_preserves_queued_original -- --exact --test-threads=1
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo test --release --offline --locked -p bombay-zenoh-link-tls --lib unicast::tests::listener_stop_retires_full_handoff_and_preserves_queued_original -- --exact --test-threads=1
+```
+
+
+Final complete handoff change record: Bombay records+173/-9/net164
+across two files; production+0/-0/net0 and public types+0/-0. SDK production
++27/-10/net17, tests+1067/-9/net1058, metadata+6/-0 across six files.
+Both selected worktrees have zero untracked files. Known1606/2500 working,
+1589 retained,12/18 and all125/20000 historical/external extents carry.
+This private checkpoint adds no SDK delivery or full-feature acceptance.
