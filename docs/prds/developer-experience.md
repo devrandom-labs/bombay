@@ -2867,6 +2867,13 @@ VCS963067e and all21 packaged files match. Existing send_map is unchanged;
 capacity observation reserves no slot or permission, while Consumer retains the
 original through notification panic. Its integration and both complete graph
 comparisons follow this frozen0.1.5 checkpoint.
+The version-only merge expects Cargo.toml, both Cargo.lock files and upstream
+documentation; every Rust file must equal cd77c8b. Production/API/state delta0.
+Derived law: notification failure retains the original queued payload; capacity
+observation is neither reservation nor authority. Ordinary Application syntax
+and complete outcomes stay unchanged. Reuse the existing mailbox, Driver and
+Node contracts; verify exact399/324 neighbor conservation and all24 native Nix
+checks after merging. No owner or interpreter abstraction is added.
 
 Final drift: production+0/-0, public types/spellings+0/-0; tests+551/-389/net162 in
 five files; gates+13/-3/net10 in one file. Seven files including this record.
