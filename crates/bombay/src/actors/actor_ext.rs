@@ -1,11 +1,14 @@
 use core::time::Duration;
 use std::time::Instant;
 
-use behavior::{Behavior, BehaviorAddr, BehaviorMessage, EndpointAddress, Never, Protocol};
+use behavior::{
+    Behavior, BehaviorAddr, BehaviorMessage, EndpointAddress, Never, Protocol, SendsFor, User,
+};
 use behavior_actors::{
-    Deadline, DeadlineReaction, EstablishedTerminationMonitor, EstablishedTerminationReaction,
-    FinalizeOnShutdown, ObserveEstablished, OneShot, Periodic, ReceiveTimeout, ShutdownReaction,
-    Stash, StashRoute, StaticallyInfallible, StopOnShutdown, TimedReaction,
+    Deadline, DeadlineReaction, DeliveryRoute, EstablishedTerminationMonitor,
+    EstablishedTerminationReaction, FinalizeOnShutdown, ObserveEstablished, OneShot, Periodic,
+    ReceiveTimeout, ShutdownReaction, Stash, StashRoute, StaticallyInfallible, StopOnShutdown,
+    TimedReaction,
 };
 
 /// Discover and compose reusable wrappers from any concrete actor behavior.
@@ -15,18 +18,32 @@ use behavior_actors::{
 /// type and remains semantically significant. No policy is selected unless it
 /// is supplied explicitly by the application.
 pub trait ActorExt: Behavior + Sized {
-    /// Stash selected messages using a pure decision over the inner behavior and message.
+    /// Hold selected original inputs up to `limit`, returning overflow to `refusals`.
     ///
     /// Replay observes the inner state returned by each preceding transition.
     /// The inner transition must be statically infallible: replay cannot undo
-    /// actions already produced by earlier messages.
+    /// actions already produced by earlier messages. A refusal sends the whole
+    /// original User, including its sender, and continues without changing the
+    /// inner actor. Zero refuses all newly selected held inputs; delivery,
+    /// release and non-user events remain available.
     #[must_use]
-    fn with_stash(self, route: fn(&Self, &BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
+    fn with_stash<R>(
+        self,
+        limit: usize,
+        refusals: R,
+        route: fn(&Self, &BehaviorMessage<Self>) -> StashRoute,
+    ) -> Stash<Self, R>
     where
         Self: Behavior<Ph = Never>,
         Self::Error: StaticallyInfallible,
+        R: DeliveryRoute + Clone,
+        R::Protocol: Protocol<
+                Addr = BehaviorAddr<Self>,
+                Msg = User<BehaviorAddr<Self>, BehaviorMessage<Self>>,
+            >,
+        R::Sends: SendsFor<Self::Event>,
     {
-        Stash::new(self, route)
+        Stash::new(self, limit, refusals, route)
     }
 
     /// React once after the relative delay.

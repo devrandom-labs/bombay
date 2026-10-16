@@ -24,6 +24,29 @@ Compiler friction cannot invent bounds, no-op inputs or structural caller work.
 
 ## Ownership and delivery
 
+Finite holding is isolated on `codex/devx-stash-limits`. The ordinary spelling
+is `actor.with_stash(limit, refused, route)`; overflow returns the complete
+original input and sender through Actions. Explicit UnlimitedStash serves
+advanced unbounded/Never callers. Source-selected owner a863633 (draft Behavior
+PR114, including common send-product PR113) passes all11 native Nix gates,
+1,016 tests/123 doctests, package preflight and its failure controls. Those APIs
+are unpublished; actual published0.28.0 does not contain finite holding.
+
+The focused Bombay source-selected matrix passes Rust1.99/1.96 debug/release:
+three native journeys (accepted refusal, closed recipient and replay-selector
+panic retirement) plus six strict static fixtures per configuration. Original
+Box allocations/senders, all custody lanes, cleanup and both notifications are
+observed. A held input stays owned until delegated or taken; unwind preserves
+only still-undelegated originals, never arbitrary actor rollback. The original
+queue fails this law in both profiles; independent reviews and pure original-
+source controls distinguish selector-current custody from actor-consumed input.
+All397 nonowner package records remain exact. Root manifests/lock still select
+registry027/150: these proofs use isolated source selection, not an actual
+registry build of the new facade. Catalogue migration, diagnostic inventory,
+reviewed breaking release/registry adoption and final whole-repository gates
+remain open. No new runtime or protocol surface is introduced by this facade.
+Latest main f4aa3b3d is already an ancestor of this isolated branch.
+
 The registry delivery stays isolated on `codex/devx-registry-027`; verified
 integration1cc0953 includes current mainf25e4a0. The timer implementation is
 separate on `codex/devx-owned-timers`. Other AI worktrees remain untouched. It selects registry Behavior/Actors0.27.0,
