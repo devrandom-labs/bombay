@@ -115,8 +115,8 @@ packages prove the combined changes, rather than transferring earlier timer-only
 archive results. Normal registry release, final nested locks, remote/minimal-feature
 and authoritative Bombay full gates remain required.
 
-Complete feature Rust delta againstbf1921b, including uncommitted inventory tests:
-production+143/-39/net104; tests+610/-166/net444; public types+0/-0, across28
+Complete feature Rust delta againstbf1921b, including inventory reconciliation:
+production+143/-39/net104; tests+623/-175/net448; public types+0/-0, across29
 Rust files. Four existing ActorExt signatures lose IDs. Three private runtime
 contracts own the disjoint timer key, occurrence proof and destination port;
 there is no new production module, lifecycle phase, transition authority,
@@ -124,6 +124,29 @@ arrival-history state, repeated cause, semantic flag or structural caller syntax
 The earlier owner/minimal-runtime+126 checkpoint is a different scope. The
 composition and settlement laws in the owning PRD remain the cross-check;
 checkpoint disposition:pass. Documentation/JSON changes are recorded separately.
+
+The formatted source passes the pinned1.99 feature sequence in101.644s:
+426 exact remote outer cases plus20 separate UI fixtures per debug/release
+profile; both child-feature harnesses each execute six fixtures. Formatting,
+all-feature/all-target Bombay strict Clippy and all-feature docs pass without
+Rust warnings. All2084 inputs stay exact through the nine commands; two
+independent evidence reviews confirm counts, modes and six required request
+cases. This is source-selected648 proof, not registry, protected nested tests,
+whole-workspace all-feature execution or authoritative Nix acceptance.
+
+The original optimized matrix still fails one Node startup before pressure
+work; its panic hid the cause and an isolated pass does not explain it. With
+the same parent-owned IPv4/IPv6 listeners held across four controls, fixed-port
+startup fails native AddressInUse in both profiles, while `localhost:0` runs
+the complete original Counter journey. Both local-only pressure tests now use
+SDK-selected ports and disclose the original startup source on failure. Their
+Work bodies and all61 assertions remain unchanged; shared two-node fixtures,
+runtime code, public types and policies are untouched. Runner, socket-guard
+and initial format failures keep their outcomes. Minimum-compiler feature
+verification stops at an existing child-fixture diagnostic mismatch (one
+E0277 versus two expected), before executing the remaining stages. Current
+passing checks do not certify that failed minimum run or recover either old
+failure cause.
 
 ## Verification
 

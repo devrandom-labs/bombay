@@ -2,15 +2,14 @@
 //! Every retry rechecks current permission and retains the exact native Full command.
 use super::super::counter::{CounterProcessed, CounterValue};
 use super::{Counter, CounterMessage, EndpointRole, LedgerCommand, MailLedger, Receipts};
-use super::{
-    assert_completed, assert_notifications, assert_report, configuration, reserved_address,
-};
+use super::{assert_completed, assert_notifications, assert_report, configuration};
 use bombay::TrySendError;
 use bombay::actors::ActorExt;
 use bombay::behavior::BehaviorBase;
 use bombay::prelude::Application;
 use bombay::remote::{Admission, ExportLimits, IngressError, RequestRefusal};
 use std::cell::{Cell, Ref, RefCell};
+use std::error::Error;
 use std::num::NonZeroUsize;
 use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
 use std::sync::{Arc, Mutex, mpsc as release};
@@ -37,12 +36,12 @@ impl Drop for PermissionLoan<'_> {
 )]
 fn counter_retries_only_its_original_full_request_with_current_permission() {
     Builder::new_multi_thread().worker_threads(1).enable_all().build().unwrap().block_on(async {
-        let address = reserved_address();
+        let address = "tls/localhost:0";
         let refusals = Arc::new(Mutex::new(Vec::<IngressError<Query>>::new()));
         let observed = Arc::clone(&refusals);
         let mut node = Application::new(Counter::new().stop_on_shutdown())
-            .open_node(configuration(&address, &EndpointRole::Receiver)).await
-            .unwrap_or_else(|_| panic!("configured actual Counter Node"));
+            .open_node(configuration(address, &EndpointRole::Receiver)).await
+            .unwrap_or_else(|(_, _, cause)| panic!("configured actual Counter Node at {address}: {cause}; source: {:?}", cause.source()));
         let (execution, receiving) = node.execute_with(|application| async move {
             let target = application.root().established_recipient();
             let target_address = application.root().address();
@@ -228,7 +227,7 @@ fn ledger_full_retry_returns_the_same_allocation_when_the_exact_actor_has_retire
         .build()
         .unwrap()
         .block_on(async {
-            let address = reserved_address();
+            let address = "tls/localhost:0";
             let refusals = Arc::new(Mutex::new(Vec::<IngressError<Query>>::new()));
             let observed = Arc::clone(&refusals);
             let mut node = Application::new(
@@ -237,9 +236,14 @@ fn ledger_full_retry_returns_the_same_allocation_when_the_exact_actor_has_retire
                 }
                 .stop_on_shutdown(),
             )
-            .open_node(configuration(&address, &EndpointRole::Receiver))
+            .open_node(configuration(address, &EndpointRole::Receiver))
             .await
-            .unwrap_or_else(|_| panic!("configured actual Ledger Node"));
+            .unwrap_or_else(|(_, _, cause)| {
+                panic!(
+                    "configured actual Ledger Node at {address}: {cause}; source: {:?}",
+                    cause.source()
+                )
+            });
             let (execution, receiving) = node
                 .execute_with(|application| async move {
                     let target = application.root().established_recipient();
