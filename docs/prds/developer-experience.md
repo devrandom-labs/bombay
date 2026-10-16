@@ -339,3 +339,19 @@ exact through testing, current formatting and strict Clippy for all five targets
 both independent source/terminal reviews pass. This is combined archive evidence,
 not registry adoption or full-programme acceptance. Documentation updates follow
 the frozen-source checkpoint; earlier source receipts are not relabelled.
+
+### Stash recovery
+
+The owning law at Behavior641d44d selects `let pending = stash.take();` for
+original held inputs, leaving its actor and route intact. Owner5068f6a adds
+one method and no stored state, bound or type. The native invoice
+journey accounts for a nonempty held FIFO plus unread mailbox suffix, original
+senders and move-only allocations, every retirement lane, cleanup and both
+notifications. Rust1.99/1.96 debug/release pass with private owner selection;
+the actual root stays registry-only. Pure owner cases cover both shutdown
+orders and independent machine deferrals plus future outer replay. Three
+isolated broken-body controls are rejected in both profiles; the first shared
+build-directory control campaign remains failed and uncredited. No production
+Bombay code changes; capacity/overflow and final owner/archive/registry gates remain
+separate obligations. Sources, failed preliminary controls and twice-reviewed
+receipts stay with the owning PRD; these bounded proofs do not close DX14.
