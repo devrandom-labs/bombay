@@ -1,11 +1,26 @@
 # Developer experience coordination
 
-Status: active. Work is isolated on `codex/devx-policy-interface`;
+Status: active. Work is isolated on `codex/devx-pr375-integration`;
 the other Bombay checkout is untouched. Initial inspected baselines were
 Bombay `c3afb3011090ac4c9112fd39e4a76980db856df0` and Behavior
 `d69f992b371c12ab34e73b18e45b8112c90a1508`; current Bombay selects published
 Behavior/Actors0.26.0, macros0.14.2, Communication0.1.6 and Timers0.2.0
 without repository patches.
+
+
+PR375 merge repair, before editing: capture upstream67a286c (PR374) and
+retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native
+check snapshot untouched. Preserve simultaneous native-reply/query receiving,
+occupied outside slots, acquired User/EOF custody, exact query/count permits
+and cancellation wake registration. This is integration of existing transport
+policy, not a new actor-model law. Keep Node work callbacks actor-only and
+complete Application outcomes. Selected registry owners are unchanged and
+verified in PR375-INTEGRATION-INPUTS.json. Expected integration introduces no
+new public type, actor state, runtime owner or policy; retain upstream assertions
+and shared receipt-cost ownership. Compile the combined source before any
+call-site correction, then verify the affected native cases and final gates.
+Update the existing PR head after resolving its conflict; this does not authorize
+merging PR375 to main or implement the separate remote actor product.
 
 Latest-main integration, pre-edit (2026-10-15): isolate upstream8d809b3 on
 `codex/devx-client-integration` from fully gated ea2b5b4; keep the unfinished
