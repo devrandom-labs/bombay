@@ -11,8 +11,9 @@ PRD records those decisions. Delegation does not establish any passing witness.
 
 Communication0.1.6 adoption PR377 merged76dbd849 with all six checks passing;
 required38820049280 succeeds and reviewed/tested/main tree25bc63d2 matches.
-PR379 integrates that actual main with production/tests/graph unchanged from
-17fec54; its documentation conflict is resolved and fresh head CI is required.
+PR379 now integrates actual main67a286c, including PR374. Its startup kernel
+and test remain byte-identical to17fec54; the merged futures-util dependency
+edge belongs to PR374. Documentation is resolved; fresh head CI is required.
 The startup correction remains unmerged. Capacity observation reserves no slot
 and cannot replace fresh permission checks; no full remote row advances.
 
@@ -25,7 +26,9 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 release and PR374 API delivery remain held.
+privacy remain open. PR373 was superseded; PR374 merged67a286c after all six
+checks passed.
+Full-service delivery and the private transport API remain open.
 
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
@@ -505,11 +508,16 @@ Current release result: PR371 actually merged75c8db4f with all six checks and
 scoped final source/native/Nix reviews passing. The registry archive, tag and267
 Rust files for bombay-rs0.1.3 match that reviewed tree; publication is verified.
 Earlier failures above retain their original scope and are not overwritten.
-The current unmerged export candidate adds per-request native clients and
-explicit Full-only retry. Its20 focused tests and combined406 tests pass in
-debug and optimized builds before release-main integration. Current-source
-inversions, post-integration combined gates, final review and PR delivery remain
-required. No full R01–R25, AUTH1 or NET1 obligation closes from these results.
+PR372 actually mergede2a4e7f3 after all six checks and final scoped reviews passed.
+Its per-request native clients and explicit Full-only retry retain focused
+controls, intended inversions and exact-restored results in both profiles.
+Required Nix38726056219 executes406 remote cases per profile, workspace703/0/1
+and bounded Driver/Observe fuzz; conditional Miri is skipped. The separate
+concurrent-receive contribution remains unmerged: six current-source cuts fail
+their intended assertions in both profiles. Restored affected406 passes in both
+profiles before lint-only corrections; final source passes fresh focused controls,
+strict workspace Clippy and formatting. Its own CI and delivery remain required.
+No full R01–R25, AUTH1 or NET1 obligation closes from these results.
 
 
 Application startup-custody regression: prior main fails exactly the acquired

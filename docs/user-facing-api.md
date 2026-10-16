@@ -488,11 +488,14 @@ host. Trusted work can clone or close the native Session and must honor the SDK
 host/custody contract; exposing that advanced API does not enforce all remote
 policy. Whole operation disposal is surrender, not proof of joined retirement.
 
-Node is delivered; the unmerged `ApplicationHandle::export` contribution uses
+Node and PR372's `ApplicationHandle::export` are delivered on main. Export uses
 that Node's private Session and actual Application ownership. It retains each
 request's originals with an independent existing reply client and preserves
-native nonwaiting admission results. It remains a lower-level candidate:
+native nonwaiting admission results. It remains a lower-level primitive:
 authenticated remote operations and the ordinary multi-node API are still pending.
+Its separate concurrent-receive candidate preserves actual query/native inputs
+without making callers serialize JSON in actor mailboxes. Provider verification,
+reply protection and current permission remain distinct from native acquisition.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 

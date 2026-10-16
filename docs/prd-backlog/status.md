@@ -20,8 +20,9 @@ main trees match25bc63d2; required Nix38820049280 succeeds, primitive fuzz
 passes and Miri is skipped. Both locks preserve every other package. Capacity
 readiness observes without reserving capacity or granting authority. Fresh
 permission checks and the full remote Application service remain required;
-full remote rows stay open. PR379 integrates this actual main without changing
-its startup correction source; fresh exact-head CI remains required.
+full remote rows stay open. PR374 concurrent receiving merged67a286c after
+all six checks passed. PR379 integrates that actual main without changing its
+startup correction source; fresh exact-head CI remains required.
 
 [Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
 mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
@@ -32,7 +33,9 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 release and PR374 API delivery remain held.
+privacy remain open. PR373 was superseded; PR374 merged67a286c after all six
+checks passed.
+Full-service delivery and the private transport API remain open.
 
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.
@@ -71,15 +74,24 @@ commit, annotated tag and267 Rust files match the reviewed merged tree.
 Its packaged graph retains SDK1.10.9, TLS1.10.3 and Rustls0.23.46. No new
 registry-consumer execution or complete remote support is claimed.
 
-The unmerged crate-owned export retains one existing native client per request;
+The merged crate-owned export retains one existing native client per request;
 20 focused consumer tests pass in both profiles. Two native Full-retry cases
 also pass with the narrow loan-release-panic extension. Dispatch removal,
 authority bypass and late storage fail their intended assertions in both
 profiles, followed by exact restored controls. Scoped interface minimization
-and independent source reviews are recorded. Draft PR372 contains the candidate
+and independent source reviews are recorded. PR372 delivers the primitive
 and the corrected allocation measurement: restored plain55/0/0 and protected
-70/0/1 suites pass in both profiles. Final combined gates, execution review and
-actual PR delivery remain required. These scoped results do not change any
+70/0/1 suites pass in both profiles. Workspace Nextest passes703/one skipped;
+all six final CI checks pass, including independently reviewed native TLS debug
+and release campaigns and required Nix38726056219. The normal exact-head guarded
+merge ise2a4e7f3; its tree matches reviewed663ac970. Publication remains separate.
+An isolated dependent contribution adds concurrent query/native
+receiving to the existing export: its three extended Counter/Ledger cases pass
+in debug and optimized profiles. All six current-source cuts reach intended
+assertions in both profiles; exact-restored affected406 passes in both profiles
+before lint-only corrections. Final source has fresh focused controls, strict
+workspace Clippy and formatting passing. Its own required CI and actual delivery
+remain required. These results do not change any
 full R01–R25, AUTH1 or NET1 state.
 
 An isolated test-only composition now runs two actual Nodes with both protocols

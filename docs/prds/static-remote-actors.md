@@ -1,7 +1,8 @@
 # Static remote actors and typed admission
 
-Current delivery: Communication0.1.6 adoption merged through PR377. Startup
-PR379 integrates actual main and requires fresh exact-head CI before merge.
+Current delivery: Communication0.1.6 adoption merged through PR377; concurrent
+query/native receiving merged through PR374 at67a286c. Startup PR379 integrates
+that actual main and requires fresh exact-head CI before merge.
 Earlier preparation sections retain their historical source/execution scope.
 
 ## Communication capacity dependency (2026-10-15 UTC)
@@ -51,7 +52,9 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 release and PR374 API delivery remain held.
+privacy remain open. PR373 was superseded; PR374 merged67a286c after all six
+checks passed.
+Full-service delivery and the private transport API remain open.
 
 The contribution retains source07e3a096 (+702/-13 test lines), removing only
 one duplicate assertion from reviewede090227f. It preserves the original
@@ -79,20 +82,23 @@ the earlier timed-out required job remains uncredited. Actual bombay-rs0.1.3
 publication is verified against its registry archive, tag and merged source.
 Complete remote delivery remains outstanding.
 
-The unmerged crate-owned export now retains an independent existing native client
-per request. Its20 focused consumer tests pass in debug and optimized builds,
-including the actual late-A/B isolation defect and cancellation with native
-Stash custody. Explicit Full retry has two passing native pressure cases in
-both profiles; dispatch-removal and permission-refusal inversions fail their
-intended assertions in both profiles. The narrow permission-loan release-panic
-witness also passes both profiles, with intended late-storage failures and
-fresh restored controls. Standard diagnostic/source custody and scoped
-minimization are independently qualified. PR372 contains the candidate; its
-corrected allocation measurement passes the full plain and protected suites
-in both profiles. Final combined gates, execution review and actual delivery
-remain required. These scoped results do not establish complete remote support.
-All full R01–R25, AUTH1 and NET1 gates, protected Node-owned exports and the
-separate remote-counter application remain open.
+PR372 mergede2a4e7f3 after all six checks and scoped source/native/required-Nix
+reviews passed. Its merged tree exactly matches reviewed663ac970. The crate-owned
+export retains each request's original bytes, proof and provider receipt with an
+independent existing native client. Native admission, Full-only retry, late-reply
+isolation, cancellation custody and permission-loan release-panic witnesses are
+qualified. Required run38726056219 passes, including406 remote cases per profile,
+703 optimized workspace passes/one ignored and actual bounded fuzz campaigns.
+Conditional Miri is skipped. This new API is merged, not yet registry-published.
+
+The dependent concurrent receive contribution remains unmerged. Its three
+extended Counter/Ledger cases pass in both profiles; six causal cuts reach their
+intended assertions in both profiles, followed by exact restoration. Full affected
+commands pass406 per profile before lint-only corrections; the final source has
+fresh focused controls, strict workspace Clippy and formatting passing. Required
+CI and actual delivery remain pending. All full R01–R25, AUTH1 and NET1 gates,
+authenticated Node-owned exports and the separate remote-counter application
+remain open. These primitives do not establish complete remote support.
 See [reviewed prerequisite delivery](#reviewed-prerequisite-delivery-2026-10-15-utc)
 for exact commits, tests, scope and limitations. The following earlier
 checkpoints preserve their historical source and gate states.
@@ -25936,6 +25942,432 @@ Final CI/artifact review and a normal exact-head guarded merge remain required.
 Record their actual results and merge in the next delivery checkpoint; no full
 R01–R25, AUTH1 or NET1 gate closes from this prerequisite.
 
+### Concurrent export input — isolated research before implementation
+
+PR372's final submitted source is663ac97. Its CI/delivery gate remains separate;
+this research branch does not alter that submitted source. Selected dependency
+versions and ownership remain Behavior/Actors0.25.0, Communication0.1.5,
+Tokio1.53.1 and transitive futures-util0.3.34, without patches. Sealed research
+fe50322b/8da4583a inspects their actual receive, notification and future-set
+implementations. It selects no new production API, dependency or default.
+
+The required next law is two-way progress: an incoming query must progress while
+a prior actor reply remains pending, and an actor reply must progress without
+a later query or unrelated wake. Current receive_query/receive_native each
+borrow the whole Export. First isolate that ordinary public composition in an
+existing consumer test owner and compile it through pinned Nix. Expected E0499
+documents a borrowing limitation only; it is not an executed semantic inverse
+or proof that any particular new API is needed. Keep the probe under60 new
+source lines, with no manifest/dependency/public-type changes or new controller.
+
+Alternatives under investigation are disjoint borrowing within the existing
+owner using standard/Tokio futures, or the already locked FuturesUnordered for
+multiple actual native waits. The latter owns its children and their wake
+registrations but allocates per child; rebuilding it ends those borrowed waits
+and incurs allocation churn. Inspect and measure before selecting it. Dropping
+a temporary Communication receive removes its actual notification waiter;
+payload retention alone cannot establish progress. Preserve any acquired native
+result before disposing its producer. Do not invent a readiness flag, extra
+mailbox, task hierarchy, scheduler or public wrapper to evade the question.
+
+Mailbox-capacity readiness is a separate unresolved prerequisite. The selected
+Communication exposes no public capacity-only waiter. Its awaited send may
+admit after waiting and therefore cannot replace the approved coherent fresh
+permission check plus nonwaiting admission. This research promises no automatic
+idle retry, timeout, resource default, production identity or full acceptance.
+
+The public composition probe now has actual evidence: the unchanged concrete
+consumer target compiles with --no-run and exits0. Adding ten lines that retain
+both futures produces exactly one E0499 at the second mutable Export borrow.
+Both commands use pinned Nix with the selected lock and offline Cargo. No
+runtime test executes. Exact restoration returns the existing test owner from
+probe d53ff9c3 to original e71cf573; only this coordinator-owned PRD remains
+changed. Receipt5f1cac38/review9a2f0596 preserve the actual argv, outcomes, raw
+logs and source hashes. The coordinator independently inspected both commands,
+the exact diagnostic and restoration after the author's two disclosed passes.
+This demonstrates the public borrowing gap, not a selected solution or a
+runtime progress guarantee. No production API or dependency is changed.
+
+Correct the first probe-cost estimate: ten introduced/restored Rust lines are
+only part of this research. The author's baseline/run/restore/review programs
+add61 conservatively counted inline tooling lines, including their embedded
+review text. Keep the earlier ten-only estimate as superseded evidence.
+The known finite envelope becomes14673, leaving327 under15000; it still is not
+a full historical upper bound. Conservatively add three inline software-owner
+identities:101 identified plus five unresolved-history slots gives106 allocated
+against110. This adds no retained test/production/dependency/public-type lines,
+but the authored historical research and tooling remain cumulative.
+
+### Concurrent export input — selected bounded composition
+
+Fresh six-owner verificationa7b18ea8/7db5ac49 inspects current source, relevant
+tests and documentation for Behavior/Actors0.25.0, Address0.3.0,
+Communication0.1.5, private Observe and Timers0.2.0. Exact versions, selected
+760-line Behavior instructions, root locke058fe21 and absence of patches are
+rechecked. Native actor receiving remains Communication-owned; this operation
+adds no Behavior effect, local mailbox, observation publisher or lifecycle.
+
+Under the standing recommendation delegation, select one inherent Export
+operation with the proposed caller spelling
+`export.receive(&mut query, &mut completed).await`. The query slot has exactly
+the existing receive_query product; completed is Option<RequestKey<Replies>>.
+An occupied outside slot suppresses further acquisition. A native completion
+leaves the actual User or EOF in its existing request row before notifying the
+caller. This adds no public product or mutable view of retained acquisitions.
+Existing query-only and exact-request native receiving remain available.
+
+Use already locked futures-util0.3.34's FuturesUnordered with the narrow alloc
+feature, defaults disabled and the ordinary Cargo requirement ^0.3.34, as an
+optional normal dependency behind remote. Both locks retain the exact current
+package records; supported-source evidence remains version-specific rather
+than promising untested future patch behavior. Its StreamExt reexport
+avoids a separate futures-core edge. Fixed std/Tokio branches cannot hold an
+arbitrary number of row waits; temporary receive polling loses registrations.
+A handwritten scheduler or one runtime task per row has no demonstrated need.
+FuturesUnordered retains the actual borrowed child futures and registrations;
+its per-child allocation and O(N) rebuild work are explicit costs, bounded by
+the existing retained-request count. No allocation/performance improvement is
+claimed. End outstanding borrows before row mutation, then rearm before parking.
+Preserve acquired originals before every completed producer is disposed.
+
+Select native-first acquisition for this append-only owner. The source-qualified
+proof f2a7db35 relies on each eligible row acquiring once, at most N lifetime
+rows, and filtering already acquired User/EOF, Unattempted and native refusals.
+Clearing an outside completed-key slot cannot clear a private row acquisition.
+Thus a continuously ready query follows at most N genuine native acquisitions;
+native Pending/self-wake continues to the query branch in the same select poll.
+This is an acquisition bound assuming continued polling and available host
+budget, not a latency promise. Eviction, rearming or an infinite ready branch
+would reopen this policy. A stronger N-independent rotation requires additional
+entitlement state and is not selected for this finite owner.
+
+Before production edits, extend existing consumer law tests: the native-pending
+Ledger must acquire an actual local Query; after rearming the held receive, an
+actual actor producer fence must increase its registered wake count before any
+manual repoll, and the exact native result must remain retained. Compare against
+the count after the initial Pending poll, since the collection can self-wake
+during initialization. SDK source fence916a957e establishes that same-Session,
+local get().await completes its synchronous declaration callback. Acquire the
+actual Query/refusal before assertions; separately control available test-poll
+budget using Tokio's existing unconstrained wrapper. This isolates notification
+progress rather than proving executor fairness. Keep complete native cleanup
+before finite oracles and retain the earlier cancellation law. Counter also
+consumes the new operation as the second concrete protocol substitution.
+Expected pre-edit failure is the missing inherent method, with no runtime
+credit. Then require debug/optimized controls and intended query-branch and
+discarded-wait inversions, using exact native facts rather than timeout success.
+
+The isolated next contribution is independent of PR372's immutable submitted
+source; final delivery depends on that prerequisite's actual reviewed merge.
+Expected existing owners: remote/export.rs, crate Cargo.toml, root and isolated
+fixture locks, network_replay/cancellation.rs and association.rs, plus PRD/index.
+Reuse the existing native result slots and clients; move shared query/native
+acquisition bodies only to private functions or the existing Request owner.
+Expected net production at most100 lines, test introductions at most250, no
+new public types or software path. Carried production897/public8 and known
+verification14673 give prospective997/8/14923, within1100/10/15000. The known
+software allocation remains106/110. Stop and reconcile before exceeding these
+bounded stage estimates; incomplete historical accounting remains explicit.
+No schema, identity proof, resource default, capacity trigger, automatic retry,
+full service API or full R01–R25 acceptance is selected by this operation.
+
+### Concurrent input — pre-implementation test and budget checkpoint
+
+The first new consumer source compiles against the unchanged production owner
+only as far as three E0599 diagnostics for the selected missing receive method;
+the command actually exits101. It supplies static-gap evidence only. The
+subsequent empty-eligible-set/occupied-output counterexample is source-reviewed
+before implementation; it has no additional old-source compile or runtime
+credit. Do not rerun an absent-method check merely to regenerate the same
+diagnostic after clearing its build cache. Actual runtime cuts remain required.
+
+Final formatted test endpoint is231/-15/net216 across the same two owners.
+Authored history is larger:207 introductions before formatting plus54 introduced
+formatting lines gives261, above the initial250 estimate. The author stopped
+before any production/manifest/lock change and reported this difference.
+Under standing recommendation delegation, select275 historical Rust-test
+introductions for this bounded stage and raise the carried verification-tooling
+allowance15000 to15500 before production. Known finite extent is14966 before
+the final evidence seal, including32 direct shell input lines; leave explicit
+room for the required debug/optimized controls, inversions and restoration.
+Budget at most150 further direct verification/tooling lines for this stage.
+Production1100 net/stage100, public types10/stage0 and software slots110 remain;
+no history reset or complete historical upper-bound certificate is claimed.
+The expansion funds verification of this same receive law, not another feature.
+
+The Counter boundary queues a real local Query after both native row results
+are acquired. A full outside completed-key slot must suppress acquisition;
+after taking it, the query must progress with no eligible native rows. The
+actual late A tail remains available for the existing exact-drain assertion,
+so reacquiring an already acquired row is independently observable. Empty
+FuturesUnordered Ready(None) must not become a false input acquisition. The
+native-first N bound counts calls with both outside slots empty, continued
+polling/host budget and once-acquired append-only rows. It is source-qualified,
+not a measured all-N fairness or elapsed-time guarantee.
+
+Only idle session-owned compiled caches were removed for actual disk pressure:
+pinned Cargo clean removed3.2GiB dev and4.3GiB release output; two idle trybuild
+compiled-output directories removed another approximately3.5GiB after lsof
+found no holders. Source, evidence, generated diagnostic workspaces and active
+worktrees remain. No worktree was deleted. The first force-style removal command
+was rejected before execution; the bounded non-force removal succeeded. This
+resource change provides no semantic test credit. Current source implementation
+and all normal run/merge gates remain required.
+
+### Concurrent input — first implementation and causal verification
+
+The selected implementation adds71 net production Rust lines, plus one net
+manifest line for the optional normal futures-util edge (72 combined). It adds
+no public type or dependency package version.
+Both lock changes add only that edge to Bombay; all400 root and325 isolated
+package identities/checksums remain unchanged. The existing request owns native
+acquisition, and the concrete private query function preserves the prior channel
+acquisition law. Independent source review4fcfef18 accepts the composition; its
+fixed-collection-overhead rustdoc correction is applied before this checkpoint.
+
+Pinned offline focused controls actually execute the same three existing cases
+in debug and optimized profiles: Counter association and both Ledger provider
+substitutions,3 passed/0 failed/0 ignored each. These are extended cases, not
+three additional unique tests. Healthy source before the rustdoc correction is
+a026f486; the correction changes documentation only. The missing-method compile
+remains static-gap evidence rather than runtime inversion credit.
+
+Select the five independently reviewed causal cuts355512d4: omit only incoming
+query progress; dispose actual native waits after each Pending poll; accept an
+empty native collection as input; ignore an occupied completed-key slot; and
+rearm already acquired rows. Apply each independently from the committed healthy
+checkpoint, without modifying test oracles, through debug and optimized runs.
+The first intended post-cleanup oracle can differ across Counter and Ledger.
+Require actual assertion failures and successful compilation, then exact Git
+restoration and fresh healthy controls. No timeout or unrelated panic counts.
+Query-slot suppression remains source-reviewed, distinct from the tested
+completed-key boundary. The lifetime-N bound remains source-qualified.
+
+Read-only service/provider follow-up adds37 direct tooling input lines. It finds
+that a protector borrowing the retained receipt cannot coexist with a mutable
+whole-Export receive. That is a subsequent ordinary-Rust composition question,
+not selection of another API, trait, dependency or receipt owner. Together with
+the previously sealed38 inputs, the known pre-run finite envelope is15009;
+normal run and mutation inputs remain charged against15500 and the150 further
+direct-tooling allowance. Historical software gaps remain explicitly unproved.
+
+The incoming-query cut executes through both profiles with three intended
+assertion failures each: Counter retains one undeclared query rather than zero,
+and both Ledger consumers fail actual query acquisition. The first discarded-wait
+proposal was too broad: changing shared Request::receive also broke Counter's
+older awaited exact-request B receive. That three-case debug run printed the two
+intended Ledger failures but left Counter waiting; its exact child was terminated
+with SIGTERM and Cargo returned101 from the signal. It is not a completed test
+gate or successful Counter control. A separate two-case debug run reaches both
+intended native-wake assertions, after complete cleanup.
+
+Restore the exact healthy owner before refining that cut. Select disposal only
+inside the new combined map child: each poll creates, polls and disposes the
+existing request receive operation, while the collection child stays alive.
+Keep the original Request::receive and receive_native unchanged, allowing the
+Counter's old exact-request B wait to remain a valid control. This is a narrower
+fault injection, not a production design change or weakened test oracle.
+
+The refined combined-only disposal cut now executes in both profiles: Counter
+passes and both Ledger consumers fail the exact native-producer wake assertion.
+The false-empty-native-input cut executes with both Ledger controls passing and
+Counter failing its retained-query-prefix assertion in both profiles. These
+results remain tied to the pre-boundary-extension test source; no later-source
+execution is inferred from them.
+
+Before accepting the new operation, close a test gap found by the coordinator:
+the occupied-query guard also needs a concrete counterexample while a native
+reply is already available. Select an actual additional local Query in the
+existing Counter trace after its A producer fence. Retain that Query/permit
+outside, poll the combined operation, preserve its untouched native completion
+slot, then continue the existing A/B and empty-set trace. Keep all original
+owners through cleanup before observing the guard outcome. Removing only the
+query-slot guard must acquire A prematurely and fail the post-cleanup oracle.
+No second test owner or production change is needed.
+
+Under standing recommendation delegation, expand this same stage's historical
+Rust-test introduction allowance275 to350 and further direct-input allowance150
+to225 before editing that test. Keep the cumulative15500 verification allowance,
+1100 net production,10 public types and110 software slots unchanged. This
+bounded extension buys the missing occupied-query witness and its debug/
+optimized inverse rather than leaving a promised new guard source-only.
+
+The formatted boundary extension measures74 additions/18 removals, larger than
+the informal30–40-line forecast because it also preserves and projects both
+actual Query owners. Its initial unformatted patch was not separately sealed
+before rustfmt; do not describe335 retained/historical-known additions as the
+complete introduction history. Conservatively allow up to148 authored lines
+for this extension (each of the smaller initial patch and final replacement
+bounded by74), making the stage bound409 including the earlier261. Select425
+historical test introductions before further production edits; the cumulative
+15500 allowance remains unchanged. No new test owner or public type is added.
+The upper bound is cost accounting, not an execution or full-history certificate.
+
+Current complete endpoint census against81dc1448 retains43 tracked differences
+and no untracked paths. Apply the same existing inline-unit178/3 classification
+once: production Rust+970/-2/net968; tests+8450/-13/net8437; public API+8/-0 types.
+Other configuration/guidance is+3619/-51/net3568 before this prose checkpoint.
+Do not fold the manifest's one net line into the Rust-only production count or
+sum overlapping test patches to obtain endpoint gross counts. This is new
+capability, not code reduction. The small inline census is one additional
+software owner:102 identified plus five unresolved-history slots gives107/110
+allocated. Its source is conservatively budgeted20 tooling lines; this does not
+repair earlier unresolved historical extents.
+
+The occupied-Query extension passes independent second source reviewb9e8b99a/
+patch1b238b29: A is actually ready after its existing FIFO fence; both Query
+originals/permits are retained until cleanup; the new premature-completion
+oracle precedes the old A assertions. Actual focused controls again execute
+3 passed/0 failed/0 ignored in debug and optimized profiles. Keep the prior
+three cuts qualified to their earlier test bytes. Recheck all six cuts against
+this final extended source, then restore and execute the complete affected
+20-case export suite in both profiles before accepting the operation.
+
+### Request-isolation prerequisite — restored local full gate
+
+The original pinned local flake command on clean immutableedfeec1 now actually
+exits0: all24 aarch64-darwin checks pass. Reviewdb75d2a8/result9f769cc1 bind the
+raw logc0cdf254 to that exact source;663ac970 differs only in the PRD/backlog
+prose, not Rust/manifests/locks/flake/workflow. This is non-documentation equality,
+not whole-tree equality or execution on the final submitted commit.
+
+Remote debug/optimized checks execute406 passed/zero failed/zero ignored each;
+the optimized workspace executes703 passed/zero failed/one ignored across86
+summaries. Four owning coverage floors pass. Native subprocess controls and
+allocation inversions retain their separate scopes; repeated printed summaries
+do not create additional executions. No workflow fuzz or conditional Miri result
+is inferred from this local flake run. Earlier15edf ENOSPC remains incomplete.
+The independent terminal inspection/receipt programs add42 physical tooling
+lines, with no new retained controller or local rebuild. Required GitHub Nix on
+663ac970 remains live and actual merge is still required. No full remote row
+closes from this successful prerequisite check.
+
+### Verification accounting before request-isolation delivery
+
+Actual final CI review adds59 inline inspection-source introductions, including
+its rejected trybuild/name-attribution adapter, and no retained controller.
+The parallel reviewer spent42 ordinary read/seal/download input lines after its
+healthy-source seal, including five duplicate CI metadata/log reads stopped
+before archive acquisition. The separate provider follow-up adds three. Record
+those costs; neither rejected inspection nor duplicate download creates tests.
+Conservatively allocate the two terminal inspection owner lineages explicitly:
+104 identified software owners plus five unresolved-history slots gives109/110.
+
+The known subtotal is15350 before coordinator direct inputs: prior15009 plus
+148 boundary-extension introductions,23 temporary Rust-cut introductions,
+four manifest/lock introductions,20 census lines,42 local inspection lines,
+59 CI inspection lines,42 parallel review inputs and three provider reads.
+Reserving225 coordinator direct-input lines gives15575; this deliberately
+overcounts shared/reused commands and is not a unique-history certificate.
+Under standing recommendation delegation, select16000 cumulative verification/
+tooling lines before further production edits or delivery, retaining1100 net
+production Rust,10 public types and110 software slots. Historical gaps remain
+unproved rather than reset. This funds the same causal verification and actual
+CI delivery, with no additional capability, dependency, API or resource default.
+
+### Request-isolation prerequisite — actual reviewed merge
+
+[PR372](https://github.com/devrandom-labs/bombay/pull/372) actually merged
+e2a4e7f3f1392d3a64013f3df1a4800022360fa0 at2026-10-15T12:48:34Z through a
+normal squash guarded by exact663ac970. Fresh rules require the PR and passing
+Nix; zero approvals are required. All six checks pass. Submitted, synthetic CI
+and actual merged trees are9f3c528d, with full fetched Git diff returning0.
+Required run38726056219/job116392187099 completesSUCCESS at12:37:15Z.
+
+Final execution reviewab81d700/receipt6caa83d5 qualifies actual Linux remote406
+per profile, workspace703/0/1, four coverage floors, allocation controls and
+the owning inversions/restorations. Driver2048 and four Observe1024 campaigns
+finish their actual bounded budgets;108 Driver plus337 shared Observe files
+are445 unique retained fuzz files, rehashed twice with ZIP/API digest matches.
+Miri steps are actually skipped. The separate native reviewf649bdbe qualifies
+64 protected cases/160 roles and retains ordinary uncertainty cases separately.
+No copied CI executable or production identity proof is claimed.
+
+This delivers the scoped request-isolation primitive and its minimization,
+not a full remote acceptance row or registry publication. The concurrent-input
+branch must integrate this actual merged prerequisite before its own delivery.
+
+### Concurrent input — actual main integration and final lint finding
+
+The isolated unpublished branch now uses actual mergede2a4e7f3 as its base.
+Preserve its former complete checkpoint on local ref
+research/remote-coordination-before-main; no worktree or source copy was added.
+Replay the four branch-local commits on the exact merged tree. Full Git diff
+against preservedd89a44b returns0 after replay; resulting headbb2eb7e therefore
+retains every tested source and record byte. Earlier0f4e843 remains reachable
+through that preserved lineage. This is integration, not a scope reset.
+
+All six final test-source causal cuts execute in both profiles, with9 intended
+assertion failures and9 passing controls per profile,36 executions across three
+unique extended cases. Independent reviewa7341173/hash inventorydeb1127e seals
+the exact patches, inputs, results and Git restoration. The full affected debug
+command actually returns0 with406 passes across the same nine harnesses; the
+20 export cases are a subset, not additional unique cases. Optimized combined
+execution on the integrated head remains live.
+
+Workspace strict Clippy actually returns101 for one private receive_query
+parameter: nested Option encodes no acquisition, acquired channel closure, or
+an acquired Query/permit. The old public method and native retained field already
+use this exact product. Select a function-scoped expect(option_option) with that
+three-state reason, matching the existing owning representation. This adds four
+production annotation lines, no executable operation, type, dependency or API.
+Do not replace the product with a wrapper just to silence a lint. Wait for the
+current immutable optimized command to finish before editing its Rust input;
+then require strict Clippy and fresh focused debug/optimized controls. Preserve
+the earlier cut/combined evidence with its actual pre-annotation source hashes.
+
+Both full affected commands actually finish406/0/0 before the annotation; after
+that four-line annotation the fresh three focused cases pass in both profiles.
+The next strict pass resolves the production lint and exposes four test-style
+diagnostics: wakes/waker names and three redundant try_recv closures. Select
+the existing SDK FifoChannelHandler method directly with module-scope imports,
+and rename only the count owner to wake_count. Retain every actual method call,
+result classification, actor input and post-cleanup oracle. Expected at most12
+test introductions keeps the conservative421 stage bound within425. These are
+style corrections, not new semantics or permission for wider cleanup. Repeat
+strict checks and focused controls on their final source before submission.
+
+### Concurrent input — scoped minimization and submission checkpoint
+
+Final source135bc702/testsd53e29f2/2714adbc passes strict pinned workspace
+all-target Clippy with remote enabled, formatting, and three focused cases in
+both debug and optimized profiles. All commands actually return0, and all six
+source/manifest/lock hashes match again afterward. Before the four annotation
+lines and nine mechanical test introductions, both full affected commands
+actually execute406/0/0; the twelve causal-cut commands remain sealed to their
+actual earlier source bytes. Final review4e9676d9 preserves that distinction,
+accepts the equivalent method references/count rename and confirms all original
+oracles/ownership remain. Do not relabel older logs as final-byte executions.
+
+Scoped minimization retains the existing Export and request rows as owners.
+One inherent receive operation expresses the proved public borrowing gap;
+FuturesUnordered owns only the actual temporary waits, and the private functions
+share existing acquisition bodies. Counter and Ledger provide concrete public
+Application consumers. There is no new trait, wrapper, macro, erased future,
+task hierarchy, observation cell, public type, capacity policy or actor contract.
+The allocation/rebuild cost, finite native-first proof and still-unresolved
+shipping provider-borrow/admission seam remain explicit. This accepts this
+contribution's ownership/API minimization, not whole-PRD distillation.
+
+Against actual parent e2a4e7f3 this contribution has13 existing tracked paths:
+production Rust+101/-26/net75; tests+289/-15/net274; public API+0/-0 types.
+The manifest separately adds2/removes1 and both locks add one dependency edge;
+no package/version/checksum changes. Historical Rust-test introductions remain
+conservatively bounded418/425 after the exact nine-line style patch; formatting
+is check-only. The last independent review adds19 direct inspection lines and
+20 conservatively counted chronological prose lines, including its correction.
+No new controller/source owner is introduced by these mechanical fixes.
+
+Complete current endpoint against81dc1448:43 tracked differences, no untracked
+paths; production Rust+974/-2/net972, tests+8452/-13/net8439, public API+8/-0 types.
+The prior inline-unit178/3 classification is applied once. Carry the16000
+verification allowance,1100 net production,10 public types and109/110 allocated
+software slots, including five unresolved-history slots. Earlier unbounded
+historical extents are still unproved. This is new capability, not a reduction.
+Required CI on the submitted combined source, final execution review and actual
+PR delivery remain required; every full remote acceptance row remains open.
+
+
 
 ### Application startup custody — isolated delivery stage (2026-10-15)
 
@@ -26091,3 +26523,53 @@ Its old required38826374588 run and native reviews retain their exact17fec
 qualification; push the resolved head and require its fresh CI before merging.
 No completed full remote row or published remote service is claimed. Release
 PR378 was closed unmerged by the bot; replacement PR380 and API PR374 stay held.
+
+
+### Resumed startup integration (2026-10-16 UTC)
+
+Resume the interrupted PRD goal at the existing PR379 merge of main67a286c.
+Both documentation conflict resolutions already exist in the working files;
+the index still records them as unresolved. Preserve both the concurrent-input
+and startup-custody records, then stage those exact resolutions. All production,
+test, manifest and lock changes from main remain intact; execution.rs is
+byte-identical to the reviewed9308f768 correction. PR374's actual merge is
+67a286cf5dccf12f182d777c43d363e2aa0b1968 with all six checks passing.
+Its added futures-util edge belongs to that merged contribution, so the earlier
+17fec54 graph-identity statement applies only to its original checkpoint.
+
+The selected Behavior/Actors remains0.25.0 at2bb4510077bfa5aed82e08d25453c146b3184285;
+its complete instructions were read again. Communication0.1.6, Address0.3.0,
+Timers0.2.0, private Observe and Tokio1.53.1 remain the existing owners. No
+patch, new dependency selection, API, default or production correction is added
+by this integration. Original source inversions and controls retain their exact
+source qualification; fresh debug/optimized startup and combined checks, source
+review and actual updated-head CI are required before merge. Current receipts
+are kept in /tmp/bombay-prd-resumption. Full R01–R25/AUTH1/NET1 remain open.
+
+
+Resumed focused controls execute the exact owning startup regression once in
+each profile: debug and optimized both pass1/0/0 with333 filtered. Execution
+source remains9308f768; pinned argv, source/log SHA256 values and exit0 results
+are recorded in /tmp/bombay-prd-resumption/startup-focused.json. Two author
+passes and a fresh independent two-pass review map the native closure oracle
+to the law and challenge no-Ready/no-panic/substituted-owner/no-preparation
+counterexamples. The receiver samples closure after execution disposal; final
+assertions run after host disposal. No new inverse or changed test is claimed.
+Combined checks continue and updated-head CI is still required.
+
+The user's requested checkout audit removes19 clean merged/redundant worktrees,
+retaining their branches. Full process-descendant inspection excludes active
+Codex/Nix/build work; remaining idle terminal shells contain no running work.
+All128 ignored evidence files from three checkouts are archived and SHA256
+verified before removal under /tmp/bombay-prd-resumption. Pruning22 invalid
+worktree registrations leaves their source/target directories untouched; the
+otherwise unreferenced detached ae4396d8 is retained under
+refs/archive/worktrees/first-notification-consumers. Dirty, active and unfinished
+checkouts remain. The cleanup receipts list each exact path, original HEAD,
+retained branch and archive; no production or public surface changes follow.
+
+Final integration contribution against actual main67a286c: four tracked paths,
+zero untracked paths; production+10/-4/net6, tests+193/-0/net193, public API
++0/-0 types. Three existing documents account for the remaining source delta.
+All prior cumulative PRD windows and historical reservations carry; this merge
+does not reset the full-goal budget or close any full remote acceptance row.

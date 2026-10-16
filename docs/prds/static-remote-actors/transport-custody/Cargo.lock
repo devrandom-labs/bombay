@@ -278,6 +278,7 @@ dependencies = [
  "bombay-timers",
  "bombay-zenoh",
  "bombay-zenoh-config",
+ "futures-util",
  "json-event-parser",
  "loom",
  "parking_lot",
