@@ -170,25 +170,69 @@ CALLER-CONSERVATION, PRODUCTION-CONSERVATION and FINAL-FORMAT. Only this evidenc
 record is amended after the frozen runs; executable proof inputs remain exact.
 
 
-Catalogue migration is reopened at the first real unannotated FIFO factory
-failure. Its17-file candidate was archived and every caller restored byte-exact
-to69e4a3b, preserving original business inputs, policies, refusal values and
-retirement assertions. No runtime/API change or caller annotation is retained.
-The owning roster/FIFO constructor candidate now passes7 focused cases,15 real
-native cases on both compilers/profiles, plus10 actual extracted-archive cases
-per compiler/profile. Breaking-source costs and a masked owner Nix-audit crash
-remain explicit release blockers. Broad migration resumes after owner delivery.
+Catalogue adoption reuses the proven owning roster/directory/queue/router
+constructors, named Config, explicit recovery and existing startup ports.
+This is caller/API policy: no new actor law, runtime state, bound, dependency,
+policy default or public type. The unannotated factory consumer first failed on
+published270/150; owner repair50348d7 now passes eleven native gates,
+987 nextest/118 doctests, archives and all14 exact-head CI checks. Publication
+and registry-only catalogue acceptance remain open. Candidate selection occurs
+only in isolated source copies; delivery manifests/locks retain registry owners.
 
-Directory/router mixed reply contracts remain unchanged until separately proved;
-unused exact roster/FIFO hosts may then be removed. Ordinary startup closure
-migration must preserve its real source-failure and retirement journey. Originals
-and the rejected candidate remain in REGISTRY-027-CATALOGUE-INPUTS and
-UNRETAINED-{SOURCES.json,patch}; the original compile failure is CATALOGUE-CHECK.
-The existing worker-factory Stash oracle is also proven weak: bypassing Stash
-passes it. A same-worker Released assertion passes both compilers/profiles and
-makes that bypass fail in debug/release; retain it with the eventual caller
-migration. This does not prove inner shutdown independently of the proxy.
+The resumed batch changes21 Rust callers. Ordinary examples infer initial
+factory roles; unused roster/FIFO reply aliases, hosts and obsolete test-only
+Hosts requirements disappear. Directory/router mixed reply contracts remain.
+Reuse Bombay's existing public ExactReplies export, including the separate
+protected workspace: its E0433 and cascading E0308 disappear without custody
+changes. Preserve all747 original assertions byte-exact and in order; add only
+the independently proved same-worker Released observation. Bypassing Stash
+fails that observation in both profiles, while the original oracle falsely
+passed. Neither version proves independent inner shutdown through the proxy.
 
+| Verification | Exact scope and result |
+| --- | --- |
+| Candidate-selected native callers |31 identical cases in seven targets on1.99/1.96 debug/release;50.140/221.349/53.964/256.982s,2079 conserved inputs. Four UI drivers explicitly excluded. |
+| Separate protected retirement | One actual held-startup/sibling-progress case on both compilers/profiles;12.809/191.888/71.007/207.496s,2078 inputs/322 nonowner records conserved. |
+| Final caller lint/examples | Strict all-workspace/all-target Clippy passes; minimum all-target check passes. Supervision and pool binaries execute on both compilers/profiles (eight runs), with actual compilation and successful business/retirement/cleanup traces. |
+| Registry-only static callers | Strict124-case replay passes1.99/1.96 in167.118/174.517s:19 positive/105 negative fixtures,29 UI suites,25 targets,107 outer passes and one exactly accounted parent-invoked child ignore;1248 source hashes conserved. This is local axum-enabled coverage, not remote/all-feature or full-programme acceptance. |
+
+Each retained source/oracle and evidence batch receives two independent reviews.
+All frozen inputs and397 root nonowner records are conserved. Actor control
+sums/subordinate payloads are unchanged;21 caller files retain26 enum declarations
+and124 lexical match arms. Runtime production+0/-0/net0, examples+28/-31/net-3,
+tests+469/-395/net74 before verifier controls; public types+0/-0. Counts are
+review diagnostics, not proof of complete custody. Existing partial retirement
+projections and the startup notice preceding committed readiness remain open.
+Named startup closure migration is a later stage after this checkpoint.
+
+Compiler expectations preserve invalid operations and ownership errors. Seven
+canonical goldens change only published names or the reviewed Stash diagnostic;
+registry controls independently establish their text. No absolute candidate path
+is retained. Expand the existing compiler-specific record from44 to124 fixtures,
+29 suites and25 targets; preserve the old13 minimum snapshots and add eight
+reviewed differences. Compiler identities and all fixture hashes remain fixed.
+
+Verifier law recorded before tooling edits: exact child→parent relationship and
+per-target passed/ignored counts, with the parent passing once in that target.
+Reject every unknown/duplicate target, fixture outcome, summary, ignore, wrong
+mode or filtered/failing result. Focused pre-edit controls prove the old valid
+ignore refusal and false zero-ignore acceptance. Independent review's six extra
+record inversions also fail before their repair. Reuse the same immutable
+scratch copy/source and patch hashes; expected four tooling/test/metadata files,
+core production/public types+0/-0. The expanded programme budget applies.
+Final verifier and test sources pass two independent reviews; five unit methods
+include the valid baselines and corruption controls, and all eight real-entry
+conservation controls reject for their intended reasons (raw fake Cargo0 stays
+separate from verifier1). The minimum patch retains its original bytes as an
+exact prefix plus eight new hunks; independent application yields the same21
+reviewed minimum hashes as the strict run. This later serialization proof does
+not change fixture operations. Core production+0/-0, tooling+36/-9/net27,
+unit tests+112/-0, compiler metadata+172/-8 and patch+125/-0. Ordinary unified
+patch blank context keeps its required prefix spaces. Nix reports a busy
+evaluation-cache database before one successful shell; compiler checks and
+source conservation complete independently. Earlier failed attempts, including
+inaccurate inverse matchers, retain no pass credit. Disposition: pass this
+finite diagnostic checkpoint; final registry catalogue/full gates remain open.
 
 PR375 merge repair, before editing: capture upstream67a286c (PR374) and
 retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native
@@ -1568,6 +1612,7 @@ statuses are retained separately. Two independent final code reviews pass.
 Reproduce from the workspace root (choose a new empty output directory):
 
 ```sh
+nix develop -c python3 -B tools/diagnostics_test.py
 nix develop -c python3 tools/diagnostics.py --output /tmp/bombay-diagnostics-current
 nix develop -c env RUSTC="$MSRV_BIN/rustc" RUSTDOC="$MSRV_BIN/rustdoc" \
   python3 tools/diagnostics.py --cargo "$MSRV_BIN/cargo" \

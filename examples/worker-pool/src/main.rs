@@ -30,7 +30,7 @@ async fn main() {
     let roles =
         OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
     let pool = queue::new(
-        |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
+        |_| WorkerSubmission::immediate(SearchWorker),
         roles,
         queue::Config {
             startup: StartupLimit::new(1).expect("one worker has positive capacity"),

@@ -4,7 +4,6 @@ use core::convert::Infallible;
 use core::time::Duration;
 use tokio::runtime::Builder;
 
-use behavior_actors::composition::replies::ExactReplies;
 use behavior_actors::diagnostic::DiagnosticDisposition;
 use behavior_actors::lifecycle::ActorDrainPolicy;
 use behavior_actors::supervisor::roster::{
@@ -17,6 +16,7 @@ use behavior_actors::worker::{
 use behavior_actors::{Exit, StopOnShutdown};
 use bombay::actors::ActorExt as _;
 use bombay::behavior::Never;
+use bombay::composition::replies::ExactReplies;
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
 use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::oneshot;

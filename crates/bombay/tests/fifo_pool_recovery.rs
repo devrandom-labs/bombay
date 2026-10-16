@@ -1,4 +1,5 @@
 use bombay::WorkOutcome;
+use bombay::composition::replies::ExactReplies;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::convert::Infallible;
 use core::time::Duration;
@@ -6,14 +7,21 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::runtime::Builder;
 
-use behavior_actors::atomic::{
-    ActivationPolicy, ActorDrainPolicy, AdmissionRejection, AssignedReturnReason, Assignment,
-    BacklogCapacity, DiagnosticDisposition, FifoCommand, FifoOutcome, FifoPool,
-    ImmediateActivation, Interruption, OrderedRoles, PoolFailureReaction, PoolRecovery,
-    RestartLimit, RestartRelease, SubmissionId, WorkerSource, WorkerSubmission, fifo, pool_worker,
+use behavior_actors::diagnostic::DiagnosticDisposition;
+use behavior_actors::lifecycle::ActorDrainPolicy;
+use behavior_actors::pool::queue::{
+    self, AdmissionRejection, AssignedReturnReason, FifoCommand, FifoPool,
+};
+use behavior_actors::pool::{
+    Assignment, BacklogCapacity, Interruption, PoolFailureReaction, PoolRecovery, RecoveryPolicy,
+    SubmissionId, pool_worker,
+};
+use behavior_actors::worker::{
+    ImmediateStartup, OrderedRoles, RestartLimit, RestartRelease, StartupLimit, WorkerSource,
+    WorkerSubmission,
 };
 use behavior_actors::{Crash, Exit};
-use bombay::behavior::{Actions, MessageProtocol, Never};
+use bombay::behavior::{Actions, Never};
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
 use bombay::{Application, WorkerFactory, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::{Notify, oneshot};
@@ -67,18 +75,16 @@ enum PreparationRelease {
     Panic,
 }
 
-impl WorkerSource<WorkerRole, RecoverableWorker, ImmediateActivation> for RecoveryWorkshop {
+impl WorkerSource<WorkerRole, RecoverableWorker, ImmediateStartup> for RecoveryWorkshop {
     type WorkerRejection = Never;
     type SourceRejection = Never;
 }
 
-impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateActivation>
-    for RecoveryWorkshop
-{
+impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateStartup> for RecoveryWorkshop {
     async fn prepare_first(
         &mut self,
         role: &WorkerRole,
-    ) -> WorkerPreparationStart<RecoverableWorker, ImmediateActivation, Never, Never> {
+    ) -> WorkerPreparationStart<RecoverableWorker, ImmediateStartup, Never, Never> {
         assert_eq!(*role, WorkerRole::Primary);
         self.preparations.fetch_add(1, Ordering::SeqCst);
         self.prepared.notify_one();
@@ -101,7 +107,7 @@ impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateActivation>
     async fn prepare_next(
         &mut self,
         _: &WorkerRole,
-    ) -> Result<WorkerSubmission<RecoverableWorker, ImmediateActivation>, Never> {
+    ) -> Result<WorkerSubmission<RecoverableWorker, ImmediateStartup>, Never> {
         panic!("one role cannot request another worker in the same preparation")
     }
 }
@@ -109,19 +115,18 @@ impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateActivation>
 type Pool = FifoPool<
     WorkerRole,
     RecoverableWorker,
-    ImmediateActivation,
+    ImmediateStartup,
     RecoveryWorkshop,
     Infallible,
     u8,
     u16,
+    ExactReplies,
 >;
-type CustomerProtocol = MessageProtocol<MailAddr, FifoOutcome<WorkerRole, u8, u16>>;
 
 bombay::topology! {
     pool_application {
         root { Worker => worker; }
         worker {}
-        hosts { customers: CustomerProtocol; }
     }
 }
 
@@ -134,29 +139,34 @@ fn recovery_pool(
 ) -> Pool {
     let roles =
         OrderedRoles::new(WorkerRole::Primary, []).expect("one role is a valid worker roster");
-    fifo(
+    queue::new(
         move |_: &WorkerRole| {
             WorkerSubmission::immediate(RecoverableWorker {
                 availability: initial_availability,
             })
         },
         roles,
-        ActivationPolicy::new(1).expect("one activation is valid capacity"),
-        PoolRecovery::permanent(
-            RecoveryWorkshop {
-                preparations: Arc::clone(preparations),
-                prepared: Arc::clone(prepared),
-                release,
-            },
-            RestartLimit::new(1, Duration::from_secs(30)),
-            RestartRelease::immediate(),
-            PoolFailureReaction::RetireRole,
-        ),
-        BacklogCapacity::new(8),
-        interruption,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        queue::Config {
+            startup: StartupLimit::new(1).expect("one activation is valid capacity"),
+            recovery: PoolRecovery::permanent(
+                RecoveryWorkshop {
+                    preparations: Arc::clone(preparations),
+                    prepared: Arc::clone(prepared),
+                    release,
+                },
+                RecoveryPolicy {
+                    limit: RestartLimit::new(1, Duration::from_secs(30)),
+                    delay: RestartRelease::immediate(),
+                    failure: PoolFailureReaction::RetireRole,
+                },
+            ),
+            backlog: BacklogCapacity::new(8),
+            interruption,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
+    .build()
     .unwrap_or_else(|_| panic!("the first worker is prepared"))
 }
 
@@ -900,32 +910,37 @@ fn fifo_factory_replaces_workers_and_drains_the_complete_graph() {
     let prepared = Arc::new(Notify::new());
     let source_preparations = Arc::clone(&preparations);
     let source_prepared = Arc::clone(&prepared);
-    let pool = fifo(
+    let pool = queue::new(
         |_| {
             WorkerSubmission::immediate(RecoverableWorker {
                 availability: WorkerAvailability::RetireAfterAssignment,
             })
         },
         OrderedRoles::new(WorkerRole::Primary, []).expect("one distinct role"),
-        ActivationPolicy::new(1).expect("one activation"),
-        PoolRecovery::permanent(
-            WorkerFactory::new(move |role| {
-                assert_eq!(*role, WorkerRole::Primary);
-                source_preparations.fetch_add(1, Ordering::SeqCst);
-                source_prepared.notify_one();
-                WorkerSubmission::immediate(RecoverableWorker {
-                    availability: WorkerAvailability::RemainAvailable,
-                })
-            }),
-            RestartLimit::new(1, Duration::from_secs(30)),
-            RestartRelease::immediate(),
-            PoolFailureReaction::RetireRole,
-        ),
-        BacklogCapacity::new(8),
-        Interruption::Retry,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        queue::Config {
+            startup: StartupLimit::new(1).expect("one activation"),
+            recovery: PoolRecovery::permanent(
+                WorkerFactory::new(move |role| {
+                    assert_eq!(*role, WorkerRole::Primary);
+                    source_preparations.fetch_add(1, Ordering::SeqCst);
+                    source_prepared.notify_one();
+                    WorkerSubmission::immediate(RecoverableWorker {
+                        availability: WorkerAvailability::RemainAvailable,
+                    })
+                }),
+                RecoveryPolicy {
+                    limit: RestartLimit::new(1, Duration::from_secs(30)),
+                    delay: RestartRelease::immediate(),
+                    failure: PoolFailureReaction::RetireRole,
+                },
+            ),
+            backlog: BacklogCapacity::new(8),
+            interruption: Interruption::Retry,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
+    .build()
     .unwrap_or_else(|_| panic!("the first worker is prepared"));
     let spaces = pool_application::Topology::new();
     let observed_preparations = Arc::clone(&preparations);

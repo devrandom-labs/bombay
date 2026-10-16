@@ -1,14 +1,18 @@
 //! Key affinity, complete admission rejection, and joined worker custody.
 
 use bombay::Application;
-use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, BacklogCapacity, BindingCapacity, BindingExpectation,
-    BindingReply, BindingRequestId, DiagnosticDisposition, Interruption, KeyedAdmissionRejection,
-    KeyedCommand, KeyedOutcome, OrderedRoles, PoolFailureReaction, PoolRecovery, SubmissionId,
-    WorkerSubmission, keyed,
-};
 use bombay::behavior::{ClassifySettlement, MessageProtocol, SettlementStatus};
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
+use bombay::pool::router::{
+    self, BindingCapacity, BindingExpectation, BindingReply, BindingRequestId,
+    KeyedAdmissionRejection, KeyedCommand, KeyedOutcome,
+};
+use bombay::pool::{
+    BacklogCapacity, Interruption, PoolFailureReaction, PoolRecovery, SubmissionId,
+};
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr};
+use bombay::worker::{OrderedRoles, StartupLimit, WorkerSubmission};
 use tokio::runtime::Builder;
 
 use super::search_worker::{SearchJob, SearchResult, SearchWorker};
@@ -38,20 +42,22 @@ bombay::topology! {
 )]
 fn keyed_search_preserves_affinity_rejected_payload_and_joined_worker() {
     let roles = OrderedRoles::new(WorkerRole::Primary, []).expect("the roster is distinct");
-    let pool = keyed(
+    let pool = router::new(
         |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
         roles,
         |key: &String| match key.as_str() {
             "account" => WorkerRole::Primary,
             _ => WorkerRole::Replica,
         },
-        ActivationPolicy::new(1).expect("one worker fits activation capacity"),
-        PoolRecovery::temporary(PoolFailureReaction::RetireRole),
-        BacklogCapacity::new(8),
-        BindingCapacity::new(2).expect("two retained bindings are positive capacity"),
-        Interruption::Fail,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        router::Config {
+            startup: StartupLimit::new(1).expect("one worker fits activation capacity"),
+            recovery: PoolRecovery::temporary(PoolFailureReaction::RetireRole),
+            backlog: BacklogCapacity::new(8),
+            bindings: BindingCapacity::new(2).expect("two retained bindings are positive capacity"),
+            interruption: Interruption::Fail,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
     .unwrap_or_else(|_| panic!("the declared worker is prepared"));
     let application_host = Builder::new_current_thread()

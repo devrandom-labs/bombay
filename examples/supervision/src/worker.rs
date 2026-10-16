@@ -1,7 +1,7 @@
 use bombay::actors::ActorExt as _;
-use bombay::atomic::{ActivationPlan, WorkerSubmission};
 use bombay::behavior::{Actions, BehaviorActed, Never};
 use bombay::prelude::StopOnShutdown;
+use bombay::worker::{StartupPlan, WorkerSubmission};
 use tokio::sync::mpsc;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -31,7 +31,7 @@ pub(super) struct Startup {
     activated: mpsc::UnboundedSender<WorkerRole>,
 }
 
-impl ActivationPlan for Startup {
+impl StartupPlan for Startup {
     type Ready = ();
     type Rejection = Never;
 
@@ -39,7 +39,7 @@ impl ActivationPlan for Startup {
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
+    async fn start(self) -> Result<Self::Ready, Self::Rejection> {
         self.activated
             .send(self.role)
             .expect("the application observes each worker activation");
@@ -51,7 +51,7 @@ pub(super) fn worker_submission(
     role: WorkerRole,
     activated: &mpsc::UnboundedSender<WorkerRole>,
 ) -> WorkerSubmission<ManagedWorker, Startup> {
-    WorkerSubmission::activated(
+    WorkerSubmission::with_startup(
         Worker.stop_on_shutdown(),
         Startup {
             role,

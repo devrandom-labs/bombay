@@ -1,12 +1,13 @@
 use super::{Counter, CounterMessage, CounterProcessed, CounterValue};
 use bombay::actors::ActorExt as _;
-use bombay::atomic::{
-    ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
-    FailureReaction, FixedSnapshot, FixedSupervisor, OrderedRoles, Recovery, StableProxy,
-    WorkerActivation, WorkerSubmission, fixed,
-};
-use bombay::behavior::{Behavior, BehaviorSettlements, Here, MessageProtocol, Never, RecoverEvent};
+use bombay::behavior::{Behavior, BehaviorSettlements, Here, Never, RecoverEvent};
+use bombay::composition::replies::ExactReplies;
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
 use bombay::prelude::*;
+use bombay::proxy::StableProxy;
+use bombay::supervisor::roster::{self, FailureReaction, FixedSupervisor, Recovery};
+use bombay::worker::{OrderedRoles, StartupLimit, StartupPlan, WorkerStartup, WorkerSubmission};
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, Application,
     RetirementAssessment, RetirementSchema, WorkOutcome,
@@ -30,10 +31,10 @@ struct HeldCounterActivation {
     release: oneshot::Receiver<()>,
     preparation_resource: OwnedSemaphorePermit,
 }
-impl ActivationPlan for HeldCounterActivation {
+impl StartupPlan for HeldCounterActivation {
     type Ready = ();
     type Rejection = oneshot::error::RecvError;
-    async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
+    async fn start(self) -> Result<Self::Ready, Self::Rejection> {
         self.reached
             .send(())
             .expect("the controller owns the reached receiver");
@@ -43,26 +44,31 @@ impl ActivationPlan for HeldCounterActivation {
     }
 }
 type CounterProxy = StableProxy<Counter, HeldCounterActivation>;
-type CounterSupervisor =
-    FixedSupervisor<CounterRole, Counter, HeldCounterActivation, Never, Infallible, Infallible>;
+type CounterSupervisor = FixedSupervisor<
+    CounterRole,
+    Counter,
+    HeldCounterActivation,
+    Never,
+    Infallible,
+    Infallible,
+    ExactReplies,
+    ExactReplies,
+>;
 type CounterSupervisorRoot = StopOnShutdown<CounterSupervisor>;
-type CounterCapability = MessageProtocol<MailAddr, CapabilityResult<CounterRole, Counter>>;
-type CounterStatus = MessageProtocol<MailAddr, FixedSnapshot<Counter>>;
 
 bombay::topology! {
     counter_subtree_application {
         root: CounterSupervisor { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts { capabilities: CounterCapability; status: CounterStatus; }
     }
 }
 use counter_subtree_application::RootRetirements;
 fn held_counter_supervisor(activation: HeldCounterActivation) -> CounterSupervisor {
     let mut activation = Some(activation);
-    fixed(
+    roster::new(
         move |_: &CounterRole| {
-            Ok::<_, Infallible>(WorkerSubmission::activated(
+            Ok::<_, Infallible>(WorkerSubmission::with_startup(
                 Counter::new(),
                 activation
                     .take()
@@ -70,11 +76,13 @@ fn held_counter_supervisor(activation: HeldCounterActivation) -> CounterSupervis
             ))
         },
         OrderedRoles::new(CounterRole::Current, []).expect("the declared role is unique"),
-        ActivationPolicy::new(1).expect("explicit fixture activation capacity"),
-        Recovery::temporary(),
-        FailureReaction::StopSupervisor,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        roster::Config {
+            startup: StartupLimit::new(1).expect("explicit fixture activation capacity"),
+            recovery: Recovery::temporary(),
+            failure: FailureReaction::StopSupervisor,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
     .build()
     .unwrap_or_else(|_| panic!("the actual Counter is prepared"))
@@ -386,7 +394,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         .into_iter()
         .map(|event| {
             <<CounterProxy as Behavior>::Event as RecoverEvent<
-                WorkerActivation<Counter, HeldCounterActivation>,
+                WorkerStartup<Counter, HeldCounterActivation>,
                 Here,
             >>::recover(event)
             .map(|activation| {

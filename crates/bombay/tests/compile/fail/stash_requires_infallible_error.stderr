@@ -1,9 +1,11 @@
-error[E0277]: the trait bound `Box<[u8]>: behavior_actors::stash::StaticallyInfallible` is not satisfied
+error[E0277]: stash replay requires an infallible inner behavior
   --> tests/compile/fail/stash_requires_infallible_error.rs:11:13
    |
 11 |     let _ = bombay::actors::ActorExt::with_stash(Documents, |_, _| {
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `behavior_actors::stash::StaticallyInfallible` is not implemented for `Box<[u8]>`
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this error type is not supported for infallible replay
    |
+   = help: the trait `behavior_actors::stash::StaticallyInfallible` is not implemented for `Box<[u8]>`
+   = note: use Never or MachineError<A, M, Never> for the inner transition error; replay cannot undo actions from earlier messages
 help: the following other types implement trait `behavior_actors::stash::StaticallyInfallible`
   --> $CARGO/bombay-behavior-actors-$VERSION/src/stash.rs
    |

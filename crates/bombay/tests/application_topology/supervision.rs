@@ -3,24 +3,30 @@
 
 use bombay::ActorCustody;
 use bombay::WorkOutcome;
-use bombay::atomic::{FixedSupervisor, StableProxy};
 use bombay::behavior::{Behavior, BirthMode, ChildHead, CreationKind};
+use bombay::composition::replies::ExactReplies;
+use bombay::proxy::StableProxy;
+use bombay::supervisor::roster::FixedSupervisor;
 use bombay::{
-    ApplicationTopology, ChildFailure, ChildOrigin, Hosts, NativeChild, NativeHost,
-    ProjectTerminal, RetirementSchema, RootRegistration, Runtime,
+    ApplicationTopology, ChildFailure, ChildOrigin, NativeChild, NativeHost, ProjectTerminal,
+    RetirementSchema, RootRegistration, Runtime,
 };
 use core::convert::Infallible;
 use core::time::Duration;
 use tokio::runtime::Builder;
 
 use bombay::actors::ActorExt as _;
-use bombay::atomic::{
-    ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
-    FailureReaction, FixedCommand, FixedSnapshot, OrderedRoles, Recovery, RestartLimit,
-    RestartRelease, Strategy, WorkerSource, WorkerSubmission, fixed,
-};
 use bombay::behavior::{Actions, BehaviorActed, MessageProtocol, Never};
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr, StopOnShutdown};
+use bombay::supervisor::roster::{
+    self, CapabilityResult, FailureReaction, FixedCommand, Recovery, RecoveryPolicy, Strategy,
+};
+use bombay::worker::{
+    OrderedRoles, RestartLimit, RestartRelease, StartupLimit, StartupPlan, WorkerSource,
+    WorkerSubmission,
+};
 use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::mpsc;
 
@@ -51,7 +57,7 @@ struct ActivationNotice {
     activated: mpsc::UnboundedSender<WorkerRole>,
 }
 
-impl ActivationPlan for ActivationNotice {
+impl StartupPlan for ActivationNotice {
     type Ready = ();
     type Rejection = Never;
 
@@ -59,7 +65,7 @@ impl ActivationPlan for ActivationNotice {
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
+    async fn start(self) -> Result<Self::Ready, Self::Rejection> {
         self.activated
             .send(self.role)
             .expect("the application observes each worker activation");
@@ -104,7 +110,7 @@ fn worker_submission(
     role: WorkerRole,
     activated: &mpsc::UnboundedSender<WorkerRole>,
 ) -> WorkerSubmission<ManagedWorker, ActivationNotice> {
-    WorkerSubmission::activated(
+    WorkerSubmission::with_startup(
         Worker.stop_on_shutdown(),
         ActivationNotice {
             role,
@@ -113,7 +119,6 @@ fn worker_submission(
     )
 }
 
-type Status = MessageProtocol<MailAddr, FixedSnapshot<Worker>>;
 type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, Worker>>;
 
 bombay::topology! {
@@ -121,7 +126,6 @@ bombay::topology! {
         root { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts { status: Status; capability: Capability; }
     }
 }
 
@@ -145,8 +149,6 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
     Spaces: ApplicationTopology<ManagedSupervisor, (), Descendants = RootDescendants>
         + NativeHost<Runtime = Runtime>
         + RootRegistration<<ManagedSupervisor as Behavior>::Protocol>
-        + Hosts<Status>
-        + Hosts<Capability>
         + NativeChild<ManagedSupervisor, ChildHead, NativeProxy, RootDescendants, ProxyDescendants>
         + NativeChild<NativeProxy, ChildHead, NativeWorker, ProxyDescendants, Never>,
 {
@@ -155,19 +157,23 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
         let roles =
             OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role roster is distinct");
         let initial_activated = activated.clone();
-        fixed(
+        roster::new(
             move |role: &WorkerRole| worker_submission(*role, &initial_activated),
             roles,
-            ActivationPolicy::new(1).expect("one worker fits the activation policy"),
-            Recovery::permanent(
-                Workshop { activated },
-                Strategy::OneForOne,
-                RestartLimit::new(1, Duration::from_secs(30)),
-                RestartRelease::immediate(),
-            ),
-            FailureReaction::StopSupervisor,
-            ActorDrainPolicy::WaitForActorGraph,
-            DiagnosticDisposition::terminate(),
+            roster::Config {
+                startup: StartupLimit::new(1).expect("one worker fits the activation policy"),
+                recovery: Recovery::permanent(
+                    Workshop { activated },
+                    RecoveryPolicy {
+                        strategy: Strategy::OneForOne,
+                        limit: RestartLimit::new(1, Duration::from_secs(30)),
+                        delay: RestartRelease::immediate(),
+                    },
+                ),
+                failure: FailureReaction::StopSupervisor,
+                shutdown: ActorDrainPolicy::WaitForActorGraph,
+                diagnostics: DiagnosticDisposition::terminate(),
+            },
         )
         .build()
         .unwrap_or_else(|_| panic!("the declared worker is prepared"))
@@ -343,13 +349,13 @@ fn supervisor_replaces_and_retires_native_worker() {
 #[cfg(test)]
 mod tests {
     use super::{WorkerRole, Workshop, worker_submission};
-    use bombay::atomic::ProxyPhase;
-    use bombay::atomic::{
-        ActivationPolicy, ActorDrainPolicy, DiagnosticDisposition, FailureReaction, OrderedRoles,
-        Recovery, RestartLimit, RestartRelease, Strategy, fixed,
-    };
     use bombay::behavior::{CreationKind, Step};
+    use bombay::diagnostic::DiagnosticDisposition;
+    use bombay::lifecycle::ActorDrainPolicy;
     use bombay::prelude::Activate as _;
+    use bombay::proxy::ProxyPhase;
+    use bombay::supervisor::roster::{self, FailureReaction, Recovery, RecoveryPolicy, Strategy};
+    use bombay::worker::{OrderedRoles, RestartLimit, RestartRelease, StartupLimit};
     use core::time::Duration;
     use tokio::sync::mpsc;
 
@@ -360,19 +366,23 @@ mod tests {
             let roles = OrderedRoles::new(WorkerRole::Primary, [])
                 .expect("the one-role roster is distinct");
             let initial_activated = activated.clone();
-            fixed(
+            roster::new(
                 move |role: &WorkerRole| worker_submission(*role, &initial_activated),
                 roles,
-                ActivationPolicy::new(1).expect("one worker fits the activation policy"),
-                Recovery::permanent(
-                    Workshop { activated },
-                    Strategy::OneForOne,
-                    RestartLimit::new(1, Duration::from_secs(30)),
-                    RestartRelease::immediate(),
-                ),
-                FailureReaction::StopSupervisor,
-                ActorDrainPolicy::WaitForActorGraph,
-                DiagnosticDisposition::terminate(),
+                roster::Config {
+                    startup: StartupLimit::new(1).expect("one worker fits the activation policy"),
+                    recovery: Recovery::permanent(
+                        Workshop { activated },
+                        RecoveryPolicy {
+                            strategy: Strategy::OneForOne,
+                            limit: RestartLimit::new(1, Duration::from_secs(30)),
+                            delay: RestartRelease::immediate(),
+                        },
+                    ),
+                    failure: FailureReaction::StopSupervisor,
+                    shutdown: ActorDrainPolicy::WaitForActorGraph,
+                    diagnostics: DiagnosticDisposition::terminate(),
+                },
             )
             .build()
             .unwrap_or_else(|_| panic!("the declared worker is prepared"))
@@ -399,8 +409,16 @@ mod tests {
     }
 }
 
-type Supervisor =
-    FixedSupervisor<WorkerRole, ManagedWorker, ActivationNotice, Workshop, Infallible, Infallible>;
+type Supervisor = FixedSupervisor<
+    WorkerRole,
+    ManagedWorker,
+    ActivationNotice,
+    Workshop,
+    Infallible,
+    Infallible,
+    ExactReplies,
+    ExactReplies,
+>;
 type ManagedSupervisor = StopOnShutdown<Supervisor>;
 type NativeProxy = StableProxy<ManagedWorker, ActivationNotice>;
 type NativeWorker = <<NativeProxy as Behavior>::Birth as BirthMode>::Child;

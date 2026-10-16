@@ -4,27 +4,22 @@
 mod worker;
 
 use bombay::actors::ActorExt as _;
-use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition, FailureReaction,
-    FixedCommand, FixedSnapshot, OrderedRoles, Recovery, RestartLimit, RestartRelease, Strategy,
-    fixed,
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
+use bombay::supervisor::roster::{
+    self, CapabilityResult, FailureReaction, FixedCommand, Recovery, RecoveryPolicy, Strategy,
 };
-use bombay::behavior::MessageProtocol;
-use bombay::prelude::MailAddr;
+use bombay::worker::{OrderedRoles, RestartLimit, RestartRelease, StartupLimit};
 use bombay::{Application, WorkerFactory};
 use core::time::Duration;
 use tokio::sync::mpsc;
-use worker::{Worker, WorkerCommand, WorkerRole, worker_submission};
-
-type Status = MessageProtocol<MailAddr, FixedSnapshot<Worker>>;
-type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, Worker>>;
+use worker::{WorkerCommand, WorkerRole, worker_submission};
 
 bombay::topology! {
     supervisor_application {
         root { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts { status: Status; capability: Capability; }
     }
 }
 
@@ -33,19 +28,23 @@ async fn main() {
     let (ready, mut startups) = mpsc::unbounded_channel();
     let roles = OrderedRoles::new(WorkerRole::Primary, []).expect("the worker role is unique");
     let initial_ready = ready.clone();
-    let supervisor = fixed(
-        move |role: &WorkerRole| worker_submission(*role, &initial_ready),
+    let supervisor = roster::new(
+        move |role| worker_submission(*role, &initial_ready),
         roles,
-        ActivationPolicy::new(1).expect("one worker has positive capacity"),
-        Recovery::permanent(
-            WorkerFactory::new(move |role| worker_submission(*role, &ready)),
-            Strategy::OneForOne,
-            RestartLimit::new(1, Duration::from_secs(30)),
-            RestartRelease::immediate(),
-        ),
-        FailureReaction::StopSupervisor,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        roster::Config {
+            startup: StartupLimit::new(1).expect("one worker has positive capacity"),
+            recovery: Recovery::permanent(
+                WorkerFactory::new(move |role| worker_submission(*role, &ready)),
+                RecoveryPolicy {
+                    strategy: Strategy::OneForOne,
+                    limit: RestartLimit::new(1, Duration::from_secs(30)),
+                    delay: RestartRelease::immediate(),
+                },
+            ),
+            failure: FailureReaction::StopSupervisor,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
     .build()
     .unwrap_or_else(|_| panic!("the worker is prepared"));
@@ -58,9 +57,7 @@ async fn main() {
         let first = startups.recv().await.expect("first worker startup");
         println!("worker ready: {first:?}");
         let target = application.root().established_recipient();
-        let mut caller = application
-            .external::<Capability>()
-            .expect("the caller is established");
+        let mut caller = application.external().expect("the caller is established");
         caller
             .send(
                 &target,

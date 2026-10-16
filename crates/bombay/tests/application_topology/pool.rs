@@ -7,13 +7,15 @@ use tokio::runtime::Builder;
 
 use super::search_worker::{SearchJob, SearchResult, SearchWorker};
 use bombay::Application;
-use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, BacklogCapacity, DiagnosticDisposition, FifoCommand,
-    FifoOutcome, Interruption, OrderedRoles, PoolFailureReaction, PoolRecovery, SubmissionId,
-    WorkerSubmission, fifo,
-};
 use bombay::behavior::MessageProtocol;
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
+use bombay::pool::queue::{self, FifoCommand, FifoOutcome};
+use bombay::pool::{
+    BacklogCapacity, Interruption, PoolFailureReaction, PoolRecovery, SubmissionId,
+};
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr};
+use bombay::worker::{OrderedRoles, StartupLimit, WorkerSubmission};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum WorkerRole {
@@ -26,7 +28,6 @@ bombay::topology! {
     search_application {
         root { Worker => worker; }
         worker {}
-        hosts { customers: CustomerProtocol; }
     }
 }
 
@@ -38,16 +39,19 @@ fn run_search_pool() {
     let pool = {
         let roles =
             OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
-        fifo(
+        queue::new(
             |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
             roles,
-            ActivationPolicy::new(1).expect("one activation is positive capacity"),
-            PoolRecovery::temporary(PoolFailureReaction::RetireRole),
-            BacklogCapacity::new(8),
-            Interruption::Retry,
-            ActorDrainPolicy::WaitForActorGraph,
-            DiagnosticDisposition::terminate(),
+            queue::Config {
+                startup: StartupLimit::new(1).expect("one activation is positive capacity"),
+                recovery: PoolRecovery::temporary(PoolFailureReaction::RetireRole),
+                backlog: BacklogCapacity::new(8),
+                interruption: Interruption::Retry,
+                shutdown: ActorDrainPolicy::WaitForActorGraph,
+                diagnostics: DiagnosticDisposition::terminate(),
+            },
         )
+        .build()
         .unwrap_or_else(|_| panic!("the declared search worker is prepared"))
     };
     let spaces = search_application::Topology::new();
