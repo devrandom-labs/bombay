@@ -39,11 +39,11 @@ they are tests rather than a second production receiver. The optional remote gra
 owners. Private application/node.rs owns one finalized Application and one fresh
 Session; Application::open_node checks private remote/startup.rs policy first.
 Node::run_with joins the existing Application execution and receiving operations;
-Node::execute_with retains separate operations and Session-borrowing results.
-Both lend the original Session to trusted work through the same invocation owner. No remote command is authenticated or admitted by this
-transport foundation. Typed network exports and multi-node composition remain
-pending;
-transport fixtures do not establish that public surface. Protected Counter
+Node::execute_with retains separate operations. Both callbacks receive the ordinary
+ApplicationHandle and may retain caller-local borrows and non-Send values. The
+native Session stays inside Node and its private invocation path. These execution
+methods do not authenticate or admit remote commands. Typed network exports and
+multi-node composition remain pending; transport fixtures do not establish that public surface. Protected Counter
 regressions belong to `crates/bombay/tests/protected_counter`, executed by the
 isolated transport-custody package rather than an example binary.
 
