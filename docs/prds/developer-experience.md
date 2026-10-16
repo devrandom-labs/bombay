@@ -162,9 +162,23 @@ three exact owner-root remaps. The first strict stale-index copy attempt failed
 before Rust; a draft audit's missing fixture-mode literal was corrected without
 changing verifier, snapshots or raw evidence. Neither earns gate credit.
 The five-path canonical batch is+11/-80, including metadata/deleted stderr;
-Rust tests0/-16, production/public-types0. Source-selected acceptance does not
+Rust tests0/-16, production/public-types0. This compiler replay alone does not
 certify registry delivery, protected nested consumers, authoritative flake gates
 or either old failure cause. The owning PRD retains the pre-edit law atcb9ad32.
+
+The4a8b531 protected downstream copy now passes pinned1.99 debug/release:
+53 plain cases and68 protected cases per profile, with one controlled TLS
+fixture ignored by the ordinary suite. Five controlled campaign modes per
+profile then execute64 complete combinations/160 exact role processes, covering
+root/child, peer/router, both providers and sibling-evidence refusals. Binary,
+source, certificate and child-log hashes match; all322 nested nonowner records
+remain exact. Format and both strict Clippy modes pass. Two independent reviews
+confirm coverage and source conservation through each run. The initial Clippy
+argument placement failed before Rust; corrected placement retains locked/offline
+and deny-warnings checks without editing source or locks. This is current-compiler
+source-selected evidence; minimum compiler, final registry locks and authoritative
+Nix remain open. The exact optimized retry case also passes separately; this
+does not explain its historical hang or strengthen older partial-custody oracles.
 
 ## Verification
 
