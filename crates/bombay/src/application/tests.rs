@@ -20,8 +20,11 @@ use std::cell::Cell;
 use std::ptr;
 use std::rc::Rc;
 use std::task::{Context, Poll, Waker};
+use std::time::Duration;
 use tokio::runtime::{Builder, Handle};
 use tokio::sync::oneshot;
+use tokio::task::yield_now;
+use tokio::time::timeout;
 use zenoh::Session;
 
 #[test]
@@ -404,4 +407,144 @@ fn unpolled_connection_acquisition_returns_original_application_network_and_work
             assert_eq!(*increments, 5);
             assert!(native.is_err() && notifications.is_err());
         });
+}
+
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "retain actual connection observation and every native receipt through surrendered receiving and cleanup"
+)]
+fn remote_entry_keeps_its_connection_association_after_close_receiving_is_surrendered() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let acquired = host.block_on(async {
+        let (execution, receiving, closing) = Application::new(Counter::new().stop_on_shutdown())
+            .execute_remote(listening_counter_network(), |application| async move {
+                let session = application.session.clone();
+                let target = application.root().address();
+                let mut client = application.client::<CounterValue>().unwrap();
+                let increment = client.try_send(CounterMessage::Increment);
+                let read = client.try_send(CounterMessage::Read(client.recipient()));
+                let value = if read.is_ok() {
+                    Some(timeout(Duration::from_secs(5), client.receive()).await)
+                } else {
+                    None
+                };
+                let stopped = application.request_shutdown();
+                let report =
+                    timeout(Duration::from_secs(5), application.lifecycle().retirement()).await;
+                client.close_admission();
+                let mut tail = Vec::new();
+                while let Some(original) = client.receive().await {
+                    tail.push(original);
+                }
+                (
+                    session, target, increment, read, value, stopped, report, tail,
+                )
+            })
+            .unwrap_or_else(|_| panic!("the entered host accepts cold remote execution"));
+        // Deliberately surrender this receiver before acquisition starts.
+        drop(closing);
+        let ((), (outcome, native, notifications, ())) = tokio::join!(execution, receiving);
+        let (output, cleanup) = outcome
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("the actual Counter work completes"));
+        let (session, target, increment, read, value, stopped, report, tail) = output;
+        let association = session.as_ref().map(Session::zid);
+        // This is a failure-only driver, never a joined-close result or success substitute.
+        let closed = match &session {
+            Some(session) => Some(
+                timeout(Duration::from_secs(5), async {
+                    while !session.is_closed() {
+                        yield_now().await;
+                    }
+                })
+                .await,
+            ),
+            None => None,
+        };
+        let forced = match (&session, &closed) {
+            (Some(session), Some(Err(_))) => Some(session.close().await),
+            _ => None,
+        };
+        drop(session);
+        (
+            association,
+            closed,
+            forced,
+            target,
+            increment,
+            read,
+            value,
+            stopped,
+            report,
+            tail,
+            cleanup,
+            native,
+            notifications,
+        )
+    });
+    drop(host);
+    let (
+        association,
+        closed,
+        forced,
+        target,
+        increment,
+        read,
+        value,
+        stopped,
+        report,
+        tail,
+        cleanup,
+        native,
+        notifications,
+    ) = acquired;
+    let notifications = notifications.unwrap();
+    let (origin, retirement) = native.unwrap();
+    let report = report.expect("the actual runtime retirement report was acquired");
+    assert!(
+        association.is_some(),
+        "startup must associate the actual Session with Work"
+    );
+    assert!(
+        matches!(closed, Some(Ok(()))),
+        "owned cleanup must close the observed Session"
+    );
+    assert!(
+        forced.is_none(),
+        "forced failure cleanup supplies no closure success credit"
+    );
+    assert!(cleanup.is_ok() && increment.is_ok() && read.is_ok() && stopped.is_ok());
+    assert!(matches!(&value, Some(Ok(Some(value))) if value.from == target && value.message == 1));
+    assert_eq!(tail.len(), 0);
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    assert_eq!(origin.address(), target);
+    let ActorRetirement::Completed {
+        custody,
+        completion,
+        interpretation,
+        source,
+        settlements,
+    } = retirement
+    else {
+        panic!("the original Counter native retirement is complete")
+    };
+    let settlement = settlements.settlement_status();
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!(settlement, SettlementStatus::Accepted);
+    assert!(interpretation.is_none() && source.is_none());
+    assert!(custody.control.is_empty() && custody.user.is_empty());
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert!(custody.capability_failures.is_empty() && custody.additional_failures.is_empty());
+    assert!(custody.retirement_failures.is_empty());
+    assert!(custody.received_interpretation.is_none() && custody.received_source.is_none());
+    assert!(custody.source_index.is_none() && custody.acquired_ingress.is_none());
+    assert!(custody.terminal_report.is_none() && custody.unread_owner_cancellation.is_none());
 }

@@ -58,8 +58,12 @@ permission/time snapshot and retry policy; client construction and attempted
 mailbox admission remain separate facts. Stable Entity resolution still awaits.
 
 Merged PR372 composes those existing owners through
-`ApplicationHandle::export`. Only Node execution attaches its own native Session
-to the live handle; there is no public arbitrary handle/Session pairing.
+`ApplicationHandle::export`. The new remote Application entry also attaches its
+acquired private Connection through the existing execution owner; the provisional
+Node path does so too.
+Remote-entry Work receives only the ordinary typed ApplicationHandle;
+the provisional Node still lends its Session and remains a privacy defect.
+There is no public arbitrary handle/Session pairing.
 `remote::Export` retains protected bytes, proof and opaque provider receipt with
 one independent existing reply client per request. It compares stable provider
 identities, preserves duplicate/conflicting originals, and checks explicit count

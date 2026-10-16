@@ -478,8 +478,15 @@ current public native-configuration/session/query exposure is a defect pending
 removal, not the supported finished application-authoring path. The remote PRD
 holds the next release and API delivery until this boundary is reconciled.
 
-Startup returns the original Application/configuration on profile, host or
-native refusal. The selected profile requires configured TLS addresses, disabled
+The remote connection entry stage adds `Application::execute_remote(Network, Work)`
+and `run_remote` without native objects in Work. Immediate host refusal returns
+all three originals. Later startup refusal returns original cold inputs through
+`ApplicationOutcome::Unstarted`; independent connection receiving retains its
+sole actual cause. Prepared and staging outcomes retain their distinct inputs.
+Execution reuses the family-capable owner; authenticated inbound/outbound remote
+service and nonempty-family verification remain unfinished. The provisional
+Node API separately returns original Application/configuration on refusal.
+The selected profile requires configured TLS addresses, disabled
 discovery, mutual TLS, configured private roots, verified names and explicit
 native query capacity. No default capacity is selected. Per-endpoint overrides
 and `OneOf` fallback are rejected. SDK parsing verifies actual credentials; policy

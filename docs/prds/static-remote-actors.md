@@ -11,8 +11,8 @@ remote406 per profile and six requester cases per profile. Driver/Observe fuzz
 passes; conditional Miri is skipped. Reviews005a8147/98d0443b and actual merge
 receiptcf93122f retain exact attribution in /tmp/bombay-pr377-ci-review.
 This delivers the verified Communication0.1.6 adoption only. PR379's separate
-startup correction still requires its own CI/delivery. PR378 release and PR374
-API delivery remain held pending the public transport boundary and service.
+startup correction still requires its own CI/delivery. The bot closed PR378 unmerged and replaced it with PR380; PR380 release and
+PR374 API delivery remain held pending the public transport boundary and service.
 Every full R01–R25/AUTH1/NET1 obligation remains open.
 
 The research branch integrates that actual main early. Preserve both the private
@@ -28901,3 +28901,150 @@ this forecast is not a historical upper-bound certificate or a scope reset.
 The prior startup stage remains charged at its measured contribution. Measure
 each retained substage; a missing contract or new abstraction still blocks its
 dependent edits despite this larger review window. No acceptance state advances.
+
+Before production edits, four public entry tests are authored and independently
+reviewed twice (319 raw lines plus their three-line mount). Actual pinned-Nix
+debug compile at4b2cbab returns101: one missing four-declaration export and four
+missing-method errors (three execute_remote, one run_remote), with no secondary
+inference errors. No runtime test executes or receives credit. Preserve source
+4bdd40c1 and raw absent-api.log in /tmp/bombay-remote-entry.
+Their driver guards do not bound every native close/join wait; do not use them
+to qualify an omitted-close inversion. Work counters observe WorkFuture entry,
+not callable construction. Public receiver-surrender and real-family witnesses
+remain separate. The model retains ApplicationOutcome's six states, its exact
+branches and all distinct native/notification/family results; the entry adds
+only the existing independently received connection result, not another owner.
+
+Entry checkpoint: the four public regressions pass4/0/0 in both debug and
+release on formatted source ae82b996/network,19e0be18/execution,94d75df3/tests.
+Restoring only the old coupled cold/prepared Work mapper (retaining sibling
+visibility) fails cargo check in both profiles with exactly E0599 at
+outcome.into_supplied; no runtime evidence is credited to this static denial.
+The original fixed mapper is restored byte-for-byte before subsequent checks.
+Strict checking then identifies only documentation markup, an unused lint
+expectation and the deliberately large original-input recovery products.
+Keep those already selected products inline, as in existing Application APIs;
+use narrow result_large_err expectations rather than change ownership or add
+boxing from a diagnostic. No semantic type, API shape or bound is selected.
+
+The public tests do not inspect Application's private connection association.
+Add one owning entry regression that surrenders independent connection
+receiving before startup, obtains the actual private Session only inside Work,
+performs a real local Counter exchange and full root retirement, and observes
+owned connection closure after Application cleanup. Its failure-only watchdog
+cannot stand in for a joined network result; the surrendered result is not
+claimed. Invert only this new entry's PreparedApplication connection field to
+None: the missing real Work association must fail after local cleanup. Keep
+the earlier direct-kernel acquired-startup/barrier witness separately.
+No production field, public test hook or fallback result owner is needed.
+Select up to600 retained entry-verification lines (previously500) before
+writing this additional test; the450 gross production and cumulative2500/18/
+125/20000 review windows and all historical reservations remain unchanged.
+Nonempty Entity families and unwind-specific entry cases remain unproved.
+
+Corrected library lint reaches eight test diagnostics previously masked by the
+unused private mapping. Mount the existing application_support module once in
+its integration-test root, and borrow that owner from both children. Correct
+three observation-only test spellings and use a narrow long-test expectation.
+The three immutable proof-record loans across provider await are deliberately
+serialized in these finite tests: request verification ends before protection,
+reply verification starts after protection and ends before another iteration,
+and the direct protection control ends its loan before its first write. Only
+the protector mutates the local table; no spawned task or SDK callback owns it.
+Keep the original borrowed slices with narrow expectations recording that law;
+cloning for the lint would alter the measured borrowing composition. This
+qualifies these four noncapturing finite provider callers only, not arbitrary
+concurrent-provider safety. No new production model, suppression of unused
+production code or runtime ownership policy follows.
+
+The owning association/surrender test (formatted9f92364c) actually passes1/0/0
+in debug and optimized builds. Its exact entry Some(connection)->None cut
+(b5ad26c9) fails1/0 at the intended post-cleanup missing-Session assertion in
+both profiles. Restore fixed5150862d byte-for-byte before controls. This proves
+actual entry association and closed-Session observation with surrendered close
+receiving; it does not prove a received close Result, joined SDK producer or
+callback drain. The Session clone remains held through the closure observation,
+so last-handle destruction cannot manufacture that observation. Runtime host
+retirement precedes final assertions. No nonempty-family/unwind/service gate
+is closed. Author and independent reviews each inspect tests twice.
+
+Further publication research remains unselected. Existing SDK IntoFuture starts
+synchronous routing before returning Ready. Inline resolution has least extra
+custody but may stall a service. Selected Tokio1.53.1 spawn_blocking can isolate
+owned SDK inputs, but needs explicit bounded submission and actual retained
+join; its queue separates local permission checking from worker start, and
+started tasks cannot abort. Do not impose Send/Arc on local provider receipts.
+block_in_place can borrow those receipts and a coherent permission loan without
+Send/static, but pauses every sibling future in that same task and may delay
+local authority updates. A multithread Handle is insufficient: selected
+LocalSet::run_until explicitly disallows block_in_place and owning tests prove
+the panic. Current non-Send caller-polled Work makes that a relevant boundary.
+Tokio restores scheduler context on unwind, not publication or acquired facts.
+Any candidate must store actual results outside the relevant producer before
+its disposal, retain independent join/receipt custody, and distinguish logical
+permission submission, actual SDK return, delivery and actor execution.
+Neither publication concurrency/resource policy nor a new task/trait/worker
+pool/default limit is selected by this source research.
+
+The bot's closed-unmerged PR378 still had its superseded required run active
+on24b6881. Cancel that obsolete38828004158 run to avoid spending CI resources
+on an unmergeable head. Current PR379 startup correction and repaired PR380
+release runs remain untouched; cancelled execution receives no passing credit.
+
+The three-operation source comparison also remains unselected. The protected
+study's replay identity is Binding+sequence; operation and authority revision
+belong to scope, not the replay key. Increment, Read and Stop must meet one
+actor-wide owner before any native endpoint allocation. Separate operation
+Exports would incorrectly permit a conflicting second effect under the same
+identity. The current Export row has one fixed reply protocol, while canonical
+Counter requires distinct CounterProcessed and CounterValue recipients and
+Stop requires actual lifecycle authority/report instead of a reply endpoint.
+Selected Behavior recipients have no endpoint map/contramap; birth/send products
+do not supply one. Plain tuples plus a closed operation-specific native state
+are eligible to compare, not a selected generalized row/type or provider trait.
+Only the selected operation should allocate its endpoint. Keep the current
+per-row isolation; older shared processing/value receivers do not prove it.
+Admission is separate from actual processed/value/retirement evidence; all
+acquired milestones and exact replay originals need one truthful retained owner.
+The older study also lacks actual processed.from validation and complete cached
+milestone evidence. Cross-operation conflict, duplicate reuse, concurrent native
+protocols, exact source checks, authorized exact-target Stop and send-only denial
+must execute before retaining a replacement. Terminal Ledger remains the second
+unrelated consumer. No adapter actor, second registry or universal reply protocol
+is selected by this investigation.
+
+Final strict workspace/all-target/all-feature Clippy returns0 (9.55s) after
+one narrow long-owning-test expectation; rustfmt check also returns0. The
+restored workspace all-feature debug test returns101 at the existing
+transport_is_private acceptance gate: all three expected compile-denial
+snippets still compile through provisional native Config/Session/Query APIs.
+Before that stop, outer harnesses report743 passed/1 failed/0 ignored; this
+is not a completed workspace pass and later targets/docs receive no credit.
+The restored354 library and42 Application-client cases pass, including this
+stage's owning test and four public entry controls. The privacy regression
+remains enabled and red; entry integration alone cannot release API/release
+holds. Focused optimized combined controls retain their separate actual result.
+
+Entry checkpoint including tracked and untracked files:15 changed paths;
+production+378/-4/net374, tests+563/-5/net558, public API+4/-0 newly
+reachable types (zero new type declarations: these four Network inputs were
+already reserved in the cumulative budget), plus two new inherent methods. First substage gross production378/450 and retained verification
+558/600 remain within the selected windows. Cumulative vs81dc1448, with the
+existing188/3 test reclassification applied once:63 paths, production
++1832/-44/net1788 and tests+12105/-14/net12091. Separate owning Communication
+104 makes known combined production1892/2500. Twelve cumulative public
+additions remain reserved/retained under18; carry every older/external ledger
+and unproved historical extent. No source count is reset by these stages.
+
+The restored optimized combined command actually returns0:354 library plus42
+Application-client tests pass (396 total), including the owning association
+and all four public entry controls on final owning source1212b881. Its only
+change from earlier focused9f92364c is the four-line lint expectation; retain
+that source distinction for the earlier focused/inverse logs. Debug restored
+controls are the same354+42 within the stopped workspace run above. Actual
+optimized logcfbaac99 and debugdcbcd00e, strict969b9211 and fmtacd8652a are
+retained in /tmp/bombay-remote-entry. Both fixed sources and all locks remain
+unchanged. Two-pass independent source/execution review finds no weakened law.
+This is a verified private connection-entry checkpoint, not a delivered
+remote-service feature, distillation, required-CI pass or merge. Keep both
+public-service holds and every open acceptance obligation.

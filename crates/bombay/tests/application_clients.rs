@@ -12,6 +12,14 @@ use bombay::{ActorFailureAssessment, RetirementAssessment, TrySendError};
 #[path = "../../../examples/counter/src/counter.rs"]
 mod counter;
 
+#[cfg(feature = "remote")]
+#[path = "application_support/mod.rs"]
+mod application_support;
+
+#[cfg(feature = "remote")]
+#[path = "application_clients/remote.rs"]
+mod remote;
+
 use bombay::prelude::TimerId;
 use core::future::Future;
 use core::pin::pin;

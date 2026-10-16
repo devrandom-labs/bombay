@@ -36,9 +36,7 @@ use zenoh::query::{ConsolidationMode, Query, Reply};
 use zenoh::{Error as ZenohError, Session};
 use zenoh_config::Config;
 
-#[path = "../application_support/mod.rs"]
-mod application_support;
-use application_support::assert_completed;
+use super::application_support::assert_completed;
 
 #[derive(Debug)]
 struct ProtectedMessage {
@@ -522,7 +520,8 @@ where
     clippy::too_many_arguments,
     clippy::too_many_lines,
     clippy::type_complexity,
-    reason = "one causal trace keeps explicit policy inputs and all original acquisition and cleanup products together"
+    clippy::await_holding_refcell_ref,
+    reason = "preserve original record loans through serialized provider acquisition; only the later protector mutates this local table"
 )]
 async fn read_study<Target, Replies, Operation, Receipt, WireValue, FirstRetirement>(
     mut export: Export<Target, Replies, Receipt>,
@@ -984,6 +983,11 @@ fn assert_report(report: ActorRetirementReport) {
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
 }
 
+#[expect(
+    clippy::too_many_lines,
+    clippy::await_holding_refcell_ref,
+    reason = "keep the actual record loan through provider acquisition and release it before the first protection write"
+)]
 async fn reply_protection_records<Receipt>(
     profile: ProviderProfile,
     provider: impl AsyncFn(

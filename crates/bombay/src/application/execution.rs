@@ -1161,7 +1161,7 @@ where
     }
 }
 
-impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
+impl<Inputs, ColdWork, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
     ApplicationOutcome<
         Inputs,
         ApplicationWorkPresence<(Work, Invoke), Never>,
@@ -1169,12 +1169,13 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
         Cleanup,
         StagingInputs,
         PreparedInputs,
-        (Work, Invoke),
+        (ColdWork, Invoke),
     >
 {
-    fn into_supplied(
+    pub(in crate::application) fn into_supplied(
         self,
-    ) -> ApplicationOutcome<Inputs, Work, Output, Cleanup, StagingInputs, PreparedInputs> {
+    ) -> ApplicationOutcome<Inputs, Work, Output, Cleanup, StagingInputs, PreparedInputs, ColdWork>
+    {
         match self {
             Self::StagingRejected { inputs } => ApplicationOutcome::StagingRejected { inputs },
             Self::Unstarted {

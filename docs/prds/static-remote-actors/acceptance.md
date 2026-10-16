@@ -9,6 +9,17 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
+The connection-entry stage now executes four public Application caller tests
+in debug and release: original cold input recovery, actual startup-refusal
+custody, cancelled borrowed execution waiting, and run_remote result products.
+Restoring the old coupled cold/prepared Work mapper fails compilation at the
+intended outcome projection in both profiles. This is static denial only.
+These local Counter controls establish no remote admission, handshake, service,
+nonempty Entity family or whole-PRD witness. The separate owning connection
+association/surrender test retains its own execution record in the PRD.
+PR378 was closed unmerged by the release bot; replacement PR380 and API PR374
+remain held for complete public service and transport privacy correction.
+
 Communication adoption [PR377](https://github.com/devrandom-labs/bombay/pull/377)
 merged76dbd849 at2026-10-16T00:31:25Z after all six checks and scoped reviews
 passed. Reviewed/submitted329, actual CI429 and merged main share tree25bc63d2.

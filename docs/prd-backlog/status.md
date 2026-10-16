@@ -1,10 +1,19 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-15 UTC. This is the implementation index for the
+Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
+
+The remote connection-entry stage adds Application::execute_remote/run_remote
+using the existing execution owner and Bombay Network inputs. Four public
+caller controls pass in debug and release; these are local startup/custody
+controls, not authenticated remote service proof. The actor-wide three-operation
+replay service, outbound Actions and transport privacy replacement remain open.
+The bot closed release PR378 unmerged and replaced it with PR380; that release
+and API PR374 remain held. Finished prerequisites merge independently through
+reviewed, passing PRs; no full remote requirement advances from these controls.
 
 Communication0.1.6 adoption PR377 merged76dbd849 at2026-10-16T00:31:25Z after
 all six checks and scoped reviews passed. Reviewed, tested and main trees match
