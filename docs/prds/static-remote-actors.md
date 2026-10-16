@@ -32172,3 +32172,159 @@ files. These14 current paths are within15 forecast. Known1617/2500 working
 production versus1589 retained,12/18 public reservations and all125/20000
 historical/external extents carry. No full queue, SDK delivery, service/privacy,
 R01-R25/AUTH1/NET1 or release completion follows.
+
+
+Native queue source is now eligible for TEST-ONLY mounting: exactc255dded has
+699 formatted source lines plus the existing2-line module mount, within the
+selected701 forecast. Whole authora4031be7, rootd8c103f3 and independent
+f1cacc40 each record two source reviews. Both old pure test bodies remain
+exact3ec465dc; the new four native tests reuse the one89-line delivery fixture.
+The actual constructor remains original/unboundedf3cd3e2f; production is
+unchanged in this mounting stage. Run the six-test owning cohort in debug and
+optimized builds: both configuration and both zero-role controls must pass,
+and both pressure layouts must fail ONLY the final queue-bound assertion AFTER
+every native qualifier, recovery and cleanup check. Compile, watchdog, setup
+or earlier assertion failures receive no law evidence and permit no constructor
+change. Current main was freshly fetched and remainsf25e4a0c, already an
+ancestor of researchae86c0a. All full remote and SDK delivery gates remain open.
+
+Mount-stage complete scope: SDK production+38/-10/net28; tests+1867/-79/net1788;
+metadata+6/-0; public API types+0/-0 across the same12 SDK paths including both
+untracked test files. This adds638 test lines to the private input milestone,
+zero production. Known1617/2500 working and12/18 public reservations plus all
+125/20000 historical/external extents carry; no new file, dependency or public
+interface. The later bounded constructor/documentation is still gated.
+
+
+The first mountedc255 actual debug command stopped at one compiler veto,
+E0277 in queue.rs121: existing ConfigMut::extend_from_iter requires Iterator,
+while the test supplied an array. Receiptprior-debug/logeb9f8995 preserves the
+exact unchanged source; no native test ran and no queue-law failure qualifies.
+The sole correctionb58dc758 passes array.into_iter() into that existing API.
+It adds no type, bound, interface, port, visibility, policy or production code;
+reversing the one expression reconstructs exactc255. The source remains699
+lines/701 with the existing mount. Pinned external formatting passes. Root and
+author amendment reviews retain all prior custody, causality and cleanup laws;
+independent amendment approval remains required before corrected executions.
+
+Independent amendment reviewf2e65726 also passes twice for exactb58; corrected
+original-constructor execution is now eligible, still with no runtime credit.
+
+
+Actual original-constructor native regressions now qualify in debug and
+optimized builds: each six-test cohort has4 passes and2 failures, ONLY the
+final queue.rs593 bound assertion for Peer/Peer and Router/Client. Logs441cb4d0
+and0aef077c retain unchanged50-input maps and exactb58 test source. All prior
+live delivery, original-result custody, real EOF, same-writer completion,
+same-owner fresh retry, native joins and empty-owner checks passed first. This
+is actual unbounded-constructor evidence with the privately verified TLS
+prerequisites; it is not a claim that the entire published SDK was rerun.
+
+Pre-production candidate scope: replace only the existing constructor channel
+expression with flume::bounded(params.config.unicast.accept_pending). Retain
+all existing active-establishment/dispatcher/producer/close/task semantics.
+Update its existing example comment, configuration field/setter, the two native
+configuration documents, and owning build Errors rustdoc, including the actual
+feature-gated multi-link key generation error. These are the same four forecast
+production paths; no new type, interface, dependency, default or validation owner.
+
+The external candidate is+21/-6/net15 relative to the input milestone; complete
+SDK production against its HEAD is+57/-14/net43. Including input validation11,
+this queue stage is26 net production lines, one beyond the earlier25 estimate
+because the owning fallible build method requires its Errors documentation.
+Select a <=30 forecast before any production mount, within the standing scope;
+known working forecast1589+43=1632/2500, public12/18 and all125/20000 unknown
+historical/external extents carry. SDK13 paths plus two selected record paths
+stays within15. Retained native test scope stays701 plus the89-line fixture.
+Baseline independent review and exact candidate source approval still gate
+production mounting; no constructor change or positive queue result exists yet.
+
+Actual baseline independent two-pass review87f1c243 passes. Exact final external
+candidate d5992b0b/11b18559/1df28850/f5a8d290 passes whole author454afc39,
+root7dc7676c and independent1c3d4160 reviews. The four comment occurrences
+explicitly include receiver-reserved originals; no source-count increase.
+All pre-edit prerequisites now permit mounting ONLY this four-file candidate
+for the SAME b58 six-test debug/optimized regressions; positive acceptance and
+broader controls remain pending. No SDK adoption or full remote claim.
+
+
+The SAME b58 six-test cohort now passes6/0 in BOTH profiles on the exact
+approved four-file candidate (debug8855ff62, optimized7730bf14). Original
+unbounded cases retain their two final-only failures, so this is an actual
+old/new regression comparison. Independent runtime reviewea136390 passes
+twice. Every55-input candidate map is unchanged; only the four approved SDK
+files differ from the50-input original epoch, with PRD/runner provenance
+changes recorded separately. Initialc255 compilation received no law credit.
+
+All eight subsequent scoped controls are terminal0: owning library31 passed/
+1 ignored per profile (96f804f1/d2b50ec4); existing full-native pressure layouts
+2 passed/5 filtered per profile (9bafc892/3eed3553); production-library strict
+Clippy369d64a3, exact native-target strict Clippyca9b870e, owning strict rustdoc
+eb34046b and workspace formatf11076df. The actual rendered owning build
+Errors section is inspected and preserved. These checks bind the same55 current
+inputs;13 total terminal receipts preserve46/50/55-input epochs separately.
+Neither library-only lint nor strict rustdoc proves unit-test/all-target lint
+or executes documentation tests. Prior TLS20 evidence retains its own earlier
+epoch and is not relabeled as a current rerun.
+
+Exact subsequent commands, from the controlled SDK checkout:
+
+```sh
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo test --offline --locked -p bombay-zenoh-transport --no-default-features --features transport_tls,test --lib -- --test-threads=1
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo test --release --offline --locked -p bombay-zenoh-transport --no-default-features --features transport_tls,test --lib -- --test-threads=1
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo test --offline --locked -p bombay-zenoh-transport --no-default-features --features transport_tls,test --test unicast_transport tls_pressure_ -- --test-threads=1
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo test --release --offline --locked -p bombay-zenoh-transport --no-default-features --features transport_tls,test --test unicast_transport tls_pressure_ -- --test-threads=1
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo clippy --offline --locked -p bombay-zenoh-transport --no-default-features --features transport_tls,test --lib -- -D warnings
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo clippy --offline --locked -p bombay-zenoh-transport --no-default-features --features transport_tls,test --test unicast_transport -- -D warnings
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo rustdoc --offline --locked -p bombay-zenoh-transport --no-default-features --features transport_tls,test --lib -- -D warnings
+nix develop --profile /tmp/bombay-zenoh-bounded-ingress-shell -c cargo fmt --all -- --check
+```
+
+This verifies the selected TLS queue count law at pressure capacity1, actual
+nonadmission at0, live delivery and same-owner recovery for both approved
+layouts. Source inspection preserves the configured supported range and
+separate global active/queued policy; it does not make this finite native
+trace a proof of every capacity or all protocols. Native close bounds/call
+counts, expiry and internal error discharge, arbitrary queued shutdown drain,
+whole byte/backing/task bounds, full SDK test lint/CI/publication/adoption and
+service/privacy/full R01-R25/AUTH1/NET1 acceptance remain open. Source audit
+identifies dormant native feature consumers as the next separate SDK lint
+prerequisite; the older actual blocked lint log remains tied to its old epoch.
+
+Complete current SDK tracked/untracked delta: production+57/-14/net43;
+tests+1867/-79/net1788; metadata+6/-0; public API types+0/-0 across13 paths,
+including both new private test files. New queue/input policy is26 net
+production lines including the previous11 input-validation lines, within the
+revised30 forecast; this is new resource enforcement, not code reduction.
+Known working1589+43=1632/2500 and public12/18 reservations, plus every
+125-owner/20000-verification historical/external extent, carry without reset.
+The two Bombay record files complete the15-path selected scope. No SDK commit,
+PR, publication, adoption or full remote delivery is inferred. Final complete
+record/census and immutable proof preservation remain required before the next
+source stage.
+
+
+Current record checkpoint: Bombay documentation+145/-6/net139 across two files;
+production+0/-0 and public types+0/-0. Combined15paths include SDK13 above.
+Independent controls reviewa2aa5148 verifies all13 actual epochs and696 exact
+source references. Complete current census is retained before archive freezing.
+
+
+The native accepted-queue proof is sealed at
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-16/native-accepted-queue-private-1ea4-20261016T131320Z`. It preserves358 payloads,13 actual terminal Cargo receipts,
+119 exact input versions including62 fresh neighbor records, and no missing
+versions. Manifest`341e19cd1f27d378467a1447de65255dd97b2b11876f857a2d2c6272ccdd8c41`;
+seal`3cbc8a849ee337d123af8011e3baee2a2da660b32fb6eea1464c0a8d41cfee1f`.
+The reviewed helper performed two complete copy/hash/inventory passes, fsync
+and read-only sealing. Root independently rechecked every358 payload, byte
+count, file/directory mode, all119 versions, and all13 SDK/two Bombay current
+files against their pre-seal snapshots. Four earlier native proofs and actual
+main CI/merge proof remain separately verified immutable links.
+
+Final post-seal record checkpoint: Bombay documentation+174/-14/net160 across
+two files; production+0/-0 and public types+0/-0. SDK remains unchanged at
+production+57/-14/net43, tests+1867/-79/net1788, metadata+6/-0, public types
++0/-0 across13 paths including both untracked test files. Total15 paths.
+Known1632/2500 working versus1589 retained,12/18 public reservations and all
+125/20000 historical/external extents carry. This is private proof preservation;
+no SDK commit/PR/publication/adoption or full remote delivery is claimed.

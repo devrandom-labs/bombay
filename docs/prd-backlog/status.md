@@ -54,14 +54,15 @@ both profiles; this is comparison evidence, not a defect found in main. No
 public service API is selected. Production and public types are unchanged;
 actual service lifecycle, privacy and all full remote gates stay open.
 
-Fresh full-service comparisons identify the shared mixed-operation replay row,
-genuine absent-Work attachment and native pre-callback resource limits as open
-ownership edges. Private SDK handshake/cancellation comparisons and all19
-owning TLS tests pass both profiles; intended inversions are qualified. Full
-native transport saturation/refusal/fresh-retry remains unverified, including
-the open-deadline/handshake-deadline tradeoff. The candidate is unadopted. Both
-approved Peer and RouterClient layouts remain in scope; no production service
-API or narrowed acceptance is selected.
+Fresh full-service comparisons identify the shared mixed-operation replay row
+and genuine absent-Work attachment as open ownership edges. Separately scoped
+private native proofs cover handshake pressure, handoff cancellation and the
+selected accepted-queue count/recovery law in both approved layouts. Earlier
+owning TLS20 runs retain their own source epoch. The current queue cohort and
+controls pass debug/optimized checks, as recorded below. The SDK is unadopted.
+Whole byte/backing/task limits, universal close, expiry/error discharge,
+arbitrary drain, full SDK CI, service ownership and privacy remain open.
+No production service API or narrowed acceptance is selected.
 
 Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
@@ -142,12 +143,15 @@ Full-channel producer cancellation also passes while preserving bidirectional
 use of the queued original and natively closing the untransferred rejection.
 Actual prior-source comparisons fail only their intended final checks. Owning
 TLS20/0 per profile and focused lint/format pass. Full SDK test lint remains
-blocked by unchanged stale feature consumers. Manager queue/bytes/close/drain,
-SDK delivery and all full remote acceptance remain open. A private input-policy
-prerequisite now rejects only unsupported usize::MAX through the existing
-fallible native builder; supported values/default, owning library and both
-native layouts pass debug/optimized controls. The actual accepted queue remains
-unbounded. No SDK adoption or full queue/remote acceptance follows. Exact scopes
+blocked by unchanged stale feature consumers. Whole bytes/close/drain,
+SDK delivery and all full remote acceptance remain open. The private candidate
+now bounds the existing accepted queue with the validated configured limit;
+only unsupported usize::MAX is rejected. The same actual regressions fail only
+the final bound on the original constructor and pass all six cases after the
+change in both profiles. Zero admission, both approved layouts, live delivery,
+same-owner recovery, owning library/native controls and scoped lint/docs/format
+pass. Whole bytes/close/drain, all-target SDK lint/CI and adoption remain open.
+This is private queue-count verification, not full remote acceptance. Exact scopes
 and source-bound evidence belong in the
 [owning change record](../prds/static-remote-actors.md#accepted-link-handoff--cancellation-before-receiver-release).
 
