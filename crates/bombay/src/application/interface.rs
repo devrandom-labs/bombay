@@ -946,6 +946,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    mod invocation;
     use crate::actors::ActorExt;
     #[cfg(feature = "remote")]
     use crate::application::{ApplicationScope, MailboxCapacity};

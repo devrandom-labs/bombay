@@ -165,62 +165,83 @@ where
         ) -> WorkFuture,
         WorkFuture: Future,
     {
-        self.execute_with_entities_invocation(work, |work: Work, application| {
-            (work(application), None::<Ready<()>>)
-        })
+        match self.execute_with_entities_invocation(
+            ApplicationWorkPresence::Supplied(work),
+            |work: ApplicationWorkPresence<Work, Never>, application| {
+                (
+                    ApplicationWorkPresence::Supplied(work.into_supplied()(application)),
+                    None::<Ready<()>>,
+                )
+            },
+        ) {
+            Ok((execution, (receiving, received_families))) => Ok((execution, async move {
+                let (work, root, notifications) = receiving.await;
+                let work = work.into_supplied_with_entities();
+                let families = received_families.await;
+                ApplicationOutcome::new(work, root, notifications, families)
+            })),
+            Err((application, work, cause)) => Err((application, work.into_supplied(), cause)),
+        }
     }
 
     // Preserve original Work independently from the concrete invocation callable.
     #[expect(
         clippy::type_complexity,
-        clippy::too_many_lines,
         reason = "one owning family preparation, invocation and complete independent receiving product"
     )]
-    pub(crate) fn execute_with_entities_invocation<
+    pub(in crate::application) fn execute_with_entities_invocation<
         Actor,
         StagingFailure,
         ChildFailures,
         Work,
         Invoke,
         WorkFuture,
+        NoWork,
         Exporting,
     >(
         self,
-        work: Work,
+        work: ApplicationWorkPresence<Work, NoWork>,
         invoke: Invoke,
     ) -> Result<
         (
             impl Future<Output = ()>,
-            impl Future<
-                Output = ApplicationOutcome<
-                    WorkOutcome<
-                        Self,
-                        Work,
-                        <WorkFuture as Future>::Output,
-                        (),
-                        (
-                            Root,
-                            Spaces,
-                            Families,
-                            Work,
-                            StagingFailure,
-                            ApplicationScope,
-                        ),
-                        (Actor, Arc<Spaces>, ApplicationScope),
-                    >,
-                    (
-                        RootOrigin<Root>,
-                        ActorRetirement<
-                            Actor,
-                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            ChildFailures,
+            (
+                impl Future<
+                    Output = (
+                        WorkOutcome<
+                            Self,
+                            (ApplicationWorkPresence<Work, NoWork>, Invoke),
+                            ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
+                            (),
+                            (
+                                Root,
+                                Spaces,
+                                Families,
+                                ApplicationWorkPresence<Work, NoWork>,
+                                StagingFailure,
+                                ApplicationScope,
+                            ),
+                            (Actor, Arc<Spaces>, ApplicationScope),
+                            (ApplicationWorkPresence<Work, NoWork>, Invoke),
                         >,
+                        Result<
+                            (
+                                RootOrigin<Root>,
+                                ActorRetirement<
+                                    Actor,
+                                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                                    ChildFailures,
+                                >,
+                            ),
+                            RecvError,
+                        >,
+                        Result<ActorNotificationReceipts, RecvError>,
                     ),
-                    Families::Shutdowns,
                 >,
-            >,
+                impl Future<Output = Families::Shutdowns>,
+            ),
         ),
-        (Self, Work, TryCurrentError),
+        (Self, ApplicationWorkPresence<Work, NoWork>, TryCurrentError),
     >
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
@@ -273,9 +294,12 @@ where
         ChildFailures: Send + 'static,
         Families::Installed: 'static,
         Invoke: FnOnce(
-            Work,
+            ApplicationWorkPresence<Work, NoWork>,
             ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
-        ) -> (WorkFuture, Option<Exporting>),
+        ) -> (
+            ApplicationWorkPresence<WorkFuture, NoWork>,
+            Option<Exporting>,
+        ),
         WorkFuture: Future,
         Exporting: Future<Output = ()>,
     {
@@ -303,18 +327,12 @@ where
             _,
             _,
             _,
-            Never,
+            NoWork,
             _,
         >(
             executor,
             self,
-            (
-                work,
-                move |work: ApplicationWorkPresence<Work, Never>, application| {
-                    let (work, exports) = invoke(work.into_supplied(), application);
-                    (ApplicationWorkPresence::Supplied(work), exports)
-                },
-            ),
+            (work, invoke),
             async |application: &Self| ((), application.allocations()),
             move |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
                   startup_inputs,
@@ -322,10 +340,7 @@ where
                 let (application, (work, invoke), publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
-                        ApplicationWorkCustody::NotInvoked(
-                            (ApplicationWorkPresence::Supplied(work), invoke),
-                            None,
-                        ),
+                        ApplicationWorkCustody::NotInvoked((work, invoke), None),
                         publication,
                     )),
                 };
@@ -341,7 +356,6 @@ where
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
                         let (work, invoke) = work;
-                        let work = work.into_supplied();
                         let rejection = ApplicationWorkPublication {
                             publication: Some((
                                 ApplicationWorkCustody::StagingRejected((
@@ -379,18 +393,7 @@ where
                 },
             ),
         );
-        let receiving = async move {
-            let (work, root_retirement, termination_notification) = receiving.await;
-            let work_outcome = work.into_supplied();
-            let family_retirements = received_families.await;
-            ApplicationOutcome::new(
-                work_outcome,
-                root_retirement,
-                termination_notification,
-                family_retirements,
-            )
-        };
-        Ok((execution, receiving))
+        Ok((execution, (receiving, received_families)))
     }
 
     /// Await caller-local Entity work and the exact independent root/family receiving product.

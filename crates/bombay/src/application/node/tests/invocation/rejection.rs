@@ -1,7 +1,10 @@
 use super::super::{Counter, MailLedger};
 use crate::actors::ActorExt;
+use crate::application::execution::ApplicationWorkPresence;
+use crate::behavior::Never;
 use crate::{Application, ApplicationStagingError, WorkOutcome};
 use core::future::{Future, Ready, poll_fn};
+use core::pin::pin;
 use core::task::Poll;
 use std::cell::Cell;
 use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
@@ -61,15 +64,20 @@ fn invocation_disposal_keeps_original_staging_rejection() {
                     entries: Vec::new(),
                 },
             );
-            let (execution, receiving) = application
-                .execute_with_entities_invocation(work, move |work: Box<Vec<u8>>, application| {
-                    let _original_disposal = &disposal;
-                    invoked.set(invoked.get() + 1);
-                    (
-                        async move { (work, application.request_shutdown()) },
-                        None::<Ready<()>>,
-                    )
-                })
+            let (execution, (receiving, received_families)) = application
+                .execute_with_entities_invocation(
+                    ApplicationWorkPresence::Supplied(work),
+                    move |work: ApplicationWorkPresence<Box<Vec<u8>>, Never>, application| {
+                        let _original_disposal = &disposal;
+                        invoked.set(invoked.get() + 1);
+                        (
+                            ApplicationWorkPresence::Supplied(async move {
+                                (work.into_supplied(), application.request_shutdown())
+                            }),
+                            None::<Ready<()>>,
+                        )
+                    },
+                )
                 .unwrap_or_else(|_| panic!("the actual host is entered"));
             let mut execution = Box::pin(execution);
             let fault = poll_fn(|context| {
@@ -80,14 +88,24 @@ fn invocation_disposal_keeps_original_staging_rejection() {
             })
             .await;
             drop(execution);
-            let mut receiving = Box::pin(receiving);
-            let outcome = poll_fn(|context| Poll::Ready(receiving.as_mut().poll(context))).await;
-            drop(receiving);
+            let (outcome, families) = {
+                let mut receiving = pin!(receiving);
+                let mut received_families = pin!(received_families);
+                poll_fn(|context| {
+                    Poll::Ready((
+                        receiving.as_mut().poll(context),
+                        received_families.as_mut().poll(context),
+                    ))
+                })
+                .await
+            };
             move || {
-                let Poll::Ready(outcome) = outcome else {
-                    panic!("staging rejection must already be received after execution surrender");
+                let (Poll::Ready((work, root, notifications)), Poll::Ready(())) =
+                    (outcome, families)
+                else {
+                    panic!("both original receivers must be ready after execution surrender");
                 };
-                let (work, root, notifications, ()) = outcome.into_parts();
+                let work = work.into_supplied_with_entities();
                 assert!(root.is_err());
                 assert!(notifications.is_err());
                 let WorkOutcome::StagingRejected {

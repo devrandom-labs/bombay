@@ -501,3 +501,10 @@ SDK adoption passes407 library/public and68 native TLS tests per profile, with
 one controlled subprocess still ignored. Exact graph conservation, locked metadata,
 strict lint/format/source laws pass after fresh84-input owner verification. Six
 metadata/record paths change no Rust/API; focused main delivery remains pending.
+
+
+The existing family invocation now supports genuine Absent. Both selected runtime
+profiles pass471 cases; intended omission inversions, strict lint, format and
+source laws pass with exact restoration. Eleven paths add70 production lines and
+no public type. Next: Node-owned cold Export/replay, provider and close custody;
+all full remote/service/privacy acceptance remains open.

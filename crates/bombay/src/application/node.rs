@@ -1,7 +1,7 @@
 //! One finalized local Application associated with one freshly opened native runtime.
 
 use super::composition::ComposeApplication;
-use super::execution::RootInterpreter;
+use super::execution::{ApplicationWorkPresence, RootInterpreter};
 use super::{Application, ApplicationHandle, ApplicationOutcome, ApplicationScope, WorkOutcome};
 use crate::NativeHost;
 use crate::address::MailAddr;
@@ -296,24 +296,9 @@ where
         ) -> WorkFuture,
         WorkFuture: Future,
     {
-        let (application, work) = self.take_application(work)?;
-        let session = &self.session;
-        match application.execute_with_entities_invocation(
-            work,
-            move |work: Work, mut application| {
-                application.session = Some(session.clone());
-                (work(application), None::<Ready<()>>)
-            },
-        ) {
-            Ok((execution, receiving)) => {
-                execution.await;
-                Ok(receiving.await)
-            }
-            Err((application, work, cause)) => {
-                self.application = Some(application);
-                Err(NodeExecutionRefusal::Host { work, cause })
-            }
-        }
+        let (execution, receiving) = self.execute_with(work)?;
+        execution.await;
+        Ok(receiving.await)
     }
 
     /// Issue the declared application with ordinary typed actor work.
@@ -426,16 +411,27 @@ where
         let (application, work) = self.take_application(work)?;
         let session = &self.session;
         match application.execute_with_entities_invocation(
-            work,
-            move |work: Work, mut application| {
+            ApplicationWorkPresence::Supplied(work),
+            move |work: ApplicationWorkPresence<Work, Never>, mut application| {
                 application.session = Some(session.clone());
-                (work(application), None::<Ready<()>>)
+                (
+                    ApplicationWorkPresence::Supplied(work.into_supplied()(application)),
+                    None::<Ready<()>>,
+                )
             },
         ) {
-            Ok(products) => Ok(products),
+            Ok((execution, (receiving, received_families))) => Ok((execution, async move {
+                let (work, root, notifications) = receiving.await;
+                let work = work.into_supplied_with_entities();
+                let families = received_families.await;
+                ApplicationOutcome::new(work, root, notifications, families)
+            })),
             Err((application, work, cause)) => {
                 self.application = Some(application);
-                Err(NodeExecutionRefusal::Host { work, cause })
+                Err(NodeExecutionRefusal::Host {
+                    work: work.into_supplied(),
+                    cause,
+                })
             }
         }
     }

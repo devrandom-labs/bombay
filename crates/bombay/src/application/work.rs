@@ -1,6 +1,7 @@
 use behavior::Never;
 use tokio::sync::oneshot::error::RecvError;
 
+use super::ApplicationScope;
 use super::execution::{ApplicationCleanupError, ApplicationWorkPresence};
 
 /// Caller-local work disposition alongside the actual unit application cleanup.
@@ -169,6 +170,76 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
             },
             Self::Interrupted { cleanup } => WorkOutcome::Interrupted { cleanup },
         }
+    }
+}
+
+impl<Inputs, Work, Invoke, Output, Cleanup, Root, Spaces, Families, Failure, PreparedInputs>
+    WorkOutcome<
+        Inputs,
+        (ApplicationWorkPresence<Work, Never>, Invoke),
+        ApplicationWorkPresence<Output, Never>,
+        Cleanup,
+        (
+            Root,
+            Spaces,
+            Families,
+            ApplicationWorkPresence<Work, Never>,
+            Failure,
+            ApplicationScope,
+        ),
+        PreparedInputs,
+        (ApplicationWorkPresence<Work, Never>, Invoke),
+    >
+{
+    #[expect(
+        clippy::type_complexity,
+        reason = "preserve original family staging inputs without a new product"
+    )]
+    pub(in crate::application) fn into_supplied_with_entities(
+        self,
+    ) -> WorkOutcome<
+        Inputs,
+        Work,
+        Output,
+        Cleanup,
+        (Root, Spaces, Families, Work, Failure, ApplicationScope),
+        PreparedInputs,
+    > {
+        let outcome = match self {
+            Self::StagingRejected {
+                inputs: (root, spaces, families, work, failure, scope),
+            } => WorkOutcome::StagingRejected {
+                inputs: (root, spaces, families, work.into_supplied(), failure, scope),
+            },
+            Self::Unstarted {
+                application,
+                work: (work, invoke),
+            } => WorkOutcome::Unstarted {
+                application,
+                work: (work.into_supplied(), invoke),
+            },
+            Self::Prepared {
+                inputs,
+                work,
+                cleanup,
+            } => WorkOutcome::Prepared {
+                inputs,
+                work,
+                cleanup,
+            },
+            Self::NotInvoked {
+                work,
+                startup_error,
+                cleanup,
+            } => WorkOutcome::NotInvoked {
+                work,
+                startup_error,
+                cleanup,
+            },
+            Self::Completed { output, cleanup } => WorkOutcome::Completed { output, cleanup },
+            Self::Interrupted { cleanup } => WorkOutcome::Interrupted { cleanup },
+        };
+        outcome.into_supplied()
     }
 }
 

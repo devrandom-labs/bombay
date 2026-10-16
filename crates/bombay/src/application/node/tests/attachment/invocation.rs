@@ -3,6 +3,7 @@ use super::super::custody::completed_actor;
 use super::super::{Counter, CounterMessage};
 use super::ReplyWork;
 use crate::actors::ActorExt;
+use crate::application::execution::ApplicationWorkPresence;
 use crate::behavior::{Never, User};
 use crate::remote::verify;
 use crate::{ActorNotificationReceipts, Application, WorkOutcome};
@@ -48,40 +49,49 @@ fn internal_exports_keep_originals_when_ready_work_disposal_panics() {
                     reply,
                     panic: Some(panic),
                 };
-                let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
-                    .execute_with_entities_invocation(work, |work, application| {
-                        let interface =
-                            application.interface(application.root().established_recipient());
-                        let lifecycle = application.lifecycle();
-                        let exporting = async move {
-                            verify(request, retained, |borrowed| async {
-                                calls.borrow_mut().push(Rc::as_ptr(borrowed));
-                                Ok::<_, Never>(provider_receipt)
-                            })
-                            .await;
-                            let target = interface.api().clone();
-                            let mut client = interface
-                                .client_to::<_, CounterProcessed>(target)
-                                .unwrap_or_else(|_| {
-                                    panic!("the actual correlated reply client allocates")
-                                });
-                            let admitted = client
-                                .send(CounterMessage::IncrementAndReply {
-                                    request_sequence: 137,
-                                    reply_to: client.recipient(),
-                                })
-                                .await;
-                            let processed = client.receive().await;
-                            let stopped = lifecycle.request_shutdown();
-                            let report = lifecycle.retirement().await;
-                            client.close_admission();
-                            let tail = client.receive().await;
-                            *native = Some((admitted, processed, stopped, report, tail));
-                            *published = Some(publication.send(output));
-                        };
-                        (work(application), Some(exporting))
-                    })
-                    .unwrap_or_else(|_| panic!("the actual host is entered"));
+                let (execution, (receiving, received_families)) =
+                    Application::new(Counter::new().stop_on_shutdown())
+                        .execute_with_entities_invocation(
+                            ApplicationWorkPresence::Supplied(work),
+                            |work: ApplicationWorkPresence<_, Never>, application| {
+                                let interface = application
+                                    .interface(application.root().established_recipient());
+                                let lifecycle = application.lifecycle();
+                                let exporting = async move {
+                                    verify(request, retained, |borrowed| async {
+                                        calls.borrow_mut().push(Rc::as_ptr(borrowed));
+                                        Ok::<_, Never>(provider_receipt)
+                                    })
+                                    .await;
+                                    let target = interface.api().clone();
+                                    let mut client = interface
+                                        .client_to::<_, CounterProcessed>(target)
+                                        .unwrap_or_else(|_| {
+                                            panic!("the actual correlated reply client allocates")
+                                        });
+                                    let admitted = client
+                                        .send(CounterMessage::IncrementAndReply {
+                                            request_sequence: 137,
+                                            reply_to: client.recipient(),
+                                        })
+                                        .await;
+                                    let processed = client.receive().await;
+                                    let stopped = lifecycle.request_shutdown();
+                                    let report = lifecycle.retirement().await;
+                                    client.close_admission();
+                                    let tail = client.receive().await;
+                                    *native = Some((admitted, processed, stopped, report, tail));
+                                    *published = Some(publication.send(output));
+                                };
+                                (
+                                    ApplicationWorkPresence::Supplied(work.into_supplied()(
+                                        application,
+                                    )),
+                                    Some(exporting),
+                                )
+                            },
+                        )
+                        .unwrap_or_else(|_| panic!("the actual host is entered"));
                 let mut execution = Box::pin(execution);
                 let fault = poll_fn(|context| {
                     match catch_unwind(AssertUnwindSafe(|| execution.as_mut().poll(context))) {
@@ -92,9 +102,10 @@ fn internal_exports_keep_originals_when_ready_work_disposal_panics() {
                 })
                 .await;
                 drop(execution);
-                let outcome = receiving.await;
+                let (work, native, notifications) = receiving.await;
+                let work = work.into_supplied_with_entities();
+                let () = received_families.await;
                 move || {
-                    let (work, native, notifications, ()) = outcome.into_parts();
                     let (admitted, processed, stopped, _report, tail) = retained_native
                         .expect("actual native outcomes stored before Work was made Ready");
                     admitted.expect("actual correlated command admitted");

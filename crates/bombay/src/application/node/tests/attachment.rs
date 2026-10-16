@@ -4,6 +4,7 @@ use super::counter::{CounterIncremented, CounterProcessed};
 use super::custody::completed_actor;
 use super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
+use crate::application::execution::ApplicationWorkPresence;
 use crate::behavior::{Never, User};
 use crate::remote::verify;
 use crate::{
@@ -69,15 +70,24 @@ fn projected_handoff_keeps_ready_work_and_provider_result() {
                     reply,
                     panic: Some(panic),
                 };
-                let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
-                    .execute_with_entities_invocation(work, |work, application| {
-                        let interface =
-                            application.interface(application.root().established_recipient());
-                        let lifecycle = application.lifecycle();
-                        transferred = Some(handoff.send((interface, lifecycle)));
-                        (work(application), None::<Ready<()>>)
-                    })
-                    .unwrap_or_else(|_| panic!("the actual host is entered"));
+                let (execution, (receiving, received_families)) =
+                    Application::new(Counter::new().stop_on_shutdown())
+                        .execute_with_entities_invocation(
+                            ApplicationWorkPresence::Supplied(work),
+                            |work: ApplicationWorkPresence<_, Never>, application| {
+                                let interface = application
+                                    .interface(application.root().established_recipient());
+                                let lifecycle = application.lifecycle();
+                                transferred = Some(handoff.send((interface, lifecycle)));
+                                (
+                                    ApplicationWorkPresence::Supplied(work.into_supplied()(
+                                        application,
+                                    )),
+                                    None::<Ready<()>>,
+                                )
+                            },
+                        )
+                        .unwrap_or_else(|_| panic!("the actual host is entered"));
                 let companion = async {
                     let (interface, lifecycle) =
                         granted.await.expect("actual committed root handoff");
@@ -118,9 +128,10 @@ fn projected_handoff_keeps_ready_work_and_provider_result() {
                     fault
                 };
                 let (fault, companion) = tokio::join!(kernel, companion);
-                let outcome = receiving.await;
+                let (work, native, notifications) = receiving.await;
+                let work = work.into_supplied_with_entities();
+                let () = received_families.await;
                 move || {
-                    let (work, native, notifications, ()) = outcome.into_parts();
                     let (admitted, processed, stopped, report, unread, published) = companion;
                     let transfer = transferred.expect("Invoke attempted its actual handoff");
                     assert!(transfer.is_ok());
@@ -197,13 +208,19 @@ fn missing_host_returns_original_work_before_handoff() {
         }
     };
     let Err((application, work, cause)) = Application::new(Counter::new().stop_on_shutdown())
-        .execute_with_entities_invocation(work, move |work, application| {
-            invoke_calls.set(invoke_calls.get() + 1);
-            let interface = application.interface(application.root().established_recipient());
-            let lifecycle = application.lifecycle();
-            *transfer = Some(handoff.send((interface, lifecycle)));
-            (work(application), None::<Ready<()>>)
-        })
+        .execute_with_entities_invocation(
+            ApplicationWorkPresence::Supplied(work),
+            move |work: ApplicationWorkPresence<_, Never>, application| {
+                invoke_calls.set(invoke_calls.get() + 1);
+                let interface = application.interface(application.root().established_recipient());
+                let lifecycle = application.lifecycle();
+                *transfer = Some(handoff.send((interface, lifecycle)));
+                (
+                    ApplicationWorkPresence::Supplied(work.into_supplied()(application)),
+                    None::<Ready<()>>,
+                )
+            },
+        )
     else {
         panic!("no host is entered before the actual invocation");
     };
@@ -214,7 +231,7 @@ fn missing_host_returns_original_work_before_handoff() {
         host.block_on(async {
             tokio::time::timeout(Duration::from_secs(10), async {
                 let (execution, receiving) = application
-                    .execute_with_entities(work)
+                    .execute_with_entities(work.into_supplied())
                     .unwrap_or_else(|_| panic!("the same originals enter the real host"));
                 execution.await;
                 let outcome = receiving.await;

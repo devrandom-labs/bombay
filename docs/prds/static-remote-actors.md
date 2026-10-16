@@ -33225,3 +33225,157 @@ complete records. Six paths: production/tests +0/-0, metadata +18/-46, public
 types +0/-0; exact runtime input bytes are frozen before this final record update.
 This verifies dependency adoption on the research branch, not main delivery or
 full service/privacy/resource acceptance. Prepare a focused main PR separately.
+
+
+### Family invocation — genuine absence through the existing owner
+
+Pre-edit blocker: f8's kernel accepts genuine absent Work, but the existing
+family adapter still manufactures Supplied at its boundary. Node uses that
+adapter even with no families. Fresh73-input verification03fbdee7 selects
+lock667a03, Behavior/Actors0.26.0/macros0.14.2 at98983b4 and complete selected
+instructions; Address0.3.0, Communication0.1.6, private Observe, Timers0.2.0 and
+Entity current APIs/tests/docs are verified. The adopted SDK is1.10.10 with
+Link/TLS/Transport1.10.4;18 manifests contain no patch/replace. The narrow source
+comparisondb2917ee rejects a new mapper/trait and a wider root-absence refactor.
+
+Selected derived Application law: the same family installer must accept actual
+Absence, issue one exporting future after startup, release existing Work permission,
+and retain original root, both notifications and complete nonempty-family receiving.
+No Work callable or Work future is constructed for absence. This changes no actor
+model law, interpreter, timer, address lease or shutdown policy. Reuse existing
+ApplicationWorkPresence, WorkOutcome, family installation/publications, Arc spaces,
+source-protected staging guard and the existing private kernel. Add no owner,
+trait, marker, public type, callback placeholder or public absence spelling.
+
+Generalize only execute_with_entities_invocation to consume Presence<Work,NoWork>
+and Invoke returning (Presence<WorkFuture,NoWork>,Option<Exporting>). Cold,
+Prepared and NotInvoked retain the identical (Presence,Invoke) product. Staging
+retains (Root,Spaces,Families,Presence,Failure,Scope) in the existing initialized
+publication BEFORE Invoke disposal. Ready retains Presence<Output,NoWork> before
+bare producer disposal. NoWork is Never for supplied callers and () with Work=Never
+for absence; Ready<Never> only names an uninhabited future position, never a value.
+
+At the existing WorkOutcome owner, one explicit family-shaped supplied projection
+preserves public Work/Output, all six dispositions and the original six-field
+staging tuple. The private absent consumer retains raw Presence in cold, staging
+and completed custody; it matches genuine Absent(()) directly. Add no unused
+absent-family projection before a real public absent caller requires one. Prepared
+remains (Actor,Arc<Spaces>,Scope). Preserve cleanup/errors and Interrupted. This
+stage promises no additional recovery at unguarded destructor or whole-owner
+surrender cuts. Ordinary root-only execute/absence and the kernel stay unchanged.
+The existing Node run_with may reuse execute_with for identical cold issuance;
+all public signatures remain unchanged. No Node-owned service is established.
+
+Test-first scope: put one owning child module under interface::tests to reuse
+its actual Accounts/AccountsRole/AccountReport and shutdown fixture without new
+visibility or another actor/provider framework. Reuse actual Counter and MailLedger
+sources. Two native substitutions each use a nonempty Accounts family and an
+actual family command/retirement. Counter performs genuine Read/CounterValue;
+Ledger transfers its original move-only Box through the one-way sender and
+performs terminal Read/Receipts. Borrowed/non-Send acquisitions remain outside
+exporting. Require exact native replies/origins, original Ledger allocation,
+Completed(Absent(())), root/native notifications and all actual family report axes.
+Establish the old adapter's intended Presence-is-not-a-Future static failure
+before production; then real debug/optimized controls and intended owning-source
+inversions must fail their untouched final post-cleanup oracles. Watchdogs,
+setup/compiler failures supply no runtime inversion credit. Review tests twice.
+
+Forecast: execution.rs, work.rs and node.rs; interface.rs test mount plus new
+interface/tests/invocation.rs; four existing private-invocation test callers;
+this PRD/status and DEAD_ENDS: at most twelve paths. Production at most180 net
+lines; verification at most1100 Rust/100 script/140 record lines, including the
+rejected403-line fixture program retained outside active source. New public types+0/-0. The seven
+existing calls are prelisted: public Entity/Node adapters and four owning tests;
+their mechanical Presence/projection migration adds no policy or bounds. If this
+scope needs new generic transformation machinery or exceeds its forecast, reopen
+the model before further production. Carry known1759 production,12/18 reservations
+and all2500/18/125/20000 historical/external extents; no reset or headroom claim.
+Node cold Export ownership, provider/query custody, mixed operations, drain/close,
+public privacy and every full R01–R25/AUTH1/NET1 gate remain separate and open.
+
+
+The first403-line Counter/Ledger fixture program is rejected before production.
+Actual prior-source debug/optimized compilation each returns101 with two E0271
+and two dependent E0599: InstallEntityFamilies requires Definition::Hosts to equal
+the exact Application Spaces. Existing Accounts fixes ActorSpace<ShutdownLedger>;
+adding another host to a topology cannot satisfy that equality. These failures
+are setup-only and earn no Presence-law or runtime credit. Review06c371d3 also
+requires complete native family custody and the entire EntityMetrics product.
+
+Reopen the test model and select the already demonstrated exact ShutdownLedger
+Application plus its Accounts fixture. One genuine-Absent exporting future sends
+one original root Vec and two actual family commands, with independent exact-root
+shutdown and full receiving before assertions. No new actor, definition, host
+adapter, marker or generic fixture is justified. The Counter/Ledger f8 controls
+keep their separate scope; both real protocols remain required by the later Node
+service. No full acceptance criterion is removed. Keep raw private Absent and the
+single supplied projection; do not add an unused absent projection. All original
+failed bytes/receipts remain in family-invocation/rejected-hosts. Full budgets and
+unknown historical charges carry; production is still unchanged before reauthoring.
+
+The revised exact-host test reaches only the intended Presence-is-not-Future
+E0277 boundary; its first debug epoch remains distinct. Before accepting the
+oracle, distinguish one-way root admission from processing: shutdown may retain
+that exact original in native unread User custody. Check the exclusive processed
+or unread native disposition without claiming a processing reply. The Entity
+fence still proves both family commands processed. Inspect the complete native
+failure/custody axes and entire metrics product; no sleeps or scheduling assumptions.
+
+The accepted test syntax now fails only the intended Presence<Ready<Never>,()>
+Future bound in both profiles, with unchanged input maps and original bytes frozen.
+Select into_supplied_with_entities at the existing WorkOutcome owner: normalize
+only cold/staging Presence, then reuse the existing into_supplied projection.
+No generic mapper, new bound or absent projection is needed. The record window
+is140 lines to include rejected-model provenance and complete final evidence.
+
+The first implementation compile exposes raw invocation borrows in receiving:
+consume the actual Absent/Completed product before inspecting borrowed slots,
+and apply the selected supplied projection before returning observation closures.
+Its unchanged585-input receipt is compiler setup only, not runtime evidence.
+The actual new debug case then passes1/0 after complete root/family receiving.
+Narrow the private adapter from crate to application visibility, matching its
+existing Presence owner and all seven actual local call sites; do not widen the
+enum. No public interface or new abstraction follows from compiler diagnostics.
+Measured eleven paths including untracked: production+130/-49/net81,
+tests+357/-57/net300, records+119/-0 before this note; public types+0/-0.
+This is capability work, not code reduction; retain all cumulative charges.
+
+Reopen receiving layout before further production edits. The broader unchanged585
+source debug run aborts with a real stack overflow in the existing live requester;
+strict Clippy reports two existing family-receiving futures now21568 bytes, plus
+six new-test style findings. Focused passes and both intended common-kernel
+inversions keep only their earlier bounded scope. Freeze that entire585-input
+model separately. Cancel its unfinished optimized broader command explicitly;
+its actual -2 receipt is neither a failed law nor a passing cohort.
+
+Select the dependency-neutral existing-owner alternative: the private family
+adapter returns its kernel receiver and family receiver as a tuple. Public
+supplied receiving projects Work BEFORE waiting for families, in one coroutine
+with the same public outcome. This restores the earlier ownership order rather
+than boxing tests, enlarging stacks or introducing a mapper/dependency. Preserve
+the staging-disposal test's finite receiving check when migrating its tuple.
+Keep eleven source paths/180 net production/1100 verification Rust/100 scripts,
+public types0. Expand only the record forecast to180 lines for the actual veto
+and corrected evidence, retaining every historical/external charge. FutureExt
+map remains unselected: its dependency is remote-only while Entity execution
+also builds without remote. Fresh focused debug/optimized, original live-requester
+and family-future lint gates must pass before broader verification resumes.
+
+Final flattened family prerequisite: both profiles pass the same ordered471
+outer cases across eleven harnesses (376 library/95 consumers). Thirteen inner
+compile fixtures remain separate. Strict workspace/all-feature/all-target lint,
+format, source laws11 and the feature-off core check pass through pinned Nix.
+The current omission inverse fails only the post-cleanup family-admission oracle
+in both profiles; exact44f6 source restoration and restored debug5/0 pass.
+Final two-pass review binds the complete source, typed originals and actual logs;
+the corrected inventory preserves its earlier mixed-fixture parser as rejected.
+Exact argv/results: family-invocation/flattened-broad-debug.json and
+flattened-restored-release.json; final-review.json retains the independent audit.
+All585 executed inputs are frozen in verified-source before these final two
+guide edits; final document-only gates bind their new bytes separately.
+Complete eleven-path checkpoint: production+153/-83/net70;
+tests+384/-70/net314; records+180/-0/net180; public types+0/-0.
+This adds capability. Known1829 production/12 public reservations and every
+historical/rejected/external2500/18/125/20000 extent carry without a reset.
+Node-owned cold declarations, mixed rows, providers, drain/close, public privacy,
+reviewed main delivery and all full R01–R25/AUTH1/NET1 acceptance remain open.
