@@ -234,6 +234,49 @@ source conservation complete independently. Earlier failed attempts, including
 inaccurate inverse matchers, retain no pass credit. Disposition: pass this
 finite diagnostic checkpoint; final registry catalogue/full gates remain open.
 
+
+Startup caller migration (pre-edit, DX10/11/26): replace only the supervision
+example's named Startup plan and ManagedWorker alias with the already-published
+owning closure implementation of StartupPlan. Keep WorkerRole, WorkerCommand,
+Worker, worker_submission, its borrowed sender input and every current business
+operation. The returned submission owns one cloned sender and role; construction
+and future creation do not send the notice, polling startup sends it exactly
+once, and cancellation drops the same owned values. This is mechanical use of
+the existing contract, not a new actor law or owner abstraction. Existing native
+supervision tests supply initial birth/replacement/retirement and pure creation
+oracles; the startup/source failure matrix remains unchanged.
+
+The return names StopOnShutdown<Worker> and an opaque StartupPlan with its exact
+Ready=()/Rejection=Never contract. Rust2024's existing precise capture `use<>`
+expresses that no borrowed sender is retained; it adds no capability bound.
+See the official [capture rules](https://doc.rust-lang.org/edition-guide/rust-2024/rpit-lifetime-capture.html).
+Prove the smallest actual copied example and its existing tests before updating
+the real caller. Expected one Rust file, net deletion, one plan type and one
+alias removed; no public crate type, runtime field/state/branch or new wrapper.
+Preserve the startup notice versus committed-readiness distinction; this batch
+does not claim a new readiness guarantee. The expanded programme budget applies.
+
+
+Retained startup checkpoint: worker.rs61→39 lines (+9/-31/net-22), removing
+Startup and ManagedWorker while preserving the business actor body byte-exact.
+Both supported compilers/profiles each pass one native replacement/retirement
+test, one pure initialization/correlation test and the actual example (eight
+test executions/four demos). All2080 inputs and397 nonowner records remain
+exact through execution; full-workspace/all-target strict Clippy passes in
+14.476s. Two independent source/oracle and evidence reviews pass. The historical
+executed driver's caption says “two native tests”; this attribution corrects it
+without changing the source-bound receipt. Examples still require owner107's
+publication for unannotated initial factories.
+
+Worker control and Stop action, both protocol enums (2→2), match arms (1→1),
+module (1→1), template states and custody equations are unchanged. The same two
+owned startup values move from a named product into an owning closure/future.
+Core production+0/-0, public crate types+0/-0; no new authority, state, bound,
+field, arrival history, cause copy, semantic boolean or structural caller path.
+Cross-check StartupPlan/WorkerSubmission, StartWorker permit/grant, initialization
+and original retirement laws; disposition: pass this mechanical batch. No new
+readiness, panic, cancellation, exhaustive custody or memory improvement claim.
+
 PR375 merge repair, before editing: capture upstream67a286c (PR374) and
 retained DevX06d6fd2 in a new isolated worktree; keep the live620-file native
 check snapshot untouched. Preserve simultaneous native-reply/query receiving,
