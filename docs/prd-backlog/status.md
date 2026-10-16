@@ -42,7 +42,9 @@ The separate declaration diagnostic correction has fresh owner verification and
 an actual pre-edit debug/optimized regression. It preserves the original cause
 while bounding outer Display/Debug. Healthy focused and all21 Application-client
 controls pass in both profiles; strict lint and formatting pass. Service ownership
-and Query privacy remain open; focused main delivery still requires review and CI.
+and Query privacy remain open. The focused diagnostic correction merged through
+PR384 asf25e4a0c after all six CI checks and independent source/local/native/
+required-log reviews passed. That delivery closes no full remote row.
 
 The test-only invocation-attachment comparison passes both controls in debug
 and optimized builds using existing invocation and independent receiving owners.
@@ -50,6 +52,15 @@ The rejected asynchronous wrapper fails at the intended Ready-result check in
 both profiles; this is comparison evidence, not a defect found in main. No
 public service API is selected. Production and public types are unchanged;
 actual service lifecycle, privacy and all full remote gates stay open.
+
+Fresh full-service comparisons identify the shared mixed-operation replay row,
+genuine absent-Work attachment and native pre-callback resource limits as open
+ownership edges. Private SDK handshake/cancellation comparisons and all19
+owning TLS tests pass both profiles; intended inversions are qualified. Full
+native transport saturation/refusal/fresh-retry remains unverified, including
+the open-deadline/handshake-deadline tradeoff. The candidate is unadopted. Both
+approved Peer and RouterClient layouts remain in scope; no production service
+API or narrowed acceptance is selected.
 
 Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,

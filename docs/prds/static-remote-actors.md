@@ -31331,3 +31331,194 @@ The PRD and status changes record the comparison and its limits. Known combined
 production1589/2500,12/18 public reservations and every125/20000 historical or
 external extent carry unchanged. This stage selects no public service API and
 closes none of the full remote, Query privacy or release gates.
+
+
+### Full service composition — current native resource and operation gaps
+
+Fresh source comparison at fe803ace selects the unchanged lock3caba2a6:
+Behavior/Actors0.26.0 at98983b4, macros0.14.2, Address0.3.0,
+Communication0.1.6, private Observe, Timers0.2.0 and current Entity.
+SDK1.10.9, transport/TLS1.10.3 and config1.10.2 select published VCS1ea4bd16;
+fresh controlled main and all three archive VCS records agree. No patch or
+version change is selected. The dedicated clean SDK research checkout is
+/private/tmp/bombay-zenoh-bounded-ingress. Existing owners retain their laws:
+Behavior pure Actions, primitive delivery/leases/reports/timers, Bombay actor
+and family tasks, and the SDK's connection/TLS/routing resources.
+
+The full service has three concrete unresolved edges. Fixed-Replies Export
+cannot hold Counter Increment/Read/Stop under one actor-wide replay owner or
+Ledger Append/terminal Read without changing its row contract. Existing
+SendProduct supplies ordered actor effects, not arbitrary non-Send provider
+execution or independent service progress. Genuine absent Work never calls
+Invoke; a supplied unit callback would misrepresent absence. Ordinary functions,
+concrete native owners and the existing presence sum remain the comparison
+inputs. No new operation trait, macro, runtime or public service API is selected.
+
+Fresh SDK source also shows two pre-callback terms with no count cap: the TLS
+listener's pending handshakes and the transport's accepted-link channel.
+max_sessions and accept_pending enforce later boundaries. The RX recycling
+pool can allocate fallback batches. Application permits therefore cannot prove
+the full resource equation. These are missing service-contract guarantees,
+not a new claim that a previously supported bounded profile regressed. Preserve
+both approved Peer and RouterClient scope. Exact source inputs and limitations
+are retained in service-operations/operations.json and service-resources/source.json.
+
+Pre-edit native experiment: author one SDK-owning TLS test (at most220 added
+Rust test lines) beside its existing real mTLS fixture tests. The SDK stage
+touches its existing unicast/tests.rs, TLS Cargo.toml and Cargo.lock: add only
+the already selected workspace Flume0.11.1 development edge, preserving every
+package/version/checksum. This gives the owning test its actual channel type
+without widening production visibility or adding a test factory. Bombay
+Cargo.lock remains unchanged. Withhold completion
+of a first handshake after wire progress; retain the SAME second valid mTLS
+operation before and after releasing the first. Compare the current concurrent
+listener with a candidate sequential listener using existing timeout and
+acceptor. The intended old-source failure must be actual second-handshake
+completion while the first remains held, not a setup/compiler/watchdog failure.
+A finite observation interval establishes only that trace; bound the complete
+test as well and establish the first-peer observation precedes the actual
+native handshake timeout. Require the resumed second operation's actual bytes and complete listener/link cleanup before law
+assertions. Author and independent two-pass source review precede execution;
+actual debug/optimized comparison precedes production selection.
+
+Sequential concurrency one is a research candidate with an explicit throughput
+and slow-client cost. A bounded FuturesUnordered alternative remains eligible
+if a real accepted progress requirement rejects that candidate. No production
+edit is selected by the test forecast. An eventual smallest TLS change would
+reuse raw TcpListener, existing TlsAcceptor/security configuration, timeout,
+LinkUnicastTls and listener cancellation, deleting the uncontrolled pending set;
+forecast at most60 changed TLS control lines and no public type. Any actual
+retained production delta must be measured before selection.
+
+The shared accepted-link queue is a separate law: a naked bounded send can
+strand listener retirement, and cancelling Flume's consuming send does not
+prove explicit original-link close. Do not combine that unresolved fix with
+the handshake comparison or claim a complete count/byte bound. Last-Query
+FINAL also requires the last shared native owner; one refused clone's disposal
+does not establish caller completion or authenticated nonadmission.
+Carry known production1589/2500,12/18 public reservations and every125-owner/
+20000-verification historical/external extent. Current Bombay software delta
+for this stage is zero; records are measured separately. Full service,
+privacy, R01-R25/AUTH1/NET1, API and release gates remain open.
+
+
+The exact formatted H1 test6781537d is now mounted only in the SDK owner:
+tests+197/-5/net192, test manifest+3/-0 and the one existing Flume lock edge.
+Actual old-production debug and optimized runs each reach only the final
+held-interval rejection after authenticated first flight, actual open first
+peer below its native deadline, successful second mTLS/native handoff, real
+bytes, both native close/EOF directions, joined listener and drained channel.
+They execute0/1/0 with17 filtered, logs f9f91d72/eee8e21b. Both source maps are
+unchanged; no setup/compiler/timeout failure is credited. These SDK-owning
+runs use that owner's lock (including Syn3.0.4), not Bombay's combined graph.
+The source VCS and actual Flume0.11.1/Rustls0.23.46/Tokio1.53.1 agree with the
+selected consumer. Registry adoption remains a separate gate.
+
+Pre-production comparison record: mount a reviewed private sequential candidate
+in SDK TLS unicast.rs only, expected production+23/-6/net17, public types+0/-0.
+It reuses raw TcpListener, the exact existing TlsAcceptor, native handshake
+timeout, listener cancellation, peer identity/certificate policy, success
+handoff and LinkUnicastTls. Delete only the uncontrolled pending-handshake set.
+Keep actual handshake IO versus timeout causes with the actual peer in native
+logging and preserve error throttling. No new task, wrapper, trait, parser,
+second actor contract, defaults or transport profile. Both profiles must pass
+the unchanged focused H1 test before broadening. This is positive capability
+code, not code reduction; known combined production would become1606/2500 if
+retained. Carry12/18 public reservations and all125/20000 extents unchanged.
+
+Successful H1 alone is insufficient to retain or ship this candidate. Add and
+verify an actual pending-handshake cancellation control before retention, then
+run the owning security/IO controls, lint and formatting. Review the deliberate
+one-handshake throughput/slow-peer tradeoff with the accepted progress laws.
+Remove any obsolete dependency only after the candidate is retained; no
+release, version bump, public API or global accepted-link queue change belongs
+to this comparison. Both full supported topologies and every remaining service,
+byte, callback, privacy and R01-R25/AUTH1/NET1 gate stay open.
+
+
+The exact private candidate1fa83b68 now passes the unchanged H1 test in both
+profiles:1/0/0 with17 filtered, logs56067f12/38de1b85. Each actual trace takes
+about1.12 seconds and retains matching18-entry source maps. Earlier old-source
+D/R failures remain their exact6781537d test/source scope. Current combined
+working production is1589 committed plus17 unretained SDK lines =1606/2500;
+this is not merged or published delivery.
+
+Before broadening tests, record the required cancellation comparison: cancel
+the actual listener after observing an authenticated server flight with client
+completion still withheld. Observe a borrowed wait on its SAME join handle;
+always release the first peer and acquire the actual join before law assertions.
+Preserve first-peer EOF versus still-open evidence separately. Inverting only
+the pending-handshake cancellation branch must prevent early join, then allow
+that same listener to join after causal peer release. A watchdog, abort, expired
+first handshake, failed setup or failed final join cannot qualify this inversion.
+The original concurrent listener supplies a compatibility control for this
+existing cancellation law; it does not satisfy the new H1 comparison.
+
+Expand the self-imposed test forecast before mounting that addition: at most320
+introduced Rust test lines in the SAME existing owning test file, replacing220.
+A closed test observation choice/common first-flight setup may delete duplicated
+fixture construction without a generic test framework. Preserve complete native
+traces; if H1 body/source changes, run both original-production H1 comparisons
+on that final test source rather than relabel earlier executions. Expected
+production remains+23/-6/net17, public types+0/-0 and the same six total paths
+across the SDK and Bombay records. Both tests need author and independent
+two-pass review, debug/optimized controls and qualified inversion before
+retention. Carry all2500/18/125/20000 limits and historical/external extents.
+
+
+Cancellation source67f4e652 passes author, root and independent two-pass
+reviews; pinned formatting preserves its exact bytes. Total tests+277/-6/net271
+stays within the pre-edit320-line forecast. Mount this final source for original
+H1 failures and existing-cancellation positives, candidate positives and the
+inner-cancellation-only inverse da36e1c3 in both profiles. Earlier678-source
+receipts retain their original scope. No cancellation execution is credited yet.
+
+
+Final cancellation-source67f4 comparison now has twelve actual terminal
+commands. Original H1 debug/optimized fail only final498; original cancellation
+passes1/0 in each. Candidate1fa passes all four owning unicast controls in each.
+Removing only inner cancellation (da36) fails only final381 after the same
+listener joins following actual peer surrender. Independent runtime review
+5e7ce2da verifies all eight comparisons and source restoration. Exact restored
+candidate passes all19 TLS library/security/IO tests in each profile; strict
+TLS library/tests Clippy and formatting exit0. All before/after source maps and
+raw log hashes match. No expected inverse failure is a new shipping defect.
+
+Retain this as a private experiment only. The SDK defaults give both transport
+open and TLS handshake a10000ms deadline; a held handshake plus100ms error
+throttle can exhaust a later valid transport open. The raw connector comparison
+bypasses that outer deadline. A complete native transport saturation/refusal/
+fresh-retry witness remains necessary before adoption. No concurrency-progress
+guarantee is inferred; both Peer and RouterClient remain required. Dependency
+retirement, publication/adoption, accepted-link queue, backing bytes and the
+full service/privacy gates remain open. Current SDK production+23/-6/net17,
+tests+277/-6/net271, test manifest+3, lock+1, public types+0/-0. Bombay has only
+record changes; complete two-worktree census and twelve receipts are in
+service-resources/handshake/cancellation-final-local.json. Carry known1606/2500
+working production,12/18 and all125/20000 historical/external extents.
+
+
+Focused main diagnostic delivery: PR384 merged normally at2026-10-16T10:11:25Z
+asf25e4a0c70f1272904da8eb7f13c5b8f1699fa6b. All six CI contexts pass on
+7d638124; actual CI merge95396074 and final merge have exact tree84ad62ce.
+Required review57a88b18 and native review8b4a5dd5 pass with bounded campaign
+and skipped-Miri limits preserved. Actual parents arefbb5c742+7d638124; the
+main merge receipt is in declaration-main/merge-receipt.json. Source/local
+proof archives retain their original scope. The completed-CI archive manifest
+390d1dee and seal72c8a30f preserve actual CI and merge evidence. Full service/privacy, all R01-R25/AUTH1/NET1 and release remain open.
+
+
+Native comparison archive manifestfcb7805f/sealf380e0d2 preserves all16 terminal
+commands,95 exact source versions and the uncommitted private SDK patch. Root
+independently rehashed all195 payloads. One historical status draft remains
+explicitly digest-only; every software variant is exact. The completed PR384
+CI archive has963 payloads, independently rehashed by root. Both snapshots are
+read-only and retain their bounded evidence and open full-feature gates. The
+clean merged diagnostic worktree was removed without force after checking its
+empty tracked/untracked/ignored delta, main ancestry and absence of live CWDs.
+
+Final comparison change record before main-history integration: Bombay
+production+0/-0/net0; SDK production+23/-6/net17; tests+277/-6/net271; public
+types+0/-0. SDK metadata+4/-0. Bombay records+203/-1/net202 across the same two
+paths; no untracked files in either selected worktree. Carry all historical
+125/20000 extents and known1606/2500 working,1589 retained,12/18 reservations.
