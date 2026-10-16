@@ -16,7 +16,7 @@ workspace = true
 
 [features]
 default = []
-remote = ["dep:serde", "dep:zenoh", "dep:zenoh_config", "dep:zenoh_protocol", "dep:json-event-parser", "dep:futures-util"]
+remote = ["dep:serde", "dep:serde_json", "dep:zenoh", "dep:zenoh_config", "dep:zenoh_protocol", "dep:json-event-parser", "dep:futures-util"]
 axum = ["dep:axum", "tokio/net"]
 
 [dependencies]
@@ -33,6 +33,7 @@ timers = { workspace = true }
 triomphe = { workspace = true }
 axum = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 futures-util = { version = "0.3.34", default-features = false, features = ["alloc"], optional = true }
 json-event-parser = { version = "=0.2.3", default-features = false, optional = true }
 zenoh = { package = "bombay-zenoh", version = "=1.10.9", default-features = false, features = ["transport_tls"], optional = true }

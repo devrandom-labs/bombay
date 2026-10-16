@@ -3,6 +3,7 @@ use super::{Counter, CounterMessage, LedgerCommand, MailLedger, Receipts};
 use bombay::actors::ActorExt;
 use bombay::behavior::BehaviorBase;
 use bombay::prelude::Exit;
+use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use bombay::remote::{
     Metadata,
     json::{self, Limits},
@@ -21,7 +22,6 @@ use tokio::runtime::Builder;
 use tokio::sync::{Semaphore, mpsc};
 use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
-use zenoh_config::Config;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -53,22 +53,21 @@ struct LedgerRequest {
     operation: LedgerOperation,
 }
 
-fn listening_configuration() -> Config {
+fn listening_configuration() -> Network {
     let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
-    let declaration = serde_json::json!({
-        "mode":"peer", "queries_max_retained":2,
-        "connect":{"endpoints":[]}, "listen":{"endpoints":["tls/localhost:0"]},
-        "scouting":{"multicast":{"enabled":false,"listen":false},"gossip":{"enabled":false}},
-        "transport":{"link":{"protocols":["tls"],"tls":{
-            "root_ca_certificate":certificates.join("root-ca.pem"),
-            "listen_certificate":certificates.join("recipient-certificate.pem"),
-            "listen_private_key":certificates.join("recipient-private-key.pem"),
-            "enable_mtls":true,"verify_name_on_connect":true,"use_public_pki":false
-        }}}
-    })
-    .to_string();
-    Config::from_deserializer(&mut serde_json::Deserializer::from_str(&declaration)).unwrap()
+    Network {
+        layout: NetworkLayout::Peer {
+            connect: None,
+            listen: Some(ConnectionEndpoints {
+                addresses: vec!["localhost:0".to_owned()],
+                certificate: CredentialSource::File(certificates.join("recipient-certificate.pem")),
+                private_key: CredentialSource::File(certificates.join("recipient-private-key.pem")),
+            }),
+        },
+        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
+        max_retained_queries: NonZeroUsize::new(2).unwrap(),
+    }
 }
 
 const COUNTER_OBJECT: &[u8] = br#"{"bombay":{"wire_version":1,"schema_version":1,"provider_profile":"counter-record-test-v1","deployment":"comparison","caller":"caller","caller_session":"fedcba9876543210fedcba9876543210","controller":"owner","actor":"counter","host":"host","protocol":"counter","grant_issuer":"issuer","runtime_generation":"123456789abcdef0123456789abcdef0","actor_generation":17,"authority_generation":19,"request_sequence":23},"kind":"request","operation":"increment"}"#;

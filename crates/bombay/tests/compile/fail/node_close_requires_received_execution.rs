@@ -1,15 +1,15 @@
 use bombay::Application;
 use bombay::actors::ActorExt;
-use zenoh_config::Config;
+use bombay::remote::Network;
 
 #[path = "../../../../../examples/counter/src/counter.rs"]
 mod counter;
 
 use counter::Counter;
 
-async fn close_running_node(config: Config) {
+async fn close_running_node(network: Network) {
     let mut node = Application::new(Counter::new().stop_on_shutdown())
-        .open_node(config)
+        .open_node(network)
         .await
         .unwrap_or_else(|_| panic!("the node opens"));
     let (execution, receiving) = node

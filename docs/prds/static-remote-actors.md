@@ -1,22 +1,30 @@
 # Static remote actors and typed admission
 
-## Current source after PR375 integration (2026-10-16 UTC)
+## Current source after latest-main integration (2026-10-16 UTC)
 
 The user requested latest main, three complete repository scans, and one
 canonical way to compose, run and retire an application. The research branch
-integrates main5e9bcd1, selecting Behavior/Actors0.26.0 at98983b4 and macros0.14.2.
+integrates mainfbb5c742, selecting Behavior/Actors0.26.0 at98983b4 and macros0.14.2.
 Application owns the one executable composition and complete Work/root/retirement
 results. The disconnected0.25 connection-entry and generic Native prototypes
 have been removed from active source; exact source and unique law evidence
-remain archived. Active production owners now match main. The only source
-adaptation is the existing PR379 test's current WorkOutcome/capacity spelling;
-its original ownership oracle passes in debug and optimized builds.
+remain archived. At cleanup checkpointd682e87, production owners match main
+and the existing startup test's current WorkOutcome/capacity spelling passes
+both profiles. Three complete codebase scans found no additional competing
+production owner. That checkpoint's strict lint/format checks pass; its current
+test coverage is840 plus7 doctests, with Config/Query privacy still open then.
 
-All three codebase scans are complete. No further competing production owner
-was found. Strict lint and formatting pass; current workspace coverage passes
-except the two retained raw Config/Query privacy denials. SDK privacy,
-shipping service integration and stale mutation-baseline migration remain
-unfinished. All full R01–R25/AUTH1/NET1 rows remain open.
+The active input-privacy stage replaces the same Node opener's raw Config with
+the selected Network product. Eight owning mapping tests, four public input
+tests, migrated Node callers and all six native public Node controls pass in
+debug and optimized builds. Deliberate mapping, diagnostic and input-custody
+defects reach the intended assertions; exact source is restored. Concrete Config
+receives the intended E0308 denial, and existing Session/borrow denials remain.
+Default workspace execution passes. Full feature-enabled execution passes847
+tests and7 doctests, failing only the kept Query privacy target. Strict workspace
+lint passes after correcting one documentation backtick. SDK service/query privacy,
+shipping integration and mutation-baseline migration remain unfinished.
+All full R01-R25/AUTH1/NET1 rows remain open.
 
 Earlier checkpoints below retain their source/version/execution scope.
 
@@ -54,10 +62,15 @@ that Zenoh stay private even through advanced APIs: power users compose Bombay
 contracts, not native transport objects. The separate remote-counter application must
 demonstrate the ordinary boundary; tests carry assertions and fault campaigns.
 
-Current source `9747c90e` does not satisfy this requirement: Node owns and opens
-the Session, but `Node::execute_with` passes `&Session` to work, startup accepts the
-raw SDK Config, and the low-level Export exposes native query custody. These
-are prerequisite interfaces, not proof of the finished Application experience.
+Earlier source `9747c90e` did not satisfy this requirement: Node owned and opened
+the Session, but `Node::execute_with` passed `&Session` to work, startup accepted
+raw SDK Config, and the low-level Export exposed native query custody. Current
+main's Work takes only the ordinary Application handle; the active Network
+input stage replaces raw Config on that same opener. Public Export still lends
+Query/count permits, accepts a native Query refusal callback and returns Session
+and Query receivers from undeclare; Reply and declarations are reachable through
+those values. These remain prerequisite interfaces, not proof of the finished
+Application experience.
 Audit and minimize the complete public surface before declaring full delivery;
 do not retain an extra forwarding facade solely to conceal unfinished plumbing.
 No replacement API or production design is selected by this clarification.
@@ -30416,4 +30429,369 @@ migration remain open. This checkpoint is committed as a reviewed source
 reduction, not feature acceptance or remote delivery. The isolated startup test
 repair is independently submitted as PR382 at eeb8dc66 against main5e9bcd1;
 its two files are the same verified startup regression and its owning DevX
-change record. Required CI and actual review/merge remain pending.
+change record. That submission-time checkpoint is historical; actual delivery
+and final independent CI review are recorded below.
+
+
+### Current Node configuration privacy — attached input stage
+
+The current executable Config privacy negative accepts the raw SDK type. Repair
+that actual boundary on the existing owner: Application::open_node(Network)
+returns the same Node or the original (Application, Network, NodeStartupRefusal).
+Network construction borrows original inputs; no refusal reconstructs or clones
+them. Node continues owning exactly one fresh Session and delegates execution
+and receiving to the same invocation kernel. Do not restore Connection,
+execute_remote, a second opener, provider framework or another runtime.
+
+Fresh selected lock remains3caba2a6, no patches: Behavior/Actors0.26.0 at98983b4
+(complete selected AGENTS reread), macros0.14.2, Address0.3.0, Communication0.1.6,
+Timers0.2.0, private Observe, SDK1.10.9, Config1.10.2, Protocol1.10.1, Tokio1.53.1.
+Current native setters, Node profile validation, actual Counter/Shutdown actor,
+invocation, full outcomes and neighboring public ownership contracts are
+reinspected. This stage changes no Behavior fold, Address lease, Communication
+mailbox, Observe publication or Timers policy. R17/R20 construction and explicit
+SDK privacy are deliberate Bombay policy; native reachability/authentication and
+full R01-R25 service acceptance remain independent. No unverified dependency
+contract blocks this ordinary-input stage; full service remains open.
+
+Reuse the four already selected and reserved input types: Network owns explicit
+layout, deployment roots and native retained-query count; NetworkLayout owns
+Peer direction alternatives or RouterClient's required connect direction;
+ConnectionEndpoints owns each all-of address list and its two independent
+credentials; CredentialSource owns File(PathBuf) or Base64(Box<str>). These
+products express actual inputs rather than hide another owner. They delete
+public raw Config construction and its caller configuration plumbing; the real
+Counter opener is their concrete consumer. No builder, trait, typestate, macro,
+implicit defaults, supplied identity or options pass-through is selected. The
+earlier ordinary-Rust comparison remains valid; fresh API review follows the
+official Rust checklist, naming and type-safety guidance.
+
+Before production, add the smallest public Counter witness: current-thread host
+refusal returns original Network buffers and the original usable Application;
+a real multithreaded TLS listener executes Counter increment/read with one
+ordinary handle, returns its non-Send Rc result and complete native retirement;
+endpoint option injection refuses before open and returns the original address.
+Make the raw Config denial explicitly name zenoh_config::Config, avoiding an
+unrelated inferred Default failure. Establish intended missing-input compile
+failures before production; then run focused debug/optimized positives and exact
+raw Config denial. Permission, replay and Query service privacy are not inferred.
+Review each test twice, independently, including always-refuse and reconstructed
+input counterexamples.
+
+Pre-edit production scope: remote/network.rs, remote/mod.rs, remote/startup.rs,
+application/node.rs and the remote-only serde_json normal dependency edge in
+Cargo.toml/selected locks; at most300 net production lines and four reintroduced
+public types already included in the carried12 reservations. Reuse the archived
+exact typed mapping only after requalifying it at the real Node consumer. Preserve
+all five distinct credentials, explicit quota, all-of semantics and fixed TLS/
+mTLS/private-roots/name checks/disabled discovery. Reject metadata/options and
+non-UTF-8 paths without lossy conversion. Native generated setter rejection
+retains the original Network and exact field classification; actual native
+address/value/open causes remain original sources. Do not whole-Config serialize.
+
+Design stage edits only its focused tests and smallest real caller. Existing
+raw-Config catalogue consumers may temporarily fail compilation; bulk migration
+is a later measured stage after the actual law passes. Current combined known
+production1494/2500, public12 reservations/18, software125 and verification20000
+windows and every historical/external extent carry. Main's imported review
+surface remains separately attributed. No new allocation of a second service
+owner or acceptance/release claim follows from this necessary boundary change.
+
+
+Actual pre-production commands now return101 for the intended old boundary:
+network-input-before reports missing four input imports and old Config fields;
+raw-config-explicit-before executes and reports both concrete Config/Query
+negatives unexpectedly compile. The latter now names zenoh_config::Config
+explicitly. Exact test/source hashes are frozen in network-input/before.json;
+no execution or shipping acceptance is inferred from the former static failure.
+
+Before implementation, narrow the old raw Config validation surface as well:
+fixed-id policy, required NonZero query count and the closed File/Base64 sum make
+ConfiguredRuntimeId, QueryLimitRequired, CredentialConflict and CredentialRequired
+public inputs impossible. Remove those obsolete variants and the raw Config
+validator rather than adding an alternate opener or retaining dead policy code.
+The private Network construction establishes those policies once. Keep actual
+Unsupported/QueryLimitExcessive/Host/HostFlavor/Open refusals and the three
+already selected mapping causes. Generated SDK setter refusal discharges its
+rejected temporary setting into field classification while returning the entire
+original Network; native endpoint/conversion/open causes remain exact sources.
+The private borrowed conversion is named to_configuration following Rust's
+conversion convention; no public Into<Config> or native accessor is added.
+Node close spells its existing opaque native Box as standard Error, without
+reboxing or changing its concrete type. Future service/native outputs remain open.
+SDK startup timeout/retry defaults are unchanged and establish no bounded
+startup, readiness or peer-handshake guarantee. API review sources:
+https://rust-lang.github.io/api-guidelines/checklist.html, naming.html and
+type-safety.html.
+
+
+The attached input stage now passes all3 focused public tests in debug and
+optimized profiles on formatted networkea59d15b/startup4bf64874/Node d44dd4ff
+and tests2ffe66d9. Explicit concrete Config now fails at E0308, expected Network
+found Config; Query remains the one unexpected compile success. Accept only
+that intended Config diagnostic after review. No listener handshake, exact
+native lowering or whole-consumer/CI credit follows from the Counter trace.
+
+The complete tracked/untracked initial input-stage measurement is8paths:
+production+283/-238/net45; tests+234/-1/net233; public types+4/-0 (same four
+within the carried12 reservations); non-Rust records+94/-1. Known combined
+production1539/2500. This is new public input capability, not code reduction.
+All prior budgets, source reservations, upstream extents and full acceptance
+remain carried. A later measurement includes the following verification work.
+
+Next, requalify the eight existing pure mapping laws inside network/tests.rs,
+with no Connection/alternate runtime fixture. To compile the owning unit target,
+replace only its three existing raw Config input factories (Node requests/json
+and their shared application_clients protocol fixture) with the already proved
+Network product. Preserve all caller/actor/replay/retirement assertions and
+provider policies. Actual SDK strings retain their sole known tls/ scheme in
+query fixtures; constructors remove that fixture scheme before supplying the
+selected plain-address Network input. This is fixture construction, not another
+public address parser. Prior fixture-only2s connecting overrides are not public
+Network inputs; retain the selected SDK default behavior, existing complete
+trace watchdogs, and explicit absence of bounded startup credit. Do not infer
+new timeout policy or support from healthy controls. No production parameter,
+trait, callback, route or bounds change is selected by this migration. Broader
+external consumers and their changed diagnostics remain a later stage.
+
+Additional scope: eight pure getter/error/input laws (about500 retained test
+lines), three existing test factory bodies, one owning cfg(test) mount and the
+actual Config diagnostic. Source/API+0 beyond that test-only mount. Review
+twice, run focused debug/optimized controls, then establish actual native
+security/source/injection inversions and restore exact source before accepting
+lowering. The getter laws cover all layouts, five File/Base64/mixed credentials,
+all-of lists, security settings, missing directions, injected metadata/options,
+exact native error source, maximum quota and nonUTF8 originals.
+
+
+Owning mapping controls now execute8/0/0 per profile,360 filtered, on network
+15276b5c and tests5c0af5d8. Both author and independent review pairs pass; the
+address cause test additionally compares actual native Display/Debug to a
+separate same-input native constructor, supplementing source-pointer coherence.
+Direct unmodified move of the SDK Box remains an ownership/source obligation,
+not a claim that formatting identifies every possible synthetic error.
+
+Before crediting these laws, select eight independent one-source inversions in
+remote/network.rs: AllOf-to-OneOf fallback; listening Base64 certificate wired
+to connecting certificate; public PKI enabled; parsed metadata/options guard
+removed; native address cause stringified/reboxed; configured quota replaced
+with constant2 (including excessive input); empty-list refusal removed; strict
+UTF8 path conversion replaced by lossy conversion. Each uses the real owning
+implementation and unchanged eight tests in debug/optimized profiles, must reach
+its named independent failed oracle, and receives no credit for compiler/setup/
+timeout failure. Store exact base/mutant/test/source/log hashes; restore exact
+source between cuts and finally rerun all eight healthy controls per profile.
+External orchestration is capped at180 authored lines, with no repository
+production/test harness or model added. All cumulative reservations remain.
+
+The first AllOf inversion reaches the intended group-strategy assertion in
+both profiles. The initial credential inversion stops and restores the exact
+baseline because its expected-oracle inventory incorrectly also named the
+mixed-source test: that test uses a File listening certificate, so a Base64
+listening setter defect does not affect it. The actual all-five Base64 test
+does fail at the wrong connecting credential, with seven other tests passing
+and no compiler error. Preserve that initial unqualified orchestration receipt.
+Continue under fresh receipt names with only the applicable all-five oracle;
+neither the test assertions nor the source defect changes. AllOf need not rerun.
+Two external82-line scripts total164 authored lines within the180-line bound.
+
+### Node input consumers — selected test migration after lowering qualification
+
+Keep this stage blocked until the mapping inversions and restored eight-test
+controls finish. Seven formatted external drafts are reviewed twice by author
+and independently; no caller draft is applied during the mapping experiment.
+They replace the node_outcome and protected_counter public_node input factories,
+four Node borrowing fixtures, and the obsolete raw Config guard tests. Expected
+production0/0 and public types0/0; drafted tests+124/-413/net-289 across seven
+paths. Retain the exact raw Config negative and its actual E0308 diagnostic.
+Narrowly add only the already selected serde_json normal dependency edge to the
+isolated transport fixture lock when Cargo validates its updated graph; keep
+root lock, package versions, sources and checksums unchanged.
+
+The five retired raw Config tests covered supplied native identity, mutable
+security/discovery/protocol options, missing/conflicting credentials or quota,
+direction-specific unused credentials, and an empty native all-of group.
+Closed inputs, exact mapping getters, all four layouts, distinct credential
+sources, excessive quota and option-injection tests now own the applicable laws.
+The empty group is an explicit policy distinction: the old raw Config accepted
+an empty connect group beside a listener, whereas a supplied Network direction
+with no addresses is deliberately refused. Absence is represented by None.
+Keep the native startup diagnostic's concrete error allocation/source/redaction
+test unchanged. Do not restore a raw opener for retired input shapes.
+
+All existing retry, borrowed/non-Send work, root/child custody, notifications,
+close-borrow and cleanup assertions remain. Session negatives must first accept
+Network as their otherwise-valid input, then fail at their original Session
+argument mismatch; close-borrow must retain E0499. Reject unrelated input or
+Default failures rather than blessing changed diagnostics. Native SDK transport
+and isolated research that do not call Application::open_node stay separate.
+
+Independent review found both public adverse-input witnesses too narrow: the
+native Open refusal observed only the certificate buffer, and absent-host
+observed complete values but only that allocation. The revised private test
+snapshot records the actual address Vec, each ordered String buffer/content,
+three independently named File PathBuf buffers/full contents, explicit quota,
+and exact Peer/listener-only/source alternatives. Both refusals compare complete
+observations while retaining actual sources, usable returned Application, first
+poll and full retirement facts. This test-only observation product adds no
+runtime, public type, configuration model or borrowed Network owner.
+
+Run actual migrated consumer controls in both profiles before credit. Then
+temporarily clone only deployment_roots in the same Node opener, preserving
+the public signature and all native settings: both adverse snapshot assertions
+must fail in debug/optimized builds. Restore exact owning source and rerun
+healthy controls. Compilation, setup, watchdog expiry or a different failed
+oracle receive no original-custody credit. Allow at most90 additional external
+orchestration lines for this separate end-to-end witness within the carried
+20000-line verification window; no production addition is selected.
+
+The independent complete current-tree measurement (including four untracked
+paths) corrects the initial input snapshot by one physical production line:
+18 paths, production+284/-238/net46; tests+828/-82/net746. Network is now233
+physical lines, with its two cfg(test) mount lines charged to tests. Known
+combined production is1540/2500, not the earlier initial1539. Public additions
+remain the same four within the carried12/18 reservations. The seven external
+drafts are not yet part of this measurement; they reserve a25-path stage union
+and their proposed test delta is separately+124/-413/net-289. Raw cumulative
+path unions include explicitly imported upstream work and do not certify a
+new historical upper bound or reset any earlier/external reservation.
+
+Diagnostic audit of this same input stage identifies one missing direct law:
+the new public credential Debug implementation must omit both File path values
+and Base64 contents through leaf, direction and whole-Network formatting. Add
+one pure public test (54 formatted lines) observing all five supplied sources
+and eight public diagnostic views, retaining the original three public tests.
+It makes no native-open or exact-format/verbosity claim. No retained production
+or public type is added. Review twice by author and independently, then qualify
+File and Base64 disclosure separately in the actual CredentialSource formatter
+in both profiles, restoring exact source and healthy four-test controls. Allow
+at most80 external orchestration lines within the carried verification window.
+This tests the already selected input redaction contract; it does not repair
+Export's separately unresolved native declaration diagnostics or service API.
+
+The mapping qualification is terminal and restored: all eight source defects
+reach their intended unchanged-test assertions in both profiles; restored
+controls execute8/0/0 in each profile on exact15276b5c source and5c0af5d8 owning
+tests. Raw source/test/log hashes are checked. Keep the initial mistaken
+credential-oracle inventory unqualified; use its corrected fresh receipts.
+The quota-constant defect also fails the independent layout getter, and the
+endpoint-guard cut first fails metadata rejection; neither result claims every
+conceivable field mutation was exercised. These are deliberately injected test
+checks, not eight newly discovered shipping bugs.
+
+Only after that terminal gate, apply the seven independently reviewed Rust
+consumer drafts, the54-line pure Debug test and the isolated lock's one existing
+serde_json edge. Actual pinned Cargo metadata --offline --locked refuses the
+old fixture lock and accepts the revised lock. All325 package identities and
+324 other records remain identical; root lock remains3caba2a6. Metadata proves
+the dependency graph only, not Rust execution. Migrated runtime callers,
+otherwise-valid Session/close-borrow diagnostics and stronger original-input
+observations are now being executed; whole-workspace and service gates remain.
+
+Migrated owning public controls now execute11/0/0 per profile across Network,
+node_outcome, remote_node and node_borrowing. The borrowing harness independently
+accepts caller-local Cell/Rc work and retains both Session-argument denials plus
+the E0499 close-borrow denial without changing their expected diagnostics.
+Trybuild's inner compilation remains dev-profile static evidence even in the
+optimized outer harness. Both credential disclosure inversions reach the new
+public secrecy assertion in each profile; exact Network source is restored and
+all four public Network controls pass again per profile. These tests exercise
+intentional source defects, not newly found shipping bugs. Native fixture's six
+public Node cases and whole-workspace verification remain pending.
+
+Read-only next-blocker audit freshly verifies the0.26 graph and current owners.
+Export's public Query/callback/undeclare interfaces still expose the SDK, and
+existing consumers can return Export from Work after Application cleanup. The
+current invocation joins actors, Work and Entity families rather than those
+service tails. Existing actor-local Send interpreter construction is a different
+owner from a caller-local borrowed/non-Send provider. Export's native cause
+Display/Debug also needs its own diagnostic law. Record these current blockers
+without selecting a new service API or adding production to this input stage.
+
+### Restored input-stage controls and latest-main delivery
+
+The six public native Node cases pass in each profile. The deliberate Node
+root-path clone reaches both original-input snapshot assertions in debug and
+optimized builds, while the other four cases pass. Exact Node d44dd4ff and
+Network15276b5c are restored; all six healthy cases pass again. This proves the
+bounded deployment-root allocation law, not an inversion of every input field.
+On the negative native-Open case, the snapshot fails before later cleanup
+assertions; complete cleanup assertions execute on the restored control. The
+absent-host negative reaches its cleanup assertions before the snapshot.
+
+Two author and two independent reviews retain the original consumer assertions
+and source/log hashes. Independent executed-evidence records under network-input:
+mapping e2c3dacc, credential Debug b11ca3f7 and Node custody57c64a93. Deliberate
+source defects are test qualification, not newly discovered production bugs.
+The initial credential-oracle inventory remains unqualified and preserved.
+
+Pinned-Nix `cargo test --offline --locked --workspace` succeeds on the restored
+source:773 tests pass/0 fail/2 ignored, plus7 doctests/0 fail/3 ignored. The113
+test and six documentation summaries are counted separately; overlapping focused
+runs are not added to those totals. Exact receipt network-workspace-default has
+log SHAb3f14d35. Workspace and isolated-fixture formatting both pass. The
+feature-enabled no-fail-fast workspace run and current strict Clippy remain
+pending; default features do not exercise the enabled remote privacy gate.
+
+PR382 is actually merged asfbb5c742 at2026-10-16T06:19:33Z after all six
+exact-head checks pass. Submitted eeb8dc66, CI test-merge and merged main share
+tree15915f0f. Final independent source/required-Nix/native/fuzz review is sealed
+after merge as2b2063a2 (machine record5ee78953); the owning DevX PRD records
+actual executions, skipped gates and account-event provenance. Required original
+run38852961714 was never restarted or cancelled. The main integration270675d
+has exactly the preceding d682e87 tree; both incoming files already matched.
+This imports the reviewed test-only repair without changing input-stage source.
+
+All full remote requirements, actual Query exposure, private service lifetime,
+provider freshness, shipping applications and mutation-baseline migration remain
+open. This stage adds ordinary input capability; it is not a finished remote
+service, release or production-code reduction. Carried2500/18/125/20000 review
+windows and all historical/external reservations remain in force.
+
+Terminal broad input-stage verification: pinned-Nix
+`cargo test --offline --locked --workspace --all-features --no-fail-fast`
+returns101 at only remote_surface. Its113 test summaries contain847 passed,
+1 failed and2 ignored; six documentation summaries contain7 passed,0 failed
+and3 ignored. The actual Config fixture passes its E0308 denial; the existing
+Query fixture unexpectedly compiles. This is the known public SDK exposure,
+not an injected source defect or a green workspace. No-fail-fast reaches every
+remaining target and all documentation tests. Receipt
+network-workspace-all-features/log79274990 preserves the complete execution.
+
+Current strict pinned-Nix
+`cargo clippy --offline --locked --workspace --all-targets --all-features -- -D warnings`
+passes. Its first run reports one missing pair of backticks around RouterClient
+in included user-facing documentation; correct that prose and retain both the
+failed initial receipt and successful network-clippy-doc-corrected receipt.
+No lint suppression, production edit or expected test diagnostic changes for
+this correction. Public input/source hashes remain the qualified restored ones.
+
+The full isolated protected_counter target also executes68/0/1 in each profile
+through pinned Nix, with protected-transport and the revised locked graph. Logs
+b79a65f0 (debug) and2689d7ed (optimized) retain all69 cases; the controlled TLS
+subprocess fixture is ignored and receives no execution credit here. This
+qualifies the changed shared inputs and fixture lock beyond the six focused
+Node cases. Existing Linux CI native campaigns retain PR382's separate source
+scope; they do not certify this research input stage.
+
+Final bounded distillation review08ee7a1e passes both ownership/test reviews
+and actual execution/source/log checks. No additional wrapper, runtime, public
+conversion or deletion is selected. Complete tracked/untracked stage:28 paths,
+including the owning DevX delivery record and four new source/diagnostic paths.
+
+```text
+production: +284 / -238 / net 46
+tests:      +1006 / -495 / net 511
+public API: +4 types / -0 types
+```
+
+Known cumulative production is1540/2500, including the external Communication104;
+the same four input types remain within carried12/18 public reservations. The
+raw cumulative upstream-inclusive source delta is3994/2558/net1436 production
+and26384/2671/net23713 tests versus81dc1448; imported upstream work is separately
+attributed and does not reset125-owner/20000-verification reservations or unknown
+historical extents. Count receipt a90c9cdc records the per-path source snapshot;
+later terminal record prose changes only non-Rust counts. The generated duplicate
+diagnostic and its ignore file are archived by exact hash and removed; canonical
+expected Config stderr remains. This is a verified research checkpoint with an
+enabled failing Query privacy gate, not main delivery or full PRD completion.

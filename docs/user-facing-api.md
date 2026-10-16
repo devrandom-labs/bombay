@@ -565,11 +565,16 @@ check versions, profiles, SDK identities, replay and permission. Metadata neithe
 authenticates input nor grants actor access. Providers protect the exact original
 transmitted bytes; deserializing and reserializing is not proof verification.
 
-The `remote` feature provides `application.open_node(config).await`. Its input is the configuration owner's `Config` from
-`bombay-zenoh-config` 1.10.2 (aliased as `zenoh_config` in Cargo). Build
-root/child topology with ordinary Application first. Its returned
-`remote::Node` owns that declaration and one fresh native Session. Await the
-complete application with
+The `remote` feature uses `application.open_node(network).await`. Supply Bombay's
+`remote::Network`: explicit deployment roots, native query capacity and
+`NetworkLayout`. Peer layout has independent connecting/listening directions;
+`RouterClient` requires connecting endpoints. Each `ConnectionEndpoints` owns an
+all-of plain-address list, its certificate and private key. `CredentialSource`
+selects each file or base64 value independently. There are no implicit
+credentials, shared identities or query limits, and no public SDK Config input.
+Build root/child topology with ordinary Application first. The returned
+`remote::Node` owns that declaration and one private fresh network connection.
+Await the complete application with
 `node.run_with(|application| async move { ... }).await`.
 Work receives the same inferred Application handle as local execution and can
 return caller-local, non-`Send` values. The joined result is the ordinary
@@ -580,8 +585,8 @@ For independently driven operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
 
-Transport hiding remains unfinished: startup configuration, exported query
-custody and native failures still expose SDK types. These are
+Transport hiding remains unfinished: exported query custody, declarations and
+native receive/retirement results still expose SDK objects. These are
 remaining interface work, not the canonical business callback. Zenoh is Bombay's
 internal network; application authors compose actors and use typed Bombay
 clients and recipients. Both execution entry points preserve the original
@@ -589,14 +594,17 @@ callable on refusal. Missing-host refusal also restores the original declaration
 a second execution returns `NodeExecutionRefusal::ExecutionIssued`, including
 when that already-issued Node's Session is closed.
 
-Startup returns the original Application/configuration on profile, host or
-native refusal. The selected profile requires configured TLS addresses, disabled
-discovery, mutual TLS, configured private roots, verified names and explicit
-native query capacity. No default capacity is selected. Per-endpoint overrides
-and `OneOf` fallback are rejected. SDK parsing verifies actual credentials; policy
-checks alone prove no handshake. Opening requires an entered multithreaded Tokio
-host. Native SDK configuration and query access must move into their runtime
-owners before the network interface work is complete.
+Startup returns the original Application/Network on mapping, host or native
+refusal. Bombay constructs TLS-only connections with disabled discovery,
+mutual TLS, supplied private roots and verified names. Empty directions,
+endpoint metadata/options and unsupported file-path encoding are refused.
+Outgoing addresses retain all-of semantics; no fallback is inferred. Actual
+credential parsing remains native; construction establishes no peer handshake.
+Opening requires an entered multithreaded Tokio host. Native startup timeout
+and retry defaults establish no bounded startup or readiness guarantee. The
+input-privacy stage passes its focused mapping, caller and original-input
+controls; the private remote service remains required before full interface
+acceptance.
 Whole operation disposal is surrender, not proof of joined retirement.
 
 Node and `ApplicationHandle::export` are delivered on main. Export uses

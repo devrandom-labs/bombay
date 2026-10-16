@@ -6,7 +6,10 @@ use super::{Counter, CounterMessage, CounterValue, completed_actor};
 use bombay::actors::ActorExt;
 use bombay::behavior::{Behavior, ClassifySettlement, Here, Ingress, SettlementStatus};
 use bombay::prelude::{Application, Completion, StopOnShutdown};
-use bombay::remote::{NodeExecutionRefusal, NodeStartupRefusal};
+use bombay::remote::{
+    ConnectionEndpoints, CredentialSource, Network, NetworkLayout, NodeExecutionRefusal,
+    NodeStartupRefusal,
+};
 use bombay::{
     ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement, ApplicationHandle,
     RetirementAssessment, WorkOutcome,
@@ -18,31 +21,81 @@ use std::cell::Cell;
 use std::error::Error;
 use std::fs;
 use std::io::ErrorKind;
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::ptr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tokio::runtime::{Builder, Handle, TryCurrentError};
 use tokio::sync::oneshot;
-use zenoh_config::Config;
 
-fn listening_configuration() -> Config {
+fn listening_configuration() -> Network {
     let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("certificates");
-    let root = certificates.join("root-ca.pem");
-    let certificate = certificates.join("recipient-certificate.pem");
-    let key = certificates.join("recipient-private-key.pem");
-    let declaration = serde_json::json!({
-        "mode": "peer", "queries_max_retained": 2,
-        "listen": {"endpoints": ["tls/localhost:0"]},
-        "scouting": {"multicast": {"enabled": false, "listen": false}, "gossip": {"enabled": false}},
-        "transport": {"link": {"protocols": ["tls"], "tls": {
-            "root_ca_certificate": root, "listen_certificate": certificate,
-            "listen_private_key": key, "enable_mtls": true,
-            "verify_name_on_connect": true, "use_public_pki": false
-        }}}
-    }).to_string();
-    Config::from_deserializer(&mut serde_json::Deserializer::from_str(&declaration))
-        .expect("actual fixture PEM configuration")
+    Network {
+        layout: NetworkLayout::Peer {
+            connect: None,
+            listen: Some(ConnectionEndpoints {
+                addresses: vec!["localhost:0".to_owned()],
+                certificate: CredentialSource::File(certificates.join("recipient-certificate.pem")),
+                private_key: CredentialSource::File(certificates.join("recipient-private-key.pem")),
+            }),
+        },
+        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
+        max_retained_queries: NonZeroUsize::new(2).unwrap(),
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct NetworkOriginals {
+    addresses: *const String,
+    endpoints: Vec<(*const u8, String)>,
+    deployment_roots: (*const u8, PathBuf),
+    certificate: (*const u8, PathBuf),
+    private_key: (*const u8, PathBuf),
+    max_retained_queries: NonZeroUsize,
+}
+
+fn network_originals(network: &Network) -> NetworkOriginals {
+    let NetworkLayout::Peer {
+        connect: None,
+        listen: Some(listener),
+    } = &network.layout
+    else {
+        panic!("the original listener-only layout must survive refusal");
+    };
+    let (
+        CredentialSource::File(deployment_roots),
+        CredentialSource::File(certificate),
+        CredentialSource::File(private_key),
+    ) = (
+        &network.deployment_roots,
+        &listener.certificate,
+        &listener.private_key,
+    )
+    else {
+        panic!("all three original File source choices must survive refusal");
+    };
+    NetworkOriginals {
+        addresses: listener.addresses.as_ptr(),
+        endpoints: listener
+            .addresses
+            .iter()
+            .map(|address| (address.as_ptr(), address.clone()))
+            .collect(),
+        deployment_roots: (
+            deployment_roots.as_os_str().as_encoded_bytes().as_ptr(),
+            deployment_roots.clone(),
+        ),
+        certificate: (
+            certificate.as_os_str().as_encoded_bytes().as_ptr(),
+            certificate.clone(),
+        ),
+        private_key: (
+            private_key.as_os_str().as_encoded_bytes().as_ptr(),
+            private_key.clone(),
+        ),
+        max_retained_queries: network.max_retained_queries,
+    }
 }
 
 #[test]
@@ -472,42 +525,27 @@ fn public_node_native_open_refusal_preserves_usable_application_and_original_con
         .build()
         .unwrap();
     host.block_on(async {
-        let mut config = listening_configuration();
+        let mut network = listening_configuration();
         let missing = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("certificates/absent-node-certificate.pem");
         let absent =
             fs::metadata(&missing).expect_err("isolated missing PEM fixture remains absent");
-        let encoded = serde_json::to_string(&missing).expect("native file declaration");
-        for (field, value) in [
-            ("listen/timeout_ms", "0"),
-            ("listen/exit_on_failure", "true"),
-            ("transport/link/tls/listen_certificate", encoded.as_str()),
-        ] {
-            let changed = config.insert_json5(field, value);
-            changed.expect("fixture-only immediate failure policy");
-        }
-        let original = config
-            .transport()
-            .link()
-            .tls()
-            .listen_certificate()
-            .as_ref()
-            .expect("supplied file")
-            .as_ptr();
+        let NetworkLayout::Peer {
+            connect: None,
+            listen: Some(listener),
+        } = &mut network.layout
+        else {
+            panic!("the actual fixture supplies a listener only");
+        };
+        listener.certificate = CredentialSource::File(missing);
+        let original = network_originals(&network);
         let refused = Application::new(Counter::new().stop_on_shutdown())
-            .open_node(config)
+            .open_node(network)
             .await;
-        let Err((application, config, refusal)) = refused else {
+        let Err((application, network, refusal)) = refused else {
             panic!("actual native PEM opening must fail");
         };
-        let retained = config
-            .transport()
-            .link()
-            .tls()
-            .listen_certificate()
-            .as_ref()
-            .expect("original file retained")
-            .as_ptr();
+        let retained = network_originals(&network);
         let source = refusal
             .source()
             .expect("actual SDK cause remains inspectable");
@@ -551,7 +589,7 @@ fn public_node_native_open_refusal_preserves_usable_application_and_original_con
         assert!(matches!(&notifications.termination, Ok(())));
         assert!(matches!(&notifications.retirement, Ok(())));
         let behavior = completed_actor(origin, retirement);
-        drop((behavior, client, config, refusal, notifications));
+        drop((behavior, client, network, refusal, notifications));
     });
 }
 #[test]
@@ -715,17 +753,8 @@ fn public_node_missing_host_restores_the_declaration_for_original_work_retry() {
 #[test]
 fn public_node_absent_startup_host_preserves_original_inputs_and_usable_application() {
     let application = Application::new(Counter::new().stop_on_shutdown());
-    let config = listening_configuration();
-    let original_credential = config
-        .transport()
-        .link()
-        .tls()
-        .listen_certificate()
-        .as_ref()
-        .expect("actual declared certificate")
-        .as_ptr();
-    let original_configuration =
-        serde_json::to_string(&config).expect("complete original public configuration view");
+    let network = listening_configuration();
+    let original_configuration = network_originals(&network);
     let absent_host = Handle::try_current().expect_err("this ordinary test has no entered host");
     let host = Builder::new_multi_thread()
         .worker_threads(1)
@@ -733,7 +762,7 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
         .build()
         .unwrap();
     let (first_poll, opened) = {
-        let mut opening = pin!(application.open_node(config));
+        let mut opening = pin!(application.open_node(network));
         let first = opening
             .as_mut()
             .poll(&mut Context::from_waker(Waker::noop()));
@@ -745,7 +774,7 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
             }
         }
     };
-    let (application, config, refusal) = match opened {
+    let (application, network, refusal) = match opened {
         Err(inputs) => inputs,
         Ok(mut node) => {
             let _closed = host.block_on(node.close());
@@ -753,16 +782,7 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
             panic!("unexpected native Session acquisition after acquiring close result");
         }
     };
-    let retained_credential = config
-        .transport()
-        .link()
-        .tls()
-        .listen_certificate()
-        .as_ref()
-        .expect("actual original certificate retained")
-        .as_ptr();
-    let retained_configuration =
-        serde_json::to_string(&config).expect("complete retained public configuration view");
+    let retained_configuration = network_originals(&network);
     let actual_source = refusal
         .source()
         .and_then(|source| source.downcast_ref::<TryCurrentError>());
@@ -813,12 +833,11 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
     assert!(absent_host.is_missing_context());
     assert!(matches!(&refusal, NodeStartupRefusal::Host { cause } if cause.is_missing_context()));
     assert!(exact_source);
-    assert_eq!(retained_credential, original_credential);
     assert_eq!(retained_configuration, original_configuration);
     drop((
         behavior,
         client,
-        config,
+        network,
         refusal,
         notifications,
         absent_host,

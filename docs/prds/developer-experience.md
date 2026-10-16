@@ -9,6 +9,12 @@ Communication0.1.6 and Timers0.2.0 without repository patches. Remaining
 feature acceptance and remote service/privacy work stay open; this merge
 record does not certify fresh checks on the combined research checkout.
 
+[PR382](https://github.com/devrandom-labs/bombay/pull/382) merged as
+`fbb5c742663a8ad8ce86558edbff2c5b18304a25` on2026-10-16 after all six CI
+checks passed. It repairs only the existing startup test's current capacity and
+WorkOutcome spelling; production is unchanged. The focused delivery record
+below preserves its reviewed source, actual executions and merge provenance.
+
 ## Historical integration checkpoints
 
 The following checkpoints retain their original source, instructions and
@@ -2960,3 +2966,31 @@ Every command runs through nix develop and the repository's pinned shell.
 Source review separately proves the complete production prefix byte-identical
 main5e9bcd1. Focused PR delivery and required CI remain separate; neither this
 repair nor the earlier merge closes full remote service/privacy requirements.
+
+Actual focused delivery: PR382 submitted
+`eeb8dc66ef755fa491e6fe0c411e91bba6242e3e` and merged as
+`fbb5c742663a8ad8ce86558edbff2c5b18304a25` at2026-10-16T06:19:33Z.
+Submitted, CI test-merge and actual merge share tree
+`15915f0f44c3892878d3bee6e86ea6a11e8e685a`. Both independent source-review
+passes preserve all15 assertions and their order. Production0/0, tests+8/-4/net4,
+public types0/0; the complete submitted change contains only the owning test
+module and this record.
+
+Original required run38852961714 attempt1 succeeds; job116818037849 completes
+at06:18:36Z. All six exact-head contexts pass, including both native TLS profiles.
+All24 selected Nix gates pass. The named startup regression passes four times
+across debug, optimized and remote gates; the default optimized workspace
+reports773/0/2 across111 summaries. Driver completes2048 seeded fuzz runs and
+each of four Observe targets completes1024. Both native profiles retain32
+protected cases/80 roles and independently checked source, log, certificate and
+artifact hashes. Deliberately killed-caller late-exit observations retain their
+negative scope; Miri is skipped and incompatible platforms are omitted.
+
+Final independent execution review is sealed after the actual merge:
+pr382-ci-review.md SHA256
+`2b2063a2f50905451c4461d8915c97ac60556b8bf84ac17002ca8d8be617fbc5`,
+JSON `5ee78953afcb5e43657b8594cc40f1e2decfb3be7321e849fe5e58d213807878`,
+under the session's legacy evidence directory. Its897-file manifest retains
+raw run/artifact/event evidence. GitHub records auto-merge enabled at05:08:43Z
+and merge at06:19:33Z by account joeldsouzax; these facts do not identify the
+client that enabled it. Full DevX and remote-service acceptance remain open.

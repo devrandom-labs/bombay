@@ -16,6 +16,7 @@ use bombay::actors::ActorExt;
 use bombay::behavior::User;
 use bombay::prelude::{Application, MailAddr};
 use bombay::remote::{Admission, ExportError, ExportLimits, Metadata, json, try_retain, verify};
+use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use core::ops::AsyncFn;
 use std::cell::{Cell, RefCell};
@@ -32,43 +33,39 @@ use tokio::runtime::Builder;
 use tokio::sync::{Semaphore, mpsc, oneshot};
 use tokio::time::timeout;
 use zenoh::query::ConsolidationMode;
-use zenoh_config::Config;
 
-fn configuration(address: &str, role: &EndpointRole) -> Config {
+fn configuration(address: &str, role: &EndpointRole) -> Network {
     let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
-    let (listen, connect, certificate, key, certificate_owner, key_owner) = match role {
-        EndpointRole::Receiver => (
-            vec![address],
-            vec![],
-            "listen_certificate",
-            "listen_private_key",
-            "recipient-certificate.pem",
-            "recipient-private-key.pem",
-        ),
-        EndpointRole::Caller => (
-            vec![],
-            vec![address],
-            "connect_certificate",
-            "connect_private_key",
-            "caller-certificate.pem",
-            "caller-private-key.pem",
-        ),
+    let (certificate, private_key) = match role {
+        EndpointRole::Receiver => ("recipient-certificate.pem", "recipient-private-key.pem"),
+        EndpointRole::Caller => ("caller-certificate.pem", "caller-private-key.pem"),
     };
-    let mut tls = serde_json::json!({
-        "root_ca_certificate": certificates.join("root-ca.pem"),
-        "enable_mtls": true, "verify_name_on_connect": true, "use_public_pki": false
-    });
-    tls[certificate] = serde_json::json!(certificates.join(certificate_owner));
-    tls[key] = serde_json::json!(certificates.join(key_owner));
-    let declaration = serde_json::json!({
-        "mode": "peer", "queries_max_retained": 2,
-        "listen": {"endpoints": listen},
-        "connect": {"endpoints": connect, "timeout_ms": 2000, "exit_on_failure": true},
-        "scouting": {"multicast": {"enabled": false, "listen": false}, "gossip": {"enabled": false}},
-        "transport": {"link": {"protocols": ["tls"], "tls": tls}}
-    }).to_string();
-    Config::from_deserializer(&mut serde_json::Deserializer::from_str(&declaration)).unwrap()
+    let endpoints = ConnectionEndpoints {
+        addresses: vec![
+            address
+                .strip_prefix("tls/")
+                .expect("the fixture uses TLS")
+                .to_owned(),
+        ],
+        certificate: CredentialSource::File(certificates.join(certificate)),
+        private_key: CredentialSource::File(certificates.join(private_key)),
+    };
+    let layout = match role {
+        EndpointRole::Receiver => NetworkLayout::Peer {
+            connect: None,
+            listen: Some(endpoints),
+        },
+        EndpointRole::Caller => NetworkLayout::Peer {
+            connect: Some(endpoints),
+            listen: None,
+        },
+    };
+    Network {
+        layout,
+        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
+        max_retained_queries: NonZeroUsize::new(2).unwrap(),
+    }
 }
 enum EndpointRole {
     Caller,

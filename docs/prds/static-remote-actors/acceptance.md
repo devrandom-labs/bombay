@@ -1,12 +1,25 @@
 # Static remote actor acceptance
 
-Current-main reconciliation (2026-10-16): PR375 main5e9bcd1 selects
+Current-main reconciliation (2026-10-16): mainfbb5c742 includes PR375 and
+the reviewed, CI-passing PR382 test-only compatibility repair. It selects
 Behavior/Actors0.26.0 and complete Application/Work outcomes. The earlier
 connection-entry prototype is retired from current source. Its distinct
 configuration, startup-disposal, connection-retirement, public-entry and family
 controls below retain their historical source scope; upstream tests do not
 replace all of those laws. Current service ownership and consumer witnesses
 remain required. No full remote acceptance row closes from this cleanup.
+
+Current input-privacy work uses the same Node opener with Network instead of
+raw SDK Config. Four public input tests, eight owning mapping tests, migrated
+callers and six native public Node controls pass in debug and optimized builds.
+Mapping, credential disclosure and original-input reconstruction inversions
+reach their intended assertions; exact source is restored. Concrete Config now
+receives the intended E0308 denial; existing Session and close-borrow denials
+retain their original diagnostics. Default workspace execution and strict
+all-feature lint pass. Full-feature execution passes847 tests and7 doctests,
+failing only the kept Query privacy target. Query privacy, peer
+handshake and full service acceptance remain open. Historical raw
+Config/Session/privacy statements below retain their original source scope.
 
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of

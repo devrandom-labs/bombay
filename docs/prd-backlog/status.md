@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Current integration: user-requested latest main5e9bcd1 (PR375) selects
+Current integration: user-requested latest mainfbb5c742 (PR382) selects
 Behavior/Actors0.26.0 and the complete Application/Work outcomes. Superseded
 0.25 remote-entry research is retired; historical evidence below retains
 its original source scope. Full service, SDK privacy and all full remote rows
@@ -12,6 +12,17 @@ qualified laws remain in archived source/evidence and require current-owner
 witnesses before shipping credit. Replay research with a concrete `Native` value
 is parked outside active source; Export retains the existing fixed-client
 prerequisite.
+
+The current input-privacy stage attaches the four selected Network input types
+to the existing Node opener, with no alternate connection runtime. Focused
+Counter startup/work/retirement tests pass debug and optimized; a concrete native
+Config is now denied. Native lowering, credential diagnostics, original-input
+custody and migrated callers pass their focused controls and intended source
+inversions. Default workspace tests and strict all-feature lint pass. Full-feature
+execution passes847 tests and7 doctests, failing only the kept Query privacy
+target. Export Query/Session exposure and full service/privacy
+acceptance remain open. PR382's test-only startup compatibility repair merged
+after all six CI checks and final independent review; it closes no full remote row.
 
 Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,

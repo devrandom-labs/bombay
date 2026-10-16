@@ -10,7 +10,7 @@ use crate::local::children::{
 };
 use crate::local::effects::CommitActions;
 use crate::local::effects::services::NativeConstruction;
-use crate::remote::startup::{NodeStartupRefusal, check_node_configuration};
+use crate::remote::{Network, NodeStartupRefusal};
 use crate::terminal::{ActorRetirement, RetirementSchema, RootOrigin};
 use crate::topology::{ApplicationTopology, RootRegistration};
 use behavior::{
@@ -21,8 +21,7 @@ use core::fmt;
 use core::future::Future;
 use std::error::Error;
 use tokio::runtime::{Handle, RuntimeFlavor, TryCurrentError};
-use zenoh::{Error as ZenohError, Session};
-use zenoh_config::Config;
+use zenoh::Session;
 
 /// One finalized ordinary Application and its fresh owned native Session.
 ///
@@ -100,42 +99,44 @@ impl<Work> fmt::Debug for NodeExecutionRefusal<Work> {
 }
 
 impl<Root, Spaces, Members> Application<Root, Spaces, Members> {
-    /// Validate the raw native configuration before opening one fresh runtime.
+    /// Open one private network connection for this Application.
     ///
-    /// Open an SDK-defined clone so a startup refusal retains the supplied Config.
-    /// Native ID expansion affects that opening clone only. No supplied Session
-    /// or shared runtime is accepted. Successful startup transfers this declaration.
+    /// Network inputs explicitly supply each direction, its credentials, deployment
+    /// roots and query capacity. Native configuration and fresh identity stay private.
+    /// Successful startup transfers this declaration; every refusal returns the
+    /// original Application and Network. Cancelling the entire opening surrenders
+    /// those owned inputs. Native timeout/retry defaults establish no readiness or
+    /// bounded startup guarantee.
     ///
     /// # Errors
-    /// Returns the original Application and Config with the actual profile or SDK
-    /// cause. Cancelling the whole owned opening operation surrenders those inputs.
+    /// Returns the original Application and Network with the actual mapping, host
+    /// or native opening cause. Outer diagnostics omit credentials and native causes.
     #[expect(
         clippy::result_large_err,
-        reason = "return the actual Application and native configuration without boxing originals"
+        reason = "return the actual Application and Network without boxing originals"
     )]
     pub async fn open_node(
         self,
-        config: Config,
-    ) -> Result<Node<Root, Spaces, Members>, (Self, Config, NodeStartupRefusal)> {
-        let config = match check_node_configuration(config) {
+        network: Network,
+    ) -> Result<Node<Root, Spaces, Members>, (Self, Network, NodeStartupRefusal)> {
+        let config = match network.to_configuration() {
             Ok(config) => config,
-            Err((config, cause)) => return Err((self, config, cause)),
+            Err(cause) => return Err((self, network, cause)),
         };
         let host = match Handle::try_current() {
             Ok(host) => host,
-            Err(cause) => return Err((self, config, NodeStartupRefusal::Host { cause })),
+            Err(cause) => return Err((self, network, NodeStartupRefusal::Host { cause })),
         };
         let flavor = host.runtime_flavor();
         if flavor != RuntimeFlavor::MultiThread {
-            return Err((self, config, NodeStartupRefusal::HostFlavor { flavor }));
+            return Err((self, network, NodeStartupRefusal::HostFlavor { flavor }));
         }
-        let opening = config.clone();
-        match zenoh::open(opening).await {
+        match zenoh::open(config).await {
             Ok(session) => Ok(Node {
                 application: Some(self),
                 session,
             }),
-            Err(cause) => Err((self, config, NodeStartupRefusal::Open { cause })),
+            Err(cause) => Err((self, network, NodeStartupRefusal::Open { cause })),
         }
     }
 }
@@ -174,7 +175,7 @@ impl<Root, Spaces, Members> Node<Root, Spaces, Members> {
     ///
     /// # Errors
     /// Preserves the SDK's original close error; this operation is not actor admission.
-    pub async fn close(&mut self) -> Result<(), ZenohError> {
+    pub async fn close(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         self.session.close().await
     }
 }

@@ -35,12 +35,15 @@ Session. Node::run_with awaits its complete outcome; execute_with keeps separate
 execution and receiving operations. Both callbacks receive only the ordinary
 Application handle and retain caller-local borrows and non-Send outputs. Both
 preserve original Work on refusal through the existing invocation spine. It owns no new actor trait,
-mailbox, lifetime authority or permission policy. Startup profile checks preserve original declarations on refusal;
-actual SDK and root/child integration remain separate verification gates.
+mailbox, lifetime authority or permission policy. Startup consumes explicit
+Bombay Network inputs, constructs the fixed private configuration, and returns
+original Application/Network on refusal. Its focused real Counter startup/work/
+retirement controls establish no full remote service or peer handshake.
 Native transport fixtures remain scoped verification consumers.
 The user requires this transport ownership to stay entirely private. Current
-native Config/Session/Query exposure is provisional and must be removed from
-all public APIs, including advanced ones. Networking startup, service work and
+native Session/Query/declaration exposure through Export remains provisional
+and must be removed from all public APIs, including advanced ones. Startup now
+accepts only Network and rejects a concrete native Config at compile time. Networking startup, service work and
 retirement must reuse Application ownership; users compose Bombay contracts.
 The next release/API delivery is held until the remote PRD's session-free
 Application witness and public-surface audit establish that boundary.
