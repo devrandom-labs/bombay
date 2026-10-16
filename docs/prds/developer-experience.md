@@ -24,9 +24,9 @@ Compiler friction cannot invent bounds, no-op inputs or structural caller work.
 
 ## Ownership and delivery
 
-Work stays isolated on `codex/devx-registry-027`; verified integration1cc0953
-includes current mainf25e4a0. Other AI
-worktrees remain untouched. It selects registry Behavior/Actors0.27.0,
+The registry delivery stays isolated on `codex/devx-registry-027`; verified
+integration1cc0953 includes current mainf25e4a0. The timer implementation is
+separate on `codex/devx-owned-timers`. Other AI worktrees remain untouched. It selects registry Behavior/Actors0.27.0,
 macros0.15.0, Address0.3.0, Communication0.1.6 and Timers0.2.0 without repository
 patches. All397 original root nonowner package records remain exact.
 
@@ -67,9 +67,10 @@ missing-ID sites. Its unchanged named control records today's baseline; the
 candidate now proves named-request replacement separately from wrapper-owned
 ingress; Rust still has no method overloading by arity. Owner timer commits
 87aedf1/2e5e863 and their caller/oracle migrations retain the shared typed target
-products, original request custody and named custom ports. Four native journeys
-pass with the actual extracted unpublished archives on1.99/1.96 debug/release.
-These are source/archive proofs, not registry publication.
+products, original request custody and named custom ports. Behavior PR109/6488965 includes the reviewed factory and output-reference
+changes from PR107/108. All eleven fresh owner Nix gates pass:992 nextest,
+120 doctests and50 reference controls; all14 current CI checks pass. These
+are source/archive proofs, not registry publication.
 
 The proven five-file runtime/test change is transferred byte-for-byte to the
 isolated `codex/devx-owned-timers` worktree frombf1921b. Mechanical migration
@@ -88,12 +89,41 @@ path remaps normalize dependency locations; this is source-selected proof.
 The path-only and encoded-flag attempts remain failures. Later lint-only
 expectations and equivalent empty-vector assertions have separate review.
 
-Workspace all-target build and strict Clippy pass with the candidate owners;
-the full test run stops at two existing Engine inventory checks still describing
-026/142 and retired public names. Reconcile those records against actual270/150
-source before full-gate credit. No production repair or weakened inventory check
-is selected. Runtime/package/full gates and the breaking owner release remain
-required; the actual registry branch stays separate.
+The Engine inventory now names the exact selected owners and current45 template/
+19 capability families. All24 historical evidence revisions remain98983; changing
+selection does not relabel old execution. Registry commit1a8f20b passes all11
+inventory checks on both compilers/profiles; four intended metadata inversions
+fail. This feature additionally binds Actors to unpublished6488965 and its shared
+timer family. The existing presence scan is inventory, not proof of interpreter
+correctness; no production repair or weakened check was added.
+
+With that reconciliation, the source-selected default workspace including Axum
+passes pinned1.99 formatting, all-target build, strict Clippy, all-target tests
+and doctests. It records782 outer passes,132 separately counted UI fixtures,
+two declared parent-invoked child ignores and seven doctests/three existing
+ignores. All2084 bound inputs stayed unchanged. Four expected unused-patch
+warnings belong to isolated macro probes. Remote features were disabled;
+zero-case remote targets earn no runtime credit. Earlier lint/inventory failures
+remain failures.
+
+Actual extracted6488965 archives match all223 shipped Rust files. On1.99/1.96
+in debug/release, eight complete targets run27 cases plus one selected keyed-pool
+case per profile:112 executions (96 native/application,16 pure), alongside16
+actual counter/template/supervision/pool example runs. All1501 bound inputs and
+397 nonowner lock records remain exact through those runs. These unpublished
+packages prove the combined changes, rather than transferring earlier timer-only
+archive results. Normal registry release, final nested locks, remote/minimal-feature
+and authoritative Bombay full gates remain required.
+
+Complete feature Rust delta againstbf1921b, including uncommitted inventory tests:
+production+143/-39/net104; tests+610/-166/net444; public types+0/-0, across28
+Rust files. Four existing ActorExt signatures lose IDs. Three private runtime
+contracts own the disjoint timer key, occurrence proof and destination port;
+there is no new production module, lifecycle phase, transition authority,
+arrival-history state, repeated cause, semantic flag or structural caller syntax.
+The earlier owner/minimal-runtime+126 checkpoint is a different scope. The
+composition and settlement laws in the owning PRD remain the cross-check;
+checkpoint disposition:pass. Documentation/JSON changes are recorded separately.
 
 ## Verification
 
