@@ -417,7 +417,7 @@ This limit applies to subsequently established external actors, bound clients
 and exported interfaces. Changing a scope/application setting does not resize an
 existing endpoint. Communication rounds a positive minimum up to a power of two
 with floor2: requesting3 means4 effective slots, available through `get()`.
-Zero or overflowing rounding returns `MailboxCapacityError` with the original
+Zero or a requested minimum above 2^30 returns `MailboxCapacityError` with the original
 minimum, before mailbox allocation. Closing admission preserves accepted replies;
 `try_send` returns the original input when full or closed.
 

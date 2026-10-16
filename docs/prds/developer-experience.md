@@ -253,3 +253,34 @@ added; checkpoint:pass. These source/archive proofs do not publish an owner.
 Normal registry adoption and complete Bombay gates remain required; ready
 PR107/108/109 keep their reviewed heads. The owning PRD retains the sole
 requirement checklist and the bounded evidence.
+
+Mailbox validation is a separate DX06 correction on
+`codex/devx-mailbox-limits`, based on registry1a8f20b. The unchanged locked
+owners are Behavior/Actors0.27.0, macros0.15.0, Address0.3.0,
+Communication0.1.6 and Timers0.2.0; Observe remains this workspace's module.
+Communication requires rounded power-of-two capacity below2^31. Its largest
+valid power is2^30. There is no public primitive validator/limit to reuse.
+Bombay's existing validated constructor now refuses zero or a requested minimum
+above2^30 through its unchanged error carrying the original request. One private
+limit serves its existing guard and actionable error text. The checked rounding
+chain, stored NonZeroUsize, public types, runtime and all callers stay unchanged.
+
+Before production changes, both profiles reproduced acceptance of1073741825 as
+2147483648 and the independent actual Scope/external primitive panic before ring
+allocation. Those expected failures and panic controls remain historical only.
+The eight supported-value pairs require no huge mailbox allocation. The retained
+registry-only client/root/child/cold/Entity matrix passes12cases per Rust1.99/1.96
+debug/release configuration (48executions), preserving all original payload,
+rejection/retry and joined-retirement assertions. Strict current Clippy and
+formatting pass; doctests pass six cases including three compile denials, with
+three existing ignores. All628 bound inputs remain exact through the matrix.
+
+The four-path delta is production+10/-4/net6, tests+35/-0; public types+0/-0.
+The single immutable capacity product, two Result alternatives and one explicit
+validation if remain; the raw substring count including rustdoc was corrected.
+No state, repeated cause, lifecycle authority, late runtime check, semantic flag
+or structural caller syntax is added. Native primitive/application capacity and
+Driver laws cross-check unchanged; source/model checkpoint:pass. Pre-edit laws,
+independent reviews and immutable receipts remain in the sole owning PRD.
+The required full Nix gate and delivery remain pending; valid capacity does not
+promise that memory for an arbitrarily large mailbox is available.
