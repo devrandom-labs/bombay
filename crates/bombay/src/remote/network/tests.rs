@@ -2,7 +2,7 @@
 
 use super::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use crate::remote::startup::NodeStartupRefusal;
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::error::Error;
 #[cfg(unix)]
 use std::ffi::OsString;
@@ -514,5 +514,68 @@ fn non_utf8_credential_paths_preserve_all_five_original_allocations() {
         assert!(
             matches!(refusal, NodeStartupRefusal::CredentialPath { field } if field == expected_field)
         );
+    }
+}
+
+fn query_layouts() -> [NetworkLayout; 4] {
+    [
+        NetworkLayout::Peer {
+            connect: Some(connecting()),
+            listen: None,
+        },
+        NetworkLayout::Peer {
+            connect: None,
+            listen: Some(listening()),
+        },
+        NetworkLayout::Peer {
+            connect: Some(connecting()),
+            listen: Some(listening()),
+        },
+        NetworkLayout::RouterClient {
+            connect: connecting(),
+        },
+    ]
+}
+
+#[test]
+fn query_publication_disables_drop_queue_refill_wait_in_every_layout() {
+    for layout in query_layouts() {
+        let network = Network { layout, ..peer() };
+        let config = network.to_configuration().unwrap();
+        let wait = config
+            .transport()
+            .link()
+            .tx()
+            .queue()
+            .congestion_control()
+            .drop()
+            .wait_before_drop();
+        assert_eq!(*wait, 0);
+    }
+}
+
+#[test]
+fn query_publication_overwrites_all_incoming_queries_without_other_filters() {
+    for layout in query_layouts() {
+        let network = Network { layout, ..peer() };
+        let config = network.to_configuration().unwrap();
+        let actual = serde_json::to_value(config.qos().network()).unwrap();
+        let expected = json!([{
+            "id": null,
+            "zids": null,
+            "interfaces": null,
+            "link_protocols": null,
+            "messages": ["query"],
+            "key_exprs": null,
+            "overwrite": {
+                "congestion_control": "drop",
+                "priority": null,
+                "express": null
+            },
+            "flows": ["ingress"],
+            "qos": null,
+            "payload_size": null
+        }]);
+        assert_eq!(actual, expected);
     }
 }

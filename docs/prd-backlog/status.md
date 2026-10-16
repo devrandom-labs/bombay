@@ -533,3 +533,16 @@ No new production/API or full remote acceptance follows from the comparison plan
 
 Named pure products pass a separate-crate static privacy comparison; the public
 supertrait form is rejected. Actual Export/Node/replay/lifetime integration is open.
+
+
+Select inline logical SDK publication for the next service candidate, with explicit
+Drop Get, bounded nonwaiting callbacks and exact result custody. First verify the
+private zero-refill-wait/all-ingress-Query Drop profile through independent failing
+mapping regressions. Four-path/+45 production/public0 scope and exact limits are
+recorded in the remote PRD. Native progress, permission/drain and all full remote
+acceptance remain open; no worker or new runtime/API is selected.
+
+
+Private query-profile lowering passes10 owning/473 related cases per profile,
+strict lint, format and11 source laws. Four paths add36 production lines/public0.
+Native progress, cold service/privacy and every full remote gate remain open.

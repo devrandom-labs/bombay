@@ -6,8 +6,10 @@ use serde_json::Value;
 use std::fmt;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
+use zenoh_config::qos::{CongestionControlConf, QosOverwriteMessage, QosOverwrites};
 use zenoh_config::{
-    Config, EndPoint, EndPoints, ModeDependentValue, SecretValue, TLSConf, WhatAmI,
+    Config, EndPoint, EndPoints, InterceptorFlow, ModeDependentValue, QosOverwriteItemConf,
+    SecretValue, TLSConf, WhatAmI,
 };
 use zenoh_protocol::core::{Locators, LocatorsStrategy};
 
@@ -72,6 +74,40 @@ impl Network {
         config
             .set_queries_max_retained(Some(self.max_retained_queries))
             .map_err(|_| NodeStartupRefusal::QueryLimitExcessive)?;
+        // This removes native refill waiting, not SDK locks or serialization.
+        config
+            .transport
+            .link
+            .tx
+            .queue
+            .congestion_control
+            .drop
+            .set_wait_before_drop(0)
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "transport/link/tx/queue/congestion_control/drop/wait_before_drop",
+            })?;
+        // Normal network replies inherit this query policy; local Get must set its own.
+        config
+            .qos
+            .set_network(vec![QosOverwriteItemConf {
+                id: None,
+                zids: None,
+                interfaces: None,
+                link_protocols: None,
+                messages: (QosOverwriteMessage::Query, Vec::new()).into(),
+                key_exprs: None,
+                overwrite: QosOverwrites {
+                    congestion_control: Some(CongestionControlConf::Drop),
+                    priority: None,
+                    express: None,
+                },
+                flows: Some((InterceptorFlow::Ingress, Vec::new()).into()),
+                qos: None,
+                payload_size: None,
+            }])
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "qos/network",
+            })?;
         let outgoing = match connect {
             Some(direction) => vec![EndPoints::Locators(Locators {
                 strategy: LocatorsStrategy::AllOf,

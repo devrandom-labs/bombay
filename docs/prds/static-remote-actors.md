@@ -33567,3 +33567,79 @@ Frozen sources, actual linked artifacts, logs and limits are in cold-comparison/
 The initial public-supertrait form stays rejected. No runtime, actual Export replay,
 cold Node, permission or retirement evidence follows. Three guide paths retain
 production/tests+0/-0, public types+0/-0; all historical and external charges carry.
+
+
+### Private query publication profile: selected bounded regression
+
+Select the inline logical SDK-entry/result policy for the next complete service
+candidate under the standing delegated choice. This is deliberate Bombay policy,
+not an actor-model law or a total SDK-call latency guarantee. Hold the existing
+current permission loan through synchronous SDK entry and storage of its original
+Result in outside custody; do not infer delivery, processing or nonexecution from
+SDK success/failure. Every library Get must explicitly choose Drop, and both Query
+and Reply callbacks must use existing bounded nonwaiting retention. Default FIFO
+callbacks are a known veto. No worker, task hierarchy, runtime or policy API is
+selected. Actual permission/cancellation/drain and native traces remain open.
+
+The first independently reviewable blocker is private Network lowering: native
+Drop retains a1000-microsecond refill wait and incoming queries retain the sender's
+Block policy. Before production, add two independent pure configuration regressions
+for all four existing layouts. One observes zero Drop refill wait; the other
+compares the complete sole unconditional ingress Query overwrite, including every
+unset filter and unchanged priority/express. Establish each intended failure on
+unchanged production in debug and optimized builds. These tests prove mapping,
+not transport progress or whole-route behavior. Keep the existing endpoint/TLS
+and exact original-input tests intact.
+
+Fresh exact owners are399-package Cargo.lock (667a03e9), Behavior/Actors0.26.0
+at98983b456c4a8f7cd0911982eaf9488455b6d8bc, Config1.10.2, SDK1.10.10 and
+Transport1.10.4. Fresh six-owner/API/test/docs and private Config/interceptor/
+pipeline prerequisite review is required before production; its record is
+network-profile/prerequisites. Reuse Config's typed setters, QosOverwriteItemConf,
+QosOverwrites, existing Unsupported refusal, and inferred nonempty tuple conversion
+from selected nonempty-collections0.3.1. No dependency/lock/schema/error/public type
+is added. Behavior, Actors, Address, Communication, Observe, Timers, Entity and
+Engine ownership is unchanged. No aggregate states, event branches or subordinate
+results are introduced: one fixed profile remains owned by Network.
+
+Forecast: four tracked paths (Network, its tests, this PRD, backlog status),
+production+45/-0 maximum, tests+110/-0 maximum, records+90/-0 maximum; public
+API+0/-0. Keep rejected/source/external charges and prior1829 production /12
+public reservations within the already authorized2500/18/125/20000 cumulative
+ceilings; do not reset unknown costs or claim certified headroom. External
+recorder reuses the prior28-line owner. Changes to complete service custody need
+a separate pre-edit record and failing witness. First lower only after review
+and actual original failures; then focused D/R, strict lint/format and source laws.
+
+Limits: SDK locks/serialization remain synchronous. Local delivery bypasses
+transport ingress, so explicit Drop on library Get remains mandatory. Early
+interceptor rejection FINAL uses pre-chain QoS (including ACL denial before the
+overwrite); external routers retain their own waits/settings. No universal FINAL,
+cooperative-call or network latency promise is made. Current Network configures
+no ACL rule; actual ACL integration must settle this exception before acceptance.
+Native Peer/Peer and Router/Client, stalled Query/Reply consumers and sibling
+progress, actual result custody and close/drain are unexecuted obligations.
+All full R01–R25/AUTH1/NET1 states remain open.
+
+
+Profile prerequisite5718dc1b freshly verifies48 source inputs, all18 manifests,
+selected760-line instructions and typed setter/nonempty APIs. Independent tests
+review6cda9dd0 passes both reviews. Unchanged production15276b5c fails both tests
+in debug and optimized (0passed/2failed each): actual wait1000 versus0 and native
+empty rule list versus the complete expected rule, no setup/compiler failure.
+Original input snapshots and exact receipts are retained in network-profile/.
+Lower only the pre-recorded fixed native profile next; no API/type/dependency.
+
+
+Private profile local gates pass:10 owning tests per profile and473 related
+Application/Entity/Node cases per profile, with identical ordered outer names
+across11 harnesses;13 inner compiler fixtures remain separate. Strict workspace
+all-feature/all-target Clippy, formatting and11 Driver source laws pass. Every
+final runtime gate binds the same585 unchanged inputs, frozen before these final
+record-only edits. Two author and independent test/production reviews pass.
+The original D/R failures establish both intended mapping regressions.
+Complete delta: production+37/-1/net36; tests+64/-1/net63; public types+0/-0,
+four tracked paths/no untracked source. Records and exact commands/hashes are
+in network-profile/final-census and execution receipts. Known production1865 and
+12 reservations carry all prior costs. This adds capability code; it is not
+code reduction, native progress, feature distillation, CI/merge or full acceptance.
