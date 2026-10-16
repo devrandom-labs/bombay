@@ -9,11 +9,13 @@ profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
-Communication0.1.6 publication is verified after reviewed owning PR13 and release
-PR14 merges with passing CI. Narrow Bombay adoption is selected; its main-based
-tests and PR delivery remain pending. Capacity observation neither reserves a
-slot nor substitutes for fresh permission checks. Arbitrary foreign-waker-panic
-sibling progress is unsupported. This prerequisite closes no full row.
+Communication0.1.6 adoption PR377 merged76dbd849 with all six checks passing;
+required38820049280 succeeds and reviewed/tested/main tree25bc63d2 matches.
+PR379 now integrates actual main67a286c, including PR374. Its startup kernel
+and test remain byte-identical to17fec54; the merged futures-util dependency
+edge belongs to PR374. Documentation is resolved; fresh head CI is required.
+The startup correction remains unmerged. Capacity observation reserves no slot
+and cannot replace fresh permission checks; no full remote row advances.
 
 [Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
 mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
@@ -24,7 +26,9 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 release and PR374 API delivery remain held.
+privacy remain open. PR373 was superseded; PR374 merged67a286c after all six
+checks passed.
+Full-service delivery and the private transport API remain open.
 
 The DevX integration prerequisite is delivered through reviewed
 [PR359](https://github.com/devrandom-labs/bombay/pull/359), merged7fccf08b at
@@ -514,3 +518,12 @@ their intended assertions in both profiles. Restored affected406 passes in both
 profiles before lint-only corrections; final source passes fresh focused controls,
 strict workspace Clippy and formatting. Its own CI and delivery remain required.
 No full R01–R25, AUTH1 or NET1 obligation closes from these results.
+
+
+Application startup-custody regression: prior main fails exactly the acquired
+affine-owner release oracle in debug and optimized builds after real Ready and
+original producer-disposal panic. The six-line existing-kernel correction and
+193-line owning test preserve cold Application/Work and original panic, without
+Zenoh or a new API. Fixed debug/optimized controls each pass the actual test; affected combined
+checks, required CI and actual PR delivery remain pending in the PRD. No full
+remote row closes.

@@ -1,19 +1,28 @@
 # Backlog status and dependencies
 
-Updated: 2026-10-15 UTC. This is the implementation index for the
+Updated: 2026-10-16 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
 Historical inventory marks and research snapshots are not current eligibility.
 
-Communication0.1.6 is selected for narrow adoption after owning PR13 and release
-PR14 merged with all checks passing and actual registry/archive verification.
-The minimum and both locks change only the existing package. Capacity readiness
-is an observation, not reserved capacity or admission authority. Main-based
-integration verification and PR delivery remain pending; fresh-authority retries
-and the complete remote Application service remain required. Full remote rows
-stay open; [the PRD](../prds/static-remote-actors.md#communication-capacity-dependency-2026-10-15-utc)
-records source, scope and exact completion gates.
+A focused main-based Application startup-custody correction is under
+verification: a completed startup producer must not lose its original acquired
+value when its Drop panics. The actual regression fails its ownership oracle
+on prior source in both profiles; fixed controls, combined verification and
+PR delivery remain tracked in the
+[PRD](../prds/static-remote-actors.md#application-startup-custody--isolated-delivery-stage-2026-10-15).
+This is a local ownership prerequisite; full remote gates remain open.
+
+Communication0.1.6 adoption PR377 merged76dbd849 at2026-10-16T00:31:25Z
+with all six checks and scoped reviews passing. Submitted, tested and actual
+main trees match25bc63d2; required Nix38820049280 succeeds, primitive fuzz
+passes and Miri is skipped. Both locks preserve every other package. Capacity
+readiness observes without reserving capacity or granting authority. Fresh
+permission checks and the full remote Application service remain required;
+full remote rows stay open. PR374 concurrent receiving merged67a286c after
+all six checks passed. PR379 integrates that actual main without changing its
+startup correction source; fresh exact-head CI remains required.
 
 [Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
 mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
@@ -24,7 +33,9 @@ source attribution. Six provider cases execute per profile: two finite refusals,
 two actual two-Node TLS requester flows and two local pending-protection cases.
 Primitive fuzz passes; conditional Miri is skipped. This test-only contribution
 adds no production/API/dependency; full R01–R25/AUTH1/NET1 and public transport
-privacy remain open. PR373 release and PR374 API delivery remain held.
+privacy remain open. PR373 was superseded; PR374 merged67a286c after all six
+checks passed.
+Full-service delivery and the private transport API remain open.
 
 Controlled TLS correction [PR12](https://github.com/devrandom-labs/bombay-zenoh/pull/12)
 merged1ea4bd16 with passing PR and main CI; its guarded publication succeeded.

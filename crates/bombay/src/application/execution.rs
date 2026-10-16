@@ -1750,7 +1750,8 @@ where
     let (notification_publication, received_notification) = oneshot::channel();
     let execution = async move {
         let mut original_work = original_work;
-        let (startup_inputs, allocations) = {
+        let mut acquired_startup = None;
+        {
             let Some((ApplicationWorkCustody::Unstarted(application, _), _)) =
                 original_work.publication.as_ref()
             else {
@@ -1759,12 +1760,17 @@ where
             let mut startup_acquisition = pin!(acquire_startup_inputs(application));
             poll_fn(|context| {
                 let entered_executor = executor.enter();
-                let acquired = startup_acquisition.as_mut().poll(context);
+                let acquired = startup_acquisition.as_mut().poll(context).map(|original| {
+                    acquired_startup = Some(original);
+                });
                 drop(entered_executor);
                 acquired
             })
-            .await
-        };
+            .await;
+        }
+        let (startup_inputs, allocations) = acquired_startup
+            .take()
+            .expect("completed startup retains its original acquired inputs");
         let (prepared_work, installed_families) =
             match prepare(original_work, startup_inputs, allocations.clone()) {
                 Ok(prepared) => prepared,
@@ -2015,4 +2021,197 @@ where
         (outcome, root, termination_notification)
     };
     (execution, result)
+}
+
+#[cfg(test)]
+mod startup {
+    use super::{
+        Application, ApplicationHandle, ApplicationOutcome, ApplicationScope,
+        ApplicationWorkCustody, ApplicationWorkPresence, ApplicationWorkPublication,
+        execute_application_with,
+    };
+    use crate::ShutdownLedger;
+    use crate::actors::ActorExt;
+    use crate::behavior::{Behavior, BehaviorBase, Never};
+    use crate::local::children::StructuralOrigins;
+    use behavior_actors::StopOnShutdown;
+    use core::future::{Future, poll_fn};
+    use std::cell::Cell;
+    use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
+    use std::ptr;
+    use std::rc::Rc;
+    use std::task::Poll;
+    use tokio::runtime::{Builder, Handle};
+    use tokio::sync::oneshot;
+    use tokio::sync::oneshot::error::TryRecvError;
+
+    struct StartupPanic {
+        cause: Option<Box<u64>>,
+        disposals: Rc<Cell<usize>>,
+    }
+
+    impl Drop for StartupPanic {
+        fn drop(&mut self) {
+            let cause = self
+                .cause
+                .take()
+                .expect("one original startup disposal cause");
+            self.disposals.set(self.disposals.get() + 1);
+            panic_any(cause);
+        }
+    }
+
+    #[test]
+    #[expect(
+        clippy::borrowed_box,
+        clippy::too_many_lines,
+        reason = "startup borrows the original boxed cold Application; retain its owners, panic and custody in one trace"
+    )]
+    fn ready_startup_owner_is_released_when_its_producer_disposal_panics() {
+        let observations = {
+            let host = Builder::new_current_thread().enable_all().build().unwrap();
+            host.block_on(async {
+                let application = Box::new(Application::new(
+                    ShutdownLedger {
+                        entries: vec![13],
+                        received: Vec::new(),
+                    }
+                    .stop_on_shutdown(),
+                ));
+                let original_application = ptr::from_ref(application.as_ref());
+                let calls = Rc::new(Cell::new(0_usize));
+                let work = Box::new((29_u64, Rc::clone(&calls)));
+                let original_work = ptr::from_ref(work.as_ref());
+                let preparations = Rc::new(Cell::new(0_usize));
+                let preparation_calls = Rc::clone(&preparations);
+                let starts = Rc::new(Cell::new(0_usize));
+                let startup_calls = Rc::clone(&starts);
+                let ready = Rc::new(Cell::new(0_usize));
+                let ready_calls = Rc::clone(&ready);
+                let disposals = Rc::new(Cell::new(0_usize));
+                let cause = Box::new(71_u64);
+                let original_cause = ptr::from_ref(cause.as_ref());
+                let disposal = StartupPanic {
+                    cause: Some(cause),
+                    disposals: Rc::clone(&disposals),
+                };
+                let (observation, observed) = oneshot::channel();
+                let (execution, receiving) = execute_application_with::<
+                    _,
+                    StopOnShutdown<ShutdownLedger>,
+                    StopOnShutdown<ShutdownLedger>,
+                    _,
+                    StructuralOrigins<<StopOnShutdown<ShutdownLedger> as BehaviorBase>::Base>,
+                    Never,
+                    (),
+                    Never,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    Never,
+                >(
+                    Handle::current(),
+                    application,
+                    work,
+                    move |application: &Box<Application<StopOnShutdown<ShutdownLedger>, _>>| {
+                        startup_calls.set(startup_calls.get() + 1);
+                        let allocations = application.allocations();
+                        let mut observation = Some(observation);
+                        poll_fn(move |_context| {
+                            let _original_disposal = &disposal;
+                            let (owner, received) = oneshot::channel::<()>();
+                            let published = observation
+                                .take()
+                                .expect("one startup acquisition publishes its actual receiver")
+                                .send(received);
+                            ready_calls.set(ready_calls.get() + 1);
+                            Poll::Ready(((owner, published), allocations.clone()))
+                        })
+                    },
+                    move |original: ApplicationWorkPublication<_, _, _, _, Never, _>,
+                          (owner, published),
+                          allocations| {
+                        preparation_calls.set(preparation_calls.get() + 1);
+                        let (application, work, publication) = original.into_unstarted();
+                        let (root, spaces, (), (), scope) = (*application).into_parts();
+                        let scope = scope.unwrap_or(ApplicationScope { allocations });
+                        let invoke = move |work: Box<(u64, Rc<Cell<usize>>)>,
+                                           application: ApplicationHandle<
+                            <ShutdownLedger as Behavior>::Protocol,
+                            <StopOnShutdown<ShutdownLedger> as Behavior>::Event,
+                        >| async move {
+                            work.1.set(work.1.get() + 1);
+                            let stopped = application.request_shutdown();
+                            let report = application.lifecycle().retirement().await;
+                            (work, owner, published, stopped, report)
+                        };
+                        Ok((
+                            ApplicationWorkPublication {
+                                publication: Some((
+                                    ApplicationWorkCustody::Prepared(
+                                        (root, spaces, scope),
+                                        ApplicationWorkPresence::Supplied((work, invoke)),
+                                    ),
+                                    publication,
+                                )),
+                            },
+                            (),
+                        ))
+                    },
+                    ((), |_executor, (), ()| None),
+                );
+                let mut execution = Box::pin(execution);
+                let caught = poll_fn(|context| {
+                    match catch_unwind(AssertUnwindSafe(|| execution.as_mut().poll(context))) {
+                        Ok(Poll::Pending) => Poll::Pending,
+                        actual => Poll::Ready(actual),
+                    }
+                })
+                .await;
+                drop(execution);
+                let (outcome, native, notifications) = receiving.await;
+                let acquired = match observed.await {
+                    Ok(mut receiver) => Ok(receiver.try_recv()),
+                    Err(cause) => Err(cause),
+                };
+                move || {
+                    let ApplicationOutcome::Unstarted { application, work } = outcome else {
+                        panic!("startup disposal must retain the original cold owners");
+                    };
+                    let Err(original_panic) = caught else {
+                        panic!("the actual Ready producer must retain its original disposal panic");
+                    };
+                    let caught_original = original_panic
+                        .downcast_ref::<Box<u64>>()
+                        .expect("borrow the original boxed disposal cause");
+                    assert_eq!(ptr::from_ref(caught_original.as_ref()), original_cause);
+                    assert_eq!(**caught_original, 71);
+                    assert_eq!(disposals.get(), 1);
+                    assert_eq!(starts.get(), 1);
+                    assert_eq!(ready.get(), 1);
+                    assert_eq!(preparations.get(), 0);
+                    assert_eq!(calls.get(), 0);
+                    assert_eq!(ptr::from_ref(application.as_ref()), original_application);
+                    assert_eq!(ptr::from_ref(work.as_ref()), original_work);
+                    assert_eq!(work.0, 29);
+                    assert!(Rc::ptr_eq(&work.1, &calls));
+                    assert_eq!(application.root().base().entries.as_slice(), [13]);
+                    assert_eq!(application.root().base().received.len(), 0);
+                    assert!(native.is_err() && notifications.is_err());
+                    let custody = acquired.expect("observe the actual acquired oneshot receiver");
+                    assert_eq!(
+                        custody,
+                        Err(TryRecvError::Closed),
+                        "execution disposal must release its original acquired affine owner"
+                    );
+                }
+            })
+        };
+        observations();
+    }
 }
