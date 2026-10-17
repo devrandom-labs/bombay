@@ -24,6 +24,24 @@ Compiler friction cannot invent bounds, no-op inputs or structural caller work.
 
 ## Ownership and delivery
 
+The user authorizes146 cumulative native paths for registry adoption and the
+canonical `application.shutdown()` spelling. This deliberate naming policy
+reuses ApplicationHandle/ApplicationLifecycle, the exact InjectEvent capability
+and request_actor_shutdown; it preserves Result<(), ShutdownRejection>, the
+borrowed handle and independent termination/retirement observations. No actor
+state, policy, type, authority, effect or allocation is added. Two existing
+method spellings become two short spellings without a compatibility alias;
+expected rename production line delta0 before formatting. The focused external
+caller fails exactly two missing-method errors on the prior source, including
+the029 archive graph; its original spelling passes both profiles. Prove both
+owners and complete wrapper-order shutdown/retirement before migrating the
+119 caller/doc/compiler paths. Nine dependency/inventory paths then bind the
+published versions, protected workspace and Engine fuzz protocol owner. Keep
+all static denials and original assertions; regenerate compiler expectations
+and hashes without weakening coverage. The owning PRD has the exact scoped
+path set, two reviews and release/native evidence. Implementation and final
+registry/native gates remain pending.
+
 Finite holding is isolated on `codex/devx-stash-limits`. The ordinary spelling
 is `actor.with_stash(limit, refused, route)`; overflow returns the complete
 original input and sender through Actions. Explicit UnlimitedStash serves
