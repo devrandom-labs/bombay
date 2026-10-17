@@ -35048,3 +35048,100 @@ conservatively charge800 authored/modified Rust lines, recorder3 and fault
 script66 verification lines, without refunding prior costs. Current family
 fixture is331+253 lines plus4 mount lines. The actual complete cold public Node
 consumer, SDK privacy, native close and all full remote rows remain open.
+
+### Verification acquisition — bounded pre-edit change record
+
+Fresh source remains lock667a03e9 with no patch/replace: Behavior/Actors0.26.0
+at98983b4, macros0.14.2, Address0.3.0/9f058dc, Communication0.1.6/963067e,
+private Observe, Timers0.2.0/9369d1f, SDK1.10.10/c34eb350 and Tokio1.53.1.
+Feature prerequisites5c5910ec and selected instructions2b7a9195 still apply;
+no dependency source or contract changed. This is one private remote fact-transfer
+seam, not selection or unblocking of the whole public cold Node integration.
+
+The actual selected verify ownerc121e16d aborts on simultaneous provider poll
+and destructor panics despite an outer catch, in debug and optimized standalone
+controls. This vetoes the proposed outer-catch architecture, not the existing
+public verify contract, which promises no panic containment. Correction764fa77b
+supersedes that condition of modela7b1. An ordinary actual provider kept outside
+the catch preserves both original payload allocations in both profiles. Early
+abort earns no final-result preservation or runtime regression credit. Original
+outer executable bytes were not captured in those run input maps; later direct
+runs capture their actual executable before/after. All source/log epochs remain.
+
+Smallest new owning regression: actual Ready-Ok and borrowed non-Error Ready-Err
+survive explicit producer disposal panic; occupied result prevents repoll. A
+second test catches actual provider poll and disposal separately, proves both
+original native payload allocations, exactly one disposal and no invented
+provider result. The new test source is157 lines before any production edit;
+its author passes map independent post-disposal outcomes and check early-panic,
+result-loss and repeated-poll counterexamples. Independent review is required.
+
+Expected software paths: remote/verification.rs and its new private
+verification/tests.rs only. Production forecast+20/-8/net12; tests approximately
+160 lines plus test mount. Public API+0/-0. Factor the existing Pending/Ready to
+outside-slot transfer into one private poll_verification function; public verify
+reuses it and keeps construction, occupied-slot and unwind contracts. The actual
+provider owner stays outside the caught poll callback and is disposed separately.
+No wrapper, trait, runtime, erased protocol, new error or public product. The
+function owns that one authoritative transfer, deletes the existing inline
+transfer, and serves public verify plus the concrete private producer regression.
+
+This prerequisite is separate from the unmounted cold-service drafts. Its
+acceptance requires intended old missing-seam denial, debug/optimized controls,
+an owning Ready-result erasure inversion with post-disposal failure and exact
+restoration, existing public verification controls, strict scoped lint and
+formatting. No source-only proof closes a full remote row. Known retained1911,
+public12 and approved cumulative2500/18/125/20000 plus every earlier, rejected,
+external and unknown extent carry; this forecast is no certified headroom.
+
+### Verification acquisition — local results and complete change record
+
+The retained owner44a04de2 factors the existing transfer once. Production is
++22/-10/net12; the same file adds3 test mount lines. No public type, new error,
+allocation or new ownership state is added. Source reviewb26d8a47 confirms the
+unchanged public factory-suppression, borrowed-wait, Ready-before-disposal and
+unwind contract. Public verify itself still promises no panic containment.
+Only the new private caller can own the actual producer outside its catch.
+
+The original two-test155-line source passes Cargo debug/optimized controls.
+Its initial loss and repoll inversions fail after actual disposal, but stop in
+the Receipt loop iteration; Refusal is unexecuted in those negative runs.
+Amendmentde4864a4 splits the identical body into independent Receipt and Refusal
+leaves (162 lines). Both final owning-source controls pass all3 tests per profile.
+Both owning defects independently fail both Ready leaves in each profile,
+1passed/2failed: loss fails original-result custody after disposal; omitted guard
+fails the actual poll count2 instead of1 after disposal. The separate double
+panic test passes. Exact owner44a04de2 is restored and all3 pass again.
+
+Those focused compiler hosts load the actual owner and its actual test through
+ordinary module symlinks, with both logical and repository source bytes frozen.
+An earlier path-attribute host fails E0583 before testing and receives no law
+credit. Every later run captures its actual executable before/after. These are
+owning-source controls, not a complete Cargo workspace execution. The existing
+public remote_verification target passes all3 tests in both profiles; all22
+application_clients pass in both. Strict workspace all-feature/all-target Clippy
+and workspace format checks pass. No current full workspace runtime result or
+Node service acceptance is inferred.
+
+The later unmounted Ready-Ok/Ready-Err Node source now expects the actual provider
+Drop payload in its disposal slot and no poll payload, matching correction764fa77b;
+reviewde4864a4 checks that bounded provenance amendment. Earlier source01283869
+retains its earlier outer-operation classification and no runtime credit transfers.
+The cold Node API and pending-sibling/cancellation/authority/target gates stay open.
+
+Complete current tracked/untracked tree: production+22/-10/net12;
+tests+3193/-33/net3160; public API+0/-0; twelve paths. Seven untracked Rust files
+total3160 lines, including the mounted162-line owner test and six unmounted
+consumer drafts. This is new verification and a net-positive private capability,
+not code reduction. Standalone46/47-line probes,2-line ordinary host, recorder
+changes, both inverse epochs, source amendments and all earlier copied/rejected/
+external/historical/unknown extents carry. Known retained production becomes1923
+on retention; public reservations remain12. Approved2500/18/125/20000 remains a
+cumulative boundary, without a refund or certified headroom claim.
+
+Independent outcome reviewed9ab65e checks all53 raw logs, all95,962 map entries
+per pass and968 unique frozen versions twice. It confirms each qualified source
+epoch, both exact restorations, final three-case controls, public/client checks
+and strict lint/format results. Nine inner UI rows from the client target remain
+separate from22 outer tests. All aborted, setup and unbound historical-binary
+limitations above remain explicit; no full Node, CI, merge or full-row credit.
