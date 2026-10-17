@@ -17,8 +17,11 @@ extractions now explicitly refuse outstanding loans; all eight drafts
 The [complete change and size checkpoint](../prds/static-remote-actors.md#cold-service--complete-next-change-and-size-checkpoint)
 forecasts950 net production lines over known retained1947, exceeding the
 approved2500 ceiling. Explicit expansion is pending; no production edit is
-made under that forecast. Earlier7509 missing-contract checks and their scoped
-reviewb8c7880d remain historical evidence, before the identity prerequisite.
+made under that forecast. The [duplicate source audit](../prds/static-remote-actors.md#duplicate-progress--current-source-coverage-limit)
+also requires a causal canonical-inspection witness before protector release;
+queueing duplicate queries alone does not prove that progress. Earlier7509
+missing-contract checks and their scoped reviewb8c7880d remain historical
+evidence, before the identity prerequisite.
 
 The source covers original sibling facts through separate producer disposal,
 borrowed waits, duplicate/foreign startup targets, actual current guard construction,

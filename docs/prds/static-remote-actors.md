@@ -35960,3 +35960,40 @@ and1,084 frozen versions. Independent consumer reviewa0a0b69c accepts the six
 extraction changes and quota-source correction. No remaining source veto clears
 the separate production size gate. The explicit bounded-stage question is now
 pending; do not interpret a missing answer as authorization.
+
+
+### Duplicate progress — current source coverage limit
+
+Source audit at1c97ab32 finds a specific missing causal oracle. In peer.rs
+exchange, Protection queues the duplicate/conflict before releasing the canonical
+protector, but waits for their replies only afterward. Ledger progress proves
+another target advances; it does not prove the Counter duplicate inspected its
+canonical receipt while that protector held its loan. A per-target implementation
+that postpones those two queries until release can produce every asserted reply
+and row in this trace. The existing twenty drafts and std-only custody comparison
+therefore cannot certify that concurrent canonical-inspection law.
+
+Before retaining the implementation, add an owning regression with an independent
+observable canonical-inspection witness acquired before actual protector release,
+then inspect its result only after full cleanup. Exercise both the early duplicate
+and a duplicate arriving after canonical completion. Queue submission, verifier
+factory counts or another target's reply alone are insufficient. A failure that
+only times out the whole application before cleanup receives no law credit.
+
+Locked FuturesUnordered0.3.34 poll_next registers the parent waker and returns
+actual child output on Ready; its Bomb disposes the child before that output
+escapes. Existing completion driving is the first candidate for duplicate
+coordination. It does not itself retain a late duplicate's terminal fact. Preserve
+actual returned completion outside disposable producers; do not infer completion
+from an empty protection slot, native EOF or numeric key relationships. A new
+Observe cell or mirrored completion table is not selected. Exact storage and the
+causal regression remain implementation-model gates, not additional public APIs.
+
+This audit changes no production, test or public type. It narrows the evidence
+claim and identifies the counterexample the integrated stage must exclude.
+The size question remains pending; a missing answer is not approval.
+All full acceptance, historical costs and prior evidence qualifications carry.
+
+Checkpoint against1c97ab32, including untracked files: production+0/-0/net0;
+tests+0/-0/net0; public API+0/-0 types; two documentation paths, no untracked
+file. This source-only audit executes no new Rust test or runtime command.
