@@ -5,8 +5,8 @@ use std::{env, fs};
 use serde::Deserialize;
 use serde_json::Value;
 
-const BEHAVIOR_REVISION: &str = "b8307d1a763dfd2998ef140dba488f32eb15d010";
-const ACTORS_REVISION: &str = "7644735358a338b4574ac81982d68b2450bad53c";
+const BEHAVIOR_REVISION: &str = "55dbac2d1068b29907498b3a7fa32b3080e0cd30";
+const ACTORS_REVISION: &str = "55dbac2d1068b29907498b3a7fa32b3080e0cd30";
 const EVIDENCE_BEHAVIOR_REVISION: &str = "98983b456c4a8f7cd0911982eaf9488455b6d8bc";
 
 #[derive(Deserialize)]
@@ -480,9 +480,9 @@ fn manifest_exactly_matches_canonical_law_index() {
     let manifest = manifest();
     assert_eq!(manifest.schema, 2);
     assert_eq!(manifest.law_source, "docs/driver-law.md");
-    assert_eq!(manifest.behavior.core, "0.27.0");
-    assert_eq!(manifest.behavior.actors, "0.27.0");
-    assert_eq!(manifest.behavior.macros, "0.15.0");
+    assert_eq!(manifest.behavior.core, "0.29.0");
+    assert_eq!(manifest.behavior.actors, "0.29.0");
+    assert_eq!(manifest.behavior.macros, "0.16.0");
     assert_eq!(manifest.behavior.revision, BEHAVIOR_REVISION);
     assert_eq!(
         manifest.gate.command,
@@ -658,6 +658,7 @@ fn engine_does_not_mirror_actor_template_laws() {
         "composition.machine",
         "composition.message-adapter",
         "composition.stash",
+        "composition.unlimited-stash",
         "discovery.presence",
         "discovery.pub-sub",
         "discovery.registry",
@@ -724,7 +725,7 @@ fn engine_does_not_mirror_actor_template_laws() {
     }
     for (field, expected) in [
         ("package", "bombay-behavior-actors"),
-        ("version", "0.27.0"),
+        ("version", "0.29.0"),
         ("revision", ACTORS_REVISION),
     ] {
         if manifest["owner"][field] != expected {

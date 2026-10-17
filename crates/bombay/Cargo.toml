@@ -40,7 +40,7 @@ zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-f
 zenoh_protocol = { package = "zenoh-protocol", version = "=1.10.1", default-features = false, optional = true }
 
 [dev-dependencies]
-behavior-macros = { package = "bombay-behavior-macros", version = "=0.15.0" }
+behavior-macros = { package = "bombay-behavior-macros", version = "=0.16.0" }
 http-body-util = "0.1.5"
 tower = { version = "0.5.3", features = ["util"] }
 futures-util = { version = "0.3.34", default-features = false, features = [

@@ -284,9 +284,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior"
-version = "0.27.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3efe62f4bde0540921066108449a9b904a5f1a8fc11c1a111076c297add769f"
+checksum = "3d22b69ce159ff90c25e9b5a599f0d2fb750835b8a05426daa1bfb47083ef4f6"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
@@ -294,9 +294,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-actors"
-version = "0.27.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8d67db591cd06c508fc86b0a291063690845898cef2fe7edefc5d9feeba31d5"
+checksum = "abb764bdd37460ea42374a3370f3ea45374eade86f374418264137a06443b549"
 dependencies = [
  "bombay-behavior",
  "bombay-behavior-macros",
@@ -305,9 +305,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-macros"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0ae2dc7c3e07d5358e20bcd460ad0eaf62056fb73d510d57a85d6c0ab906212"
+checksum = "2c72e980d373e4f422f93b4a1efd156d875a4ac60abc5e39e3030f0f4c98c45e"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1122,7 +1122,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2540,7 +2540,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2996,7 +2996,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3529,7 +3529,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

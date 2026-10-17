@@ -2,11 +2,11 @@
   "schema": 3,
   "owner": {
     "package": "bombay-behavior-actors",
-    "version": "0.27.0",
-    "revision": "7644735358a338b4574ac81982d68b2450bad53c"
+    "version": "0.29.0",
+    "revision": "55dbac2d1068b29907498b3a7fa32b3080e0cd30"
   },
   "engine_contract": "universal Behavior execution only",
-  "inventory_contract": "Source-selected candidate 7644735358a338b4574ac81982d68b2450bad53c over published270 base b8307d1; actual registry manifest/lock adoption remains pending the normal breaking release. Event/effect families name the tested typed contracts, not Engine policy or runtime correctness certification.",
+  "inventory_contract": "Published Actors0.29.0 at verified source55dbac2d1068b29907498b3a7fa32b3080e0cd30, selected by the actual registry-only root manifest/lock. Finite holding and explicit unbounded holding have distinct refusal capabilities. Event/effect families name typed contracts, not Engine policy or runtime correctness certification.",
   "templates": [
     {"id":"supervisor.directory","public":["supervisor::directory::DynamicSupervisor","supervisor::directory::new"],"source":"src/templates/supervisor/directory/mod.rs","event":"DynamicSupervisorEvent<Key, Worker, Plan>","lanes":["ObserveChild","ProxyOperation","ScheduleAfter","start/replace/stop/query/cancel replies","lifecycle delivery","DiagnosticAction"],"composition":"Births<StableProxy<Worker, Plan>> with DynamicSupervisorRequests in declared order","evidence":["tests/dynamic.rs","tests/atomic_request_product.rs"]},
     {"id":"pool.queue","public":["pool::queue::FifoPool","pool::queue::new"],"source":"src/templates/pool/queue/mod.rs","event":"FifoEvent<Role, W, P, Job, WorkerResult, ActionItemResult<PrepareWorkers>, WorkerPreparation, Replies>","lanes":["ObserveChild","InitializeWorker","StartWorker","customer outcome delivery","AssignWorker","PrepareWorkers","ScheduleAfter","ShutdownEstablished","DiagnosticAction"],"composition":"Births<StopOnShutdown<W>> with FifoRequests in declared order","evidence":["tests/fifo_pool.rs","tests/fifo_pool/retirement.rs"]},
@@ -16,7 +16,8 @@
 
     {"id":"composition.machine","public":["Machine"],"source":"src/machine.rs","event":"User<A, M>","lanes":["none (Vec<Never>)"],"composition":"standalone finite-state transition Behavior with NoBirths","evidence":["tests/algebra.rs"]},
     {"id":"composition.message-adapter","public":["MessageAdapter"],"source":"src/composition/message_adapter.rs","event":"User<Route::Protocol::Addr, Input>","lanes":["Route::Sends delivery"],"composition":"standalone input-to-message adapter with NoBirths","evidence":["src/composition/message_adapter.rs#[cfg(test)]"]},
-    {"id":"composition.stash","public":["Stash"],"source":"src/stash.rs","event":"B::Event","lanes":["inner B::Sends"],"composition":"transparent wrapper preserving B protocol and births while deferring selected events","evidence":["tests/algebra.rs"]},
+    {"id":"composition.stash","public":["Stash"],"source":"src/stash/limit.rs","event":"B::Event","lanes":["actor: B::Sends","refusals: R::Sends carrying original User"],"composition":"finite original-input holding; overflow refuses through existing typed delivery, with infallible closed-phase replay and FIFO take","evidence":["tests/stash_limits.rs","tests/algebra.rs","tests/stash.rs"]},
+    {"id":"composition.unlimited-stash","public":["UnlimitedStash"],"source":"src/stash/queue.rs","event":"B::Event","lanes":["inner B::Sends"],"composition":"explicit unbounded original-input holding; infallible closed-phase replay and FIFO take retain undelegated originals on unwind","evidence":["tests/stash.rs","tests/algebra.rs"]},
 
     {"id":"discovery.presence","public":["Presence"],"source":"src/discovery/presence.rs","event":"TimedEvent<User<A, PresenceMessage<K, Route>>>","lanes":["reply delivery","ScheduleAfter"],"composition":"standalone presence policy with NoBirths","evidence":["src/discovery/presence.rs#[cfg(test)]"]},
     {"id":"discovery.pub-sub","public":["PubSub"],"source":"src/discovery/pub_sub.rs","event":"User<A, PubSubMessage<K, P>>","lanes":["subscriber delivery"],"composition":"standalone topic-membership policy with NoBirths","evidence":["src/discovery/pub_sub.rs#[cfg(test)]"]},
