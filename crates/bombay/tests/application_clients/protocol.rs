@@ -42,6 +42,9 @@ pub(super) enum LedgerOperation {
 pub(super) enum Purpose {
     Request,
     ReadReply,
+    Processed,
+    Admitted,
+    Stopped,
 }
 #[derive(Clone, Copy)]
 pub(super) enum ProviderProfile {

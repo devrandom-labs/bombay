@@ -1,13 +1,24 @@
 # Backlog status and dependencies
 
-Current next remote step: private asynchronous startup is committed/pushed as
+Current next remote step: private verifier acquisition608c232 is locally
+verified with original-result and separate poll/disposal panic controls. It adds
+12 net production lines and no public type; scoped two-pass outcome review passes.
+Public verification controls and all22 application clients pass both profiles;
+strict all-feature workspace lint and formatting pass. This is a prerequisite,
+not public Node service acceptance or main delivery. Private asynchronous startup
+is committed/pushed as
 3b77de09 with verified recovery archivec17b2c74. Fresh public Node prerequisites
 5c5910ec recheck the exact399-package lock,13 archives,18 manifests and44 owners.
 The local combined child/family fixture passes all22 application-client tests
 in both profiles, strict focused lint and formatting; production/API are unchanged.
 The public cold Export/Node consumer remains blocked on its actual mixed
 protocol, child, compatible nominal family, borrowed-provider, absent-Work and
-native-close witnesses. No public API is selected by the prior compiler probes.
+native-close witnesses. The first consumer compiler baseline has seven intended missing-API errors in
+both profiles. The nine-case source and real endpoint-exhaustion source have reviewed
+missing-API baselines in both profiles, without runtime acceptance. The later
+Ready-result/destructor-panic source has scoped review but no runtime acceptance. Sibling progress/disposal,
+remaining producer faults, target certification and mutable authority still
+block production selection. No public API is selected by compiler probes.
 The [remote PRD](../prds/static-remote-actors.md#public-node-consumer--fresh-prerequisites-and-scope)
 records ownership, remaining gates and carried budgets. All full remote rows
 remain open; this is neither main delivery nor distillation.

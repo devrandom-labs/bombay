@@ -198,39 +198,7 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
     let custody = native
         .custody()
         .expect("the complete Creator remains native");
-    assert_eq!(custody.behavior.base().counters.len(), 2);
-    assert!(custody.behavior.base().ledger.is_some());
-    let [CreationSettlement::Settled(creations)] = custody.behavior.base().creations.as_slice()
-    else {
-        panic!("the one complete creation batch remains owned");
-    };
-    let committed = creations.iter().collect::<Vec<_>>();
-    let [
-        SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Head(
-            ChildCreationOutcome::Established(counter),
-        ))),
-        SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Head(
-            ChildCreationOutcome::Established(sibling),
-        ))),
-        SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Tail(ChildChoice::Head(
-            ChildCreationOutcome::Established(ledger),
-        )))),
-    ] = committed.as_slice()
-    else {
-        panic!("the actual first target, second sibling and third Ledger are committed");
-    };
-    assert_eq!(
-        exported.message.counter.recipient(),
-        counter.actor().recipient()
-    );
-    assert_eq!(
-        exported.message.sibling.recipient(),
-        sibling.actor().recipient()
-    );
-    assert_eq!(
-        exported.message.ledger.recipient(),
-        ledger.actor().recipient()
-    );
+    assert_exports(custody.behavior.base(), &exported.message);
     assert!(custody.child_failures.is_empty());
     assert_eq!(custody.descendants.len(), 3);
     let mut counter_origins = Vec::new();
@@ -328,4 +296,30 @@ fn assert_retirement<Actor, Descendants, Failure>(
     assert!(custody.additional_failures.is_empty());
     assert!(custody.retirement_failures.is_empty());
     assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
+}
+
+fn assert_exports(creator: &Creator, exported: &ActorExports) {
+    assert_eq!(creator.counters.len(), 2);
+    assert!(creator.ledger.is_some());
+    let [CreationSettlement::Settled(creations)] = creator.creations.as_slice() else {
+        panic!("the one complete creation batch remains owned");
+    };
+    let committed = creations.iter().collect::<Vec<_>>();
+    let [
+        SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Head(
+            ChildCreationOutcome::Established(counter),
+        ))),
+        SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Head(
+            ChildCreationOutcome::Established(sibling),
+        ))),
+        SettledItem::Attempted(ItemSettlement::Accepted(ChildChoice::Tail(ChildChoice::Head(
+            ChildCreationOutcome::Established(ledger),
+        )))),
+    ] = committed.as_slice()
+    else {
+        panic!("the actual first target, second sibling and third Ledger are committed");
+    };
+    assert_eq!(exported.counter.recipient(), counter.actor().recipient());
+    assert_eq!(exported.sibling.recipient(), sibling.actor().recipient());
+    assert_eq!(exported.ledger.recipient(), ledger.actor().recipient());
 }

@@ -2,6 +2,29 @@
 
 ## Current status (2026-10-17 UTC)
 
+Latest main49cc8971 was fetched and remains included in this research branch.
+The public cold Node consumer is still unimplemented: twelve proposed cases
+cover healthy composition, refusals, constructor exhaustion and Ready-result
+producer destruction. These sources remain unmounted and receive no service
+runtime or full-requirement acceptance.
+
+A bounded private prerequisite now factors verifier polling from producer
+ownership. The actual provider stays outside the caught call, allowing polling
+and destruction to be caught separately without losing either original panic
+payload or an already acquired result. This adds12 net production lines and no
+public type. Exact owning-source checks, both deliberate defects, public
+verification controls and all22 application clients pass their applicable debug
+and optimized controls. Strict all-feature workspace lint and formatting pass.
+Independent two-pass outcome reviewed9ab65e verifies all53 command records and
+968 frozen versions; details and qualifications are in the final change record.
+
+Next complete the remaining public-consumer source gates, then the one Node
+integration: pending sibling progress/disposal, cancellation, target certification
+and mutable authority remain unproved there. Full R01–R25/AUTH1/NET1,
+distillation, required CI, review and normal main delivery remain open.
+
+## Earlier private-startup checkpoint (2026-10-17 UTC)
+
 Main49cc8971 remains the latest integration and is already an ancestor of this
 research branch. The private startup owner now awaits actual asynchronous
 binding before invoking supplied Work. Genuine absence owns no invocation
@@ -35049,6 +35072,119 @@ script66 verification lines, without refunding prior costs. Current family
 fixture is331+253 lines plus4 mount lines. The actual complete cold public Node
 consumer, SDK privacy, native close and all full remote rows remain open.
 
+### Public Node consumer — first source cohort
+
+Local fixture7fd84b39 is committed/pushed; no new main merge occurred. The new
+unmounted consumer/codec/native-peer source is1513 formatted lines. With the
+existing proof assertion extracted unchanged and three shared Purpose variants,
+current tests are+1543/-33/net1510 across five software paths, including all
+three untracked files; production+0/-0/net0, public API+0/-0. This exceeds the
+700–1100 test forecast; it is no extra budget or certified headroom. All prior
+retained1911/public12 and cumulative2500/18/125/20000 charges still carry.
+
+This first source cohort specifies actual supplied and absent Work, two borrowed
+provider families, asynchronous committed child proof binding, compatible
+nonempty family, selected decode-to-native move-only allocation, Counter
+protection held pending during Ledger progress, mixed request keys, duplicate/
+conflict, actual child Stop/report, complete wire envelopes and automatic close.
+It is uncompiled: no missing-contract denial, runtime or acceptance is credited.
+Binding, second-declaration and provider refusals and pending verification are
+still missing and block production selection. The private peer rejects callback
+overflow in this finite cohort; it is no full overflow/discharge policy.
+
+Source model09df2ce7 rejects the two earlier native-report wrapper hypotheses:
+promote the existing owning Request instead, keep three pure declarations and
+one canonical generalized attempt law. Consuming Request extraction borrows
+the still-owned declarations for the selected terminal report callback, after
+independent cleanup/close originals are owned. Callback panic is explicit
+consumer surrender of those consumed inputs. Other original cold fields,
+provider/native/codec/protection/publication facts remain independently owned.
+These are comparison hypotheses, not retained public types.
+
+The actual caller exposes a binder destructor loan in unconditional tuple
+extraction. Source reviewf336ac65 conditionally accepts an ordinary Result
+projection: healthy Ok contains exact Exports, actual optional BindResult and
+actual close Result; Err returns every remaining Application/export/binder/
+binding/close original. Ok requires actual issued cleanup completion and close
+acquisition, never empty fields or Session.is_closed. Close failure remains an
+independent original in Ok. No wrapper, trait, manual drop or borrower scope.
+
+SDK-free runtime_id and checked actor_address are source-justified candidate
+projections from existing Session/Address owners: the native peer cannot form
+truthful metadata from opaque child capabilities alone. The focused current
+policy is immutable; unit validation is not a mutable Ref/MutexGuard loan proof.
+Pre-verification bounded custody must include duplicate/conflict/provider
+originals. Counting all acquired requests under retained_requests would change
+the old distinct-entry policy and requires explicit selection before production.
+No shadow replay table or unbounded audit log is accepted. All full remote rows
+remain open.
+
+### Public Node consumer — refusal source and compiler baseline
+
+The first eight actual command closures are independently reviewed in
+node-consumer-outcomes-independent.json0221d325: two shared-fixture controls
+pass; corrected old-surface debug/optimized checks each fail on exactly seven
+missing API errors (2E0432,4E0599,1E0560). The earlier eight-error check also
+contains a real private-peer temporary-borrow setup error; it has no pure
+contract-denial credit. Its bounded correction preserves the original native
+Reply owner (reviewaff2ff89). No public cold consumer has run successfully.
+
+The expanded unmounted source adds pending verification and binding, second
+declaration, verification, protection, request-current and reply-current
+refusals. Source correction keeps the peer open through actual Node completion,
+drains query streams before peer close, associates original bytes/proofs and
+receipts, checks actual child origins and observes Counter state independently
+after refusal. Verification waits for the first actual canonical reply before
+submitting replay/conflict; protection still exercises those while pending.
+Two formatter commands only are added; neither establishes compilation.
+
+Producer-fault modela7b1b710 requires independent original Ready Results, poll
+unwind and explicit disposal facts on the existing owners. Caller-local panic
+must not fabricate a JoinError or replace ApplicationOutcome. Actual native
+endpoint exhaustion, producer fault/disposal, target certification and mutable
+authority regressions remain required before production selection. All full
+remote rows, prior cumulative charges and unknown extents remain open.
+
+### Public Node consumer — constructor and disposal source
+
+Independent reviewf919f415 closes six command records: the corrected nine-case
+checks each report exactly14 missing-API errors; two earlier borrow setup
+errors receive no contract credit. Source869c978d and deadline amendment31ab3965
+cover that exact source cohort. Constructor source73e60a9c uses the actual
+finite Application address source, a pre-established Receipts endpoint, one
+real accepted Append and one exhausted sender constructor. Original raw pairs,
+receipts, unused FnOnce/Box, native sender, terminal Ledger, notifications and
+independent close are specified. No predicted allocated identity is asserted.
+
+Constructor command review71975c52 closes five records. Debug/optimized checks
+of9955d45d each contain exactly five missing API errors, without runtime. The
+first formatter omitted this new untracked file from both input maps; only its
+terminal status is retained, without complete source-closure credit. Recorder
+now includes all untracked crate/example/test inputs. Later formatting and both
+checks capture actual constructor source. Both temporary module mounts were
+removed byte-exactly (integration6bc7a8c3, owning modulee8e0a7d7).
+
+The current unexecuted extension adds real Ready-Ok and Ready-Err provider
+destructor panics. Four independent native panic slots are proposed alongside
+existing Request originals: verifier poll/disposal and protector poll/disposal.
+They retain actual standard Rust unwind payloads; no public fault wrapper or
+synthetic JoinError is introduced. The test future returns the actual nominal
+provider Result and panics only in its destructor. Final checks require the
+original receipt/error, exactly one disposal, unchanged Counter state and all
+independent native/family/notification/close results. This source is under
+review; no earlier compiler or runtime result transfers to it.
+
+Pending-sibling progress/disposal, pure poll plus separate disposal, borrowed
+wait cancellation, duplicate/foreign target startup, mutable authority and
+intended inversions remain production-selection gates. No production API or
+full remote requirement is complete. Known retained1911/public12, approved
+cumulative2500/18/125/20000 and all prior/rejected/external/unknown charges carry.
+
+Complete current tracked/untracked tree: production+0/-0/net0;
+tests+3031/-33/net2998; public API+0/-0; ten paths. Six untracked
+Rust drafts total3001 lines and remain unmounted. These are new verification
+sources, not code reduction. Earlier forecasts and all cumulative costs carry.
+
 ### Verification acquisition — bounded pre-edit change record
 
 Fresh source remains lock667a03e9 with no patch/replace: Behavior/Actors0.26.0
@@ -35129,10 +35265,11 @@ reviewde4864a4 checks that bounded provenance amendment. Earlier source01283869
 retains its earlier outer-operation classification and no runtime credit transfers.
 The cold Node API and pending-sibling/cancellation/authority/target gates stay open.
 
-Complete current tracked/untracked tree: production+22/-10/net12;
-tests+3193/-33/net3160; public API+0/-0; twelve paths. Seven untracked Rust files
-total3160 lines, including the mounted162-line owner test and six unmounted
-consumer drafts. This is new verification and a net-positive private capability,
+Complete verified stage against7fd84b39: production+22/-10/net12;
+tests+3193/-33/net3160; public API+0/-0; twelve paths. At the verification
+checkpoint, seven untracked Rust files total3160 lines, including the mounted
+162-line owner test and six unmounted consumer drafts. The private prerequisite
+is committed separately as608c232; these measurements do not reset prior charges. This is new verification and a net-positive private capability,
 not code reduction. Standalone46/47-line probes,2-line ordinary host, recorder
 changes, both inverse epochs, source amendments and all earlier copied/rejected/
 external/historical/unknown extents carry. Known retained production becomes1923
