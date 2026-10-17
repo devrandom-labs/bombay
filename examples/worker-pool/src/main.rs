@@ -72,7 +72,6 @@ async fn main() {
                 .send(FifoCommand::shutdown())
                 .await
                 .expect("orderly pool shutdown");
-            println!("actor retirement: {:?}", application.retirement().await);
             result
         })
         .await
@@ -80,6 +79,10 @@ async fn main() {
     let (result, retirement) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the search work completes"));
+    let report = retirement
+        .root_report()
+        .expect("the joined pool published its report");
+    println!("actor retirement: {report:?}");
     println!("search matches: {}", result.matches);
     // Execution already performed cleanup; these reports are optional inspection.
     println!(

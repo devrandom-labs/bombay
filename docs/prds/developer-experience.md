@@ -82,7 +82,7 @@ was already included in the authorized rename set.
 
 ## Verification and remaining work
 
-The user authorized184 cumulative source paths for DX04/24 report retention.
+The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The
 pre-edit real FIFO archive consumer denied both methods; its control passed.
@@ -126,8 +126,17 @@ assertion, production code, public surface or dependency changes. The default
 workspace formatter does not cover this separately rooted target. Its explicit
 format check and protected all-target strict Clippy pass. The first native full
 run is interrupted at707.143s with eight valid retained outputs; it is not a full
-pass. Final native and Linux gates remain required. No merging or publication
-is authorized for this batch.
+pass. The user then authorizes the186-path scope for the pool/supervision entrypoints.
+Four existing examples inspect the report after execution; Work returns only the
+business result or unit. No example callback now waits for retirement solely to inspect the report.
+The existing `run_with` join also covers natural timeout completion: a focused
+consumer proves native Stopped completion and the original completed business
+state in both profiles without an extra wait. Domain policies, assignments,
+replacement and phased shutdown stay unchanged. The example source delta is
++20/-9 lines, with no new runtime or public surface. The frozenf0fdae3 full run is interrupted at593.909s to include this
+approved example migration in one final source freeze; it is not a full pass.
+Final native and Linux gates remain required. No merging or publication is
+authorized for this batch.
 
 The owning PRD records exact commands, source identities, failures and limits.
 The initial actual-registry immutable128-case runs pass both compilers with all

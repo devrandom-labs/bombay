@@ -29,13 +29,15 @@ async fn main() {
                 .send(ProcessorMessage::Open)
                 .await
                 .expect("open admitted");
-            application.retirement().await
         })
         .await
         .unwrap_or_else(|_| panic!("the processor application starts"));
-    let (report, retirement) = outcome
+    let ((), retirement) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the processor work completes"));
+    let report = retirement
+        .root_report()
+        .expect("the joined processor published its report");
     println!("receive timeout: {report:?}");
     println!("cleanup: {:?}", retirement.cleanup());
 
@@ -44,13 +46,15 @@ async fn main() {
     )
     .run_with(|application| async move {
         application.shutdown().expect("shutdown admitted");
-        application.retirement().await
     })
     .await
     .unwrap_or_else(|_| panic!("the processor application starts"));
-    let (report, retirement) = outcome
+    let ((), retirement) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the processor work completes"));
+    let report = retirement
+        .root_report()
+        .expect("the joined processor published its report");
     println!("shutdown: {report:?}");
     println!("cleanup: {:?}", retirement.cleanup());
 }

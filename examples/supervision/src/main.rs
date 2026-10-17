@@ -79,13 +79,15 @@ async fn main() {
             .send(&target, FixedCommand::shutdown())
             .await
             .expect("supervisor shutdown admitted");
-        application.retirement().await
     })
     .await
     .unwrap_or_else(|_| panic!("the supervisor application starts"));
-    let (report, retirement) = outcome
+    let ((), retirement) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the supervision work completes"));
+    let report = retirement
+        .root_report()
+        .expect("the joined supervisor published its report");
     println!("actor retirement: {report:?}");
     // Execution already performed cleanup; these reports are optional inspection.
     println!(

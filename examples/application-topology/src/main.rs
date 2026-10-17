@@ -15,13 +15,15 @@ async fn main() {
     let outcome = Application::with_topology(root, document_application::Topology::new())
         .run_with(|application| async move {
             application.shutdown().expect("phased shutdown admitted");
-            application.retirement().await
         })
         .await
         .unwrap_or_else(|_| panic!("the document application starts"));
-    let (report, retirement) = outcome
+    let ((), retirement) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the document work completes"));
+    let report = retirement
+        .root_report()
+        .expect("the joined document root published its report");
     println!("actor retirement: {report:?}");
     // Execution already performed cleanup; these reports are optional inspection.
     println!(
