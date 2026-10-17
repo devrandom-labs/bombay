@@ -4,14 +4,19 @@ use core::convert::Infallible;
 use core::time::Duration;
 use tokio::runtime::Builder;
 
-use behavior_actors::atomic::{
-    ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
-    FailureReaction, FixedCommand, FixedSnapshot, FixedSupervisor, OrderedRoles, Recovery,
-    RestartLimit, RestartRelease, Strategy, WorkerSource, WorkerSubmission, fixed,
+use behavior_actors::diagnostic::DiagnosticDisposition;
+use behavior_actors::lifecycle::ActorDrainPolicy;
+use behavior_actors::supervisor::roster::{
+    self, FailureReaction, FixedCommand, FixedSupervisor, Recovery, RecoveryPolicy, Strategy,
+};
+use behavior_actors::worker::{
+    OrderedRoles, RestartLimit, RestartRelease, StartupLimit, StartupPlan, WorkerSource,
+    WorkerSubmission,
 };
 use behavior_actors::{Exit, StopOnShutdown};
 use bombay::actors::ActorExt as _;
-use bombay::behavior::{MessageProtocol, Never};
+use bombay::behavior::Never;
+use bombay::composition::replies::ExactReplies;
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
 use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
 use tokio::sync::oneshot;
@@ -30,7 +35,7 @@ type ManagedWorker = StopOnShutdown<Worker>;
 
 struct ActivationNotice(Option<oneshot::Sender<()>>);
 
-impl ActivationPlan for ActivationNotice {
+impl StartupPlan for ActivationNotice {
     type Ready = ();
     type Rejection = Never;
 
@@ -38,7 +43,7 @@ impl ActivationPlan for ActivationNotice {
         clippy::unused_async_trait_impl,
         reason = "Defer trait-port work and owned inputs until the future is polled."
     )]
-    async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
+    async fn start(self) -> Result<Self::Ready, Self::Rejection> {
         if let Some(sender) = self.0 {
             sender
                 .send(())
@@ -64,7 +69,7 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
         &mut self,
         _: &WorkerRole,
     ) -> WorkerPreparationStart<ManagedWorker, ActivationNotice, Never, Never> {
-        WorkerPreparationStart::Submitted(WorkerSubmission::activated(
+        WorkerPreparationStart::Submitted(WorkerSubmission::with_startup(
             Worker.stop_on_shutdown(),
             ActivationNotice(None),
         ))
@@ -78,26 +83,30 @@ impl WorkerPreparationSource<WorkerRole, ManagedWorker, ActivationNotice> for Wo
         &mut self,
         _: &WorkerRole,
     ) -> Result<WorkerSubmission<ManagedWorker, ActivationNotice>, Never> {
-        Ok(WorkerSubmission::activated(
+        Ok(WorkerSubmission::with_startup(
             Worker.stop_on_shutdown(),
             ActivationNotice(None),
         ))
     }
 }
 
-type Supervisor =
-    FixedSupervisor<WorkerRole, ManagedWorker, ActivationNotice, Workshop, Infallible, Infallible>;
+type Supervisor = FixedSupervisor<
+    WorkerRole,
+    ManagedWorker,
+    ActivationNotice,
+    Workshop,
+    Infallible,
+    Infallible,
+    ExactReplies,
+    ExactReplies,
+>;
 type RootSupervisor = StopOnShutdown<Supervisor>;
-type WorkerProtocol = Worker;
-type Status = MessageProtocol<MailAddr, FixedSnapshot<WorkerProtocol>>;
-type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, WorkerProtocol>>;
 
 bombay::topology! {
     supervisor_application {
         root { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts { status: Status; capability: Capability; }
     }
 }
 
@@ -107,24 +116,31 @@ fn prepared_supervisor(activation_sender: oneshot::Sender<()>) -> Supervisor {
         OrderedRoles::new(WorkerRole::Primary, []).expect("the single declared role is unique");
     let release = RestartRelease::constant(Duration::from_millis(1))
         .expect("the positive release interval is valid");
-    fixed(
+    roster::new(
         move |_: &WorkerRole| {
             let sender = initial_activation
                 .take()
                 .expect("the sole initial role owns one activation notice");
-            WorkerSubmission::activated(Worker.stop_on_shutdown(), ActivationNotice(Some(sender)))
+            WorkerSubmission::with_startup(
+                Worker.stop_on_shutdown(),
+                ActivationNotice(Some(sender)),
+            )
         },
         roles,
-        ActivationPolicy::new(1).expect("one activation is positive capacity"),
-        Recovery::permanent(
-            Workshop,
-            Strategy::OneForOne,
-            RestartLimit::new(1, Duration::from_secs(30)),
-            release,
-        ),
-        FailureReaction::StopSupervisor,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        roster::Config {
+            startup: StartupLimit::new(1).expect("one activation is positive capacity"),
+            recovery: Recovery::permanent(
+                Workshop,
+                RecoveryPolicy {
+                    strategy: Strategy::OneForOne,
+                    limit: RestartLimit::new(1, Duration::from_secs(30)),
+                    delay: release,
+                },
+            ),
+            failure: FailureReaction::StopSupervisor,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
     .build()
     .unwrap_or_else(|_| panic!("the sole worker is prepared"))
@@ -170,6 +186,7 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

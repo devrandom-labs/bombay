@@ -34,7 +34,7 @@ async fn generated_leaf_matches_manual_counter_custody() {
         let increment = client.send(CounterMessage::Increment).await;
         let read = client.send(CounterMessage::Read(client.recipient())).await;
         let received = client.receive().await;
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         let termination = application.termination().await;
         (increment, read, received, shutdown, termination)
     })
@@ -50,19 +50,19 @@ async fn generated_leaf_matches_manual_counter_custody() {
         let increment = client.send(CounterMessage::Increment).await;
         let read = client.send(CounterMessage::Read(client.recipient())).await;
         let received = client.receive().await;
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         let termination = application.termination().await;
         (increment, read, received, shutdown, termination)
     })
     .await;
     // Both complete receiving products are acquired before any comparison.
-    let (generated_work, generated_native, generated_notifications, ()) = generated
+    let (generated_work, _root_report, generated_native, generated_notifications, ()) = generated
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the generated explicit leaf starts");
         })
         .into_parts();
-    let (manual_work, manual_native, manual_notifications, ()) = manual
+    let (manual_work, _root_report, manual_native, manual_notifications, ()) = manual
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the handwritten explicit leaf starts");

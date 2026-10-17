@@ -1,18 +1,24 @@
 use bombay::ActorNotificationReceipts;
 use bombay::WorkOutcome;
+use bombay::composition::replies::ExactReplies;
 use core::convert::Infallible;
 use core::time::Duration;
 use std::sync::Arc;
 
-use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, Assignment, BacklogCapacity, DiagnosticDisposition,
-    FifoCommand, FifoOutcome, FifoPool, ImmediateActivation, Interruption, OrderedRoles,
-    PoolFailureReaction, PoolRecovery, RestartLimit, RestartRelease, SubmissionId, WorkerSource,
-    WorkerSubmission, fifo, pool_worker,
+use bombay::behavior::{Actions, BehaviorBase, CreationKind};
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
+use bombay::pool::queue::{self, FifoCommand, FifoPool};
+use bombay::pool::{
+    Assignment, BacklogCapacity, Interruption, PoolFailureReaction, PoolRecovery, RecoveryPolicy,
+    SubmissionId, pool_worker,
 };
-use bombay::behavior::{Actions, BehaviorBase, CreationKind, MessageProtocol};
 use bombay::prelude::Exit;
 use bombay::prelude::{ActorRetirement, Completion, MailAddr};
+use bombay::worker::{
+    ImmediateStartup, OrderedRoles, RestartLimit, RestartRelease, StartupLimit, WorkerSource,
+    WorkerSubmission,
+};
 use bombay::{Application, WorkerPreparationSource, WorkerPreparationStart};
 use std::collections::VecDeque;
 use tokio::sync::Semaphore;
@@ -68,23 +74,17 @@ struct WorkshopClosed {
     worker: RecoverableWorker,
 }
 
-impl WorkerSource<WorkerRole, RecoverableWorker, ImmediateActivation> for RecoveryWorkshop {
+impl WorkerSource<WorkerRole, RecoverableWorker, ImmediateStartup> for RecoveryWorkshop {
     type WorkerRejection = WorkerRejection;
     type SourceRejection = WorkshopClosed;
 }
 
-impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateActivation>
-    for RecoveryWorkshop
-{
+impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateStartup> for RecoveryWorkshop {
     async fn prepare_first(
         &mut self,
         role: &WorkerRole,
-    ) -> WorkerPreparationStart<
-        RecoverableWorker,
-        ImmediateActivation,
-        WorkerRejection,
-        WorkshopClosed,
-    > {
+    ) -> WorkerPreparationStart<RecoverableWorker, ImmediateStartup, WorkerRejection, WorkshopClosed>
+    {
         assert_eq!(*role, WorkerRole::Primary);
         let Some(worker) = self.workers.pop_front() else {
             return WorkerPreparationStart::WorkerRejected(WorkerRejection::Exhausted);
@@ -101,7 +101,7 @@ impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateActivation>
     async fn prepare_next(
         &mut self,
         role: &WorkerRole,
-    ) -> Result<WorkerSubmission<RecoverableWorker, ImmediateActivation>, WorkerRejection> {
+    ) -> Result<WorkerSubmission<RecoverableWorker, ImmediateStartup>, WorkerRejection> {
         assert_eq!(*role, WorkerRole::Primary);
         let permit = self
             .admission
@@ -117,19 +117,18 @@ impl WorkerPreparationSource<WorkerRole, RecoverableWorker, ImmediateActivation>
 type Pool = FifoPool<
     WorkerRole,
     RecoverableWorker,
-    ImmediateActivation,
+    ImmediateStartup,
     RecoveryWorkshop,
     Infallible,
     u8,
     u16,
+    ExactReplies,
 >;
-type CustomerProtocol = MessageProtocol<MailAddr, FifoOutcome<WorkerRole, u8, u16>>;
 
 bombay::topology! {
     pool_application {
         root { Worker => worker; }
         worker {}
-        hosts { customers: CustomerProtocol; }
     }
 }
 
@@ -151,29 +150,34 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
         payload: first,
         availability: WorkerAvailability::RetireAfterAssignment,
     });
-    let pool: Pool = fifo(
+    let pool: Pool = queue::new(
         move |_: &WorkerRole| {
             WorkerSubmission::immediate(initial.take().expect("one original worker"))
         },
         OrderedRoles::new(WorkerRole::Primary, []).expect("one real role"),
-        ActivationPolicy::new(1).expect("one active worker"),
-        PoolRecovery::permanent(
-            RecoveryWorkshop {
-                admission: Arc::clone(&admission),
-                workers: VecDeque::from([RecoverableWorker {
-                    payload: replacement,
-                    availability: WorkerAvailability::RemainAvailable,
-                }]),
-            },
-            RestartLimit::new(1, Duration::from_secs(30)),
-            RestartRelease::immediate(),
-            PoolFailureReaction::StopPool,
-        ),
-        BacklogCapacity::new(8),
-        Interruption::Retry,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        queue::Config {
+            startup: StartupLimit::new(1).expect("one active worker"),
+            recovery: PoolRecovery::permanent(
+                RecoveryWorkshop {
+                    admission: Arc::clone(&admission),
+                    workers: VecDeque::from([RecoverableWorker {
+                        payload: replacement,
+                        availability: WorkerAvailability::RemainAvailable,
+                    }]),
+                },
+                RecoveryPolicy {
+                    limit: RestartLimit::new(1, Duration::from_secs(30)),
+                    delay: RestartRelease::immediate(),
+                    failure: PoolFailureReaction::StopPool,
+                },
+            ),
+            backlog: BacklogCapacity::new(8),
+            interruption: Interruption::Retry,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
+    .build()
     .unwrap_or_else(|_| panic!("initial worker definition prepared"));
     let outcome = Application::with_topology(pool, pool_application::Topology::new())
         .run_with(move |application| async move {
@@ -222,6 +226,7 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
             output: (work, termination),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -266,7 +271,7 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
         for diagnostic in core::mem::take(&mut action.sends.diagnostics) {
             if let bombay::behavior::SettledItem::Attempted(
                 bombay::behavior::ItemSettlement::Accepted(
-                    bombay::atomic::DiagnosticAccepted::Terminal(diagnostic),
+                    bombay::diagnostic::DiagnosticAccepted::Terminal(diagnostic),
                 ),
             ) = diagnostic
             {

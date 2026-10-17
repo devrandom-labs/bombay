@@ -7,13 +7,14 @@ use core::time::Duration;
 use tokio::runtime::Builder;
 
 use bombay::actors::ActorExt as _;
-use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition, FailureReaction,
-    FixedCommand, FixedSnapshot, OrderedRoles, Recovery, RestartLimit, RestartRelease, Strategy,
-    fixed,
-};
 use bombay::behavior::MessageProtocol;
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr};
+use bombay::supervisor::roster::{
+    self, CapabilityResult, FailureReaction, FixedCommand, Recovery, RecoveryPolicy, Strategy,
+};
+use bombay::worker::{OrderedRoles, RestartLimit, RestartRelease, StartupLimit};
 use bombay::{Application, WorkerFactory};
 use tokio::sync::mpsc;
 
@@ -21,7 +22,6 @@ use tokio::sync::mpsc;
 mod worker;
 use worker::{Worker, WorkerCommand, WorkerRole, worker_submission};
 
-type Status = MessageProtocol<MailAddr, FixedSnapshot<Worker>>;
 type Capability = MessageProtocol<MailAddr, CapabilityResult<WorkerRole, Worker>>;
 
 bombay::topology! {
@@ -29,7 +29,6 @@ bombay::topology! {
         root { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts { status: Status; capability: Capability; }
     }
 }
 
@@ -44,19 +43,23 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
         let roles =
             OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role roster is distinct");
         let initial_activated = activated.clone();
-        fixed(
+        roster::new(
             move |role: &WorkerRole| worker_submission(*role, &initial_activated),
             roles,
-            ActivationPolicy::new(1).expect("one worker fits the activation policy"),
-            Recovery::permanent(
-                WorkerFactory::new(move |role| worker_submission(*role, &activated)),
-                Strategy::OneForOne,
-                RestartLimit::new(1, Duration::from_secs(30)),
-                RestartRelease::immediate(),
-            ),
-            FailureReaction::StopSupervisor,
-            ActorDrainPolicy::WaitForActorGraph,
-            DiagnosticDisposition::terminate(),
+            roster::Config {
+                startup: StartupLimit::new(1).expect("one worker fits the activation policy"),
+                recovery: Recovery::permanent(
+                    WorkerFactory::new(move |role| worker_submission(*role, &activated)),
+                    RecoveryPolicy {
+                        strategy: Strategy::OneForOne,
+                        limit: RestartLimit::new(1, Duration::from_secs(30)),
+                        delay: RestartRelease::immediate(),
+                    },
+                ),
+                failure: FailureReaction::StopSupervisor,
+                shutdown: ActorDrainPolicy::WaitForActorGraph,
+                diagnostics: DiagnosticDisposition::terminate(),
+            },
         )
         .build()
         .unwrap_or_else(|_| panic!("the declared worker is prepared"))
@@ -127,6 +130,7 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -221,13 +225,13 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
 
 mod tests {
     use super::{WorkerFactory, WorkerRole, worker_submission};
-    use bombay::atomic::ProxyPhase;
-    use bombay::atomic::{
-        ActivationPolicy, ActorDrainPolicy, DiagnosticDisposition, FailureReaction, OrderedRoles,
-        Recovery, RestartLimit, RestartRelease, Strategy, fixed,
-    };
     use bombay::behavior::{CreationKind, Step};
+    use bombay::diagnostic::DiagnosticDisposition;
+    use bombay::lifecycle::ActorDrainPolicy;
     use bombay::prelude::Activate as _;
+    use bombay::proxy::ProxyPhase;
+    use bombay::supervisor::roster::{self, FailureReaction, Recovery, RecoveryPolicy, Strategy};
+    use bombay::worker::{OrderedRoles, RestartLimit, RestartRelease, StartupLimit};
     use core::time::Duration;
     use tokio::sync::mpsc;
 
@@ -238,19 +242,23 @@ mod tests {
             let roles = OrderedRoles::new(WorkerRole::Primary, [])
                 .expect("the one-role roster is distinct");
             let initial_activated = activated.clone();
-            fixed(
+            roster::new(
                 move |role: &WorkerRole| worker_submission(*role, &initial_activated),
                 roles,
-                ActivationPolicy::new(1).expect("one worker fits the activation policy"),
-                Recovery::permanent(
-                    WorkerFactory::new(move |role| worker_submission(*role, &activated)),
-                    Strategy::OneForOne,
-                    RestartLimit::new(1, Duration::from_secs(30)),
-                    RestartRelease::immediate(),
-                ),
-                FailureReaction::StopSupervisor,
-                ActorDrainPolicy::WaitForActorGraph,
-                DiagnosticDisposition::terminate(),
+                roster::Config {
+                    startup: StartupLimit::new(1).expect("one worker fits the activation policy"),
+                    recovery: Recovery::permanent(
+                        WorkerFactory::new(move |role| worker_submission(*role, &activated)),
+                        RecoveryPolicy {
+                            strategy: Strategy::OneForOne,
+                            limit: RestartLimit::new(1, Duration::from_secs(30)),
+                            delay: RestartRelease::immediate(),
+                        },
+                    ),
+                    failure: FailureReaction::StopSupervisor,
+                    shutdown: ActorDrainPolicy::WaitForActorGraph,
+                    diagnostics: DiagnosticDisposition::terminate(),
+                },
             )
             .build()
             .unwrap_or_else(|_| panic!("the declared worker is prepared"))

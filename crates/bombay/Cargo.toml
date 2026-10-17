@@ -1,7 +1,7 @@
 [package]
 name = "bombay-rs"
 description = "A pluggable process runtime over Bombay Behavior."
-version = "0.1.3"
+version = "0.2.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -23,7 +23,7 @@ axum = ["dep:axum", "tokio/net"]
 behavior = { workspace = true }
 behavior-actors = { workspace = true }
 bombay-engine = { workspace = true }
-bombay-macros = { version = "0.1.3", path = "../bombay-macros" }
+bombay-macros = { version = "0.2.0", path = "../bombay-macros" }
 bombay-address = { workspace = true }
 communication = { workspace = true }
 parking_lot = { workspace = true }
@@ -40,7 +40,7 @@ zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-f
 zenoh_protocol = { package = "zenoh-protocol", version = "=1.10.1", default-features = false, optional = true }
 
 [dev-dependencies]
-behavior-macros = { package = "bombay-behavior-macros", version = "=0.14.2" }
+behavior-macros = { package = "bombay-behavior-macros", version = "=0.16.0" }
 http-body-util = "0.1.5"
 tower = { version = "0.5.3", features = ["util"] }
 futures-util = { version = "0.3.34", default-features = false, features = [

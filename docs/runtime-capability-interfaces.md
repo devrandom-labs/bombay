@@ -30,10 +30,13 @@ top-level metadata object; concrete Serde schemas retain field presence, uniquen
 meaning. Native syntax causes remain available. This checks acceptance after
 token materialization and proves neither a peak-heap bound nor authentication.
 The optional remote feature provides Application::open_node and remote::Node as a
-transport owner, reusing ordinary Application execution with a borrowed native
-Session. Node::run_with awaits its complete outcome; execute_with keeps separate
-operations and permits a Session-borrowing business result. Both preserve original
-Work on refusal through the existing invocation spine. It owns no new actor trait,
+transport owner over ordinary Application execution. Both Node callbacks receive
+only the typed ApplicationHandle, preserving caller-local borrows and non-Send
+work. Node::run_with awaits the complete outcome; execute_with retains separate
+execution and receiving operations. Both preserve original Work on refusal
+through the existing invocation spine. The native Session remains inside Node;
+remaining public SDK configuration/query surfaces are tracked in the
+[DevX coordination](prds/developer-experience.md). It owns no new actor trait,
 mailbox, lifetime authority or permission policy. Startup profile checks preserve original declarations on refusal;
 actual SDK and root/child integration remain separate verification gates.
 Native transport fixtures remain scoped verification consumers.

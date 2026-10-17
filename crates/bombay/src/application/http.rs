@@ -277,8 +277,14 @@ where
             ((), |_executor, (), ()| None),
         );
         let receiving = async move {
-            let (work, root, termination_notification) = receiving.await;
-            ApplicationOutcome::new(work.into_http(), root, termination_notification, ())
+            let (work, root_report, root, termination_notification) = receiving.await;
+            ApplicationOutcome::new(
+                work.into_http(),
+                root_report,
+                root,
+                termination_notification,
+                (),
+            )
         };
         Ok((execution, receiving))
     }

@@ -210,7 +210,7 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
                         None
                     };
                     let root = application.root().address();
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     let report = application.lifecycle().retirement().await;
                     let undeclared = queryable.undeclare().await;
                     (
@@ -226,7 +226,7 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
                 })
                 .unwrap_or_else(|_| panic!("exact Node execution"));
             execution.await;
-            let (outcome, native, notifications, ()) = receiving.await.into_parts();
+            let (outcome, _root_report, native, notifications, ()) = receiving.await.into_parts();
             let (
                 (observations, publications, read, value, root, stopped, report, undeclared),
                 cleanup,
@@ -496,7 +496,7 @@ fn node_ledger_checks_metadata_object_before_its_terminating_read() {
                 })
                 .unwrap_or_else(|_| panic!("exact Node execution"));
             execution.await;
-            let (outcome, native, notifications, ()) = receiving.await.into_parts();
+            let (outcome, _root_report, native, notifications, ()) = receiving.await.into_parts();
             let (
                 (
                     observations,

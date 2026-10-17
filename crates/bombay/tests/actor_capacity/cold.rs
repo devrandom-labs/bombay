@@ -71,7 +71,7 @@ async fn cold_member_passes_actor_capacity_to_its_fresh_child_and_returns_comple
         caller.send(&archive, DocumentCommand::Count(caller.recipient())).await.unwrap_or_else(|_| panic!("the accepted child prefix precedes its count"));
         let receipt = caller.receive().await.expect("both original documents were processed");
         assert_eq!(receipt.message, 2);
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         (identities, document)
     }).await.unwrap_or_else(|_| panic!("the cold-member application starts"));

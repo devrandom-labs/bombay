@@ -4926,7 +4926,7 @@ mod independent_actor_execution {
         drop(runtime);
         let stale = CHILD_EXECUTION_COMPLETION.lock().unwrap().take();
         assert!(stale.is_none());
-        let (application_outcome, root_retirement, notifications, ()) = joined
+        let (application_outcome, _root_report, root_retirement, notifications, ()) = joined
             .expect("whole original application result remains")
             .into_parts();
         if matches!(

@@ -366,7 +366,7 @@ where
             acquisitions, reply_callbacks, joined_first, requests)
     }).unwrap_or_else(|_| panic!("the concrete sender Application enters its host"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, sender_native, sender_notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, sender_native, sender_notifications, ()) = outcome.into_parts();
     let (output, sender_cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original sender Work is independently received"));
@@ -675,13 +675,13 @@ async fn counter_case<Receipt>(
                 identity,
             )
             .await;
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (study, primed, stopped, report)
         })
         .unwrap_or_else(|_| panic!("receiver host entry"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let ((study, primed, stopped, report), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original receiver Work output"));
@@ -817,7 +817,7 @@ async fn ledger_case<Receipt>(
         })
         .unwrap_or_else(|_| panic!("Ledger host entry"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let ((study, primed, caller, allocation), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Ledger Work output"));

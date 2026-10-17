@@ -58,7 +58,7 @@ bombay::topology! {
 }
 
 async fn nominal_recursive_creations() {
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Node {
             startup: NodeStartup::Grow { remaining: 3 },
         }
@@ -68,7 +68,7 @@ async fn nominal_recursive_creations() {
     .run_with(|application| async move {
         application
             .lifecycle()
-            .request_shutdown()
+            .shutdown()
             .expect("shutdown admitted");
     })
     .await
@@ -166,11 +166,11 @@ async fn initialization_rejection_returns_the_original_child_and_work() {
     .stop_on_shutdown();
     let work = Box::new(String::from("root work survived"));
     let work_allocation = work.as_ptr();
-    let (outcome, native, notifications, ()) = Application::with_topology(root, parent_application::Topology::new())
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(root, parent_application::Topology::new())
         .run_with(move |application| async move {
             application
                 .lifecycle()
-                .request_shutdown()
+                .shutdown()
                 .expect("root shutdown admitted");
             work
         })
@@ -250,11 +250,11 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
         child: Some(CreateChild::birth(id, child)),
     }
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = Application::with_topology(root, parent_application::Topology::new())
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(root, parent_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
-                .request_shutdown()
+                .shutdown()
                 .expect("root shutdown admitted");
         })
         .await
@@ -326,11 +326,11 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
         )),
     }
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = Application::with_topology(root, parent_application::Topology::new())
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(root, parent_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
-                .request_shutdown()
+                .shutdown()
                 .expect("shutdown admitted");
         })
         .await
@@ -452,11 +452,11 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
         ]),
     }
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = Application::with_topology(root, sibling_application::Topology::new())
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(root, sibling_application::Topology::new())
         .run_with(|application| async move {
             application
                 .lifecycle()
-                .request_shutdown()
+                .shutdown()
                 .expect("shutdown admitted");
         })
         .await

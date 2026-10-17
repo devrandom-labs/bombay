@@ -31,24 +31,51 @@ def snapshot_names(root):
 
 
 def diagnostic_coverage(transcript, manifest):
-    cases = re.findall(
-        r"^test (.+?\.rs)"
-        r"(?: \[(should pass|should fail to compile)\])? \.\.\. ok$",
+    reports = re.findall(
+        r"^test (.+?\.rs)(?: \[([^\n]*)\])? \.\.\. ([^\n]*)$",
         transcript, re.MULTILINE)
+    cases = [(path, mode) for path, mode, verdict in reports if verdict == "ok"]
     paths = [path for path, _ in cases]
     suites = [name for name in manifest["suites"]
               if transcript.count(f"test {name} ... ok\n") == 1]
-    summaries = re.findall(
-        r"test result: ok\. (\d+) passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;",
-        transcript)
+    summary_pattern = (
+        r"^test result: ok\. (\d+) passed; 0 failed; (\d+) ignored; "
+        r"0 measured; 0 filtered out;")
+    ignored_pattern = r"^test (.+?) \.\.\. ignored(?:, [^\n]*)?$"
+    runs = re.findall(
+        r"^ *Running tests/(\w+)\.rs \([^\n]+\)\n(.*?)(?=^ *Running tests/|\Z)",
+        transcript, re.MULTILINE | re.DOTALL)
+    targets = []
+    for target, body in runs:
+        ignored = re.findall(ignored_pattern, body, re.MULTILINE)
+        declarations = manifest["ignored"].get(target, {})
+        counts = re.findall(summary_pattern, body, re.MULTILINE)
+        complete = len(re.findall(r"^test result:", body, re.MULTILINE)) == 1 and \
+            target in manifest["targets"] and counts == [
+            (str(manifest["targets"][target]), str(len(declarations)))]
+        complete = complete and sorted(ignored) == sorted(declarations) and all(
+            body.count(f"test {parent} ... ok\n") == 1
+            for parent in declarations.values())
+        targets.append({"name": target, "ignored": ignored, "complete": complete})
+    names = [target["name"] for target in targets]
+    target_coverage = len(names) == len(set(names)) == len(manifest["targets"]) and \
+        set(names) == set(manifest["targets"]) and \
+        set(manifest["ignored"]).issubset(manifest["targets"]) and \
+        all(target["complete"] for target in targets) and \
+        len(re.findall(r"^test result:", transcript, re.MULTILINE)) == len(runs) and \
+        len(re.findall(r"^ *Running tests/[^\n]*", transcript, re.MULTILINE)) == len(runs) and \
+        len(re.findall(ignored_pattern, transcript, re.MULTILINE)) == sum(
+            len(target["ignored"]) for target in targets)
     modes = all(mode in ("", "should pass") if "/pass/" in path
                 else mode in ("", "should fail to compile") for path, mode in cases)
-    complete = len(paths) == len(set(paths)) == len(manifest["cases"]) and \
+    complete = len(reports) == len(paths) == len(set(paths)) == len(manifest["cases"]) and \
         set(paths) == set(manifest["cases"]) and modes and \
         suites == manifest["suites"] and \
-        sorted(map(int, summaries)) == sorted(manifest["targets"].values())
+        not re.search(r"^test .+? \.\.\. FAILED(?:\s|$)", transcript, re.MULTILINE) and \
+        target_coverage
     return {"verified_cases": sorted(paths), "verified_suites": suites,
-            "case_modes_valid": modes, "coverage_complete": complete}
+            "verified_targets": targets, "case_modes_valid": modes,
+            "coverage_complete": complete}
 
 
 def main():
@@ -84,7 +111,9 @@ def main():
         raise SystemExit("The reviewed diagnostic patch changed")
     for name, expected in snapshots.items():
         path = Path(name)
-        if path.parent != Path("crates/bombay/tests/compile/fail") or path.suffix != ".stderr":
+        if path.parent not in (Path("crates/bombay/tests/compile/fail"),
+                               Path("crates/bombay-engine/tests/compile/fail"),
+                               Path("crates/observe-tests/tests/compile/fail")) or path.suffix != ".stderr":
             raise SystemExit("Expected diagnostics must name existing compile-fail snapshots")
         if digest(repository / path) != expected["canonical_sha256"]:
             raise SystemExit(f"Canonical expectation changed: {name}")
@@ -122,8 +151,8 @@ def main():
                        CARGO_BUILD_JOBS="2", CARGO_INCREMENTAL="0",
                        CARGO_PROFILE_DEV_DEBUG="0", CARGO_PROFILE_TEST_DEBUG="0",
                        CARGO_PROFILE_RELEASE_DEBUG="0", CARGO_TERM_COLOR="never")
-            argv = [options.cargo, "test", "--locked", "-p", "bombay-rs", "--features",
-                    "axum", "--no-fail-fast"]
+            argv = [options.cargo, "test", "--locked", "-p", "bombay-rs", "-p", "bombay-engine",
+                    "-p", "observe-tests", "--features", "axum", "--no-fail-fast"]
             for target in manifest["targets"]:
                 argv.extend(["--test", target])
             log = output / "diagnostics.log"

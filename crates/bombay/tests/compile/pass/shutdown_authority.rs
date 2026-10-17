@@ -12,7 +12,7 @@ fn typed_shutdown<P: Protocol, Event>(lifecycle: ApplicationLifecycle<P, Event>)
 where
     Event: InjectEvent<ShutdownRequested, Here>,
 {
-    let _request = lifecycle.request_shutdown();
+    let _request = lifecycle.shutdown();
     let _termination = lifecycle.termination();
 }
 

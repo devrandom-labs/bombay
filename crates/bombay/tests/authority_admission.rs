@@ -961,7 +961,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
                         service.close_admission();
                         let drained = service.receive().await;
                         assert!(drained.is_none());
-                        let stopped = application.lifecycle().request_shutdown();
+                        let stopped = application.lifecycle().shutdown();
                         assert_eq!(stopped, Ok(()));
                         (result, service.address())
                     },
@@ -978,6 +978,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
                 output: (observations, sender),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, terminal)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -1086,7 +1087,7 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
                     service.close_admission();
                     let drained = service.receive().await;
                     assert!(drained.is_none());
-                    let stopped = application.lifecycle().request_shutdown();
+                    let stopped = application.lifecycle().shutdown();
                     assert_eq!(stopped, Ok(()));
                     (result, service.address())
                 }),
@@ -1102,6 +1103,7 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
                 output: (observations, sender),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, terminal)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -2940,7 +2942,7 @@ mod replay {
                             service.close_admission();
                             let drained = service.receive().await;
                             assert!(drained.is_none());
-                            let stopped = application.lifecycle().request_shutdown();
+                            let stopped = application.lifecycle().shutdown();
                             assert_eq!(stopped, Ok(()));
                             (observations, target)
                         },
@@ -2957,6 +2959,7 @@ mod replay {
                     output: (observations, target),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, terminal)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -3082,7 +3085,7 @@ mod replay {
                         service.close_admission();
                         let drained = service.receive().await;
                         assert!(drained.is_none());
-                        let stopped = application.lifecycle().request_shutdown();
+                        let stopped = application.lifecycle().shutdown();
                         assert_eq!(stopped, Ok(()));
                         (observations, target)
                     }),
@@ -3098,6 +3101,7 @@ mod replay {
                     output: (observations, target),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, terminal)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),

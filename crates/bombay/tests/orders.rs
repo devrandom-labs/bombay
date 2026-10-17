@@ -61,7 +61,7 @@ mod order_book {
                             assert_eq!(admitted, request);
                             // Give the actual actor its turn before requesting shutdown.
                             tokio::task::yield_now().await;
-                            let shutdown = application.request_shutdown();
+                            let shutdown = application.shutdown();
                             assert_eq!(shutdown, Ok(()));
                             request
                         },
@@ -82,7 +82,7 @@ mod order_book {
                 .base()
                 .orders;
             assert_eq!(orders, &BTreeMap::from([(request.order_id, request)]));
-            let (_, native, _, ()) = retirement.into_parts();
+            let (_, _root_report, native, _, ()) = retirement.into_parts();
             assert_application_stopped(native.expect("the original root joins"));
         }
 
@@ -142,7 +142,7 @@ mod http {
             let outcome = tokio_test(
                 Application::new(OrderBook::default().stop_on_shutdown()).run_with(
                     |application| async move {
-                        let stopped = application.request_shutdown();
+                        let stopped = application.shutdown();
                         assert_eq!(stopped, Ok(()));
                         let termination = application.termination().await;
                         assert_eq!(termination, Ok(Exit::Normal));
@@ -184,7 +184,7 @@ mod http {
                 .try_into_completed()
                 .unwrap_or_else(|_| panic!("HTTP rejection completes"));
             assert!(retirement.cleanup().is_ok());
-            let (_, native, _, ()) = retirement.into_parts();
+            let (_, _root_report, native, _, ()) = retirement.into_parts();
             assert_application_stopped(native.expect("the original root joins"));
         }
 
@@ -193,7 +193,7 @@ mod http {
             let rejected = tokio_test(
                 Application::new(OrderBook::default().stop_on_shutdown()).run_with(
                     |application| async move {
-                        let stopped = application.request_shutdown();
+                        let stopped = application.shutdown();
                         assert_eq!(stopped, Ok(()));
                         let termination = application.termination().await;
                         assert_eq!(termination, Ok(Exit::Normal));
@@ -222,7 +222,7 @@ mod http {
                 panic!("the caller's actual runtime is entered");
             })
             .into_parts();
-            let (rejected, native, notifications, ()) = rejected;
+            let (rejected, _root_report, native, notifications, ()) = rejected;
             let (original, cleanup) = rejected.try_into_completed().unwrap_or_else(|original| {
                 drop(original);
                 panic!("the completed rejection preserves independent actor cleanup");
@@ -298,6 +298,7 @@ mod http {
                     output: _,
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((_, ActorRetirement::ActorTaskFailed(_))),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -313,6 +314,7 @@ mod http {
                     output: Ok(()),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),

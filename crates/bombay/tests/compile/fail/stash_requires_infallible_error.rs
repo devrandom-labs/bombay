@@ -8,7 +8,13 @@ impl Documents {
 }
 
 fn main() {
-    let _ = bombay::actors::ActorExt::with_stash(Documents, |_, _| {
+    let refused = bombay::behavior::Recipient::<
+        bombay::behavior::MessageProtocol<
+            bombay::MailAddr,
+            bombay::behavior::User<bombay::MailAddr, Box<[u8]>>,
+        >,
+    >::global(bombay::MailAddr::APPLICATION_ROOT);
+    let _ = bombay::actors::ActorExt::with_stash(Documents, 2, refused, |_, _| {
         bombay::composition::StashRoute::Stash
     });
 }
