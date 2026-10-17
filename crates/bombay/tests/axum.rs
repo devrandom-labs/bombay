@@ -83,6 +83,7 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
             output: serving,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -153,6 +154,7 @@ fn bind_failure_does_not_activate_or_build_the_router() {
         WorkOutcome::StagingRejected {
             inputs: Ok((application, router, rejected, bind_error)),
         },
+        _root_report,
         Err(_),
         Err(_),
         (),
@@ -282,7 +284,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             let (WorkOutcome::Unstarted {
                 application: (application, router, returned_address),
                 work: (),
-            }, Err(_), Err(_), ()) = receiving.await.into_parts()
+            }, _root_report, Err(_), Err(_), ()) = receiving.await.into_parts()
             else {
                 panic!("unpolled HTTP execution must return all untouched cold inputs");
             };
@@ -294,7 +296,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                 .unwrap_or_else(|_| panic!("binding still uses the actual entered host")).into_parts();
             let (WorkOutcome::StagingRejected {
                 inputs: Ok((application, router, returned_address, bind_error)),
-            }, Err(_), Err(_), ()) = refused
+            }, _root_report, Err(_), Err(_), ()) = refused
             else {
                 panic!(
                     "the real occupied address refuses before actor staging or router invocation"
@@ -318,7 +320,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                     returned = &mut completion => {
                         let (WorkOutcome::StagingRejected {
                             inputs: Ok((returned_application, returned_router, retry_address, error)),
-                        }, Err(_), Err(_), ()) = returned.into_parts() else {
+                        }, _root_report, Err(_), Err(_), ()) = returned.into_parts() else {
                             panic!("an early HTTP result must retain the actual bind refusal and original inputs");
                         };
                         assert_eq!(error.kind(), io::ErrorKind::AddrInUse);
@@ -415,6 +417,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
             output: Ok(()),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -624,6 +627,7 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
             WorkOutcome::StagingRejected {
                 inputs: Err((root, spaces, router, failure, listener, scope)),
             },
+            _root_report,
             native,
             notifications,
             (),
@@ -649,7 +653,7 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
         assert_eq!(actor.base().entries.as_ptr(), entries_pointer);
         assert_eq!(actor.base().entries, [307, 311]);
         drop((blocked, id, children, cause));
-        let (outcome, native, notifications, ()) = scope
+        let (outcome, _root_report, native, notifications, ()) = scope
             .with_topology(root, spaces)
             .child(HttpWorkerRole::Declared, actor)
             .run_axum(requested_address, router)
@@ -773,6 +777,7 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
                 output: (retained_serve, supplied_retirement),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, root_retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -846,6 +851,7 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
             output: (serve, Ok(values)),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, root_retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

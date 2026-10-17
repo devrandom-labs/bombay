@@ -1936,7 +1936,7 @@ async fn run_counter_profile<R>(
                     | (CounterWorkCase::CounterAfterPublication, Some(Ok(())))
             ));
             let (
-                WorkOutcome::Interrupted { cleanup: Ok(()) },
+                WorkOutcome::Interrupted { cleanup: Ok(()) }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -1954,7 +1954,7 @@ async fn run_counter_profile<R>(
                     WorkOutcome::Completed {
                         cleanup: Ok(()),
                         output: (publication, permission),
-                    },
+                    }, _root_report,
                     Ok((origin, retirement)),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -2016,7 +2016,7 @@ async fn run_counter_profile<R>(
                     | (CounterWorkCase::RequesterAfterPublication, Some(Ok(())))
             ));
             let (
-                WorkOutcome::Interrupted { cleanup: Ok(()) },
+                WorkOutcome::Interrupted { cleanup: Ok(()) }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -2046,7 +2046,7 @@ async fn run_counter_profile<R>(
                 WorkOutcome::Completed {
                     cleanup: Ok(()),
                     output: counter_work_receipts,
-                },
+                }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -2089,7 +2089,7 @@ async fn run_counter_profile<R>(
         WorkOutcome::Completed {
             output: (publication, permission),
             cleanup: Ok(()),
-        },
+        }, _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -2131,7 +2131,7 @@ async fn run_counter_profile<R>(
             WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
-            },
+            }, _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -2985,7 +2985,7 @@ async fn run_protected_counter_profile<R>(
             counter_fault_pointer
         );
         let (
-            WorkOutcome::Interrupted { cleanup: Ok(()) },
+            WorkOutcome::Interrupted { cleanup: Ok(()) }, _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3001,7 +3001,7 @@ async fn run_protected_counter_profile<R>(
             WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
-            },
+            }, _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3045,7 +3045,7 @@ async fn run_protected_counter_profile<R>(
             .as_ref()
             .expect_err("original Counter Work panic");
         let (
-            WorkOutcome::Interrupted { cleanup: Ok(()) },
+            WorkOutcome::Interrupted { cleanup: Ok(()) }, _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3095,7 +3095,7 @@ async fn run_protected_counter_profile<R>(
             WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
-            },
+            }, _root_report,
             Ok((requester_origin, requester_retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3110,7 +3110,7 @@ async fn run_protected_counter_profile<R>(
             WorkOutcome::Completed {
                 output: (sibling_publication, sibling_permission),
                 cleanup: Ok(()),
-            },
+            }, _root_report,
             Ok((sibling_origin, sibling_retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3267,7 +3267,7 @@ async fn run_protected_counter_profile<R>(
         let (fault_pointer, pointers) =
             first_requester_original_pointers.expect("original pointers before publication");
         let (
-            outcome,
+            outcome, _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3347,7 +3347,7 @@ async fn run_protected_counter_profile<R>(
                 WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -3635,7 +3635,7 @@ async fn run_protected_counter_profile<R>(
             WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
-            },
+            }, _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3677,7 +3677,7 @@ async fn run_protected_counter_profile<R>(
                     WorkOutcome::Completed {
                         output: (publication, permission),
                         cleanup: Ok(()),
-                    },
+                    }, _root_report,
                     Ok((origin, retirement)),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -4350,7 +4350,7 @@ mod pending_verification {
                     WorkOutcome::Completed {
                         output: stopped,
                         cleanup: Ok(()),
-                    },
+                    }, _root_report,
                     Ok((origin, retirement)),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -4652,7 +4652,7 @@ mod full_retry {
                 WorkOutcome::Completed {
                     output: stopped,
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -5783,7 +5783,7 @@ mod allocation_profile {
                 WorkOutcome::Completed {
                     output: stopped,
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -6729,7 +6729,7 @@ mod proof_rotation {
                 WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -6994,7 +6994,7 @@ mod closed_counter {
                 WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, native_retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -7364,7 +7364,7 @@ mod stop_admission {
                 WorkOutcome::Completed {
                     output: (publication, continued),
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -7760,7 +7760,7 @@ mod stop_admission {
             WorkOutcome::Completed {
                 output: (publication, continued),
                 cleanup: Ok(()),
-            },
+            }, _root_report,
             Ok((origin, native)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -8215,7 +8215,7 @@ mod protected_application {
                     output:
                         (receipt, expired_receipt, stale, unavailable, authorization, outcomes, stopped),
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, native)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -8854,7 +8854,7 @@ mod protected_application {
                             stopped,
                         ),
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, native)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),

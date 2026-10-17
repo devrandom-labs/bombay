@@ -226,7 +226,7 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
         .enable_all()
         .build()
         .unwrap();
-    let (outcome, root, notifications, (family, ())) = host
+    let (outcome, _root_report, root, notifications, (family, ())) = host
         .block_on(application.run_with_entities(|application| async move {
             let trees = application.entities(TreesRole);
             let caller = application

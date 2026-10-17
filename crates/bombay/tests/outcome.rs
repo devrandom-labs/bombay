@@ -147,7 +147,7 @@ async fn completed_counter_inspects_work_retirement_and_notifications_without_po
             .retirement
             .is_ok()
     );
-    let (cleanup, native, notifications, ()) = retirement.into_parts();
+    let (cleanup, _root_report, native, notifications, ()) = retirement.into_parts();
     cleanup.expect("the original cleanup result remains available");
     let (_, native) = native.expect("the entire native result remains available");
     assert_eq!(
@@ -198,7 +198,7 @@ async fn rejected_work_selection_returns_the_whole_application_result() {
     assert!(notifications.termination.is_ok());
     assert!(notifications.retirement.is_ok());
     assert_eq!(Rc::strong_count(&original), 2);
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, _root_report, native, notifications, ()) = outcome.into_parts();
     let WorkOutcome::NotInvoked {
         work,
         startup_error: Some(_),
@@ -260,7 +260,7 @@ async fn cancelled_cold_execution_returns_all_originals_for_real_retry() {
     assert!(outcome.work_output().is_none());
     assert!(outcome.retirement().is_err());
     assert!(outcome.notifications().is_err());
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, _root_report, native, notifications, ()) = outcome.into_parts();
     let WorkOutcome::Unstarted { application, work } = work else {
         panic!("the cold phase owns the actual untouched declaration and callable");
     };
@@ -621,7 +621,7 @@ fn destroyed_host_keeps_ready_work_and_every_receiving_failure() {
     assert!(retirement.cleanup().is_err());
     assert!(retirement.retirement().is_err());
     assert!(retirement.notifications().is_err());
-    let (cleanup, native, notifications, ()) = retirement.into_parts();
+    let (cleanup, _root_report, native, notifications, ()) = retirement.into_parts();
     assert!(cleanup.is_err());
     assert!(native.is_err());
     assert!(notifications.is_err());
@@ -730,7 +730,8 @@ async fn same_protocol_families_select_both_real_positions_and_preserve_separate
         visits.shutdown(),
         bombay::entity::EntityShutdown::Settled { represented: 1, .. }
     ));
-    let (cleanup, native, notifications, (visits, (counters, ()))) = retirement.into_parts();
+    let (cleanup, _root_report, native, notifications, (visits, (counters, ()))) =
+        retirement.into_parts();
     cleanup.expect("the original cleanup result survives");
     let (_, native) = native.expect("the original native root survives");
     assert_eq!(native.completion(), Some(&Completion::Stopped));
@@ -826,7 +827,7 @@ async fn http_binding_refusal_returns_whole_inputs_for_real_retry_and_joined_ret
     assert!(outcome.retirement().is_err());
     assert!(outcome.notifications().is_err());
     assert_eq!(calls.get(), 0);
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, _root_report, native, notifications, ()) = outcome.into_parts();
     let WorkOutcome::StagingRejected {
         inputs: Ok((application, router, returned_address, error)),
     } = work

@@ -85,6 +85,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -101,6 +102,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -133,6 +135,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -149,6 +152,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -181,6 +185,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -197,6 +202,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -233,6 +239,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -249,6 +256,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -306,6 +314,7 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -450,6 +459,7 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -466,6 +476,7 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

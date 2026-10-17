@@ -368,6 +368,7 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
                 ),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

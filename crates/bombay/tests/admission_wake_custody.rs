@@ -170,6 +170,7 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
             output: (original_cause, acquired, root_address, source_address),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

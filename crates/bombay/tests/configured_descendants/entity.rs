@@ -327,7 +327,7 @@ async fn entity_hydration_keeps_configured_services_and_original_constructor_fai
         let command_pointer = command.as_ptr() as usize;
         let rejected = Box::<[u8]>::from([229, 233]);
         let rejected_pointer = rejected.as_ptr() as usize;
-        let (work, root, notifications, (family, ())) = application.run_with_entities(|application| async move {
+        let (work, _root_report, root, notifications, (family, ())) = application.run_with_entities(|application| async move {
             let ledgers = application.entities(LedgersRole);
             let caller = application.sender_to(ledgers.entity(1))
                 .unwrap_or_else(|_| panic!("the typed Entity recipient is established"));

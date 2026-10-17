@@ -59,6 +59,7 @@ fn receive_timeout_replays_deferred_work_and_preserves_retirement() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -111,6 +112,7 @@ fn shutdown_preserves_the_complete_processor_retirement() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

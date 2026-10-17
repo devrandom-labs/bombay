@@ -129,7 +129,7 @@ async fn actual_actor_bounds_both_sources_and_returns_every_original_payload() {
             messages: Vec::new(),
             timers: Vec::new(),
         };
-        let (work, native, notifications, ()) = Application::new(flood)
+        let (work, _root_report, native, notifications, ()) = Application::new(flood)
             .run_with(move |application| async move {
                 let sender = application.sender().expect("the actual root sender");
                 // These synchronous admissions cannot yield to the actor on this

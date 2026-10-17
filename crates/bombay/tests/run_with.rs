@@ -356,6 +356,7 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
             output: rejected,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -411,6 +412,7 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
             output,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -469,6 +471,7 @@ fn run_is_the_unit_boundary_specialization() {
                 startup_error: Some(_startup_error),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -505,6 +508,7 @@ fn run_is_the_unit_boundary_specialization() {
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -528,6 +532,7 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -593,6 +598,7 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -638,6 +644,7 @@ async fn continuing_report_cannot_select_the_later_stop_outcome() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -690,6 +697,7 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -745,6 +753,7 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -795,6 +804,7 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
             output: finalization,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -895,6 +905,7 @@ async fn outer_finalization_keeps_its_notice_through_inner_timer() {
             output: finalization,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -965,6 +976,7 @@ async fn inner_finalization_keeps_its_notice_through_outer_timer() {
             output: finalization,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1024,6 +1036,7 @@ async fn timer_expiry_stops_without_running_shutdown_finalization() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok(terminal),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1053,6 +1066,7 @@ async fn finalization_panic_keeps_its_payload_actor_and_independent_work_result(
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1133,6 +1147,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
             startup_error: Some(startup_error),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1203,6 +1218,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1291,6 +1307,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             output: ordinary,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1337,6 +1354,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             output: explicit,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1536,6 +1554,7 @@ fn public_run_blocking_returns_entered_host_inputs_and_retries_both_configuratio
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -1619,6 +1638,7 @@ fn public_run_blocking_recovers_real_build_error_in_limited_child() {
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),

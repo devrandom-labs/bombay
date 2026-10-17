@@ -858,7 +858,7 @@ async fn recipient(
                     target_refusals,
                 ),
             cleanup: Ok(()),
-        },
+        }, _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1230,7 +1230,7 @@ async fn caller(
                     refused_completions,
                 ),
             cleanup: Ok(()),
-        },
+        }, _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

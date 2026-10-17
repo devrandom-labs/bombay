@@ -49,6 +49,7 @@ mod documents {
                 output: termination,
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),

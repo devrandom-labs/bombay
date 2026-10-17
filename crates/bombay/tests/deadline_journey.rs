@@ -62,7 +62,7 @@ async fn deadline_and_inactivity_keep_their_order_original_actor_and_complete_re
         })
         .await
         .unwrap_or_else(|_| panic!("the real caller host interprets both timer requests"));
-    let (work, native, notifications, ()) = entered.into_parts();
+    let (work, _root_report, native, notifications, ()) = entered.into_parts();
     let (termination, cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("normal timer expiry retains the independent application work"));

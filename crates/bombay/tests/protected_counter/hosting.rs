@@ -185,7 +185,7 @@ fn same_address_foreign_child_keeps_its_owning_application() {
                 })
                 .unwrap_or_else(|_| panic!("actual Node A execution"));
             tokio::join!(execution_a, execution_b);
-            let (outcome_a, native_a, notifications_a, ()) = receiving_a.await.into_parts();
+            let (outcome_a, _root_report, native_a, notifications_a, ()) = receiving_a.await.into_parts();
             let WorkOutcome::Completed { output, cleanup } = outcome_a else {
                 panic!("actual A Work output");
             };
@@ -217,7 +217,7 @@ fn same_address_foreign_child_keeps_its_owning_application() {
             exports_a,
             values_a,
         ) = output_a;
-        let (outcome_b, native_b, notifications_b, ()) = received_b;
+        let (outcome_b, _root_report, native_b, notifications_b, ()) = received_b;
         let WorkOutcome::Completed {
             output,
             cleanup: cleanup_b,
@@ -539,7 +539,7 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
                 })
                 .unwrap_or_else(|_| panic!("actual Node A execution"));
             tokio::join!(execution_a, execution_b);
-            let (outcome_a, native_a, notifications_a, ()) = receiving_a.await.into_parts();
+            let (outcome_a, _root_report, native_a, notifications_a, ()) = receiving_a.await.into_parts();
             let WorkOutcome::Completed { output, cleanup } = outcome_a else {
                 panic!("actual A Work output");
             };
@@ -572,7 +572,7 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
             exports_a,
             values_a,
         ) = output_a;
-        let (outcome_b, native_b, notifications_b, ()) = received_b;
+        let (outcome_b, _root_report, native_b, notifications_b, ()) = received_b;
         let WorkOutcome::Completed {
             output,
             cleanup: cleanup_b,

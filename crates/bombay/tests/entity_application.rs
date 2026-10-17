@@ -396,81 +396,85 @@ fn application_runs_two_native_entity_families() {
         .enable_all()
         .build()
         .expect("the synchronous journey owns one enabled application host");
-    let (outcome, root_receiving, notification_receiving, shutdowns) = application_host
-        .block_on(
-            application.run_with_entities(move |application| async move {
-                let accounts = application.entities(AccountsRole);
-                let profiles = application.entities(ProfilesRole);
-                let first = accounts.entity(FIRST_ACCOUNT);
-                let second = accounts.entity(SECOND_ACCOUNT);
-                let profile = profiles.entity(9);
-                let root = application.root().established_recipient();
-                let caller = application
-                    .external::<Replies>()
-                    .expect("the application establishes one external actor");
+    let (outcome, _root_report, root_receiving, notification_receiving, shutdowns) =
+        application_host
+            .block_on(
+                application.run_with_entities(move |application| async move {
+                    let accounts = application.entities(AccountsRole);
+                    let profiles = application.entities(ProfilesRole);
+                    let first = accounts.entity(FIRST_ACCOUNT);
+                    let second = accounts.entity(SECOND_ACCOUNT);
+                    let profile = profiles.entity(9);
+                    let root = application.root().established_recipient();
+                    let caller = application
+                        .external::<Replies>()
+                        .expect("the application establishes one external actor");
 
-                let release_hydrations = async {
-                    while hydrations_started.load(Ordering::Acquire) < 1 {
-                        tokio::task::yield_now().await;
-                    }
-                    let first_peak = hydrations_started.load(Ordering::Acquire);
-                    assert_eq!(first_peak, 1);
-                    hydration_releases.add_permits(1);
-                    while hydrations_started.load(Ordering::Acquire) < 2 {
-                        tokio::task::yield_now().await;
-                    }
-                    hydration_releases.add_permits(1);
-                };
-                let (first_admission, second_admission, ()) = tokio::join!(
-                    caller.send(&first, 41),
-                    caller.send(&second, 43),
-                    release_hydrations,
-                );
-                require_admitted(first_admission, "first account");
-                require_admitted(second_admission, "second account");
-                let profile_admission = caller.send(&profile, 73).await;
-                require_admitted(profile_admission, "profile");
+                    let release_hydrations = async {
+                        while hydrations_started.load(Ordering::Acquire) < 1 {
+                            tokio::task::yield_now().await;
+                        }
+                        let first_peak = hydrations_started.load(Ordering::Acquire);
+                        assert_eq!(first_peak, 1);
+                        hydration_releases.add_permits(1);
+                        while hydrations_started.load(Ordering::Acquire) < 2 {
+                            tokio::task::yield_now().await;
+                        }
+                        hydration_releases.add_permits(1);
+                    };
+                    let (first_admission, second_admission, ()) = tokio::join!(
+                        caller.send(&first, 41),
+                        caller.send(&second, 43),
+                        release_hydrations,
+                    );
+                    require_admitted(first_admission, "first account");
+                    require_admitted(second_admission, "second account");
+                    let profile_admission = caller.send(&profile, 73).await;
+                    require_admitted(profile_admission, "profile");
 
-                let capacity_refusal = caller.send(&accounts.entity(CAPACITY_REFUSAL), 47).await;
-                assert_unavailable(capacity_refusal, 47);
-                let first_passivation = application.passivate_entity(AccountsRole, &FIRST_ACCOUNT);
-                assert_eq!(first_passivation, Passivation::Begun);
-                let second_passivation =
-                    application.passivate_entity(AccountsRole, &SECOND_ACCOUNT);
-                assert_eq!(second_passivation, Passivation::Begun);
-                Arc::clone(&retirements_completed)
-                    .acquire_many_owned(2)
-                    .await
-                    .expect("both passivated accounts retire")
-                    .forget();
-                let hydration_refusal = caller.send(&accounts.entity(HYDRATION_REFUSAL), 53).await;
-                assert_unavailable(hydration_refusal, 53);
-                let launch_refusal = caller.send(&accounts.entity(LAUNCH_REFUSAL), 59).await;
-                assert_unavailable(launch_refusal, 59);
-                let reactivation_admission = caller.send(&first, 61).await;
-                require_admitted(reactivation_admission, "reactivated account");
-                let forced = accounts.entity(FORCED_RETIREMENT);
-                let stop_admission = caller.send(&forced, STOP_ACCOUNT).await;
-                require_admitted(stop_admission, "stopping account");
-                let forced_passivation =
-                    application.passivate_entity(AccountsRole, &FORCED_RETIREMENT);
-                assert_eq!(forced_passivation, Passivation::Begun);
-                Arc::clone(&retirements_completed)
-                    .acquire_owned()
-                    .await
-                    .expect("the forced account retirement completes")
-                    .forget();
-                caller
-                    .send(&root, RootCommand::Admit(profile, 97))
-                    .await
-                    .expect("the actor-originated command enters the root mailbox");
-            }),
-        )
-        .unwrap_or_else(|(application, work, error)| {
-            drop((application, work));
-            panic!("the explicit application host must be entered: {error}");
-        })
-        .into_parts();
+                    let capacity_refusal =
+                        caller.send(&accounts.entity(CAPACITY_REFUSAL), 47).await;
+                    assert_unavailable(capacity_refusal, 47);
+                    let first_passivation =
+                        application.passivate_entity(AccountsRole, &FIRST_ACCOUNT);
+                    assert_eq!(first_passivation, Passivation::Begun);
+                    let second_passivation =
+                        application.passivate_entity(AccountsRole, &SECOND_ACCOUNT);
+                    assert_eq!(second_passivation, Passivation::Begun);
+                    Arc::clone(&retirements_completed)
+                        .acquire_many_owned(2)
+                        .await
+                        .expect("both passivated accounts retire")
+                        .forget();
+                    let hydration_refusal =
+                        caller.send(&accounts.entity(HYDRATION_REFUSAL), 53).await;
+                    assert_unavailable(hydration_refusal, 53);
+                    let launch_refusal = caller.send(&accounts.entity(LAUNCH_REFUSAL), 59).await;
+                    assert_unavailable(launch_refusal, 59);
+                    let reactivation_admission = caller.send(&first, 61).await;
+                    require_admitted(reactivation_admission, "reactivated account");
+                    let forced = accounts.entity(FORCED_RETIREMENT);
+                    let stop_admission = caller.send(&forced, STOP_ACCOUNT).await;
+                    require_admitted(stop_admission, "stopping account");
+                    let forced_passivation =
+                        application.passivate_entity(AccountsRole, &FORCED_RETIREMENT);
+                    assert_eq!(forced_passivation, Passivation::Begun);
+                    Arc::clone(&retirements_completed)
+                        .acquire_owned()
+                        .await
+                        .expect("the forced account retirement completes")
+                        .forget();
+                    caller
+                        .send(&root, RootCommand::Admit(profile, 97))
+                        .await
+                        .expect("the actor-originated command enters the root mailbox");
+                }),
+            )
+            .unwrap_or_else(|(application, work, error)| {
+                drop((application, work));
+                panic!("the explicit application host must be entered: {error}");
+            })
+            .into_parts();
     drop(application_host);
     let notifications = notification_receiving
         .expect("the existing cleanup owner transferred both original notifications");

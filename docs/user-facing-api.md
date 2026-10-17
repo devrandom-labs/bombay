@@ -88,6 +88,9 @@ let (termination, retirement) = outcome.try_into_completed()
         drop(original);
         panic!("the work must complete");
     });
+let report = retirement.root_report().expect("the joined root published its report");
+assert_eq!(report.retirement(), bombay::RetirementAssessment::Established);
+assert_eq!(report.failures(), bombay::ActorFailureAssessment::NoFailuresFound);
 retirement.cleanup().as_ref().expect("independent work cleanup");
 let (_origin, root) = retirement.retirement().as_ref().expect("actual joined native root");
 let notifications = retirement.notifications().as_ref().expect("actual notification transfer");
@@ -201,7 +204,13 @@ executes simultaneous hydration, refusals, reactivation and child retirement.
 Declaring a family class starts no task; `.entity_family(role, definition, directory, capacity)`
 supplies its real policy and owned definition.
 
-The successful outer result owns one `ApplicationOutcome`. Its `work()`,
+The successful outer result owns one `ApplicationOutcome`. Its `root_report()`
+returns the runtime-issued assessment of the root and its owned subtree. It
+remains available after Work finishes and after `try_into_completed()` transfers
+the business value. `None` means no report was published. Root retirement and
+failure evidence are separate; work, notifications and Entity families retain
+their independent results. Reading the report consumes no detailed custody.
+Its `work()`,
 `retirement()` and `notifications()` methods borrow the original independent
 results. An Entity application also selects a family with `family(role)`,
 without naming its product position. The borrowed `FamilyRetirement` exposes
@@ -228,7 +237,7 @@ phase and values:
 Use `work_output()` to borrow completed work and `cleanup()` to borrow the
 independent cleanup Result. `try_into_completed()` consumes a completed outcome
 into `(output, retirement)` even when cleanup failed. The named
-`ApplicationRetirement` retains cleanup, root retirement, notifications and
+`ApplicationRetirement` retains cleanup, root report, root retirement, notifications and
 families independently. Another phase returns the entire original report in
 `Err`, including every receiving result. These operations require no `Clone`, `Debug`
 or `Send` bound on caller values and do not classify actor success. The
@@ -262,9 +271,11 @@ native policies retain their original task context and failure causes.
 `ApplicationOutcome`, `ApplicationRetirement` and `WorkOutcome` are explicit
 `bombay` root imports, not prelude exports. Ordinary construction infers them.
 For owned inspection of every work phase, `into_parts()` peels the complete
-work/root/notification/family product; root-only applications own `()` for
+work/report/root/notification/family product; root-only applications own `()` for
 families. `WorkOutcome::try_into_completed()` then returns output and cleanup
 only, because the other results have already transferred to the caller.
+The additional report is the second part; existing four-part decompositions
+must include it when migrating. Ordinary inspection uses the named methods.
 
 Advanced custom hosting supplies `RootRegistration` for its physical root
 namespace and `ApplicationTopology` for complete custody. A custom accessor's

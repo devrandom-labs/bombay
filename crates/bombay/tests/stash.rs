@@ -105,7 +105,7 @@ async fn retirement_recovers_original_stashed_invoices_and_the_unread_mailbox_su
     assert!(admissions.iter().all(Result::is_ok));
     assert!(shutdown.is_ok());
     assert_ne!(origins[0], origins[1]);
-    let (cleanup, native, notifications, ()) = retirement.into_parts();
+    let (cleanup, _root_report, native, notifications, ()) = retirement.into_parts();
     assert!(cleanup.is_ok());
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),

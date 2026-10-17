@@ -318,7 +318,7 @@ async fn cancelled_ledger_read<Receipt>(
         })
         .unwrap_or_else(|_| panic!("actual local host"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let (output, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Work"));

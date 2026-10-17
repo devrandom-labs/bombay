@@ -148,7 +148,7 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
         })
         .unwrap_or_else(|_| panic!("the actual host is entered"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, _root_report, native, notifications, ()) = outcome.into_parts();
     let WorkOutcome::NotInvoked {
         work,
         startup_error,
@@ -223,14 +223,17 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
     let mut actor = custody.behavior.into_inner();
     actor.file = Some(request);
     actor.ready = ready_delivery.to;
-    let (work, native, notifications, ()) = Application::new(actor.stop_on_shutdown())
-        .with_interpreter(|| Services)
-        .run_with(work)
-        .await
-        .unwrap_or_else(|_| {
-            panic!("the original actor and callable recover under a fresh runtime configuration")
-        })
-        .into_parts();
+    let (work, _root_report, native, notifications, ()) =
+        Application::new(actor.stop_on_shutdown())
+            .with_interpreter(|| Services)
+            .run_with(work)
+            .await
+            .unwrap_or_else(|_| {
+                panic!(
+                    "the original actor and callable recover under a fresh runtime configuration"
+                )
+            })
+            .into_parts();
     let (work, cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the retained original callable runs during recovery"));
@@ -313,7 +316,7 @@ async fn pure_initialization_refusal_never_constructs_services_even_during_retir
     let expected_ready = replies.recipient();
     let attempts = Arc::new(AtomicUsize::new(0));
     let observed_attempts = Arc::clone(&attempts);
-    let (work, native, notifications, ()) = scope
+    let (work, _root_report, native, notifications, ()) = scope
         .with_root(
             Notice {
                 original,
@@ -404,7 +407,7 @@ async fn pure_initialization_panic_retains_the_original_actor_request_and_cause_
     let cause_pointer = ptr::from_ref(cause.as_ref()).cast::<()>();
     let attempts = Arc::new(AtomicUsize::new(0));
     let observed_attempts = Arc::clone(&attempts);
-    let (work, native, notifications, ()) = scope
+    let (work, _root_report, native, notifications, ()) = scope
         .with_root(
             Notice {
                 original,
@@ -536,7 +539,7 @@ fn missing_host_returns_the_original_application_constructor_and_work_for_retry(
         .enable_all()
         .build()
         .expect("enter the actual native host only after recovering the owned inputs");
-    let (work, native, notifications, ()) = host.block_on(async move {
+    let (work, _root_report, native, notifications, ()) = host.block_on(async move {
         application
             .run_with(work)
             .await

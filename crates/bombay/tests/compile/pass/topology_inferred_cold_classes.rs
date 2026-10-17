@@ -23,7 +23,7 @@ bombay::topology! {
 async fn main() {
     let original: Box<[u8]> = Box::from([7, 11]);
     let allocation = original.as_ptr();
-    let (outcome, native, notifications, ()) = bombay::Application::with_topology(Root.stop_on_shutdown(), application::Topology::new())
+    let (outcome, _root_report, native, notifications, ()) = bombay::Application::with_topology(Root.stop_on_shutdown(), application::Topology::new())
         .child(Background, Worker { original }.stop_on_shutdown())
         .run_with(|application| async move {
             application.shutdown().expect("shutdown admitted");

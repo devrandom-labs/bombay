@@ -104,7 +104,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         .enable_all()
         .build()
         .expect("caller host");
-    let (outcome, native, notifications, ()) = host
+    let (outcome, _root_report, native, notifications, ()) = host
         .block_on(
             scope
                 .with_topology(root, service_application::Topology::new())

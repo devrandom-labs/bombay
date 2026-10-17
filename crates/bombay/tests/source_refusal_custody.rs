@@ -226,6 +226,7 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
             output: (work, termination),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

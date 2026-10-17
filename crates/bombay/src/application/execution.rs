@@ -257,11 +257,12 @@ where
             ),
         );
         let receiving = async move {
-            let (work, root_retirement, termination_notification) = receiving.await;
+            let (work, root_report, root_retirement, termination_notification) = receiving.await;
             let work_outcome = work.into_supplied();
             let family_retirements = received_families.await;
             ApplicationOutcome::new(
                 work_outcome,
+                root_report,
                 root_retirement,
                 termination_notification,
                 family_retirements,
@@ -658,8 +659,14 @@ where
             ((), |_executor, (), ()| None),
         );
         let receiving = async move {
-            let (work, root, termination_notification) = receiving.await;
-            ApplicationOutcome::new(work.into_supplied(), root, termination_notification, ())
+            let (work, root_report, root, termination_notification) = receiving.await;
+            ApplicationOutcome::new(
+                work.into_supplied(),
+                root_report,
+                root,
+                termination_notification,
+                (),
+            )
         };
         Ok((execution, receiving))
     }
@@ -841,8 +848,14 @@ where
             ((), |_executor, (), ()| None),
         );
         let receiving = async move {
-            let (work, root, termination_notification) = receiving.await;
-            ApplicationOutcome::new(work.into_absent(), root, termination_notification, ())
+            let (work, root_report, root, termination_notification) = receiving.await;
+            ApplicationOutcome::new(
+                work.into_absent(),
+                root_report,
+                root,
+                termination_notification,
+                (),
+            )
         };
         Ok((execution, receiving))
     }
@@ -1351,6 +1364,7 @@ pub(in crate::application) fn execute_application_with<
                 (Actor, Spaces, ApplicationScope),
                 ColdWork,
             >,
+            Option<ActorRetirementReport>,
             Result<
                 (
                     RootOrigin<Owner>,
@@ -1508,7 +1522,7 @@ where
                     installed_families,
                     family_publications,
                 ) {
-                    match cleanup_publication.send(cleanup) {
+                    match cleanup_publication.send((cleanup, None)) {
                         Ok(()) => {}
                         Err(cleanup) => drop(cleanup),
                     }
@@ -1611,7 +1625,7 @@ where
                 Ok(()) | Err(()) => {}
             }
         });
-        match cleanup_publication.send(cleanup) {
+        match cleanup_publication.send((cleanup, Some(retirement_observation.clone()))) {
             Ok(()) => {}
             Err(cleanup) => drop(cleanup),
         }
@@ -1680,24 +1694,30 @@ where
     };
     let result = async move {
         let custody = work_result.await;
-        let outcome = match custody {
+        let (outcome, root_report) = match custody {
             Ok(ApplicationWorkCustody::Unstarted(application, work)) => {
-                WorkOutcome::Unstarted { application, work }
+                (WorkOutcome::Unstarted { application, work }, None)
             }
             Ok(ApplicationWorkCustody::StagingRejected(inputs)) => {
-                WorkOutcome::StagingRejected { inputs }
+                (WorkOutcome::StagingRejected { inputs }, None)
             }
             custody => {
                 // Publication failure does not classify actor or task existence.
                 // Retain its actual error alongside the acquired work custody.
-                let cleanup = match cleanup_result.await {
-                    Ok(cleanup) => match cleanup.await {
-                        Ok(cleanup) => Ok(cleanup),
-                        Err(error) => Err(ApplicationCleanupError::TaskFailed(error)),
-                    },
-                    Err(error) => Err(ApplicationCleanupError::PublicationClosed(error)),
+                let (cleanup, root_report) = match cleanup_result.await {
+                    Ok((cleanup, retirement)) => {
+                        let cleanup = match cleanup.await {
+                            Ok(cleanup) => Ok(cleanup),
+                            Err(error) => Err(ApplicationCleanupError::TaskFailed(error)),
+                        };
+                        // Read only after joining the existing producer. An absent
+                        // publication remains absent, including cleanup failure.
+                        let report = retirement.and_then(|retirement| retirement.try_get());
+                        (cleanup, report)
+                    }
+                    Err(error) => (Err(ApplicationCleanupError::PublicationClosed(error)), None),
                 };
-                match custody {
+                let outcome = match custody {
                     Ok(ApplicationWorkCustody::Prepared(inputs, work)) => WorkOutcome::Prepared {
                         inputs,
                         work,
@@ -1720,12 +1740,13 @@ where
                     Ok(ApplicationWorkCustody::Unstarted(_, _)) => {
                         unreachable!("the original untouched input branch already returned")
                     }
-                }
+                };
+                (outcome, root_report)
             }
         };
         let root = received_root.await;
         let termination_notification = received_notification.await;
-        (outcome, root, termination_notification)
+        (outcome, root_report, root, termination_notification)
     };
     (execution, result)
 }
@@ -1885,7 +1906,7 @@ mod startup {
                 })
                 .await;
                 drop(execution);
-                let (outcome, native, notifications) = receiving.await;
+                let (outcome, _root_report, native, notifications) = receiving.await;
                 let acquired = match observed.await {
                     Ok(mut receiver) => Ok(receiver.try_recv()),
                     Err(cause) => Err(cause),

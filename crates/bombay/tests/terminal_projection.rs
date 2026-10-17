@@ -107,6 +107,7 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
             startup_error: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -124,6 +125,7 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

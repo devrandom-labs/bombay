@@ -381,7 +381,7 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
                 }
                 .stop_on_shutdown(),
             );
-        let (work, native, notifications, ()) = application
+        let (work, _root_report, native, notifications, ()) = application
             .run_with(|application| async move {
                 let mut ready = BTreeMap::new();
                 for _ in 0..4 {

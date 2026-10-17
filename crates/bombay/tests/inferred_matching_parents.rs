@@ -59,8 +59,8 @@ async fn matching_incoming_births_preserve_declaration_order_independence() {
         drop(original);
         panic!("right declaration keeps its original application");
     });
-    let (left_outcome, left_native, left_notifications, ()) = left.into_parts();
-    let (right_outcome, right_native, right_notifications, ()) = right.into_parts();
+    let (left_outcome, _root_report, left_native, left_notifications, ()) = left.into_parts();
+    let (right_outcome, _root_report, right_native, right_notifications, ()) = right.into_parts();
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),

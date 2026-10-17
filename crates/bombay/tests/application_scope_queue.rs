@@ -197,7 +197,7 @@ fn work_queue_preserves_exact_dispatch_and_full_rejection_through_shutdown() {
     let Err((application, work, _missing_host)) = unstarted else {
         panic!("missing host returns the entire scope, root and uninvoked work");
     };
-    let (outcome, native, notifications, ()) = host
+    let (outcome, _root_report, native, notifications, ()) = host
         .block_on(application.run_with(work))
         .unwrap_or_else(|original| {
             drop(original);
@@ -250,7 +250,7 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
         .enable_all()
         .build()
         .expect("caller host");
-    let (outcome, native, notifications, ()) = host
+    let (outcome, _root_report, native, notifications, ()) = host
         .block_on(async {
             let (execution, receiver) = scope
                 .with_topology(root, spaces)
@@ -301,7 +301,7 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
             .await;
             drop(execution);
             assert!(failed_setup.is_err());
-            let (outcome, native, notifications, ()) = receiver.await.into_parts();
+            let (outcome, _root_report, native, notifications, ()) = receiver.await.into_parts();
             assert!(native.is_err());
             assert!(notifications.is_err());
             let WorkOutcome::Prepared {
@@ -368,7 +368,7 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
         WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => StashRoute::Deliver,
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = scope
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(root)
         .run_with(|application| async move {
             let caller = application.sender().expect("live root sender");
@@ -454,7 +454,7 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
                 }
             },
         );
-    let (outcome, native, notifications, ()) = scope
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(root)
         .run_with(|application| async move {
             let caller = application.sender().expect("live root sender");

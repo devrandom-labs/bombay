@@ -82,6 +82,7 @@ fn cache_preserves_an_exact_external_customer() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -182,6 +183,7 @@ fn barrier_releases_two_exact_external_participants() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -257,6 +259,7 @@ fn latch_releases_exact_external_participants() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

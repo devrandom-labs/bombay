@@ -230,7 +230,7 @@ async fn closed_payment_recipient_preserves_mapped_rejections_and_unread_invoice
     assert_eq!(admissions.len(), 3);
     assert!(admissions.iter().all(Result::is_ok));
     assert!(stopped.is_ok());
-    let (cleanup, native, notifications, ()) = retirement.into_parts();
+    let (cleanup, _root_report, native, notifications, ()) = retirement.into_parts();
     assert!(cleanup.is_ok());
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),

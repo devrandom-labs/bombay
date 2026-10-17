@@ -206,7 +206,7 @@ mod tests {
     )]
     fn correlated_increments_publish_after_the_actual_mutation() {
         let host = Builder::new_current_thread().enable_all().build().unwrap();
-        let (execution, (work, native, notifications, ())) = host.block_on(async {
+        let (execution, (work, _root_report, native, notifications, ())) = host.block_on(async {
             let prepared = Application::new(Counter::new().stop_on_shutdown()).execute_with(
                 |application| async move {
                     let lifecycle = application.lifecycle();
@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn overflowing_increment_keeps_the_original_error_without_processing_success() {
         let host = Builder::new_current_thread().enable_all().build().unwrap();
-        let (execution, (work, native, notifications, ())) = host.block_on(async {
+        let (execution, (work, _root_report, native, notifications, ())) = host.block_on(async {
             let prepared = Application::new(Counter::at_maximum().stop_on_shutdown()).execute_with(
                 |application| async move {
                     let lifecycle = application.lifecycle();
@@ -454,7 +454,7 @@ mod tests {
     )]
     fn separate_read_ports_preserve_cancelled_waits_and_refuse_late_replies() {
         let host = Builder::new_current_thread().enable_all().build().unwrap();
-        let (execution, (work, native, notifications, ())) = host.block_on(async {
+        let (execution, (work, _root_report, native, notifications, ())) = host.block_on(async {
             let prepared = Application::new(Counter::new().stop_on_shutdown()).execute_with(
                 |application| async move {
                     let lifecycle = application.lifecycle();

@@ -143,6 +143,7 @@ fn external_actor_sends_with_its_allocated_origin_and_receives_exact_reply() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -233,6 +234,7 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -433,6 +435,7 @@ fn external_actor_try_send_keeps_full_and_closed_originals_and_truthful_origin()
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -577,7 +580,7 @@ fn fixed_target_client_try_send_preserves_originals_and_origin() {
             ),
         )
         .unwrap_or_else(|_| panic!("the real Application starts"));
-    let (outcome, native, notifications, ()) = receipts.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = receipts.into_parts();
     let (output, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("Work retains each actual result"));

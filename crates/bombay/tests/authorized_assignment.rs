@@ -283,6 +283,7 @@ fn authorized_assignments_survive_application_replacement() {
                     output: observed,
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, terminal)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -376,6 +377,7 @@ fn authorized_assignments_survive_application_replacement() {
                     output: observed,
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, terminal)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -515,6 +517,7 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
             output: observed,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, terminal)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -618,6 +621,7 @@ async fn export_assignment(
             output: observed,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, terminal)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

@@ -186,6 +186,7 @@ fn fixed_supervisor_executes_activation_and_retires_its_proxy_tree() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

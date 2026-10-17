@@ -767,6 +767,7 @@ async fn run_counter(
             output: (address, verifier, processor, observed),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -916,6 +917,7 @@ async fn run_arithmetic(
             output: (address, verifier, processor, observed),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

@@ -268,6 +268,7 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
             output: (termination, failure),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -527,6 +528,7 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -766,6 +768,7 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

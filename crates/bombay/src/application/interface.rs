@@ -1084,7 +1084,7 @@ mod tests {
         );
         let original = Box::<[u64]>::from([79, 83]);
         let allocation = original.as_ptr();
-        let (outcome, root, notifications, families) = Application::new(
+        let (outcome, _root_report, root, notifications, families) = Application::new(
             ShutdownLedger {
                 entries: vec![73],
                 received: Vec::new(),
@@ -1210,7 +1210,7 @@ mod tests {
 
     #[tokio::test]
     async fn failed_root_client_allocation_preserves_live_application_authority() {
-        let (outcome, root, notifications, ()) = Application::new(
+        let (outcome, _root_report, root, notifications, ()) = Application::new(
             ShutdownLedger {
                 entries: vec![13, 17],
                 received: Vec::new(),
@@ -1272,7 +1272,7 @@ mod tests {
         let external = scope.external::<MessageProtocol<MailAddr, u64>>().unwrap();
         let external_recipient = external.recipient();
         let expected_external = external_recipient.clone();
-        let (outcome, native, notifications, ()) = scope
+        let (outcome, _root_report, native, notifications, ()) = scope
             .with_root(
                 ShutdownLedger {
                     entries: vec![13, 17],
@@ -1784,7 +1784,7 @@ mod installed_shutdown_contract {
             let released = release_work.send(());
             released.expect("the report did not finish or cancel application work");
             execution.await;
-            let (work, native, notifications, ()) = receiving.await.into_parts();
+            let (work, _root_report, native, notifications, ()) = receiving.await.into_parts();
             let WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
@@ -1924,11 +1924,12 @@ mod installed_shutdown_contract {
             report
         })
         .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
-        let ((), (work, native, notifications, ())) = timeout(Duration::from_secs(10), async {
-            tokio::join!(execution, async { receiving.await.into_parts() })
-        })
-        .await
-        .expect("a report observer panic cannot lose the actor result or stall cleanup");
+        let ((), (work, _root_report, native, notifications, ())) =
+            timeout(Duration::from_secs(10), async {
+                tokio::join!(execution, async { receiving.await.into_parts() })
+            })
+            .await
+            .expect("a report observer panic cannot lose the actor result or stall cleanup");
         let WorkOutcome::Completed {
             output: report,
             cleanup: Ok(()),

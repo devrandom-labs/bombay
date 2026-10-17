@@ -176,6 +176,7 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -304,6 +305,7 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -469,6 +471,7 @@ fn fifo_search_completes_and_drains_its_worker() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

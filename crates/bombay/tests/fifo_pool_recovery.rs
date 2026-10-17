@@ -279,6 +279,7 @@ fn fifo_pool_prepares_one_replacement_and_drains_both_workers() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -374,6 +375,7 @@ fn fifo_pool_retries_the_exact_assigned_job_after_worker_stop() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -502,6 +504,7 @@ fn fifo_pool_returns_the_assigned_payload_when_interruption_fails() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -619,6 +622,7 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -734,6 +738,7 @@ fn source_task_failure_terminates_the_active_pool() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1036,6 +1041,7 @@ fn fifo_factory_replaces_workers_and_drains_the_complete_graph() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

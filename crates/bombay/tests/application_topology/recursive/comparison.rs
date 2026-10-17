@@ -454,13 +454,13 @@ async fn generated_recursive_garden_matches_manual_native_custody() {
     )
     .run_with(|application| async move { application.termination().await })
     .await;
-    let (generated_work, generated_native, generated_notifications, ()) = generated
+    let (generated_work, _root_report, generated_native, generated_notifications, ()) = generated
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the existing generated garden starts");
         })
         .into_parts();
-    let (manual_work, manual_native, manual_notifications, ()) = manual
+    let (manual_work, _root_report, manual_native, manual_notifications, ()) = manual
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the handwritten public garden starts");
@@ -561,13 +561,13 @@ async fn generated_outer_timer_matches_manual_native_custody() {
     )
     .run_with(|application| async move { application.termination().await })
     .await;
-    let (generated_work, generated_native, generated_notifications, ()) = generated
+    let (generated_work, _root_report, generated_native, generated_notifications, ()) = generated
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the generated outer timer starts");
         })
         .into_parts();
-    let (manual_work, manual_native, manual_notifications, ()) = manual
+    let (manual_work, _root_report, manual_native, manual_notifications, ()) = manual
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the handwritten outer timer starts");
@@ -698,13 +698,13 @@ async fn generated_singleton_matches_manual_original_initialization_refusal() {
     )
     .run()
     .await;
-    let (generated_work, generated_native, generated_notifications, ()) = generated
+    let (generated_work, _root_report, generated_native, generated_notifications, ()) = generated
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the generated singleton owns startup refusal");
         })
         .into_parts();
-    let (manual_work, manual_native, manual_notifications, ()) = manual
+    let (manual_work, _root_report, manual_native, manual_notifications, ()) = manual
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the manual singleton owns startup refusal");

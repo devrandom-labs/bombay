@@ -210,7 +210,8 @@ fn accounts_passivate_reactivate_and_preserve_complete_retirement() {
     let ((), retirement) = outcome.try_into_completed().unwrap_or_else(|_| {
         panic!("the original application work completes beside its joined cleanup");
     });
-    let (cleanup, root_receiving, notification_receiving, shutdowns) = retirement.into_parts();
+    let (cleanup, _root_report, root_receiving, notification_receiving, shutdowns) =
+        retirement.into_parts();
     cleanup.expect("the original application cleanup succeeds");
     let notifications = notification_receiving
         .expect("the existing cleanup owner transferred both original notifications");

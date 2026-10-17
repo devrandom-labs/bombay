@@ -130,6 +130,7 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

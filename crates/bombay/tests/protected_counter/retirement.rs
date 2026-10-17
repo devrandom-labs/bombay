@@ -295,7 +295,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         WorkOutcome::Completed {
             output: observations,
             cleanup: Ok(()),
-        },
+        }, _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -319,7 +319,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         WorkOutcome::Completed {
             output: progress,
             cleanup: Ok(()),
-        },
+        }, _root_report,
         Ok((sibling_origin, sibling_native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

@@ -978,6 +978,7 @@ fn record_provider_consumer_uses_exclusive_admission() {
                 output: (observations, sender),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, terminal)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -1102,6 +1103,7 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
                 output: (observations, sender),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, terminal)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -2957,6 +2959,7 @@ mod replay {
                     output: (observations, target),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, terminal)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -3098,6 +3101,7 @@ mod replay {
                     output: (observations, target),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, terminal)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),

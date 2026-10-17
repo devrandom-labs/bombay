@@ -63,7 +63,7 @@ bombay::topology! {
 
 #[tokio::test(flavor = "current_thread")]
 async fn cold_recursive_creation_retains_every_original_descendant() {
-    let (outcome, native, notifications, ()) =
+    let (outcome, _root_report, native, notifications, ()) =
         Application::with_topology(Counter::new().stop_on_shutdown(), forest::Topology::new())
             .child(
                 Canopy,
@@ -171,7 +171,7 @@ async fn cold_initialization_refusal_returns_the_original_definition_and_indepen
     let allocation = payload.as_ptr();
     let work = Box::new(String::from("counter work survived"));
     let work_allocation = work.as_ptr();
-    let (outcome, native, notifications, ()) =
+    let (outcome, _root_report, native, notifications, ()) =
         Application::with_topology(Counter::new().stop_on_shutdown(), forest::Topology::new())
             .child(
                 Canopy,

@@ -71,7 +71,7 @@ async fn independent_timers_preserve_every_wrapper_notice_and_complete_retiremen
         ))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = scope
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(session)
         .run_with(|application| async move {
             tokio::time::timeout(Duration::from_secs(5), application.termination())
@@ -130,7 +130,7 @@ async fn equal_timer_ids_replace_the_inner_schedule_without_fabricating_its_noti
         recipient: observer.recipient(),
     }
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = scope
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(session)
         .run_with(|application| async move {
             tokio::time::timeout(Duration::from_secs(5), application.termination())
@@ -308,7 +308,7 @@ async fn rejected_owned_timer_preserves_prefix_suffix_original_state_and_retirem
     let entered = tokio::time::timeout(Duration::from_secs(5), scope.with_root(appointment).run())
         .await
         .expect("initial scheduling refusal has a finite complete retirement");
-    let (work, native, notifications, ()) = entered
+    let (work, _root_report, native, notifications, ()) = entered
         .unwrap_or_else(|_| panic!("the actual caller host is entered"))
         .into_parts();
     let WorkOutcome::NotInvoked {

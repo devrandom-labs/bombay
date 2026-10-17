@@ -119,7 +119,7 @@ async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
             panic!("live application host");
         })
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -161,7 +161,7 @@ async fn timer_outside_shutdown_infers_the_actual_lifecycle_lane() {
             panic!("live application host");
         })
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -209,7 +209,7 @@ async fn natural_completion_needs_no_unused_shutdown_capability() {
             panic!("live application host");
         })
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -277,7 +277,7 @@ async fn http_ends_with_the_domain_session_without_a_shutdown_lane() {
         .expect("original customer task returns")
         .await
         .expect("customer completes independently");
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),

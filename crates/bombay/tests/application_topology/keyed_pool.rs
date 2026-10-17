@@ -64,7 +64,7 @@ fn keyed_search_preserves_affinity_rejected_payload_and_joined_worker() {
         .enable_all()
         .build()
         .expect("the caller owns its current-thread host");
-    let (outcome, native, notifications, ()) = application_host
+    let (outcome, _root_report, native, notifications, ()) = application_host
         .block_on(
             Application::with_topology(pool, search_application::Topology::new()).run_with(
                 |application| async move {

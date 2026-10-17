@@ -1152,7 +1152,7 @@ async fn counter_native_applications<R>(
                 WorkOutcome::Completed {
                     output: (publication, permission),
                     cleanup: Ok(()),
-                },
+                }, _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -1313,7 +1313,7 @@ async fn counter_native_applications<R>(
                     WorkOutcome::Completed {
                         output: (publication, permission),
                         cleanup: Ok(()),
-                    },
+                    }, _root_report,
                     Ok((origin, retirement)),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -1385,7 +1385,7 @@ async fn counter_native_applications<R>(
             WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
-            },
+            }, _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -1656,7 +1656,7 @@ async fn counter_native_applications<R>(
             WorkOutcome::Completed {
                 output: (publication, permission),
                 cleanup: Ok(()),
-            },
+            }, _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -1989,7 +1989,7 @@ fn counter_child_stop<R>(
         WorkOutcome::Completed {
             output: (publication, continued),
             cleanup: Ok(()),
-        },
+        }, _root_report,
         Ok((origin, parent_terminal)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -2508,7 +2508,7 @@ fn counter_query_count<R>(
         WorkOutcome::Completed {
             output: (publication, continued),
             cleanup: Ok(()),
-        },
+        }, _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

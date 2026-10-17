@@ -59,7 +59,7 @@ fn run_search_pool() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
-    let (application_outcome, native, notifications, ()) = application_host
+    let (application_outcome, _root_report, native, notifications, ()) = application_host
         .block_on(
             Application::with_topology(pool, spaces).run_with(|application| async move {
                 let mut customer = application

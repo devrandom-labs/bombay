@@ -82,6 +82,38 @@ was already included in the authorized rename set.
 
 ## Verification and remaining work
 
+The user authorized184 cumulative source paths for DX04/24 report retention.
+`outcome.root_report()` and `retirement.root_report()` inspect the existing
+runtime-issued root/subtree report after Work returns its business value. The
+pre-edit real FIFO archive consumer denied both methods; its control passed.
+The complete product now retains work, optional report, native receiving,
+notifications and families independently; `into_parts` exposes all five axes,
+with the report second. Completed selection transfers all results; rejection
+returns the original outcome. Missing publication remains absent.
+
+Existing Observe/cleanup publication and joining own this transfer. Family-only
+cleanup has no root observation; cold work allocates none earlier. Production:
++101/-28, net+73 lines in three existing owners; public types added/removed0/0,
+two getters. Control sums,74 match arms, modules, effects and actor authority
+stay unchanged. The aggregate checkpoint passes without arrival history,
+semantic flags or structural caller syntax. All7,639 original assertion sites
+survive; six native regressions and two product laws add55. All other caller
+changes insert the report slot; three fixture hashes change, no expected
+diagnostic bytes. Two test reviews and an independent report-erasure inversion
+prove failure detection: five preservation regressions fail in each profile,
+while the cold/absent control passes.
+
+Actual owner debug/release each pass344 library plus19 outcome tests. Both
+wrapper orders, startup refusal, cancellation and real notification panic
+preserve the independent native custody. Isolated native1.96 debug/release and
+real pool/supervisor debug/release journeys pass. Workspace/Axum all-target
+checks, strict Clippy and both immutable compiler corpora pass (136 cases,
+32 suites,28 targets,633 unchanged source inputs). In the same-source FIFO
+measurement on both compilers, preservation adds8bytes peak heap, no allocations
+and no retained heap; System RSS remains noisy. These scoped results do not
+replace fresh full-gate/archive verification. No merging or publication is
+authorized for this batch.
+
 The owning PRD records exact commands, source identities, failures and limits.
 The initial actual-registry immutable128-case runs pass both compilers with all
 633 inputs conserved. The prepared136-case verifier passes both compilers with

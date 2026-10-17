@@ -164,7 +164,7 @@ async fn invoices(mode: Customer) {
     assert!(admissions.iter().all(Result::is_ok));
     assert!(shutdown.is_ok());
     assert_ne!(origins[0], origins[1]);
-    let (cleanup, native, notifications, ()) = retirement.into_parts();
+    let (cleanup, _root_report, native, notifications, ()) = retirement.into_parts();
     assert!(cleanup.is_ok());
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
@@ -415,7 +415,7 @@ async fn a_replay_selector_panic_preserves_every_previously_held_invoice() {
     assert!(admissions.iter().all(Result::is_ok));
     assert_ne!(origins[0], origins[1]);
     assert_eq!(termination, Err(Crash::Panicked));
-    let (cleanup, native, notifications, ()) = retirement.into_parts();
+    let (cleanup, _root_report, native, notifications, ()) = retirement.into_parts();
     assert!(cleanup.is_ok());
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),

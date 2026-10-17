@@ -325,6 +325,7 @@ fn coordinated_recovery_prepares_replacement_roles_in_declaration_order() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, joined)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -507,6 +508,7 @@ fn coordinated_recovery_rejects_the_second_role_after_preparing_the_first() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, joined)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -814,6 +816,7 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
             output: sibling_outcome,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((target_origin, target_native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -829,6 +832,7 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
             output: (target_report, sibling_report),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((sibling_origin, sibling_native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1281,6 +1285,7 @@ fn joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_
             output,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1474,7 +1479,7 @@ fn export_clients_preserve_root_sibling_nested_and_closed_actor_ownership() {
         established: Vec::new(),
     };
     let host = Builder::new_current_thread().enable_all().build().unwrap();
-    let (outcome, native, notifications, ()) = host
+    let (outcome, _root_report, native, notifications, ()) = host
         .block_on(
             Application::with_topology(
                 owner.stop_on_shutdown(),

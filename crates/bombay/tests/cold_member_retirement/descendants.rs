@@ -207,7 +207,7 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         TimedParent::new().stop_on_shutdown(),
         timed_application::Topology::new(),
     )

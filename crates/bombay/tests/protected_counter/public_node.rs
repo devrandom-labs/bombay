@@ -126,7 +126,7 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
                 }
                 (pending, observed_entry, released)
             };
-            let (outcome, native, notifications, ()) = receiving.await.into_parts();
+            let (outcome, _root_report, native, notifications, ()) = receiving.await.into_parts();
             let WorkOutcome::Completed { output, cleanup } = outcome else {
                 panic!("actual Work output");
             };
@@ -316,7 +316,7 @@ fn public_node_child_keeps_installed_target_and_complete_descendant_receipts() {
             })
             .unwrap_or_else(|_| panic!("existing child topology is issued"));
         execution.await;
-        let (outcome, native, notifications, ()) = receiving.await.into_parts();
+        let (outcome, _root_report, native, notifications, ()) = receiving.await.into_parts();
         let WorkOutcome::Completed { output, cleanup } = outcome else {
             panic!("child Work retained");
         };
@@ -531,7 +531,7 @@ fn public_node_native_open_refusal_preserves_usable_application_and_original_con
             })
             .unwrap_or_else(|_| panic!("original local declaration remains usable"));
         execution.await;
-        let (outcome, native, notifications, ()) = receiving.await.into_parts();
+        let (outcome, _root_report, native, notifications, ()) = receiving.await.into_parts();
         let WorkOutcome::Completed {
             output: (admitted, reply, address, stopped, client),
             cleanup,
@@ -677,7 +677,7 @@ fn public_node_missing_host_restores_the_declaration_for_original_work_retry() {
                 .execute_with(work)
                 .unwrap_or_else(|_| panic!("actual restored declaration retries once"));
             execution.await;
-            let (outcome, native, notifications, ()) = receiving.await.into_parts();
+            let (outcome, _root_report, native, notifications, ()) = receiving.await.into_parts();
             let WorkOutcome::Completed {
                 output: (permitted, stopped, original),
                 cleanup,
@@ -774,7 +774,7 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
         (Some(actual), Some(expected)) => ptr::eq(actual, expected),
         _ => false,
     };
-    let (outcome, native, notifications, ()) = host.block_on(async {
+    let (outcome, _root_report, native, notifications, ()) = host.block_on(async {
         let (execution, receiving) = application
             .execute_with(|application| async move {
                 let mut client = application.client::<CounterValue>().unwrap();

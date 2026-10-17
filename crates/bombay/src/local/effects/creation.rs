@@ -3247,7 +3247,7 @@ mod child_rejection_custody {
             )),
         }
         .stop_on_shutdown();
-        let (outcome, native, notifications, ()) =
+        let (outcome, _root_report, native, notifications, ()) =
             Application::with_topology(root, worker_application::Topology::new())
                 .run_with(move |application| async move {
                     application

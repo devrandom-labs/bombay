@@ -385,6 +385,7 @@ where
                 output: (actor_address, sender, allocation, initial, retried, verification, after),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((
                 origin,
                 ActorRetirement::Completed {

@@ -168,7 +168,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         TimedParent::new().stop_on_shutdown(),
         timed_application::Topology::new(),
     )

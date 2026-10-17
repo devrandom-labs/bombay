@@ -38,7 +38,7 @@ bombay::topology! {
 async fn main() {
     let entries: Box<[u8]> = Box::from([3, 7]);
     let allocation = entries.as_ptr();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Counter::new().stop_on_shutdown(),
         counter_application::Topology::new(),
     )
