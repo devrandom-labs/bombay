@@ -14,6 +14,12 @@ static denials fail as expected; exact restoration compiles. Independent outcome
 reviewdb15d5fc verifies all ten commands and618 frozen input versions. This selects
 no public API and executes no application.
 
+The finite native ingress comparison now passes all11 Network tests in debug
+and optimized builds, plus strict all-feature workspace lint and formatting.
+Its owning capacity bypass fails the intended typed refusal assertion in both
+profiles; production source is exactly restored. This proves the scoped count/
+inline-disposal path, not flood, stalled egress or full service acceptance.
+
 Next prove the ordinary Node-owned public consumer and its complete ownership,
 then implement the accepted integration. SDK privacy, full remote service,
 all full R01–R25/AUTH1/NET1 acceptance, distillation, CI and reviewed merges remain unfinished. The [latest family record](#original-nonempty-family-product-through-the-service-comparison)
@@ -34207,3 +34213,116 @@ one selected Cargo build, eight direct rustc runs and the excluded launcher127.
 Its working patch reconstructs at committed e340 through b748/f980 predecessors;
 no standalone recovery is claimed. Final retained scope remains two records,
 no root untracked files, production +0/-0/net0, tests +0/-0/net0, public +0/-0.
+
+
+### Native ingress discharge — first composition proof before public serving
+
+Fresh ingress-prerequisites575e401f rehashes the399-package lock,13 selected
+registry archives/VCS records,18 manifests/no overrides,44 owner inputs and10
+Entity/runtime/normative sources. Only the two committed0f74 records changed;
+software/versions/selected760-line Behavior instructions are unchanged. Fresh
+Network/Ingress tests and exact native Query/FINAL/matching APIs are inspected.
+Source304fc42d, eligibility789f9e9d and compositionf23101df independently accept
+this bounded comparison; no public integration or full acceptance is selected.
+
+Blocker: Payload-only count tests do not establish actual Query inline discharge
+and last-share native completion. Add four finite TLS traces (Peer and controlled
+native Router/RouterClient, retention2 or3 with queue1). Hold one actual accepted
+Query+permit outside, leave the second unread, await its actual Accepted callback
+observation, then submit the third. Observe Capacity versus QueueFull and exact
+charge ownership through Query disposal before permit release. Acquire third Get
+EOF beyond callback/last-share release before releasing the accepted originals.
+Acquire all native Get outputs/EOF, declaration withdrawal and both Session close
+results before independent oracles. No actor/provider work is performed here.
+
+Use explicit outbound Drop, ConsolidationNone and bounded nonwaiting callbacks.
+Retain actual constructor/reply/callback failures so timeout or lost error cannot
+look like clean FINAL; measure the EOF interval against the60-second native
+query timeout. The10-second watchdog cannot preempt synchronous SDK work and
+is not a latency proof. Matching is only a route setup fact. A native Router
+fixture changes the mapped server mode; this adds no public Router opener.
+Only one Queryable matches. A closed payload-free disposition explicitly
+discharges the unverified Query; Queue retains its permit until Query disposal.
+No extra refusal queue, worker, provider framework or observation owner follows.
+
+Pre-edit forecast: existing Network test parent, new owning ingress test and
+two records (four retained paths); at most400 new test lines, production net0,
+public types +0/-0, dependencies0. Temporarily invert only owning try_retain
+(fifth path, at most10 lines) to acquire a foreign permit after shared exhaustion;
+expect the post-cleanup native Capacity oracle to fail with QueueFull. Run healthy,
+inverted and exact-restored focused traces in debug and optimized builds; no
+setup/compiler/watchdog failure counts. Existing owners remain authoritative.
+
+Known1865/2500 retained production and12/18 public reservations carry. External
+authored forecast3700→4200 includes the report394 and previously charged426,
+all new verification/inverse epochs and all historical/rejected/unknown extents;
+125 paths/20000 verification remain cumulative, with no certified headroom or
+reset. This first control does not cover stalled native egress, flood, whole bytes,
+R14/R19/R25, public Node composition, complete privacy or any full remote row.
+
+First source074e/parentae985 passes source review7623d98e and recorded pinned
+format checking. The first healthy-debug command returns101/stable before any
+test: SessionInfo.locators is selectedSDK's unstable-gated getter. This is setup
+only, not an inverse or contract failure. Reuse the existing protocol fixture's
+reserved loopback address before open; change no features/public API/visibility.
+All later bind contention likewise remains setup failure. Preserve the actual
+failed source/receipt/log and review; corrected-source review precedes rerun.
+
+Corrected source8bb passes format checking and the actual focused TLS test in
+debug and optimized builds: one test/four cases per profile, zero failures,
+595 frozen inputs unchanged. Source reviewa8c0b79a binds the corrected setup.
+The planned finite owning capacity bypass is now temporary source only; source
+review precedes its two executions. No full row or public API credit follows.
+
+Inverse review41f90d82 seals the finite owning bypass. Both actual inverse
+runs return101/stable at the intended post-cleanup typed refusal assertion:
+QueueFull/Some(0) instead of Capacity(NoPermits)/None. They establish neither
+later unexecuted assertions nor broader pressure laws. Exact owning source05919f
+is restored byte for byte; restored Network tests and strict lint remain pending.
+
+Restored source8bb passes all11 Network tests per profile. Strict lint then
+returns101 only for similar matching-channel names and an unused expectation.
+Final source071 removes that unused attribute and renames only those bindings;
+independent amendment786c741c proves the executable operations unchanged. The
+prior inverse executions remain bound to8bb rather than relabeled as071 runs.
+Corrected strict workspace/all-feature/all-target lint passes on071. Retained
+production+0/-0/net0; tests+377/-1/net376; public API+0/-0 types, four paths.
+
+### Native ingress discharge — final source and verification
+
+Final test071a55e4 and parentae985 add four finite real TLS cases through the
+existing Network and try_retain owners. Both final Network commands pass11/0/0;
+strict workspace/all-feature/all-target lint and formatting pass. Fourteen actual
+command receipts retain610 distinct frozen input versions, each rehashed, with
+stable before/after maps. The getter compile failure and first lint failure stay
+separate from semantic evidence. The two actual owning inverse failures remain
+bound to8bb; independent source review786c741c proves only an unused attribute
+and channel names changed before the final071 positive controls.
+
+Both inverse failures reach the exact first Peer/retention2 typed refusal check
+after all four traces acquire their cleanup results. Later no-reply, elapsed,
+callback-error, disconnected and later-role close assertions are unexecuted in
+those failures; only the healthy runs establish them. Original owning source05919f
+is restored byte for byte. No retained production, dependency or public API change.
+
+Final verification uses the pinned shell:
+
+```text
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c cargo test --offline --locked -p bombay-rs --all-features --lib remote::network::tests:: -- --nocapture --test-threads=1
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c cargo test --offline --locked --release -p bombay-rs --all-features --lib remote::network::tests:: -- --nocapture --test-threads=1
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c cargo clippy --offline --locked --workspace --all-features --all-targets -- -D warnings
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c cargo fmt --all -- --check
+```
+
+Four retained paths, including the new test: production+0/-0/net0;
+tests+377/-1/net376; public API+0/-0 types. Conservatively charged child authorship
+is475/-101 with difflib line matching; Git measures474/-100 for the same374 retained
+lines. Preserve the higher carried charge. Parent3/-1 and temporary owning6/-1
+are additional; the temporary production change is removed.
+All earlier formatting/rejected/external/historical/unknown charges and approved
+2500/18/125/20000 ceilings carry. Known retained1865/public reservations12 remain;
+there is no allowance reset or certified headroom. Actual public Node ownership,
+SDK privacy, full R01–R25/AUTH1/NET1, distillation, CI and reviewed merges stay open.
+
+Independent two-pass outcomes review8e9b576f verifies all14 raw receipts/logs and
+610 frozen input versions, exact restoration and the reached-oracle limits above.

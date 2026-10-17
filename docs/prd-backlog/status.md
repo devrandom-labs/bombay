@@ -556,3 +556,14 @@ public privacy, distillation, CI and reviewed delivery remain open. Known retain
 production1865/public reservations12 carry all2500/18/125/20000 and historical,
 external, rejected and unknown costs. External authored forecast is3700, including
 394 new report-comparison Rust lines; no certified headroom or allowance reset.
+
+
+The scoped native TLS Query refusal/discharge proof now passes11 Network tests
+in debug and optimized builds, strict workspace/all-feature/all-target lint and
+formatting. The owning capacity bypass fails its intended typed oracle in both
+profiles, with exact restoration. Final source changes only test code; retained
+production0/tests+377/-1/public0. Four finite Peer/RouterClient traces do not close
+full R19: stalled egress/flood/bytes remain open. Next is the public Node ownership
+and SDK-private service contract. Forecast verification4200 and all prior report,
+copied/rejected/historical/unknown costs carry; retained production/public
+reservations stay1865/12, with no reset or certified headroom. All full rows stay open.

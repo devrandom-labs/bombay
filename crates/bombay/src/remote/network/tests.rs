@@ -1,4 +1,4 @@
-//! Pure native configuration mapping; no startup, handshake or service-lifetime proof.
+//! Configuration mapping and finite native ingress controls; no full service-lifetime proof.
 
 use super::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use crate::remote::startup::NodeStartupRefusal;
@@ -579,3 +579,5 @@ fn query_publication_overwrites_all_incoming_queries_without_other_filters() {
         assert_eq!(actual, expected);
     }
 }
+
+mod ingress;
