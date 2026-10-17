@@ -3,7 +3,7 @@
 use bombay::ApplicationScope;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{BehaviorBase, EstablishedRecipient, MessageProtocol, Never};
-use bombay::composition::StashRoute;
+use bombay::composition::{StashRoute, UnlimitedStash};
 use bombay::prelude::{Completion, Exit, MailAddr, StopOnShutdown};
 use bombay::routing::{WorkQueue, WorkQueueMessage, WorkQueueOutcome, WorkQueueRejection};
 use bombay::{
@@ -360,17 +360,14 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
     let mut admissions = scope.external::<Admissions>().expect("early admission");
     let value = Box::new(String::from("released work"));
     let pointer = ptr::from_ref(value.as_ref());
-    let root = WorkQueue::new(0)
-        .with_stash(|queue, message| match message {
-            WorkQueueMessage::Submit { .. } if queue.base().state().available().is_empty() => {
-                StashRoute::Stash
-            }
-            WorkQueueMessage::Available { .. } => StashRoute::Release,
-            WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => {
-                StashRoute::Deliver
-            }
-        })
-        .stop_on_shutdown();
+    let root = UnlimitedStash::new(WorkQueue::new(0), |queue, message| match message {
+        WorkQueueMessage::Submit { .. } if queue.base().state().available().is_empty() => {
+            StashRoute::Stash
+        }
+        WorkQueueMessage::Available { .. } => StashRoute::Release,
+        WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => StashRoute::Deliver,
+    })
+    .stop_on_shutdown();
     let (outcome, native, notifications, ()) = scope
         .with_root(root)
         .run_with(|application| async move {
@@ -444,17 +441,19 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
     let mut admissions = scope.external::<Admissions>().expect("early admission");
     let value = Box::new(String::from("released work"));
     let pointer = ptr::from_ref(value.as_ref());
-    let root = WorkQueue::new(0)
-        .stop_on_shutdown()
-        .with_stash(|queue, message| match message {
-            WorkQueueMessage::Submit { .. } if queue.base().state().available().is_empty() => {
-                StashRoute::Stash
-            }
-            WorkQueueMessage::Available { .. } => StashRoute::Release,
-            WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => {
-                StashRoute::Deliver
-            }
-        });
+    let root =
+        UnlimitedStash::new(
+            WorkQueue::new(0).stop_on_shutdown(),
+            |queue, message| match message {
+                WorkQueueMessage::Submit { .. } if queue.base().state().available().is_empty() => {
+                    StashRoute::Stash
+                }
+                WorkQueueMessage::Available { .. } => StashRoute::Release,
+                WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => {
+                    StashRoute::Deliver
+                }
+            },
+        );
     let (outcome, native, notifications, ()) = scope
         .with_root(root)
         .run_with(|application| async move {

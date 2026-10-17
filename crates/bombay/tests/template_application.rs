@@ -3,7 +3,8 @@ use core::time::Duration;
 use std::time::Instant;
 
 use behavior_actors::{
-    Activate, Machine, Move, OwnedTimerElapsed, Stash, StashRoute, StopOnShutdown, TimerGeneration,
+    Activate, Machine, Move, OwnedTimerElapsed, StashRoute, StopOnShutdown, TimerGeneration,
+    UnlimitedStash,
 };
 use bombay::actors::ActorExt;
 use bombay::behavior::{
@@ -375,10 +376,6 @@ fn every_fluent_method_returns_its_existing_owner_type() {
     let delay = Duration::from_millis(1);
 
     same_type(
-        &TimerRoot.with_stash(deliver_never),
-        &Stash::new(TimerRoot, deliver_never),
-    );
-    same_type(
         &TimerRoot.with_one_shot(delay, stop_after_timer),
         &OneShot::new(TimerRoot, delay, stop_after_timer),
     );
@@ -407,14 +404,13 @@ fn every_fluent_method_returns_its_existing_owner_type() {
 )]
 async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
     let delay = Duration::from_millis(1);
-    let fluent = TimerRoot
-        .with_stash(deliver_never)
-        .with_receive_timeout(delay, stop_wrapped::<Stash<TimerRoot>>)
+    let fluent = UnlimitedStash::new(TimerRoot, deliver_never)
+        .with_receive_timeout(delay, stop_wrapped::<UnlimitedStash<TimerRoot>>)
         .stop_on_shutdown();
     let direct = StopOnShutdown::new(ReceiveTimeout::new(
-        Stash::new(TimerRoot, deliver_never),
+        UnlimitedStash::new(TimerRoot, deliver_never),
         delay,
-        stop_wrapped::<Stash<TimerRoot>>,
+        stop_wrapped::<UnlimitedStash<TimerRoot>>,
     ));
 
     same_type(&fluent, &direct);
@@ -438,9 +434,8 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         .expect("the direct stack accepts its exact timer generation");
     assert!(fluent_elapsed == direct_elapsed);
 
-    let runtime = TimerRoot
-        .with_stash(deliver_never)
-        .with_receive_timeout(delay, stop_wrapped::<Stash<TimerRoot>>)
+    let runtime = UnlimitedStash::new(TimerRoot, deliver_never)
+        .with_receive_timeout(delay, stop_wrapped::<UnlimitedStash<TimerRoot>>)
         .stop_on_shutdown();
     let application_outcome = Application::new(runtime)
         .run()

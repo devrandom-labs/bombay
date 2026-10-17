@@ -184,6 +184,9 @@
     "tests/compile/fail/retirement_report_is_runtime_issued.rs",
     "tests/compile/fail/root_origin_cannot_be_child.rs",
     "tests/compile/fail/run_with_wrong_root_protocol.rs",
+    "tests/compile/fail/stash/address.rs",
+    "tests/compile/fail/stash/host.rs",
+    "tests/compile/fail/stash/message.rs",
     "tests/compile/fail/stash_requires_closed_phase.rs",
     "tests/compile/fail/stash_requires_infallible_error.rs",
     "tests/compile/fail/terminal_origin_cannot_change_role.rs",
@@ -241,6 +244,7 @@
     "tests/compile/pass/fluent_template_stack.rs",
     "tests/compile/pass/infallible_result_errors.rs",
     "tests/compile/pass/shutdown_authority.rs",
+    "tests/compile/pass/stash.rs",
     "tests/compile/pass/stash_machine.rs",
     "tests/compile/pass/terminal_inclusion_sources.rs",
     "tests/compile/pass/topology_inferred_cold_classes.rs"
@@ -274,7 +278,8 @@
     "run_with_protocol_is_compile_checked",
     "behavior_layer_authoring_contract",
     "projection_shape_is_compile_checked",
-    "worker_factory_rejects_invalid_capabilities"
+    "worker_factory_rejects_invalid_capabilities",
+    "finite_stashes_preserve_static_capabilities"
   ],
   "targets": {
     "activation_authoring": 2,
@@ -301,7 +306,8 @@
     "run_with": 22,
     "template_authoring": 1,
     "terminal_projection": 3,
-    "worker_factory": 4
+    "worker_factory": 4,
+    "stash_limits": 4
   },
   "ignored": {
     "run_with": {

@@ -4,7 +4,7 @@ use bombay::behavior::{
     Actions, Behavior, BehaviorActed, BehaviorBase, Delivery, EventLayer, InterpreterRequests,
     MessageProtocol, Never, NoBirths, Recipient, SendLayer, Step, User,
 };
-use bombay::composition::StashRoute;
+use bombay::composition::{StashRoute, UnlimitedStash};
 use bombay::prelude::{Activate as _, MailAddr};
 use core::time::Duration;
 
@@ -216,19 +216,14 @@ fn worker() -> Worker {
 }
 #[test]
 fn stash_before_reminder_preserves_original_invoices_and_one_reminder() {
-    journey(
-        worker()
-            .with_stash(route)
-            .with_one_shot(Duration::from_secs(3), reminder),
-    );
+    journey(UnlimitedStash::new(worker(), route).with_one_shot(Duration::from_secs(3), reminder));
 }
 #[test]
 fn reminder_before_stash_preserves_original_invoices_and_one_reminder() {
-    journey(
-        worker()
-            .with_one_shot(Duration::from_secs(3), reminder)
-            .with_stash(route),
-    );
+    journey(UnlimitedStash::new(
+        worker().with_one_shot(Duration::from_secs(3), reminder),
+        route,
+    ));
 }
 
 #[test]

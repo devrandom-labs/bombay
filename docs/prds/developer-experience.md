@@ -50,14 +50,18 @@ locks and remote records change no Rust source; older graph proofs do not
 certify this newer lock. The prepared caller patch still applies unchanged.
 It preserves255 original assertions and all compile denials; both compiler
 corpora pass128 cases and its private workspace passes791 tests/two controlled
-child skips. Actual migration remains pending the separate14→24 native-file
-budget approval. A refreshed private copy of native e69c6dc with owner aafd1e9
+child skips. The user authorizes both the14→24 native-file caller migration and
+merging/publishing Behavior PR113/114 after generated-release review. The exact
+11-path caller patch is applied; all changed bytes match the reviewed/current-
+graph tested copy, with no new production code, policy, bound or public type.
+Cargo and the separately scoped inventory bindings remain unchanged for now.
+A refreshed private copy of native e69c6dc with owner aafd1e9
 passes 791 default workspace tests on pinned 1.99 in 298.503s. The same two child
 skips are confirmed by the exact nextest listing; all 633 inputs in each native
 copy, 837 owner inputs and 396 current nonowner records remain exact. This newer-graph
 proof does not certify minimum, remote TLS runtime, protected nested, registry
 or authoritative native Nix gates. Its extra dependency/inventory bindings stay
-private and are outside the pending caller-only scope.
+private and are outside the authorized caller-only scope.
 Common owner PR113/809e7b3 also preserves caller generic/type
 names without reserving private macro spellings, adding public types or runtime
 storage. Its1,022 owner tests,11 Nix checks and real two-lane failure/retirement

@@ -8,7 +8,7 @@ use super::{
 };
 use bombay::actors::ActorExt;
 use bombay::behavior::BehaviorBase;
-use bombay::composition::{StashRoute, StashStatus};
+use bombay::composition::{StashRoute, StashStatus, UnlimitedStash};
 use bombay::prelude::Application;
 use bombay::remote::{ExportLimits, IngressError, verify};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
@@ -52,14 +52,16 @@ async fn cancelled_ledger_read<Receipt>(
     identity: fn(&Receipt) -> (&Binding, u64),
     same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
-    let root = MailLedger {
-        entries: Vec::new(),
-    }
-    .with_stash(|ledger, command| match command {
-        LedgerCommand::Read(_) if ledger.entries.is_empty() => StashRoute::Stash,
-        LedgerCommand::Append(_) => StashRoute::Release,
-        LedgerCommand::Read(_) => StashRoute::Deliver,
-    })
+    let root = UnlimitedStash::new(
+        MailLedger {
+            entries: Vec::new(),
+        },
+        |ledger, command| match command {
+            LedgerCommand::Read(_) if ledger.entries.is_empty() => StashRoute::Stash,
+            LedgerCommand::Append(_) => StashRoute::Release,
+            LedgerCommand::Read(_) => StashRoute::Deliver,
+        },
+    )
     .stop_on_shutdown();
     let address = reserved_address();
     let mut node = Application::new(root)

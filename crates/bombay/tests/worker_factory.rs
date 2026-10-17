@@ -9,7 +9,7 @@ use tokio::runtime::Builder;
 
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{Actions, BehaviorActed, BehaviorBase, MessageProtocol, Never};
-use bombay::composition::StashRoute;
+use bombay::composition::{StashRoute, UnlimitedStash};
 use bombay::diagnostic::DiagnosticDisposition;
 use bombay::lifecycle::ActorDrainPolicy;
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr, StopOnShutdown};
@@ -394,18 +394,20 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
         roster::new(
             move |role: &WorkerRole| {
                 WorkerSubmission::with_startup(
-                    Worker {
-                        release: StopRelease::AwaitingRelease,
-                    }
-                    .with_stash(|worker, message| match message {
-                        WorkerCommand::Stop
-                            if worker.base().release == StopRelease::AwaitingRelease =>
-                        {
-                            StashRoute::Stash
-                        }
-                        WorkerCommand::Stop => StashRoute::Deliver,
-                        WorkerCommand::Release => StashRoute::Release,
-                    })
+                    UnlimitedStash::new(
+                        Worker {
+                            release: StopRelease::AwaitingRelease,
+                        },
+                        |worker, message| match message {
+                            WorkerCommand::Stop
+                                if worker.base().release == StopRelease::AwaitingRelease =>
+                            {
+                                StashRoute::Stash
+                            }
+                            WorkerCommand::Stop => StashRoute::Deliver,
+                            WorkerCommand::Release => StashRoute::Release,
+                        },
+                    )
                     .stop_on_shutdown(),
                     ActivationNotice {
                         role: *role,
@@ -419,18 +421,21 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
                 recovery: Recovery::permanent(
                     WorkerFactory::new(move |role| {
                         WorkerSubmission::with_startup(
-                            Worker {
-                                release: StopRelease::AwaitingRelease,
-                            }
-                            .with_stash(|worker, message| match message {
-                                WorkerCommand::Stop
-                                    if worker.base().release == StopRelease::AwaitingRelease =>
-                                {
-                                    StashRoute::Stash
-                                }
-                                WorkerCommand::Stop => StashRoute::Deliver,
-                                WorkerCommand::Release => StashRoute::Release,
-                            })
+                            UnlimitedStash::new(
+                                Worker {
+                                    release: StopRelease::AwaitingRelease,
+                                },
+                                |worker, message| match message {
+                                    WorkerCommand::Stop
+                                        if worker.base().release
+                                            == StopRelease::AwaitingRelease =>
+                                    {
+                                        StashRoute::Stash
+                                    }
+                                    WorkerCommand::Stop => StashRoute::Deliver,
+                                    WorkerCommand::Release => StashRoute::Release,
+                                },
+                            )
                             .stop_on_shutdown(),
                             ActivationNotice {
                                 role: *role,
@@ -621,19 +626,19 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
 )]
 fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
     let (activated, mut activations) = mpsc::unbounded_channel();
-    let supervisor =
-        {
-            let roles = OrderedRoles::new(WorkerRole::Primary, [])
-                .expect("the one-role roster is distinct");
-            let initial_activated = activated.clone();
-            roster::new(
-                move |role: &WorkerRole| {
-                    WorkerSubmission::with_startup(
+    let supervisor = {
+        let roles =
+            OrderedRoles::new(WorkerRole::Primary, []).expect("the one-role roster is distinct");
+        let initial_activated = activated.clone();
+        roster::new(
+            move |role: &WorkerRole| {
+                WorkerSubmission::with_startup(
+                    UnlimitedStash::new(
                         Worker {
                             release: StopRelease::AwaitingRelease,
                         }
-                        .stop_on_shutdown()
-                        .with_stash(|worker, message| match message {
+                        .stop_on_shutdown(),
+                        |worker, message| match message {
                             WorkerCommand::Stop
                                 if worker.base().release == StopRelease::AwaitingRelease =>
                             {
@@ -641,24 +646,26 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
                             }
                             WorkerCommand::Stop => StashRoute::Deliver,
                             WorkerCommand::Release => StashRoute::Release,
-                        }),
-                        ActivationNotice {
-                            role: *role,
-                            activated: initial_activated.clone(),
                         },
-                    )
-                },
-                roles,
-                roster::Config {
-                    startup: StartupLimit::new(1).expect("one worker fits the activation policy"),
-                    recovery: Recovery::permanent(
-                        WorkerFactory::new(move |role| {
-                            WorkerSubmission::with_startup(
+                    ),
+                    ActivationNotice {
+                        role: *role,
+                        activated: initial_activated.clone(),
+                    },
+                )
+            },
+            roles,
+            roster::Config {
+                startup: StartupLimit::new(1).expect("one worker fits the activation policy"),
+                recovery: Recovery::permanent(
+                    WorkerFactory::new(move |role| {
+                        WorkerSubmission::with_startup(
+                            UnlimitedStash::new(
                                 Worker {
                                     release: StopRelease::AwaitingRelease,
                                 }
-                                .stop_on_shutdown()
-                                .with_stash(|worker, message| match message {
+                                .stop_on_shutdown(),
+                                |worker, message| match message {
                                     WorkerCommand::Stop
                                         if worker.base().release
                                             == StopRelease::AwaitingRelease =>
@@ -667,27 +674,28 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
                                     }
                                     WorkerCommand::Stop => StashRoute::Deliver,
                                     WorkerCommand::Release => StashRoute::Release,
-                                }),
-                                ActivationNotice {
-                                    role: *role,
-                                    activated: activated.clone(),
                                 },
-                            )
-                        }),
-                        RecoveryPolicy {
-                            strategy: Strategy::OneForOne,
-                            limit: RestartLimit::new(1, Duration::from_secs(30)),
-                            delay: RestartRelease::immediate(),
-                        },
-                    ),
-                    failure: FailureReaction::StopSupervisor,
-                    shutdown: ActorDrainPolicy::WaitForActorGraph,
-                    diagnostics: DiagnosticDisposition::terminate(),
-                },
-            )
-            .build()
-            .unwrap_or_else(|_| panic!("the declared worker is prepared"))
-        };
+                            ),
+                            ActivationNotice {
+                                role: *role,
+                                activated: activated.clone(),
+                            },
+                        )
+                    }),
+                    RecoveryPolicy {
+                        strategy: Strategy::OneForOne,
+                        limit: RestartLimit::new(1, Duration::from_secs(30)),
+                        delay: RestartRelease::immediate(),
+                    },
+                ),
+                failure: FailureReaction::StopSupervisor,
+                shutdown: ActorDrainPolicy::WaitForActorGraph,
+                diagnostics: DiagnosticDisposition::terminate(),
+            },
+        )
+        .build()
+        .unwrap_or_else(|_| panic!("the declared worker is prepared"))
+    };
     let spaces = supervisor_application::Topology::new();
     let application_host = Builder::new_current_thread()
         .enable_all()

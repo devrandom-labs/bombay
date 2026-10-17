@@ -1,6 +1,6 @@
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{BehaviorBase as _, MessageProtocol, NoSends, SendLayer, Step, Stopped};
-use bombay::composition::{MessageAdapter, StashRoute};
+use bombay::composition::{MessageAdapter, StashRoute, UnlimitedStash};
 use bombay::{
     ActorCustody, ActorNotificationReceipts, ActorRetirement, ApplicationScope, Completion,
     MailAddr, MailboxCapacity,
@@ -52,9 +52,10 @@ async fn retirement_recovers_original_stashed_invoices_and_the_unread_mailbox_su
     ];
     // Payments are paused when shutdown arrives. Their original invoices
     // belong to the retired stash or the unread mailbox, never to a new copy.
-    let root = MessageAdapter::new(destination, payment)
-        .with_stash(|_, _| StashRoute::Stash)
-        .stop_on_shutdown();
+    let root = UnlimitedStash::new(MessageAdapter::new(destination, payment), |_, _| {
+        StashRoute::Stash
+    })
+    .stop_on_shutdown();
     let outcome = tokio::time::timeout(
         Duration::from_secs(5),
         scope

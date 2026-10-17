@@ -13,6 +13,8 @@ struct Clock;
 #[bombay::actor(message = bombay::behavior::Never)]
 impl Clock {}
 
+fn same_actor<Actor>(_: &Actor, _: &Actor) {}
+
 fn main() {
     let scope = bombay::ApplicationScope::new();
     let refused = scope
@@ -27,6 +29,11 @@ fn main() {
         refused.recipient(),
         |_, _| bombay::composition::StashRoute::Stash,
     );
+    let direct =
+        bombay::composition::Stash::new(Documents(Vec::new()), 2, refused.recipient(), |_, _| {
+            bombay::composition::StashRoute::Stash
+        });
+    same_actor(&root, &direct);
     let root = bombay::actors::ActorExt::stop_on_shutdown(root);
     let _documents = scope.with_root(root).run();
 
