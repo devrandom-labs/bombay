@@ -149,7 +149,7 @@ async fn invoices(mode: Customer) {
                         received.push(delivery);
                     }
                 }
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (admissions, shutdown, origins, refused, received, payments)
             }),
     )

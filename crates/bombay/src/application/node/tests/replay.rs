@@ -675,7 +675,7 @@ async fn counter_case<Receipt>(
                 identity,
             )
             .await;
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (study, primed, stopped, report)
         })

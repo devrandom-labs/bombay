@@ -333,7 +333,7 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
                         .expect("the original installed A remains owned")
                         .request_shutdown(Ingress::<ShutdownRequested, Here>::new())
                 });
-                let stopped = application.lifecycle().request_shutdown();
+                let stopped = application.lifecycle().shutdown();
                 assert_eq!(stopped, Ok(()));
                 (
                     target_address,

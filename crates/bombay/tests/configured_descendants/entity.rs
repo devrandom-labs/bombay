@@ -352,7 +352,7 @@ async fn entity_hydration_keeps_configured_services_and_original_constructor_fai
             };
             assert_eq!(command.as_ptr() as usize, rejected_pointer);
             assert_eq!(&*command, &[229, 233]);
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));

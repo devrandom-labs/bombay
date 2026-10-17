@@ -304,7 +304,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
                         assert_eq!(key, service);
                         assert_eq!(cause, EntryRetirement::Stop);
                     }
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     assert_eq!(shutdown, Ok(()));
                     let termination = application.termination().await;
                     assert_eq!(termination, Ok(Exit::Normal));

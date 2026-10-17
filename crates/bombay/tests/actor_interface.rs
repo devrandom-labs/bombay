@@ -215,9 +215,9 @@ fn external_actor_close_drains_the_prefix_and_stale_exact_recipient_never_retarg
                         .expect_err("the stale exact endpoint is closed");
                     let rejected_message = rejected.into_message();
                     assert_eq!(rejected_message, 31);
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     assert_eq!(shutdown, Ok(()));
-                    let repeated = lifecycle.request_shutdown();
+                    let repeated = lifecycle.shutdown();
                     assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
                 },
             ),
@@ -417,7 +417,7 @@ fn external_actor_try_send_keeps_full_and_closed_originals_and_truthful_origin()
                         *borrowed.message += 1;
                     }
                     assert_eq!(borrowed_value, 42);
-                    let stopped = application.lifecycle().request_shutdown();
+                    let stopped = application.lifecycle().shutdown();
                     assert_eq!(stopped, Ok(()));
                 },
             ),
@@ -553,7 +553,7 @@ fn fixed_target_client_try_send_preserves_originals_and_origin() {
                     while let Some(message) = receiver.receive().await {
                         delivered.push(message);
                     }
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     (
                         client,
                         receiver,

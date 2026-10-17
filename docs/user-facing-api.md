@@ -57,7 +57,7 @@ Execution returns one report containing independent work, root retirement and
 notification results. Borrowing or selecting work keeps every other result.
 For a started application, Bombay awaits cleanup before returning this report; `cleanup()`
 borrows the recorded result. The application still chooses when its root should
-stop, through a domain command, a policy or `request_shutdown()`. Joining does
+stop, through a domain command, a policy or `shutdown()`. Joining does
 not itself request a stop, and dropping a future does not promise completed
 asynchronous cleanup.
 This executable fragment checks that complete handoff.
@@ -74,7 +74,7 @@ simple multi-node application surface remains pending.
 let service = bombay::actors::ActorExt::stop_on_shutdown(Service);
 let outcome = bombay::Application::new(service)
     .run_with(|application| async move {
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         application.termination().await
     })
@@ -126,7 +126,7 @@ let root = bombay::actors::ActorExt::stop_on_shutdown(Service {
 });
 let outcome = scope.with_root(root).run_with(|application| async move {
     let announcement = announcements.receive().await.expect("root ready");
-    let shutdown = application.request_shutdown();
+    let shutdown = application.shutdown();
     assert_eq!(shutdown, Ok(()));
     announcement.message
 }).await.unwrap_or_else(|original| {
@@ -376,7 +376,7 @@ Supplied Work receives the activated application's concrete handle:
 let outcome = Application::new(service.stop_on_shutdown())
     .run_with(|application| async move {
         let reply = boundary(application.root()).await;
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         (reply, shutdown)
     })
     .await;
@@ -391,7 +391,7 @@ mailbox. Its target keeps its own lifetime when the sender is dropped. For an
 exact local recipient, `sender.try_send(command)` attempts admission without a
 capacity wait and returns the complete command in `Full` or `Closed`. Stable
 Entity references use asynchronous `send`, which can resolve and hydrate them.
-`request_shutdown()` and `termination()` delegate to the existing lifecycle
+`shutdown()` and `termination()` delegate to the existing lifecycle
 owner. Request acknowledgement, observed termination and joined cleanup remain
 distinct. `lifecycle()` remains the explicit projection when another consumer
 needs only lifecycle authority. Clients and senders gain no such authority.
@@ -1038,7 +1038,7 @@ let application_receiving = application.run_with_entities(
         caller.send(AccountCommand::Deposit(amount)).await.expect("deposit admitted");
         let mode = application.retire_entity(AccountsRole, &account_id)
             .await.expect("the captured incarnation retired");
-        application.request_shutdown().expect("root shutdown admitted");
+        application.shutdown().expect("root shutdown admitted");
         mode
     },
 ).await;

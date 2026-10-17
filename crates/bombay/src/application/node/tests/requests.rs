@@ -301,7 +301,7 @@ async fn live_read<Receipt>(
                 acknowledged = service_requests.receive() => acknowledged,
                 reply = receiving_reply.recv() => { additional_reply = reply; None }
             }} else { None };
-            let stopped = caller.request_shutdown();
+            let stopped = caller.shutdown();
             let report = caller.lifecycle().retirement().await;
             (current, original, original_allocations, initial_records, protection_calls.into_inner(), begun, trigger, issued, query,
                 received_request, request_shape, request_declaration, request_verification, request_scope,
@@ -316,7 +316,7 @@ async fn live_read<Receipt>(
         let undeclared = queryable.undeclare().await;
         let mut remaining_queries = Vec::new();
         while let Ok(original) = queries.try_recv() { remaining_queries.push(original); }
-        let stopped = receiver.request_shutdown();
+        let stopped = receiver.shutdown();
         let report = receiver.lifecycle().retirement().await;
         (read, caller_native, caller_notifications, caller_cleanup, caller_closed, undeclared,
             remaining_queries, requests, legacy_values, publications, primed, stopped, report, target_address, scope, caller_connection)
@@ -912,7 +912,7 @@ async fn pending_protection<Receipt>(
                 )
             };
             drop(consumer);
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             ordinary.close_admission();
             let mut ordinary_tail = Vec::new();

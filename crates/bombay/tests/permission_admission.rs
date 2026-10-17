@@ -360,7 +360,7 @@ where
                             exhausted.is_none(),
                             "the complete processing reply trace has no duplicate"
                         );
-                        let stopped = application.lifecycle().request_shutdown();
+                        let stopped = application.lifecycle().shutdown();
                         assert_eq!(stopped, Ok(()));
                         (
                             actor_address,

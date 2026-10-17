@@ -106,7 +106,7 @@ async fn named_birth_delivers_both_reports_and_preserves_retirement() {
     .run_with(|application| async move {
         application
             .lifecycle()
-            .request_shutdown()
+            .shutdown()
             .expect("real shutdown operation");
     })
     .await;

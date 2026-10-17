@@ -143,7 +143,7 @@ fn counter_retries_only_its_original_full_request_with_current_permission() {
             processing.close_admission();
             let mut processing_tail = Vec::new();
             while let Some(original) = processing.receive().await { processing_tail.push(original); }
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (target_address, denied, allowed, denied_duplicate, allowed_duplicate,
                 denied_allocation, allowed_allocation, denied_recipient, allowed_recipient,

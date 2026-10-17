@@ -755,7 +755,7 @@ async fn run_counter(
                 complete_counter,
             )
             .await;
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             (address, verifier.address(), processor.address(), observed)
         })
@@ -904,7 +904,7 @@ async fn run_arithmetic(
                 complete_arithmetic,
             )
             .await;
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             (address, verifier.address(), processor.address(), observed)
         })

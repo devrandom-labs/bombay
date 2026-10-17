@@ -787,7 +787,7 @@ async fn recipient(
             Ok(())
         }
         .await;
-        let shutdown = application.lifecycle().request_shutdown();
+        let shutdown = application.lifecycle().shutdown();
         (
             work,
             shutdown,
@@ -1161,7 +1161,7 @@ async fn caller(
                 Ok(())
             }
             .await;
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             (
                 work,
                 shutdown,

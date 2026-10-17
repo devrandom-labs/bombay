@@ -67,7 +67,7 @@ fn main() {
         .child(AuditWorker, Worker { original: third }.stop_on_shutdown());
     let host = Builder::new_current_thread().enable_all().build().expect("caller-owned host");
     let outcome = host.block_on(application.run_with(|application| async move {
-        let shutdown = application.lifecycle().request_shutdown();
+        let shutdown = application.lifecycle().shutdown();
         assert_eq!(shutdown, Ok(()));
         let termination = application.lifecycle().termination().await;
         assert_eq!(termination, Ok(Exit::Normal));

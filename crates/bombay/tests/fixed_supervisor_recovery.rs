@@ -728,7 +728,7 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
                         .await
                         .expect("the real supervisor-owned task reached its held work");
                     let lifecycle = application.lifecycle();
-                    lifecycle.request_shutdown().unwrap();
+                    lifecycle.shutdown().unwrap();
                     let termination = lifecycle.termination().await;
                     assert_eq!(termination, Ok(Exit::Normal));
                     let mut initial_observer = Box::pin(lifecycle.retirement());
@@ -796,7 +796,7 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
                         );
                         let replayed = lifecycle.retirement().await;
                         assert_eq!(replayed, target_report);
-                        sibling.lifecycle().request_shutdown().unwrap();
+                        sibling.lifecycle().shutdown().unwrap();
                         let sibling_report = sibling.lifecycle().retirement().await;
                         (target_report, sibling_report)
                     })
@@ -1240,7 +1240,7 @@ fn joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_
                         .receive()
                         .await
                         .expect("the same sibling continues after A joins");
-                    let parent_shutdown = application.lifecycle().request_shutdown();
+                    let parent_shutdown = application.lifecycle().shutdown();
                     (
                         activations,
                         first_export,
@@ -1567,7 +1567,7 @@ fn export_clients_preserve_root_sibling_nested_and_closed_actor_ownership() {
                     Ok(client) => Some(client.send(FixedCommand::shutdown()).await),
                     Err(_) => None,
                 };
-                let parent_shutdown = application.request_shutdown();
+                let parent_shutdown = application.shutdown();
                 (
                     activations,
                     parent_address,

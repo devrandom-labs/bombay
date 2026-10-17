@@ -257,11 +257,11 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     ///
     /// # Errors
     /// Returns the exact already-stopping or already-stopped rejection.
-    pub fn request_shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
+    pub fn shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
     where
         Event: InjectEvent<ShutdownRequested, ShutdownPath>,
     {
-        self.lifecycle().request_shutdown()
+        self.lifecycle().shutdown()
     }
 
     /// Observe termination of the exact root through its lifecycle owner.
@@ -564,7 +564,7 @@ impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
     ///
     /// Returns the exact rejection when the root is already stopping or has
     /// already stopped.
-    pub fn request_shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
+    pub fn shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
     where
         Event: InjectEvent<ShutdownRequested, ShutdownPath>,
     {
@@ -1128,7 +1128,7 @@ mod tests {
                 .send(vec![89, 97])
                 .await
                 .expect("native Entity admission activates the original logical identity");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             sender.address()
         })
@@ -1235,7 +1235,7 @@ mod tests {
                 ))
             ));
             assert_eq!(application.root().address(), root);
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         })
         .await
@@ -1289,7 +1289,7 @@ mod tests {
                     application.export_client::<_, MessageProtocol<MailAddr, u64>>(root.clone());
                 let construction =
                     application.export_client::<_, MessageProtocol<MailAddr, u64>>(root);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 let report = application.lifecycle().retirement().await;
                 (
                     unowned,
@@ -1453,8 +1453,8 @@ mod installed_shutdown_contract {
             retirement: old_retirement,
         };
         let repeated_lifecycle = lifecycle.clone();
-        let accepted = lifecycle.request_shutdown();
-        let repeated = repeated_lifecycle.request_shutdown();
+        let accepted = lifecycle.shutdown();
+        let repeated = repeated_lifecycle.shutdown();
         assert_eq!(accepted, Ok(()));
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let old_termination = lifecycle.termination().await;
@@ -1554,8 +1554,8 @@ mod installed_shutdown_contract {
             control: fresh.shutdown_control.clone(),
             retirement: fresh_retirement,
         };
-        let old_request = lifecycle.request_shutdown();
-        let replay = repeated_lifecycle.request_shutdown();
+        let old_request = lifecycle.shutdown();
+        let replay = repeated_lifecycle.shutdown();
         assert_eq!(old_request, Err(ShutdownRejection::AlreadyStopped));
         assert_eq!(replay, Err(ShutdownRejection::AlreadyStopped));
         let mut fresh_termination = pin!(fresh_lifecycle.termination());
@@ -1566,7 +1566,7 @@ mod installed_shutdown_contract {
         let allocation = values.as_ptr();
         let delivered = fresh.actor.send_from(MailAddr(61), values).await;
         assert!(delivered.is_ok());
-        let new_request = fresh_lifecycle.request_shutdown();
+        let new_request = fresh_lifecycle.shutdown();
         assert_eq!(new_request, Ok(()));
         let stopped = fresh_termination.await;
         assert_eq!(stopped, Ok(Exit::Normal));
@@ -1649,9 +1649,9 @@ mod installed_shutdown_contract {
         }
         let absent = actors.resolve(&address);
         assert!(absent.is_none());
-        let fresh_replay = fresh_lifecycle.request_shutdown();
+        let fresh_replay = fresh_lifecycle.shutdown();
         assert_eq!(fresh_replay, Err(ShutdownRejection::AlreadyStopped));
-        let old_replay = lifecycle.request_shutdown();
+        let old_replay = lifecycle.shutdown();
         assert_eq!(old_replay, Err(ShutdownRejection::AlreadyStopped));
     }
     enum LedgerSpaceDisposal {
@@ -1750,7 +1750,7 @@ mod installed_shutdown_contract {
                     assert!(matches!(pending, Poll::Pending));
                 }
                 let independent = lifecycle.clone();
-                let requested = lifecycle.request_shutdown();
+                let requested = lifecycle.shutdown();
                 requested.expect("the exact root accepts its first stop request");
                 let report = application.retirement().await;
                 let independently_observed = independent.retirement().await;
@@ -1916,7 +1916,7 @@ mod installed_shutdown_contract {
             })
             .await;
             drop(failure);
-            let stopped = lifecycle.request_shutdown();
+            let stopped = lifecycle.shutdown();
             stopped.expect("the actual root accepts shutdown");
             let report = application.retirement().await;
             let independently_observed = observer.await;

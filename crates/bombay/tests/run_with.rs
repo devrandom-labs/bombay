@@ -554,12 +554,12 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
                 assert!(matches!(pending, Poll::Pending));
             }
 
-            let accepted = lifecycle.request_shutdown();
+            let accepted = lifecycle.shutdown();
             assert_eq!(accepted, Ok(()));
-            let repeated = lifecycle.request_shutdown();
+            let repeated = lifecycle.shutdown();
             assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
             let result = termination.await;
-            let stopped = lifecycle.request_shutdown();
+            let stopped = lifecycle.shutdown();
             (result, stopped)
         })
         .await
@@ -759,9 +759,9 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
     )
     .run_with(|application| async move {
         let lifecycle = application.lifecycle();
-        let shutdown = lifecycle.request_shutdown();
+        let shutdown = lifecycle.shutdown();
         assert_eq!(shutdown, Ok(()));
-        let repeated = lifecycle.request_shutdown();
+        let repeated = lifecycle.shutdown();
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         lifecycle.termination().await
     })
@@ -819,9 +819,9 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
             .expect("the root accepts its finalization observer");
         let ready = observer.receive().await.map(|event| event.message);
         assert!(matches!(ready, Some(FinalizationEvent::Ready)));
-        let shutdown = lifecycle.request_shutdown();
+        let shutdown = lifecycle.shutdown();
         assert_eq!(shutdown, Ok(()));
-        let repeated = lifecycle.request_shutdown();
+        let repeated = lifecycle.shutdown();
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let finalization = observer.receive().await.map(|event| event.message);
         let termination = lifecycle.termination().await;
@@ -927,9 +927,9 @@ async fn outer_finalization_keeps_its_notice_through_inner_timer() {
             .expect("the root accepts its finalization observer");
         let ready = observer.receive().await.map(|event| event.message);
         assert!(matches!(ready, Some(FinalizationEvent::Ready)));
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
-        let repeated = application.request_shutdown();
+        let repeated = application.shutdown();
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let finalization = observer.receive().await.map(|event| event.message);
         let termination = application.termination().await;
@@ -986,9 +986,9 @@ async fn inner_finalization_keeps_its_notice_through_outer_timer() {
             .expect("the root accepts its finalization observer");
         let ready = observer.receive().await.map(|event| event.message);
         assert!(matches!(ready, Some(FinalizationEvent::Ready)));
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
-        let repeated = application.request_shutdown();
+        let repeated = application.shutdown();
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let finalization = observer.receive().await.map(|event| event.message);
         let termination = application.termination().await;
@@ -1065,7 +1065,7 @@ async fn finalization_panic_keeps_its_payload_actor_and_independent_work_result(
         }),
     )
     .run_with(|application| async move {
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         application.lifecycle().termination().await
     })

@@ -249,7 +249,7 @@ mod tests {
                     };
                     let first_processing = first.receive().now_or_never();
                     let second_processing = second.receive().now_or_never();
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     let termination = match observed_termination {
                         Some(termination) => termination,
                         None => lifecycle.termination().await,
@@ -379,7 +379,7 @@ mod tests {
                     };
                     let processing = increments.receive().now_or_never();
                     // A successful-overflow inversion must still retire its surviving root.
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     let termination = match observed_termination {
                         Some(termination) => termination,
                         None => lifecycle.termination().await,
@@ -503,7 +503,7 @@ mod tests {
                         Ok(()) | Err(_) => (None, None),
                     };
                     let extra_reply = continuation.receive().now_or_never();
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     let termination = match early_termination.or(later_termination) {
                         Some(termination) => termination,
                         None => lifecycle.termination().await,

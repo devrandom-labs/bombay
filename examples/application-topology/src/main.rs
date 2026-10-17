@@ -14,9 +14,7 @@ async fn main() {
         .finish();
     let outcome = Application::with_topology(root, document_application::Topology::new())
         .run_with(|application| async move {
-            application
-                .request_shutdown()
-                .expect("phased shutdown admitted");
+            application.shutdown().expect("phased shutdown admitted");
             application.retirement().await
         })
         .await

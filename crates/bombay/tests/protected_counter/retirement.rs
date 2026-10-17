@@ -213,7 +213,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                     let target_address = target.root().address();
                     let reached_result = reached_receiver.await;
                     let lifecycle = target.lifecycle();
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     let termination_before = lifecycle.termination().now_or_never();
                     let report_before = lifecycle.retirement().now_or_never();
                     let retirement = lifecycle.retirement();
@@ -252,7 +252,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                             let target_termination = lifecycle.termination().await;
                             let replayed_report = lifecycle.retirement().await;
                             let permits_settled = resource.available_permits();
-                            let sibling_shutdown = sibling.lifecycle().request_shutdown();
+                            let sibling_shutdown = sibling.lifecycle().shutdown();
                             let sibling_termination = sibling.lifecycle().termination().await;
                             let sibling_report = sibling.lifecycle().retirement().await;
                             (

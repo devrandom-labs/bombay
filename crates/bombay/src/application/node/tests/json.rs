@@ -210,7 +210,7 @@ fn node_counter_checks_original_json_before_its_exact_root_effect() {
                         None
                     };
                     let root = application.root().address();
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     let report = application.lifecycle().retirement().await;
                     let undeclared = queryable.undeclare().await;
                     (

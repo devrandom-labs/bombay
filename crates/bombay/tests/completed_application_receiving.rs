@@ -245,7 +245,7 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
     );
     let outcome = application
         .run_with(move |application| async move {
-            let requested = application.request_shutdown();
+            let requested = application.shutdown();
             requested.expect("the actual live root accepts shutdown");
             output
         })
@@ -800,7 +800,7 @@ fn borrowed_local_work_returns_non_send_output_after_root_join() {
         let borrowed = &borrowed;
         let application = paired_account(Arc::new(vec![31, 37]));
         let pair = application.execute_with(move |application| async move {
-            let requested = application.request_shutdown();
+            let requested = application.shutdown();
             requested.expect("the live root accepts shutdown");
             (output, borrowed)
         });
@@ -853,7 +853,7 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
         let application = paired_account(state);
         let (execution, result) = application
             .execute_with(move |application| async move {
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 requested.expect("the retried live root accepts shutdown");
                 original
             })
@@ -926,7 +926,7 @@ fn startup_pending_drop_preserves_uninvoked_callable_and_exact_old_root() {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, result) = application
             .execute_with(move |application| async move {
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 requested.expect("the new live root accepts shutdown");
                 callable
             })
@@ -1069,7 +1069,7 @@ fn result_surrender_releases_completed_output_without_cancelling_live_execution(
         };
         drop(result);
         let released_at_surrender = retained.strong_count();
-        let requested = lifecycle.request_shutdown();
+        let requested = lifecycle.shutdown();
         execution.await;
         requested.expect("the surviving execution keeps the root live until this explicit request");
         assert!(before_surrender.is_pending());
@@ -1092,7 +1092,7 @@ fn completed_root_does_not_surrender_pending_application_work() {
         let (execution, result) = paired_account(Arc::new(vec![31, 37]))
             .execute_with(move |application| async move {
                 let lifecycle = application.lifecycle();
-                let requested = lifecycle.request_shutdown();
+                let requested = lifecycle.shutdown();
                 ready
                     .send((lifecycle, requested))
                     .expect("the caller owns the real shutdown request observation");
@@ -1150,7 +1150,7 @@ fn missing_executor_returns_original_application_and_callable() {
     let state_retained = Arc::downgrade(&original_state);
     let application = paired_account(original_state);
     let attempted = application.execute_with(move |application| async move {
-        let requested = application.request_shutdown();
+        let requested = application.shutdown();
         requested.expect("the actual retried root accepts shutdown");
         output
     });
@@ -1230,7 +1230,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
         );
         let (execution, result) = application
             .execute_with(move |application| async move {
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 requested.expect("the real retry root accepts shutdown");
                 callable
             })
@@ -1373,7 +1373,7 @@ fn cancelled_borrowed_result_wait_preserves_same_receiver_and_completed_output()
             poll_fn(|context| Poll::Ready(borrowed_wait.as_mut().poll(context))).await
         };
         let output_owned = retained.strong_count();
-        let requested = lifecycle.request_shutdown();
+        let requested = lifecycle.shutdown();
         let ((), outcome) = tokio::join!(&mut execution, result.as_mut());
         let (
             WorkOutcome::Completed {
@@ -1628,7 +1628,7 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
         let products = application_host
             .block_on(
                 application.run_with_entities(move |application| async move {
-                    let requested = application.request_shutdown();
+                    let requested = application.shutdown();
                     requested.expect("the actual live root accepts shutdown");
                     output
                 }),
@@ -2787,7 +2787,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                         Ok(()) => observer.receive().await,
                         Err(_) => None,
                     };
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     let termination = application.lifecycle().termination().await;
                     let retirements_before_work_completion = work_retirements
                         .lock()
@@ -3333,7 +3333,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
     .execute_with(move |application| {
         let work_id = Handle::current().id();
         async move {
-            let requested = application.request_shutdown();
+            let requested = application.shutdown();
             requested.expect("the genuine live root receives its explicit shutdown request");
             (output, borrowed_input, work_id)
         }
@@ -3601,7 +3601,7 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         observed_invocations.set(observed_invocations.get() + 1);
         let work_id = Handle::current().id();
         async move {
-            let requested = application.request_shutdown();
+            let requested = application.shutdown();
             requested.expect("the retried original callable requests actual new-root shutdown");
             (work, borrowed_input, work_id)
         }
@@ -3623,7 +3623,7 @@ fn destroyed_selected_host_preserves_uninvoked_work_and_untouched_control() {
         observed_control_invocations.set(observed_control_invocations.get() + 1);
         let work_id = Handle::current().id();
         async move {
-            let requested = application.request_shutdown();
+            let requested = application.shutdown();
             requested.expect("the untouched original application receives its actual shutdown");
             (control_work, borrowed_input, work_id)
         }
@@ -3959,7 +3959,7 @@ fn host_setup_unwind_keeps_uninvoked_work_until_receiver_discharge() {
             .execute_with(move |application| {
                 work_invocations.set(work_invocations.get() + 1);
                 async move {
-                    let requested = application.request_shutdown();
+                    let requested = application.shutdown();
                     requested.expect("only an actually invoked Work requests shutdown");
                     work
                 }
@@ -4059,7 +4059,7 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
             .execute_with(move |application| {
                 work_invocations.set(work_invocations.get() + 1);
                 async move {
-                    let requested = application.request_shutdown();
+                    let requested = application.shutdown();
                     requested.expect("the retried original Work requests actual shutdown");
                     (work, borrowed)
                 }
@@ -4212,7 +4212,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
             .execute_with(move |application| {
                 work_invocations.set(work_invocations.get() + 1);
                 async move {
-                    let requested = application.request_shutdown();
+                    let requested = application.shutdown();
                     requested.expect("the retried original Work requests actual shutdown");
                     (work, borrowed)
                 }
@@ -4781,7 +4781,7 @@ mod family_cleanup {
                     ),
                     Ok(Poll::Ready(_)) | Err(_) => None,
                 };
-                let stopped = application.request_shutdown();
+                let stopped = application.shutdown();
                 (output, admission, hydrated, stopped)
             });
             drop(entered);
@@ -5097,7 +5097,7 @@ mod family_cleanup {
                 let published = observation_publication
                     .send((lifecycle.termination(), lifecycle.termination()));
                 drop(published);
-                let stopped = lifecycle.request_shutdown();
+                let stopped = lifecycle.shutdown();
                 (output, admission, hydrated, stopped)
             });
             drop(entered);
@@ -5180,7 +5180,7 @@ fn supplied_ready_unit_has_its_bare_original_output() {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
             .execute_with(move |application| async move {
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 requested.expect("the live root accepts shutdown");
             })
             .unwrap_or_else(|original| {
@@ -5220,7 +5220,7 @@ fn supplied_ready_work_error_has_its_bare_original_output() {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
             .execute_with(move |application| async move {
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 requested.expect("the live root accepts shutdown");
                 Err("original work error")
             })
@@ -5263,7 +5263,7 @@ fn supplied_ready_local_rc_has_its_bare_original_output() {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
             .execute_with(move |application| async move {
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 requested.expect("the live root accepts shutdown");
                 Rc::clone(output_owner)
             })
@@ -5308,7 +5308,7 @@ fn supplied_ready_borrowed_has_its_bare_original_output() {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
             .execute_with(move |application| async move {
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 requested.expect("the live root accepts shutdown");
                 borrowed
             })
@@ -5349,7 +5349,7 @@ fn supplied_ready_user_none_has_its_bare_original_output() {
         let application = paired_account(Arc::new(vec![31, 37]));
         let (execution, receiving) = application
             .execute_with(move |application| async move {
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 requested.expect("the live root accepts shutdown");
                 None
             })

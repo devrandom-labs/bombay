@@ -61,7 +61,7 @@ mod order_book {
                             assert_eq!(admitted, request);
                             // Give the actual actor its turn before requesting shutdown.
                             tokio::task::yield_now().await;
-                            let shutdown = application.request_shutdown();
+                            let shutdown = application.shutdown();
                             assert_eq!(shutdown, Ok(()));
                             request
                         },
@@ -142,7 +142,7 @@ mod http {
             let outcome = tokio_test(
                 Application::new(OrderBook::default().stop_on_shutdown()).run_with(
                     |application| async move {
-                        let stopped = application.request_shutdown();
+                        let stopped = application.shutdown();
                         assert_eq!(stopped, Ok(()));
                         let termination = application.termination().await;
                         assert_eq!(termination, Ok(Exit::Normal));
@@ -193,7 +193,7 @@ mod http {
             let rejected = tokio_test(
                 Application::new(OrderBook::default().stop_on_shutdown()).run_with(
                     |application| async move {
-                        let stopped = application.request_shutdown();
+                        let stopped = application.shutdown();
                         assert_eq!(stopped, Ok(()));
                         let termination = application.termination().await;
                         assert_eq!(termination, Ok(Exit::Normal));

@@ -68,7 +68,7 @@ async fn nominal_recursive_creations() {
     .run_with(|application| async move {
         application
             .lifecycle()
-            .request_shutdown()
+            .shutdown()
             .expect("shutdown admitted");
     })
     .await
@@ -170,7 +170,7 @@ async fn initialization_rejection_returns_the_original_child_and_work() {
         .run_with(move |application| async move {
             application
                 .lifecycle()
-                .request_shutdown()
+                .shutdown()
                 .expect("root shutdown admitted");
             work
         })
@@ -254,7 +254,7 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
         .run_with(|application| async move {
             application
                 .lifecycle()
-                .request_shutdown()
+                .shutdown()
                 .expect("root shutdown admitted");
         })
         .await
@@ -330,7 +330,7 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
         .run_with(|application| async move {
             application
                 .lifecycle()
-                .request_shutdown()
+                .shutdown()
                 .expect("shutdown admitted");
         })
         .await
@@ -456,7 +456,7 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
         .run_with(|application| async move {
             application
                 .lifecycle()
-                .request_shutdown()
+                .shutdown()
                 .expect("shutdown admitted");
         })
         .await

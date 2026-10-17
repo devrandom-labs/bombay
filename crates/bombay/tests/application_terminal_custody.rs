@@ -579,7 +579,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
         let termination =
             tokio::time::timeout(Duration::from_secs(5), lifecycle.termination()).await;
         if termination.is_err() {
-            match lifecycle.request_shutdown() {
+            match lifecycle.shutdown() {
                 Ok(())
                 | Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped) => {}
             }

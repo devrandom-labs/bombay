@@ -84,7 +84,7 @@ async fn cold_recursive_creation_retains_every_original_descendant() {
                     .expect("read admitted");
                 let reply = caller.receive().await.expect("original reply");
                 assert_eq!(reply.message, 1);
-                application.request_shutdown().expect("shutdown admitted");
+                application.shutdown().expect("shutdown admitted");
             })
             .await
             .unwrap_or_else(|original| {
@@ -195,7 +195,7 @@ async fn cold_initialization_refusal_returns_the_original_definition_and_indepen
                     .await
                     .expect("counter reply survives independent child refusal");
                 assert_eq!(reply.message, 1);
-                application.request_shutdown().expect("shutdown admitted");
+                application.shutdown().expect("shutdown admitted");
                 work
             })
             .await

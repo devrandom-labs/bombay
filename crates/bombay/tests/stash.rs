@@ -87,7 +87,7 @@ async fn retirement_recovers_original_stashed_invoices_and_the_unread_mailbox_su
                     .await;
                 // Three admitted inputs exceed the verified two-slot mailbox,
                 // requiring execution to acquire at least the first invoice.
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (
                     [first_admission, second_admission, third_admission],
                     shutdown,

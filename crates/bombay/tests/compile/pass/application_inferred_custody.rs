@@ -60,7 +60,7 @@ async fn main() {
             .await
             .expect("read admitted");
         let reply = customer.receive().await.expect("business reply");
-        lifecycle.request_shutdown().expect("shutdown is admitted");
+        lifecycle.shutdown().expect("shutdown is admitted");
         reply.message
     })
     .await

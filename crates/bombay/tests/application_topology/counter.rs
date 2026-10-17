@@ -42,7 +42,7 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
                     .await
                     .expect("the counter replies to the exact customer");
                 assert_eq!(value.message, 1);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 let termination = application.termination().await;
                 assert_eq!(termination, Ok(Exit::Normal));

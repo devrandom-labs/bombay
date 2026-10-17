@@ -14,7 +14,7 @@ note: this call may capture more lifetimes than intended, because Rust 2024 has 
    |
 15 |       let (execution, receiving) = node
    |  __________________________________^
-16 | |         .execute_with(|application| async move { application.request_shutdown() })
+16 | |         .execute_with(|application| async move { application.shutdown() })
    | |__________________________________________________________________________________^
 help: if you can modify this crate, add a precise capturing bound to avoid overcapturing: `+ use<Actor, StagingFailure, ChildFailures, Work, WorkFuture, Root, Spaces, Members>`
   --> src/application/node.rs

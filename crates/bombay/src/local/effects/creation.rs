@@ -3252,7 +3252,7 @@ mod child_rejection_custody {
                 .run_with(move |application| async move {
                     application
                         .lifecycle()
-                        .request_shutdown()
+                        .shutdown()
                         .expect("shutdown admitted");
                     work
                 })

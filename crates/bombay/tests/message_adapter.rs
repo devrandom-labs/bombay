@@ -61,7 +61,7 @@ async fn one_adapter_name_maps_an_invoice_to_its_established_recipient() {
                 let sender = application.sender().expect("the invoice sender exists");
                 let admitted = sender.send(invoice).await;
                 let received = customer.receive().await;
-                let stopped = application.request_shutdown();
+                let stopped = application.shutdown();
                 (admitted, received, stopped, customer)
             }),
     )
@@ -217,7 +217,7 @@ async fn closed_payment_recipient_preserves_mapped_rejections_and_unread_invoice
                 }
                 // Three actual business inputs exceed the verified two-slot
                 // capacity, proving the first was acquired before shutdown.
-                let stopped = application.request_shutdown();
+                let stopped = application.shutdown();
                 (admissions, stopped, sender.address(), customer)
             }),
     )

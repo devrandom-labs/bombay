@@ -139,7 +139,7 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
                     .expect("the original reply recipient survives recovery");
                 assert_eq!(report.message, 17);
                 assert_eq!(report.from, application.root().address());
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 let termination = application.termination().await;
                 assert_eq!(termination, Ok(Exit::Normal));
@@ -520,7 +520,7 @@ fn missing_host_returns_the_original_application_constructor_and_work_for_retry(
                 .expect("the original recipient accepts actual file readiness");
             assert_eq!(report.message, 127);
             assert_eq!(report.from, application.root().address());
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));

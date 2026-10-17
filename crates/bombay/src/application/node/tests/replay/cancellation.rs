@@ -246,7 +246,7 @@ async fn cancelled_ledger_read<Receipt>(
                 let before = wake_count.0.load(Ordering::SeqCst);
                 let appended = sender.send(LedgerCommand::Append(original)).await;
                 let fallback = if appended.is_err() {
-                    Some(application.request_shutdown())
+                    Some(application.shutdown())
                 } else {
                     None
                 };

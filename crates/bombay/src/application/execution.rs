@@ -1857,7 +1857,7 @@ mod startup {
                             <StopOnShutdown<ShutdownLedger> as Behavior>::Event,
                         >| async move {
                             work.1.set(work.1.get() + 1);
-                            let stopped = application.request_shutdown();
+                            let stopped = application.shutdown();
                             let report = application.lifecycle().retirement().await;
                             (work, owner, published, stopped, report)
                         };

@@ -24,7 +24,7 @@ Compiler friction cannot invent bounds, no-op inputs or structural caller work.
 
 ## Ownership and delivery
 
-The user authorizes146 cumulative native paths for registry adoption and the
+The user authorizes 146 cumulative native paths for registry adoption and the
 canonical `application.shutdown()` spelling. This deliberate naming policy
 reuses ApplicationHandle/ApplicationLifecycle, the exact InjectEvent capability
 and request_actor_shutdown; it preserves Result<(), ShutdownRejection>, the
@@ -39,16 +39,21 @@ owners and complete wrapper-order shutdown/retirement before migrating the
 published versions, protected workspace and Engine fuzz protocol owner. Keep
 all static denials and original assertions; regenerate compiler expectations
 and hashes without weakening coverage. The owning PRD has the exact scoped
-path set, two reviews and release/native evidence. Implementation and final
-registry/native gates remain pending.
+path set, two reviews and release/native evidence. The rename and registry
+selection are applied; final compiler, nested and repository gates remain open.
 
 Finite holding is isolated on `codex/devx-stash-limits`. The ordinary spelling
 is `actor.with_stash(limit, refused, route)`; overflow returns the complete
 original input and sender through Actions. Explicit UnlimitedStash serves
-advanced unbounded/Never callers. Source-selected owner aafd1e9 (review-ready Behavior
-PR114, including common send-product PR113) passes all11 native Nix gates,
-1,035 tests/123 doctests, package preflight and its failure controls. Those APIs
-are unpublished; actual published0.28.0 does not contain finite holding.
+advanced unbounded/Never callers. Behavior PR113/114 and reviewed release PR115
+are merged. The normal workflow published Behavior/Actors 0.29.0 and macros
+0.16.0 from 55dbac2. Registry checksums, clean archive provenance, tags and
+releases agree; all 228 shipped Rust files match the tested candidate. The
+release passed all 14 GitHub checks, 11 native Nix gates, 1,035 owner tests,
+123 doctests and four-workspace package preflight. The historical handwritten
+SendInput consumer rejects the incorrectly labelled compatible macro at E0283;
+the ordinary published pool remains valid. The breaking macro version protects
+that existing manual implementation contract.
 
 The focused Bombay source-selected matrix passes Rust1.99/1.96 debug/release:
 three native journeys (accepted refusal, closed recipient and replay-selector
@@ -58,32 +63,31 @@ observed. A held input stays owned until delegated or taken; unwind preserves
 only still-undelegated originals, never arbitrary actor rollback. The original
 queue fails this law in both profiles; independent reviews and pure original-
 source controls distinguish selector-current custody from actor-consumed input.
-All397 nonowner package records remain exact. Root manifests/lock still select
-registry027/150: these proofs use isolated source selection, not an actual
-registry build of the new facade. Catalogue migration, diagnostic inventory,
-reviewed breaking release/registry adoption and final whole-repository gates
-remain open. No new runtime or protocol surface is introduced by this facade.
-Latest main49cc897 is merged without conflicts. Its internal TLS dependency,
-locks and remote records change no Rust source; older graph proofs do not
-certify this newer lock. The prepared caller patch still applies unchanged.
-It preserves255 original assertions and all compile denials; both compiler
-corpora pass128 cases and its private workspace passes791 tests/two controlled
-child skips. The user authorizes both the14→24 native-file caller migration and
-merging/publishing Behavior PR113/114 after generated-release review. The exact
-11-path caller patch is applied; all changed bytes match the reviewed/current-
-graph tested copy, with no new production code, policy, bound or public type.
-Cargo and the separately scoped inventory bindings remain unchanged for now.
-A refreshed private copy of native e69c6dc with owner aafd1e9
-passes 791 default workspace tests on pinned 1.99 in 298.503s. The same two child
-skips are confirmed by the exact nextest listing; all 633 inputs in each native
-copy, 837 owner inputs and 396 current nonowner records remain exact. This newer-graph
-proof does not certify minimum, remote TLS runtime, protected nested, registry
-or authoritative native Nix gates. Its extra dependency/inventory bindings stay
-private and are outside the authorized caller-only scope.
-Common owner PR113/809e7b3 also preserves caller generic/type
-names without reserving private macro spellings, adding public types or runtime
-storage. Its1,022 owner tests,11 Nix checks and real two-lane failure/retirement
-proofs are separate from registry publication and full-programme acceptance.
+These bounded source-selected proofs retain their original dependency limits.
+The applied caller migration preserves all 255 original assertions. Actual root,
+Engine fuzz and protected locks now select registry 0.29.0/0.16.0 without owner
+patches. The existing Driver inventory test first rejects its stale selection;
+all 11 checks pass after recording the published source. All eight law rows,
+24 historical revisions and 44 unrelated template rows remain exact. Engine's
+real fuzz target first fails with two incompatible Behavior versions; aligning
+its one dependency fixes debug and optimized checks without Rust source changes.
+This is compilation evidence, not a fuzz execution claim.
+
+All 396 root nonowner package identities, versions, sources and checksums remain;
+392 complete records are identical. Four permitted Windows-only dependency edges
+select the already present windows-sys 0.61.2 instead of 0.52; downloaded source
+manifests independently confirm their ranges. No Windows execution is claimed.
+Latest main 49cc897 is merged and was checked for further updates. Other AI
+worktrees remain untouched.
+
+The shorter shutdown name passes the external caller and three existing native
+journeys on Rust 1.99/1.96 in debug and optimized builds. Admission still returns
+the exact Result; it does not imply full application cleanup has completed.
+Current and minimum diagnostic runs preserve all 128 cases (20 positive and
+108 negative). The observed mismatches change only marker width/position; all
+causes, types, suggestions and error codes remain. Reviewed expectations retain
+26 targets, 30 suites, the controlled child and all 21 compiler-specific snapshots.
+Immutable final replays are required before crediting the complete corpus.
 
 The registry delivery stays isolated on `codex/devx-registry-027`; verified
 integration1cc0953 includes current mainf25e4a0. The timer implementation is

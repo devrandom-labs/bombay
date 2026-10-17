@@ -397,7 +397,7 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
                     BTreeSet::from([3, 5, 7, 11])
                 );
                 assert_eq!(constructions.load(Ordering::SeqCst), 4);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 let termination = application.termination().await;
                 assert_eq!(termination, Ok(Exit::Normal));

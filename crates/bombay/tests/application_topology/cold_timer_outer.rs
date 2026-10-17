@@ -107,7 +107,7 @@ fn cold_children_keep_original_root_through_timer_outer() {
         .expect("caller-owned host");
     let (outcome, native, notifications, ()) = host
         .block_on(application.run_with(|application| async move {
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.lifecycle().termination().await;
             assert_eq!(termination, Ok(Exit::Normal));

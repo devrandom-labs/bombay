@@ -37,7 +37,7 @@ async fn two_threads_borrow_one_sender_and_the_actor_processes_both_commands() {
                 .unwrap_or_else(|_| panic!("the root still admits after sender destruction"));
             let reply = client.receive().await.expect("actual counter reply");
             assert_eq!(reply.from, application.root().address());
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             reply.message
         })

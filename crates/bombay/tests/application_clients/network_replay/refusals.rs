@@ -55,7 +55,7 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                             move |original| local_refusals.lock().unwrap().push(original),
                         )
                         .await;
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     let report = application.lifecycle().retirement().await;
                     (declaration, expected, stopped, report)
                 })
@@ -79,7 +79,7 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                     let foreign = Application::new(Counter::new().stop_on_shutdown())
                         .run_with(|foreign_application| async move {
                             let target = foreign_application.root().established_recipient();
-                            let stopped = foreign_application.request_shutdown();
+                            let stopped = foreign_application.shutdown();
                             let report = foreign_application.lifecycle().retirement().await;
                             (target, stopped, report)
                         })
@@ -150,7 +150,7 @@ fn public_exports_preserve_constructor_refusals_and_original_targets() {
                             move |original| observed.lock().unwrap().push(original),
                         )
                         .await;
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     let report = application.lifecycle().retirement().await;
                     (
                         application,

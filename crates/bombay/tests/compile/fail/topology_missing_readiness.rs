@@ -38,7 +38,7 @@ bombay::topology! { reports { root: Root { Reporter => reporter; } reporter: Rep
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let outcome = bombay::Application::with_topology(Root { visits: 0, originals: Vec::new() }.stop_on_shutdown(), reports::Topology::new())
-        .run_with(|application| async move { application.lifecycle().request_shutdown().expect("real shutdown operation"); })
+        .run_with(|application| async move { application.lifecycle().shutdown().expect("real shutdown operation"); })
         .await;
     drop(outcome);
 }

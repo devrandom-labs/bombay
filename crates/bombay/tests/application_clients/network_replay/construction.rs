@@ -41,7 +41,7 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
                     move |original| observed.lock().unwrap().push(original),
                 )
                 .await;
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (declaration, stopped, report)
         })
@@ -133,7 +133,7 @@ async fn ledger_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> boo
                     move |original| observed.lock().unwrap().push(original),
                 )
                 .await;
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (declaration, stopped, report)
         })

@@ -153,7 +153,7 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
                         exhausted.is_none(),
                         "the root emits exactly its one useful reply"
                     );
-                    let shutdown = application.lifecycle().request_shutdown();
+                    let shutdown = application.lifecycle().shutdown();
                     assert_eq!(shutdown, Ok(()));
                     (original_cause, acquired, root_address, source_address)
                 },

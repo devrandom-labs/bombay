@@ -191,7 +191,7 @@ async fn shutdown_while_observing_preserves_the_live_target_and_complete_retirem
             let sender = application
                 .sender_to(target.recipient())
                 .expect("the actual peer capability accepts an independent sender");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             let termination = application.termination().await;
             (shutdown, termination, target, sender)
         })

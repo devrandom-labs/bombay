@@ -54,7 +54,7 @@ fn early_and_late_clients_share_the_configured_limit_and_keep_rejected_values() 
                     panic!("the later endpoint must inherit the same bound");
                 };
                 assert!(ptr::eq(identity, original.as_ptr()));
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 let report = application.retirement().await;
                 assert_eq!(
@@ -147,7 +147,7 @@ fn application_clients_and_exported_interfaces_use_the_same_small_reply_bound() 
                         };
                         assert!(ptr::eq(identity, original.as_ptr()));
                     }
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     assert_eq!(shutdown, Ok(()));
                     let report = application.retirement().await;
                     assert_eq!(
@@ -211,7 +211,7 @@ fn missing_host_returns_the_configured_application_and_original_work_for_retry()
             );
         }
         assert!(caller.receive().await.is_none());
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         original
     }) else {

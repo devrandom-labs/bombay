@@ -262,7 +262,7 @@ fn authorized_assignments_survive_application_replacement() {
                         .send(&recipient, Command::Snapshot(service.recipient()))
                         .await;
                     let snapshot = service.receive().await;
-                    let shutdown = application.lifecycle().request_shutdown();
+                    let shutdown = application.lifecycle().shutdown();
                     (
                         recipient,
                         allocation,
@@ -354,7 +354,7 @@ fn authorized_assignments_survive_application_replacement() {
                         .send(&recipient, Command::Snapshot(service.recipient()))
                         .await;
                     let snapshot = service.receive().await;
-                    let shutdown = application.lifecycle().request_shutdown();
+                    let shutdown = application.lifecycle().shutdown();
                     (
                         stale_allocation,
                         fresh_allocation,
@@ -490,7 +490,7 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
                         .send(&recipient, Command::Snapshot(service.recipient()))
                         .await;
                     let snapshot = service.receive().await;
-                    let shutdown = application.lifecycle().request_shutdown();
+                    let shutdown = application.lifecycle().shutdown();
                     (
                         allocation,
                         actual_allocation,
@@ -599,7 +599,7 @@ async fn export_assignment(
                 )
                 .await;
             let snapshot = service.receive().await;
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             (
                 serial,
                 allocation,

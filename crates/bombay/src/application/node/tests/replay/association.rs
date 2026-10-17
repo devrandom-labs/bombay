@@ -298,7 +298,7 @@ mod counter {
                         } else {
                             None
                         };
-                        let stopped = application.request_shutdown();
+                        let stopped = application.shutdown();
                         let report = application.lifecycle().retirement().await;
                         (
                             export,
@@ -721,7 +721,7 @@ mod ledger {
                             {
                                 None
                             }
-                            Ok(_) | Err(_) => Some(application.request_shutdown()),
+                            Ok(_) | Err(_) => Some(application.shutdown()),
                         };
                         let report = application.lifecycle().retirement().await;
                         // Actual joined retirement precedes B's lazy reply-endpoint allocation.

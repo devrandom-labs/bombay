@@ -26,7 +26,7 @@ async fn main() {
     let (outcome, native, notifications, ()) = bombay::Application::with_topology(Root.stop_on_shutdown(), application::Topology::new())
         .child(Background, Worker { original }.stop_on_shutdown())
         .run_with(|application| async move {
-            application.request_shutdown().expect("shutdown admitted");
+            application.shutdown().expect("shutdown admitted");
         }).await.unwrap_or_else(|original| { drop(original); panic!("host entered"); }) .into_parts();
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| { drop(original); panic!("work returned"); });
     cleanup.expect("the actual cleanup producer completed independently");

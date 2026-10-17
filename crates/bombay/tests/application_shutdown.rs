@@ -103,9 +103,9 @@ async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
     let outcome = Application::with_topology(root, ActorSpace::new())
         .run_with(|application| async move {
             let lifecycle = increment_counter(application).await;
-            let shutdown = lifecycle.request_shutdown();
+            let shutdown = lifecycle.shutdown();
             assert_eq!(shutdown, Ok(()));
-            let repeated_shutdown = lifecycle.request_shutdown();
+            let repeated_shutdown = lifecycle.shutdown();
             assert!(matches!(
                 repeated_shutdown,
                 Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped)
@@ -145,9 +145,9 @@ async fn timer_outside_shutdown_infers_the_actual_lifecycle_lane() {
     let outcome = Application::with_topology(root, ActorSpace::new())
         .run_with(|application| async move {
             let lifecycle = increment_counter(application).await;
-            let shutdown = lifecycle.request_shutdown();
+            let shutdown = lifecycle.shutdown();
             assert_eq!(shutdown, Ok(()));
-            let repeated_shutdown = lifecycle.request_shutdown();
+            let repeated_shutdown = lifecycle.shutdown();
             assert!(matches!(
                 repeated_shutdown,
                 Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped)

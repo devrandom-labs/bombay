@@ -43,7 +43,7 @@ async fn main() {
         Machine::new(ProcessorState::new(), ProcessorPhase::Closed, transition).stop_on_shutdown(),
     )
     .run_with(|application| async move {
-        application.request_shutdown().expect("shutdown admitted");
+        application.shutdown().expect("shutdown admitted");
         application.retirement().await
     })
     .await

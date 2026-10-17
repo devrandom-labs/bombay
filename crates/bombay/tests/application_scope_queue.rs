@@ -188,7 +188,7 @@ fn work_queue_preserves_exact_dispatch_and_full_rejection_through_shutdown() {
                     .await
                     .expect("idempotent withdrawal");
             }
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));
@@ -282,7 +282,7 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
                         .await
                         .expect("original early worker")
                         .message;
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     assert_eq!(shutdown, Ok(()));
                     let termination = application.termination().await;
                     assert_eq!(termination, Ok(Exit::Normal));
@@ -398,7 +398,7 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
                 .await
                 .expect("exact released payload")
                 .message;
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));
@@ -484,7 +484,7 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
                 .await
                 .expect("exact released payload")
                 .message;
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));

@@ -400,7 +400,7 @@ async fn counter_case<Receipt>(
                     )
                     .await;
                     let retained = retain_verified(&mut export, &mut original, &mut verified);
-                    let stopped = foreign_application.request_shutdown();
+                    let stopped = foreign_application.shutdown();
                     let report = foreign_application.lifecycle().retirement().await;
                     (export, retained, original, verified, stopped, report)
                 })
@@ -635,7 +635,7 @@ async fn counter_case<Receipt>(
                     second_receive = Some(first.receive_native(key).await);
                 }
             }
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (
                 first,
@@ -1059,7 +1059,7 @@ async fn ledger_case<Receipt>(
                     )
                     .await;
                     let retained = retain_verified(&mut export, &mut original, &mut verified);
-                    let stopped = foreign_application.request_shutdown();
+                    let stopped = foreign_application.shutdown();
                     let report = foreign_application.lifecycle().retirement().await;
                     (export, retained, original, verified, stopped, report)
                 })
@@ -1299,7 +1299,7 @@ async fn ledger_case<Receipt>(
                 }
             }
             let stopped = if first_report.is_none() {
-                Some(application.request_shutdown())
+                Some(application.shutdown())
             } else {
                 None
             };

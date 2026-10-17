@@ -232,7 +232,7 @@ async fn manual_namespace_keeps_configured_services_through_generic_root_and_rec
         .with_topology(root.stop_on_shutdown(), hosts)
         .run_with(|application| async move {
             let reports = receive_documents(&mut replies).await;
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));

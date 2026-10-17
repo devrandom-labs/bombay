@@ -550,7 +550,7 @@ async fn counter_native_applications<R>(
                             } else {
                                 None
                             };
-                            let stopped = local_lifecycle.request_shutdown();
+                            let stopped = local_lifecycle.shutdown();
                             let permitted = local_permitted.send(());
                             (
                                 first,
@@ -691,7 +691,7 @@ async fn counter_native_applications<R>(
                     if ordinal == 3 {
                         counter_control("STOP_REFUSAL_SETTLED");
                     }
-                    let stopped = requester_lifecycle.request_shutdown();
+                    let stopped = requester_lifecycle.shutdown();
                     let released = requester_permitted.send(());
                     (begun, triggered, stopped, released)
                 };
@@ -1007,8 +1007,8 @@ async fn counter_native_applications<R>(
             Some(queryable) => Some(queryable.undeclare().await),
             None => None,
         };
-        let stopped = original_stop.request_shutdown();
-        let sibling_stopped = sibling_stop.request_shutdown();
+        let stopped = original_stop.shutdown();
+        let sibling_stopped = sibling_stop.shutdown();
         (
             binding,
             target_origin,
@@ -1133,7 +1133,7 @@ async fn counter_native_applications<R>(
                 )
                 .await;
                 let child_retirements = tokio::join!(stop.retirement(), sibling_stop.retirement());
-                let stopped = lifecycle.request_shutdown();
+                let stopped = lifecycle.shutdown();
                 let released = permit.send(());
                 (
                     service,
@@ -1928,7 +1928,7 @@ fn counter_child_stop<R>(
             let remaining_target_stop = installed.request_shutdown(Ingress::<_, Here>::new());
             let remaining_sibling_stop =
                 sibling_installed.request_shutdown(Ingress::<_, Here>::new());
-            let parent_stop = parent_lifecycle.request_shutdown();
+            let parent_stop = parent_lifecycle.shutdown();
             let released = permit.send(());
             (
                 exported,
@@ -2449,7 +2449,7 @@ fn counter_query_count<R>(
                     Err(_) => None,
                 });
             }
-            let stopped = lifecycle.request_shutdown();
+            let stopped = lifecycle.shutdown();
             let permission = permitted.send(());
             (
                 authorization,

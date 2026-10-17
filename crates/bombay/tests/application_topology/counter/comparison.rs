@@ -34,7 +34,7 @@ async fn generated_leaf_matches_manual_counter_custody() {
         let increment = client.send(CounterMessage::Increment).await;
         let read = client.send(CounterMessage::Read(client.recipient())).await;
         let received = client.receive().await;
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         let termination = application.termination().await;
         (increment, read, received, shutdown, termination)
     })
@@ -50,7 +50,7 @@ async fn generated_leaf_matches_manual_counter_custody() {
         let increment = client.send(CounterMessage::Increment).await;
         let read = client.send(CounterMessage::Read(client.recipient())).await;
         let received = client.receive().await;
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         let termination = application.termination().await;
         (increment, read, received, shutdown, termination)
     })

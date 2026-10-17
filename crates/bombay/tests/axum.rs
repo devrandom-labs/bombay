@@ -66,9 +66,9 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
             move |application| {
                 assert_eq!(application.root().address(), MailAddr(0));
                 observed.fetch_add(1, Ordering::SeqCst);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
-                let repeated = application.request_shutdown();
+                let repeated = application.shutdown();
                 assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
                 Router::new()
             },
@@ -262,7 +262,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                         .send(283)
                         .await
                         .expect("early receipt remains live after bind retry");
-                    let requested = lifecycle.request_shutdown();
+                    let requested = lifecycle.shutdown();
                     assert_eq!(requested, Ok(()));
                     "stopped"
                 }
@@ -353,7 +353,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                                 Ok(Ok(_)) => {}
                                 Ok(Err(_)) | Err(_) => {
                                     // A real client failure must still release the running root and server.
-                                    match lifecycle.request_shutdown() {
+                                    match lifecycle.shutdown() {
                                         Ok(())
                                         | Err(
                                             ShutdownRejection::AlreadyStopping
@@ -610,7 +610,7 @@ fn http_staging_rejection_retains_bound_listener_and_namespace() {
                 });
                 let published = published.send((router_entries, sender));
                 assert!(published.is_ok());
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 Router::new()
             })
@@ -739,7 +739,7 @@ fn failed_work_owned_retirement_preserves_completed_serving_result() {
             let (execution, receiving) = Application::new(Root.stop_on_shutdown())
                 .execute_with(move |application| async move {
                     let supplied_retirement = task.await;
-                    let requested = application.request_shutdown();
+                    let requested = application.shutdown();
                     match requested {
                         Ok(())
                         | Err(
@@ -825,7 +825,7 @@ fn joined_work_owned_retirement_preserves_original_outcome() {
         let (execution, receiving) = Application::new(Root.stop_on_shutdown())
             .execute_with(move |application| async move {
                 let supplied_retirement = task.await;
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 match requested {
                     Ok(())
                     | Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped) =>

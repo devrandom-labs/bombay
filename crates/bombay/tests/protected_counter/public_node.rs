@@ -90,7 +90,7 @@ fn public_node_root_preserves_borrowed_execution_and_original_second_work() {
                         None
                     };
                     let address = application.root().address();
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     (
                         published,
                         observed_visits,
@@ -290,7 +290,7 @@ fn public_node_child_keeps_installed_target_and_complete_descendant_receipts() {
                 };
                 let sibling_stopped = sibling_installed.request_shutdown(Ingress::<_, Here>::new());
                 let sibling_report = sibling_installed.retirement().await;
-                let parent_stopped = application.request_shutdown();
+                let parent_stopped = application.shutdown();
                 (
                     exported,
                     received.from,
@@ -526,7 +526,7 @@ fn public_node_native_open_refusal_preserves_usable_application_and_original_con
                     None
                 };
                 let address = application.root().address();
-                let stopped = application.request_shutdown();
+                let stopped = application.shutdown();
                 (admitted, reply, address, stopped, client)
             })
             .unwrap_or_else(|_| panic!("original local declaration remains usable"));
@@ -578,7 +578,7 @@ fn public_node_closed_session_preserves_original_move_only_work() {
                 work_calls.fetch_add(1, Ordering::SeqCst);
                 async move {
                     let permitted = permission.await;
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     (permitted, stopped, original)
                 }
             });
@@ -648,7 +648,7 @@ fn public_node_missing_host_restores_the_declaration_for_original_work_retry() {
         work_calls.fetch_add(1, Ordering::SeqCst);
         async move {
             let permitted = permission.await;
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             (permitted, stopped, original)
         }
     };
@@ -785,7 +785,7 @@ fn public_node_absent_startup_host_preserves_original_inputs_and_usable_applicat
                     None
                 };
                 let address = application.root().address();
-                let stopped = application.request_shutdown();
+                let stopped = application.shutdown();
                 (admitted, reply, address, stopped, client)
             })
             .unwrap_or_else(|_| panic!("returned original local Application is usable"));

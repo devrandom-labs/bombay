@@ -33,7 +33,7 @@ mod documents {
             .block_on(
                 Application::with_topology(application, document_application::Topology::new())
                     .run_with(|application| async move {
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         assert_eq!(shutdown, Ok(()));
                         application.termination().await
                     }),

@@ -230,7 +230,7 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
                 .await
                 .expect("read admitted");
             let reply = customer.receive().await.expect("business reply");
-            let shutdown = lifecycle.request_shutdown();
+            let shutdown = lifecycle.shutdown();
             assert_eq!(shutdown, Ok(()));
             CounterSnapshot {
                 value: reply.message,
@@ -450,7 +450,7 @@ async fn independent_counter_execution_infers_custody_and_keeps_local_work() {
     let work = Rc::clone(&original);
     let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
         .execute_with(|application| async move {
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             work
         })
@@ -525,7 +525,7 @@ async fn independent_execution_cancellation_returns_original_cold_callable() {
     let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
         .execute_with(|application| async move {
             invoked.set(invoked.get() + 1);
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             invoked
         })
@@ -567,7 +567,7 @@ async fn independent_entity_execution_infers_root_custody_without_families() {
     let work = Rc::clone(&original);
     let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
         .execute_with_entities(|application| async move {
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             work
         })
@@ -657,7 +657,7 @@ async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
         .execute_axum(address, |application| {
             assert_eq!(router_payload.audit.as_ptr(), allocation);
             router_called.set(router_called.get() + 1);
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             Router::new()
         })

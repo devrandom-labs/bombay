@@ -383,7 +383,7 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
                 };
                 replies.close_admission();
                 let exhausted = replies.receive().await;
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (
                     checked, admitted, read, exhausted, shutdown, caller, replies,
                 )
@@ -405,7 +405,7 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
                         .binding;
                         let hosted = (binding, application.root().established_recipient());
                         let counter = run_counter(Some(hosted)).await;
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         (counter, shutdown)
                     },
                 ),
@@ -456,7 +456,7 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
         let exhausted = replies.receive().await;
         let shutdown = match &admitted {
             Some(Ok(())) => None,
-            _ => Some(application.request_shutdown()),
+            _ => Some(application.shutdown()),
         };
         (
             checked, admitted, read, exhausted, shutdown, caller, replies,

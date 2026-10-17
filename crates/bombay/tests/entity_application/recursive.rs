@@ -256,7 +256,7 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
                 }) => assert_eq!(command, 23),
                 other => panic!("expected complete launch rejection, got {other:?}"),
             }
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         }))
         .unwrap_or_else(|original| {

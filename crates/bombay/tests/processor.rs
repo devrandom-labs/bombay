@@ -94,7 +94,7 @@ fn shutdown_preserves_the_complete_processor_retirement() {
                     .stop_on_shutdown(),
             )
             .run_with(|application| async move {
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 let termination = application.termination().await;
                 assert_eq!(termination, Ok(Exit::Normal));

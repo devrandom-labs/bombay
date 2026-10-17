@@ -98,7 +98,7 @@ async fn completed_counter_inspects_work_retirement_and_notifications_without_po
                 .receive()
                 .await
                 .expect("the original count reply arrives");
-            application.request_shutdown().expect("shutdown admitted");
+            application.shutdown().expect("shutdown admitted");
             application
                 .termination()
                 .await
@@ -244,7 +244,7 @@ async fn cancelled_cold_execution_returns_all_originals_for_real_retry() {
                 .receive()
                 .await
                 .expect("the original counter replies");
-            application.request_shutdown().expect("shutdown admitted");
+            application.shutdown().expect("shutdown admitted");
             application
                 .termination()
                 .await
@@ -426,9 +426,7 @@ async fn entity_work_selection_keeps_original_family_shutdowns_and_actor_retirem
         let read = caller.send(CounterCommand::Read(caller.recipient())).await;
         assert!(read.is_ok());
         let count = caller.receive().await.expect("the actual Entity replies");
-        application
-            .request_shutdown()
-            .expect("root shutdown admitted");
+        application.shutdown().expect("root shutdown admitted");
         application.termination().await.expect("root stopped");
         count.message
     })
@@ -688,9 +686,7 @@ async fn same_protocol_families_select_both_real_positions_and_preserve_separate
             .receive()
             .await
             .expect("the independent visitor replies");
-        application
-            .request_shutdown()
-            .expect("root shutdown admitted");
+        application.shutdown().expect("root shutdown admitted");
         application.termination().await.expect("root stopped");
         (counter, visit)
     })
@@ -816,7 +812,7 @@ async fn http_binding_refusal_returns_whole_inputs_for_real_retry_and_joined_ret
             router_calls.set(router_calls.get() + 1);
             assert_eq!(router_data.as_ptr(), allocation);
             application
-                .request_shutdown()
+                .shutdown()
                 .expect("the configured HTTP root accepts shutdown");
             Router::new().route("/ready", get(|| async { "ready" }))
         })

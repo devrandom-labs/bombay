@@ -88,7 +88,7 @@ fn same_address_foreign_child_keeps_its_owning_application() {
                 } else {
                     None
                 };
-                let stopped = application.request_shutdown();
+                let stopped = application.shutdown();
                 (
                     export,
                     published,
@@ -162,7 +162,7 @@ fn same_address_foreign_child_keeps_its_owning_application() {
                     };
                     let foreign_address = *foreign_address;
                     let advanced = advance.send(());
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     (
                         export,
                         published,
@@ -444,7 +444,7 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
                 } else {
                     None
                 };
-                let stopped = application.request_shutdown();
+                let stopped = application.shutdown();
                 (
                     export,
                     published,
@@ -515,7 +515,7 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
                     };
                     let foreign_address = *foreign_address;
                     let advanced = advance.send(());
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     (
                         export,
                         published,

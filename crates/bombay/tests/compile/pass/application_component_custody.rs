@@ -85,7 +85,7 @@ async fn main() {
             .await
             .expect("the actual counter replies");
         lifecycle
-            .request_shutdown()
+            .shutdown()
             .expect("the root admits shutdown");
         reply.message
     })
