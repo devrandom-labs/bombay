@@ -157,19 +157,9 @@ The [topology tests](../crates/bombay/tests/application_topology.rs) and
 execute these paths. No default policy or dummy capability fills an unused lane.
 
 Finite singleton chains infer their actors from the constructed root and its
-births. For example, a fixed supervisor declares only its relationships and
-external protocols:
-
-```rust,ignore
-bombay::topology! {
-    supervisor_application {
-        root { Proxy => proxy; }
-        proxy { Worker => worker; }
-        worker {}
-        hosts { status: Status; capability: Capability; }
-    }
-}
-```
+births. A fixed supervisor declares the root-to-proxy and proxy-to-worker
+relationships once. The complete declaration and its owning constructor are in
+the [supervision example](../examples/supervision/src/main.rs).
 
 The [executed supervisor](../crates/bombay/tests/application_topology/supervision.rs)
 uses the owning constructor directly, without composed return aliases. For
@@ -182,21 +172,9 @@ actors, forged roles and missing report lanes. The
 [recursive tests](../crates/bombay/tests/application_topology/recursive.rs)
 exercise both wrapper orders and complete failure/retirement custody.
 
-Cold classes also infer their actor types from `.child(role, actor)`:
-
-```rust,ignore
-bombay::topology! {
-    timed_application {
-        root: TimedParent {}
-        members {
-            Timer(TimerOutside) => timer;
-            Shutdown(ShutdownOutside) => shutdown;
-        }
-        timer {}
-        shutdown {}
-    }
-}
-```
+Cold classes also infer their actor types from `.child(role, actor)`. The
+declaration names each member role and its class; the constructed actors supply
+their actual wrapper types.
 
 The [native timer journey](../crates/bombay/tests/native_timer_retirement.rs)
 constructs both actual wrapper orders and consumes every original retirement
@@ -209,20 +187,10 @@ The [cold-descendant journey](../crates/bombay/tests/inferred_cold_descendants.r
 executes creation, its same-action reply and complete retained actor state without
 a wrapped child alias or application-written retirement enum.
 
-Entity families are independent hydrated roots in that same declaration:
-
-```rust,ignore
-bombay::topology! {
-    entity_application {
-        root: Root {}
-        hosts { accounts: Account; profiles: Profile; }
-        families { account: Accounts; profile: Profiles; }
-        account {}
-        profile { worker(ProfileChildrenWorker) => worker; }
-        worker {}
-    }
-}
-```
+Entity families are independent hydrated roots in that same declaration. Its
+`hosts` section names the external protocols, and `families` names each role
+and its definition. The complete declaration lives with its
+[two-family journey](../crates/bombay/tests/entity_application.rs).
 
 The definitions supply their actual `Behavior`; protocol hosts remain explicit
 logical address-space choices. A definition with children selects the generated

@@ -119,9 +119,31 @@ no Rust source, public types or unrelated lock records. Both source/oracle
 reviews preserve the historical passing consumers and intended failing
 compatibility inversions. All-feature three-package preview verification passes;
 all seven examples and the renamed consumer compile against its extracted
-archives, and six terminating local examples execute. Resulting-source full
-gates, complete archive consumers and release review remain separate obligations.
+archives, and six terminating local examples execute. At41812fce all25 native
+Nix gates pass in3185.671s with all633 inputs unchanged. The workspace passes791
+outer cases/136 UI; remote debug/release each pass426/20 UI. Protected consumers
+pass132 outer cases, with two deliberate failed children and four zero-match
+controls checked separately. Actual three-package/all-feature archives and24
+native cases per profile pass both supported compilers; all501 archive files and
+19 caller Rust files remain exact. Linux CI and release review remain separate
+obligations. Eight successful Nix outputs were unavailable during initial hash
+inspection; exact re-realization passes in584.829s, and all25 outputs now have
+their expected derivers/content hashes verified and local GC roots retained.
 The preview and source-scope authorization do not authorize merging or publication.
+
+The guide links its three former partial ignored topology copies to complete
+compiled examples/tests. Both supported compiler previews retain all six passing
+doctests and have zero ignored cases; no Rust fixture or assertion is removed.
+Actual native all-feature doctests also pass six cases with zero ignores.
+An isolated optimized
+two-actor FIFO journey measures mailbox minimum1 (effective2) versus1024 at
+equal work: peak heap142770 versus396226bytes, with complete retirement,
+cleanup and notifications. Joined heap is10768bytes for both. The remaining
+56bytes after host shutdown trace to Tokio's thread-local parker. Source-specific
+build targets, allocator inversion, calibrated child RSS and rejected-status
+controls replace the superseded shared-cache samples. These are bounded buffer
+capacity costs, not whole-framework performance claims; the owning PRD retains
+the exact measurements and limits.
 
 Use the existing immutable verifier inside pinned Nix, with fresh empty output
 directories; verification never overwrites expected diagnostics:
