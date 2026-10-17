@@ -70,6 +70,43 @@ impl Observations {
 }
 
 impl Peer {
+    pub(super) async fn quota(
+        self,
+        request: ProtectedMessage,
+        shutdown: impl FnOnce() -> Result<(), ShutdownRejection>,
+        retired: oneshot::Receiver<()>,
+    ) -> (Observations, Result<(), ShutdownRejection>) {
+        self.wait_for(COUNTER).await;
+        let (mut first, first_refused) = self.query(COUNTER, &request).await;
+        let mut replies = Vec::new();
+        // Query FINAL must be observed while this actor and declaration remain live.
+        // Preserve an unexpected reply as an observation and still finish cleanup.
+        while let Some(original) = first.recv().await {
+            replies.push(original);
+        }
+        self.wait_for(COUNTER).await;
+        let (mut second, second_refused) = self.query(COUNTER, &request).await;
+        let mut additional = Vec::new();
+        while let Some(original) = second.recv().await {
+            additional.push(original);
+        }
+        self.wait_for(COUNTER).await;
+        let shutdown = shutdown();
+        retired
+            .await
+            .expect("full quota cleanup and Node close complete");
+        let closed = self.session.close().await;
+        (
+            Observations {
+                replies,
+                additional,
+                refused: vec![first_refused, second_refused],
+                closed,
+            },
+            shutdown,
+        )
+    }
+
     pub(super) async fn close(self) -> Observations {
         let closed = self.session.close().await;
         Observations {
@@ -173,6 +210,13 @@ impl Peer {
     pub(super) async fn rejected(
         self,
         request: ProtectedMessage,
+        sibling: Option<(
+            ProtectedMessage,
+            oneshot::Receiver<()>,
+            oneshot::Receiver<()>,
+            oneshot::Receiver<()>,
+            oneshot::Sender<()>,
+        )>,
         returned: oneshot::Receiver<()>,
         shutdown: impl AsyncFnOnce() -> Result<(), ShutdownRejection>,
         continued: oneshot::Sender<()>,
@@ -180,6 +224,27 @@ impl Peer {
     ) -> (Observations, Result<(), ShutdownRejection>) {
         self.wait_for(COUNTER).await;
         let (mut receiving, refused) = self.query(COUNTER, &request).await;
+        let mut sibling = match sibling {
+            Some((request, entered, counter_pending, canceled, released)) => {
+                counter_pending.await.expect(
+                    "Counter verification was actually polled Pending before sibling progress",
+                );
+                self.wait_for(LEDGER).await;
+                let receiving = self.query(LEDGER, &request).await;
+                entered
+                    .await
+                    .expect("the sibling actually reached pending protection");
+                canceled
+                    .await
+                    .expect("the borrowed execution wait was canceled with its loan held");
+                let publication = released.send(());
+                publication.expect(
+                    "the Counter provider remains owned through borrowed-wait cancellation",
+                );
+                Some(receiving)
+            }
+            None => None,
+        };
         returned
             .await
             .expect("the actual refusing producer returned its original cause");
@@ -193,12 +258,19 @@ impl Peer {
         while let Some(original) = receiving.recv().await {
             replies.push(original);
         }
+        let mut refused = vec![refused];
+        if let Some((receiving, rejected)) = &mut sibling {
+            while let Some(original) = receiving.recv().await {
+                replies.push(original);
+            }
+            refused.push(Arc::clone(rejected));
+        }
         let closed = self.session.close().await;
         (
             Observations {
                 replies,
                 additional: Vec::new(),
-                refused: vec![refused],
+                refused,
                 closed,
             },
             shutdown,

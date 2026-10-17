@@ -350,11 +350,20 @@ async fn constructor_refusal() {
             protection,
             published,
             (request_refusal, reply_refusal, refusal),
-            (verification_poll, verification_disposal, protection_poll, protection_disposal),
+            (
+                verification_factory,
+                verification_poll,
+                verification_disposal,
+                protection_factory,
+                protection_poll,
+                protection_disposal,
+            ),
         ) = request.into_parts(&declarations);
         assert!(
-            verification_poll.is_none()
+            verification_factory.is_none()
+                && verification_poll.is_none()
                 && verification_disposal.is_none()
+                && protection_factory.is_none()
                 && protection_poll.is_none()
                 && protection_disposal.is_none()
         );

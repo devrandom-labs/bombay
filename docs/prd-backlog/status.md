@@ -1,27 +1,29 @@
 # Backlog status and dependencies
 
-Current next remote step: private verifier acquisition608c232 is locally
-verified with original-result and separate poll/disposal panic controls. It adds
-12 net production lines and no public type; scoped two-pass outcome review passes.
-Public verification controls and all22 application clients pass both profiles;
-strict all-feature workspace lint and formatting pass. This is a prerequisite,
-not public Node service acceptance or main delivery. Private asynchronous startup
-is committed/pushed as
-3b77de09 with verified recovery archivec17b2c74. Fresh public Node prerequisites
-5c5910ec recheck the exact399-package lock,13 archives,18 manifests and44 owners.
-The local combined child/family fixture passes all22 application-client tests
-in both profiles, strict focused lint and formatting; production/API are unchanged.
-The public cold Export/Node consumer remains blocked on its actual mixed
-protocol, child, compatible nominal family, borrowed-provider, absent-Work and
-native-close witnesses. The first consumer compiler baseline has seven intended missing-API errors in
-both profiles. The nine-case source and real endpoint-exhaustion source have reviewed
-missing-API baselines in both profiles, without runtime acceptance. The later
-Ready-result/destructor-panic source has scoped review but no runtime acceptance. Sibling progress/disposal,
-remaining producer faults, target certification and mutable authority still
-block production selection. No public API is selected by compiler probes.
-The [remote PRD](../prds/static-remote-actors.md#public-node-consumer--fresh-prerequisites-and-scope)
-records ownership, remaining gates and carried budgets. All full remote rows
-remain open; this is neither main delivery nor distillation.
+Current next remote step: implement the one cold Export/Node composition against
+its twenty source-reviewed consumer cases. Eight drafts (4252 lines) remain unmounted;
+final debug/optimized checks report25 direct missing source contracts plus two
+inference cascades, and the owning constructor reports five missing contracts.
+Formatting passes; two-pass outcome reviewb8c7880d verifies all25 command records
+and1030 frozen versions. This adds no production code or public type and supplies
+no successful service build/runtime acceptance. Both temporary mounts are restored.
+
+The source covers original sibling facts through separate producer disposal,
+borrowed waits, duplicate/foreign startup targets, actual current guard construction,
+row/factory quota and distinct native factory/poll/disposal payloads. Total retained
+request custody is now explicitly selected instead of the old distinct-entry count.
+The rejected third-query permit check races native destructor completion; owning
+permit discharge and permission through admission/publication/revocation remain
+open. Exact source gates, limits and cumulative charges are in the
+[remote PRD](../prds/static-remote-actors.md#concurrent-node-consumer--final-source-and-verification-record).
+
+Earlier private verifier acquisition608c2326 remains locally verified with12 net
+production lines and no public type. Its original-result, poll/disposal and intended
+inversion controls, public verification,22 clients and strict checks retain their
+scoped evidence. Private asynchronous startup3b77de09 and its recovery archivec17
+remain separate prerequisites. Current5c5910ec selected lock/13 archives/18 manifests
+remain unchanged. Full cold service, SDK privacy and all R01–R25/AUTH1/NET1,
+distillation, required CI/review and normal main delivery remain open.
 
 Current integration: user-requested latest main49cc8971 (PR385) selects
 Behavior/Actors0.26.0 and the complete Application/Work outcomes. Superseded

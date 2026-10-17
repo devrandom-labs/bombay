@@ -2,26 +2,36 @@
 
 ## Current status (2026-10-17 UTC)
 
-Latest main49cc8971 was fetched and remains included in this research branch.
-The public cold Node consumer is still unimplemented: twelve proposed cases
-cover healthy composition, refusals, constructor exhaustion and Ready-result
-producer destruction. These sources remain unmounted and receive no service
-runtime or full-requirement acceptance.
+Latest main49cc8971 was fetched again and remains included in this research
+branch. The public cold Node path is still unimplemented. Its twenty proposed
+cases now cover healthy mixed protocols/children/families, original refusals,
+constructor exhaustion, pending siblings and borrowed waits, target certification,
+current guard construction, total request custody and distinct provider factory,
+poll and disposal faults. All eight draft files remain unmounted:4252 lines of
+source, not passing service or full-requirement evidence.
 
-A bounded private prerequisite now factors verifier polling from producer
-ownership. The actual provider stays outside the caught call, allowing polling
-and destruction to be caught separately without losing either original panic
-payload or an already acquired result. This adds12 net production lines and no
-public type. Exact owning-source checks, both deliberate defects, public
-verification controls and all22 application clients pass their applicable debug
-and optimized controls. Strict all-feature workspace lint and formatting pass.
-Independent two-pass outcome reviewed9ab65e verifies all53 command records and
-968 frozen versions; details and qualifications are in the final change record.
+The new cohort adds no production code or public type. Independent two-pass
+source reviews qualify each bounded law. Final debug/optimized consumer checks
+both fail on25 direct missing contracts plus two inference cascades; owning
+constructor checks both fail on five missing contracts. Both final formatting
+checks pass. Outcome reviewb8c7880d checks all25 new command records and1030
+frozen versions twice, including exact restoration of both temporary mounts.
+No successful cold build or runtime test is credited.
 
-Next complete the remaining public-consumer source gates, then the one Node
-integration: pending sibling progress/disposal, cancellation, target certification
-and mutable authority remain unproved there. Full R01–R25/AUTH1/NET1,
-distillation, required CI, review and normal main delivery remain open.
+The earlier private acquisition608c2326 adds12 net production lines and no public
+type. Its actual original-result and independent poll/disposal controls, intended
+inversions, public verification and22 application-client cases passed in both
+profiles, with strict lint/format checks. That scoped evidence remains separate
+from this source cohort and full Node service acceptance.
+
+Next select and implement one cold Export/Node path against these exact consumer
+contracts, preserving six distinct native provider panic slots, one Request
+vector and existing invocation/retirement owners. The selected total request
+quota deliberately replaces distinct-entry semantics. The discarded third-query
+permit check had a real destructor-order race; permit discharge remains an owning
+runtime/resource gate. Current-guard construction does not prove guard retention
+through result storage/publication or revocation. All full R01–R25/AUTH1/NET1,
+SDK privacy, distillation, required CI/review and normal main delivery stay open.
 
 ## Earlier private-startup checkpoint (2026-10-17 UTC)
 
@@ -35282,3 +35292,329 @@ epoch, both exact restorations, final three-case controls, public/client checks
 and strict lint/format results. Nine inner UI rows from the client target remain
 separate from22 outer tests. All aborted, setup and unbound historical-binary
 limitations above remain explicit; no full Node, CI, merge or full-row credit.
+
+### Concurrent provider faults — consumer source change record
+
+Continue on research b213b8f5 with a clean initial tree. Lock667a03e9,
+selected Behavior/Actors0.26.0 revision98983b4 and complete instructions2b7a9195
+remain selected; no patch, replacement or dependency change. The private
+poll_verification owner44a04de2 is the only intervening primitive change,
+reviewedb26d8a47 and verifieded9ab65e. Re-inspection covers the actual provider
+source, receipt ownership, current RefCell permission loans, Node execution,
+private Export retention, actual peer query/declaration/close operations and
+Driver cancellation/retirement contracts. Existing primitive ownership remains
+as recorded in feature prerequisites5c5910ec; no dependency blocker is waived.
+
+The deliberate Bombay policy is per-request fault containment: a provider
+fault records its actual native unwind payload without inventing a provider
+Result or JoinError, without admitting that failed request, and without
+surrendering sibling request custody. A sibling already awaiting protection
+retains its actual admitted command/native result. Final application shutdown
+must individually dispose all pending producers, preserve each independent
+panic and release their actual mutable provider loans before extraction.
+Whole-operation surrender still supplies no async-cleanup certificate.
+
+Smallest additional source witness reuses the existing real Creator, Counter,
+Ledger and nonempty family refusal consumer. Four verifier-fault cases first
+hold Counter verification pending, admit one real Ledger Append, then hold its
+protector with a mutable RefCell guard over a caller-owned scope value. A canceled borrowed execution wait must
+leave that loan held. Only after that observation may the private peer release
+Counter polling. Ready-Ok/Ready-Err destruction, pure poll panic and simultaneous
+poll/disposal panic retain separate original facts. An independent terminal Ledger Read proves actual Append processing before root
+shutdown; Ledger disposal separately panics; final assertions require its original native Append, raw/proof/receipt,
+one disposal, exact panic identity, released guard, and all ordinary root,
+notification, family and close originals. No early failed assertion, timeout,
+empty Ledger or producer factory call counts as this witness.
+
+Expected paths are the existing refusal, faults and peer test files plus PRD
+records; approximately250 additional test lines, production+0/-0/net0 and
+public API+0/-0. Reuse the existing source enum, nominal provider receipts,
+standard Future/RefMut/oneshot products and native panic payload storage. No
+new runtime, replay owner, error wrapper or public API is selected. Review the
+new source twice, including independent counterexample review, before mounting.
+It cannot run against the absent cold Node API yet; no runtime credit is
+claimed. Original missing-contract compiler controls and later actual service
+controls/inversions remain required. All2500/18/125/20000 cumulative and earlier
+copied/rejected/external/unknown costs carry; no reset or certified headroom.
+
+Independent source review found and corrected two causal gaps: saving the actual
+borrow attempt postpones the loan oracle until after cleanup, and the terminal
+Ledger Read removes the scheduling assumption that admitted Append must already
+be processed at root cancellation. A poll-time Counter signal, separately from
+factory construction, must precede the sibling request and borrowed-wait
+cancellation. The original sibling receipt/proof and both actual sender origins
+are compared independently. This provider-owned RefMut is a lending/disposal
+witness only: the current-permission callback does not consult that scope value.
+The separate mutable grant/current-authority gate remains open.
+
+The corrected source exceeds the approximate250-line forecast. At this source
+checkpoint the complete tracked/untracked delta is four paths: production
++0/-0/net0; tests+466/-47/net419; public API+0/-0; records+62/-0. There are no
+untracked paths. Both formatter commands pass and intentionally change source;
+neither compiles or runs the absent Node consumer. Prior source epochs and all
+cumulative unknown/copy/rejection costs still carry without allowance reset.
+
+The second containment observation occurs after the Counter fault and actual
+Counter Read, before terminal Ledger Read/root shutdown. It saves the actual
+scope borrow result and sibling disposal count; final oracles require the loan
+still held and zero disposals there. This excludes global sibling cancellation
+that would otherwise preserve final row facts while violating containment.
+
+### Mutable current permission — consumer source preparation
+
+The existing healthy consumer currently returns unit from permission callbacks.
+Replace that focused immutable policy with an actual RefCell<Binding> snapshot
+loan for both protocols, reusing the selected provider identity and existing
+wire current-scope validation. The exact guard, rather than a borrowed receipt
+or a copied authorization answer, must survive until its native operation/result
+storage or reply publication completes. This is deliberate Bombay local policy;
+it does not imply remote revocation linearizability.
+
+First source witness returns the actual Ref<Binding> and records actual borrow
+refusals inside each selected native command constructor. Its final observations
+require all four genuine constructors to see their current binding still loaned,
+and both binding stores to be mutable again after Node extraction. The three
+healthy paths exercise supplied/absent Work, both pending provider phases and
+both nominal receipt families. No new public type or source-owned permission
+framework; this changes consumer.rs plus records, approximately100 test lines,
+production+0/-0/net0 and API+0/-0. Reuse ordinary constructor closures, existing
+current callbacks and existing RefCell owner. Compilation/runtime remain absent.
+
+This is only a current-guard and construction witness. Native result-storage
+and publication boundaries still require owning implementation inspection and
+actual differential/inversion controls; a construction observation alone cannot
+certify them. Mutable revocation between authentication and admission/publication
+also stays open. All earlier cumulative costs and source extents carry. The
+concurrent-fault RefMut fixture is independently a provider-lending witness and
+is not credited as this permission check.
+
+### Target certification — source decision before implementation
+
+Independent modelc6eead26 confirms the already selected one-export-per-actor
+law. Reuse the existing cold Export result slot as `startup`, describing its
+complete certification/reservation/declaration operation honestly. The failing
+export retains UnownedTarget or DuplicateTarget directly; never wrap a local
+refusal in Declaration or fabricate a native error. Successful startup means
+actual native declaration success. Common preflight failure leaves all other
+startup and all withdrawal slots absent. The actual successful binder Result,
+original targets and unused Work remain independent. This requires no new
+public type or certification field.
+
+Write two narrow source controls with two real Counter Applications alive
+concurrently: two distinct export keys select one actor, or the second selects
+the other Application's actor. Their local numeric addresses may coincide;
+association must be checked before numeric duplicate comparison. Neither export
+may declare or invoke Work. Acquire actual Node cleanup/close, return original
+unused Work through the existing result, then execute that exact callable once
+in the already live other Application to recover its original move-only Box and
+borrowed configuration while performing a real Counter Read and shutdown.
+Final observations follow both actual Application outcomes. Expected source is
+one approximately250-line unmounted targets.rs plus its draft mount; production
++0/-0/net0, API+0/-0. Existing shared providers, reply declaration, native
+Counter and ordinary Application invocation are reused. Source preparation does
+not select production API or establish any runtime law; full family/cohort and
+all later inversions remain separate. All previous extents/cumulative costs carry.
+
+### Retained request quota — explicit selection
+
+Select the recommended single total custody maximum for the replacement cold
+Export: retained_requests counts every Request row acquired for the export's
+lifetime, including verification/permission/constructor refusals, duplicates and
+conflicts, pending work and terminal native results. Reserve its row before
+invoking a provider. A canonical request and each acquired duplicate occupy
+separate custody rows; duplicate rows reference the exact original canonical
+key. Use that same append-only Request vector for canonical identity comparison
+and terminal extraction, without a second replay table or mirrored counter.
+
+This deliberately replaces the old distinct-canonical-entry meaning. Once total
+row custody is full, even a repeated canonical request cannot invoke a verifier,
+allocate a native endpoint or obtain another row. The old duplicate-before-
+distinct-limit behavior does not carry to the replacement. No second maximum,
+default, eviction or reusable row identifier is selected. Existing retained
+rows/keys remain valid until extraction; a full quota cannot rewrite them.
+
+Raw native callbacks and queued Query custody remain separately bounded by
+queued_queries/retained_queries and Node's explicit connection limits. Refusing
+transfer into a Request row is not a stored provider refusal and must never
+fabricate a provider result. Its actual raw Query and any count permit require
+explicit individual discharge under the existing ingress policy. A mapped
+IngressError<()> still owns its permit and cannot be called discharged until
+that original permit is actually released after the Query. Bounded diagnostics
+must truthfully describe discharge; they cannot grow with rejected traffic or
+retain unbounded query/proof history. Full resource/flood/overflow and actual
+SDK-final behavior remain independent acceptance gates.
+
+Before production selection, extend the real public consumer with full-quota
+repeat and verification-refusal cases; both must leave the original retained
+facts intact and show that the next provider/constructor was not called. The
+public input/error/docs contract and old caller expectations must migrate in
+the same replacement stage. This policy decision grants no implementation,
+verification, allowance reset or full-row acceptance. All prior costs carry.
+
+Target source review93a7728b vetoed its initial264-line epoch: a wrong Work
+invocation could panic before the other Application joined, and shutdown
+admission alone could race owner cancellation. Preserve that epoch and revise
+the source to pass an explicit Option<original Work>, retaining unexpected
+WorkOutcome on the existing result instead of aborting. The other live
+Application shuts down and awaits its existing retirement even when no unused
+callable returns. The recovered callable also awaits actual retirement after
+its real Read/shutdown. Final refusal oracles follow both joined outcomes.
+Inline run_with supplies the existing concrete closure context; no new handle
+alias, trait, wrapper or bound is added. These are source corrections, without
+negative runtime credit or public API selection.
+
+### Quota controls — source before replacement
+
+Current complete tree after target source corrections: production+0/-0/net0;
+tests+836/-58/net778; public API+0/-0; six paths including the284-line untracked
+targets.rs. Target source is34 lines over its250-line forecast. Reviews
+3b3b5cc3/cd88b99d/5888c885 are source-only; original target veto93a7728b remains.
+One erroneous package selector never reached compilation. Corrected debug and
+optimized checks each report22 errors:20 missing source contracts plus two
+unresolved-inference cascades in the canceled-wait consumer. There is no
+E0308, no successful service build, and no runtime acceptance. A module-order
+format difference was corrected; final direct draft format check passes. The
+temporary integration-root mount is restored byte-exact6bc7a8c3. The owning
+constructor draft remained unmounted in these checks. All source epochs carry.
+
+Add approximately300 source lines in quota.rs plus a private peer method and
+draft mount. Use one actual live Counter Node, one cold read declaration and
+genuine absent Work. Set total request custody to one. The first case acquires
+an actual successful canonical read/reply; the second retains an actual borrowed
+provider refusal. In each, send the identical request again while the actor and
+export remain live. Its native query must finish without a reply before any
+shutdown request or native query expiry. Final extraction must retain exactly
+the original row, show exactly one actual provider factory invocation and no
+second native constructor, and include a bounded RetentionCapacity discharge
+observation for that exact full-quota transfer. That observation follows actual
+Query disposal/permit release, not provider construction. Match both first
+query outcomes, exact provider/native/raw/proof originals, root/notifications
+and independent peer/Node close results after joined cleanup.
+
+Reuse Request custody, existing ExportError::RetentionCapacity in the SDK-free
+ingress observation vector, standard Result products, existing receipt and pure
+read declarations; no new public diagnostic wrapper/type. This selects a
+bounded diagnostic for request-row capacity refusal only; other callback
+capacity/queue/overflow disposal contracts remain independently blocked. The
+explicit lifetime custody quota is a deliberate change from old distinct-entry
+semantics. Production+0/-0/net0 and public API+0/-0 for this source stage. No
+new implementation, runtime, API or allowance acceptance is inferred; all
+copied/modified/rejected/historical/unknown costs carry.
+
+Quota source review found FINAL alone cannot observe the rejected Query's count
+charge release. The amended finite trace uses retained_queries=1 and submits a
+third identical Query after the second FINAL, before shutdown and with the
+queryable still matched. It must produce a second row-level RetentionCapacity
+observation, proving the preceding refused Query released the sole charge; a
+truthfully reported native-ingress capacity refusal cannot substitute. This is
+one finite release observation, not proof of every last disposal, arbitrary
+traffic, final-charge release or whole resource bounds. The implementation must
+retain the distinction between actual native ingress capacity and Request-row
+capacity; all actual owning controls/inversions remain required.
+
+The third-query amendment is rejected as a healthy-source oracle. Selected
+SDK1.10.10 sends FINAL from QueryInner::drop before that destructor returns;
+permit destruction follows later. A transport worker can receive FINAL and
+submit another callback during this lawful interval. Matching does not join
+local disposal. Exact restoration returns quota.rs c4e01445 and peer.rs63e79812,
+reviewede5f7b163, retaining the two-query row/factory scope only. FINAL and its
+RetentionCapacity diagnostic supply no independent permit-release credit.
+Keep that owning runtime/resource gate open; no production hook, extra query
+retry policy, source authority or public type is introduced. The rejected
+6a26/a6b1 epoch and its actual formatter record remain frozen, with all costs.
+
+### Provider construction provenance — source gate
+
+Factory construction is a third actual operation alongside polling and disposal.
+The four-slot proposal cannot preserve its native panic without misclassifying
+it. Before production selection, extend the existing Request extraction product
+to six independent native payload slots, one factory/poll/disposal triplet per
+provider. These are existing standard native unwind payloads, not new protocol
+errors or public wrapper types. No provider Result may be invented when its
+factory failed to return a future; there is no producer disposal in that case.
+
+Add two actual ordinary factory-panic cases to the existing Counter refusal
+consumer, retaining the full native/family/notification/close trace. Verification
+construction panic must leave Counter state zero and no future/result; protection
+construction panic must preserve the already acquired processing reply and
+Counter state one. Preserve the exact native Arc payload and every independent
+original. Plain protection factories return ordinary Ready futures; the healthy
+consumer still exercises borrowing asynchronous protectors, so neither spelling
+becomes a placeholder. Factory signal is emitted by the actual called closure;
+future polling/destruction signals remain separately attributed. No pending
+sibling claim is made by these two cases; the earlier four cases own that gate.
+
+Expected source changes: existing refusal consumer plus six-slot destructuring
+in healthy, quota and constructor drafts; approximately150 test lines, no new
+software path, production+0/-0/net0 and API+0/-0 for this source stage. Reuse
+RefusalStage and existing boxed native payload storage. This is explicit source
+selection of provenance, not public implementation clearance. Two-pass source
+review and later actual factory/poll/disposal inversions remain required. Old
+four-slot source epochs and all cumulative costs remain carried and qualified.
+
+Factory source review adds direct caller-local construction counts: the actual
+Fn increments before returning any future or panicking. Final oracles require
+(verification,protection)=(1,0) for verifier construction failure and(1,1) for
+protector construction failure, excluding a retried/ignored factory fault that
+would leave no extra producer destructor. Earlier source-only missing-contract
+checks precede this amendment and receive no final runtime credit. Fresh main
+fetch still selects49cc8971, already integrated; no new merge is required.
+
+### Concurrent Node consumer — final source and verification record
+
+Retain this bounded source cohort after reviews3b3b5cc3 (sibling faults),
+cd88b99d (current construction guard), c6eead26/5888c885 (target startup),
+e5f7b163 (row/factory quota only) and01ed5c00 (six-slot factory provenance).
+Earlier target veto93a7728b and quota amendment veto26d85d95 remain immutable.
+The latter's third-query source is restored exactly to its scoped predecessor
+before the separate six-slot amendment. No new owner, runtime, public wrapper,
+registry or Behavior/effect contract was implemented by these sources.
+
+Fresh locked checks still match13 exact crate archives/VCS identities and18
+manifests in5c5910ec; all44 owner inputs remain qualified. Differences are the
+already verified private acquisition44a04de2, shared Purpose declarations338b,
+and current PRD/status records. Behavior/Actors0.26.0 revision98983b4 and complete
+instructions2b7a9195 remain selected. Latest origin/main49cc8971 is already an
+ancestor of this branch; no main merge or new CI run occurred in this stage.
+
+Actual commands all use the pinned profile. Initial cargo check used the wrong
+package selector bombay and stopped before compilation; this is setup-only.
+Corrected intermediate consumer checks fail on22 errors, including two inference
+cascades. The new final source checks use bombay-rs:
+
+- cargo check --offline --locked -p bombay-rs --all-features --test application_clients,
+  with a second --release invocation: both101,6E0432+17E0599+4E0560. Of27 errors,
+ 25 are direct missing source contracts and two are diverging-inference cascades.
+- cargo test --offline --locked -p bombay-rs --all-features --lib --no-run,
+  with a second --release invocation: both101,1E0432+3E0599+1E0560. No tests run.
+- cargo fmt --all -- --check and direct rustfmt --edition 2024 --check of the
+  actual consumer/constructor sources: both0, with unchanged before/after maps.
+
+An earlier workspace format check fails only on module ordering; the subsequent
+formatter makes that bounded correction. Source formatter changes are recorded
+as changed inputs, without compiler/runtime credit. No proposed type, bound or
+visibility is retained from a compiler suggestion. Both temporary test mounts
+are removed byte-exactly: integration root6bc7a8c3 and private owning roote8e0a7d7.
+The two new files and all prior drafts remain unmounted after the checks.
+
+Independent outcome reviewb8c7880d verifies every raw log/receipt and all48,354
+source-map entries per pass,1030 unique frozen versions, twice. All25 actual
+command closures are complete. It confirms scoped source reversals and final
+projection hashes, setup-only and inference qualifications, unchanged immutable
+prerequisites and no runtime/CI credit. No earlier148-command archive audit was
+repeated. Whole-goal archives and all historical costs remain required.
+
+Complete tracked/untracked delta againstb213b8f5: production+0/-0/net0;
+tests+1325/-71/net1254; public API+0/-0; seven software paths plus PRD/status.
+The eight unmounted drafts total4252 lines; the two new untracked files total592
+lines before commit. Factory source exceeded its approximate150-line forecast;
+all copied, corrected, discarded and formatted source epochs, inline tooling,
+records and prior unknown costs carry. This is new verification source, not code
+reduction. Known retained production1923 and12 public reservations are unchanged;
+approved2500/18/125/20000 cumulative boundaries grant no reset or headroom claim.
+No feature is complete, distilled or merged from this checkpoint. Exact native
+permit discharge, current permission through admission/result/publication and
+revocation, cold owner implementation and real differential/inversion execution
+remain required before those laws can receive acceptance. The full goal stays
+active through all remaining wire/security/effect/resource/two-process/fault-host,
+ordinary remote example, minimization and reviewed main delivery gates.

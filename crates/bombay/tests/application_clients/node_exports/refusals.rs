@@ -1,5 +1,6 @@
 //! Actual refusal consumers: original causes, unused Work and acquired native facts coexist.
 use super::super::super::counter::{CounterMessage, CounterProcessed, CounterValue};
+use super::super::super::ledger::{LedgerCommand, Receipts};
 use super::super::actors::{ActorExports, Counters, CountersRole, Creator, Exports, topology};
 use super::super::{assert_exports, assert_retirement};
 use super::{CounterOutcome, LedgerOutcome, peer, protocol, wire};
@@ -9,15 +10,18 @@ use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, E
 use bombay::remote::{Attempt, Export, ExportError, ExportLimits};
 use bombay::remote::{reply, stop, submission};
 use bombay::{
-    ActorFailureAssessment, ActorRetirement, ApplicationScope, MailAddr, RetirementAssessment,
-    WorkOutcome,
+    ActorFailureAssessment, ActorRetirement, ApplicationScope, Completion, MailAddr,
+    RetirementAssessment, WorkOutcome,
 };
 use protocol::{
     EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, recorded,
     reserved_address, scheduled,
 };
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+use std::future::ready;
 use std::num::NonZeroUsize;
+use std::panic::panic_any;
+use std::pin::pin;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
@@ -36,6 +40,10 @@ enum RefusalStage {
     Reply,
     VerifiedDisposal,
     RefusedDisposal,
+    VerificationPoll,
+    VerificationDoublePanic,
+    VerificationFactory,
+    ProtectionFactory,
 }
 
 #[derive(Debug)]
@@ -140,12 +148,53 @@ async fn refused_receipt_survives_its_producer_destructor_panic() {
     .expect("finite Ready-Err disposal trace completes before native expiry");
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn poll_panic_preserves_pending_sibling_native_result_and_disposal() {
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        refused(RefusalStage::VerificationPoll),
+    )
+    .await
+    .expect("finite poll fault and sibling disposal complete before native expiry");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn poll_and_destructor_panics_preserve_all_three_original_payloads() {
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        refused(RefusalStage::VerificationDoublePanic),
+    )
+    .await
+    .expect("finite independent producer disposals complete before native expiry");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn verification_factory_panic_has_no_provider_result_or_disposal() {
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        refused(RefusalStage::VerificationFactory),
+    )
+    .await
+    .expect("finite verification construction fault completes before native expiry");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn protection_factory_panic_preserves_the_actual_native_reply() {
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        refused(RefusalStage::ProtectionFactory),
+    )
+    .await
+    .expect("finite protection construction fault completes before native expiry");
+}
+
 async fn refused(stage: RefusalStage) {
     let address = reserved_address();
     let reports = Arc::new(Mutex::new(Vec::new()));
     let scope = ApplicationScope::new();
     let mut exported = scope.external::<Exports>().unwrap();
     let mut values = scope.external::<CounterValue>().unwrap();
+    let mut receipts = scope.external::<Receipts>().unwrap();
     let application = scope
         .with_topology(
             Creator::default().stop_on_shutdown(),
@@ -181,11 +230,47 @@ async fn refused(stage: RefusalStage) {
     let deadline = Instant::now() + Duration::from_secs(30);
     let producer_panic = Arc::new(vec![61_u8, 67]);
     let disposed = RefCell::new(Vec::new());
+    let polling_panic = Arc::new(vec![71_u8, 73]);
+    let sibling_panic = Arc::new(vec![79_u8, 83]);
+    let borrowed_scope: Box<[u8]> = [89, 97].into();
+    let scope_allocation = borrowed_scope.as_ptr();
+    let ledger_scope = RefCell::new(borrowed_scope);
+    let ledger_disposals = RefCell::new(Vec::new());
+    let ledger_loans = RefCell::new(Vec::new());
+    let (ledger_entered, ledger_pending) = oneshot::channel();
+    let (wait_entered, wait_pending) = oneshot::channel();
+    let ledger_entered = RefCell::new(Some((ledger_entered, wait_entered)));
+    let (wait_canceled, wait_observed) = oneshot::channel();
+    let (counter_released, counter_gate) = oneshot::channel();
+    let counter_gate = RefCell::new(Some(counter_gate));
+    let (counter_entered, counter_pending) = oneshot::channel();
+    let counter_entered = RefCell::new(Some(counter_entered));
+    let verification_calls = Cell::new(0);
+    let protection_calls = Cell::new(0);
     let verify_counter = |bytes: &[u8], proof: &[u8]| {
+        verification_calls.set(verification_calls.get() + 1);
+        if let RefusalStage::VerificationFactory = stage {
+            let publication = returned
+                .borrow_mut()
+                .take()
+                .expect("one actual verification factory fault")
+                .send(());
+            publication.expect("private peer observes actual verification construction");
+            panic_any(Arc::clone(&producer_panic));
+        }
         let result = match stage {
-            RefusalStage::Verification | RefusalStage::RefusedDisposal => Err(
-                VerificationRefusal::Withheld(withhold(&configuration, &original_cause, &returned)),
-            ),
+            RefusalStage::Verification => Err(VerificationRefusal::Withheld(withhold(
+                &configuration,
+                &original_cause,
+                &returned,
+            ))),
+            RefusalStage::RefusedDisposal => Err(VerificationRefusal::Withheld(Withheld {
+                scope: &configuration,
+                original: original_cause
+                    .borrow_mut()
+                    .take()
+                    .expect("one actual Ready refusal"),
+            })),
             _ => {
                 let request = ProtectedMessage {
                     protected: bytes.into(),
@@ -201,21 +286,44 @@ async fn refused(stage: RefusalStage) {
             }
         };
         let panic = match stage {
-            RefusalStage::VerifiedDisposal | RefusalStage::RefusedDisposal => {
-                Some(Arc::clone(&producer_panic))
-            }
+            RefusalStage::VerifiedDisposal
+            | RefusalStage::RefusedDisposal
+            | RefusalStage::VerificationDoublePanic => Some(Arc::clone(&producer_panic)),
             _ => None,
+        };
+        let (gate, polling) = match stage {
+            RefusalStage::VerifiedDisposal | RefusalStage::RefusedDisposal => {
+                (counter_gate.borrow_mut().take(), None)
+            }
+            RefusalStage::VerificationPoll | RefusalStage::VerificationDoublePanic => (
+                counter_gate.borrow_mut().take(),
+                Some(Arc::clone(&polling_panic)),
+            ),
+            _ => (None, None),
         };
         faults::Verification {
             result: Some(result),
+            gate,
+            entered: counter_entered.borrow_mut().take(),
+            polling,
             panic,
             returned: &returned,
             disposed: &disposed,
             stage,
         }
     };
-    let protect_counter =
-        async |bytes: &[u8], receipt: &recorded::Receipt<CounterInput>| match stage {
+    let protect_counter = |bytes: &[u8], receipt: &recorded::Receipt<CounterInput>| {
+        protection_calls.set(protection_calls.get() + 1);
+        if let RefusalStage::ProtectionFactory = stage {
+            let publication = returned
+                .borrow_mut()
+                .take()
+                .expect("one actual protection factory fault")
+                .send(());
+            publication.expect("private peer observes actual protection construction");
+            panic_any(Arc::clone(&producer_panic));
+        }
+        let result = match stage {
             RefusalStage::Protection => Err(ProtectionRefusal::Withheld(withhold(
                 &configuration,
                 &original_cause,
@@ -224,6 +332,8 @@ async fn refused(stage: RefusalStage) {
             _ => wire::protect(bytes, recorded::projection(receipt), &replies, maximum)
                 .map_err(ProtectionRefusal::Provider),
         };
+        ready(result)
+    };
     let verify_ledger = async |bytes: &[u8], proof: &[u8]| {
         let request = ProtectedMessage {
             protected: bytes.into(),
@@ -237,6 +347,23 @@ async fn refused(stage: RefusalStage) {
         .await
     };
     let protect_ledger = async |bytes: &[u8], receipt: &scheduled::Receipt<LedgerInput>| {
+        match stage {
+            RefusalStage::VerifiedDisposal
+            | RefusalStage::RefusedDisposal
+            | RefusalStage::VerificationPoll
+            | RefusalStage::VerificationDoublePanic => {
+                let permission = ledger_scope.borrow_mut();
+                return faults::Protection {
+                    permission,
+                    entered: ledger_entered.borrow_mut().take(),
+                    loans: &ledger_loans,
+                    disposed: &ledger_disposals,
+                    panic: Some(Arc::clone(&sibling_panic)),
+                }
+                .await;
+            }
+            _ => {}
+        }
         wire::protect(
             bytes,
             scheduled::projection(receipt),
@@ -418,6 +545,7 @@ async fn refused(stage: RefusalStage) {
         let targets = (counter.clone(), ledger.clone());
         let lifecycle = application.lifecycle();
         let read_target = counter.clone();
+        let ledger_target = ledger.clone();
         *binding.borrow_mut() = Some((
             admission,
             actual,
@@ -425,7 +553,31 @@ async fn refused(stage: RefusalStage) {
             family_reply,
             (target, sibling_address, ledger_address),
         ));
-        let publication = published.send((request, lifecycle, read_target));
+        let sibling_request = match stage {
+            RefusalStage::VerifiedDisposal
+            | RefusalStage::RefusedDisposal
+            | RefusalStage::VerificationPoll
+            | RefusalStage::VerificationDoublePanic => Some(wire::register(
+                wire::claims(
+                    ProviderProfile::Scheduled,
+                    "ledger",
+                    &caller_id,
+                    &receiver_id,
+                    ledger_address,
+                    317,
+                ),
+                LedgerInput::Append(vec![101, 103].into_boxed_slice()),
+                &ledger_requests,
+            )),
+            _ => None,
+        };
+        let publication = published.send((
+            request,
+            sibling_request,
+            lifecycle,
+            read_target,
+            ledger_target,
+        ));
         publication.unwrap_or_else(|_| panic!("the actual private peer waits for child binding"));
         match stage {
             RefusalStage::Binding => Err(withhold(&configuration, &original_cause, &returned)),
@@ -435,8 +587,11 @@ async fn refused(stage: RefusalStage) {
     let (finished, peer_finished) = oneshot::channel();
     let (server_closed, server_retired) = oneshot::channel();
     let counter_observation = RefCell::new(None);
+    let ledger_observation = RefCell::new(None);
+    let wait_observation = RefCell::new(None);
+    let sibling_retention = RefCell::new(None);
     let exchange = async {
-        let (request, lifecycle, target) = received
+        let (request, sibling_request, lifecycle, target, ledger_target) = received
             .await
             .expect("actual child binding preceded refusal");
         match stage {
@@ -445,6 +600,15 @@ async fn refused(stage: RefusalStage) {
                 let (peer, shutdown) = peer
                     .rejected(
                         request,
+                        sibling_request.map(|request| {
+                            (
+                                request,
+                                ledger_pending,
+                                counter_pending,
+                                wait_observed,
+                                counter_released,
+                            )
+                        }),
                         producer_returned,
                         async || {
                             let admission = values
@@ -455,6 +619,26 @@ async fn refused(stage: RefusalStage) {
                                 .await;
                             let original = values.receive().await;
                             *counter_observation.borrow_mut() = Some((admission, original));
+                            match stage {
+                                RefusalStage::VerifiedDisposal
+                                | RefusalStage::RefusedDisposal
+                                | RefusalStage::VerificationPoll
+                                | RefusalStage::VerificationDoublePanic => {
+                                    let loan =
+                                        ledger_scope.try_borrow_mut().map(|scope| scope.as_ptr());
+                                    let disposals = ledger_disposals.borrow().len();
+                                    *sibling_retention.borrow_mut() = Some((loan, disposals));
+                                    let admission = receipts
+                                        .send(
+                                            &ledger_target.recipient(),
+                                            LedgerCommand::Read(receipts.recipient()),
+                                        )
+                                        .await;
+                                    let original = receipts.receive().await;
+                                    *ledger_observation.borrow_mut() = Some((admission, original));
+                                }
+                                _ => {}
+                            }
                             lifecycle.request_shutdown()
                         },
                         finished,
@@ -469,19 +653,43 @@ async fn refused(stage: RefusalStage) {
     let payload: Box<[u8]> = [53, 59].into();
     let payload_address = payload.as_ptr();
     let execution = async {
-        let outcome = node
-            .run_with(|application| {
-                invoked.borrow_mut().push(payload.as_ptr());
-                let configuration = &configuration;
-                async move {
-                    peer_finished
-                        .await
-                        .expect("actual refusal trace precedes Work completion");
-                    let report = application.lifecycle().retirement().await;
-                    (configuration.as_str(), payload, report)
-                }
-            })
-            .await;
+        let operation = node.run_with(|application| {
+            invoked.borrow_mut().push(payload.as_ptr());
+            let configuration = &configuration;
+            async move {
+                peer_finished
+                    .await
+                    .expect("actual refusal trace precedes Work completion");
+                let report = application.lifecycle().retirement().await;
+                (configuration.as_str(), payload, report)
+            }
+        });
+        let mut operation = pin!(operation);
+        let early = match stage {
+            RefusalStage::VerifiedDisposal
+            | RefusalStage::RefusedDisposal
+            | RefusalStage::VerificationPoll
+            | RefusalStage::VerificationDoublePanic => {
+                let completed = tokio::select! {
+                    outcome = operation.as_mut() => Some(outcome),
+                    pending = wait_pending => {
+                        pending.expect("the actual sibling protector holds its permission loan");
+                        None
+                    }
+                };
+                let loan = ledger_scope.try_borrow_mut().map(|scope| scope.as_ptr());
+                *wait_observation.borrow_mut() = Some((completed.as_ref().map(|_| ()), loan));
+                let publication = wait_canceled.send(());
+                publication
+                    .expect("private peer waits until borrowed-wait cancellation was observed");
+                completed
+            }
+            _ => None,
+        };
+        let outcome = match early {
+            Some(outcome) => outcome,
+            None => operation.await,
+        };
         let publication = server_closed.send(());
         (outcome, publication)
     };
@@ -502,11 +710,11 @@ async fn refused(stage: RefusalStage) {
         counter.into_parts();
     let (
         _ledger_inputs,
-        _ledger_declarations,
+        ledger_declarations,
         ledger_declared,
         ledger_withdrawn,
         ledger_ingress,
-        ledger_requests,
+        ledger_rows,
     ) = ledger.into_parts();
     closed.expect("actual Node connection close result");
     peer.closed
@@ -537,6 +745,7 @@ async fn refused(stage: RefusalStage) {
     assert_eq!(custody.descendants.len(), 3);
     let mut counter_origins = Vec::new();
     let mut ledger_origins = Vec::new();
+    let mut append_origin = None;
     for child in &custody.descendants {
         match child {
             topology::RootRetirements::Counter { origin, retirement } => {
@@ -550,16 +759,33 @@ async fn refused(stage: RefusalStage) {
             topology::RootRetirements::MailLedger { origin, retirement } => {
                 ledger_origins.push(origin.address());
                 assert_retirement(retirement.as_ref());
-                assert!(matches!(
-                    retirement.as_ref(),
-                    ActorRetirement::OwnerCancelled { .. }
-                ));
                 let entries = &retirement
                     .custody()
                     .expect("original untouched Ledger")
                     .behavior
                     .entries;
-                assert!(entries.is_empty());
+                match stage {
+                    RefusalStage::VerifiedDisposal
+                    | RefusalStage::RefusedDisposal
+                    | RefusalStage::VerificationPoll
+                    | RefusalStage::VerificationDoublePanic => {
+                        let [(from, original)] = entries.as_slice() else {
+                            panic!("actual sibling Append survives its pending protector disposal");
+                        };
+                        assert_eq!(retirement.completion(), Some(&Completion::Stopped));
+                        append_origin = Some(*from);
+                        let allocation = ledger_allocation.borrow();
+                        assert_eq!(original.as_ref(), [101, 103]);
+                        assert_eq!(Some(original.as_ptr()), *allocation);
+                    }
+                    _ => {
+                        assert!(matches!(
+                            retirement.as_ref(),
+                            ActorRetirement::OwnerCancelled { .. }
+                        ));
+                        assert!(entries.is_empty());
+                    }
+                }
             }
         }
     }
@@ -595,12 +821,7 @@ async fn refused(stage: RefusalStage) {
             residents: 0
         }
     );
-    assert!(
-        disposal.is_none()
-            && ingress.is_empty()
-            && ledger_ingress.is_empty()
-            && ledger_requests.is_empty()
-    );
+    assert!(disposal.is_none() && ingress.is_empty() && ledger_ingress.is_empty());
     match stage {
         RefusalStage::Binding => {
             let Err(refusal) = bound.expect("actual binding was attempted") else {
@@ -646,8 +867,13 @@ async fn refused(stage: RefusalStage) {
                 RefusalStage::Verification
                 | RefusalStage::Request
                 | RefusalStage::VerifiedDisposal
-                | RefusalStage::RefusedDisposal => 0,
-                RefusalStage::Protection | RefusalStage::Reply => 1,
+                | RefusalStage::RefusedDisposal
+                | RefusalStage::VerificationPoll
+                | RefusalStage::VerificationDoublePanic
+                | RefusalStage::VerificationFactory => 0,
+                RefusalStage::Protection
+                | RefusalStage::Reply
+                | RefusalStage::ProtectionFactory => 1,
                 _ => unreachable!("only queried refusals acquire a native Counter read"),
             };
             assert_eq!(
@@ -681,7 +907,14 @@ async fn refused(stage: RefusalStage) {
                 protection,
                 publications,
                 (request_refusal, reply_refusal, refusal),
-                (verification_poll, verification_disposal, protection_poll, protection_disposal),
+                (
+                    verification_factory,
+                    verification_poll,
+                    verification_disposal,
+                    protection_factory,
+                    protection_poll,
+                    protection_disposal,
+                ),
             ) = request.into_parts(&counter_declarations);
             let registered = requests.borrow();
             assert_eq!(registered.len(), 1);
@@ -702,8 +935,26 @@ async fn refused(stage: RefusalStage) {
             assert!(decoded.is_none() && refusal.is_none() && publications.is_empty());
             assert!(protection_poll.is_none() && protection_disposal.is_none());
             match stage {
-                RefusalStage::VerifiedDisposal | RefusalStage::RefusedDisposal => {
-                    assert!(verification_poll.is_none());
+                RefusalStage::VerificationFactory => {
+                    faults::assert_panic(verification_factory, &producer_panic);
+                    assert!(protection_factory.is_none());
+                }
+                RefusalStage::ProtectionFactory => {
+                    faults::assert_panic(protection_factory, &producer_panic);
+                    assert!(verification_factory.is_none());
+                }
+                _ => assert!(verification_factory.is_none() && protection_factory.is_none()),
+            }
+            match stage {
+                RefusalStage::VerifiedDisposal
+                | RefusalStage::RefusedDisposal
+                | RefusalStage::VerificationDoublePanic => {
+                    match stage {
+                        RefusalStage::VerificationDoublePanic => {
+                            faults::assert_panic(verification_poll, &polling_panic)
+                        }
+                        _ => assert!(verification_poll.is_none()),
+                    }
                     let payload = verification_disposal.expect(
                         "actual provider disposal unwinds after the original Ready result is acquired",
                     );
@@ -712,6 +963,10 @@ async fn refused(stage: RefusalStage) {
                         .expect("exact native panic payload type");
                     assert!(Arc::ptr_eq(payload, &producer_panic));
                     assert_eq!(payload.as_slice(), [61, 67]);
+                }
+                RefusalStage::VerificationPoll => {
+                    faults::assert_panic(verification_poll, &polling_panic);
+                    assert!(verification_disposal.is_none());
                 }
                 _ => assert!(verification_poll.is_none() && verification_disposal.is_none()),
             }
@@ -730,6 +985,28 @@ async fn refused(stage: RefusalStage) {
                             && protection.is_none()
                     );
                     assert!(request_refusal.is_none() && reply_refusal.is_none());
+                }
+                RefusalStage::VerificationPoll
+                | RefusalStage::VerificationDoublePanic
+                | RefusalStage::VerificationFactory => {
+                    assert!(
+                        verified.is_none(),
+                        "a provider factory or poll panic must not fabricate a result"
+                    );
+                    assert!(
+                        key.is_none()
+                            && native.is_none()
+                            && encoding.is_none()
+                            && protection.is_none()
+                            && request_refusal.is_none()
+                            && reply_refusal.is_none()
+                    );
+                    let original = original_cause.borrow();
+                    let original = original
+                        .as_ref()
+                        .expect("provider faults leave the refusal cause unused");
+                    assert_eq!(original.as_ptr(), allocation);
+                    assert_eq!(original.as_ref(), [37, 41]);
                 }
                 RefusalStage::VerifiedDisposal => {
                     verified
@@ -766,7 +1043,9 @@ async fn refused(stage: RefusalStage) {
                             && reply_refusal.is_none()
                     );
                 }
-                RefusalStage::Protection | RefusalStage::Reply => {
+                RefusalStage::Protection
+                | RefusalStage::Reply
+                | RefusalStage::ProtectionFactory => {
                     verified
                         .expect("actual verification result")
                         .expect("actual receipt");
@@ -802,6 +1081,15 @@ async fn refused(stage: RefusalStage) {
                             assert_withheld(cause, &configuration, allocation);
                             assert!(reply_refusal.is_none());
                         }
+                        RefusalStage::ProtectionFactory => {
+                            assert!(protection.is_none() && reply_refusal.is_none());
+                            let original = original_cause.borrow();
+                            let original = original
+                                .as_ref()
+                                .expect("factory panic leaves the unused refusal cause outside");
+                            assert_eq!(original.as_ptr(), allocation);
+                            assert_eq!(original.as_ref(), [37, 41]);
+                        }
                         RefusalStage::Reply => {
                             protection
                                 .expect("actual protection result")
@@ -819,9 +1107,145 @@ async fn refused(stage: RefusalStage) {
             assert_eq!(stopped, Some(Ok(())));
         }
     }
+    match stage {
+        RefusalStage::VerifiedDisposal
+        | RefusalStage::RefusedDisposal
+        | RefusalStage::VerificationPoll
+        | RefusalStage::VerificationDoublePanic => {
+            let permission = ledger_scope.try_borrow_mut().expect(
+                "individual producer disposal releases the actual borrowed guard even after panic",
+            );
+            assert_eq!(permission.as_ptr(), scope_allocation);
+            assert_eq!(permission.as_ref(), [89, 97]);
+            let loans = ledger_loans.borrow();
+            let disposals = ledger_disposals.borrow();
+            let wait = wait_observation.borrow();
+            let (early, loan) = wait
+                .as_ref()
+                .expect("actual borrowed wait cancellation was observed");
+            assert!(
+                early.is_none(),
+                "the pending branch must win before Counter is released"
+            );
+            assert!(
+                loan.is_err(),
+                "borrowed-wait cancellation retains the actual provider loan"
+            );
+            let sibling = sibling_retention.borrow();
+            let (loan, disposed) = sibling
+                .as_ref()
+                .expect("sibling retention observed after the Counter fault");
+            assert!(
+                loan.is_err(),
+                "the unrelated provider remains owned after a request-local fault"
+            );
+            assert_eq!(*disposed, 0);
+            assert_eq!(loans.as_slice(), [scope_allocation]);
+            assert_eq!(disposals.as_slice(), [()]);
+            let [request] = <[_; 1]>::try_from(ledger_rows)
+                .unwrap_or_else(|_| panic!("one acquired sibling request is retained"));
+            let (
+                key,
+                original,
+                verified,
+                decoded,
+                native,
+                encoding,
+                protection,
+                publications,
+                (request_refusal, reply_refusal, refusal),
+                (
+                    verification_factory,
+                    verification_poll,
+                    verification_disposal,
+                    protection_factory,
+                    protection_poll,
+                    protection_disposal,
+                ),
+            ) = request.into_parts(&ledger_declarations);
+            let registered = ledger_requests.borrow();
+            assert_eq!(registered.len(), 1);
+            assert_eq!(original.0, registered[0].protected);
+            assert_eq!(original.1, registered[0].proof);
+            let declared: wire::Request<LedgerInput> = serde_json::from_slice(&original.0).unwrap();
+            assert_eq!(declared.bombay.actor_generation, addresses.2.0);
+            assert_eq!(declared.bombay.request_sequence, 317);
+            assert_eq!(declared.kind, protocol::Purpose::Request);
+            let expected = LedgerInput::Append(vec![101, 103].into_boxed_slice());
+            assert_eq!(declared.operation, expected);
+            let verified = verified
+                .expect("sibling verification completed")
+                .expect("actual sibling receipt");
+            let scope = scheduled::projection(&verified);
+            let proof = scheduled::proof(&verified);
+            assert_eq!(scope.bombay, declared.bombay);
+            assert_eq!(scope.kind, declared.kind);
+            assert_eq!(scope.operation, declared.operation);
+            assert_eq!(proof, original.1.as_ref());
+            assert!(
+                key.is_some()
+                    && decoded.is_none()
+                    && protection.is_none()
+                    && publications.is_empty()
+                    && request_refusal.is_none()
+                    && reply_refusal.is_none()
+                    && refusal.is_none()
+                    && verification_factory.is_none()
+                    && verification_poll.is_none()
+                    && verification_disposal.is_none()
+                    && protection_factory.is_none()
+                    && protection_poll.is_none()
+            );
+            encoding
+                .expect("actual sibling encoding retained")
+                .expect("pure Append encoding succeeded");
+            faults::assert_panic(protection_disposal, &sibling_panic);
+            let Some(LedgerOutcome::Appended {
+                unsent,
+                native: (sender, admission),
+            }) = native
+            else {
+                panic!("pending sibling preserves its actual native Append");
+            };
+            assert!(unsent.is_none());
+            let Attempt::Returned(Ok(sender)) = sender else {
+                panic!("the actual sibling sender constructor succeeded");
+            };
+            let observation = ledger_observation.borrow();
+            let (read_admission, original) = observation
+                .as_ref()
+                .expect("actual independent Ledger barrier");
+            let original = original
+                .as_ref()
+                .expect("terminal Ledger Read proves Append processing before shutdown");
+            assert!(read_admission.is_ok());
+            assert_eq!(original.from, addresses.2);
+            let origin = sender.address();
+            assert_eq!(original.message, [origin]);
+            assert_eq!(append_origin, Some(origin));
+            assert!(matches!(admission, Attempt::Returned(Ok(()))));
+        }
+        _ => {
+            assert!(ledger_rows.is_empty());
+            let loans = ledger_loans.borrow();
+            let disposals = ledger_disposals.borrow();
+            assert!(loans.is_empty() && disposals.is_empty());
+        }
+    }
+    let expected_calls = match stage {
+        RefusalStage::Binding | RefusalStage::Declaration => (0, 0),
+        RefusalStage::Protection | RefusalStage::Reply | RefusalStage::ProtectionFactory => (1, 1),
+        _ => (1, 0),
+    };
+    assert_eq!(
+        (verification_calls.get(), protection_calls.get()),
+        expected_calls
+    );
     let disposals = disposed.borrow();
     match stage {
-        RefusalStage::Binding | RefusalStage::Declaration => assert!(disposals.is_empty()),
+        RefusalStage::Binding | RefusalStage::Declaration | RefusalStage::VerificationFactory => {
+            assert!(disposals.is_empty())
+        }
         _ => assert_eq!(disposals.as_slice(), [stage]),
     }
     match (stage, work) {

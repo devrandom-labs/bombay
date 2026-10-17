@@ -23,8 +23,12 @@ use tokio::sync::oneshot;
 mod peer;
 #[path = "../protocol.rs"]
 mod protocol;
+#[path = "quota.rs"]
+mod quota;
 #[path = "refusals.rs"]
 mod refusals;
+#[path = "targets.rs"]
+mod targets;
 #[path = "wire.rs"]
 mod wire;
 
@@ -237,27 +241,35 @@ async fn complete(presence: Presence, pending: ProviderStage) {
             .unwrap_or_else(|_| panic!("the borrowed scheduled protector keeps its receiver"));
         received.await.expect("actual scheduled protector result")
     };
+    let counter_authority = &RefCell::new(wire::binding("counter"));
+    let ledger_authority = &RefCell::new(wire::binding("ledger"));
+    let counter_construction = &RefCell::new(Vec::new());
+    let ledger_construction = &RefCell::new(Vec::new());
     let current_counter =
         |receipt: &recorded::Receipt<CounterInput>, runtime: &str, target: MailAddr| {
+            let permission = counter_authority.borrow();
             wire::current(
                 recorded::projection(receipt),
                 runtime,
                 target,
-                wire::binding("counter"),
+                *permission,
                 &caller_id,
                 deadline,
-            )
+            )?;
+            Ok::<_, Refusal>(permission)
         };
     let current_ledger =
         |receipt: &scheduled::Receipt<LedgerInput>, runtime: &str, target: MailAddr| {
+            let permission = ledger_authority.borrow();
             wire::current(
                 scheduled::projection(receipt),
                 runtime,
                 target,
-                wire::binding("ledger"),
+                *permission,
                 &caller_id,
                 deadline,
-            )
+            )?;
+            Ok::<_, Refusal>(permission)
         };
     let export_limits = ExportLimits {
         queued_queries: maximum,
@@ -272,7 +284,17 @@ async fn complete(presence: Presence, pending: ProviderStage) {
         wire::decode_counter,
         (
             reply(
-                wire::increment,
+                |input| {
+                    wire::increment(input).map(|command| {
+                        move |reply_to| {
+                            let loan = counter_authority
+                                .try_borrow_mut()
+                                .map(|permission| permission.protocol);
+                            counter_construction.borrow_mut().push(loan);
+                            command(reply_to)
+                        }
+                    })
+                },
                 wire::processed,
                 |unsent, client, admission, received, tail| CounterOutcome::Processed {
                     unsent,
@@ -281,7 +303,17 @@ async fn complete(presence: Presence, pending: ProviderStage) {
             ),
             (
                 reply(
-                    wire::counter_read,
+                    |input| {
+                        wire::counter_read(input).map(|command| {
+                            move |reply_to| {
+                                let loan = counter_authority
+                                    .try_borrow_mut()
+                                    .map(|permission| permission.protocol);
+                                counter_construction.borrow_mut().push(loan);
+                                command(reply_to)
+                            }
+                        })
+                    },
                     wire::value,
                     |unsent, client, admission, received, tail| CounterOutcome::Value {
                         unsent,
@@ -310,14 +342,36 @@ async fn complete(presence: Presence, pending: ProviderStage) {
         limits(),
         |bytes| wire::decode_ledger(bytes, &decoded_allocation),
         (
-            submission(wire::append, wire::appended, |unsent, sender, admission| {
-                LedgerOutcome::Appended {
+            submission(
+                |input| {
+                    wire::append(input).map(|command| {
+                        move || {
+                            let loan = ledger_authority
+                                .try_borrow_mut()
+                                .map(|permission| permission.protocol);
+                            ledger_construction.borrow_mut().push(loan);
+                            command()
+                        }
+                    })
+                },
+                wire::appended,
+                |unsent, sender, admission| LedgerOutcome::Appended {
                     unsent,
                     native: (sender, admission),
-                }
-            }),
+                },
+            ),
             reply(
-                wire::ledger_read,
+                |input| {
+                    wire::ledger_read(input).map(|command| {
+                        move |reply_to| {
+                            let loan = ledger_authority
+                                .try_borrow_mut()
+                                .map(|permission| permission.protocol);
+                            ledger_construction.borrow_mut().push(loan);
+                            command(reply_to)
+                        }
+                    })
+                },
                 wire::receipts,
                 |unsent, client, admission, received, tail| LedgerOutcome::Read {
                     unsent,
@@ -659,11 +713,20 @@ async fn complete(presence: Presence, pending: ProviderStage) {
             protection,
             publications,
             (request_refusal, reply_refusal, refusal),
-            (verification_poll, verification_disposal, protection_poll, protection_disposal),
+            (
+                verification_factory,
+                verification_poll,
+                verification_disposal,
+                protection_factory,
+                protection_poll,
+                protection_disposal,
+            ),
         ) = request.into_parts(&counter_declarations);
         assert!(
-            verification_poll.is_none()
+            verification_factory.is_none()
+                && verification_poll.is_none()
                 && verification_disposal.is_none()
+                && protection_factory.is_none()
                 && protection_poll.is_none()
                 && protection_disposal.is_none()
         );
@@ -804,11 +867,20 @@ async fn complete(presence: Presence, pending: ProviderStage) {
             protection,
             publications,
             (request_refusal, reply_refusal, refusal),
-            (verification_poll, verification_disposal, protection_poll, protection_disposal),
+            (
+                verification_factory,
+                verification_poll,
+                verification_disposal,
+                protection_factory,
+                protection_poll,
+                protection_disposal,
+            ),
         ) = request.into_parts(&ledger_declarations);
         assert!(
-            verification_poll.is_none()
+            verification_factory.is_none()
+                && verification_poll.is_none()
                 && verification_disposal.is_none()
+                && protection_factory.is_none()
                 && protection_poll.is_none()
                 && protection_disposal.is_none()
         );
@@ -996,4 +1068,13 @@ async fn complete(presence: Presence, pending: ProviderStage) {
     assert_retirement(native.as_ref().expect("actual native family original"));
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    let counter_loans = counter_construction.borrow();
+    let ledger_loans = ledger_construction.borrow();
+    let counter_current = counter_authority.try_borrow_mut();
+    let ledger_current = ledger_authority.try_borrow_mut();
+    assert_eq!(counter_loans.len(), 2);
+    assert_eq!(ledger_loans.len(), 2);
+    assert!(counter_loans.iter().all(Result::is_err));
+    assert!(ledger_loans.iter().all(Result::is_err));
+    assert!(counter_current.is_ok() && ledger_current.is_ok());
 }
