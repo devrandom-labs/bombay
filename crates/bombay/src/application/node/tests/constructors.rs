@@ -358,7 +358,9 @@ async fn constructor_refusal() {
                 protection_poll,
                 protection_disposal,
             ),
-        ) = request.into_parts(&declarations);
+        ) = request
+            .try_into_parts(&declarations)
+            .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
         assert!(
             verification_factory.is_none()
                 && verification_poll.is_none()

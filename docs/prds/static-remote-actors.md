@@ -2,15 +2,33 @@
 
 ## Current status (2026-10-17 UTC)
 
+The concurrent ownership comparison passes its scoped controls and two reviews.
+The complete cold-service change is recorded at the
+[size checkpoint](#cold-service--complete-next-change-and-size-checkpoint).
+Its forecast950 net production lines would exceed the approved2500 cumulative
+ceiling from known retained1947. Explicit authorization is required before that
+production work; no increased allowance is assumed. The current change has no
+production or public API addition. Latest main49cc8971 was fetched again and
+is already included.
+
+Identity checkpointc6d133f5 is committed and pushed: the two projections from
+existing owners pass389 library and22 client tests per profile, intended source
+inversions, strict lint, formatting and no-default checking. Independent source,
+31-command outcome and recovery reviews pass. Archive078aec83 and the required
+four-bundle chain recover its exact tree. This closes only the local identity
+prerequisite. The cold consumer errors below describe7509c62f, before those
+methods existed; no cold compile or service success is inferred atc6d133f5.
+
 Latest main49cc8971 was fetched again and remains included in this research
 branch. The public cold Node path is still unimplemented. Its twenty proposed
 cases now cover healthy mixed protocols/children/families, original refusals,
 constructor exhaustion, pending siblings and borrowed waits, target certification,
 current guard construction, total request custody and distinct provider factory,
-poll and disposal faults. All eight draft files remain unmounted:4252 lines of
-source, not passing service or full-requirement evidence.
+poll and disposal faults. All eight draft files remain unmounted:4268 current lines of
+source after the six consuming-extraction corrections below. They supply no
+passing service or full-requirement evidence.
 
-The new cohort adds no production code or public type. Independent two-pass
+That source cohort adds no production code or public type. Independent two-pass
 source reviews qualify each bounded law. Final debug/optimized consumer checks
 both fail on25 direct missing contracts plus two inference cascades; owning
 constructor checks both fail on five missing contracts. Both final formatting
@@ -35733,3 +35751,212 @@ builder. No reset or certified headroom is claimed. This checkpoint supplies
 no cold service execution, SDK privacy, CI or main merge. All full remote rows,
 their remaining permission/resource/fault/wire/Actions gates, minimization and
 reviewed main delivery remain open; the full goal stays active.
+
+
+### Cold request custody — ordinary Rust ownership comparison
+
+Continue from cleanc6d133f5; the preceding turn is progress, not a wait: it
+changes the owning APIs, verifies their laws and captures exact recovery.
+Fresh inspection rechecks all13 archive/VCS pairs and18 manifests against
+5c5910ec and current lock667a03e9. Behavior/Actors0.26.0/98983b4, macros0.14.2,
+Address0.3.0/9f058dc, Communication0.1.6/963067e, private Observe,
+Timers0.2.0/9369d1f, SDK1.10.10/c34eb350 and Tokio1.53.1 are unchanged.
+Current addressing/control, task/shutdown, mailbox retirement, observation,
+entity/family, Export, invocation and Node contracts are re-inspected with their
+relevant tests/docs. Selected760-line instructions2b7a9195 are read in full.
+No dependency or ownership edge is unverified; no actor-algebra change is proposed.
+
+The retained native-isolation decision explicitly removes the one-pending
+restriction. Do not replace it with a serial per-actor service to simplify the
+cold implementation. The one append-only Request vector must permit a canonical
+receipt to be inspected while its actual protector is pending, and independent
+request processing must retain originals outside disposable producers. A second
+replay table, cloned domain receipt, unsafe self-reference or erased future is
+ineligible. Keeping all mutable request fields behind one RefCell would prevent
+that concurrent canonical inspection when an actual producer holds its loan.
+
+Before selecting production storage, execute a bounded ordinary-Rust comparison:
+actual pending futures retain caller loans and original receipt allocations;
+compare whole-request borrowing with independent result-slot borrowing under
+one stable Rc allocation. Rc is only a private producer lease, not a cloneable
+public request capability. An affine Request owns the actual custody. Proposed
+try_into_parts consumes only when Rc::try_unwrap returns the complete original;
+otherwise it returns the same Request. This explicit refusal covers a still-live
+or deliberately forgotten operation without panicking or rebuilding facts.
+A successful handoff is not a completed network or actor execution claim.
+
+This may require replacing the twenty drafts' currently infallible Request
+extraction hypothesis with ordinary fallible extraction. That correction is not
+selected until the comparison and independent source/outcome review establish
+the actual distinction. Node's already-selected consuming Result projection
+continues to preserve exports/binder/binding/close originals independently.
+
+The comparison is isolated std-only verification source, expected at most250
+Rust lines and no production or public API additions. It exercises memory,
+lending and exact typed custody, not a substitute remote runtime, provider,
+Communication or Observe implementation. Expected whole-cell assertion failure,
+per-slot controls, live-lease refusal, exact allocation/error recovery and affine
+clone denial run through the pinned Nix shell in debug and optimized modes.
+Review tests twice and record actual source epochs/results. No production edit
+or migration is cleared by a green probe. The complete cold owner, static
+operation declarations, callback/future disposal, finite quota, native permit
+and permission/publication laws still need an exact pre-edit model and census.
+Known retained1947/public reservations12 and all2500/18/125/20000 historical,
+copied, rejected, modified and unknown charges carry; no reset/headroom claim.
+
+
+### Cold service — complete next change and size checkpoint
+
+The ownership comparison is terminal. Whole-request borrowing fails its final
+canonical-readability assertion after actual producer disposal in both profiles.
+The corrected per-slot comparison passes4/0 in each profile, checking original
+allocations and bytes, live-reader/producer refusal and actual loan release.
+A deliberately forgotten producer refuses extraction and claims no cleanup.
+Corrected clone denials fail only E0599 in each profile. The original clone
+commands did not capture their included lending source; only the corrected
+commands have complete include closure. Both formatting epochs are explicit.
+Independent source reviewc65a108c and outcome review6cafa14d cover18 commands,
+18,819 input-map entries and1,064 frozen versions. This is234 final isolated
+Rust verification lines, plus the earlier/modified epochs and one recorder line;
+all cumulative charges carry. It establishes no actor/provider/network gate.
+
+Select only the extraction distinction for the unmounted consumer hypotheses:
+replace their six Request::into_parts calls with try_into_parts and explicit
+failure disposal after joined cleanup. The same owned tuple and all its oracles
+remain. Expected four test paths,+18/-6/net12 before formatting, no production
+or public addition. Independent review must confirm each handoff follows the
+actual application/service cleanup; an unexpected Err must not be relabelled as
+successful cleanup. A private Rc lease remains an implementation candidate.
+
+The next integrated implementation must replace the current active Export,
+not add a second service. The previous+250–450 estimates omitted part of the
+concurrent producer/disposal and original-result surface. They are withdrawn
+as implementation forecasts. The complete proposed change is:
+
+| Existing owner | Required replacement and retained law | Estimated net production |
+| --- | --- | ---: |
+| remote/export.rs replaced by export/mod.rs and private query child | Cold inputs, actual declaration/withdrawal, one bounded append-only request vector, native ingress disposal and request driving; replace current fixed-Replies orchestration. | +200 |
+| export declaration child | Pure Reply/Submission/Stop products and private closed tuple interpretation over existing client/sender/exact actor shutdown; original constructors, native attempts and consumer-owned terminal reports. | +350 |
+| export request child | Actual originals/result slots, canonical identity lookup and finite producer loans; independent provider factory/poll/disposal capture and consuming handoff. | +250 |
+| application/node.rs | Store exports/binder/binding/close originals outside disposable waits; compose existing asynchronous binding with supplied or genuinely absent Work and joined receiving. | +200 |
+| application/interface.rs, application/work.rs, remote/mod.rs | Delete the old Handle/Session active-export route, reuse existing invocation/absence projections and curate the one surface. | -50 |
+| **Total forecast** | Planning estimates, not measured implementation or permission. | **+950** |
+
+Public surface forecast: promote the existing affine Request; generalize and
+rename Admission as Attempt without retaining a compatibility spelling; add
+only the three pure declaration products. Five gross public additions and one
+removal are reserved against the existing12/18 accounting. Native reply/sender
+custody uses private aliases over existing standard products, not public mutable
+report wrappers, a provider trait, Service type or Declaration facade. All public
+names and consuming signatures must pass the official Rust API Guidelines and
+selected Behavior rules before retention. No dependency or actor algebra change.
+
+The ownership equation is one Export request vector whose rows keep raw bytes,
+proof, provider Result, decode Result, selected native originals, encoding Result,
+protection Result, publications, independent refusal causes and six actual panic
+payloads. Each fact has one owner. Canonical keys exist only after actual native
+constructor success; pre-constructor refusal creates no key. Every row, including
+refused or duplicate rows, consumes the configured lifetime custody maximum
+before any provider factory. Duplicate rows refer to the canonical row in that
+same vector; no second replay table or inferred identity is introduced.
+
+Actual pending operations may hold immutable verified receipt loans while other
+rows progress. Each producer owns only a private lease; per-result cells avoid
+locking the entire request. Extraction uses Rc::try_unwrap and returns the same
+Request on refusal. Provider futures are polled and disposed separately, with
+actual Ready Results stored before disposal. Their individual disposal must run
+even after another destructor panics; FuturesUnordered::Drop is insufficient.
+A private producer owner, if needed, owns precisely that disposal law and no
+second scheduler. Any proposed Observe signal for actual pipeline quiescence remains unselected
+until its existing owning completion is identified. The std-only comparison
+proves no observation cell or wakeup contract. Duplicates must not copy a receipt,
+invent success or wait for final client EOF before canonical reply publication.
+
+Current request permission spans selection, native construction, command
+construction, nonwaiting admission and storage of the complete native Result.
+Reply permission is independently rechecked before canonical observation.
+Release that loan before awaiting protection; after storing the actual protection
+Result, acquire a fresh current loan immediately before synchronous SDK entry
+and retain it through the actual publication Result storage. Do not hold a
+permission loan across a pending provider. Later revocation cannot erase earlier
+facts. Separate clients preserve native reply origins. Stop uses the exact
+certified actor's existing shutdown and retirement capability, including children;
+matching an address or protocol never authorizes another actor or root shutdown.
+Native tail closure/draining follows actual actor/application retirement and is
+separate from reply availability. Query disposal precedes its permit release.
+
+Node binds actual actor targets before any declarations or Work. Foreign and
+duplicate targets refuse before either starts. BindResult, failing Export startup
+Result, original unused Work, independent native root/child/family receiving and
+Session close remain distinct. Successful Node extraction requires its actual
+joined cleanup and stored close Result; surrender is not completion. Normal
+local Application execution, Driver and Behavior fold laws remain unchanged.
+
+The smallest existing end-to-end regressions are the twenty source-reviewed
+cold cases: mixed Counter operations and move-only Ledger, both borrowed nominal
+providers, supplied/non-Send Work and genuine absence, real children/family,
+original refusals, endpoint exhaustion, pending sibling and borrowed wait,
+preflight foreign/duplicate targets, total row quota and six producer fault sites.
+Their7509 missing-contract failures precede implementation; currentc6 identity
+methods do not establish a new cold positive. Additional intended ownership,
+permission/publication and exact permit-discharge inversions must exercise the
+actual implementation in both profiles. Then audit old callers and all tracked
+contracts, remove the competing SDK-facing surface, prove privacy denials and
+run the required pinned-Nix gates. Broad migration follows the focused laws.
+
+This proposal needs a new explicit size authorization before production edits.
+Known retained production1947 plus forecast950 is2897, above the approved2500
+ceiling; the earlier estimates cannot establish headroom. Proposed bounded
+allowance for this complete integrated stage: at most1000 additional net
+production lines, five gross public additions with Admission removed, forty
+changed paths including the eight existing draft tests, old caller migration,
+privacy denials and project records, and4000 additional authored/modified
+verification lines. Existing4252 draft
+lines and all prior/copy/rejected/unknown costs remain charged, without reset or
+refund. This is new capability, not code reduction. No increased allowance is
+yet approved and no production edit is made under this forecast.
+
+The expected production paths are remote/export.rs (removed),
+remote/export/{mod,declaration,request,query}.rs, remote/mod.rs,
+application/{node,interface,work}.rs. Recheck whether each child owns a distinct
+concern before creation; the root curates ownership rather than holding the
+whole loop. Existing old-API callers occur in the owning requests/json/replay
+subtree, public network_replay/{construction,refusals,pressure}.rs and the Query
+privacy fixture. Their measured migration and the two test mounts are included
+in the proposed forty-path allowance, alongside current module/capability/API
+and PRD/status records. Preserve each existing distinct law; do not delete old
+cases simply because the new implementation initially cannot express them.
+
+All full R01–R25/AUTH1/NET1, outbound Actions, two-process/fault-host, resource/
+security/freshness gates, remote-counter application, distillation, CI/review
+and normal PR merges remain required after this integrated stage. It must not
+be split into repeated prerequisites to evade the size checkpoint.
+
+
+Independent consumer review also finds one earlier quota-source gap: it treats
+WorkOutcome as an Option instead of using the existing try_into_completed
+projection. Correct that draft with the same actual absence/cleanup projection
+as the other consumers; no new absence API is selected. Final two-pass
+reviewa0a0b69c and formatting pass. This is source repair, not executed
+quota/cleanup acceptance. The std-only comparison does not select an observation
+signal; pending duplicate wakeup must reuse a verified owner before lowering.
+
+
+Current checkpoint measurement againstc6d133f5, including all tracked and
+untracked repository files: production+0/-0/net0; tests+26/-10/net16;
+public API+0/-0 types; six changed paths and no untracked repository file.
+The eight unmounted drafts total4268 lines. Pinned-Nix formatting checks pass;
+these hypotheses have no new successful cold compile or runtime execution.
+The original18-command ownership review remains bound to its original source
+epochs. Four later formatting commands cover the draft projection corrections,
+including their final unchanged check; their source epochs are retained
+separately. Known production1947/public reservations12 and all historical
+2500/18/125/20000 charges carry. The proposed expanded allowance remains pending
+explicit user approval. This checkpoint does not deliver the PRD or close any
+full acceptance row.
+
+The final census binds22 terminal command receipts,23,061 before-map entries
+and1,084 frozen versions. Independent consumer reviewa0a0b69c accepts the six
+extraction changes and quota-source correction. No remaining source veto clears
+the separate production size gate. The explicit bounded-stage question is now
+pending; do not interpret a missing answer as authorization.

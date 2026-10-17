@@ -9,13 +9,16 @@ work; full service/privacy, CI/review and main delivery remain open. The
 [identity record](../prds/static-remote-actors.md#runtime-and-actor-identity--local-verification-and-minimization)
 retains the exact scopes, costs and remaining gates.
 
-Current next remote step: implement the one cold Export/Node composition against
-its twenty source-reviewed consumer cases. Eight drafts (4252 lines) remain unmounted;
-at7509c62f, debug/optimized checks report25 direct missing source contracts plus two
-inference cascades, and the owning constructor reports five missing contracts.
-Formatting passes; two-pass outcome reviewb8c7880d verifies all25 command records
-and1030 frozen versions. This adds no production code or public type and supplies
-no successful service build/runtime acceptance. Both temporary mounts are restored.
+Current next remote step: implement the one concurrent cold Export/Node path.
+The bounded ownership comparison passes4/0 in both profiles, its intended
+whole-cell failures and corrected clone denials, with two reviews. Six draft
+extractions now explicitly refuse outstanding loans; all eight drafts
+(4268 lines) remain unmounted and no cold service build/runtime is credited.
+The [complete change and size checkpoint](../prds/static-remote-actors.md#cold-service--complete-next-change-and-size-checkpoint)
+forecasts950 net production lines over known retained1947, exceeding the
+approved2500 ceiling. Explicit expansion is pending; no production edit is
+made under that forecast. Earlier7509 missing-contract checks and their scoped
+reviewb8c7880d remain historical evidence, before the identity prerequisite.
 
 The source covers original sibling facts through separate producer disposal,
 borrowed waits, duplicate/foreign startup targets, actual current guard construction,

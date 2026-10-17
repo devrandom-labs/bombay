@@ -173,6 +173,9 @@ async fn complete(policy: VerificationPolicy) {
         .into_parts()
         .unwrap_or_else(|_| panic!("actual quota cleanup and network close complete"));
     let (work, native, notifications, ()) = outcome.into_parts();
+    let (absence, cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the quota execution retains genuine Work absence"));
     let (_, native) = native.expect("actual quota root retirement");
     let notifications = notifications.expect("actual quota notification originals");
     let (_inputs, declarations, startup, withdrawal, ingress, rows) = export.into_parts();
@@ -196,7 +199,9 @@ async fn complete(policy: VerificationPolicy) {
             protection_poll,
             protection_disposal,
         ),
-    ) = row.into_parts(&declarations);
+    ) = row
+        .try_into_parts(&declarations)
+        .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
     bound
         .expect("actual binding result")
         .expect("quota binding succeeds");
@@ -211,10 +216,11 @@ async fn complete(policy: VerificationPolicy) {
     withdrawal
         .expect("actual quota declaration withdrawn")
         .expect("actual native withdrawal");
-    assert!(
-        work.is_none(),
-        "absent Work has no synthetic invocation callback"
-    );
+    cleanup.expect("actual quota application cleanup joins");
+    match absence {
+        None => {}
+        Some(never) => match never {},
+    }
     assert!(shutdown.is_ok());
     notifications
         .termination

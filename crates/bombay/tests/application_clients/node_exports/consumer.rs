@@ -721,7 +721,9 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                 protection_poll,
                 protection_disposal,
             ),
-        ) = request.into_parts(&counter_declarations);
+        ) = request
+            .try_into_parts(&counter_declarations)
+            .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
         assert!(
             verification_factory.is_none()
                 && verification_poll.is_none()
@@ -875,7 +877,9 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                 protection_poll,
                 protection_disposal,
             ),
-        ) = request.into_parts(&ledger_declarations);
+        ) = request
+            .try_into_parts(&ledger_declarations)
+            .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
         assert!(
             verification_factory.is_none()
                 && verification_poll.is_none()

@@ -915,7 +915,9 @@ async fn refused(stage: RefusalStage) {
                     protection_poll,
                     protection_disposal,
                 ),
-            ) = request.into_parts(&counter_declarations);
+            ) = request
+                .try_into_parts(&counter_declarations)
+                .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
             let registered = requests.borrow();
             assert_eq!(registered.len(), 1);
             assert_eq!(original.0, registered[0].protected);
@@ -1162,7 +1164,9 @@ async fn refused(stage: RefusalStage) {
                     protection_poll,
                     protection_disposal,
                 ),
-            ) = request.into_parts(&ledger_declarations);
+            ) = request
+                .try_into_parts(&ledger_declarations)
+                .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
             let registered = ledger_requests.borrow();
             assert_eq!(registered.len(), 1);
             assert_eq!(original.0, registered[0].protected);
