@@ -185,7 +185,8 @@ fn same_address_foreign_child_keeps_its_owning_application() {
                 })
                 .unwrap_or_else(|_| panic!("actual Node A execution"));
             tokio::join!(execution_a, execution_b);
-            let (outcome_a, _root_report, native_a, notifications_a, ()) = receiving_a.await.into_parts();
+            let (outcome_a, _root_report, native_a, notifications_a, ()) =
+                receiving_a.await.into_parts();
             let WorkOutcome::Completed { output, cleanup } = outcome_a else {
                 panic!("actual A Work output");
             };

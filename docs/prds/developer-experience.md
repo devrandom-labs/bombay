@@ -111,8 +111,23 @@ checks, strict Clippy and both immutable compiler corpora pass (136 cases,
 32 suites,28 targets,633 unchanged source inputs). In the same-source FIFO
 measurement on both compilers, preservation adds8bytes peak heap, no allocations
 and no retained heap; System RSS remains noisy. These scoped results do not
-replace fresh full-gate/archive verification. No merging or publication is
-authorized for this batch.
+replace fresh full-gate verification. Actual cleanb4b21f9 archives verify on both
+compilers, with all82 production Rust files and exact dependency checksums.
+Their consumers pass32 native cases per debug/release profile, three renamed
+tests and six running examples; all501 archive files/284 caller Rust files stay
+exact. The isolated host's HTTP feature-forwarding/count-classifier failures
+remain failed. Its HTTP example compiles; native HTTP lifecycle/refusal cases run.
+
+First Linux CI exposed two missed `matches!` tuple patterns in the already
+approved protected transport source and nested formatting. The correction adds
+only the report slot to those two patterns; removing the slots restores every
+original token apart from whitespace in all five affected files. No original
+assertion, production code, public surface or dependency changes. The default
+workspace formatter does not cover this separately rooted target. Its explicit
+format check and protected all-target strict Clippy pass. The first native full
+run is interrupted at707.143s with eight valid retained outputs; it is not a full
+pass. Final native and Linux gates remain required. No merging or publication
+is authorized for this batch.
 
 The owning PRD records exact commands, source identities, failures and limits.
 The initial actual-registry immutable128-case runs pass both compilers with all
