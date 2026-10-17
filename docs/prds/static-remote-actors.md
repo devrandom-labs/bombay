@@ -34958,3 +34958,93 @@ Admission attempt law and keep runtime-owned facts read-only or consumed.
 Final complete-tree measurement, including tracked intent and untracked sources:
 production+209/-184/net25; tests+491/-166/net325; public types+0/-0.
 Records+388/-7/net381; full tree+1088/-357/net731;13 paths, no untracked files.
+
+### Public Node consumer — fresh prerequisites and scope
+
+Startup checkpoint3b77de09 is committed and pushed. Its immutable recovery
+archivec17b2c74 contains1059 payloads and the complete501-commit HEAD history;
+independent review602a52b3 verifies all hashes, command/source closures and
+empty-bare recovery without prerequisites. This is recovery evidence, not
+remote acceptance or main delivery.
+
+Fresh node-prerequisites.json5c5910ec binds current3b77de09, lock667a03e9
+(399 packages),13 selected archive checksums/VCS records,18 unchanged manifests
+without patches/replacements and44 owning source/test/document inputs. It
+replaces no earlier receipt. Behavior/Actors0.26.0 at98983b4 and macros0.14.2
+retain complete760-line instructions2b7a9195; Address0.3.0/9f058dc,
+Communication0.1.6/963067e, private Observe, Timers0.2.0/9369d1f and Entity
+retain their exact owners. SDK1.10.10/c34eb350, Config1.10.2,
+futures-util0.3.34 and Tokio1.53.1 are unchanged. Current API, relevant tests
+and documentation were inspected for each owner. The five changed owner inputs
+are the committed startup kernel/Node/test and the two updated records, with
+source and records reviews77a6eb85/421c1f32; no dependency contract changed.
+
+Application now owns the verified optional asynchronous binding and original
+Work guard. Node still supplies no binding and exposes only supplied Work.
+Export still owns the one issuer, RequestKey and replay Vec, but its active
+construction, receiving and retirement expose SDK types and fix one reply
+protocol per actor. Those are the present public-integration blockers. Behavior
+owns pure Actions, Actors owns lifecycle policy, Address certifies association,
+Communication owns exact native admission, Observe owns independent terminal
+facts, Timers owns generations, Entity owns family shutdown, and Engine owns
+the sole Driver. No new semantic owner is selected.
+
+The next consumer must use actual Counter Processed/Value/Stop and move-only
+MailLedger Append/terminal Read in one Node, both existing borrowed provider
+families, supplied non-Send Work and genuine absence, actual asynchronous child
+proof acquisition, complete independent family/root/child/notification facts
+and actual native close. The application-facing part imports no SDK and owns
+no query loop or manual retirement barrier. A private peer fixture may use the
+SDK; it supplies no public outbound Actions acceptance by itself.
+
+Accounts and LiveAccounts have exact, incompatible Hosts types. Do not relabel
+them or add a generic host adapter. First establish one concrete test-only
+topology and nominal family definition using the unchanged Counter/MailLedger
+behaviors, existing typed creation settlements and actual committed child
+proofs. Its local control validates the fixture only. The complete public
+consumer, intended old-surface denial and two source reviews precede production
+selection. Compiler diagnostics cannot select a new architecture or bound.
+
+Reuse the existing attempt carrier rather than retaining a second Admission/
+Attempt law. All reusable runtime facts remain private with read-only access;
+terminal by-value reporting is an explicit consuming policy after independent
+cleanup. Pending verification and protection require separate outside result
+slots and individual producer disposal; whole-container Drop is not proof that
+all futures were disposed. Duplicate actual targets must be certified and
+rejected before any declaration or Work. Exact API forms remain unselected.
+
+The provisional next scope remains at most15 software paths,250–400 net
+production and700–1100 authored test lines before actual measurement. This is
+an estimate, not extra authorization or certified headroom; report declarations
+remain hypotheses, not six automatic additions. Before any production edit,
+record the actual complete consumer, smallest failing regression, exact paths,
+public additions/removals and measured delta. Known1911 retained production,
+12 public reservations, approved cumulative2500/18/125/20000 and every earlier,
+rejected, external, historical and unknown charge carry. Archive builder92 is
+additional verification. Full R01–R25/AUTH1/NET1, minimization, CI and normal
+reviewed main delivery remain open.
+
+### Public Node consumer — verified local fixture
+
+The concrete Creator/Counter/MailLedger/Counters fixture now passes all22
+application_clients tests in debug and optimized builds at2MiB, focused strict
+all-feature Clippy and workspace formatting. Independent two-pass review
+node-fixture-outcomes-independent.json689e2ebc verifies21 command/log closures
+and829 unique frozen source versions. Debug/release share identical core source
+and ordered test names; their full input maps differ by three later receipts.
+
+Test-only target/sibling swapping fails the intended committed-proof equality
+at222 in both profiles. Replacing the original move-only allocation with a copy
+fails allocation identity at259 in both profiles. Both exact restorations pass;
+final style changes preserve those oracles. These cuts validate this local
+fixture, not production remote behavior. Earlier path, role and iterator compiler
+errors are setup failures. The earlier false family-Stopped assumption was
+corrected against its existing shutdown-request/cancel/join contract.
+
+Complete current tree: production+0/-0/net0; tests+588/-0/net588; public
+API+0/-0; records+102/-0/net102; five paths including both untracked fixture
+files. Recorded source transitions total+662/-78, excluding pre-capture edits;
+conservatively charge800 authored/modified Rust lines, recorder3 and fault
+script66 verification lines, without refunding prior costs. Current family
+fixture is331+253 lines plus4 mount lines. The actual complete cold public Node
+consumer, SDK privacy, native close and all full remote rows remain open.

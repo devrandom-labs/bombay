@@ -1,5 +1,17 @@
 # Backlog status and dependencies
 
+Current next remote step: private asynchronous startup is committed/pushed as
+3b77de09 with verified recovery archivec17b2c74. Fresh public Node prerequisites
+5c5910ec recheck the exact399-package lock,13 archives,18 manifests and44 owners.
+The local combined child/family fixture passes all22 application-client tests
+in both profiles, strict focused lint and formatting; production/API are unchanged.
+The public cold Export/Node consumer remains blocked on its actual mixed
+protocol, child, compatible nominal family, borrowed-provider, absent-Work and
+native-close witnesses. No public API is selected by the prior compiler probes.
+The [remote PRD](../prds/static-remote-actors.md#public-node-consumer--fresh-prerequisites-and-scope)
+records ownership, remaining gates and carried budgets. All full remote rows
+remain open; this is neither main delivery nor distillation.
+
 Current integration: user-requested latest main49cc8971 (PR385) selects
 Behavior/Actors0.26.0 and the complete Application/Work outcomes. Superseded
 0.25 remote-entry research is retired; historical evidence below retains

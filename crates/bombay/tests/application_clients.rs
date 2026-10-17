@@ -879,3 +879,7 @@ async fn certified_reply_client_uses_the_application_capacity() {
 #[cfg(feature = "remote")]
 #[path = "application_clients/network_replay.rs"]
 mod network_replay;
+
+#[cfg(feature = "remote")]
+#[path = "application_clients/node_exports.rs"]
+mod node_exports;
