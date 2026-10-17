@@ -11,7 +11,7 @@
       "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
     }
   },
-  "patch_sha256": "e279ba5534a0691c009ce16a61a7573bbce95c9b73e174e42d23531050060aa2",
+  "patch_sha256": "fd7bffe7352825d8925eca68f5077145279f05b08206558eff18bdce45e82d93",
   "snapshots": {
     "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
       "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
@@ -117,6 +117,16 @@
       "canonical_sha256": "e7b1a90222f717de646f2c80837fd24288ec2a4ec375ff3750a48d3abd03eeb9",
       "minimum_sha256": "97ffc0232142eb02f25cc3d7a0e1815a9fa4900d994d9e5678cb0c833d8554e2",
       "fixture_sha256": "31411f50f93a79ef584cafafee4ca345ba4b76045a34acdd125e56c20aa15565"
+    },
+    "crates/bombay-engine/tests/compile/fail/no_lifecycle_controls.stderr": {
+      "canonical_sha256": "5d145eae289ac35d7f1b4eeb9739cfcfc8b263ebdc13222ba8365ea59f591afc",
+      "minimum_sha256": "8f09ad15065e5066995faec3764afb17679ea24e9e67672b680b74503e05244f",
+      "fixture_sha256": "793af39ec966dad4c60aad946abf656ba02158f343f76ac62a56325d5bd6895b"
+    },
+    "crates/observe-tests/tests/compile/fail/publisher_cannot_complete_twice.stderr": {
+      "canonical_sha256": "c891428356c8b2abeece24572d6603bc2962a9a613f16038ad8d6918d5a35434",
+      "minimum_sha256": "73de2e1ddd861fd34504be4135ea40571d42b6c1b0de1d8e640eb47b56ca5bbc",
+      "fixture_sha256": "c24a16578db568fbc7be86dbba069d83fa479b6f044db4ac42c423142c8c8cc8"
     }
   },
   "cases": [
@@ -247,7 +257,15 @@
     "tests/compile/pass/stash.rs",
     "tests/compile/pass/stash_machine.rs",
     "tests/compile/pass/terminal_inclusion_sources.rs",
-    "tests/compile/pass/topology_inferred_cold_classes.rs"
+    "tests/compile/pass/topology_inferred_cold_classes.rs",
+    "tests/compile/pass/send_not_sync.rs",
+    "tests/compile/fail/environment_phase_authority.rs",
+    "tests/compile/fail/missing_environment.rs",
+    "tests/compile/fail/no_lifecycle_controls.rs",
+    "tests/compile/fail/not_a_behavior.rs",
+    "tests/compile/fail/publisher_cannot_clone.rs",
+    "tests/compile/fail/publisher_cannot_complete_twice.rs",
+    "tests/compile/fail/affine_observation_cannot_clone.rs"
   ],
   "suites": [
     "active_behavior_cannot_be_initialized_twice",
@@ -279,7 +297,9 @@
     "behavior_layer_authoring_contract",
     "projection_shape_is_compile_checked",
     "worker_factory_rejects_invalid_capabilities",
-    "finite_stashes_preserve_static_capabilities"
+    "finite_stashes_preserve_static_capabilities",
+    "driver_surface_conformance",
+    "observe_authority_is_affine_at_the_public_compilation_boundary"
   ],
   "targets": {
     "activation_authoring": 2,
@@ -307,7 +327,9 @@
     "template_authoring": 1,
     "terminal_projection": 3,
     "worker_factory": 4,
-    "stash_limits": 4
+    "stash_limits": 4,
+    "compile": 1,
+    "observe_contract": 2
   },
   "ignored": {
     "run_with": {

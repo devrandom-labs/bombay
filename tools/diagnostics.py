@@ -111,7 +111,9 @@ def main():
         raise SystemExit("The reviewed diagnostic patch changed")
     for name, expected in snapshots.items():
         path = Path(name)
-        if path.parent != Path("crates/bombay/tests/compile/fail") or path.suffix != ".stderr":
+        if path.parent not in (Path("crates/bombay/tests/compile/fail"),
+                               Path("crates/bombay-engine/tests/compile/fail"),
+                               Path("crates/observe-tests/tests/compile/fail")) or path.suffix != ".stderr":
             raise SystemExit("Expected diagnostics must name existing compile-fail snapshots")
         if digest(repository / path) != expected["canonical_sha256"]:
             raise SystemExit(f"Canonical expectation changed: {name}")
@@ -149,8 +151,8 @@ def main():
                        CARGO_BUILD_JOBS="2", CARGO_INCREMENTAL="0",
                        CARGO_PROFILE_DEV_DEBUG="0", CARGO_PROFILE_TEST_DEBUG="0",
                        CARGO_PROFILE_RELEASE_DEBUG="0", CARGO_TERM_COLOR="never")
-            argv = [options.cargo, "test", "--locked", "-p", "bombay-rs", "--features",
-                    "axum", "--no-fail-fast"]
+            argv = [options.cargo, "test", "--locked", "-p", "bombay-rs", "-p", "bombay-engine",
+                    "-p", "observe-tests", "--features", "axum", "--no-fail-fast"]
             for target in manifest["targets"]:
                 argv.extend(["--test", target])
             log = output / "diagnostics.log"
