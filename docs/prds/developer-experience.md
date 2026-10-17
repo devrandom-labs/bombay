@@ -68,8 +68,9 @@ contents, cleanup and notifications. They do not promise rollback of inputs
 already delegated to an actor. Earlier source-selected results keep their
 original version/compiler/profile limits.
 
-The user authorizes148 cumulative native paths: the previous146-path dependency
-and shutdown batch plus README.md and tools/diagnostics.py. The README teaches
+The user authorizes153 cumulative native paths: the previous148-path dependency,
+shutdown and verifier batch plus the Engine/macros manifests and three
+changelogs. The README teaches
 shutdown(); the existing immutable verifier now covers Bombay, Engine and
 Observe. Its136 existing cases,32 suites,28 targets, exact fixture modes and
 controlled child remain mandatory. Two reviewed compiler-specific expectation
@@ -90,14 +91,37 @@ separate. Bounded sanitizer campaigns pass2,048 Driver cases and1,024 cases for
 each of four Observe targets. Coverage floors remain unchanged: Driver90%,
 actor execution93%, actor outcome90%, Observe90%.
 
+All25 native Nix gates pass on cleaneadea00 in3459.500s, with all633 inputs
+unchanged and every output's deriver/content hash checked. The workspace passes791
+outer cases/136 UI fixtures; remote debug/release each pass426/20 UI. Protected
+consumers pass132 outer cases; parents verify two deliberate failed child controls
+and four zero-match controls. Both minimum remote profiles and the minimum
+workspace pass their corresponding matrices. These results precede the release
+version correction below and are not relabelled as its fresh gate results.
+
 The superseded native full run was interrupted after21 of25 outputs registered:
 both compilers independently reproduced the stale remote E0499 underline.
 Its logs, exact source hashes and individual outputs are preserved; it is not
 a passing full gate. The corrected isolated minimum remote matrix passes.
-Fresh final-source immutable replays, supported remote profiles, authoritative
-Nix gates and delivery review remain required. No signing or disk failure is
+The corrected frozen source passes both immutable compiler replays and all25
+native gates. No signing or disk failure is
 permanently waived. The older optimized original-work-retry hang remains
 unexplained; later passing runs do not resolve its cause.
+
+Actual runtime-only package verification fails on eadea00: registry Engine0.2.3
+uses Behavior0.25 while this runtime uses0.29. An unchanged historical Engine
+consumer proves that labelling current Engine0.2.4 would break existing callers.
+An unchanged published-runtime topology consumer separately proves that current
+macros labelled0.1.4 generate unavailable Runtime/NativeHost contracts. Therefore
+the approved release correction coordinates Engine0.3.0, macros0.2.0 and
+runtime0.2.0 across ten existing files, including exact nested locks. It changes
+no Rust source, public types or unrelated lock records. Both source/oracle
+reviews preserve the historical passing consumers and intended failing
+compatibility inversions. All-feature three-package preview verification passes;
+all seven examples and the renamed consumer compile against its extracted
+archives, and six terminating local examples execute. Resulting-source full
+gates, complete archive consumers and release review remain separate obligations.
+The preview and source-scope authorization do not authorize merging or publication.
 
 Use the existing immutable verifier inside pinned Nix, with fresh empty output
 directories; verification never overwrites expected diagnostics:
