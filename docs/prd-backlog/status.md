@@ -525,37 +525,29 @@ reviewed. Research integrates that actual main merge without Rust or lock drift.
 Full service, privacy and all remote acceptance gates retain their own scope.
 
 
-Next remote stage records fresh105-input prerequisites and a bounded complete
-ordinary-Rust cold-declaration/mixed-operation comparison. Reuse one Export
-replay owner; exact cold originals, constructor refusal, same-handle Stop and
-joined drain/close remain required. SDK publication policy stays unresolved.
-No new production/API or full remote acceptance follows from the comparison plan.
+The private query profile passes10 owning and473 related cases per profile,
+strict lint/format and11 source laws; its retained production delta is net36.
+Named pure declaration products pass the separate-crate privacy comparison;
+the public supertrait form is rejected. Public service integration remains open.
 
-Named pure products pass a separate-crate static privacy comparison; the public
-supertrait form is rejected. Actual Export/Node/replay/lifetime integration is open.
+The private service comparison passes six cases in debug and optimized builds:
+Counter/Ledger operations, exact endpoint-refusal originals, both pending providers,
+complete native reply prefix/disposal/EOF, and an original nonempty Entity family.
+The family consumer preserves cold refusal/retry, original root/family messages,
+full native receiving and Session close. Its original empty-family signature has
+an actual intended compiler denial in both profiles. A finite native message-loss
+fault fails only the intended post-cleanup conservation assertion; exact restoration
+returns six healthy cases in both profiles. The earlier Node-field privacy mistake
+is setup-only, without law credit. This is Application+native Session compatibility;
+the five existing Node controls remain separate. Independent restored-cohort
+review f3df7f35 accepts the exact six-case pair;
+no shipping Rust/API is retained by this comparison.
 
-
-Select inline logical SDK publication for the next service candidate, with explicit
-Drop Get, bounded nonwaiting callbacks and exact result custody. First verify the
-private zero-refill-wait/all-ingress-Query Drop profile through independent failing
-mapping regressions. Four-path/+45 production/public0 scope and exact limits are
-recorded in the remote PRD. Native progress, permission/drain and all full remote
-acceptance remain open; no worker or new runtime/API is selected.
-
-
-Private query-profile lowering passes10 owning/473 related cases per profile,
-strict lint, format and11 source laws. Four paths add36 production lines/public0.
-Native progress, cold service/privacy and every full remote gate remain open.
-
-
-The private cold/mixed service comparison now passes five cases in debug and
-optimized builds: Counter/Ledger operations, exact allocation-refusal originals,
-both nominal pending providers, and complete native reply-prefix/disposal/EOF
-custody. Finite owning faults fail the intended post-cleanup assertions, with
-unrelated controls healthy and exact source restored. Independent reviews and
-durable archives qualify this comparison only; no shipping Rust/API is retained.
-The external authored forecast is2400, carrying all rejected/historical/unknown
-and cumulative costs. Next preserve a real declared Entity family through the
-same service owner; its candidate currently fixes Families=(). Keep the existing
-exact host relationships and typed product, without another runtime. Full remote,
-public privacy, distillation, CI and reviewed delivery remain open.
+Next, prove an ordinary public Counter+Ledger consumer and useful typed outcomes
+before selecting the public lowering. A single export axis on the existing Node
+is eligible for that comparison, not an accepted architecture or report API.
+Keep SDK owners private, preserve default Node outcomes/refusal originals, and
+publish originals outside producers before disposal. All full remote acceptance,
+public privacy, distillation, CI and reviewed delivery remain open. Known retained
+production1865/public reservations12 carry all2500/18/125/20000 and historical,
+external, rejected and unknown costs; external authored forecast3200 is unchanged.

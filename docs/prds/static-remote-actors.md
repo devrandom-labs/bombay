@@ -1,6 +1,21 @@
 # Static remote actors and typed admission
 
-## Current source after latest-main integration (2026-10-16 UTC)
+## Current status (2026-10-17 UTC)
+
+Software checkpointcb357824 includes latest fetched main49cc8971. The private service
+comparison now passes six cases in debug and optimized builds, including an
+original nonempty Entity family. Intended type-denial and native message-loss
+checks, exact restoration and independent result reviews pass. This adds no
+retained Rust/public API; the four temporary test mounts have been removed.
+
+Next prove an ordinary public Counter+Ledger consumer and useful typed outcomes,
+then select and implement the owning public integration. SDK privacy, full remote
+service, all full R01–R25/AUTH1/NET1 acceptance, distillation, CI and reviewed
+merges remain unfinished. The [latest family record](#original-nonempty-family-product-through-the-service-comparison)
+contains exact scope and evidence. Earlier sections retain their historical
+source and execution scope; they do not select today's unimplemented interfaces.
+
+## Earlier source after latest-main integration (2026-10-16 UTC)
 
 The user requested latest main, three complete repository scans, and one
 canonical way to compose, run and retire an application. The research branch
@@ -33952,3 +33967,129 @@ mounts are removed for this records-only checkpoint; retained Rust/API delta0.
 The next family compatibility finding a3f279c0 is source-only, not implementation
 or acceptance: reuse exact ShutdownLedger/Accounts Hosts and original family
 receiving. Do not attach that fixture to an incompatible Counter host topology.
+
+
+### Original nonempty family product through the service comparison
+
+Prefix records-only checkpoint cb357824 is reviewed/pushed; its16-payload bundle
+archive2319dbf9 is independently verified bd482588. All temporary mounts were
+removed and every software byte remained47; main49 was freshly fetched and is
+already included. Complete the next actual family compatibility witness before
+production lowering. Fresh family-prerequisites.json rereads the six selected
+owner APIs/tests/docs, verifies399 locked packages/all18 manifests/no overrides,
+and inspects current Entity/Node/invocation ownership. All code owner hashes
+remain current; two changed initial inputs are the delivered PRD/status records.
+Backlog AUTH1/NET1 states/dependency edges remain open and reciprocal.
+
+The local candidate currently spells ApplicationHandle<Target,Event>, fixing
+Families=(). Actual invocation supplies the full typed receptionists product.
+Write a complete consumer first in a child of the existing interface invocation
+owner, reusing private Accounts/AccountsRole/AccountReport and exact
+ShutdownLedger/ActorSpace topology without copied policy or visibility changes.
+Prepare the original nonempty handle, preserve cold-refusal originals for explicit
+retry, then use active.application.entities(AccountsRole) for real family commands
+alongside a root Submission of an original Vec. Preserve full root/family native
+custody, metrics, both notifications and Session close outside all producers;
+admitted originals may be processed OR unread. Genuine Work absence remains.
+Current primary static denial is expected, not yet executed; compiler failure
+cannot earn runtime credit or invent another owner/trait/type.
+
+Only after that complete consumer proves the gap may the comparison carry
+Families through the existing ActiveExport/refusal/into_parts products and make
+only Commands allocate/attempt methods generic over that same product. Existing
+root/interface/lifecycle APIs already require no additional Families bounds.
+Retain exact Hosts equality, all existing ports and the five-case controls; no
+whole-handle clone, extra Send/static, second runtime or public API is selected.
+Source review twice, intended static denial, real D/R and finite owning inversions
+with exact restoration remain required. This is root-service compatibility,
+not permission to export a stable Entity target or close full remote acceptance.
+
+Forecast six tracked paths/four active external Rust files, at most400 additional
+verification Rust and no retained production/tests/public types/dependencies or
+new semantic type. A fourth child file preserves actual private fixture ownership
+while keeping five existing controls. External authored forecast2400→3200 includes
+new/rejected/corrected epochs conservatively; all2500/18/125/20000 cumulative and
+historical/unknown charges carry, with no reset or certified remaining headroom.
+
+The first family consumer compiler run returned E0616 for private Node fields
+from its sibling test owner. This is setup-only, with no intended static or
+runtime credit. Preserve that source/log; correct only the consumer to open a
+real Session from selected Network configuration alongside the exact Application
+and original Accounts topology. Keep an outside Session clone and acquire its
+close after original root/family/notification receiving. Do not widen Node
+visibility or copy the family fixture. Existing five Node controls remain separate.
+
+Corrected original consumer dadf4b27 returns101 in both debug and optimized
+with the intended E0308 at prepare: expected empty Families, received the actual
+Accounts product; dependent entities() E0599 follows. Source maps remain stable.
+This establishes the static gap only. Select the existing owner repair: carry
+Families through ActiveExport ownership and all input/refusal/output products;
+make allocate/attempt methods generic without changing Commands or Native axes.
+No additional Clone/Send/static bound or public type. Expected external Rust
+change under60 changed lines, no retained production/API delta. Preserve original
+epochs and five existing controls. Add only a final-row sender-state observation.
+The finite native Submission inversion drops the original root command while
+reporting Ok; the independent processed-or-unread root conservation must fail
+after receiving and close. Later family assertions cannot earn inverse credit.
+Exact restoration and six-case debug/optimized cohort are required.
+
+Actual bounded external repair is +33/-30/net3 across those three files
+(63 changed lines, three above the forecast; no scope/type/owner expansion).
+The six tracked mounts/records remain the only working-tree paths.
+
+Independent pre-runtime review found the existing private retain helper still
+named five generic arguments. Spell its actual empty family as the sixth ()
+argument; no default or broader generic helper is needed. This adds one changed
+signature line (+1/-1); all five control bodies remain unchanged. The fix spans
+the four already selected external files, total +34/-31/net3. No compiler failure
+or runtime credit is claimed for this source correction.
+
+Final independent source review d8073a6d accepts the exact four-file repair.
+Git numstat, rather than the author's sequence-matching estimate, measures
+external verification +26/-23/net3; the earlier +34/-31 estimate is superseded.
+The preliminary review's caller-hash race is preserved and explicitly corrected
+in that final receipt. No runtime result has yet been credited.
+
+Actual family repair passes the six named cases in both profiles; the finite
+native root-loss inversion returns0/1 at families.rs220 in both profiles, after
+receiving and close, with no compiler/watchdog failure. It deliberately drops the
+root original while reporting successful admission. Root pointer/bytes and later
+family assertions are unexecuted in those negative runs. Exact1fc98 restoration
+returns six healthy cases again in both profiles. Positive, negative and restored
+runs each bind621 stable inputs; across profiles the maps match, and the inverse
+changes only declarations1fc98→322cadd8. Earlier corrected original616-input D/R
+static denials and615-input Node-field setup failure remain separate epochs.
+Source d8073a6d, model2d912a12 and runtime c99ef8de reviews retain those limits;
+final restored-cohort review is pending. No public/full-service acceptance follows.
+
+All actual commands use the recorder's pinned Nix shell, offline locked graph,
+all features, bombay-rs library and one test thread. Corrected originals and
+inverse use the family_service_preserves_receiving_and_original_root_input
+filter; healthy/restored cohorts use service::. Each runs cargo test in debug
+and with --release. Exact argv, environment, source map and raw log hashes are
+in family-original-corrected-{debug,release}, family-fixed-{debug,release},
+family-root-loss-{debug,release} and family-restored-{debug,release} receipts.
+
+Complete known authored family Rust is +284/-31/net253 across frozen source,
+correction, repair and inverse epochs (family-authored-census.json). Current
+four-file footprint is2168 lines, not authorship or remaining allowance. Retained
+production/tests/public types/dependencies are all zero for this comparison;
+19 temporary mount lines across four tracked software files must not ship.
+All prior/rejected/unknown/global costs carry. Next-owning-integration review
+41eb435d and Node-axis hypothesis f27b26f3 are conditional source reviews only:
+prove a real separate-crate consumer and useful typed report/refusal custody
+before selecting any lowering, public surface or additional production delta.
+
+Final restored-cohort review f3df7f35 accepts both actual six-case pairs and
+rehashes621 unique frozen runtime payloads. Current four software files match
+exact healthy originals; current prose is later evidence, not command input.
+The family comparison is verified within its stated private scope. Full service,
+public Node-family composition and all full remote requirements remain open.
+
+Durable family archive remote-mixed-family-20261017T013618Z.tar.gz has SHA256
+f980de701d8c192cb80734290540ca2be74c9a8355262b82377316d5fd84e2be;
+independent e4675126 verifies957 payloads/all40 actual command closures and
+six-path reconstruction atcb through the referenced records/base47 chain.
+No standalone recovery or new shipping gate is inferred. All19 temporary mount
+lines are removed. Final retained working delta is two records/no untracked
+files: production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
