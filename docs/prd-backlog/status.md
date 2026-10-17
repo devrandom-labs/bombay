@@ -543,11 +543,16 @@ the five existing Node controls remain separate. Independent restored-cohort
 review f3df7f35 accepts the exact six-case pair;
 no shipping Rust/API is retained by this comparison.
 
-Next, prove an ordinary public Counter+Ledger consumer and useful typed outcomes
-before selecting the public lowering. A single export axis on the existing Node
-is eligible for that comparison, not an accepted architecture or report API.
+The separate-crate report comparison compiles useful Counter/two-reply/Stop and
+move-only Ledger outcomes without naming private routing. Its two intended static
+cuts (private interpreters and incompatible report output) fail, and exact restoration
+compiles. Independent outcome reviewdb15d5fc verifies all ten actual commands;
+no runtime or public API selection.
+Next, prove the ordinary Node-owned public consumer and complete receiving/refusal
+custody. A single export axis on the existing Node remains a comparison hypothesis.
 Keep SDK owners private, preserve default Node outcomes/refusal originals, and
 publish originals outside producers before disposal. All full remote acceptance,
 public privacy, distillation, CI and reviewed delivery remain open. Known retained
 production1865/public reservations12 carry all2500/18/125/20000 and historical,
-external, rejected and unknown costs; external authored forecast3200 is unchanged.
+external, rejected and unknown costs. External authored forecast is3700, including
+394 new report-comparison Rust lines; no certified headroom or allowance reset.

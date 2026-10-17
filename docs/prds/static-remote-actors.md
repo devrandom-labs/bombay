@@ -8,10 +8,15 @@ original nonempty Entity family. Intended type-denial and native message-loss
 checks, exact restoration and independent result reviews pass. This adds no
 retained Rust/public API; the four temporary test mounts have been removed.
 
-Next prove an ordinary public Counter+Ledger consumer and useful typed outcomes,
-then select and implement the owning public integration. SDK privacy, full remote
-service, all full R01–R25/AUTH1/NET1 acceptance, distillation, CI and reviewed
-merges remain unfinished. The [latest family record](#original-nonempty-family-product-through-the-service-comparison)
+The separate-crate typed-report comparison now compiles Counter/two replies/Stop
+and move-only Ledger observations. Both intended private-interpreter and unequal-report
+static denials fail as expected; exact restoration compiles. Independent outcome
+reviewdb15d5fc verifies all ten commands and618 frozen input versions. This selects
+no public API and executes no application.
+
+Next prove the ordinary Node-owned public consumer and its complete ownership,
+then implement the accepted integration. SDK privacy, full remote service,
+all full R01–R25/AUTH1/NET1 acceptance, distillation, CI and reviewed merges remain unfinished. The [latest family record](#original-nonempty-family-product-through-the-service-comparison)
 contains exact scope and evidence. Earlier sections retain their historical
 source and execution scope; they do not select today's unimplemented interfaces.
 
@@ -34093,3 +34098,112 @@ six-path reconstruction atcb through the referenced records/base47 chain.
 No standalone recovery or new shipping gate is inferred. All19 temporary mount
 lines are removed. Final retained working delta is two records/no untracked
 files: production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
+
+
+### Useful typed reports — ordinary Rust comparison before public lowering
+
+Fresh node-export-prerequisites f4f32bec verifies the unchanged399-package lock,
+13 selected registry archives/VCS records, all18 manifests/no overrides and44
+owner inputs; only the delivered PRD/backlog records differ. Six-owner APIs,
+docs and tests are freshly inspected. Exact selected760-line Behavior instructions
+remain applicable. The runtime/Entity/Driver owners and received-original laws
+remain unchanged. Official Rust API naming, type-safety and future-proofing
+guidance is rechecked; no macro or new runtime abstraction is eligible.
+
+Blocker: opaque/private mixed results are not useful public observations.
+Admission alone omits typed replies, exact Stop refusal and untouched constructors;
+promoting leaves alone still exposes positional Either routing. Before production,
+write the actual separate-crate Counter/two-reply/Stop and raw move-only Ledger
+consumer. Compare one reusable report function per existing pure declaration,
+with private selected-branch routing and one application-owned result enum.
+App enums must carry actual unnamed constructor types generically. Preserve
+original row metadata/receipts separately; report invocation is an explicit
+by-value typed policy handoff after outside custody, drain and retirement.
+Callback panic cannot promise recovery of its consumed input; unrelated rows stay
+owned. This is presentation, not a second actor/effect/lifecycle contract.
+
+Attempt-model be9ba4c4 accepts comparing one observed-entry/return sum for the
+three isomorphic phase carriers, with construction and admission still separate
+and exact outcomes. Never mark a mailbox attempt uncertain before its pure
+command constructor. Report-model1c003152 accepts only the bounded comparison;
+public names, useful syntax, terminality and Node integration remain unproved.
+Compare actual original static denials before any candidate: no compiler/setup
+failure earns runtime or full acceptance credit.
+
+Forecast one tracked PRD/two external Rust files and at most400 additional authored
+verification Rust, no retained production/tests/dependency or wrapper/public trait.
+Six public types if selected (pure3, same native owners2, Attempt1) would carry
+12→18 reservations, replacing old Admission without an alias; this is not public
+API selection. Existing Node-axis hypothesis remains conditional. External authored
+forecast3200→3700 carries all corrections/rejections/unknown charges and the
+unchanged2500/18/125/20000 cumulative ceilings; no reset or certified headroom.
+
+Original prototype libraryf118 compiles against freshly built selected artifacts;
+its three unused-field/method warnings are scoped one-shot baseline limitations.
+Consumer4647 returns1 with exactly two missing-surface E0432 and ten argument-shape
+E0061 errors, with stable inputs. This proves surface absence only, not six-type
+necessity, runtime behavior or a public API decision. Preserve that actual epoch.
+Before candidate edits, keep caller Input in a borrowed outside Option as well;
+occupied output must not consume it. All five proposed consumer inputs now stay
+outside producers and return beside reports. Independent source modeling accepts
+an Event-independent private Reports<Original> transformation/drain seam, reusing
+native receive_tail and selected branch routing. Commands keeps its sole Native
+and live Event proof; do not add an Event marker, dummy handle, GAT view, duplicate
+selection state or new owner merely to make pure presentation type-check.
+
+Reports-seam6044d0fa and signature7df44732 independently review the source model
+before candidate edits. Public functions name the actual inferred Original and
+Report facts with private associated equalities; no private associated projection
+appears in their public arguments or returns. This is a source privacy proposal,
+not compiler clearance. Nonreply drain stays genuinely absent, and bind checks
+both occupied native and encoded destinations before taking caller input.
+
+Consumer0b552 rerun returns1/stable with the same two E0432 and ten E0061
+missing-surface/arity errors. The preceding launcher accidentally omitted env
+and returned127/stable before rustc; that preserved setup epoch earns no law
+credit. Canonical amended source review46c47ac3 binds0b552; earlier4647 review
+remains preserved. The candidate comparison can now begin under the recorded
+source model; no runtime, selected API or production change is inferred.
+
+Candidate source7f72ce7e reuses both existing native owners and the reviewed
+private equations; external library diff is +194/-93/net101, retained code/API0.
+Known new authored comparison Rust totals392 lines across initial consumer,
+bridge, corrections and candidate changes; selected/copied and all prior costs
+carry. If the positive consumer compiles, two one-line finite static cuts will
+try importing private Commands/Reports and give Stop an incompatible unit report.
+Only the corresponding privacy/common-report denials count; restore0b552 and
+repeat the positive consumer. No runtime or API necessity follows from these cuts.
+
+Actual candidate library7f72ce7e and consumer0b552 compile with selected
+Cargo-built artifacts. Library warnings0; consumer has30 dead-code fixture
+warnings because these functions are compiled but never executed. Private-import
+consumer539f fails only E0603×2; incompatible Stop-report consumer1ae fails only
+E0271×6. Restored0b552 compiles with the exact same604-input map and raw log as
+the positive. Candidate library uses605 inputs; all before/after maps are stable.
+Ten actual commands, including the uncredited launcher127 setup, retain raw logs,
+complete argv/environment and rehashed frozen inputs in report-comparison.
+The author outcome review/census records394 newly authored external Rust lines;
+retained production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
+
+This proves useful inferred report shapes and those two finite static denials.
+It does not execute retirement, drain, occupied-slot refusal or providers; prove
+those at the owning Node integration before retaining this interface. Pure
+report handoff also does not prove passive terminal capabilities, non-Send/borrowed
+provider compatibility, complete SDK privacy, six-type necessity or full acceptance.
+No broadening, legacy deletion or production selection follows from compiler success.
+
+Independent two-pass outcomes reviewdb15d5fc/01a1f913 verifies all ten actual
+command receipts/raw logs, two hash passes over618 frozen input versions, selected
+Cargo metadata and actual linked artifacts, and420 current root software inputs.
+It confirms only consumer changes in both cuts and identical positive/restored
+604-input maps. Earlier source reviews5124e5c1 and cutseda7c048 remain exact.
+All no-runtime/no-selection limitations above remain. No temporary root mounts
+or untracked root files were created; the complete retained change is records.
+
+Durable compiler archive remote-report-comparison-20261017T022016Z.tar.gz has
+SHA256 fd7aee9c32cb238333658a2ea3824b7243e800799b4819544879099dba7efdd0.
+Independent archive review6fd98c88 verifies696 payloads,618 frozen versions,
+one selected Cargo build, eight direct rustc runs and the excluded launcher127.
+Its working patch reconstructs at committed e340 through b748/f980 predecessors;
+no standalone recovery is claimed. Final retained scope remains two records,
+no root untracked files, production +0/-0/net0, tests +0/-0/net0, public +0/-0.
