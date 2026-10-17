@@ -34492,3 +34492,108 @@ blocker, not a full R01–R25/AUTH1/NET1 row. Public Node-owned cold/service lif
 SDK privacy, selectors and canonical replay, complete protected Actions/wire/
 resource/security/two-process evidence, distillation, required CI and reviewed
 main delivery remain pending. Main remains49cc8971; this branch is not main.
+### Public service integration — current owner and comparison scope
+
+The invocation-refusal correction is committed and pushed as785498f8. Independent
+final reviewbebec4d7 and recovery review347036d9 bind its467 debug and optimized
+cases, all33 command records and660 input versions. Archive
+remote-invocation-refusal-785498f8-20261017T043339Z.tar.gz has SHA256
+d501a5fd607a6e2d61869ff7115f66538222ad5b09bba7e19c7703669e517edd;
+its full prerequisite-free Git bundle recovers the exact499-commit history into
+an empty repository. Prior external evidence and all historical costs remain
+separate. This is a research checkpoint, not main delivery or full acceptance.
+
+Fresh public-node-integration/prerequisites.json d7df717c verifies the current
+399-package lock,13 selected registry archives and VCS records,18 manifests
+without overrides,44 owner inputs and current normative inputs. The five owner
+changes from the preceding verification are exactly the reviewed785498f8
+correction. Behavior/Actors0.26.0, macros0.14.2 and the complete selected760-line
+Behavior instructions remain authoritative. Current APIs/tests for Behavior,
+Actors, Address, Communication, Observe, Timers, Entity and the Driver were
+inspected. Official Rust API naming, type-safety and future-proofing guidance
+was rechecked. No dependency or public interface is selected by this receipt.
+
+Independent source review3b7baaeb confirms the next blocker: cold Export inputs
+must remain outside disposable Invoke, bind actual actor authority after startup,
+and retire independently of bare supplied Work or genuine absence. The same
+Node and Export remain the owners. No Service wrapper, provider framework,
+second request table, family-handle clone requirement or dummy Work is eligible.
+The complete public consumer still needs both borrowed providers, Counter's
+distinct replies and Stop, move-only Ledger input, compatible nonempty families,
+all original results and actual connection close.
+
+Select for the next comparison one canonical Export per actual owned actor.
+Certify association before comparing targets; fallibly reserve temporary target
+storage, reject a duplicate target before any declaration or Work, and retain
+all cold inputs and acquired refusals. Distinct targets remain independently
+live. This is startup validation, not a registry, and supplies no restart,
+expiry, eviction or reconnect replay proof. SDK-free ingress diagnostics must
+have their own explicit finite capacity and a separate sticky omission fact.
+Only unauthenticated raw-input diagnostics may be discharged at overflow;
+original provider, command, constructor, reply and publication facts may not.
+Actual query disposal precedes its acquired permit release. Native locking,
+byte bounds and flood/stall progress still require their owning witnesses.
+
+Before production selection, compare target/control projection using the existing
+recipient, root lifecycle and exact child capabilities. Send-only declarations
+must require no lifecycle placeholder. Prove pending-provider storage with
+outside acquisition slots while a sibling row is inserted and progresses;
+neither self-reference nor a whole-row cell framework is an accepted shortcut.
+Forecast: at most two external comparison Rust files and500 additional authored
+verification lines, plus these project records; retained production/tests/API0
+at this preparation checkpoint. Every copied, rejected and temporary source
+remains charged. Known retained1886/2500, public reservations12/18 and all
+125-path/20000-verification historical and unknown costs carry without a reset
+or certified headroom. Full R01–R25/AUTH1/NET1 and reviewed main delivery remain
+open; the goal continues.
+
+### Target/control comparison — actual results and next startup blocker
+
+The disposable221-line target comparison9999db76 passed in debug and optimized
+builds, then passed again after both exact source restorations (one case per
+run,380 filtered). Recipient-only Stop cut916f fails in both modes solely with
+E0277: a messaging recipient has no shutdown command capability. Association
+cut12c2 fails in both modes at the foreign-target refusal assertion, after both
+real Applications acquire Work, native retirement, cleanup, two notifications
+and local positive comparisons. Later Stop, native completion and state
+assertions do not execute in that negative. The child specialization is only
+compiled; no live child or public service acceptance follows. Repeated Stop is
+a positive control without a separate guard inversion.
+
+Independent two-pass review568cbc19 verifies all nine actual command records,
+logs and670 exact before/after input versions. The formatter changed only the
+external source; its versions and later observational-assertion corrections
+are retained. Both cuts restore9999 exactly. Removing the four-line temporary
+module mount restores interface.rs to160b8ed5 byte for byte. Retained production,
+tests and public types remain0; this comparison selects no interface. External
+conservative authored/modified charge289 lines and temporary mount+4/-4 carry,
+including corrections, formatting and rejected cuts; no historical refund or
+headroom is inferred. All earlier approved cumulative limits and costs carry.
+
+Source audit38df23c7 confirms that ApplicationHandle has no installed-child
+getter. Existing child_service_stop and protected_counter applications obtain
+actual EstablishedActor values by sending a root command and awaiting typed
+Actions replies. ApplicationScope can prepare reply ports before startup, but
+neither a port nor an address lookup makes the child reply synchronously ready.
+Startup must await that actual reply before user Work without wrapping or
+consuming the original callable. The existing synchronous Invoke cannot do so.
+
+Source review181e9a25 conditionally accepts an optional borrowing async binding
+step on the existing execution spine, with original Work guarded through
+Pending, refusal and producer disposal. Separate binding and invocation
+closures cannot both capture the same mutable cold Export. Compare one binding
+callback that returns its concrete exporting future after acquisition, thereby
+transferring that one outside borrow, before selecting a signature. Project
+owned existing capabilities; do not retain a borrowed local or whole family
+handle, invent a getter, add a second runner, or supply placeholder Work.
+
+Provider reviews1526a289 andcb0e6392 identify a separate disposal obligation.
+A narrow per-request outside acquisition slot can preserve borrowed provider
+results, but FuturesUnordered0.3.34 deliberately leaks remaining queued futures
+if a destructor panics during container disposal. Catching that disposal does
+not prove all producers ended or their borrowed slots became readable. Compare
+bounded concrete producer storage and individual disposal under the existing
+owner; whole-exporting-future cancellation must also obey the same conservation
+law. No new provider framework or runtime design is selected by these source
+reviews. Actual child startup and provider cancellation remain blockers before
+public Node ownership, SDK privacy and the full remote acceptance gates.

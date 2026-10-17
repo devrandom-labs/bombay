@@ -587,3 +587,11 @@ public types+0/-0 across11 paths. Known retained1886/public reservations12 and
 all2500/18/125/20000 prior, rejected, external, historical and unknown charges
 carry. Public Node service ownership, SDK privacy, all full remote rows and
 reviewed main delivery remain active; this research checkpoint closes no full row.
+
+The disposable target/control comparison passes its actual debug and optimized
+controls and intended static/lifecycle-authority and namespace-refusal cuts;
+independent568cbc19 reviews all9 commands/670 versions. The owner mount is
+removed exactly; retained software/API0. No full remote row closes. The next
+public service blocker is real asynchronous child binding before bare Work;
+separate mutable Export captures and provider destruction on cancellation need
+the ownership comparisons recorded in the PRD. All cumulative costs carry.
