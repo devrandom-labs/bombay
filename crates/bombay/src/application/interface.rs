@@ -26,16 +26,6 @@ use zenoh::Session;
 #[cfg(feature = "remote")]
 use zenoh::query::Query;
 
-#[cfg(feature = "remote")]
-fn owns_actor<P>(target: &EstablishedRecipient<P>, allocations: &ApplicationAddresses) -> bool
-where
-    P: Protocol<Addr = MailAddr>,
-{
-    let mut interpreter = ExtractLocalEndpoint;
-    let endpoint = target.clone().interpret(&mut interpreter);
-    endpoint.belongs_to(allocations)
-}
-
 impl<P, Event, Families> fmt::Debug for ApplicationHandle<P, Event, Families>
 where
     P: Protocol,
@@ -127,6 +117,31 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         ApplicationClient::establish(target, &self.allocations, self.client_capacity)
     }
 
+    /// Read an actor's address after checking its association with this Application.
+    ///
+    /// Association survives actor retirement. This returns the address used in
+    /// metadata; operation permission remains the provider's separate policy.
+    ///
+    /// # Errors
+    /// Returns [`ExportError::UnownedTarget`] for a foreign actor or an external
+    /// reply endpoint, without allocating a new endpoint.
+    #[cfg(feature = "remote")]
+    pub fn actor_address<TargetProtocol>(
+        &self,
+        target: &EstablishedRecipient<TargetProtocol>,
+    ) -> Result<MailAddr, ExportError>
+    where
+        TargetProtocol: Protocol<Addr = MailAddr>,
+    {
+        let mut interpreter = ExtractLocalEndpoint;
+        let endpoint = target.clone().interpret(&mut interpreter);
+        if endpoint.belongs_to(&self.allocations) {
+            Ok(endpoint.address())
+        } else {
+            Err(ExportError::UnownedTarget)
+        }
+    }
+
     /// Construct a reply client only for an actor owned by this Application.
     ///
     /// The exact root and any owned child use the same operation. Foreign actor
@@ -155,8 +170,8 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         Replies: Protocol<Addr = MailAddr>,
         Replies::Msg: Send,
     {
-        if !owns_actor(&target, &self.allocations) {
-            return Err((target, ExportError::UnownedTarget));
+        if let Err(cause) = self.actor_address(&target) {
+            return Err((target, cause));
         }
         match ApplicationClient::establish(target, &self.allocations, self.client_capacity) {
             Ok(client) => Ok(client),
@@ -208,8 +223,8 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         {
             return Err((target, ExportError::QueryCapacity));
         }
-        if !owns_actor(&target, &self.allocations) {
-            return Err((target, ExportError::UnownedTarget));
+        if let Err(cause) = self.actor_address(&target) {
+            return Err((target, cause));
         }
         let interface = self.interface(target.clone());
         match Export::declare(

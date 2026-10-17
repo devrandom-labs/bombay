@@ -4,11 +4,14 @@
 mod counter;
 #[path = "../../../../tests/application_clients/ledger.rs"]
 mod ledger;
+#[path = "../../../../tests/application_clients/protocol.rs"]
+mod protocol;
 
 use counter::{Counter, CounterMessage};
 use ledger::{LedgerCommand, MailLedger, Receipts};
 
 mod attachment;
+mod identity;
 mod replay;
 
 mod json;

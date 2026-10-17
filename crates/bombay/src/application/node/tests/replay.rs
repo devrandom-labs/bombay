@@ -33,9 +33,7 @@ use zenoh::{Error as ZenohError, Session};
 mod application_support;
 use application_support::assert_completed;
 
-#[path = "../../../../tests/application_clients/protocol.rs"]
-mod protocol;
-use protocol::*;
+use super::protocol::*;
 
 struct ReadAcquisition<Operation, Receipt, WireValue, Target: Protocol<Addr = MailAddr>> {
     invocation: Result<(), ZenohError>,

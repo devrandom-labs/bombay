@@ -60,6 +60,11 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
                 .as_ref()
                 .expect("actual Creator Actions reply")
                 .message;
+            let addresses = (
+                application.actor_address(&counter.recipient()),
+                application.actor_address(&sibling.recipient()),
+                application.actor_address(&ledger.recipient()),
+            );
             let increment = processed
                 .send(
                     &counter.recipient(),
@@ -126,6 +131,7 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
                 family_admission,
                 family_reply,
                 shutdown,
+                addresses,
             )
         })
         .await
@@ -160,6 +166,7 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
         family_admission,
         family_reply,
         shutdown,
+        addresses,
     ) = output;
     cleanup.expect("the actual application cleanup joins");
     notifications
@@ -269,6 +276,13 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
     assert_retirement(retirement);
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    let (counter_address, sibling_address, ledger_address) = addresses;
+    let counter_address = counter_address.expect("the actual Counter belongs to this Application");
+    let sibling_address = sibling_address.expect("the actual sibling belongs to this Application");
+    let ledger_address = ledger_address.expect("the actual Ledger belongs to this Application");
+    assert_eq!(counter_address, incremented.from);
+    assert_eq!(sibling_address, sibling_value.from);
+    assert_eq!(ledger_address, ledger_reply.from);
 }
 
 fn assert_retirement<Actor, Descendants, Failure>(

@@ -145,6 +145,15 @@ impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Familie
 }
 
 impl<Root, Spaces, Members, Families> Node<Root, Spaces, Members, Families> {
+    /// Read this connection owner's runtime identity as metadata text.
+    ///
+    /// The identity remains the same after connection close. Authentication and
+    /// operation permission remain the provider's separate policies.
+    #[must_use]
+    pub fn runtime_id(&self) -> String {
+        self.session.zid().to_string()
+    }
+
     #[expect(
         clippy::type_complexity,
         reason = "return the original declaration and callable together without a wrapper or a self loan"

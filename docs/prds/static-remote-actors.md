@@ -35618,3 +35618,118 @@ revocation, cold owner implementation and real differential/inversion execution
 remain required before those laws can receive acceptance. The full goal stays
 active through all remaining wire/security/effect/resource/two-process/fault-host,
 ordinary remote example, minimization and reviewed main delivery gates.
+
+### Runtime and actor identity — bounded public prerequisite
+
+Begin from clean/pushed7509c62f, using its source-only twenty-case cohort and
+unchanged locked owners5c5910ec. The earlier source model09df2ce7 identifies the
+real ordinary-caller gap: metadata needs the actual Node runtime ID and the
+actual checked actor address, while SDK Session/endpoint objects stay private.
+No discovery or authentication service is selected by these read-only facts.
+
+Fresh owner inspection: Node.session owns the actual SDK identity; ActorRef
+owns the address and its weak Application association. ActorRef::belongs_to
+compares allocation-source identity and external reply endpoints have no actor
+association. The current private owns_actor predicate supplies the two existing
+export constructors. Address0.3.0/9f058dc, Communication0.1.6/963067e, private
+Observe, Timers0.2.0/9369d1f and Behavior/Actors0.26.0/98983b4 remain unchanged
+and verified. No new primitive, dependency edge or authority is needed. Naming
+and typed Result design are checked against official Rust API Guidelines.
+
+This deliberate Bombay projection law adds Node::runtime_id()->String from
+its actual private Session and remote-only ApplicationHandle::actor_address(
+&EstablishedRecipient<Target>)->Result<MailAddr,ExportError>. The latter first
+checks exact Application association; foreign actors and external reply
+endpoints return existing UnownedTarget. Numeric address equality is irrelevant.
+Known association survives target retirement. No new public type, generic
+axis, cache, observation cell or registration is added.
+
+Smallest owning regressions precede production: two actual Node identities
+must equal their actual underlying owner IDs and remain unchanged across close;
+a separate two-Application trace with equal actual root addresses must accept
+its own root and refuse a foreign root and same-scope external reply endpoint.
+Every actual root/notification/retirement and close result is acquired before
+oracles. The test does not claim authentication, routing or readiness. Old
+missing-method denials must compile in debug and optimized modes before edits.
+
+Expected software paths: application/node.rs, application/interface.rs, existing
+node/tests/mod.rs and new node/tests/identity.rs; production approximately
++35/-15/net20 and tests approximately200 lines plus mount. Public types+0/-0,
+two methods. Replace owns_actor with this one checked projection and reuse it
+in the two existing export constructors, preserving their original targets,
+causes, allocation order and session/limit checks. Do not retain a second
+validation spelling. No cold owner, recipe, new error or runtime is introduced.
+This separate prerequisite does not select the remaining cold API or waive its
+resource/permission/whole-service gates. All2500/18/125/20000 cumulative and
+historical/copy/rejection/unknown costs carry; known production1923/public12
+remain the pre-edit counters, without a headroom or reset claim.
+
+The first restored library runs pass389 tests per profile and all22 public
+clients per profile. Strict Clippy then detects duplicate loading of the existing
+protocol fixture by identity and replay. Before further edits, select the
+smallest test-only correction: mount that exact unchanged fixture once in the
+owning node/tests module and import it from both suites. No lint suppression,
+production change or new fixture policy. This additionally touches replay.rs;
+the constructor draft stays unmounted. Recheck the shared suite in both profiles.
+The initial source/negative receipts retain their exact original source scope;
+their oracles do not change when this fixture import moves.
+
+The shared-fixture correction passes strict workspace Clippy,389 owning tests
+per profile and no-default workspace checking. Source review identifies one
+remaining identity-test counterexample: returning the root address for every
+associated child passes the root-only positives. Extend only the existing public
+three-child fixture to retain three checked-address Results and compare them
+with actual Counter, sibling and Ledger reply origins, after its existing native,
+family and cleanup assertions. Expect roughly20 test lines and one additional
+software path, without a new test, fixture, type or production edit. Establish
+the constant-root source inversion in both profiles, restore exact owner bytes
+and rerun public clients. Existing native-origin checks make the oracle independent.
+
+### Runtime and actor identity — local verification and minimization
+
+Retain only the two direct projections and delete the old private owns_actor
+spelling. Both export constructors use the same generic association check at
+their original refusal/allocation positions. No public type, bound, stored
+state, registry or SDK-valued result is added. The ordinary-caller metadata
+gap identified by source model09df2ce7 is the concrete use; permission remains
+independent. API guidance and the public inventory now describe these facts.
+
+Actual commands use verify.py and the pinned Nix profile, offline/locked where
+applicable. Before implementation, the owning no-run check fails with exactly
+eight missing-method E0599 diagnostics in both profiles. Initial focused
+controls pass2/0 per profile. Empty-ID and association-bypass source cuts each
+produce1 pass/1 intended assertion failure per profile, after actual cleanup.
+The bypass reaches the foreign-actor assertion; its later external-endpoint
+assertion does not execute. Initial source reviewb758bb04 and subsequent
+independent production review find no ownership or preserved-order defect.
+
+The one duplicate-mod Clippy failure is corrected by a single shared fixture
+mount. Identity test bodies are byte-identical across that import correction.
+The final owning library passes389/0 in both profiles; final public clients
+pass22/0 in both profiles. The shared fixture's complete suite, strict
+workspace/all-feature/all-target Clippy, workspace formatting and no-default
+workspace checking pass. The unchanged dependency closure is rechecked:
+13 archive/VCS pairs,18 manifests and lock667a03e9 retain their selected bytes.
+
+The public child fixture adds14 lines and passes its focused control in both
+profiles. Returning APPLICATION_ROOT for all associated actors then fails
+exactly its first new address comparison in both profiles, after every prior
+root/child/family/cleanup assertion. Later sibling/Ledger comparisons do not
+execute in that inverse; restored positives check all three actual origins.
+The implementation is restored byte-exact to interfaceea04c41d and node10e4e3e0.
+Final identity source7f51f8e0 is136 lines; the child fixtured9dc4d70 retains the
+existing concrete protocols, owned payloads and family report. Both test-review
+passes and the child counterexample review are complete; no effects occur in
+the new assertions. All31 actual command receipts and their frozen source
+epochs remain separate evidence, including the failed lint and format changes.
+
+Complete tracked/untracked stage delta against7509c62f: production+38/-14/net24;
+tests+154/-3/net151; public types+0/-0, methods+2; ten paths including records.
+This is new public capability, not code reduction. Known retained production
+becomes1947; public reservations remain12. All earlier, copied, modified,
+rejected, formatted and unknown costs and the approved2500/18/125/20000
+ceilings carry, including inline recording tools and this stage's recovery
+builder. No reset or certified headroom is claimed. This checkpoint supplies
+no cold service execution, SDK privacy, CI or main merge. All full remote rows,
+their remaining permission/resource/fault/wire/Actions gates, minimization and
+reviewed main delivery remain open; the full goal stays active.

@@ -585,6 +585,13 @@ For independently driven operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
 
+For remote metadata, `node.runtime_id()` returns the connection owner's identity
+as a string. `application.actor_address(&recipient)` returns an actor's address
+only after checking its association with that Application; foreign actors and
+external reply endpoints return `ExportError::UnownedTarget`. Association survives
+actor retirement, and the runtime ID survives connection close. These projections
+do not grant operation permission or establish readiness.
+
 Declared Entity families use that same Node path. Work selects their existing
 receptionists with `application.entities(role)`; receiving retains the actual
 family shutdown results alongside the root, Work and notifications.

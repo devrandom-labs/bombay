@@ -1,8 +1,17 @@
 # Backlog status and dependencies
 
+Current identity prerequisite: Node runtime text and checked actor addresses
+project their existing owners through two methods, with no new public type or
+state. Owning389 tests and public clients22 pass in both profiles, including
+actual child address origins and intended source inversions. Strict lint,
+formatting and no-default checking pass. This is locally verified prerequisite
+work; full service/privacy, CI/review and main delivery remain open. The
+[identity record](../prds/static-remote-actors.md#runtime-and-actor-identity--local-verification-and-minimization)
+retains the exact scopes, costs and remaining gates.
+
 Current next remote step: implement the one cold Export/Node composition against
 its twenty source-reviewed consumer cases. Eight drafts (4252 lines) remain unmounted;
-final debug/optimized checks report25 direct missing source contracts plus two
+at7509c62f, debug/optimized checks report25 direct missing source contracts plus two
 inference cascades, and the owning constructor reports five missing contracts.
 Formatting passes; two-pass outcome reviewb8c7880d verifies all25 command records
 and1030 frozen versions. This adds no production code or public type and supplies
@@ -95,7 +104,7 @@ operation storage and service lifetime remain open, alongside whole byte/backing
 task limits, universal close, expiry/error discharge, arbitrary drain and privacy.
 No production service API or narrowed acceptance is selected.
 
-Updated: 2026-10-16 UTC. This is the implementation index for the
+Updated: 2026-10-17 UTC. This is the implementation index for the
 [requirements inventory](README.md). Each selected feature has its specification,
 locked-contract verification, decisions, change record and completion evidence
 in `docs/prds/`. Recheck the current lock and affected owners when selecting work.
