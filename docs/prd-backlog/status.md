@@ -546,3 +546,16 @@ acceptance remain open; no worker or new runtime/API is selected.
 Private query-profile lowering passes10 owning/473 related cases per profile,
 strict lint, format and11 source laws. Four paths add36 production lines/public0.
 Native progress, cold service/privacy and every full remote gate remain open.
+
+
+The private cold/mixed service comparison now passes five cases in debug and
+optimized builds: Counter/Ledger operations, exact allocation-refusal originals,
+both nominal pending providers, and complete native reply-prefix/disposal/EOF
+custody. Finite owning faults fail the intended post-cleanup assertions, with
+unrelated controls healthy and exact source restored. Independent reviews and
+durable archives qualify this comparison only; no shipping Rust/API is retained.
+The external authored forecast is2400, carrying all rejected/historical/unknown
+and cumulative costs. Next preserve a real declared Entity family through the
+same service owner; its candidate currently fixes Families=(). Keep the existing
+exact host relationships and typed product, without another runtime. Full remote,
+public privacy, distillation, CI and reviewed delivery remain open.

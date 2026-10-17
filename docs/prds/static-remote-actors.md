@@ -33643,3 +33643,312 @@ four tracked paths/no untracked source. Records and exact commands/hashes are
 in network-profile/final-census and execution receipts. Known production1865 and
 12 reservations carry all prior costs. This adds capability code; it is not
 code reduction, native progress, feature distillation, CI/merge or full acceptance.
+
+
+### One-table cold service: next bounded executable comparison
+
+After verified profile47faa971, select the complete mixed-row comparison rather
+than another standalone privacy result. The blocker remains fixed Replies/eager
+native clients in Export. Required witness: one Counter declaration handles actual
+IncrementAndReply/CounterProcessed, Read/CounterValue and same-root Stop; one
+Ledger declaration handles original Box Append and terminal Read. Each actor uses
+ONE actual Export-derived declaration, issuer, Vec, duplicate/conflict/count path
+and request keys. No per-operation table, substitute replay model or dummy client.
+Run these through the existing genuine Absent invocation and real Node Session.
+All acquired command/native/provider facts live outside disposable borrowed
+producers. Receive root/descendants, families and both notifications, drain actual
+reply clients and accepted query prefixes, then acquire Session close before final
+oracles. Native receiving must progress independently of another pending provider.
+
+Reuse the three pure products/ordinary tuples from the static comparison, with
+private Commands and concrete closed native products only. Its no-op constructor
+and blanket shutdown bound are NOT retained: the private allocation port returns
+an actual optional constructor operation. Reply/Submission provide real native
+endpoint operations; Stop returns genuine absence, creating no dummy future or
+endpoint. Stop alone carries the inferred shutdown-path proof and requires the
+existing event injection. Ordinary replies/Submission impose no shutdown bound.
+Attempt receives the SAME actual Application handle, not a caller-supplied no-op
+shutdown callback. Constructor and mailbox admission stay separate decisions:
+lookup/conflict/count precede selection/allocation; an endpoint refusal retains
+its untouched FnOnce builder and actual original native Result outside the table,
+without key or row charge. Keep current loans through actual result storage,
+release them before moving a borrowed Receipt; do not admit before row insertion.
+
+This remains an isolated executable comparison, not shipping API selection.
+Prototype as a cfg(test) child of the existing Export owner so it reuses actual
+private RequestKey identity. Use only temporary test mounts in Export/remote/Node
+and at most three isolated Rust files. Forecast: five tracked paths including
+PRD/status, no retained production/tests/public types (+0/-0), at most700 NEW
+handwritten verification Rust, the reused28-line recorder and100 record lines.
+Copy existing owners only with exact provenance; distinguish every unchanged copy
+from authored changes and retain total footprint/rejected epochs. All historical
+900-comparison and2500/18/125/20000 cumulative costs carry, known1865 production
+and12 public reservations; no reset or certified headroom. Fresh six-owner/API/
+test/docs/locked-contract review is required before executing the candidate.
+
+First review the complete source twice, then focused debug/optimized execution.
+Intended inversions must omit actual export polling, bypass cross-operation
+conflict or misbind Stop and reach independent post-cleanup oracles; compilation
+failure/timeouts are not runtime kills. Restore exact source and mounts. Record
+complete tracked/untracked and external deltas. Do not lower shipping production
+until this complete ownership/custody witness passes and receives its own record.
+Public Actions requester, authenticated framing/authority, native pressure,
+public privacy, all full R01–R25 and reviewed delivery remain independent gates.
+
+
+The private borrowed construction-result projection preserves pending/entered,
+actual success and the original refusal by reference; Stop's genuine lack of an
+endpoint is infallible. No cause is duplicated or discarded. Native fields stay
+outside each optional allocation/receive producer; Entered is never restarted.
+
+
+Source review before compilation rejects consuming undeclaration for the new
+outside-owner witness: it moves the sole Vec into the disposable cleanup future.
+Keep declaration custody in one private Declared/Withdrawing/Withdrawn sum;
+borrow the ActiveExport for SDK withdrawal, store its actual Result before producer
+disposal, then consume its parts separately. This owns one native resource/attempt,
+deletes the consuming teardown capture and permits no repeated withdrawal. It adds
+no public type or second lifecycle; record the uncompiled consuming draft unchanged.
+
+
+Frozen source review1b602cb9/c67c6cc9 rejects complete-custody clearance for the
+first draft. Correct before compilation: construct the cold table synchronously
+with original Session/Application/declarations returned on refusal; borrow it for
+SDK declaration and retain the actual original Result in its declaration state.
+Keep the retired request collection, each client's acquired tail and query-prefix
+result in outside slots through draining; conserve the complete Stop row and all
+issued/duplicate/returned keys. Assert six actual publication Results, not only an
+all-success predicate. This measured scope reopens the external authored allowance
+700→950, including corrections/rejected drafts, without changing retained0/public0
+or any cumulative2500/18/125/20000 ceiling. SessionLocal SDK traffic proves no mTLS,
+remote ingress or R19. Only finite post-cleanup inversions may earn runtime credit.
+
+
+For the first Counter execution, use two finite law inversions after a positive
+run: return the existing key for changed protected bytes instead of Conflict;
+and emit row0's key for the actual Read completion. Both still run all three
+commands, same-root Stop, withdrawal, reply tails, root/notifications and Session
+close, then fail exact original/conflict or wire Read-value oracles. Do not use
+omitted export/Stop as runtime evidence while they depend only on a watchdog.
+Selected SDK queryable builders lower through their existing IntoFuture contract;
+the native Result is stored before the borrowed producer is discarded.
+
+
+Counter local comparison passes actual1/0 in both profiles. Both finite conflict
+and completion-key inversions fail their intended post-host oracles in both
+profiles, without compiler/watchdog credit; exact request source is restored.
+Later assertions after each intended panic are not credited. Preserve the frozen
+Counter source/590-input positives/592-input inverses and all rejected compiler
+epochs. Ledger remains open: append its raw no-shutdown actor consumer next,
+reusing the same private ports and retain function. Known frozen authored Rust738
+plus forecast225 Ledger lines exceeds the earlier950 forecast, so revise that
+external-only forecast to1100; unknown initial caller and older/cumulative costs
+still carry, with no certified headroom. This adds no retained production/public
+surface and does not change the user's2500/18/125/20000 cumulative ceilings.
+
+
+Ledger's new ownership oracle requires an independent source inversion: copy the
+Append bytes into a new Box inside its actual FnOnce projection, keeping the same
+bytes and sender. After terminal Read and joined cleanup, the original-allocation
+oracle must fail in both profiles. Restore exact source; compilation or watchdog
+failure earns no ownership credit. Counter remains the unrelated healthy control.
+The Box-copy inversion keeps the original two-byte allocation alive only in the
+faulted process, so allocator reuse cannot make a copied Box pass the identity
+oracle. This deliberate bounded ownership fault is absent from restored source.
+
+
+### Endpoint refusal in the existing mixed comparison
+
+Counter/Ledger positives and Box-copy inversion are now independently accepted
+within their frozen local scope (mixed-runtime review da99c6c7). Complete the
+already-selected constructor-refusal requirement next, before provider/family or
+shipping work. Fresh scope/interface/address/invocation inspection confirms the
+only native endpoint cause is Allocation; the exact399-package graph/no overrides
+and six-owner prerequisite bindings are rechecked in refusal-prerequisites.json.
+Use the existing ApplicationScope/from_next(MAX-2) in each actual application.
+After its two real endpoint constructors, a third distinct request must preserve
+protected/proof/Receipt, untouched FnOnce, original target and native Exhausted
+cause outside the table, with no admission or row charge. Counter Stop must still
+complete; raw Ledger's terminal Read remains its only termination policy. Recover
+the rejected Ledger Append Box from its actual untouched builder after cleanup
+and check pointer/bytes. No native retry, cloned input or replacement error.
+Fault both actual allocation ports by discarding their refused builder; each
+post-cleanup constructor/original oracle must fail in D/R, then restore exact
+source. Reuse current ports/rows/receipts and two consumers. Five tracked paths,
+three external Rust files, no retained production/test/API addition; forecast at
+most150 additional authored Rust, revising external-only estimate1100→1250.
+All2500/18/125/20000 cumulative/historical charges carry; no certified headroom.
+
+
+Refusal local gates pass actual2/0 in D/R; both conditional builder-loss faults
+fail0/2 at the intended post-host constructor oracles in D/R. Exact native source
+is restored. Independent source413fd2df and runtime c01024e6 reviews qualify
+later unexecuted negative assertions, selected-owner/error/allocator facts and
+source/log closure. No replacement cause or Host error is credited. Caller
+delta+83/-7, no retained production/API; current external Rust421+256+662 lines
+is footprint, not cumulative authored/headroom certification. Current tracked
+delta remains five paths, including14 temporary test mount lines and two records,
+no untracked files. Production+0/-0/net0, temporary tests+14/-0/net14, public
+types+0/-0. No source is lowered into shipping production or marked distilled.
+
+
+### Pending provider and native receiving in one table
+
+Refusal is independently verified before extending this comparison. The remaining
+blocker is actual native receiving while another borrowed, nonSend provider is
+pending. Follow the owning plan f9e606fe: a native-only two-Read trace, instantiated
+with BOTH existing recorded/scheduled providers, their nominal receipts and real
+protect_when_released. Use normal ApplicationScope; separate finite cap2 records
+hold each original request and its permitted reply. Reuse metadata/Scope/DTOs and
+existing AsyncFn signatures; no stronger Send/static/Clone bound, generic guard
+mapper, new trait/framework/API or fabricated Pending provider. The table remains
+generic in Rc<Receipt>; only an independent Rc/bytes/records borrow enters protection.
+
+After actual Read0 starts protected-reply work, admit ordinary Increment, second
+retained Read and ordinary Read1. The latter is an independent causal Driver/FIFO
+barrier. Save one actual table receive poll/key/query product while the genuine
+provider remains unreleased; then re-poll the same provider and release it
+unconditionally. Recover missed native replies directly during outside-owner
+cleanup, drain both clients/ordinary prefix, root/families/notifications and Session
+close before final progress oracles. Later cleanup acquisition is not earlier
+progress. Invert actual eligibility of only row1; first acquisition still runs.
+That cut must yield a finite saved Pending result, complete cleanup, then fail the
+post-host native-progress oracle in D/R. No timeout/compiler/model kill credit.
+
+Fresh ready-mailbox/FuturesUnordered/Driver/provider/client source inspection is
+in pending-prerequisites.json; selected399-package lock/all18 manifests remain
+unchanged with no overrides. The one-poll observation is selected-source evidence,
+not a universal Future promise; reopen on a source counterexample rather than
+adding sleeps/spins. Native wire, full authorization/ACL, nonempty families,
+generalized prefix/lifetime/privacy, R19 and shipping acceptance remain open.
+
+Forecast five tracked paths, at most three active external Rust files and450
+additional verification Rust lines; no retained production/test/public types or
+dependencies. Reuse the current two fixtures unchanged. Revise the external
+authored forecast1250→2000 to include this causal trace, both actual providers,
+rejected/corrected epochs and the uncaptured early caller extent conservatively.
+All2500/18/125/20000 historical/external/cumulative charges carry; no certified
+headroom or waiver follows from that forecast. Source review twice precedes
+execution; no production lowering until the accepted ownership witness completes.
+
+
+Pending-provider comparison now passes actual2/0 in debug and optimized builds;
+both real nominal provider implementations remain pending across actual native
+receiving. Actual row1 eligibility cut fails0/2 in each profile, solely at the
+saved progress oracle987 after native recovery, provider completion and joined
+cleanup. Later key/encoded assertions do not execute in those negatives. Exact
+requests c762 is restored. Restored full Counter/Ledger/provider cohort passes4/0
+in each profile against unchanged603-input maps, service f15be51e/declarations
+a6ea33ec/requests c7620a87. Source1739334b, model e6761744 and runtime0c2df318
+independent reviews qualify the finite selected-source comparison; final cohort
+receives its own review. No compile failures, watchdogs or fabricated futures
+supply runtime credit. Rejected uncompiled source epochs and all receipts remain
+frozen. No broad lint/format/workspace or generic Future fairness credit follows.
+
+Known pending-stage authored Rust362 additions/16 removals across all captured
+source epochs, plus4 inverse lines; separate verification Python counts remain
+charged. External421+256+1008 is current footprint, not cumulative authorship.
+Tracked checkpoint remains five paths/no untracked: production+0/-0/net0,
+temporary test mounts+14/-0/net14, public types+0/-0. All temporary absolute mounts
+must be removed before commit. Retained production1865/public reservations12 and
+all2500/18/125/20000 cumulative, rejected, external and unknown costs carry.
+Full native accepted-prefix/client-disposal, nonempty-family service composition,
+transport privacy, protected wire, authorization, R19, distillation, CI and normal
+reviewed main delivery remain open. This comparison is no shipping completion.
+
+
+### Complete native reply prefix and producer disposal
+
+Pending-stage restored cohort4/0 D/R is independently reviewed385d27e2; archive
+6e1c9090 is independently verified1726e01d. Finish the existing native reply
+owner before production lowering. Fresh prefix-plan.json rechecks the selected
+399-package graph/all18 manifests and all44 recorded owner inputs (three expected
+record/test-mount differences), and freshly inspects Communication
+closure/EOF and ApplicationClient receive/drop. One retained Read0 plus three
+actual Counter replies1/2/3 into that same client, with an independent Read3
+causal barrier, must conserve every typed User and terminal None. The old
+single-result tail must fail this final trace in D/R after complete native/root/
+Session cleanup; direct fallback drains the old client's remaining prefix so
+neither watchdog nor abandoned receiver supplies evidence.
+
+A private test-only ReplyDisposal wraps the actual borrowed drain future and
+panics on Drop with an original Vec allocation. Catch that exact payload outside
+its producer; all acquired native results remain in the surviving row. If the
+baseline proves the gap, change only the existing tail field to a standard Vec
+of original Option<User> results and loop to actual EOF, storing before each
+receive producer disposal. Replay the same EOF in optimized/debug and prove no
+second acquisition. A finite owning inversion discards the second prefix result
+but still acquires EOF/completes cleanup, then fails the ordered trace; restore.
+
+Forecast same five tracked paths/three active external Rust files, at most300
+additional verification Rust, one private fault fixture and no retained
+production/test/public types or dependencies. The initial lastNone-only assertion
+proposal was rejected: exact .as_slice() checks preserve the existing empty-prefix
+law; .iter().last() is used only for EOF/replay/fallback decisions. External
+authored forecast2000→2400 conservatively includes new prefix/disposal and
+rejected/corrected epochs; all global/historical/rejected/unknown costs carry
+unchanged. This is a forecast, not certified headroom or a global ceiling change.
+No new lifecycle/stream framework, semantic bool, callback or runtime owner.
+Nonempty-family and public service/full remote acceptance remain separate.
+
+
+The original single-result tail fails the intended final first-tail oracle1224
+in both profiles (actual0/1 each), after the intentionally caught disposal
+panic1025, original panic-payload allocation, combined tail+fallback conservation
+and complete root/Session cleanup. No timeout/compiler failure is credited.
+Source07e6d477/a6ea33ec/c7620a87 is frozen in both command input closures.
+Model review fdb4d260 confirms the minimal existing-owner Vec change. Preserve
+all old empty-prefix oracles as exact as_slice()==[None], and refusal as[];
+checking lastNone alone would weaken those tests and is rejected. Use lastNone
+only for actual EOF/replay/fallback decisions. Current ExternalActor retains
+control_liveness: do not remove the EOF guard and wait on a second native receive.
+A finite EOF inversion instead duplicates the retained None within that guard
+and returns, failing the post-cleanup replay oracle. The conservation inversion
+removes/drops element1 only in the final actual-EOF branch, after every result
+was acquired; it fails combined conservation1222 before later assertions.
+No synthetic Pending, inverse ordinal, unbounded wait or source-state counter.
+
+
+Native accepted-prefix comparison is now verified locally. Original tail0/1 in
+D/R fails only first-tail1224 after caught disposal1025, original Vec allocation,
+combined fallback conservation and full cleanup. The minimal existing-tail
+change is13 additions/8 removals/net5 in external verification code, plus five
+exact prior-case observer substitutions. Fixed and restored complete five-case
+cohorts each pass5/0 in both profiles, against610 identical fixed input maps;
+original baseline has606 inputs with separately recorded plan/recorder epochs.
+Native0b5b5f7c/service1e665ee1/requests c7620a87 are exactly restored.
+
+Both finite owning inversions produce4/1 D/R with all four unrelated controls
+healthy: acquired User2 removal fails combined conservation1222; duplicate
+retained EOF fails replay1226. Each has the caught original disposal panic plus
+one intended test failure, not two failed tests. Later negative assertions are
+unexecuted: loss does not reach first-tail/replay/empty-recovery; EOF reaches
+first-tail but not empty-recovery. Source review5f86ed28, fix9a0aa88e, model
+fdb4d260 and eight-receipt runtime0fe5a548 independently qualify these outcomes;
+restored cohort receives its separate review. No native EOF re-wait, compiler
+failure or watchdog earns runtime credit. Producer-fault evidence applies to
+the whole borrowed drain/ReplyDisposal; this does not inject a separate failure
+into each concrete client-receive future's destructor.
+
+Known prefix-stage authored Rust251 additions/21 removals across frozen epochs,
+plus8/-2 inverse-only lines; private fault fixture1/public types0. External
+current426+256+1233 is footprint, not authored/cumulative headroom. Separate
+Python verification/copy counts and earlier unknown/rejected costs carry.
+At the archived comparison checkpoint, five tracked paths/no untracked have
+production+0/-0/net0, temporary test mounts+14/-0/net14 and public+0/-0;
+retained1865/public reservations12 are unchanged.
+No broad lint, format, full-workspace, shipping, R19 or public-privacy credit.
+Next complete actual nonempty-family service composition before production/API
+lowering. Full R01–R25/AUTH1/NET1 remains active, with all cumulative ceilings.
+
+
+The restored prefix cohort is independently accepted a2a21c13. Durable archive
+remote-mixed-prefix-20261017T005618Z.tar.gz (bdb6c5fb82eb6543567a4f2b66a8dae805e627997821982436027b6dbbf28a7e)
+contains867 verified payloads/31 receipts; independent full rehash eda09bca
+confirms all source/log/patch closure and prior archive links. It requires the
+referenced Network47 predecessor for base47 (no new Git bundle); historical
+gaps and the17-local/one-prior manifest qualification remain explicit. Temporary
+mounts are removed for this records-only checkpoint; retained Rust/API delta0.
+The next family compatibility finding a3f279c0 is source-only, not implementation
+or acceptance: reuse exact ShutdownLedger/Accounts Hosts and original family
+receiving. Do not attach that fixture to an incompatible Counter host topology.
