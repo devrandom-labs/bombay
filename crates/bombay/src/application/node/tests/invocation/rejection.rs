@@ -1,8 +1,10 @@
 use super::super::{Counter, MailLedger};
+use crate::ApplicationHandle;
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
-use crate::behavior::Never;
+use crate::behavior::{Behavior, Never};
 use crate::{Application, ApplicationStagingError, WorkOutcome};
+use behavior_actors::StopOnShutdown;
 use core::future::{Future, Ready, poll_fn};
 use core::pin::pin;
 use core::task::Poll;
@@ -43,6 +45,10 @@ crate::topology! {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one original staging and independent invocation-disposal trace"
+)]
 fn invocation_disposal_keeps_original_staging_rejection() {
     let observations = {
         let host = Builder::new_current_thread().enable_all().build().unwrap();
@@ -66,17 +72,19 @@ fn invocation_disposal_keeps_original_staging_rejection() {
             );
             let (execution, (receiving, received_families)) = application
                 .execute_with_entities_invocation(
-                    ApplicationWorkPresence::Supplied(work),
-                    move |work: ApplicationWorkPresence<Box<Vec<u8>>, Never>, application| {
-                        let _original_disposal = &disposal;
-                        invoked.set(invoked.get() + 1);
-                        Ok((
-                            ApplicationWorkPresence::Supplied(async move {
-                                (work.into_supplied(), application.request_shutdown())
-                            }),
-                            None::<Ready<()>>,
-                        ))
-                    },
+                    ApplicationWorkPresence::<_, Never>::Supplied((
+                        work,
+                        move |work: Box<Vec<u8>>,
+                              application: ApplicationHandle<
+                            <Counter as Behavior>::Protocol,
+                            <StopOnShutdown<Counter> as Behavior>::Event,
+                        >| {
+                            let _original_disposal = &disposal;
+                            invoked.set(invoked.get() + 1);
+                            async move { (work, application.request_shutdown()) }
+                        },
+                    )),
+                    None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
                 )
                 .unwrap_or_else(|_| panic!("the actual host is entered"));
             let mut execution = Box::pin(execution);

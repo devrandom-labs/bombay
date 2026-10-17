@@ -5,12 +5,12 @@ use super::{AccountReport, Accounts, AccountsRole};
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
 use crate::behavior::{
-    BehaviorBase, ClassifySettlement, EventLayer, Never, SettlementStatus, User,
+    Behavior, BehaviorBase, ClassifySettlement, EventLayer, Never, SettlementStatus, User,
 };
 use crate::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
 use crate::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement, Application,
-    Completion, MailAddr, RetirementAssessment, ShutdownLedger, WorkOutcome,
+    ApplicationHandle, Completion, MailAddr, RetirementAssessment, ShutdownLedger, WorkOutcome,
 };
 use behavior_actors::StopOnShutdown;
 use core::future::Ready;
@@ -131,20 +131,22 @@ async fn absent_work_drives_root_and_nonempty_family_retirement() {
             EntityCapacity::new(NonZeroUsize::new(1).unwrap(), NonZeroUsize::new(2).unwrap()),
         );
         let (execution, (receiving, received_families)) = application
-            .execute_with_entities_invocation(
-                ApplicationWorkPresence::<Never, ()>::Absent(()),
-                |presence: ApplicationWorkPresence<Never, ()>, application| {
-                    match presence {
-                        ApplicationWorkPresence::Absent(()) => {}
-                        ApplicationWorkPresence::Supplied(never) => match never {},
-                    }
+            .execute_with_entities_invocation::<
+                _, _, _, Never, fn(Never, _) -> Ready<Never>, Ready<Never>, (), _, _,
+            >(
+                ApplicationWorkPresence::Absent(()),
+                Some(async |application: &ApplicationHandle<
+                    <ShutdownLedger as Behavior>::Protocol,
+                    <StopOnShutdown<ShutdownLedger> as Behavior>::Event,
+                    _,
+                >| {
                     invocations.set(invocations.get() + 1);
                     handoff = Some(published.send(application.clone()));
+                    let account = application.entities(AccountsRole).entity(Box::<[u64]>::from([101, 103]));
+                    let interface = application.interface(());
+                    let root = application.root().established_recipient();
                     let exporting = async move {
-                        let account = application
-                            .entities(AccountsRole)
-                            .entity(Box::<[u64]>::from([101, 103]));
-                        let account = application
+                        let account = interface
                             .sender_to(account)
                             .unwrap_or_else(|_| panic!("the actual Entity sender allocates"));
                         *acquired_family_origin = Some(account.address());
@@ -153,18 +155,15 @@ async fn absent_work_drives_root_and_nonempty_family_retirement() {
                             .send(account_commands.iter().map(|value| value + 1).collect())
                             .await;
                         *acquired_family_admissions = Some((first, second));
-                        let sender = application
-                            .sender()
+                        let sender = interface
+                            .sender_to(root)
                             .expect("the genuine one-way root sender allocates");
                         *acquired_root_sender = Some(sender.address());
                         *acquired_root_admission = Some(sender.send(original).await);
                         let _published = finished.send(());
                     };
-                    Ok((
-                        ApplicationWorkPresence::<Ready<Never>, ()>::Absent(()),
-                        Some(exporting),
-                    ))
-                },
+                    Ok::<_, ()>(Some(exporting))
+                }),
             )
             .unwrap_or_else(|_| panic!("the actual host is entered"));
         let observer = async {

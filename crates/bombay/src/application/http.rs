@@ -184,6 +184,7 @@ where
             _,
             Never,
             Ready<()>,
+            _,
         >(
             executor,
             (self, router, address),
@@ -213,43 +214,35 @@ where
                         });
                     }
                 };
-                let original_work = ApplicationWorkPublication {
-                    publication: Some((
-                        ApplicationWorkCustody::NotInvoked(
-                            (
-                                ApplicationWorkPresence::Supplied((router, listener)),
-                                Some(
-                                    |work: ApplicationWorkPresence<
-                                        (Router, TcpListener),
-                                        Never,
-                                    >,
+                let original_work =
+                    ApplicationWorkPublication {
+                        publication: Some((
+                            ApplicationWorkCustody::NotInvoked(
+                                ApplicationWorkPresence::Supplied((
+                                    (router, listener),
+                                    |(router, listener): (Router, TcpListener),
                                      application: ApplicationHandle<
                                         Root::Protocol,
                                         Actor::Event,
                                     >| {
-                                        Ok((
-                                            ApplicationWorkPresence::Supplied(async move {
-                                                let (router, listener) = work.into_supplied();
-                                                let lifecycle = application.lifecycle();
-                                                let server_shutdown = lifecycle.termination();
-                                                axum::serve(listener, router(application.clone()))
-                                                    .with_graceful_shutdown(async move {
-                                                        match server_shutdown.await {
-                                                            Ok(_) | Err(_) => {}
-                                                        }
-                                                    })
-                                                    .await
-                                            }),
-                                            None::<Ready<()>>,
-                                        ))
+                                        async move {
+                                            let lifecycle = application.lifecycle();
+                                            let server_shutdown = lifecycle.termination();
+                                            axum::serve(listener, router(application.clone()))
+                                                .with_graceful_shutdown(async move {
+                                                    match server_shutdown.await {
+                                                        Ok(_) | Err(_) => {}
+                                                    }
+                                                })
+                                                .await
+                                        }
                                     },
-                                ),
+                                )),
+                                None,
                             ),
-                            None,
-                        ),
-                        publication,
-                    )),
-                };
+                            publication,
+                        )),
+                    };
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,
@@ -263,8 +256,7 @@ where
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
-                        let (work, invoke) = work;
-                        let (router, listener) = work.into_supplied();
+                        let ((router, listener), invoke) = work.into_supplied();
                         let _ = invoke;
                         let inputs = Err((root, spaces, router, failure, listener, scope));
                         return Err(ApplicationWorkPublication {
@@ -288,6 +280,7 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
+            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         );
         let receiving = async move {
             let (work, root, termination_notification) = receiving.await;

@@ -2,6 +2,7 @@
 
 use super::composition::ComposeApplication;
 use super::execution::{ApplicationWorkPresence, RootInterpreter};
+use super::work::invoke;
 use super::{Application, ApplicationHandle, ApplicationOutcome, ApplicationScope, WorkOutcome};
 use crate::NativeHost;
 use crate::address::MailAddr;
@@ -411,14 +412,19 @@ where
         let (application, work) = self.take_application(work)?;
         let session = &self.session;
         match application.execute_with_entities_invocation(
-            ApplicationWorkPresence::Supplied(work),
-            move |work: ApplicationWorkPresence<Work, Never>, mut application| {
-                application.session = Some(session.clone());
-                Ok((
-                    ApplicationWorkPresence::Supplied(work.into_supplied()(application)),
-                    None::<Ready<()>>,
-                ))
-            },
+            ApplicationWorkPresence::Supplied((
+                work,
+                move |work: Work,
+                      mut application: ApplicationHandle<
+                    Root::Protocol,
+                    Actor::Event,
+                    Families::Receptionists,
+                >| {
+                    application.session = Some(session.clone());
+                    invoke(work, application)
+                },
+            )),
+            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         ) {
             Ok((execution, (receiving, received_families))) => Ok((execution, async move {
                 let (work, root, notifications) = receiving.await;
@@ -429,7 +435,10 @@ where
             Err((application, work, cause)) => {
                 self.application = Some(application);
                 Err(NodeExecutionRefusal::Host {
-                    work: work.into_supplied(),
+                    work: {
+                        let (work, _invoke) = work.into_supplied();
+                        work
+                    },
                     cause,
                 })
             }

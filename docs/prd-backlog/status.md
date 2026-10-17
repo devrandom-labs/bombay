@@ -595,3 +595,23 @@ removed exactly; retained software/API0. No full remote row closes. The next
 public service blocker is real asynchronous child binding before bare Work;
 separate mutable Export captures and provider destruction on cancellation need
 the ownership comparisons recorded in the PRD. All cumulative costs carry.
+
+
+Earlier asynchronous-startup checkpoint: the candidate passed four focused
+debug/optimized controls: real binding waits before bare Work, absence needs no callback, and
+Ready/pending binding producer disposal preserves original unused Work after
+actual cleanup. Source revieweffde73f retains production+208/-184/net24 and
+public0 only as an unaccepted candidate. At that checkpoint, finite owning
+inverses, restoration, full controls and strict checks remained required. Public Node/child/provider/SDK
+integration and every full remote row remain open; prior caps/costs carry.
+
+
+The private asynchronous binding prerequisite is locally verified: all471
+library/public-consumer cases pass in both profiles at2MiB; eager-invocation
+and lost-publication inverses fail their intended post-cleanup assertions in
+both profiles with exact restoration. Strict lint, formatting and the no-default-features
+crate check pass. Production+209/-184/net25, tests+491/-166/net325, public0,
+13 paths; known retained1911/public reservations12 and every cumulative cost
+carry. This research retention is not reviewed main delivery or full remote
+acceptance. Next is the SDK-free cold Export/Node consumer and integration;
+all R01–R25/AUTH1/NET1 remain open.

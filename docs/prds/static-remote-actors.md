@@ -2,13 +2,21 @@
 
 ## Current status (2026-10-17 UTC)
 
-Main49cc8971 remains the latest integration. Current research changes preserve
-original unused Work on invocation refusal, then cancel and join existing
-cleanup. Sourcee3a5853d also repairs the resulting debug stack regression by
-heap-pinning supplied Work. All467 library/public-consumer tests pass in both
-profiles under the same2MiB stack, with strict workspace lint, formatting and
-the default-feature check passing. This adds21 net production lines and no public
-types; a supplied non-zero-sized future generally gains one allocation.
+Main49cc8971 remains the latest integration and is already an ancestor of this
+research branch. The private startup owner now awaits actual asynchronous
+binding before invoking supplied Work. Genuine absence owns no invocation
+callback. Refusal and binding-producer disposal preserve original unused Work
+through existing cancellation, native notifications and joined family cleanup.
+
+All471 library/public-consumer tests pass in debug and optimized builds under
+the same2MiB stack, including the earlier recorded-requester stack regression.
+Both finite early-invocation and lost-publication faults fail their intended
+post-cleanup assertions in both profiles, then restore exact source. Strict
+all-feature workspace lint, formatting and the no-default-features check pass.
+This checkpoint adds25 net production lines and no public types. It retains
+sourcee3a5853d's supplied-Work heap pinning; a non-zero-sized future generally
+gains one allocation. Public Node still supplies no binding and only supplied
+Work: cold exports, actual child/provider integration and SDK privacy are next.
 
 The earlier private service comparison passes six cases per profile, including
 an original nonempty Entity family, with scoped type-denial/native-loss checks
@@ -34597,3 +34605,356 @@ owner; whole-exporting-future cancellation must also obey the same conservation
 law. No new provider framework or runtime design is selected by these source
 reviews. Actual child startup and provider cancellation remain blockers before
 public Node ownership, SDK privacy and the full remote acceptance gates.
+
+### Child binding — ordinary Rust capture comparison before production
+
+Current source remains docs-only264a4d3. Fresh child-prerequisites642dd4a2
+rechecks all44 owning inputs,18 manifests and13 selected archives/VCS records
+againstd7df717c. Only the reviewed PRD/status records differ; no software owner,
+lock or selected instructions changed. Combined source modelfd332f62 permits
+one borrowing async binding callback returning one concrete Serving type,
+independent of every local Handle loan. Invoke must not also produce an exporter.
+
+Before changing that private execution contract, compare the exact lifetime
+using existing Creator/Worker from child_service_stop.rs, included unchanged,
+an outside reply mailbox and outside original result slots. The binder awaits
+the actual typed child proof, projects existing owned recipient/lifecycle,
+then moves the same outside mailbox borrow into its returned serving future.
+The trace must inspect the exact selected child (amount11 and exact endpoint),
+retain both exported proofs, stop the actual root and acquire native cleanup
+and both notification results. A local Handle borrowing return must fail the
+higher-ranked fixed-result constraint. The existing run_with is solely this
+comparison's test host: it proves no bare user Work ordering, refusal, binder
+Drop conservation, Node lifetime or full remote acceptance.
+
+Forecast: one external Rust comparison under200 lines, retained software/API0,
+four-line temporary cfg-test module mount removed exactly afterward. Initial86
+lines, author correction+14/-1 and recorded rustfmt changes all remain charged;
+formatted135-line source211f3451 is not a refund of prior authorship. Two-pass
+source review precedes semantic commands; actual debug/optimized results and
+static local-borrow denial remain unexecuted at this pre-edit checkpoint.
+Existing aggregate/Work phases, Behavior products, native mailbox and lifecycle
+owners are reused without new production types, branches, modules or public
+spellings. No semantic booleans, invented child getter, cloned family handle,
+second executor or no-op Work is introduced. All cumulative budgets and costs
+carry; a successful comparison alone cannot select production shape.
+
+### Child capture — verified comparison, not startup acceptance
+
+The final lawful comparison uses the existing integration-test root, preserving
+its unchanged actor expansion and visibility. Earlier library-mount attempts
+failed only missing imports and E0446 from the fixture's original pub(crate)
+send product; those failures prove no lifetime or runtime law. No visibility
+was widened. Final source463a1b3d/138 lines passes debug and optimized controls,
+and both restored controls (one case,one filtered each). Returning a future
+that instead borrows the local Handle fails only the intended lifetime check
+in both modes. Selecting the sibling executes and fails amount17 versus11 at
+line112 after actual Work/native/cleanup/two-receipt acquisition; later native
+semantic assertions are unexecuted. This checks the comparison's independent
+trace, not a production-owner mutation.
+
+Independent two-pass reviewd876c3ed rehashes all13 commands,709 frozen versions
+and17934 mapping entries. Original child fixture1aeb3ad1 and interface160b8ed5
+are restored exactly after their three- and four-line mounts. Retained software
+and public API0. Conservative new Rust charge200 includes all original,
+corrected, formatted, rejected, cut, restored and mounted epochs; the new cut
+script adds48 lines. Existing recorder74 lines is reused, with prior charges
+carried. Current138-line footprint is not a refund or certified headroom. These
+new comparisons exceed the initial500-line forecast when counted with the
+previous target comparison; the approved cumulative ceilings remain unchanged.
+
+### Asynchronous binding — owning regression and bounded change record
+
+Policy: startup must finish actual binding before invoking supplied Work. While
+binding waits, refuses, is constructed or is disposed, the original callable
+and invocation remain in the existing initialized NotInvoked publication.
+This is Bombay startup policy, not a new Behavior law. The same cold Node/Export
+and single Application execution owner remain authoritative.
+
+Before production edits, startup.rs adds the smallest native ordering regression:
+Counter's actual typed processing reply is stored outside binding; an independent
+observer holds binding Pending and records Work construction/poll counts before
+releasing it. The same reply-mailbox borrow then moves into actual retirement
+serving. Original non-Send Work is invoked once, returns its original Box from
+its bare future, requests real shutdown, and retains complete native, cleanup
+and notification results. The prior two-argument synchronous invocation cannot
+express this three-input binding contract. Establish that actual static failure
+before implementation, then require finite eager-invocation and custody inverses.
+This focused root test complements the actual child capture comparison; it does
+not by itself prove the public Node child startup consumer.
+
+Source review616926bf conditionally accepts one optional Binding on the existing
+private invocation/kernel methods. Its higher-ranked AsyncFnOnce borrows the
+local actual Handle and returns one fixed concrete Exporting future. Binding
+alone produces that exporter. Invoke returns only bare Work presence, removing
+its consumed-callback Option and former synchronous refusal/export result.
+Keep Work guarded through direct binding polls and producer Drop; install Ready
+exporting into the existing empty pinned Option during its poll. Refusal keeps
+original Work, requests existing cancellation and uses common permission/join.
+Ordinary None supplies no callback/future value. Detailed causes remain outside;
+whole-execution surrender does not promise a live returned future survives it.
+
+Forecast: production execution.rs/http.rs/node.rs, six owning test paths and two
+records (11 paths); production at most+100/-70/net30, public types+0/-0, no new
+module/runtime/trait owner. Reuse existing Work publication, Presence, typed
+Actions, actual endpoints, lifecycle observations and family receiving. Delete
+the independent Invoke exporter and consumed-Invoke history rather than retain
+a second startup path. No Work/family Clone, Send/static/Unpin requirement is
+eligible. Start with ordinary pinning; any heap choice needs the existing exact
+2MiB regression and explicit allocation accounting. Expected verification up
+to900 additional authored/modified lines, including migration and rejected
+experiments; this forecast grants no new allowance. All earlier2500/18/125/
+20000 cumulative charges and known1886/public reservations12 carry. Stop and
+reopen the model for any unrecorded semantic surface; no compiler diagnostic
+may invent it. Production remains unedited at this checkpoint.
+
+
+Pre-production model checkpoint: the preceding mandatory Invoke proposal is
+reopened. Its first real absent caller would lose its export work to Binding
+and retain only an identity/no-op callback. Instead reuse the existing sum as
+Presence<(Work,Invoke),NoWork>. Only Supplied owns an actual invocation;
+Absent owns only its original absence value. A function-pointer type over
+uninhabited Work may name the missing future without constructing a callback.
+Invoke consumes real Work and returns its bare future. The private family
+entry takes this presence and optional Binding; no third callback parameter or
+second execution method is needed. The new regression now uses that syntax.
+
+The public WorkOutcome enum and outcomes remain unchanged. Update its four
+private supplied/entity/HTTP/absent mappings to recover original Work from the
+Supplied pair. Staging rejection must initialize its original bare-Work
+publication before disposing extracted Invoke, preserving the existing owning
+rejection law. This adds work.rs to the bounded forecast (12 paths total);
+expected production+180/-140/net40, no public types, same900 verification
+forecast and unchanged cumulative limits/costs. No production shape from the
+reopened proposal was written. The sum removes a callback from genuine absence,
+rather than adding a correlated Option or placeholder. Independent revised
+model review precedes production; actual prior-source baseline remains pending.
+
+
+The first prior-contract run is terminal101 with unchanged inputs. It reaches
+only E0282 at the unassociated boxed Work parameter under the old opaque
+Supplied input; it supplies no runtime or explicit binding-denial credit. Add a
+second, fully named absence regression: Presence<(Never,fn(Never,Handle) ->
+Ready<Never>),()>::Absent and typed None binding must need no invocation value.
+It performs only real missing-host refusal and retains the original absence;
+no callback or future is constructed. The old required Invoke position must
+reject that Option as non-callable. Both tests precede production edits, with
+review and another actual baseline required; the callback shape still comes
+from the recorded domain sum, not the inference diagnostic.
+
+
+The revised prior-source baseline is terminal101/stable: E0277 at the named
+absence control confirms that the old required Invoke rejects typed None,
+plus the already qualified E0282 in the supplied-pair test. No runtime cases
+execute. Source review7686217e and model3977ccfc bind the pre-edit domain sum;
+implementation may now compare that exact private contract without adding
+semantic surface from either compiler diagnostic.
+
+
+The remaining attachment.rs consumers use real supplied-Work handoff, with no
+exporter. They keep that operation inside their actual supplied Invoke and use
+None binding, preserving a single exporting producer. Missing-host recovery
+extracts original Work before disposing its retained invocation; its existing
+closed-handoff observation must remain. This is the seventh owning test path,
+so the complete forecast is13 paths (four production/seven tests/two records),
+within the existing path ceiling. No new semantic port or type is introduced.
+
+
+First implementation checkpoint after pinned formatting (no semantic build yet):
+production+186/-182/net4; tests+327/-160/net167; public API+0/-0 types;
+records+153/-0 before this census,12 currently changed paths including the new
+tracked-intent test, no other untracked files. Split execution.rs at its owning
+cfg-test module to classify source accurately. This adds binding capability;
+it is not described as code reduction. Known retained becomes provisionally1890
+if accepted, not a reset or certification of other historical charges. Binding
+is the sole exporter producer; Absent contains no Invoke value. Existing bare
+Work heap pinning remains; binding currently uses ordinary stack pinning and
+has no new heap or universal stack claim. All execution/source tests and
+independent final source reviews remain required before retention.
+
+
+Compiler-friction checkpoint: first implementation focus is terminal101/stable
+with10 type errors and no runtime cases. One stale private host-error spelling
+contradicted the already recorded Presence pair and was corrected exactly.
+The next actual run is terminal101/stable with only six E0282 diagnostics in
+anonymous private test invocations. Stop migration here; no wrapper, trait,
+bound, alias or factory has been added to appease those diagnostics. Independent
+source review0b20b17d verifies the guard/order/mapping model, but identifies the
+unexecuted binding-producer Ready/Drop and Pending-disposal laws as acceptance
+gaps. Existing Work Drop tests do not supply that evidence.
+
+Compare ordinary named functions for the existing Work consumption law before
+selecting further code. That law already exists in public execute_with:
+consume the original FnOnce and actual owned Handle to produce its exact bare
+future. A canonical private function is eligible only if it expresses that
+same operation, replaces repeated invocations, adds no owner or public surface,
+and works with the actual opaque/non-Send factories; it may not wrap their
+future or invent a new protocol. The new standalone50-line standard-library
+comparison tests only tuple-call inference and original value ownership. It is
+not actor, startup, disposal or public-service evidence.
+
+The two existing projected-handoff controls also establish a distinct real
+case: startup can acquire and transfer ports to an independent consumer without
+owning an exporting future. Compare Binding returning Result<Option<Exporting>,
+()> for that genuine absence, rather than supplying a no-op serving future.
+Some binding must perform its actual projection or declaration; None constructs
+no producer. Binding remains the only possible exporting-future producer.
+These are source hypotheses under review, not retained interface decisions.
+All unaccepted source epochs, copied/modified verification and formatting remain
+charged. Current implementation has no semantic execution credit.
+
+
+The first standalone comparison compiles and runs1/0, but its anonymous direct-
+tuple cut ALSO compiles (0, only unused-function warning). The expected-error
+script therefore fails, then restores exact0e1e6a99. This is not a static denial
+or evidence that a new function is necessary. No production helper has been
+selected or added. Refine only the ordinary Rust experiment to the actual
+closed-sum construction seam, using standard Result<(Work,Invoke),Infallible>
+in place of the direct tuple. The uninhabited branch is exhaustively matched;
+actual Work/output and observation stay unchanged. This remains compiler-only
+comparison scope, with no new runtime model and all rejected costs carried.
+
+
+The refined closed-sum comparison is terminal0 for the named function and its
+one actual original-value test (1/0). Anonymous Box<_> invocation is terminal1
+with only E0282; finally restores exact b1cb2ccd. Binary67fc9d53 is unchanged
+before and after actual pinned-Nix execution. This selects the ordinary private
+work::invoke function for the already recorded FnOnce consumption law; no new
+owner, trait, type, bound, public spelling or future wrapper is selected. The
+direct-tuple anonymous success remains a rejected necessity witness.
+
+Before correction, select Binding -> Result<Option<Exporting>,()> for actual
+projected handoff versus actual serving. Existing handoff controls move their
+real projection into Binding and return None; actual serving returns Some.
+Kernel installs that exact Option during Ready, preserving the existing guarded
+Work until producer disposal. The canonical function replaces thin invocation
+closures; Node retains its distinct native Session assignment before invoking
+it. The staging rejection control uses its existing concrete ApplicationHandle
+type because its cold Work is deliberately not callable. No generic kernel
+FnOnce restriction is added. Same13-path forecast, public types0, all cumulative
+charges and unexecuted producer-disposal/inversion gates carry.
+
+
+Function/optional-export epoch: actual startup debug and optimized runs both
+pass2/0 (380 filtered), stable captured inputs, identical actual test names and
+2MiB stack. Inference review03bdba97 independently verifies the narrow std
+comparison; conservative new std charge59 includes rejected/refined/cut epochs.
+Three concrete Copy invocation-drop warnings remain; omit those concrete no-op
+disposals, retaining generic affine Invoke disposal and staging publication law.
+
+Next focused tests distinguish Ready producer Drop from pending cancellation.
+An owning generic test producer pins its actual concrete future, counts polls/
+disposal and panics with its original Arc cause. Actual binding transfers the
+real Handle before awaiting a gate; Ready releases that gate, Pending retains
+its sender and records actual Poll::Pending after the producer was polled.
+Catch actual poll/Drop causes separately, dispose the same execution without
+repoll, acquire root/two notifications/families/cleanup, then require untouched
+NotInvoked Work and exact recovered Box output after one real invocation.
+Ok(None) proves Work custody only, never preservation of an exporting future.
+Author/model review precedes tests; independent review must inspect final source.
+No production model expansion, public type or new path is selected.
+
+
+Four-case actual debug and optimized startup runs pass4/0 (380 filtered),
+unchanged inputs and no source warnings. Two-pass whole-source revieweffde73f
+binds execution539388c7/startupa30db8c3 and all four production/seven owning
+test paths. Current complete tree: production+208/-184/net24; tests+479/-163/
+net316; public types+0/-0; records+248/-0 before this entry;12 changed paths,
+no untracked. This is additional startup capability, not code reduction. Known
+retained would become1910 only on acceptance; prior caps/costs remain unchanged.
+
+Before inverse edits, select two finite faults on the actual execution owner.
+Guard loss moves its existing publication take before constructing Binding;
+the Ready producer Drop control must then observe Interrupted instead of
+NotInvoked only after actual cancellation, cleanup and both notifications.
+Eager invocation moves the actual supplied factory call before Binding and
+retains its bare future in the existing Presence until the normal poll point.
+It uses a temporary clone of the actual Handle under the already owning
+Receptionists:Clone law, solely in the fault overlay, not production policy.
+The actual reply/gate consumer must finish all cleanup and then reject observed
+(factory,poll)=(1,0) rather than(0,0). Independent modelse3002828/3a32fda7
+qualify these cuts. Require actual intended failures in debug/optimized builds
+and exact restoration; no later assertions after an intended failure earn
+credit. No new type, bound, public promise or full remote acceptance is selected.
+
+
+Both owning faults now fail the intended runtime assertion in debug and
+optimized builds: eager5fff02f9 observes(1,0)!=(0,0); guard7cb1e19a rejects
+missing NotInvoked after actual producer cause/cancellation/join acquisition.
+Each wrapper finally restores exact execution539388c7. Later assertions after
+each failure remain unexecuted. Current strict lint is terminal101/stable only
+for one similar-name pair, four contiguous-signature/trace length findings and
+three obsolete lint expectations. Remove those obsolete expectations, rename
+the observed startup product, and annotate the four existing contiguous owning
+contracts/traces. No helper, bound, wrapper or semantic change is selected from
+these style findings. Production gains one attribute line; all prior epochs
+and costs remain, with final exact-source controls still required.
+
+
+### Asynchronous binding — verified private startup checkpoint
+
+The one private family/kernel entry now owns optional asynchronous binding.
+Only Supplied owns (original Work, Invoke); Absent owns its actual absence.
+Binding returns the exact optional serving future or refuses, storing any
+detailed cause in its outside owner. Original NotInvoked publication remains
+initialized through binding construction, direct polling and producer Drop.
+Ready installs the exact future Option before Drop. Only successful disposal
+permits supplied invocation; refusal uses existing cancellation and common
+permission-before-export/family joins. Four private outcome mappings preserve
+public WorkOutcome shapes and exact cold/unused Work. Generic staging rejection
+initializes original bare-Work custody before Invoke disposal.
+
+Canonical private work::invoke consumes the actual FnOnce and owned Handle into
+its exact bare future. It replaces repeated thin adapters without a new owner,
+trait, public type or Send/Clone/static/Unpin restriction. Binding(None serving)
+performs actual port handoff; absent binding constructs no producer. Existing
+Work heap pinning and direct Ready-output publication remain. Binding-producer
+Drop controls prove unused Work conservation, not survival of a returned
+exporting future after surrender of its entire execution owner.
+
+Source revieweffde73f and actual review069d948f retain their exact epochs. The
+final d64b1e89 owner differs from the killed/restored539388c7 epoch only in lint
+expectations. Final tests additionally rename the startup observation product
+and update lint expectations; no transition changes. Old diagnostic-only and
+rejected direct-tuple comparisons remain qualified in their immutable receipts.
+
+Actual final debug and optimized commands each pass471 outer cases: library384,
+application_clients21, application_outcome13, axum7, completed_application_receiving39,
+entity_application2 and node_outcome5. The same known stack-regression case passes in both profiles at
+RUST_MIN_STACK=2097152. Inner compile-fixture rows remain separate.
+Final strict all-feature/all-target workspace Clippy, fmt check and no-default
+crate check return0 with unchanged captured inputs. The earlier lint101 contains
+only recorded style/expectation findings, not semantic or runtime failures.
+
+All commands use the pinned Nix profile. Test, lint and check commands use
+--offline --locked; fmt has neither option. Final reproductions after the
+Nix prefix are:
+
+```sh
+env RUST_MIN_STACK=2097152 cargo test --offline --locked -p bombay-rs --all-features --lib --test application_outcome --test node_outcome --test completed_application_receiving --test axum --test entity_application --test application_clients -- --test-threads=1
+env RUST_MIN_STACK=2097152 cargo test --offline --locked --release -p bombay-rs --all-features --lib --test application_outcome --test node_outcome --test completed_application_receiving --test axum --test entity_application --test application_clients -- --test-threads=1
+cargo clippy --offline --locked --workspace --all-features --all-targets -- -D warnings
+cargo fmt --all -- --check
+cargo check --offline --locked -p bombay-rs --no-default-features
+```
+
+Final software census: production+209/-184/net25; tests+491/-166/net325; public
+API+0/-0 types. Thirteen changed paths comprise four production, seven owning
+test and two record paths; no untracked source remains. This is capability
+addition, not code reduction. Known retained becomes1911=1886+25; reservations12
+and cumulative2500/18/125/20000 limits carry, including all copied/rejected/
+external/historical/unknown costs. Current standalone comparison charge59 and
+conservative finite fault-script charge80 (current76) are additional
+verification, not headroom or a refund.
+
+This retains a private prerequisite on the research branch. Full workspace/Nix
+CI and normal reviewed main delivery are not supplied by these local controls.
+All full R01–R25/AUTH1/NET1 remain open. Next is one real SDK-free cold Export/
+Node consumer, with actual child proof, compatible nominal family topology and
+borrowed providers; then integrate those declarations into these existing
+owners. The compared report surface remains unselected; reuse the existing
+Admission attempt law and keep runtime-owned facts read-only or consumed.
+
+Final complete-tree measurement, including tracked intent and untracked sources:
+production+209/-184/net25; tests+491/-166/net325; public types+0/-0.
+Records+388/-7/net381; full tree+1088/-357/net731;13 paths, no untracked files.

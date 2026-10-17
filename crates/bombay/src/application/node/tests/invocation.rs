@@ -36,19 +36,16 @@ fn absent_work_still_drives_correlated_counter_operations() {
                 let received_processed = &mut processed;
                 let received_admission = &mut admission;
                 let received_tail = &mut tail;
-                let invoke = |presence: ApplicationWorkPresence<Never, ()>,
-                              application: ApplicationHandle<
+                let binding = async |application: &ApplicationHandle<
                     <Counter as Behavior>::Protocol,
                     <StopOnShutdown<Counter> as Behavior>::Event,
                 >| {
-                    let () = match presence {
-                        ApplicationWorkPresence::Absent(absence) => absence,
-                        ApplicationWorkPresence::Supplied(never) => match never {},
-                    };
                     transferred = Some(handoff.send(application.clone()));
+                    let interface =
+                        application.interface(application.root().established_recipient());
                     let exporting = async move {
-                        let target = application.root().established_recipient();
-                        let mut client = application
+                        let target = interface.api().clone();
+                        let mut client = interface
                             .client_to::<_, CounterProcessed>(target)
                             .unwrap_or_else(|_| panic!("the actual reply client allocates"));
                         *received_admission = Some(
@@ -64,10 +61,7 @@ fn absent_work_still_drives_correlated_counter_operations() {
                         *received_tail = Some(client.receive().await);
                         let _published = finished.send(());
                     };
-                    Ok((
-                        ApplicationWorkPresence::<Ready<Never>, _>::Absent(()),
-                        Some(exporting),
-                    ))
+                    Ok::<_, ()>(Some(exporting))
                 };
                 let application = Application::new(Counter::new().stop_on_shutdown());
                 let (execution, receiving) = execute_application_with::<
@@ -83,23 +77,30 @@ fn absent_work_still_drives_correlated_counter_operations() {
                     _,
                     _,
                     Never,
-                    _,
+                    fn(
+                        Never,
+                        ApplicationHandle<
+                            <Counter as Behavior>::Protocol,
+                            <StopOnShutdown<Counter> as Behavior>::Event,
+                        >,
+                    ) -> Ready<Never>,
                     Ready<Never>,
                     _,
                     _,
                     (),
                     _,
+                    _,
                 >(
                     Handle::current(),
                     application,
-                    Some(invoke),
+                    (),
                     async |application: &Application<StopOnShutdown<Counter>, _>| {
                         ((), application.allocations())
                     },
                     |original: ApplicationWorkPublication<_, _, _, _, Never, _>,
                      (),
                      allocations| {
-                        let (application, invoke, publication) = original.into_unstarted();
+                        let (application, (), publication) = original.into_unstarted();
                         let (root, spaces, (), (), scope) = application.into_parts();
                         let scope = scope.unwrap_or(ApplicationScope {
                             allocations,
@@ -111,7 +112,7 @@ fn absent_work_still_drives_correlated_counter_operations() {
                                 publication: Some((
                                     ApplicationWorkCustody::Prepared(
                                         (root, spaces, scope),
-                                        (ApplicationWorkPresence::Absent(()), invoke),
+                                        ApplicationWorkPresence::Absent(()),
                                     ),
                                     publication,
                                 )),
@@ -120,6 +121,7 @@ fn absent_work_still_drives_correlated_counter_operations() {
                         ))
                     },
                     ((), |_executor, (), ()| None),
+                    Some(binding),
                 );
                 let observer = async {
                     let application = granted.await.expect("actual startup grants native control");
@@ -190,7 +192,6 @@ fn absent_work_still_drives_correlated_counter_operations() {
 #[test]
 #[expect(
     clippy::too_many_lines,
-    clippy::result_large_err,
     reason = "one original append and terminal native retirement trace; retain complete rejected inputs without boxing them"
 )]
 fn absent_work_still_drives_move_only_ledger_append() {
@@ -207,29 +208,23 @@ fn absent_work_still_drives_move_only_ledger_append() {
                 let mut sender_origin = None;
                 let received_admission = &mut admission;
                 let received_origin = &mut sender_origin;
-                let invoke = |presence: ApplicationWorkPresence<Never, ()>,
-                              application: ApplicationHandle<
+                let binding = async |application: &ApplicationHandle<
                     <MailLedger as Behavior>::Protocol,
                     <MailLedger as Behavior>::Event,
                 >| {
-                    let () = match presence {
-                        ApplicationWorkPresence::Absent(absence) => absence,
-                        ApplicationWorkPresence::Supplied(never) => match never {},
-                    };
                     transferred = Some(handoff.send(application.clone()));
+                    let interface =
+                        application.interface(application.root().established_recipient());
                     let exporting = async move {
-                        let sender = application
-                            .sender_to(application.root().established_recipient())
+                        let sender = interface
+                            .sender_to(interface.api().clone())
                             .unwrap_or_else(|_| panic!("actual one-way sender allocates"));
                         *received_origin = Some(sender.address());
                         *received_admission =
                             Some(sender.send(LedgerCommand::Append(original)).await);
                         let _published = finished.send(());
                     };
-                    Ok((
-                        ApplicationWorkPresence::<Ready<Never>, _>::Absent(()),
-                        Some(exporting),
-                    ))
+                    Ok::<_, ()>(Some(exporting))
                 };
                 let application = Application::new(MailLedger {
                     entries: Vec::new(),
@@ -247,23 +242,30 @@ fn absent_work_still_drives_move_only_ledger_append() {
                     _,
                     _,
                     Never,
-                    _,
+                    fn(
+                        Never,
+                        ApplicationHandle<
+                            <MailLedger as Behavior>::Protocol,
+                            <MailLedger as Behavior>::Event,
+                        >,
+                    ) -> Ready<Never>,
                     Ready<Never>,
                     _,
                     _,
                     (),
                     _,
+                    _,
                 >(
                     Handle::current(),
                     application,
-                    Some(invoke),
+                    (),
                     async |application: &Application<MailLedger, _>| {
                         ((), application.allocations())
                     },
                     |original: ApplicationWorkPublication<_, _, _, _, Never, _>,
                      (),
                      allocations| {
-                        let (application, invoke, publication) = original.into_unstarted();
+                        let (application, (), publication) = original.into_unstarted();
                         let (root, spaces, (), (), scope) = application.into_parts();
                         let scope = scope.unwrap_or(ApplicationScope {
                             allocations,
@@ -275,7 +277,7 @@ fn absent_work_still_drives_move_only_ledger_append() {
                                 publication: Some((
                                     ApplicationWorkCustody::Prepared(
                                         (root, spaces, scope),
-                                        (ApplicationWorkPresence::Absent(()), invoke),
+                                        ApplicationWorkPresence::Absent(()),
                                     ),
                                     publication,
                                 )),
@@ -284,6 +286,7 @@ fn absent_work_still_drives_move_only_ledger_append() {
                         ))
                     },
                     ((), |_executor, (), ()| None),
+                    Some(binding),
                 );
                 let observer = async {
                     let application = granted
@@ -347,3 +350,5 @@ fn absent_work_still_drives_move_only_ledger_append() {
 }
 
 mod rejection;
+
+mod startup;

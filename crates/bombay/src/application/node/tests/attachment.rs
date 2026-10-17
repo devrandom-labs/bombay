@@ -5,13 +5,15 @@ use super::custody::completed_actor;
 use super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
-use crate::behavior::{Never, User};
+use crate::application::work::invoke;
+use crate::behavior::{Behavior, Never, User};
 use crate::remote::verify;
 use crate::{
     ActorFailureAssessment, ActorNotificationReceipts, Application, ApplicationHandle,
     RetirementAssessment, WorkOutcome,
 };
-use core::future::{Future, Ready, poll_fn};
+use behavior_actors::StopOnShutdown;
+use core::future::{Future, Ready, poll_fn, ready};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use std::cell::{Cell, RefCell};
@@ -73,19 +75,19 @@ fn projected_handoff_keeps_ready_work_and_provider_result() {
                 let (execution, (receiving, received_families)) =
                     Application::new(Counter::new().stop_on_shutdown())
                         .execute_with_entities_invocation(
-                            ApplicationWorkPresence::Supplied(work),
-                            |work: ApplicationWorkPresence<_, Never>, application| {
-                                let interface = application
-                                    .interface(application.root().established_recipient());
-                                let lifecycle = application.lifecycle();
-                                transferred = Some(handoff.send((interface, lifecycle)));
-                                Ok((
-                                    ApplicationWorkPresence::Supplied(work.into_supplied()(
-                                        application,
-                                    )),
-                                    None::<Ready<()>>,
-                                ))
-                            },
+                            ApplicationWorkPresence::<_, Never>::Supplied((work, invoke)),
+                            Some(
+                                |application: &ApplicationHandle<
+                                    <Counter as Behavior>::Protocol,
+                                    <StopOnShutdown<Counter> as Behavior>::Event,
+                                >| {
+                                    let interface = application
+                                        .interface(application.root().established_recipient());
+                                    let lifecycle = application.lifecycle();
+                                    transferred = Some(handoff.send((interface, lifecycle)));
+                                    ready(Ok::<Option<Ready<()>>, ()>(None))
+                                },
+                            ),
                         )
                         .unwrap_or_else(|_| panic!("the actual host is entered"));
                 let companion = async {
@@ -209,21 +211,25 @@ fn missing_host_returns_original_work_before_handoff() {
     };
     let Err((application, work, cause)) = Application::new(Counter::new().stop_on_shutdown())
         .execute_with_entities_invocation(
-            ApplicationWorkPresence::Supplied(work),
-            move |work: ApplicationWorkPresence<_, Never>, application| {
-                invoke_calls.set(invoke_calls.get() + 1);
-                let interface = application.interface(application.root().established_recipient());
-                let lifecycle = application.lifecycle();
-                *transfer = Some(handoff.send((interface, lifecycle)));
-                Ok((
-                    ApplicationWorkPresence::Supplied(work.into_supplied()(application)),
-                    None::<Ready<()>>,
-                ))
-            },
+            ApplicationWorkPresence::<_, Never>::Supplied((work, invoke)),
+            Some(
+                move |application: &ApplicationHandle<
+                    <Counter as Behavior>::Protocol,
+                    <StopOnShutdown<Counter> as Behavior>::Event,
+                >| {
+                    invoke_calls.set(invoke_calls.get() + 1);
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let lifecycle = application.lifecycle();
+                    *transfer = Some(handoff.send((interface, lifecycle)));
+                    ready(Ok::<Option<Ready<()>>, ()>(None))
+                },
+            ),
         )
     else {
         panic!("no host is entered before the actual invocation");
     };
+    let (work, _invoke) = work.into_supplied();
     let before = (calls.get(), handoffs.get());
     let received = granted.try_recv();
     let observations = {
@@ -231,7 +237,7 @@ fn missing_host_returns_original_work_before_handoff() {
         host.block_on(async {
             tokio::time::timeout(Duration::from_secs(10), async {
                 let (execution, receiving) = application
-                    .execute_with_entities(work.into_supplied())
+                    .execute_with_entities(work)
                     .unwrap_or_else(|_| panic!("the same originals enter the real host"));
                 execution.await;
                 let outcome = receiving.await;

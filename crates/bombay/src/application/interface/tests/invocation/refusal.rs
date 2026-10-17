@@ -2,6 +2,7 @@
 use super::ledger_custody;
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
+use crate::application::work::invoke;
 use crate::behavior::{Behavior, BehaviorBase, Never};
 use crate::{ActorRetirement, Application, ApplicationHandle, ShutdownLedger, WorkOutcome};
 use behavior_actors::StopOnShutdown;
@@ -18,10 +19,9 @@ use tokio::time::timeout;
 #[tokio::test(flavor = "current_thread")]
 #[expect(
     clippy::too_many_lines,
-    clippy::type_complexity,
     reason = "one refusal returns exact Work and export presence with complete joined outcomes"
 )]
-async fn refused_invocation_returns_original_work_after_joined_cancellation() {
+async fn refused_binding_returns_original_work_after_joined_cancellation() {
     let calls = Rc::new(Cell::new(0));
     let used = Rc::clone(&calls);
     let original = Box::new(71_u64);
@@ -36,12 +36,12 @@ async fn refused_invocation_returns_original_work_after_joined_cancellation() {
         },
     );
     let work_allocation = ptr::from_ref(work.as_ref()).cast::<()>();
-    let invocations = Cell::new(0);
+    let bindings = Cell::new(0);
     let mut handoff = None;
     let observations = timeout(Duration::from_secs(10), async {
         let (publication, receiving) = oneshot::channel();
         let published = &mut handoff;
-        let invoked = &invocations;
+        let bound = &bindings;
         let application = Application::new(
             ShutdownLedger {
                 entries: vec![13],
@@ -51,27 +51,23 @@ async fn refused_invocation_returns_original_work_after_joined_cancellation() {
         );
         let (execution, (received, received_families)) = application
             .execute_with_entities_invocation(
-                ApplicationWorkPresence::<_, Never>::Supplied(work),
-                |work: ApplicationWorkPresence<_, Never>,
-                 application|
-                 -> Result<
-                    (
-                        ApplicationWorkPresence<Ready<Box<u64>>, Never>,
-                        Option<Ready<()>>,
-                    ),
-                    ApplicationWorkPresence<_, Never>,
-                > {
-                    invoked.set(invoked.get() + 1);
-                    // The actual root capability stays outside kernel cleanup.
-                    *published = Some(publication.send(application));
-                    Err(work)
-                },
+                ApplicationWorkPresence::<_, Never>::Supplied((work, invoke)),
+                Some(
+                    move |application: &ApplicationHandle<
+                        <ShutdownLedger as Behavior>::Protocol,
+                        <StopOnShutdown<ShutdownLedger> as Behavior>::Event,
+                    >| {
+                        bound.set(bound.get() + 1);
+                        *published = Some(publication.send(application.clone()));
+                        ready(Err::<Option<Ready<()>>, ()>(()))
+                    },
+                ),
             )
             .unwrap_or_else(|_| panic!("the entered host issues the actual application"));
         let mut execution = pin!(execution);
         let refused = poll_fn(|context| {
             let observed = execution.as_mut().poll(context);
-            if invocations.get() == 1 {
+            if bindings.get() == 1 {
                 Poll::Ready(observed)
             } else {
                 match observed {
@@ -119,7 +115,7 @@ async fn refused_invocation_returns_original_work_after_joined_cancellation() {
     let custody = ledger_custody(&native);
     assert_eq!(custody.behavior.base().entries, [13]);
     assert!(custody.behavior.base().received.is_empty() && custody.user.is_empty());
-    assert_eq!(invocations.get(), 1);
+    assert_eq!(bindings.get(), 1);
     assert_eq!(calls.get(), 0);
     assert!(matches!(&handoff, Some(Ok(()))));
     assert!(
@@ -131,7 +127,7 @@ async fn refused_invocation_returns_original_work_after_joined_cancellation() {
                 ..
             }
         ),
-        "a refused invocation returns untouched Work after actual joined cleanup"
+        "a refused binding returns untouched Work after actual joined cleanup"
     );
     let WorkOutcome::NotInvoked { work, .. } = outcome else {
         unreachable!("the complete typed outcome was inspected above");
