@@ -1,4 +1,6 @@
 //! Genuine absent Work uses the existing family installer and native retirement.
+mod refusal;
+
 use super::{AccountReport, Accounts, AccountsRole};
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
@@ -158,10 +160,10 @@ async fn absent_work_drives_root_and_nonempty_family_retirement() {
                         *acquired_root_admission = Some(sender.send(original).await);
                         let _published = finished.send(());
                     };
-                    (
+                    Ok((
                         ApplicationWorkPresence::<Ready<Never>, ()>::Absent(()),
                         Some(exporting),
-                    )
+                    ))
                 },
             )
             .unwrap_or_else(|_| panic!("the actual host is entered"));

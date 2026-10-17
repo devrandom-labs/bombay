@@ -83,12 +83,12 @@ fn internal_exports_keep_originals_when_ready_work_disposal_panics() {
                                     *native = Some((admitted, processed, stopped, report, tail));
                                     *published = Some(publication.send(output));
                                 };
-                                (
+                                Ok((
                                     ApplicationWorkPresence::Supplied(work.into_supplied()(
                                         application,
                                     )),
                                     Some(exporting),
-                                )
+                                ))
                             },
                         )
                         .unwrap_or_else(|_| panic!("the actual host is entered"));

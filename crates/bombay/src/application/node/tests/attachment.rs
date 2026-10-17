@@ -79,12 +79,12 @@ fn projected_handoff_keeps_ready_work_and_provider_result() {
                                     .interface(application.root().established_recipient());
                                 let lifecycle = application.lifecycle();
                                 transferred = Some(handoff.send((interface, lifecycle)));
-                                (
+                                Ok((
                                     ApplicationWorkPresence::Supplied(work.into_supplied()(
                                         application,
                                     )),
                                     None::<Ready<()>>,
-                                )
+                                ))
                             },
                         )
                         .unwrap_or_else(|_| panic!("the actual host is entered"));
@@ -215,10 +215,10 @@ fn missing_host_returns_original_work_before_handoff() {
                 let interface = application.interface(application.root().established_recipient());
                 let lifecycle = application.lifecycle();
                 *transfer = Some(handoff.send((interface, lifecycle)));
-                (
+                Ok((
                     ApplicationWorkPresence::Supplied(work.into_supplied()(application)),
                     None::<Ready<()>>,
-                )
+                ))
             },
         )
     else {

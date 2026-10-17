@@ -2,11 +2,17 @@
 
 ## Current status (2026-10-17 UTC)
 
-Software checkpointcb357824 includes latest fetched main49cc8971. The private service
-comparison now passes six cases in debug and optimized builds, including an
-original nonempty Entity family. Intended type-denial and native message-loss
-checks, exact restoration and independent result reviews pass. This adds no
-retained Rust/public API; the four temporary test mounts have been removed.
+Main49cc8971 remains the latest integration. Current research changes preserve
+original unused Work on invocation refusal, then cancel and join existing
+cleanup. Sourcee3a5853d also repairs the resulting debug stack regression by
+heap-pinning supplied Work. All467 library/public-consumer tests pass in both
+profiles under the same2MiB stack, with strict workspace lint, formatting and
+the default-feature check passing. This adds21 net production lines and no public
+types; a supplied non-zero-sized future generally gains one allocation.
+
+The earlier private service comparison passes six cases per profile, including
+an original nonempty Entity family, with scoped type-denial/native-loss checks
+and exact restoration. Its four temporary test mounts remain removed.
 
 The separate-crate typed-report comparison now compiles Counter/two replies/Stop
 and move-only Ledger observations. Both intended private-interpreter and unequal-report
@@ -34326,3 +34332,163 @@ SDK privacy, full R01–R25/AUTH1/NET1, distillation, CI and reviewed merges sta
 
 Independent two-pass outcomes review8e9b576f verifies all14 raw receipts/logs and
 610 frozen input versions, exact restoration and the reached-oracle limits above.
+
+### Public Node startup refusal — owning blocker before integration
+
+Fresh public-node-prerequisites95dde994 verifies the399-package lock,13 exact
+registry archives/VCS records,18 manifests without overrides,44 owning inputs
+and10 unchanged Entity/runtime/normative inputs at0d041ea5. Only the two records
+changed from the owning baseline. Behavior/Actors0.26.0 and macros0.14.2 select
+98983; the complete760-line instructions remain exact2b7a and apply. Fresh
+source inspection includes all six primitive owners, relevant cancellation/
+retirement tests, current Work/Node/Kernel, native declaration and verification.
+
+The current private Invoke tuple cannot return original unused Work if export
+binding refuses after actor startup. Cleanup joins the root; joining requests
+no stop. Resolve this ownership blocker before the public service implementation.
+Use a typed Result in that same Invoke contract; keep the actual remaining
+callback as Option<Invoke> in its existing pre-invocation product. Returned Work
+enters existing NotInvoked custody before releasing existing root cancellation
+authority. Existing cleanup acquires root, both receipts and family results.
+Nonexport adapters return Ok; genuine absent Work remains absent. Consumed Work
+or invocation/capture panic keeps its existing Interrupted/surrender boundary.
+This selects no global failure propagation or second Work/runtime abstraction.
+
+Smallest regression: after actual root startup, refuse invocation and recover
+the same non-Send boxed callable/captured allocation, with an actual live root
+capability outside. Acquire native cancellation/notification/family outcomes
+before any oracle. First establish old-source missing-Result static denial;
+then healthy D/R, actual owning original-publication erasure D/R failure after
+cleanup, exact restoration and healthy D/R. Setup/watchdog errors earn no law
+credit. Independent model/source and two-pass test reviews precede execution.
+
+Forecast at most12 paths: execution/node/http, existing owning test adapters,
+a new invocation/refusal test and these two records. Reuse WorkOutcome and
+Launch unchanged. Production+60/-20/net40; public API+0/-0 types; new test at
+most250 lines. Existing owners/public outcomes are reused, with no new wrapper,
+provider, registry, effect or lifecycle owner. Actual source remains blocked
+until the refusal model review verifies the exact contract. The later public
+composition will reuse existing ActorInterface and ApplicationLifecycle without
+holding a complete family-bearing handle through its shutdown barrier.
+
+Known1865/2500/public reservations12/18 and all125/20000 earlier, rejected,
+external, historical and unknown costs carry. External forecast4200→4500 is no
+new allowance or certified headroom. The six report types remain unselected.
+All full R01–R25/AUTH1/NET1, SDK privacy and reviewed main delivery stay open.
+
+Refusal model review0ed71adf and two-pass test reviewf2d5d8c2 accept the narrow
+private correction. Actual original-static returns101 with unchanged inputs:
+E0271 rejects the Result-returning invocation against the existing tuple contract.
+This is static blocker evidence only; no runtime failure is credited. The test
+also records its first post-invocation poll, then admits an independent fallback
+shutdown. A second finite cut will defer only refusal cancellation until after
+join; the actual native result must then be Completed rather than OwnerCancelled.
+Both cuts must acquire cleanup results before their distinguishing assertions.
+Production implementation now proceeds within the recorded twelve-path forecast;
+WorkOutcome, Launch and their ownership remain unchanged.
+
+The broader debug run identifies a stack regression in the existing recorded
+live-request test: the actual380-test e786 build aborts on stack overflow. A
+fresh isolated0d041 baseline passes that exact case with a2MiB test stack;
+after clearing the shared debug artifacts, the current e786 rebuild aborts
+under the same explicit2MiB setting. An intervening apparent current pass
+actually reused the379-test baseline binary and is excluded. The isolated
+baseline worktree was clean and has been removed normally. The current
+optimized cohort passes all467 tests across the library and six consumers.
+
+Resolve this regression within the same blocker. First compare direct matching
+with shorter lexical lifetimes, preserving both exact Invoke outcomes and
+Ready-before-Drop publication. If that fails, compare Box::pin only for supplied
+Work at its existing poll owner: one additional concrete allocation, no new
+Send/static/Unpin bound, no allocation for absent Work, and no second framework.
+Boxing is a candidate, not a stack-bound guarantee or an accepted API decision.
+Do not increase the test stack or require callers to box their application.
+
+Expected additional production scope is execution.rs only, zero net lines/types,
+within the existing eleven paths. Record every rejected source epoch and its
+cost. The existing complete live-request trace under2MiB is the regression;
+restore the failing owning source for its inversion. Current custody/Ready/Drop
+and refusal regressions must also pass in both profiles on the selected source.
+Conditional source reviewe8eb941c maps the owners, alternatives and limitations.
+
+Direct-match8aed fails the same fresh2MiB debug case and is rejected. Candidate
+e3a5853d restores e786 and changes exactly its supplied Work pin to Box::pin.
+The fresh debug case now passes1/0 with379 filtered, confirming the380-test
+current binary. Source review6d448d38 preserves concrete borrowed/non-Send Work,
+Ready-before-Drop publication and every refusal/absence/cleanup path. A supplied
+non-zero-sized future generally gains one allocation; absent Work gains none.
+This is a measured regression repair, not a general stack bound. Acceptance still
+requires the owning reversal, optimized controls and complete restored cohorts.
+
+### Invocation refusal — verified owning correction
+
+The same private Invoke now returns typed success or exact unused Work.
+Its existing product holds Some(callback) before invocation and None only after
+that callback was consumed and explicitly returned Work. Existing NotInvoked
+custody is initialized before releasing the existing cancellation authority.
+Common permission, native root, both notification receipts and family joins
+remain with their existing owners. Ordinary adapters return Ok; genuine absent
+Work stays absent. WorkOutcome and Launch are byte-identical to0d041ea5.
+No new actor, runtime, provider, registry, public type or trait bound is introduced.
+
+New testc445ea6c retains the actual boxed non-Send callable and captured output
+allocation, actual root handle and matching origin, native OwnerCancelled,
+both receipts and family() before assertions. It invokes returned Work only
+after cleanup and checks the original allocations and exactly one call.
+Family() earns no nonempty-family claim; the existing broader family controls
+remain independent. Startup_error None truthfully records successful actor
+startup; a later service must retain its separate binding cause outside Invoke.
+
+Both finite refusal cuts fail their intended post-cleanup discriminator in
+both profiles: erasure at NotInvoked125; withheld cancellation at
+OwnerCancelled116. These executions remain bound toe786, rather than relabeled
+as e3. The only later production change is the supplied Work pin, unreachable
+on this test's Err path; independent review545981e8 validates that structural
+reuse. Negative logs do not print complete native/Work enums and do not credit
+later unexecuted assertions. The ten-second watchdog is never a law oracle.
+
+Original-static9468 returns101 at E0271:12 printed headers, compiler summary14
+previous errors. This is static blocker evidence only. The first implementation
+compile and first strict-lint failures are preserved without runtime credit.
+Five formatting commands modify their recorded inputs; four earlier AFTER blobs
+were recovered by exact full SHA matching with explicit reconstruction provenance
+3001dc4f, never represented as original-time freezes. All33 actual receipts retain
+660 distinct input versions with no missing blob. The reused379-test current-stack
+pass is excluded; clearing package debug artifacts and a fresh380 inventory
+establish the subsequent current-source comparison.
+
+Direct-match8aed is a rejected allocation-free comparison. Exact sourcee3 changes
+only the supplied future pin relative toe786. Its owning debug reversal rebuilds
+exacte786 and reproduces the stack-overflow SIGABRT under2MiB; finally restores
+exacte3. The original optimized control passes, so no optimized negative kill,
+negative cleanup result or general stack bound is claimed. Supplied non-zero-sized
+Work generally gains one allocation/deallocation; absent/refused Work gains none.
+The minimal retained implementation reuses the existing Work poll owner and
+publication before producer Drop, without a forwarding abstraction.
+
+Final sourcee3a5853d/testc445ea6c passes467 tests per profile:
+380 library plus21 clients,13 outcomes,7 HTTP,39 receiving,2 family and5 Node.
+Both commands explicitly use the same2MiB stack. Strict workspace/all-feature/
+all-target lint, formatting and the default-feature build check pass. Exact commands:
+
+```text
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c env RUST_MIN_STACK=2097152 cargo test --offline --locked -p bombay-rs --all-features --lib --test application_outcome --test node_outcome --test completed_application_receiving --test axum --test entity_application --test application_clients -- --test-threads=1
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c env RUST_MIN_STACK=2097152 cargo test --offline --locked --release -p bombay-rs --all-features --lib --test application_outcome --test node_outcome --test completed_application_receiving --test axum --test entity_application --test application_clients -- --test-threads=1
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c cargo clippy --offline --locked --workspace --all-features --all-targets -- -D warnings
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c cargo fmt --all -- --check
+nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c cargo check --offline --locked -p bombay-rs --no-default-features
+```
+
+Complete retained software delta, including the untracked test before staging:
+production+62/-41/net21; tests+168/-19/net149; public API+0/-0 types;11 paths.
+This is a capability correction with added heap ownership, not code reduction.
+The rejected lexical candidate and every earlier/external/historical/unknown
+charge carry. Known retained production becomes1886/public reservations12;
+the six report types remain unselected. Approved2500/18/125/20000 ceilings and
+external4500 forecast are not reset or certified headroom.
+
+The PRD remains active. This research correction closes its owning refusal
+blocker, not a full R01–R25/AUTH1/NET1 row. Public Node-owned cold/service lifetime,
+SDK privacy, selectors and canonical replay, complete protected Actions/wire/
+resource/security/two-process evidence, distillation, required CI and reviewed
+main delivery remain pending. Main remains49cc8971; this branch is not main.

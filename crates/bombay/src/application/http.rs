@@ -213,12 +213,12 @@ where
                         });
                     }
                 };
-                let original_work =
-                    ApplicationWorkPublication {
-                        publication: Some((
-                            ApplicationWorkCustody::NotInvoked(
-                                (
-                                    ApplicationWorkPresence::Supplied((router, listener)),
+                let original_work = ApplicationWorkPublication {
+                    publication: Some((
+                        ApplicationWorkCustody::NotInvoked(
+                            (
+                                ApplicationWorkPresence::Supplied((router, listener)),
+                                Some(
                                     |work: ApplicationWorkPresence<
                                         (Router, TcpListener),
                                         Never,
@@ -227,7 +227,7 @@ where
                                         Root::Protocol,
                                         Actor::Event,
                                     >| {
-                                        (
+                                        Ok((
                                             ApplicationWorkPresence::Supplied(async move {
                                                 let (router, listener) = work.into_supplied();
                                                 let lifecycle = application.lifecycle();
@@ -241,14 +241,15 @@ where
                                                     .await
                                             }),
                                             None::<Ready<()>>,
-                                        )
+                                        ))
                                     },
                                 ),
-                                None,
                             ),
-                            publication,
-                        )),
-                    };
+                            None,
+                        ),
+                        publication,
+                    )),
+                };
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,

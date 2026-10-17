@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-Current integration: user-requested latest mainf4aa3b3d (PR383, including PR384) selects
+Current integration: user-requested latest main49cc8971 (PR385) selects
 Behavior/Actors0.26.0 and the complete Application/Work outcomes. Superseded
 0.25 remote-entry research is retired; historical evidence below retains
 its original source scope. Full service, SDK privacy and all full remote rows
@@ -567,3 +567,23 @@ full R19: stalled egress/flood/bytes remain open. Next is the public Node owners
 and SDK-private service contract. Forecast verification4200 and all prior report,
 copied/rejected/historical/unknown costs carry; retained production/public
 reservations stay1865/12, with no reset or certified headroom. All full rows stay open.
+
+
+The public Node integration next resolves its existing owning Invoke refusal
+lane: preserve original unused Work after binding refusal, then request existing
+owner cancellation and join unchanged cleanup. Fresh95dde994 contracts and the
+pre-edit production+60/-20/public0/test250 forecast are in the PRD. Model review
+must accept this exact contract before production edits; no second Work/runtime
+owner or full AUTH1/NET1 acceptance follows. All previous caps/costs carry.
+
+The private invocation refusal blocker now passes: preserve exact unused Work,
+request existing cancellation and join root, notifications and families. The
+selected source also repairs its debug stack regression through supplied Work
+heap pinning; a non-zero-sized Work future generally gains one allocation.
+All467 library/public-consumer tests pass in debug and optimized builds under
+the same2MiB stack; strict all-feature workspace lint, formatting and the
+default-feature check pass. Retained production+62/-41/net21, tests+168/-19/net149,
+public types+0/-0 across11 paths. Known retained1886/public reservations12 and
+all2500/18/125/20000 prior, rejected, external, historical and unknown charges
+carry. Public Node service ownership, SDK privacy, all full remote rows and
+reviewed main delivery remain active; this research checkpoint closes no full row.

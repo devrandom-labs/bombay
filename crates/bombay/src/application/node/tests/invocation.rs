@@ -64,10 +64,10 @@ fn absent_work_still_drives_correlated_counter_operations() {
                         *received_tail = Some(client.receive().await);
                         let _published = finished.send(());
                     };
-                    (
+                    Ok((
                         ApplicationWorkPresence::<Ready<Never>, _>::Absent(()),
                         Some(exporting),
-                    )
+                    ))
                 };
                 let application = Application::new(Counter::new().stop_on_shutdown());
                 let (execution, receiving) = execute_application_with::<
@@ -92,7 +92,7 @@ fn absent_work_still_drives_correlated_counter_operations() {
                 >(
                     Handle::current(),
                     application,
-                    invoke,
+                    Some(invoke),
                     async |application: &Application<StopOnShutdown<Counter>, _>| {
                         ((), application.allocations())
                     },
@@ -226,10 +226,10 @@ fn absent_work_still_drives_move_only_ledger_append() {
                             Some(sender.send(LedgerCommand::Append(original)).await);
                         let _published = finished.send(());
                     };
-                    (
+                    Ok((
                         ApplicationWorkPresence::<Ready<Never>, _>::Absent(()),
                         Some(exporting),
-                    )
+                    ))
                 };
                 let application = Application::new(MailLedger {
                     entries: Vec::new(),
@@ -256,7 +256,7 @@ fn absent_work_still_drives_move_only_ledger_append() {
                 >(
                     Handle::current(),
                     application,
-                    invoke,
+                    Some(invoke),
                     async |application: &Application<MailLedger, _>| {
                         ((), application.allocations())
                     },

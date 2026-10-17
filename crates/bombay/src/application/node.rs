@@ -414,10 +414,10 @@ where
             ApplicationWorkPresence::Supplied(work),
             move |work: ApplicationWorkPresence<Work, Never>, mut application| {
                 application.session = Some(session.clone());
-                (
+                Ok((
                     ApplicationWorkPresence::Supplied(work.into_supplied()(application)),
                     None::<Ready<()>>,
-                )
+                ))
             },
         ) {
             Ok((execution, (receiving, received_families))) => Ok((execution, async move {

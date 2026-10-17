@@ -70,12 +70,12 @@ fn invocation_disposal_keeps_original_staging_rejection() {
                     move |work: ApplicationWorkPresence<Box<Vec<u8>>, Never>, application| {
                         let _original_disposal = &disposal;
                         invoked.set(invoked.get() + 1);
-                        (
+                        Ok((
                             ApplicationWorkPresence::Supplied(async move {
                                 (work.into_supplied(), application.request_shutdown())
                             }),
                             None::<Ready<()>>,
-                        )
+                        ))
                     },
                 )
                 .unwrap_or_else(|_| panic!("the actual host is entered"));
