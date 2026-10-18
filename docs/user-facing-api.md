@@ -57,7 +57,7 @@ Execution returns one report containing independent work, root retirement and
 notification results. Borrowing or selecting work keeps every other result.
 For a started application, Bombay awaits cleanup before returning this report; `cleanup()`
 borrows the recorded result. The application still chooses when its root should
-stop, through a domain command, a policy or `request_shutdown()`. Joining does
+stop, through a domain command, a policy or `shutdown()`. Joining does
 not itself request a stop, and dropping a future does not promise completed
 asynchronous cleanup.
 This executable fragment checks that complete handoff.
@@ -74,7 +74,7 @@ simple multi-node application surface remains pending.
 let service = bombay::actors::ActorExt::stop_on_shutdown(Service);
 let outcome = bombay::Application::new(service)
     .run_with(|application| async move {
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         application.termination().await
     })
@@ -88,6 +88,9 @@ let (termination, retirement) = outcome.try_into_completed()
         drop(original);
         panic!("the work must complete");
     });
+let report = retirement.root_report().expect("the joined root published its report");
+assert_eq!(report.retirement(), bombay::RetirementAssessment::Established);
+assert_eq!(report.failures(), bombay::ActorFailureAssessment::NoFailuresFound);
 retirement.cleanup().as_ref().expect("independent work cleanup");
 let (_origin, root) = retirement.retirement().as_ref().expect("actual joined native root");
 let notifications = retirement.notifications().as_ref().expect("actual notification transfer");
@@ -126,7 +129,7 @@ let root = bombay::actors::ActorExt::stop_on_shutdown(Service {
 });
 let outcome = scope.with_root(root).run_with(|application| async move {
     let announcement = announcements.receive().await.expect("root ready");
-    let shutdown = application.request_shutdown();
+    let shutdown = application.shutdown();
     assert_eq!(shutdown, Ok(()));
     announcement.message
 }).await.unwrap_or_else(|original| {
@@ -157,19 +160,9 @@ The [topology tests](../crates/bombay/tests/application_topology.rs) and
 execute these paths. No default policy or dummy capability fills an unused lane.
 
 Finite singleton chains infer their actors from the constructed root and its
-births. For example, a fixed supervisor declares only its relationships and
-external protocols:
-
-```rust,ignore
-bombay::topology! {
-    supervisor_application {
-        root { Proxy => proxy; }
-        proxy { Worker => worker; }
-        worker {}
-        hosts { status: Status; capability: Capability; }
-    }
-}
-```
+births. A fixed supervisor declares the root-to-proxy and proxy-to-worker
+relationships once. The complete declaration and its owning constructor are in
+the [supervision example](../examples/supervision/src/main.rs).
 
 The [executed supervisor](../crates/bombay/tests/application_topology/supervision.rs)
 uses the owning constructor directly, without composed return aliases. For
@@ -182,21 +175,9 @@ actors, forged roles and missing report lanes. The
 [recursive tests](../crates/bombay/tests/application_topology/recursive.rs)
 exercise both wrapper orders and complete failure/retirement custody.
 
-Cold classes also infer their actor types from `.child(role, actor)`:
-
-```rust,ignore
-bombay::topology! {
-    timed_application {
-        root: TimedParent {}
-        members {
-            Timer(TimerOutside) => timer;
-            Shutdown(ShutdownOutside) => shutdown;
-        }
-        timer {}
-        shutdown {}
-    }
-}
-```
+Cold classes also infer their actor types from `.child(role, actor)`. The
+declaration names each member role and its class; the constructed actors supply
+their actual wrapper types.
 
 The [native timer journey](../crates/bombay/tests/native_timer_retirement.rs)
 constructs both actual wrapper orders and consumes every original retirement
@@ -209,20 +190,10 @@ The [cold-descendant journey](../crates/bombay/tests/inferred_cold_descendants.r
 executes creation, its same-action reply and complete retained actor state without
 a wrapped child alias or application-written retirement enum.
 
-Entity families are independent hydrated roots in that same declaration:
-
-```rust,ignore
-bombay::topology! {
-    entity_application {
-        root: Root {}
-        hosts { accounts: Account; profiles: Profile; }
-        families { account: Accounts; profile: Profiles; }
-        account {}
-        profile { worker(ProfileChildrenWorker) => worker; }
-        worker {}
-    }
-}
-```
+Entity families are independent hydrated roots in that same declaration. Its
+`hosts` section names the external protocols, and `families` names each role
+and its definition. The complete declaration lives with its
+[two-family journey](../crates/bombay/tests/entity_application.rs).
 
 The definitions supply their actual `Behavior`; protocol hosts remain explicit
 logical address-space choices. A definition with children selects the generated
@@ -233,7 +204,13 @@ executes simultaneous hydration, refusals, reactivation and child retirement.
 Declaring a family class starts no task; `.entity_family(role, definition, directory, capacity)`
 supplies its real policy and owned definition.
 
-The successful outer result owns one `ApplicationOutcome`. Its `work()`,
+The successful outer result owns one `ApplicationOutcome`. Its `root_report()`
+returns the runtime-issued assessment of the root and its owned subtree. It
+remains available after Work finishes and after `try_into_completed()` transfers
+the business value. `None` means no report was published. Root retirement and
+failure evidence are separate; work, notifications and Entity families retain
+their independent results. Reading the report consumes no detailed custody.
+Its `work()`,
 `retirement()` and `notifications()` methods borrow the original independent
 results. An Entity application also selects a family with `family(role)`,
 without naming its product position. The borrowed `FamilyRetirement` exposes
@@ -260,7 +237,7 @@ phase and values:
 Use `work_output()` to borrow completed work and `cleanup()` to borrow the
 independent cleanup Result. `try_into_completed()` consumes a completed outcome
 into `(output, retirement)` even when cleanup failed. The named
-`ApplicationRetirement` retains cleanup, root retirement, notifications and
+`ApplicationRetirement` retains cleanup, root report, root retirement, notifications and
 families independently. Another phase returns the entire original report in
 `Err`, including every receiving result. These operations require no `Clone`, `Debug`
 or `Send` bound on caller values and do not classify actor success. The
@@ -294,9 +271,11 @@ native policies retain their original task context and failure causes.
 `ApplicationOutcome`, `ApplicationRetirement` and `WorkOutcome` are explicit
 `bombay` root imports, not prelude exports. Ordinary construction infers them.
 For owned inspection of every work phase, `into_parts()` peels the complete
-work/root/notification/family product; root-only applications own `()` for
+work/report/root/notification/family product; root-only applications own `()` for
 families. `WorkOutcome::try_into_completed()` then returns output and cleanup
 only, because the other results have already transferred to the caller.
+The additional report is the second part; existing four-part decompositions
+must include it when migrating. Ordinary inspection uses the named methods.
 
 Advanced custom hosting supplies `RootRegistration` for its physical root
 namespace and `ApplicationTopology` for complete custody. A custom accessor's
@@ -376,7 +355,7 @@ Supplied Work receives the activated application's concrete handle:
 let outcome = Application::new(service.stop_on_shutdown())
     .run_with(|application| async move {
         let reply = boundary(application.root()).await;
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         (reply, shutdown)
     })
     .await;
@@ -391,7 +370,7 @@ mailbox. Its target keeps its own lifetime when the sender is dropped. For an
 exact local recipient, `sender.try_send(command)` attempts admission without a
 capacity wait and returns the complete command in `Full` or `Closed`. Stable
 Entity references use asynchronous `send`, which can resolve and hydrate them.
-`request_shutdown()` and `termination()` delegate to the existing lifecycle
+`shutdown()` and `termination()` delegate to the existing lifecycle
 owner. Request acknowledgement, observed termination and joined cleanup remain
 distinct. `lifecycle()` remains the explicit projection when another consumer
 needs only lifecycle authority. Clients and senders gain no such authority.
@@ -417,7 +396,7 @@ This limit applies to subsequently established external actors, bound clients
 and exported interfaces. Changing a scope/application setting does not resize an
 existing endpoint. Communication rounds a positive minimum up to a power of two
 with floor2: requesting3 means4 effective slots, available through `get()`.
-Zero or overflowing rounding returns `MailboxCapacityError` with the original
+Zero or a requested minimum above 2^30 returns `MailboxCapacityError` with the original
 minimum, before mailbox allocation. Closing admission preserves accepted replies;
 `try_send` returns the original input when full or closed.
 
@@ -725,7 +704,7 @@ timed termination without application code implementing `Behavior`:
 
 ```text
 let root = Machine::new(state, phase, transition)
-    .with_one_shot(TimerId(1), Duration::from_secs(1), stop)
+    .with_one_shot(Duration::from_secs(1), stop)
     .stop_on_shutdown();
 
 Application::new(root).run().await
@@ -1038,7 +1017,7 @@ let application_receiving = application.run_with_entities(
         caller.send(AccountCommand::Deposit(amount)).await.expect("deposit admitted");
         let mode = application.retire_entity(AccountsRole, &account_id)
             .await.expect("the captured incarnation retired");
-        application.request_shutdown().expect("root shutdown admitted");
+        application.shutdown().expect("root shutdown admitted");
         mode
     },
 ).await;

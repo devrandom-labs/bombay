@@ -112,13 +112,13 @@ async fn child_constructor_panic_keeps_original_creation_actions_and_independent
             constructors: Mutex::new(VecDeque::from([Ok(()), Err(cause)])),
         }),
     );
-    let (work, native, notifications, ()) = application
+    let (work, _root_report, native, notifications, ()) = application
         .run_with(|application| async move {
             let report = tokio::time::timeout(Duration::from_secs(5), replies.receive())
                 .await
                 .expect("root IO and readiness remain independent of its child's refused startup")
                 .expect("the root's real readiness request is delivered");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));

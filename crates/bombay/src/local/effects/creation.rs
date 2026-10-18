@@ -27,9 +27,8 @@ use behavior::{
     EventIngress, InjectEvent, InterpretItem, InterpretationProgress, ItemSettlement, Never,
     Protocol, RoutedCreation, SourceAdmission,
 };
-use behavior_actors::atomic::{
-    ActivationPlan, BeginActivation, PrepareWorkers, WorkerActivation, WorkerPreparation,
-    WorkerSource,
+use behavior_actors::worker::{
+    PrepareWorkers, StartWorker, StartupPlan, WorkerPreparation, WorkerSource, WorkerStartup,
 };
 use bombay_address::ClaimError;
 use bombay_engine::DriverError;
@@ -955,14 +954,14 @@ where
 }
 
 impl<C, N, Parent, Bindings, Origins, Worker, Plan, Path, Services>
-    InterpretItem<BeginActivation<Worker, Plan>, C::Event, Path>
+    InterpretItem<StartWorker<Worker, Plan>, C::Event, Path>
     for ApplicationCapabilities<C, N, Parent, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<WorkerActivation<Worker, Plan>, Path> + Send + 'static,
+    C::Event: InjectEvent<WorkerStartup<Worker, Plan>, Path> + Send + 'static,
     Worker: Behavior<Protocol: Protocol<Addr = MailAddr>> + 'static,
     BehaviorMessage<Worker>: Send,
-    Plan: ActivationPlan + 'static,
+    Plan: StartupPlan + 'static,
     Self: Send,
 {
     #[expect(
@@ -971,11 +970,11 @@ where
     )]
     fn interpret_item<'a>(
         &'a mut self,
-        input: <BeginActivation<Worker, Plan> as ActionItem>::Input<'a>,
-        received: &'a mut Option<<BeginActivation<Worker, Plan> as ActionItem>::Reply>,
+        input: <StartWorker<Worker, Plan> as ActionItem>::Input<'a>,
+        received: &'a mut Option<<StartWorker<Worker, Plan> as ActionItem>::Reply>,
     ) -> impl Future<Output = ()> + Send + 'a
     where
-        BeginActivation<Worker, Plan>: 'a,
+        StartWorker<Worker, Plan>: 'a,
     {
         async move {
             if received.is_some() {
@@ -994,7 +993,7 @@ where
                     .as_mut()
                     .expect("live activation tasks remain installed")
                     .spawn(async move {
-                        let event = C::Event::inject_at(request.activate().await);
+                        let event = C::Event::inject_at(request.start().await);
                         control.send(event).map_err(|ControlClosed(event)| event)
                     });
                 ItemSettlement::Accepted(())
@@ -1014,7 +1013,7 @@ where
         WorkerSource<Role, Worker, Plan> + WorkerPreparationSource<Role, Worker, Plan> + 'static,
     Role: Send + Sync + 'static,
     Worker: Behavior + Send + 'static,
-    Plan: ActivationPlan + 'static,
+    Plan: StartupPlan + 'static,
     Self: Send,
 {
     #[expect(
@@ -3248,12 +3247,12 @@ mod child_rejection_custody {
             )),
         }
         .stop_on_shutdown();
-        let (outcome, native, notifications, ()) =
+        let (outcome, _root_report, native, notifications, ()) =
             Application::with_topology(root, worker_application::Topology::new())
                 .run_with(move |application| async move {
                     application
                         .lifecycle()
-                        .request_shutdown()
+                        .shutdown()
                         .expect("shutdown admitted");
                     work
                 })

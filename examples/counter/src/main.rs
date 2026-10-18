@@ -22,7 +22,7 @@ async fn main() {
                 .await
                 .expect("read admitted");
             let reply = caller.receive().await.expect("counter reply");
-            application.request_shutdown().expect("shutdown admitted");
+            application.shutdown().expect("shutdown admitted");
             reply.message
         })
         .await

@@ -8,7 +8,7 @@ use super::{
 };
 use bombay::actors::ActorExt;
 use bombay::behavior::BehaviorBase;
-use bombay::composition::{StashRoute, StashStatus};
+use bombay::composition::{StashRoute, StashStatus, UnlimitedStash};
 use bombay::prelude::Application;
 use bombay::remote::{ExportLimits, IngressError, verify};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
@@ -52,14 +52,16 @@ async fn cancelled_ledger_read<Receipt>(
     identity: fn(&Receipt) -> (&Binding, u64),
     same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
-    let root = MailLedger {
-        entries: Vec::new(),
-    }
-    .with_stash(|ledger, command| match command {
-        LedgerCommand::Read(_) if ledger.entries.is_empty() => StashRoute::Stash,
-        LedgerCommand::Append(_) => StashRoute::Release,
-        LedgerCommand::Read(_) => StashRoute::Deliver,
-    })
+    let root = UnlimitedStash::new(
+        MailLedger {
+            entries: Vec::new(),
+        },
+        |ledger, command| match command {
+            LedgerCommand::Read(_) if ledger.entries.is_empty() => StashRoute::Stash,
+            LedgerCommand::Append(_) => StashRoute::Release,
+            LedgerCommand::Read(_) => StashRoute::Deliver,
+        },
+    )
     .stop_on_shutdown();
     let address = reserved_address();
     let mut node = Application::new(root)
@@ -244,7 +246,7 @@ async fn cancelled_ledger_read<Receipt>(
                 let before = wake_count.0.load(Ordering::SeqCst);
                 let appended = sender.send(LedgerCommand::Append(original)).await;
                 let fallback = if appended.is_err() {
-                    Some(application.request_shutdown())
+                    Some(application.shutdown())
                 } else {
                     None
                 };
@@ -316,7 +318,7 @@ async fn cancelled_ledger_read<Receipt>(
         })
         .unwrap_or_else(|_| panic!("actual local host"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let (output, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Work"));

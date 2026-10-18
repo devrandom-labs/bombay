@@ -11,10 +11,11 @@ use behavior::{
     InjectEvent, InterpretItem, ItemSettlement, LogicalDeliveryReason, Never, Protocol, Recipient,
     ResolveChildOccurrence, ResolvedChild, ResolvedChildPosition,
 };
-use behavior_actors::atomic::{
-    ActivationPlan, AssignWorker, Assignment, CustomerDelivery, DiagnosticAccepted,
-    DiagnosticAction, InitializeWorker, ProxyControl, ProxyControlAdmission, ProxyOperation,
-    StableProxy, WorkerInitializationOutcome, WorkerInitializationReport,
+use behavior_actors::diagnostic::{DiagnosticAccepted, DiagnosticAction};
+use behavior_actors::pool::{AssignWorker, Assignment, CustomerDelivery};
+use behavior_actors::proxy::{ProxyControl, ProxyControlAdmission, ProxyOperation, StableProxy};
+use behavior_actors::worker::{
+    InitializeWorker, StartupPlan, WorkerInitializationOutcome, WorkerInitializationReport,
 };
 use behavior_actors::{ChildStopped, ReplyDelivery};
 use communication::ControlClosed;
@@ -600,7 +601,7 @@ where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>
         + ResolveChildOccurrence<ChildHead, Child = StableProxy<Worker, Plan>>,
     Worker: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    Plan: ActivationPlan,
+    Plan: StartupPlan,
     StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
     <StableProxy<Worker, Plan> as Behavior>::Event:
         ChildInputIngress<StableProxy<Worker, Plan>, ProxyControl<Worker, Plan>>,
@@ -665,7 +666,7 @@ impl<C, N, Parent, Bindings, Origins, Worker, Plan, RootEvent, Path, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     Worker: Behavior<Protocol: Protocol<Addr = MailAddr>> + Send,
-    Plan: ActivationPlan,
+    Plan: StartupPlan,
     StableProxy<Worker, Plan>: Behavior<Protocol = Worker::Protocol>,
     EstablishedActor<StableProxy<Worker, Plan>>: Send,
     Self: ProxyControlAdmission<Worker, Plan> + Send,
@@ -764,7 +765,7 @@ where
                         termination,
                         Instant::now(),
                     )),
-                    None => WorkerInitializationOutcome::ReadyForActivation,
+                    None => WorkerInitializationOutcome::ReadyForStartup,
                 };
                 self.inject_control_event::<_, Path>(request.resolve(outcome));
                 ItemSettlement::Accepted(())
@@ -850,9 +851,9 @@ mod child_input_custody {
         CreationId, CreationSequence, Creations, Here, InterpretItem, ItemSettlement,
         MessageProtocol, Recipient,
     };
-    use behavior_actors::atomic::{
-        DynamicLifecycle, DynamicSupervisor, ImmediateActivation, ProxyControl, StableProxy,
-    };
+    use behavior_actors::proxy::{ProxyControl, StableProxy};
+    use behavior_actors::supervisor::directory::{DynamicLifecycle, DynamicSupervisor};
+    use behavior_actors::worker::ImmediateStartup;
     use behavior_actors::{Activate, StopOnShutdown};
     use communication::{Config, mailbox_channel};
     use tokio::sync::oneshot;
@@ -872,13 +873,13 @@ mod child_input_custody {
     use crate::local::endpoint::ExtractLocalEndpoint;
     use crate::terminal::{ActorRetirement, ChildOrigin, ProjectTerminal};
 
-    type LedgerProxy = StableProxy<ShutdownLedger, ImmediateActivation>;
+    type LedgerProxy = StableProxy<ShutdownLedger, ImmediateStartup>;
     type LedgerSupervisor = DynamicSupervisor<
         u64,
         ShutdownLedger,
-        ImmediateActivation,
+        ImmediateStartup,
         Recipient<
-            MessageProtocol<MailAddr, DynamicLifecycle<u64, ShutdownLedger, ImmediateActivation>>,
+            MessageProtocol<MailAddr, DynamicLifecycle<u64, ShutdownLedger, ImmediateStartup>>,
         >,
         Infallible,
     >;
@@ -1169,7 +1170,7 @@ mod child_input_custody {
         let mut request = Some(ChildInput::<
             LedgerProxy,
             LedgerProxy,
-            ProxyControl<ShutdownLedger, ImmediateActivation>,
+            ProxyControl<ShutdownLedger, ImmediateStartup>,
             ChildHead,
         >::after(
             pending,
@@ -1183,7 +1184,7 @@ mod child_input_custody {
             ChildInput<
                 LedgerProxy,
                 LedgerProxy,
-                ProxyControl<ShutdownLedger, ImmediateActivation>,
+                ProxyControl<ShutdownLedger, ImmediateStartup>,
                 ChildHead,
             >,
             (),
@@ -1212,7 +1213,7 @@ mod child_input_custody {
         let mut request = Some(ChildInput::<
             LedgerProxy,
             LedgerProxy,
-            ProxyControl<ShutdownLedger, ImmediateActivation>,
+            ProxyControl<ShutdownLedger, ImmediateStartup>,
             ChildHead,
         >::after(
             missing,
@@ -1226,7 +1227,7 @@ mod child_input_custody {
             ChildInput<
                 LedgerProxy,
                 LedgerProxy,
-                ProxyControl<ShutdownLedger, ImmediateActivation>,
+                ProxyControl<ShutdownLedger, ImmediateStartup>,
                 ChildHead,
             >,
             (),
@@ -1256,7 +1257,7 @@ mod child_input_custody {
         let mut request = Some(ChildInput::<
             LedgerProxy,
             LedgerProxy,
-            ProxyControl<ShutdownLedger, ImmediateActivation>,
+            ProxyControl<ShutdownLedger, ImmediateStartup>,
             ChildHead,
         >::after(established, ProxyControl::shutdown()));
         let mut received = None;
@@ -1264,7 +1265,7 @@ mod child_input_custody {
             ChildInput<
                 LedgerProxy,
                 LedgerProxy,
-                ProxyControl<ShutdownLedger, ImmediateActivation>,
+                ProxyControl<ShutdownLedger, ImmediateStartup>,
                 ChildHead,
             >,
             (),
@@ -1278,7 +1279,7 @@ mod child_input_custody {
         let mut request = Some(ChildInput::<
             LedgerProxy,
             LedgerProxy,
-            ProxyControl<ShutdownLedger, ImmediateActivation>,
+            ProxyControl<ShutdownLedger, ImmediateStartup>,
             ChildHead,
         >::after(
             established,
@@ -1292,7 +1293,7 @@ mod child_input_custody {
             ChildInput<
                 LedgerProxy,
                 LedgerProxy,
-                ProxyControl<ShutdownLedger, ImmediateActivation>,
+                ProxyControl<ShutdownLedger, ImmediateStartup>,
                 ChildHead,
             >,
             (),
@@ -1303,7 +1304,7 @@ mod child_input_custody {
             ChildInput<
                 LedgerProxy,
                 LedgerProxy,
-                ProxyControl<ShutdownLedger, ImmediateActivation>,
+                ProxyControl<ShutdownLedger, ImmediateStartup>,
                 ChildHead,
             >,
             (),
@@ -1357,23 +1358,20 @@ mod child_input_custody {
     fn original_worker_survives_child_input_composition<Child>()
     where
         Child: Behavior<Protocol = ShutdownLedger>,
-        Child::Event: behavior::ChildInputIngress<
-                LedgerProxy,
-                ProxyControl<ShutdownLedger, ImmediateActivation>,
-            >,
+        Child::Event: behavior::ChildInputIngress<LedgerProxy, ProxyControl<ShutdownLedger, ImmediateStartup>>,
     {
         let entries = vec![71, 73, 79];
         let original = entries.as_ptr();
         let event = <Child::Event as behavior::ChildInputIngress<
             LedgerProxy,
-            ProxyControl<ShutdownLedger, ImmediateActivation>,
+            ProxyControl<ShutdownLedger, ImmediateStartup>,
         >>::child_input(ProxyControl::start(ShutdownLedger {
             entries,
             received: Vec::new(),
         }));
         let input = <Child::Event as behavior::ChildInputIngress<
             LedgerProxy,
-            ProxyControl<ShutdownLedger, ImmediateActivation>,
+            ProxyControl<ShutdownLedger, ImmediateStartup>,
         >>::recover_child_input(event)
         .unwrap_or_else(|_| panic!("selected child input returns its original worker"));
         let mut proxy = LedgerProxy::immediate()
@@ -1395,7 +1393,7 @@ mod child_input_custody {
         let event = <Child::Event as behavior::UserEvent>::user(MailAddr(103), entries);
         let Err(event) = <Child::Event as behavior::ChildInputIngress<
             LedgerProxy,
-            ProxyControl<ShutdownLedger, ImmediateActivation>,
+            ProxyControl<ShutdownLedger, ImmediateStartup>,
         >>::recover_child_input(event) else {
             panic!("a public service message is not a private owner input");
         };
@@ -1434,7 +1432,7 @@ mod child_input_custody {
             MailAddr(107),
             Err(behavior_actors::Crash::Cancelled),
         ));
-        let Err(event) = <<behavior_actors::Watch<StopOnShutdown<LedgerProxy>> as Behavior>::Event as behavior::ChildInputIngress<LedgerProxy, ProxyControl<ShutdownLedger, ImmediateActivation>>>::recover_child_input(event) else { panic!("owned peer lifecycle report remains outside private child input lane"); };
+        let Err(event) = <<behavior_actors::Watch<StopOnShutdown<LedgerProxy>> as Behavior>::Event as behavior::ChildInputIngress<LedgerProxy, ProxyControl<ShutdownLedger, ImmediateStartup>>>::recover_child_input(event) else { panic!("owned peer lifecycle report remains outside private child input lane"); };
         let actions = behavior::delegate_transition(&mut watched, event)
             .unwrap_or_else(|_| panic!("exact peer report remains accepted by its owning watch"));
         assert!(matches!(actions.become_, behavior::Step::Stop(_)));
@@ -1447,7 +1445,7 @@ mod child_input_custody {
         let shutdown_initialization = behavior::initialize(&mut shutdown)
             .unwrap_or_else(|_| panic!("real shutdown/watch composition initializes"));
         let event = behavior::EventLayer::Owned(behavior_actors::ShutdownRequested);
-        let Err(event) = <<StopOnShutdown<behavior_actors::Watch<LedgerProxy>> as Behavior>::Event as behavior::ChildInputIngress<LedgerProxy, ProxyControl<ShutdownLedger, ImmediateActivation>>>::recover_child_input(event) else { panic!("outer owned shutdown remains outside private child input lane"); };
+        let Err(event) = <<StopOnShutdown<behavior_actors::Watch<LedgerProxy>> as Behavior>::Event as behavior::ChildInputIngress<LedgerProxy, ProxyControl<ShutdownLedger, ImmediateStartup>>>::recover_child_input(event) else { panic!("outer owned shutdown remains outside private child input lane"); };
         let actions = behavior::delegate_transition(&mut shutdown, event)
             .unwrap_or_else(|_| panic!("exact shutdown remains accepted by its owning wrapper"));
         assert!(matches!(actions.become_, behavior::Step::Stop(_)));

@@ -11,7 +11,7 @@ fn request(
         <StopOnShutdown<StopOnShutdown<counter::Counter>> as Behavior>::Event,
     >,
 ) {
-    lifecycle.request_shutdown().expect("a shutdown lane must be selected");
+    lifecycle.shutdown().expect("a shutdown lane must be selected");
 }
 
 fn main() {}

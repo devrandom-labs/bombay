@@ -1,14 +1,21 @@
+use bombay::RetirementNotificationError;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     AllocationRejection, BehaviorActed, BehaviorBase, ClassifySettlement, Never, SettlementStatus,
 };
 use bombay::{
-    ActorCustody, ActorNotificationReceipts, ActorRetirement, Application, ApplicationCleanupError,
-    WorkOutcome,
+    ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement, Application,
+    ApplicationCleanupError, RetirementAssessment, WorkOutcome,
 };
+use core::future::Future;
 use core::ptr;
+use core::task::{Context, Poll, Waker};
+use core::time::Duration;
 use std::cell::Cell;
+use std::panic::panic_any;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+use std::task::Wake;
 use tokio::sync::oneshot;
 
 #[cfg(feature = "axum")]
@@ -230,7 +237,7 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
                 .await
                 .expect("read admitted");
             let reply = customer.receive().await.expect("business reply");
-            let shutdown = lifecycle.request_shutdown();
+            let shutdown = lifecycle.shutdown();
             assert_eq!(shutdown, Ok(()));
             CounterSnapshot {
                 value: reply.message,
@@ -240,7 +247,7 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
         .await
         .unwrap_or_else(|_| panic!("the caller entered a host"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -314,7 +321,7 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
         .await
         .unwrap_or_else(|_| panic!("a host is entered"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -450,14 +457,14 @@ async fn independent_counter_execution_infers_custody_and_keeps_local_work() {
     let work = Rc::clone(&original);
     let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
         .execute_with(|application| async move {
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             work
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     execution.await;
     let outcome = receiving.await.into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -495,6 +502,7 @@ async fn independent_absent_work_infers_original_initialization_rejection() {
             startup_error: Some(_),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((
             _,
             ActorRetirement::InitializationRejected {
@@ -525,13 +533,14 @@ async fn independent_execution_cancellation_returns_original_cold_callable() {
     let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
         .execute_with(|application| async move {
             invoked.set(invoked.get() + 1);
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             invoked
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     drop(execution);
-    let (cold_outcome, cold_native, cold_notifications, ()) = receiving.await.into_parts();
+    let (cold_outcome, _root_report, cold_native, cold_notifications, ()) =
+        receiving.await.into_parts();
     let WorkOutcome::Unstarted { application, work } = cold_outcome else {
         panic!("the original callable remains cold after execution surrender");
     };
@@ -543,7 +552,7 @@ async fn independent_execution_cancellation_returns_original_cold_callable() {
         .await
         .unwrap_or_else(|_| panic!("the same callable can be retried on this host"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -567,13 +576,13 @@ async fn independent_entity_execution_infers_root_custody_without_families() {
     let work = Rc::clone(&original);
     let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
         .execute_with_entities(|application| async move {
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             work
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered host"));
     execution.await;
-    let (outcome, root, notifications, ()) = receiving.await.into_parts();
+    let (outcome, _root_report, root, notifications, ()) = receiving.await.into_parts();
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -600,7 +609,7 @@ async fn entity_runner_infers_rejected_root_and_preserves_uninvoked_work() {
     let allocation = original.audit.as_ptr();
     let invoked = Rc::new(Cell::new(0));
     let calls = Rc::clone(&invoked);
-    let (outcome, root, notifications, ()) =
+    let (outcome, _root_report, root, notifications, ()) =
         Application::new(RejectedCounter { original }.stop_on_shutdown())
             .run_with_entities(|_| async move {
                 calls.set(calls.get() + 1);
@@ -657,13 +666,14 @@ async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
         .execute_axum(address, |application| {
             assert_eq!(router_payload.audit.as_ptr(), allocation);
             router_called.set(router_called.get() + 1);
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             Router::new()
         })
         .unwrap_or_else(|_| panic!("the caller owns the entered HTTP host"));
     execution.await;
-    let (cold_outcome, cold_native, cold_notifications, ()) = receiving.await.into_parts();
+    let (cold_outcome, _root_report, cold_native, cold_notifications, ()) =
+        receiving.await.into_parts();
     let WorkOutcome::StagingRejected {
         inputs: Ok((application, router, returned_address, cause)),
     } = cold_outcome
@@ -681,7 +691,7 @@ async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
         .await
         .unwrap_or_else(|_| panic!("the same returned router is retryable"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -698,4 +708,326 @@ async fn http_pair_infers_custody_and_returns_router_on_bind_refusal() {
     cleanup.expect("actual application cleanup completes");
     let (_, retirement) = native.expect("the real root retirement is independently acquired");
     assert_eq!(retirement.completion(), Some(&bombay::Completion::Stopped));
+}
+
+#[tokio::test]
+async fn completed_root_report_survives_owned_selection() {
+    let outcome = Application::new(Counter::new().stop_on_shutdown())
+        .run_with(|application| async move {
+            let admitted = application.shutdown();
+            admitted.expect("the actual root admits shutdown");
+            CounterSnapshot {
+                value: 23,
+                audit: vec![29, 31].into_boxed_slice(),
+            }
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    let report = outcome
+        .root_report()
+        .expect("the joined root published its report");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    let allocation = outcome
+        .work_output()
+        .expect("business work completed")
+        .audit
+        .as_ptr();
+    let (value, retirement) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("completed selection preserves the independent root report"));
+    assert_eq!((value.value, value.audit.as_ptr()), (23, allocation));
+    assert_eq!(retirement.root_report(), Some(report));
+    let (cleanup, retained_report, native, notifications, ()) = retirement.into_parts();
+    cleanup.expect("actual cleanup joins");
+    assert_eq!(retained_report, Some(report));
+    let (origin, native) = native.expect("the original actor result remains owned");
+    assert_eq!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
+    assert_eq!(native.completion(), Some(&bombay::Completion::Stopped));
+    let notifications = notifications.expect("both original notification receipts remain owned");
+    notifications
+        .termination
+        .expect("termination notification succeeds");
+    notifications
+        .retirement
+        .expect("retirement notification succeeds");
+}
+
+#[tokio::test]
+async fn rejected_startup_retains_root_report_and_original_inputs() {
+    let invoked = Rc::new(Cell::new(0));
+    let calls = Rc::clone(&invoked);
+    let original = CounterSnapshot {
+        value: 37,
+        audit: vec![41, 43].into_boxed_slice(),
+    };
+    let allocation = original.audit.as_ptr();
+    let outcome = Application::new(RejectedCounter { original }.stop_on_shutdown())
+        .run_with(move |_| async move {
+            calls.set(calls.get() + 1);
+            47
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    let report = outcome
+        .root_report()
+        .expect("initialization refusal is a joined root report");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+    let returned = outcome
+        .try_into_completed()
+        .err()
+        .expect("uninvoked work returns the whole outcome");
+    assert_eq!(returned.root_report(), Some(report));
+    assert_eq!(invoked.get(), 0);
+    let (work, retained_report, native, notifications, ()) = returned.into_parts();
+    assert_eq!(retained_report, Some(report));
+    let WorkOutcome::NotInvoked {
+        work,
+        startup_error: Some(_),
+        cleanup: Ok(()),
+    } = work
+    else {
+        panic!("startup refusal retains the original callable and cleanup");
+    };
+    assert_eq!(Rc::strong_count(&invoked), 2);
+    let (_, native) = native.expect("the rejected original root remains owned");
+    let ActorRetirement::InitializationRejected {
+        custody,
+        error: CounterRefusal::Initialization,
+        ..
+    } = native
+    else {
+        panic!("the actual initialization error is preserved");
+    };
+    assert_eq!(
+        (
+            custody.behavior.base().original.value,
+            custody.behavior.base().original.audit.as_ptr()
+        ),
+        (37, allocation)
+    );
+    let notifications = notifications.expect("notification results coexist with startup refusal");
+    notifications
+        .termination
+        .expect("termination notification succeeds");
+    notifications
+        .retirement
+        .expect("retirement notification succeeds");
+    drop(work);
+    assert_eq!(Rc::strong_count(&invoked), 1);
+}
+
+#[tokio::test]
+async fn unpolled_execution_has_no_root_report_and_keeps_work() {
+    let invoked = Rc::new(Cell::new(0));
+    let calls = Rc::clone(&invoked);
+    let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+        .execute_with(move |_| async move {
+            calls.set(calls.get() + 1);
+            53
+        })
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    drop(execution);
+    let outcome = tokio::time::timeout(Duration::from_secs(5), receiving)
+        .await
+        .expect("an absent root report cannot wait for a publication that never starts");
+    assert_eq!(outcome.root_report(), None);
+    let returned = outcome
+        .try_into_completed()
+        .err()
+        .expect("cold work retains its whole outcome");
+    let (work, report, native, notifications, ()) = returned.into_parts();
+    assert_eq!(report, None);
+    let WorkOutcome::Unstarted { application, work } = work else {
+        panic!("dropping unpolled execution retains the original application and callable");
+    };
+    assert_eq!(invoked.get(), 0);
+    assert_eq!(Rc::strong_count(&invoked), 2);
+    assert!(native.is_err());
+    assert!(notifications.is_err());
+    drop((application, work));
+    assert_eq!(Rc::strong_count(&invoked), 1);
+}
+
+#[tokio::test]
+async fn root_report_survives_both_timer_shutdown_orders() {
+    let timer_outside = Application::new(
+        Counter::new()
+            .stop_on_shutdown()
+            .with_one_shot(Duration::from_secs(60), |_| {
+                bombay::behavior::Actions::stop()
+            }),
+    )
+    .run_with(|application| async move { application.shutdown() })
+    .await
+    .unwrap_or_else(|_| panic!("timer-outside application starts"));
+    let first = timer_outside
+        .root_report()
+        .expect("timer-outside root is joined");
+    let (admitted, retirement) = timer_outside
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("timer-outside work completes"));
+    admitted.expect("timer-outside shutdown is admitted");
+    assert_eq!(retirement.root_report(), Some(first));
+    retirement
+        .cleanup()
+        .as_ref()
+        .expect("timer-outside cleanup succeeds");
+    let shutdown_outside = Application::new(
+        Counter::new()
+            .with_one_shot(Duration::from_secs(60), |_| {
+                bombay::behavior::Actions::stop()
+            })
+            .stop_on_shutdown(),
+    )
+    .run_with(|application| async move { application.shutdown() })
+    .await
+    .unwrap_or_else(|_| panic!("shutdown-outside application starts"));
+    let second = shutdown_outside
+        .root_report()
+        .expect("shutdown-outside root is joined");
+    let (admitted, retirement) = shutdown_outside
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("shutdown-outside work completes"));
+    admitted.expect("shutdown-outside shutdown is admitted");
+    assert_eq!(retirement.root_report(), Some(second));
+    retirement
+        .cleanup()
+        .as_ref()
+        .expect("shutdown-outside cleanup succeeds");
+    for report in [first, second] {
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    }
+}
+
+#[tokio::test]
+async fn dropped_running_execution_keeps_root_report() {
+    let invoked = Rc::new(Cell::new(0));
+    let calls = Rc::clone(&invoked);
+    let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+        .execute_with(move |_| async move {
+            calls.set(calls.get() + 1);
+            core::future::pending::<()>().await;
+        })
+        .unwrap_or_else(|_| panic!("the caller owns the entered host"));
+    let mut execution = Box::pin(execution);
+    core::future::poll_fn(|context| {
+        let pending = execution.as_mut().poll(context);
+        assert!(matches!(pending, Poll::Pending));
+        if invoked.get() == 1 {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
+    })
+    .await;
+    drop(execution);
+    let outcome = tokio::time::timeout(Duration::from_secs(5), receiving)
+        .await
+        .expect("retained receiving joins the actor after execution cancellation");
+    let report = outcome
+        .root_report()
+        .expect("the actual cancelled root was joined");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert!(matches!(
+        outcome.work(),
+        WorkOutcome::Interrupted { cleanup: Ok(()) }
+    ));
+    let returned = outcome
+        .try_into_completed()
+        .err()
+        .expect("interrupted work keeps the whole report");
+    assert_eq!(returned.root_report(), Some(report));
+    let (_, retained_report, native, notifications, ()) = returned.into_parts();
+    assert_eq!(retained_report, Some(report));
+    let (_, native) = native.expect("the original cancelled actor remains owned");
+    assert!(native.behavior().is_some());
+    let notifications =
+        notifications.expect("both cancellation notification receipts remain owned");
+    notifications
+        .termination
+        .expect("termination notification succeeds");
+    notifications
+        .retirement
+        .expect("retirement notification succeeds");
+}
+
+struct ReportObserver {
+    failure: Mutex<Option<Arc<Vec<u64>>>>,
+    caller: Waker,
+}
+
+impl Wake for ReportObserver {
+    fn wake(self: Arc<Self>) {
+        self.wake_by_ref();
+    }
+
+    fn wake_by_ref(self: &Arc<Self>) {
+        self.caller.wake_by_ref();
+        let failure = self
+            .failure
+            .lock()
+            .expect("the observer owns its exact panic")
+            .take();
+        panic_any(failure.expect("the observer releases its original panic once"));
+    }
+}
+
+#[tokio::test]
+async fn final_root_report_survives_notification_panic_without_reclassifying_actor() {
+    let failure = Arc::new(vec![59_u64, 61]);
+    let retained_failure = Arc::downgrade(&failure);
+    let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
+        .execute_with(move |application| async move {
+            let mut observation = Box::pin(application.retirement());
+            core::future::poll_fn(|context| {
+                let waker = Waker::from(Arc::new(ReportObserver {
+                    failure: Mutex::new(Some(Arc::clone(&failure))),
+                    caller: context.waker().clone(),
+                }));
+                let mut observed = Context::from_waker(&waker);
+                let pending = observation.as_mut().poll(&mut observed);
+                assert!(matches!(pending, Poll::Pending));
+                Poll::Ready(())
+            })
+            .await;
+            drop(failure);
+            let admitted = application.shutdown();
+            admitted.expect("the root admits shutdown before report publication");
+            let report = application.retirement().await;
+            let independently_observed = observation.await;
+            assert_eq!(report, independently_observed);
+        })
+        .unwrap_or_else(|_| panic!("the actual caller host is entered"));
+    let ((), outcome) = tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::join!(execution, receiving)
+    })
+    .await
+    .expect("observer panic cannot stall the original joins");
+    let report = outcome
+        .root_report()
+        .expect("the committed report survives outside Work");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    let ((), retirement) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("notification failure does not erase completed work"));
+    assert_eq!(retirement.root_report(), Some(report));
+    let (cleanup, retained_report, native, notifications, ()) = retirement.into_parts();
+    cleanup.expect("the original cleanup task joins");
+    assert_eq!(retained_report, Some(report));
+    let (_, native) = native.expect("the complete actor remains independently owned");
+    assert_eq!(native.completion(), Some(&bombay::Completion::Stopped));
+    let notifications = notifications.expect("both original notification results remain owned");
+    notifications
+        .termination
+        .expect("termination notification succeeds independently");
+    let Err(RetirementNotificationError::Panicked { payload }) = notifications.retirement else {
+        panic!("the later report-notification panic keeps its original receipt");
+    };
+    assert_eq!(retained_failure.strong_count(), 1);
+    drop(payload);
+    assert_eq!(retained_failure.strong_count(), 0);
 }

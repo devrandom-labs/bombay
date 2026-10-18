@@ -19,7 +19,7 @@ bombay::topology! {
 async fn main() {
     let outcome = bombay::Application::with_topology(Root.stop_on_shutdown(), services::Topology::new())
         .child(Primary, Worker.stop_on_shutdown())
-        .run_with(|application| async move { application.request_shutdown().expect("admitted"); })
+        .run_with(|application| async move { application.shutdown().expect("admitted"); })
         .await;
     drop(outcome);
 }

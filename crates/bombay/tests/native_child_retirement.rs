@@ -70,7 +70,7 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
         second_id,
         Worker { payload: second }.stop_on_shutdown(),
     ));
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Creator {
             children: Some(children),
         }

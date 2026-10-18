@@ -755,7 +755,7 @@ async fn run_counter(
                 complete_counter,
             )
             .await;
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             (address, verifier.address(), processor.address(), observed)
         })
@@ -767,6 +767,7 @@ async fn run_counter(
             output: (address, verifier, processor, observed),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -904,7 +905,7 @@ async fn run_arithmetic(
                 complete_arithmetic,
             )
             .await;
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             (address, verifier.address(), processor.address(), observed)
         })
@@ -916,6 +917,7 @@ async fn run_arithmetic(
             output: (address, verifier, processor, observed),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

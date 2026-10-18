@@ -3,7 +3,6 @@ use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, Interpretation, InterpretationProgress,
     InterpreterRequests, ItemSettlement, NoSends, SettledItem, Step,
 };
-use bombay::prelude::TimerId;
 use bombay::{ActorNotificationReceipts, ActorRetirement, Application, MailAddr};
 use core::future::pending;
 use core::pin::pin;
@@ -102,7 +101,7 @@ async fn file_and_environment_services_compose_beside_native_timers() {
         ],
     };
     let root = documents
-        .with_one_shot(TimerId(1), Duration::ZERO, |documents| {
+        .with_one_shot(Duration::ZERO, |documents| {
             let mut actions = Actions::stop();
             for request in documents.files.drain(..) {
                 actions = actions.with_send(request);
@@ -113,7 +112,7 @@ async fn file_and_environment_services_compose_beside_native_timers() {
             actions
         })
         .stop_on_shutdown();
-    let (work, native, notifications, ()) = Application::new(root)
+    let (work, _root_report, native, notifications, ()) = Application::new(root)
         .with_interpreter(|| Services)
         .run_with(|application| async move { application.termination().await })
         .await
@@ -254,7 +253,7 @@ async fn native_interpreter_panic_retains_acquired_file_pending_request_and_both
         ],
         settings: vec![ReadEnvironment { name: setting }],
     };
-    let (work, native, notifications, ()) = Application::new(Documents {
+    let (work, _root_report, native, notifications, ()) = Application::new(Documents {
         files: vec![],
         settings: vec![],
     })
@@ -448,10 +447,11 @@ async fn owner_cancellation_waits_for_the_inflight_effect_and_keeps_its_complete
     );
     let released = release.send(());
     released.expect("the accepted effect receives its original permission");
-    let (work, native, notifications, ()) = tokio::time::timeout(Duration::from_secs(5), result)
-        .await
-        .expect("cancellation joins after the in-flight batch settles")
-        .into_parts();
+    let (work, _root_report, native, notifications, ()) =
+        tokio::time::timeout(Duration::from_secs(5), result)
+            .await
+            .expect("cancellation joins after the in-flight batch settles")
+            .into_parts();
     let bombay::WorkOutcome::Interrupted { cleanup } = work else {
         panic!("the original application work is interrupted");
     };
@@ -548,8 +548,8 @@ async fn timer_outside_shutdown_keeps_io_receipts_and_unemitted_requests() {
     };
     let root = documents
         .stop_on_shutdown()
-        .with_one_shot(TimerId(1), Duration::ZERO, |_| Actions::stop());
-    let (work, native, notifications, ()) = Application::new(root)
+        .with_one_shot(Duration::ZERO, |_| Actions::stop());
+    let (work, _root_report, native, notifications, ()) = Application::new(root)
         .with_interpreter(|| Services)
         .run_with(|application| async move { application.termination().await })
         .await

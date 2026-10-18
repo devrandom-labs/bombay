@@ -199,7 +199,7 @@ fn accounts_passivate_reactivate_and_preserve_complete_retirement() {
                     .send(AccountCommand::Deposit(2))
                     .await
                     .expect("the same stable reference activates a replacement");
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
             }),
         )
@@ -210,7 +210,8 @@ fn accounts_passivate_reactivate_and_preserve_complete_retirement() {
     let ((), retirement) = outcome.try_into_completed().unwrap_or_else(|_| {
         panic!("the original application work completes beside its joined cleanup");
     });
-    let (cleanup, root_receiving, notification_receiving, shutdowns) = retirement.into_parts();
+    let (cleanup, _root_report, root_receiving, notification_receiving, shutdowns) =
+        retirement.into_parts();
     cleanup.expect("the original application cleanup succeeds");
     let notifications = notification_receiving
         .expect("the existing cleanup owner transferred both original notifications");
@@ -529,7 +530,7 @@ fn entity_retirement_waits_for_callback_and_preserves_independent_observers() {
             release
                 .send(())
                 .expect("release the unrelated account's eventual retirement");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         }))
         .unwrap_or_else(|_| panic!("the application starts"));
@@ -600,7 +601,7 @@ fn entity_retirement_keeps_callback_failure_in_the_family_outcome() {
                 .expect("deposit");
             let mode = application.retire_entity(AccountsRole, &ACCOUNT_ID).await;
             assert_eq!(mode, Ok(RetirementMode::Graceful));
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         }))
         .unwrap_or_else(|_| panic!("the application starts"));
@@ -692,7 +693,7 @@ fn entity_retirement_preserves_the_forced_fence_reason() {
                 bombay::entity::DrainStage::FenceEnqueue
                     | bombay::entity::DrainStage::FenceAcknowledgement
             ));
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             reason
         }))
@@ -789,7 +790,7 @@ fn reactivated_entity_cannot_reuse_the_previous_retirement_fact() {
                 let mode = waiting.await;
                 assert_eq!(mode, Ok(RetirementMode::Graceful));
             }
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         }))
         .unwrap_or_else(|_| panic!("the application starts"));
@@ -941,7 +942,7 @@ mod account_reports {
                             .send(AccountCommand::Deposit(2))
                             .await
                             .expect("fresh incarnation admits deposit");
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         assert_eq!(shutdown, Ok(()));
                     }),
                 )

@@ -110,6 +110,7 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             startup_error: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -127,6 +128,7 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -260,6 +262,7 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
             startup_error: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -277,6 +280,7 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -564,6 +568,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -579,7 +584,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
         let termination =
             tokio::time::timeout(Duration::from_secs(5), lifecycle.termination()).await;
         if termination.is_err() {
-            match lifecycle.request_shutdown() {
+            match lifecycle.shutdown() {
                 Ok(())
                 | Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped) => {}
             }
@@ -886,6 +891,7 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
             startup_error: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -903,6 +909,7 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

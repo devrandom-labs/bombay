@@ -1,0 +1,37 @@
+error[E0277]: the actor system does not host actor protocol `MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>` locally
+  --> tests/compile/fail/stash/host.rs:22:53
+   |
+22 |     let _documents = bombay::Application::new(root).run();
+   |                                                     ^^^ missing local actor protocol
+   |
+   = note: add an `ActorSpace<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>` and implement `Hosts<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>` for the actor-space product
+help: the trait `Hosts<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>` is not implemented for `bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Documents>>`
+      but trait `Hosts<Documents>` is implemented for it
+  --> src/topology.rs
+   |
+   | / impl<P> Hosts<P> for ActorSpace<P>
+   | | where
+   | |     P: Protocol,
+   | |     P::Addr: Hash,
+   | |__________________^
+   = help: for that trait implementation, expected `Documents`, found `MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>`
+   = note: required for `bombay::local::effects::ApplicationCapabilities<StopOnShutdown<bombay::composition::Stash<Documents, Recipient<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>>>, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Documents>>, bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Documents>>` to implement `InterpretItem<Delivery<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Box<[u8]>>>, Inside<Here>>`
+   = note: required for `Vec<Delivery<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>>` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<StopOnShutdown<bombay::composition::Stash<Documents, Recipient<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>>>, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Documents>>, bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Documents>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Box<[u8]>>>, Inside<Here>>`
+   = note: 2 redundant requirements hidden
+   = note: required for `SendLayer<NoSends, StashSends<NoSends, Vec<Delivery<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>>>>` to implement `InterpretSends<bombay::local::effects::ApplicationCapabilities<StopOnShutdown<bombay::composition::Stash<Documents, Recipient<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>>>, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Documents>>, bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Documents>>, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, Box<[u8]>>>, Here>`
+   = note: required for `bombay::local::effects::ActionInterpreter<bombay::local::effects::ApplicationCapabilities<StopOnShutdown<bombay::composition::Stash<Documents, Recipient<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>>>, bombay_address::AddressSpace<bombay::MailAddr, ActorRef<Documents>>, bombay::local::effects::NoParent, bombay::local::children::NoChildBindings, bombay::local::children::StructuralOrigins<Documents>>>` to implement `bombay::local::effects::CommitActions<StopOnShutdown<bombay::composition::Stash<Documents, Recipient<MessageProtocol<bombay::MailAddr, behavior::User<bombay::MailAddr, Box<[u8]>>>>>>>`
+note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
+  --> src/application/execution.rs
+   |
+   |       pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                    --- required by a bound in this associated function
+...
+   |           >: CommitActions<
+   |  ____________^
+   | |                 Actor,
+   | |                 Retired = (
+   | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+   | |                     ChildFailures,
+   | |                 ),
+   | |             > + Send
+   | |_____________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`

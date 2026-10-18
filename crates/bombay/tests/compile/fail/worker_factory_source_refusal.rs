@@ -6,8 +6,8 @@ impl Worker {
         Ok(bombay::behavior::Actions::cont())
     }
 }
-fn worker(role: &u8) -> bombay::atomic::WorkerSubmission<Worker, bombay::atomic::ImmediateActivation> {
-    bombay::atomic::WorkerSubmission::immediate(Worker { count: u64::from(*role) })
+fn worker(role: &u8) -> bombay::worker::WorkerSubmission<Worker, bombay::worker::ImmediateStartup> {
+    bombay::worker::WorkerSubmission::immediate(Worker { count: u64::from(*role) })
 }
 
 async fn refuse_source() {

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.3...bombay-rs-v0.2.0) - 2026-10-17
+
+### Changed
+
+- **Breaking:** use Behavior/Actors 0.29, Engine 0.3 and macros 0.2.0 together.
+- Compose supervisors and pools through owning Config values and inferred startup.
+- Use wrapper-owned timer targets, finite stash admission and `stash.take()`.
+- Name application shutdown `shutdown()` while retaining typed admission and
+  independent joined retirement.
+
+### Fixed
+
+- Reject unsupported native mailbox capacities before allocation.
+- Preserve complete reply, refusal, effect and retirement custody through the
+  selected policy compositions.
+
 ## [0.1.3](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.2...bombay-rs-v0.1.3) - 2026-10-15
 
 ### Added

@@ -106,7 +106,7 @@ async fn named_birth_delivers_both_reports_and_preserves_retirement() {
     .run_with(|application| async move {
         application
             .lifecycle()
-            .request_shutdown()
+            .shutdown()
             .expect("real shutdown operation");
     })
     .await;
@@ -114,7 +114,7 @@ async fn named_birth_delivers_both_reports_and_preserves_retirement() {
         drop(original);
         panic!("the original application is retained on rejection");
     });
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),

@@ -8,7 +8,7 @@ impl Protocol for RootProtocol {
 }
 
 fn request_application_shutdown(application: ApplicationHandle<RootProtocol, ()>) {
-    let _accepted = application.request_shutdown();
+    let _accepted = application.shutdown();
 }
 
 fn main() {}

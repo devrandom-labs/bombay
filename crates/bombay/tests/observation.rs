@@ -48,7 +48,7 @@ async fn exact_observation_survives_outer_shutdown_and_transfers_the_original_te
         Actions::stop().with_send(EstablishedDelivery::new(watcher.recipient.clone(), report))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = scope
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(watcher)
         .run_with(|_| async move {
             drop(target);
@@ -118,7 +118,7 @@ async fn exact_observation_survives_inner_shutdown_and_transfers_the_original_te
             report,
         ))
     });
-    let (outcome, native, notifications, ()) = scope
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(watcher)
         .run_with(|_| async move {
             drop(target);
@@ -185,13 +185,13 @@ async fn shutdown_while_observing_preserves_the_live_target_and_complete_retirem
         panic!("shutdown must not fabricate a peer's terminal report")
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = scope
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(watcher)
         .run_with(|application| async move {
             let sender = application
                 .sender_to(target.recipient())
                 .expect("the actual peer capability accepts an independent sender");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             let termination = application.termination().await;
             (shutdown, termination, target, sender)
         })
@@ -269,7 +269,7 @@ async fn rejected_report_delivery_retains_the_whole_original_report_and_normal_a
     .observe_termination(request, |watcher, report| {
         Actions::stop().with_send(EstablishedDelivery::new(watcher.recipient.clone(), report))
     });
-    let (outcome, native, notifications, ()) = scope
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(watcher)
         .run_with(|application| async move {
             drop(target);

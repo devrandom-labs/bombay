@@ -99,7 +99,7 @@ async fn inferred_cold_branch_creates_worker_and_keeps_native_reply_and_complete
             assert_eq!(count.message, 42);
             assert_ne!(count.from, counts.address());
             assert_ne!(count.from, application.root().address());
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             count.from
         })

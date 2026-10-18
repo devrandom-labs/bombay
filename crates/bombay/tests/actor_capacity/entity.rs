@@ -201,7 +201,7 @@ async fn installed_entity_family_carries_actor_limit_into_fresh_descendants_and_
             assert_eq!(receipt.message, 2);
             let retired = application.retire_entity(Libraries, &7).await;
             assert!(retired.is_ok());
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             (identities, document, visitor_identity)
         })

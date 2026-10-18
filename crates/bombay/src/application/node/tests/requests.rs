@@ -301,7 +301,7 @@ async fn live_read<Receipt>(
                 acknowledged = service_requests.receive() => acknowledged,
                 reply = receiving_reply.recv() => { additional_reply = reply; None }
             }} else { None };
-            let stopped = caller.request_shutdown();
+            let stopped = caller.shutdown();
             let report = caller.lifecycle().retirement().await;
             (current, original, original_allocations, initial_records, protection_calls.into_inner(), begun, trigger, issued, query,
                 received_request, request_shape, request_declaration, request_verification, request_scope,
@@ -310,19 +310,19 @@ async fn live_read<Receipt>(
                 reply_publications, stopped, report, command, requester_address, caller_id, receiver_id)
         }).unwrap_or_else(|_| panic!("caller Work host entry"));
         let ((), outcome) = tokio::join!(caller_execution, caller_receiving);
-        let (outcome, caller_native, caller_notifications, ()) = outcome.into_parts();
+        let (outcome, _root_report, caller_native, caller_notifications, ()) = outcome.into_parts();
         let (read, caller_cleanup) = outcome.try_into_completed().unwrap_or_else(|_| panic!("original caller Work"));
         let caller_closed = caller.close().await;
         let undeclared = queryable.undeclare().await;
         let mut remaining_queries = Vec::new();
         while let Ok(original) = queries.try_recv() { remaining_queries.push(original); }
-        let stopped = receiver.request_shutdown();
+        let stopped = receiver.shutdown();
         let report = receiver.lifecycle().retirement().await;
         (read, caller_native, caller_notifications, caller_cleanup, caller_closed, undeclared,
             remaining_queries, requests, legacy_values, publications, primed, stopped, report, target_address, scope, caller_connection)
     }).unwrap_or_else(|_| panic!("receiver Work host entry"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, receiver_native, receiver_notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, receiver_native, receiver_notifications, ()) = outcome.into_parts();
     let (output, receiver_cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original receiver Work"));
@@ -912,7 +912,7 @@ async fn pending_protection<Receipt>(
                 )
             };
             drop(consumer);
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             ordinary.close_admission();
             let mut ordinary_tail = Vec::new();
@@ -1065,7 +1065,7 @@ async fn pending_protection<Receipt>(
         })
         .unwrap_or_else(|_| panic!("actual comparison Work host"));
     let ((), receiving) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = receiving.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = receiving.into_parts();
     let (observations, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("complete original comparison Work"));

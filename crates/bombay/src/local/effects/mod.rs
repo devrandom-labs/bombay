@@ -645,10 +645,10 @@ mod atomic_interpretation_contract {
         LogicalDeliveryReason, MessageProtocol, Never, NoBirths, NoSends, Recipient, SendLayer,
         SettledItem, SourceAdmission, Step, User, UserEvent,
     };
-    use behavior_actors::atomic::{
-        AssignWorker, Assignment, BeginActivation, CustomerDelivery, DiagnosticAction,
-        ImmediateActivation, InitializeWorker, ProxyOperation, StableProxy,
-    };
+    use behavior_actors::diagnostic::DiagnosticAction;
+    use behavior_actors::pool::{AssignWorker, Assignment, CustomerDelivery};
+    use behavior_actors::proxy::{ProxyOperation, StableProxy};
+    use behavior_actors::worker::{ImmediateStartup, InitializeWorker, StartWorker};
     use behavior_actors::{
         CancelObservation, EstablishedObservation, EstablishedTerminationMonitor,
         InterpretEstablishedObservation, ObservationId, ObservationRejection, ObserveEstablished,
@@ -688,7 +688,7 @@ mod atomic_interpretation_contract {
     #[actor(message = Never)]
     impl Worker {}
 
-    type Proxy = StableProxy<Worker, ImmediateActivation>;
+    type Proxy = StableProxy<Worker, ImmediateStartup>;
 
     struct ProxyParent;
 
@@ -2234,12 +2234,12 @@ mod atomic_interpretation_contract {
 
     #[test]
     fn local_application_interprets_exact_worker_initialization() {
-        type Proxy = StableProxy<Worker, ImmediateActivation>;
+        type Proxy = StableProxy<Worker, ImmediateStartup>;
 
         fn require<Capabilities>()
         where
             Capabilities: InterpretItem<
-                    InitializeWorker<Worker, ImmediateActivation>,
+                    InitializeWorker<Worker, ImmediateStartup>,
                     <Proxy as Behavior>::Event,
                     Here,
                 >,
@@ -2254,7 +2254,7 @@ mod atomic_interpretation_contract {
         fn require<Capabilities>()
         where
             Capabilities: InterpretItem<
-                    BeginActivation<Worker, ImmediateActivation>,
+                    StartWorker<Worker, ImmediateStartup>,
                     <Proxy as Behavior>::Event,
                     Here,
                 >,
@@ -2269,7 +2269,7 @@ mod atomic_interpretation_contract {
         fn require<Capabilities>()
         where
             Capabilities: InterpretItem<
-                    ProxyOperation<Here, Worker, ImmediateActivation>,
+                    ProxyOperation<Here, Worker, ImmediateStartup>,
                     <ProxyParent as Behavior>::Event,
                     Here,
                 >,
@@ -3437,10 +3437,10 @@ mod capability_task_retirement {
         Step, Stopped, User, UserEvent,
     };
     use behavior_actors::ShutdownRequested;
-    use behavior_actors::atomic::{
-        ActivationPermit, ActivationPlan, BeginActivation, ImmediateActivation, OrderedRoles,
-        PendingWorkerPreparation, PrepareWorkers, StartingWorkerPreparation, WorkerActivation,
-        WorkerActivationGrant, WorkerPreparation, WorkerSource,
+    use behavior_actors::worker::{
+        ImmediateStartup, OrderedRoles, PendingWorkerPreparation, PrepareWorkers, StartWorker,
+        StartingWorkerPreparation, StartupPermit, StartupPlan, WorkerPreparation, WorkerSource,
+        WorkerStartup, WorkerStartupGrant,
     };
     use bombay_engine::Completion;
     use communication::{Config, ControlClosed, ControlSender};
@@ -3487,7 +3487,7 @@ mod capability_task_retirement {
     where
         Source: WorkerSource<Role, Worker, Plan>,
         Worker: Behavior + Send,
-        Plan: ActivationPlan,
+        Plan: StartupPlan,
     {
         Starting(StartingWorkerPreparation<Source, Role, Worker, Plan>),
         Pending(PendingWorkerPreparation<Source, Role, Worker, Plan>),
@@ -3500,7 +3500,7 @@ mod capability_task_retirement {
     where
         Source: WorkerSource<Role, Worker, Plan>,
         Worker: Behavior + Send,
-        Plan: ActivationPlan,
+        Plan: StartupPlan,
     {
         task: WorkerCapabilityTask,
         phase: Option<WorkerPreparationPhase<Source, Role, Worker, Plan>>,
@@ -3576,7 +3576,7 @@ mod capability_task_retirement {
         Source: WorkerPreparationSource<Role, Worker, Plan>,
         Role: Send + Sync,
         Worker: Behavior + Send,
-        Plan: ActivationPlan,
+        Plan: StartupPlan,
         Event: InjectEvent<WorkerPreparation<Source, Role, Worker, Plan>, Path>,
     {
         loop {
@@ -3727,15 +3727,15 @@ mod capability_task_retirement {
     }
 
     /// Original grant and endpoint remain outside the Plan's owning future.
-    struct WorkerActivationCustody<W, P, Event>
+    struct WorkerStartupCustody<W, P, Event>
     where
         W: Behavior,
         BehaviorAddr<W>: EndpointAddress,
-        P: ActivationPlan,
+        P: StartupPlan,
     {
         task: WorkerCapabilityTask,
-        permit: ActivationPermit<W>,
-        grant: WorkerActivationGrant<W, P>,
+        permit: StartupPermit<W>,
+        grant: WorkerStartupGrant<W, P>,
         event: Option<Event>,
         failures: Vec<WorkerCapabilityFailure>,
         resumed_failure_origin: Option<WorkerCapabilityOperation>,
@@ -3743,23 +3743,22 @@ mod capability_task_retirement {
 
     async fn activate_worker<W, P, Event, Path>(
         plan: P,
-        custody: &Arc<TaskCustody<WorkerActivationCustody<W, P, Event>>>,
+        custody: &Arc<TaskCustody<WorkerStartupCustody<W, P, Event>>>,
         control: &ControlSender<Event>,
     ) where
         W: Behavior,
         BehaviorAddr<W>: EndpointAddress,
-        P: ActivationPlan,
-        Event: InjectEvent<WorkerActivation<W, P>, Path>,
+        P: StartupPlan,
+        Event: InjectEvent<WorkerStartup<W, P>, Path>,
     {
         let mut original = custody.lock().await;
         original.task = WorkerCapabilityTask::Started(task::id());
-        let constructed =
-            catch_unwind(AssertUnwindSafe(move || plan.activate())).map_err(|payload| {
-                WorkerCapabilityFailure {
-                    operation: WorkerCapabilityOperation::Construction,
-                    payload,
-                }
-            });
+        let constructed = catch_unwind(AssertUnwindSafe(move || plan.start())).map_err(|payload| {
+            WorkerCapabilityFailure {
+                operation: WorkerCapabilityOperation::Construction,
+                payload,
+            }
+        });
         let (reply, disposal) = capability_work_reply(constructed).await;
         let reply = match reply {
             Ok(reply) => Some(reply),
@@ -3772,7 +3771,7 @@ mod capability_task_retirement {
             original.failures.push(failure);
         }
         if let Some(reply) = reply {
-            // Selected ActivationPlan outputs are already Send. No output static
+            // Selected StartupPlan outputs are already Send. No output static
             // bound or additional Send bound is imposed by this disposal boundary.
             // Original grant is borrowed; conversion may consume only its input.
             let input = original.grant.resolve(reply);
@@ -4004,10 +4003,10 @@ mod capability_task_retirement {
     }
 
     impl<C, N, Parent, Bindings, Origins, W, P, Preparation, Path>
-        InterpretItem<BeginActivation<W, P>, C::Event, Path>
+        InterpretItem<StartWorker<W, P>, C::Event, Path>
         for ActionInterpreter<(
             Option<ApplicationCapabilities<C, N, Parent, Bindings, Origins>>,
-            Arc<Mutex<Vec<Arc<TaskCustody<WorkerActivationCustody<W, P, C::Event>>>>>>,
+            Arc<Mutex<Vec<Arc<TaskCustody<WorkerStartupCustody<W, P, C::Event>>>>>>,
             Preparation,
             Option<CapabilityRetirement<
                 <ApplicationCapabilities<C, N, Parent, Bindings, Origins> as RetireCapabilities>::Event,
@@ -4016,12 +4015,12 @@ mod capability_task_retirement {
         )>
     where
         C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-        C::Event: InjectEvent<WorkerActivation<W, P>, Path> + Send + 'static,
+        C::Event: InjectEvent<WorkerStartup<W, P>, Path> + Send + 'static,
         W: Behavior + 'static,
         BehaviorAddr<W>: EndpointAddress,
         EstablishedRecipient<W::Protocol>: Send,
-        ActivationPermit<W>: Send,
-        P: ActivationPlan + 'static,
+        StartupPermit<W>: Send,
+        P: StartupPlan + 'static,
         Preparation: Send,
         ApplicationCapabilities<C, N, Parent, Bindings, Origins>: RetireCapabilities,
         Self: Send,
@@ -4032,11 +4031,11 @@ mod capability_task_retirement {
         )]
         fn interpret_item<'a>(
             &'a mut self,
-            input: <BeginActivation<W, P> as ActionItem>::Input<'a>,
-            received: &'a mut Option<<BeginActivation<W, P> as ActionItem>::Reply>,
+            input: <StartWorker<W, P> as ActionItem>::Input<'a>,
+            received: &'a mut Option<<StartWorker<W, P> as ActionItem>::Reply>,
         ) -> impl Future<Output = ()> + Send + 'a
         where
-            BeginActivation<W, P>: 'a,
+            StartWorker<W, P>: 'a,
         {
             async move {
                 if received.is_some() {
@@ -4051,7 +4050,7 @@ mod capability_task_retirement {
                 };
                 let settlement = {
             let (permit, plan, grant) = request.into_parts();
-            let custody = Arc::new(TaskCustody::new(WorkerActivationCustody {
+            let custody = Arc::new(TaskCustody::new(WorkerStartupCustody {
                 task: WorkerCapabilityTask::Unpolled,
                 permit,
                 grant,
@@ -4104,7 +4103,7 @@ mod capability_task_retirement {
         Source: WorkerPreparationSource<Role, W, P> + Send + 'static,
         Role: Send + Sync + 'static,
         W: Behavior + Send + 'static,
-        P: ActivationPlan + 'static,
+        P: StartupPlan + 'static,
         Activation: Send,
         ApplicationCapabilities<C, N, Parent, Bindings, Origins>: RetireCapabilities,
         Self: Send,
@@ -4174,10 +4173,11 @@ mod capability_task_retirement {
             InterpretEstablished, ItemSettlement, MessageProtocol, Never, NoBirths, NoSends,
             Protocol, SettledItem, Step, User,
         };
-        use behavior_actors::atomic::{
-            ActivationPlan, InitialWorkerOutcome, ProxyControl, ProxyOutcome, StableProxy,
-            WorkerActivation, WorkerInitializationOutcome, WorkerInitializationReport,
-            WorkerStartResult,
+        use behavior_actors::proxy::{
+            InitialWorkerOutcome, ProxyControl, ProxyOutcome, StableProxy, WorkerStartResult,
+        };
+        use behavior_actors::worker::{
+            StartupPlan, WorkerInitializationOutcome, WorkerInitializationReport, WorkerStartup,
         };
         use behavior_actors::{Activate as _, Active};
         use communication::{Config, ControlClosed, mailbox_channel};
@@ -4257,7 +4257,7 @@ mod capability_task_retirement {
             Panicked(Arc<Vec<u8>>),
         }
 
-        impl ActivationPlan for ActivationWork {
+        impl StartupPlan for ActivationWork {
             type Ready = ();
             type Rejection = Never;
 
@@ -4265,7 +4265,7 @@ mod capability_task_retirement {
                 clippy::unused_async_trait_impl,
                 reason = "Keep the original selected plan and its native panic cold until the future is polled."
             )]
-            async fn activate(self) -> Result<(), Never> {
+            async fn start(self) -> Result<(), Never> {
                 match self {
                     Self::Ready => Ok(()),
                     Self::Panicked(original) => panic_any(original),
@@ -4299,7 +4299,7 @@ mod capability_task_retirement {
                 .collect();
             assert_eq!(actual, observation);
             assert_eq!(actions.sends.worker_initializations.len(), initialization);
-            assert_eq!(actions.sends.worker_activations.len(), activation);
+            assert_eq!(actions.sends.worker_startups.len(), activation);
             assert_eq!(actions.sends.worker_shutdowns.len(), 0);
             assert_eq!(actions.sends.worker_deliveries.len(), 0);
             assert_eq!(actions.sends.owner_outcomes.len(), reports);
@@ -4315,7 +4315,7 @@ mod capability_task_retirement {
             WorkerInitializationReport<ActivationWorker, ActivationWork>,
             CreationId,
         ) {
-            let proxy = StableProxy::<ActivationWorker, ActivationWork>::activated();
+            let proxy = StableProxy::<ActivationWorker, ActivationWork>::new();
             let initialized = proxy
                 .initialize()
                 .unwrap_or_else(|_| panic!("pure proxy initialization"));
@@ -4356,7 +4356,7 @@ mod capability_task_retirement {
             let request = requests.pop().expect("one original initialization request");
             assert_eq!(requests.len(), 0);
             assert_eq!(request.worker().creation(), id);
-            let report = request.resolve(WorkerInitializationOutcome::ReadyForActivation);
+            let report = request.resolve(WorkerInitializationOutcome::ReadyForStartup);
             (proxy, report, id)
         }
 
@@ -4369,8 +4369,8 @@ mod capability_task_retirement {
                 .on(report)
                 .unwrap_or_else(|_| panic!("original initialization correlation is accepted"));
             assert_proxy_actions(&activating, 0, &[], 0, 1, 0);
-            let mut requests = activating.sends.worker_activations.into_requests();
-            let request = requests.pop().expect("one original BeginActivation");
+            let mut requests = activating.sends.worker_startups.into_requests();
+            let request = requests.pop().expect("one original StartWorker");
             assert_eq!(requests.len(), 0);
             let worker = request.worker();
             let started = proxy
@@ -4378,14 +4378,14 @@ mod capability_task_retirement {
                 .unwrap_or_else(|_| panic!("actual private activation grant is accepted"));
             assert_proxy_actions(&started, 0, &[], 0, 0, 0);
             let (control, owner, mailbox, receiver) = mailbox_channel::<
-                WorkerActivation<ActivationWorker, ActivationWork>,
+                WorkerStartup<ActivationWorker, ActivationWork>,
                 User<ActivationMailAddr, Never>,
             >(Config::new(2));
             drop(receiver);
             let mut tasks = ActivationTasks::new();
             tasks.spawn(async move {
                 control
-                    .send(request.activate().await)
+                    .send(request.start().await)
                     .map_err(|ControlClosed(event)| event)
             });
             let (mut closed, failures) = tasks.settle().await;
@@ -4443,12 +4443,19 @@ mod capability_task_retirement {
             ItemSettlement, MessageProtocol, Never, NoBirths, NoSends, Protocol, SettledItem, Step,
             User,
         };
-        use behavior_actors::atomic::{
-            ActivationPolicy, ActorDrainPolicy, DiagnosticDisposition, FailureReaction,
-            FixedSupervisor, ImmediateActivation, InitialWorkerOutcome, OrderedRoles,
-            PrepareWorkers, ProxyControl, ProxyControlAdmission, ProxyOperation, ProxyOutcome,
-            Recovery, RestartLimit, RestartRelease, StableProxy, Strategy,
-            WorkerInitializationOutcome, WorkerSource, WorkerStartResult, WorkerSubmission, fixed,
+        use behavior_actors::composition::replies::ExactReplies;
+        use behavior_actors::diagnostic::DiagnosticDisposition;
+        use behavior_actors::lifecycle::ActorDrainPolicy;
+        use behavior_actors::proxy::{
+            InitialWorkerOutcome, ProxyControl, ProxyControlAdmission, ProxyOperation,
+            ProxyOutcome, StableProxy, WorkerStartResult,
+        };
+        use behavior_actors::supervisor::roster::{
+            self, FailureReaction, FixedSupervisor, Recovery, RecoveryPolicy, Strategy,
+        };
+        use behavior_actors::worker::{
+            ImmediateStartup, OrderedRoles, PrepareWorkers, RestartLimit, RestartRelease,
+            StartupLimit, WorkerInitializationOutcome, WorkerSource, WorkerSubmission,
         };
         use behavior_actors::{Activate as _, ChildStopped, Exit};
 
@@ -4522,12 +4529,12 @@ mod capability_task_retirement {
             pub(super) requested_roles: Vec<Vec<u8>>,
         }
 
-        impl WorkerSource<WorkerRole, ReplacementWorker, ImmediateActivation> for PreparationSource {
+        impl WorkerSource<WorkerRole, ReplacementWorker, ImmediateStartup> for PreparationSource {
             type WorkerRejection = Never;
             type SourceRejection = Never;
         }
 
-        impl WorkerPreparationSource<WorkerRole, ReplacementWorker, ImmediateActivation>
+        impl WorkerPreparationSource<WorkerRole, ReplacementWorker, ImmediateStartup>
             for PreparationSource
         {
             #[expect(
@@ -4537,7 +4544,7 @@ mod capability_task_retirement {
             async fn prepare_first(
                 &mut self,
                 role: &WorkerRole,
-            ) -> WorkerPreparationStart<ReplacementWorker, ImmediateActivation, Never, Never>
+            ) -> WorkerPreparationStart<ReplacementWorker, ImmediateStartup, Never, Never>
             {
                 self.requested_roles.push(role.0.as_ref().clone());
                 let original = self
@@ -4552,29 +4559,28 @@ mod capability_task_retirement {
             async fn prepare_next(
                 &mut self,
                 role: &WorkerRole,
-            ) -> Result<WorkerSubmission<ReplacementWorker, ImmediateActivation>, Never>
-            {
+            ) -> Result<WorkerSubmission<ReplacementWorker, ImmediateStartup>, Never> {
                 self.requested_roles.push(role.0.as_ref().clone());
                 panic!("later preparation failed while borrowing the source");
             }
         }
 
         struct ProxyAdmission {
-            actor: Option<EstablishedActor<StableProxy<ReplacementWorker, ImmediateActivation>>>,
+            actor: Option<EstablishedActor<StableProxy<ReplacementWorker, ImmediateStartup>>>,
             admitted: Option<(
                 CreationId,
-                ProxyControl<ReplacementWorker, ImmediateActivation>,
+                ProxyControl<ReplacementWorker, ImmediateStartup>,
             )>,
         }
 
-        impl ProxyControlAdmission<ReplacementWorker, ImmediateActivation> for ProxyAdmission {
+        impl ProxyControlAdmission<ReplacementWorker, ImmediateStartup> for ProxyAdmission {
             fn admit_proxy_control(
                 &mut self,
                 creation: CreationId,
-                control: ProxyControl<ReplacementWorker, ImmediateActivation>,
+                control: ProxyControl<ReplacementWorker, ImmediateStartup>,
             ) -> ItemSettlement<
-                ProxyControl<ReplacementWorker, ImmediateActivation>,
-                EstablishedActor<StableProxy<ReplacementWorker, ImmediateActivation>>,
+                ProxyControl<ReplacementWorker, ImmediateStartup>,
+                EstablishedActor<StableProxy<ReplacementWorker, ImmediateStartup>>,
                 ChildInputReason,
                 Never,
             > {
@@ -4595,18 +4601,22 @@ mod capability_task_retirement {
                 <FixedSupervisor<
                     WorkerRole,
                     ReplacementWorker,
-                    ImmediateActivation,
+                    ImmediateStartup,
                     PreparationSource,
                     Infallible,
                     Infallible,
+                    ExactReplies,
+                    ExactReplies,
                 > as Behavior>::Sends,
                 <FixedSupervisor<
                     WorkerRole,
                     ReplacementWorker,
-                    ImmediateActivation,
+                    ImmediateStartup,
                     PreparationSource,
                     Infallible,
                     Infallible,
+                    ExactReplies,
+                    ExactReplies,
                 > as Behavior>::Birth,
             >,
             creations: usize,
@@ -4640,8 +4650,8 @@ mod capability_task_retirement {
             actions: &Actions<
                 PoolMailAddr,
                 Never,
-                <StableProxy<ReplacementWorker, ImmediateActivation> as Behavior>::Sends,
-                <StableProxy<ReplacementWorker, ImmediateActivation> as Behavior>::Birth,
+                <StableProxy<ReplacementWorker, ImmediateStartup> as Behavior>::Sends,
+                <StableProxy<ReplacementWorker, ImmediateStartup> as Behavior>::Birth,
             >,
             creations: usize,
             observations: &[CreationId],
@@ -4658,7 +4668,7 @@ mod capability_task_retirement {
                 .collect();
             assert_eq!(actual, observations);
             assert_eq!(actions.sends.worker_initializations.len(), initializations);
-            assert_eq!(actions.sends.worker_activations.len(), activations);
+            assert_eq!(actions.sends.worker_startups.len(), activations);
             assert!(actions.sends.worker_shutdowns.is_empty());
             assert_eq!(actions.sends.worker_deliveries.len(), 0);
             assert_eq!(actions.sends.owner_outcomes.len(), outcomes);
@@ -4673,26 +4683,30 @@ mod capability_task_retirement {
         pub(super) async fn admitted_group(
             source: PreparationSource,
             roles: OrderedRoles<WorkerRole>,
-        ) -> PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateActivation>
+        ) -> PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>
         {
-            let activation = ActivationPolicy::new(3).expect("three positive activation slots");
-            let built = fixed(
+            let activation = StartupLimit::new(3).expect("three positive activation slots");
+            let built = roster::new(
                 |role: &WorkerRole| {
                     WorkerSubmission::immediate(ReplacementWorker(Arc::new(
                         role.0.as_ref().clone(),
                     )))
                 },
                 roles,
-                activation,
-                Recovery::permanent(
-                    source,
-                    Strategy::OneForAll,
-                    RestartLimit::new(3, Duration::from_secs(60)),
-                    RestartRelease::immediate(),
-                ),
-                FailureReaction::StopSupervisor,
-                ActorDrainPolicy::WaitForActorGraph,
-                DiagnosticDisposition::<Infallible>::terminate(),
+                roster::Config {
+                    startup: activation,
+                    recovery: Recovery::permanent(
+                        source,
+                        RecoveryPolicy {
+                            strategy: Strategy::OneForAll,
+                            limit: RestartLimit::new(3, Duration::from_secs(60)),
+                            delay: RestartRelease::immediate(),
+                        },
+                    ),
+                    failure: FailureReaction::StopSupervisor,
+                    shutdown: ActorDrainPolicy::WaitForActorGraph,
+                    diagnostics: DiagnosticDisposition::<Infallible>::terminate(),
+                },
             )
             .build()
             .unwrap_or_else(|_| panic!("all original declarations prepare"));
@@ -4802,17 +4816,17 @@ mod capability_task_retirement {
                 .expect("one exact initialization observation");
             assert!(initializations.is_empty());
             let activating = proxy
-                .on(initialization.resolve(WorkerInitializationOutcome::ReadyForActivation))
+                .on(initialization.resolve(WorkerInitializationOutcome::ReadyForStartup))
                 .unwrap_or_else(|_| panic!("actual initialization correlated"));
             assert_proxy_actions(&activating, 0, &[], 0, 1, 0);
-            let mut activations = activating.sends.worker_activations.into_requests();
+            let mut activations = activating.sends.worker_startups.into_requests();
             let activation = activations.pop().expect("one activation permit");
             assert!(activations.is_empty());
             let starting = proxy
                 .on(activation.started())
                 .unwrap_or_else(|_| panic!("exact activation start"));
             assert_proxy_actions(&starting, 0, &[], 0, 0, 0);
-            let ready = activation.activate().await;
+            let ready = activation.start().await;
             let reporting = proxy
                 .on(ready)
                 .unwrap_or_else(|_| panic!("actual immediate readiness"));
@@ -5011,24 +5025,14 @@ mod capability_task_retirement {
     }
 
     enum CapabilityEvent {
-        Activation(WorkerActivation<ActivationWorker, ActivationWork>),
+        Activation(WorkerStartup<ActivationWorker, ActivationWork>),
         Preparation(
-            WorkerPreparation<
-                PreparationSource,
-                WorkerRole,
-                ReplacementWorker,
-                ImmediateActivation,
-            >,
+            WorkerPreparation<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>,
         ),
-        ActivationSource(ActionItemResult<BeginActivation<ActivationWorker, ActivationWork>>),
+        ActivationSource(ActionItemResult<StartWorker<ActivationWorker, ActivationWork>>),
         PreparationSource(
             ActionItemResult<
-                PrepareWorkers<
-                    PreparationSource,
-                    WorkerRole,
-                    ReplacementWorker,
-                    ImmediateActivation,
-                >,
+                PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>,
             >,
         ),
         Shutdown(ShutdownRequested),
@@ -5049,19 +5053,14 @@ mod capability_task_retirement {
             match event.message {}
         }
     }
-    impl InjectEvent<WorkerActivation<ActivationWorker, ActivationWork>, Here> for CapabilityEvent {
-        fn inject_at(event: WorkerActivation<ActivationWorker, ActivationWork>) -> Self {
+    impl InjectEvent<WorkerStartup<ActivationWorker, ActivationWork>, Here> for CapabilityEvent {
+        fn inject_at(event: WorkerStartup<ActivationWorker, ActivationWork>) -> Self {
             Self::Activation(event)
         }
     }
     impl
         InjectEvent<
-            WorkerPreparation<
-                PreparationSource,
-                WorkerRole,
-                ReplacementWorker,
-                ImmediateActivation,
-            >,
+            WorkerPreparation<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>,
             Inside<Here>,
         > for CapabilityEvent
     {
@@ -5070,7 +5069,7 @@ mod capability_task_retirement {
                 PreparationSource,
                 WorkerRole,
                 ReplacementWorker,
-                ImmediateActivation,
+                ImmediateStartup,
             >,
         ) -> Self {
             Self::Preparation(event)
@@ -5078,37 +5077,25 @@ mod capability_task_retirement {
     }
     impl
         EventIngress<
-            BeginActivation<ActivationWorker, ActivationWork>,
-            ActionItemResult<BeginActivation<ActivationWorker, ActivationWork>>,
+            StartWorker<ActivationWorker, ActivationWork>,
+            ActionItemResult<StartWorker<ActivationWorker, ActivationWork>>,
         > for CapabilityEvent
     {
-        fn ingress(
-            event: ActionItemResult<BeginActivation<ActivationWorker, ActivationWork>>,
-        ) -> Self {
+        fn ingress(event: ActionItemResult<StartWorker<ActivationWorker, ActivationWork>>) -> Self {
             Self::ActivationSource(event)
         }
     }
     impl
         EventIngress<
-            PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateActivation>,
+            PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>,
             ActionItemResult<
-                PrepareWorkers<
-                    PreparationSource,
-                    WorkerRole,
-                    ReplacementWorker,
-                    ImmediateActivation,
-                >,
+                PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>,
             >,
         > for CapabilityEvent
     {
         fn ingress(
             event: ActionItemResult<
-                PrepareWorkers<
-                    PreparationSource,
-                    WorkerRole,
-                    ReplacementWorker,
-                    ImmediateActivation,
-                >,
+                PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>,
             >,
         ) -> Self {
             Self::PreparationSource(event)
@@ -5124,9 +5111,9 @@ mod capability_task_retirement {
         original: Arc<Vec<u8>>,
         child: Option<CapabilityChild>,
         creation: CreationId,
-        activation: Option<BeginActivation<ActivationWorker, ActivationWork>>,
+        activation: Option<StartWorker<ActivationWorker, ActivationWork>>,
         preparation: Option<
-            PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateActivation>,
+            PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>,
         >,
         received: Vec<CapabilityEvent>,
     }
@@ -5140,14 +5127,9 @@ mod capability_task_retirement {
         type Protocol = MessageProtocol<MailAddr, Never>;
         type Event = CapabilityEvent;
         type Sends = SendLayer<
-            InterpreterRequests<BeginActivation<ActivationWorker, ActivationWork>>,
+            InterpreterRequests<StartWorker<ActivationWorker, ActivationWork>>,
             SourceActions<
-                PrepareWorkers<
-                    PreparationSource,
-                    WorkerRole,
-                    ReplacementWorker,
-                    ImmediateActivation,
-                >,
+                PrepareWorkers<PreparationSource, WorkerRole, ReplacementWorker, ImmediateStartup>,
             >,
         >;
         type Birth = RetirementBirths<
@@ -5267,8 +5249,8 @@ mod capability_task_retirement {
             .on(report)
             .unwrap_or_else(|_| panic!("genuine proxy activation issuance"));
         activation_declaration::assert_proxy_actions(&actions, 0, &[], 0, 1, 0);
-        let mut requests = actions.sends.worker_activations.into_requests();
-        let activation = requests.pop().expect("one genuine BeginActivation");
+        let mut requests = actions.sends.worker_startups.into_requests();
+        let activation = requests.pop().expect("one genuine StartWorker");
         assert_eq!(requests.len(), 0);
         let expected_worker = activation.worker();
         assert_eq!(expected_worker.creation(), activation_creation);
