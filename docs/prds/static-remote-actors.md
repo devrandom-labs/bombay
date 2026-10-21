@@ -14,20 +14,30 @@ canonical-replay and lost-wake inverses fail their intended post-cleanup oracles
 in both profiles, followed by exact source restoration and passing controls.
 This inventory is not a completion percentage for the PRD.
 
-The complete uncensored all-feature library now compiles and executes403 tests
+At the preceding61eca7a6 checkpoint, the uncensored all-feature library executes403 tests
 per profile:402 pass and one unchanged native TLS ingress test hits its10-second
 watchdog. An exact isolated debug rerun also times out; the actual stalled await
 is not yet identified. No semantic failure, flake explanation or larger watchdog
 is inferred. Existing-owner lint work reduces all-feature library/test findings
-from94 to3 in an untouched shared fixture; two compilation diagnostics remain
-in an older external remote fixture. Source audit
+from94 to3 in an untouched shared fixture; older remote consumer compilation
+failures remain in two external files. Source audit
 finds two external remote files still using retired shutdown/four-part receiving
-syntax. The next four existing-file additions need the requested254-path cap;
-that approval is pending. Production2600, verification6500 and five gross public
+syntax. The required Nix recipes also name four retired test paths; their six
+current replacement leaves pass, but the recipes need correction. The request
+is now255 paths for five existing files, superseding pending254; approval is
+pending. Production2600, verification6500 and five gross public
 types remain unchanged. General cancellation and double-fault cleanup remain
 distinct open requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
 composition and remote-counter application, repository minimization, required
 CI/review and actual delivery to main remain open.
+The whole-PRD audit keeps all25 full rows open. Three new expiry cases bring
+the current uncensored library to406 tests in both profiles:403pass/3fail,
+0filtered/0ignored. Besides the unchanged ingress watchdog, both original
+first-attempt expiry cases fail the intended post-cleanup Counter1-versus0
+oracle; the matched permitted control passes. This proves the existing
+permission check before decoder/constructor work is insufficient. Production
+remains unchanged; the constructed-original custody model and repair remain
+unselected. No whole-feature passing or delivery claim follows.
 Strict all-feature production-library Clippy and default workspace/all-target
 Clippy passed on the unchanged production source; default workspace Nextest
 passed801 tests with two skipped. These earlier gates do not erase the current
@@ -38878,3 +38888,184 @@ are comparable, but host/global-runtime execution is not proven equivalent.
 This identifies no actual changed native cause and cannot justify a Node fix,
 longer watchdog or dismissal of the current reproducible failure. Await-stage
 localization is still the next diagnostic once its file is within scope.
+
+### Whole-PRD acceptance audit at61eca7a6
+
+The previous goal turn made progress through the qualified consumer and lint
+commits. Fresh two-pass audits now compare every normative acceptance row with
+current owning source and evidence; all25 full rows remain open. This is a
+requirements audit, not an additional whole-repository minimization pass or a
+new execution claim. External reports acceptance-r01-r08-review-20261021.md
+(69bdf65f) and acceptance-r19-r25-required-gate-61eca7a6.json (e1c43263), plus
+the R09–R18 independent review, retain the detailed source findings.
+
+| Rows | Current scoped evidence | Missing full acceptance |
+| --- | --- | --- |
+| R01 | Cold typed inbound Export and advanced live Requester controls. | Ordinary outbound Actions interpretation and separate public remote-counter. |
+| R02 | Metadata/JSON validation and two nominal provider consumers. | Complete malformed/profile/proof/byte-allocation/admission matrix. |
+| R03 | Scoped runtime/target/issuer checks. | Cross-host same-address and restart/old-exact-target rejection campaign. |
+| R04 | Actual independent clients, late tails and duplicate suppression. | Each protected correlation field independently substituted and denied. |
+| R05 | Locked SDK/features and local-only builds. | Supported/unsupported wire-version and required-feature exchange matrix. |
+| R06 | Typed native admission and joined-retirement facts. | Complete outbound enqueue/admission/processing and link-loss uncertainty trace. |
+| R07 | Nominal providers and protected scope checks. | Actual ACL/application allow-deny cross-product and gateway caller provenance. |
+| R08 | Held permission loans and Full retries. | Final freshness after decoding/construction and complete controlled expiry matrix. |
+| R09 | Acquired-request counts bound active provider operations. | Measured invalid-principal pressure/recovery, cache lifetime and delegation limits. |
+| R10 | Concrete required provider callbacks and explicit fixture profiles. | Production startup refuses fake/missing required provider before declaration. |
+| R11 | Exact local joined reports and protected Stop controls. | Remote held target-owned resources, independent inability/failure facts and sibling progress. |
+| R12 | Canonical/conflict/retired-target replay and issuer isolation. | Eviction, reconnect, session retirement, restart and identifier-exhaustion cases. |
+| R13 | Native Attempt facts, original Full/Closed and cancelled-wait custody. | Ordinary outbound processing-before-reply-loss and complete transport uncertainty. |
+| R14 | Request counts, diagnostics and per-input JSON maxima. | Aggregate retained bytes including SDK/provider/unread copies; ingress currently times out. |
+| R15 | Specific mailbox FIFO fences and independent replies. | Approved remote ordering scope and whole reorder/reconnect traces. |
+| R16 | Committed startup/binding/foreign-target/second-declaration controls. | Failed initialization has zero ready exports, declaration grant and old-withdrawal replay. |
+| R17 | Exact TLS-only Network mapping and native profile inputs. | Current restored native evidence and actual supported subprocess topology startup/refusal. |
+| R18 | Acquired poll/disposal/withdrawal/close facts and scoped unwind controls. | Every-boundary fault/drop/resource matrix, independent export retirement and reconnect. |
+| R19 | Counted callback transfer primitive. | Full message-class flood/stalled-consumer traces and actual bounded callback behavior. |
+| R20 | Historical native TLS fixture campaigns. | Current production-path secure-link positive/negative Linux processes with exact attribution. |
+| R21 | Explicit configuration and scoped metadata. | Authenticated discovery/omission/recovery decisions and deployment-isolation witnesses. |
+| R22 | Scoped query settings and exact target consumers. | Overlapping responders prove at most one authorized execution before any reply filtering. |
+| R23 | Isolated research workers. | Public remote-counter in separate OS processes through the actual shipping path. |
+| R24 | Existing primitive campaigns and scoped native probes. | Independent network scheduler, exhaustive/generated/minimized replay and scheduled CI campaigns. |
+| R25 | Bounded outer diagnostics and retained original causes. | Command-scoped uncertainty after retention expiry, telemetry failure and exact support table. |
+
+AUTH1 still needs the full two-provider ID/AUTH acceptance and reviewed delivery;
+NET1 still needs compatible AUTH delivery and every selected network observable.
+The four selected combined failure campaigns, three requested repository scans,
+distillation, exact-head required CI/review and actual main delivery remain open.
+
+The required Nix remote-debug/release gates still grep four retired test paths.
+The two pending-protection names map to requests::{recorded,scheduled}_cold_
+protection_preserves_requests_and_replay; the two outbound-refusal names moved
+to protection::{recorded,scheduled}_outbound_request_protection_refuses_untrusted_
+declarations. All six current leaves actually pass both canonical profiles;
+the moved outbound helper preserves its law. This is a stale gate, not lost
+coverage. Fixing both Nix recipes requires the fifth additional existing file,
+flake.nix, and therefore255 paths rather than the pending254 request. No edit
+to those five paths is made without explicit expanded authorization.
+
+The explicit remote test lists also omit remote_surface execution. Its current
+Query fixture uses a retired Export/receive_query shape and lacks a tracked
+expected diagnostic, so neither old privacy failure nor old green scope may be
+transferred to the current graph. Establish current compiling positive and
+intended privacy denial before updating that gate; no current compiler outcome
+is invented from this read-only finding. Seven tracked Python scripts remain
+(1063 lines); five are byte-unchanged from e3 and two diagnostics scripts changed.
+Two are consumed by Nix, two by native CI (which also embeds four Python blocks),
+and the remainder by documented/manual commands. Their removal must preserve
+necessary owning evidence without translating them into another custom suite.
+No script is deleted or run in this audit.
+
+### First-attempt expiry — selected failing regression only
+
+R08 requires the final coherent permission/time check after decoding around the
+capacity-nonwaiting native attempt. Current query.rs checks before canonical
+lookup, decode, selection and prepare. A held authority loan excludes updates,
+but cannot stop elapsed time. Delivery::attempt additionally invokes the actual
+FnOnce constructor before try_send. A check merely after decoding would therefore
+leave a second arbitrary-work interval; do not select that narrower repair.
+
+Add two regression leaves, a matched permitted control and one concrete shared trace in existing
+remote/export/tests.rs, reusing query_replies, recorded::Receipt, the public
+Counter/ActorExt path, Metadata/ReadRequest and submission. A caller-owned
+Cell<Duration> starts before expiry; a closed private selector advances it
+during actual decoding, actual FnOnce construction, or after the completed
+native exchange for the permitted control. A private Expired
+cause preserves the distinct time refusal. No I/O occurs inside Behavior.
+After actual native Query completion, withdrawal, independent ordinary Read
+FIFO fence, shutdown, native/root/notification/cleanup acquisition, Session
+close and complete request extraction, Counter must still be0. Current source
+is expected to produce1 in each denial case; the permitted control requires1
+and must pass before either intended denial failure is credited. Retain actual raw/proof/nominal receipt,
+clock, decoder/constructor and complete native facts; later assertions reached
+only after the primary failure earn no baseline negative credit.
+
+The constructor case deliberately preserves constructor-entry canonical identity;
+do not assert its absence or fabricate Full/Unattempted evidence. The current
+native tuple has no owned slot for a constructed command refused before send.
+That custody/model question remains unselected until the regression proves the
+law and ordinary owning representations are compared. No production repair,
+public type, new trait, wrapper or policy is authorized by this test plan.
+
+Fresh local inspection reconfirms lockfa79c780/no patch, Behavior/Actors0.29.0
+source55dbac2d and their pure Actions/StopOnShutdown contracts, Address0.3.0
+endpoint ownership, Communication0.1.6 exact try_send Full/Closed originals,
+the in-tree Observe publication pairs and Timers0.2.0 generation ownership.
+The test uses existing Application sender/Counter FIFO and does not replace
+any primitive or add a clock service. Expected production delta0/public types0,
+one existing test path plus existing PRD/status records, at most220 authored/
+modified verification lines before formatting. All previous/copy/correction/
+unknown charges carry under6500; no headroom is certified.2600 production,
+250 paths and five gross public types remain binding. Both root and independent
+source reviews precede central pinned debug/optimized baseline execution.
+
+Before authoring the matched permitted control, the author reports retained raw
+candidate165/-1 but184 gross authored/modified lines across corrected epochs.
+Reverse comparison reconstructs every pre-existing executable byte at61eca7a6;
+only submission/thiserror imports and appended regression code differ. The
+transient misplaced binding was restored and its correction remains charged.
+The control and meaningful admission codec may keep retained raw source below
+220, but total authored/modified work will exceed the original220 forecast.
+Record that drift before continuing: revised stage forecast at most275 gross
+authored/modified lines before formatting, with every earlier/corrected/copy/
+tool/unknown cost carried under6500. No new path, production or public surface
+is selected; no remaining verification headroom is certified.
+
+The author freezes raw208/-1 after247 gross authored/modified lines across all
+corrected epochs, copied0. Central pinned formatting passes; formatted test
+delta261/-1 has SHA f7167d7c. Existing executable bodies reverse byte-exact
+to61eca7a6 after removing only the appended trace and two module imports.
+Independent two-pass source review589b4781 accepts regression-first execution,
+not an implementation or complete R08 witness. Query3cc64948 and declaration
+49e4a42 remain byte-exact production; no permission/custody repair is mounted.
+
+Actual matched debug control exits0,1passed/405filtered,.02s in
+/tmp/bombay-expiry-control-debug.log. It acquires the actual admitted native
+result, admission-derived JSON and protected wire reply, then advances time.
+Both original-source expiry regressions then exit101,0passed/2failed,
+404filtered,.01s in /tmp/bombay-expiry-original-debug.log. Each fails only the
+primary independent FIFO Counter assertion at1162: actual User(root,1) versus
+required User(root,0), after native query/withdrawal/Application/root/report/
+notification/Session cleanup and complete original extraction. Later time,
+constructor and refusal assertions are unreached and receive no
+negative credit. These are original-source failures, not artificial source cuts
+or watchdog kills. Optimized control/original execution remains pending.
+
+Existing owning-type inspection finds no current cold product with a slot for
+the exact constructed Target::Msg refused before any native call. Bare owned
+messages and EstablishedDelivery can retain it structurally; their construction
+does not establish admission or permission refusal. Existing EstablishedDelivery
+ActionItem settlement fixes its native rejection law; do not relabel permission
+expiry as ClosedRecipient or generic interpreter corruption. TrySendError Full/
+Closed require a real mailbox result. Uncertain requires actual call entry;
+Unattempted alone owns no message. Raw/decoded reconstruction cannot recover the
+consumed FnOnce result, and reply slots hold another protocol's messages. The
+required distinction is unused constructor, constructed original before send,
+and actual native attempt/result. No new representation, API or wrapper is
+selected by this inspection; ordinary owned sums/products must be compared
+after both-profile baseline qualification, before any production edit.
+
+The optimized matched control exits0,1passed/405filtered,.01s in
+/tmp/bombay-expiry-control-release.log. Both original expiry cases exit101,
+0passed/2failed/404filtered,.00s in
+/tmp/bombay-expiry-original-release.log, only the same Counter1-versus0
+assertion at1162 after complete cleanup. Independent combined review99ca1b05
+accepts these exact original defects and valid controls, with the secondary
+denial oracles still unreached. All source hashes remain f716/3cc/49e.
+
+Fresh uncensored /tmp/bombay-expiry-canonical-{debug,release}.log each exit101:
+406cases,403pass/3fail/0filtered/0ignored,11.40/10.61s. The three failures are
+the two original expiry regressions and the unchanged ingress watchdog.
+All403 previous case names and outcomes match the preceding lint checkpoint;
+the new permitted control passes. Actual strict Clippy in
+/tmp/bombay-expiry-clippy.log exits101 with only the same three shared-fixture
+library findings and four diagnostics in the older external network target
+(two retired shutdown calls and two four-part projections). Cargo reached a
+different external target first than the prior two-diagnostic completed-family
+run; no additional source was edited and neither failure set is erased.
+The new trace reports no additional lint finding. Formatting passes.
+
+Complete current e3 census, including zero untracked files: conservative source
++3771/-1225/net2546, tests/fixtures+11089/-7372/net3717,250paths and unchanged
+remote public+5gross/-2. This test/audit stage adds no production/public type;
+test delta261/-1/net260 remains separate from authored/modified/copy/format costs.
+This is an intentionally failing regression checkpoint, not a fix, distillation,
+full R08 acceptance, required CI, PR or main delivery.

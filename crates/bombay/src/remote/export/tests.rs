@@ -1,4 +1,4 @@
-use super::declaration::{Commands, Delivery, Reception, reply};
+use super::declaration::{Commands, Delivery, Reception, reply, submission};
 use super::query::Exports;
 use super::{Attempt, Export, ExportLimits, RequestKey};
 use crate::actors::ActorExt;
@@ -20,6 +20,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, mpsc};
 use std::task::Wake;
 use std::time::{Duration, Instant};
+use thiserror::Error;
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
@@ -956,5 +957,264 @@ struct ReplyWake(AtomicUsize);
 impl Wake for ReplyWake {
     fn wake(self: Arc<Self>) {
         self.0.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+#[derive(Clone, Copy)]
+enum Expiry {
+    Decode,
+    Construction,
+    AfterAttempt,
+}
+
+#[derive(Debug, Error)]
+#[error("permission expired")]
+struct Expired;
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn decoding_expiry_prevents_the_first_native_attempt() {
+    timeout(
+        Duration::from_secs(40),
+        first_attempt_expiry(Expiry::Decode),
+    )
+    .await
+    .expect("the actual expiry, native query and cleanup trace finishes");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn construction_expiry_prevents_the_first_native_attempt() {
+    timeout(
+        Duration::from_secs(40),
+        first_attempt_expiry(Expiry::Construction),
+    )
+    .await
+    .expect("the actual expiry, native query and cleanup trace finishes");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn later_expiry_preserves_the_admitted_increment() {
+    timeout(
+        Duration::from_secs(40),
+        first_attempt_expiry(Expiry::AfterAttempt),
+    )
+    .await
+    .expect("the permitted native query and complete cleanup finish before the watchdog");
+}
+
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    reason = "one concrete expiry trace retains original provider, decoded input, native facts and all cleanup before independent admission oracles"
+)]
+async fn first_attempt_expiry(expiry: Expiry) {
+    let clock = Cell::new(Duration::ZERO);
+    let deadline = Duration::from_secs(1);
+    let decoded_count = Cell::new(0);
+    let constructed = Cell::new(0);
+    let before = RefCell::new(Vec::new());
+    let session = zenoh::open(
+        configuration("tls/localhost:0", &EndpointRole::Receiver)
+            .to_configuration()
+            .unwrap(),
+    )
+    .await
+    .expect("the actual private native Session opens");
+    let outcome = Application::new(Counter::new().stop_on_shutdown())
+        .run_with(|application| {
+            let clock = &clock;
+            let decoded_count = &decoded_count;
+            let constructed = &constructed;
+            let before = &before;
+            let session = &session;
+            async move {
+                let target = application.root().established_recipient();
+                let address = application.actor_address(&target).unwrap();
+                let runtime = session.zid().to_string();
+                let mut claims = metadata(ProviderProfile::Recorded, "counter", runtime.clone(), runtime);
+                claims.actor_generation = address.0;
+                let binding = Binding {
+                    deployment: "two-node-read-study", caller: "caller", controller: "owner",
+                    actor: "counter", host: "receiver", protocol: "counter",
+                    target_assignment: "first-attempt-expiry", logical_session: 401,
+                };
+                let records = [ProtectedMessage {
+                    protected: serde_json::to_vec(&ReadRequestRef {
+                        bombay: &claims, kind: Purpose::Request, operation: Command::Increment,
+                    }).unwrap().into_boxed_slice(),
+                    proof: Box::from([7_u8, 11]),
+                }];
+                let maximum = NonZeroUsize::new(1).unwrap();
+                let current = |_: &recorded::Receipt<Command>, _: &str, _: MailAddr| {
+                    if clock.get() >= deadline { Err(Expired) } else { Ok(()) }
+                };
+                let mut export = Export::new(
+                    "bombay/expiry/first", ExportLimits {
+                        queued_queries: maximum, retained_queries: maximum,
+                        retained_requests: maximum, diagnostics: maximum,
+                    }, limits(),
+                    |bytes: &[u8]| {
+                        decoded_count.set(decoded_count.get() + 1);
+                        let input = serde_json::from_slice::<ReadRequest<Command>>(bytes);
+                        if let Expiry::Decode = expiry { clock.set(deadline); }
+                        input
+                    },
+                    submission(
+                        |request: ReadRequest<Command>| match request.operation {
+                            Command::Increment => Ok(move || {
+                                constructed.set(constructed.get() + 1);
+                                if let Expiry::Construction = expiry { clock.set(deadline); }
+                                CounterMessage::Increment
+                            }),
+                            Command::Read => Err(request),
+                        },
+                        |_: &recorded::Receipt<Command>, admission: &Attempt<Result<(), TrySendError<CounterMessage>>>| {
+                            let admission = match admission {
+                                Attempt::Unattempted => "unattempted", Attempt::Uncertain => "uncertain",
+                                Attempt::Returned(Ok(())) => "admitted",
+                                Attempt::Returned(Err(TrySendError::Full(_))) => "full",
+                                Attempt::Returned(Err(TrySendError::Closed(_))) => "closed",
+                            };
+                            serde_json::to_vec(admission).map(Vec::into_boxed_slice)
+                        },
+                    ),
+                    async |bytes: &[u8], proof: &[u8]| {
+                        let original = ProtectedMessage { protected: bytes.into(), proof: proof.into() };
+                        let result = recorded::verify::<Command>(&original, &records, binding).await;
+                        if let Ok(receipt) = &result {
+                            before.borrow_mut().push(request_originals(bytes, proof, receipt));
+                        }
+                        result
+                    },
+                    async |_: &[u8], _: &recorded::Receipt<Command>| Ok::<_, Never>(Box::<[u8]>::from([13_u8, 17])),
+                    |left, right| recorded::identity(left) == recorded::identity(right),
+                    &current, &current,
+                );
+                let replies = query_replies(&mut export, &application, session,
+                    "bombay/expiry/first", &[&records[0]]).await;
+                if let Expiry::AfterAttempt = expiry { clock.set(deadline); }
+                let mut ordinary = application.client::<CounterValue>().unwrap();
+                let admitted = ordinary.send(CounterMessage::Read(ordinary.recipient())).await;
+                let fence = if admitted.is_ok() { ordinary.receive().await } else { None };
+                let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+                let requests = requests.into_iter().map(|request| request.try_into_parts()
+                    .unwrap_or_else(|_| panic!("withdrawal releases each original producer loan")))
+                    .collect::<Vec<_>>();
+                let shutdown = application.shutdown();
+                (replies, admitted, fence, ordinary, startup, withdrawal, diagnostics, requests, shutdown)
+            }
+        }).await.unwrap_or_else(|_| panic!("the actual Counter Application starts"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let (
+        (
+            replies,
+            admitted,
+            fence,
+            mut ordinary,
+            startup,
+            withdrawal,
+            diagnostics,
+            requests,
+            shutdown,
+        ),
+        cleanup,
+    ) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("original Work and cleanup remain acquired"));
+    let closed = session.close().await;
+    ordinary.close_admission();
+    let mut ordinary_tail = Vec::new();
+    while let Some(original) = ordinary.receive().await {
+        ordinary_tail.push(original);
+    }
+    let (origin, root) = native.expect("the complete original Counter retirement remains");
+    let address = origin.address();
+    let report = report.expect("the independent root report remains");
+    let notifications = notifications.expect("both original notification receipts remain");
+    let [request] =
+        <[_; 1]>::try_from(requests).unwrap_or_else(|_| panic!("one actual retained request"));
+    let (key, raw, receipt, decoded, native, encoding, protection, publications, refusals, panics) =
+        request;
+    let receipt = receipt
+        .expect("the provider result remains")
+        .unwrap_or_else(|_| panic!("the real nominal provider accepts"));
+    let after = request_originals(&raw.0, &raw.1, &receipt);
+    let expected_originals = [after];
+    let before = before.into_inner();
+    cleanup.expect("the actual Application cleanup joins");
+    closed.expect("the original native Session close succeeds");
+    notifications
+        .termination
+        .expect("actual termination notification");
+    notifications
+        .retirement
+        .expect("actual retirement notification");
+    let _counter = completed_actor(origin, root);
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    // Retain every native/decoded result without guessing the selected repair's custody shape.
+    let originals = (key, decoded, native);
+    assert!(admitted.is_ok() && shutdown.is_ok());
+    let fence = fence.expect("the independent FIFO Read completes");
+    let expected = match expiry {
+        Expiry::Decode | Expiry::Construction => 0,
+        Expiry::AfterAttempt => 1,
+    };
+    assert_eq!(
+        (fence.from, fence.message),
+        (address, expected),
+        "only permission current through the first native attempt may admit Increment"
+    );
+    assert_eq!(clock.get(), deadline);
+    assert_eq!(decoded_count.get(), 1);
+    match expiry {
+        Expiry::Decode => assert!(constructed.get() <= 1),
+        Expiry::Construction | Expiry::AfterAttempt => assert_eq!(constructed.get(), 1),
+    }
+    assert_eq!(before.as_slice(), expected_originals);
+    assert!(matches!(panics, (None, None, None, None, None, None)));
+    assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+    assert_eq!(diagnostics.len(), 0);
+    assert_eq!(replies.len(), 1);
+    assert_eq!(ordinary_tail.as_slice(), []);
+    match expiry {
+        Expiry::Decode | Expiry::Construction => {
+            assert!(matches!(&refusals.0, Some(Expired)));
+            assert!(refusals.1.is_none() && refusals.2.is_none());
+            assert!(encoding.is_none() && protection.is_none());
+            assert_eq!(publications.len(), 0);
+            assert_eq!(replies[0].len(), 0);
+            drop(originals);
+        }
+        Expiry::AfterAttempt => {
+            let (key, decoded, native) = originals;
+            let (constructor, sender, admission) =
+                native.expect("the admitted original native operation remains");
+            let encoded = encoding.expect("the native admission is encoded").unwrap();
+            let proof = protection
+                .expect("the actual encoding is protected")
+                .unwrap();
+            let expected = serde_json::to_vec("admitted").unwrap();
+            assert!(key.is_some() && decoded.is_none() && constructor.is_none());
+            assert!(matches!(sender, Attempt::Returned(Ok(_))));
+            assert!(matches!(admission, Attempt::Returned(Ok(()))));
+            assert!(refusals.0.is_none() && refusals.1.is_none() && refusals.2.is_none());
+            assert_eq!(encoded.as_ref(), expected.as_slice());
+            assert_eq!(proof.as_ref(), [13, 17]);
+            assert_eq!(publications.len(), 1);
+            assert!(publications.iter().all(Result::is_ok));
+            assert_eq!(replies[0].len(), 1);
+            let result = replies[0][0].result();
+            let sample = result
+                .as_ref()
+                .expect("the original admission reply succeeds");
+            let payload = sample.payload().to_bytes();
+            let attachment = sample
+                .attachment()
+                .expect("the protected reply retains proof")
+                .to_bytes();
+            assert_eq!(sample.key_expr().as_str(), "bombay/expiry/first");
+            assert_eq!(payload.as_ref(), encoded.as_ref());
+            assert_eq!(attachment.as_ref(), proof.as_ref());
+        }
     }
 }

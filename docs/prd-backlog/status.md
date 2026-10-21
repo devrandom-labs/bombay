@@ -923,3 +923,24 @@ Library-test lint findings fall94to3 in the untouched shared protocol fixture;
 the same older external compile diagnostics remain. All250 paths and carried
 budgets remain fixed while the separate254-path question is pending. Full remote
 acceptance and reviewed main delivery remain open.
+
+The fresh whole-PRD audit keeps every R01–R25/AUTH1/NET1 acceptance gate open.
+Required Nix remote recipes still grep four retired test identities; their
+current six leaves pass, so this is stale gate wiring rather than lost coverage.
+Including flake.nix revises the pending scope question to255 paths for five
+existing files; no expansion is approved. The remote privacy harness also needs
+current diagnostic/execution qualification, and seven Python scripts remain
+to reconcile with standing repository rules. First-attempt expiry during actual
+decode and constructor work is selected for two existing-owner failing
+regressions only; no production model or repair is selected yet. All caps and
+earlier costs carry.
+
+The new matched expiry control passes in both profiles. Both first-attempt
+expiry cases (actual decode and FnOnce construction) fail only their intended
+Counter1-versus0 oracle after complete cleanup. Unchanged production therefore
+has a confirmed freshness defect. Full current library execution is406 cases:
+403pass/3fail in each profile, comprising those two defects and the unchanged
+ingress watchdog. The constructed-original custody model and repair remain
+unselected; this regression checkpoint closes no full acceptance gate. Strict
+lint still reports3shared-fixture findings plus legacy external compilation
+errors. The revised255-path question remains pending; all existing caps carry.
