@@ -30,10 +30,6 @@ pub enum ExportError {
     UnownedTarget,
     /// Association passed, but the existing native reply endpoint was refused.
     Endpoint { cause: ExternalActorError },
-    /// This Application was not invoked by a Node.
-    NodeAbsent,
-    /// This Node's native Session is already closed.
-    SessionClosed,
     /// A supplied query count exceeds the native channel/semaphore range.
     QueryCapacity,
     /// Request storage could not be reserved before declaration.
@@ -67,8 +63,6 @@ impl fmt::Display for ExportError {
             Self::Endpoint { cause } => {
                 write!(formatter, "export reply endpoint was refused: {cause}")
             }
-            Self::NodeAbsent => formatter.write_str("Application has no Node session"),
-            Self::SessionClosed => formatter.write_str("Node session is closed"),
             Self::QueryCapacity => formatter.write_str("query count exceeds native capacity"),
             Self::Storage { cause } => write!(formatter, "request storage was refused: {cause}"),
             Self::Declaration { .. } => formatter.write_str("network declaration was refused"),
@@ -97,8 +91,6 @@ impl Error for ExportError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::UnownedTarget
-            | Self::NodeAbsent
-            | Self::SessionClosed
             | Self::QueryCapacity
             | Self::Conflict
             | Self::RetentionCapacity

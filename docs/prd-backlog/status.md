@@ -28,6 +28,11 @@ absence. Both original-code replays reject only their intended final extraction;
 the final restored library passes412/412 debug/optimized plus strict lint/fmt.
 No remote acceptance
 row closes from this scoped result. Full Nix continues on the preceding source.
+Separate minimization removes the two unproduced ExportError variants;
+live NodeExecutionRefusal::SessionClosed still retains original Work. Existing
+native-refusal, closed-Node and privacy controls pass both profiles, plus strict
+lint/docs/fmt. Production is now2615; two public enum variants are removed,
+with no new type, test or path. This is not full remote acceptance or delivery.
 The user explicitly approved2700 conservative production lines
 from the same e3 baseline and255 changed paths on2026-10-21. Before this repair,
 production totals2606; its body and documentation currently add17net.

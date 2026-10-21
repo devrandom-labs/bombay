@@ -11,11 +11,15 @@ remain open. The twenty-five full acceptance rows are not closed by prerequisite
 The current binding-result repair preserves both Ready Err with supplied Work
 and Ready Ok with genuine Work absence before producer disposal. Original-code
 replays fail only at the intended final extraction in both profiles, after
-independent cleanup. The final complete library passes412/412 debug and
+independent cleanup. The binding checkpoint's complete library passes412/412 debug and
 optimized,4.79/6.94s; strict workspace/all-feature/all-target lint and formatting
 pass. Full Nix is
 running against preceding commitaedc2897; it cannot qualify this new repair.
-Current production2623 remains within2700, with260 charged paths/five gross
+The separate8-line obsolete Export refusal retirement passes focused native
+constructor, live closed-Node Work and privacy controls in both profiles, plus
+strict workspace lint, docs and formatting. No test or public type is added;
+two public enum variants are removed. Current production2615 remains within2700,
+with260 charged paths/five gross
 public types/12000 total verification lines carrying every earlier cost.
 Main531ded50 was fetched again and is already integrated. No current delivery
 or full-feature completion is inferred. Dated records below retain their exact
@@ -40727,3 +40731,49 @@ three independent reviews and complete census are retained in the40-member
 archive /Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/binding-result-qualified-20261022.tar.gz
 SHA2561f66a4799ed56b950f3c0f4d847688fb70aabc02ce693f8076743af0a4a96db7.
 Git owns unchanged inputs; this is not a frozen transitive compiler closure.
+
+### Separate minimization — obsolete Export refusal variants
+
+After qualified binding checkpoint e06546f8, retire ExportError::NodeAbsent and
+ExportError::SessionClosed. Fresh full tracked reference search finds only their
+definitions, Display arms and source(None) alternatives; neither has a runtime
+producer or current consumer after the cold migration. Preserve the distinct,
+live NodeExecutionRefusal::SessionClosed{work}, its precedence and original Work.
+The selected lock/owners remain unchanged; no dependency or semantic owner moves.
+
+Before production editing: export/mod.rs loses exactly8 production lines;
+existing public-api-audit, this PRD and backlog status reconcile the retirement.
+All four paths are already charged. Tests0new, public types0added/removed, but
+two public enum variants are removed. Manual external construction/matches of
+those retired variants are source-incompatible; no compatibility spelling is
+retained. Keep native capacity/Storage/Declaration causes and SDK redaction.
+Reuse existing constructor-refusal, real closed-Node original-Work, privacy,
+strict lint, docs and formatting controls in both applicable profiles. An
+unproduced-variant deletion requires no fabricated regression or new machinery.
+Forecast whole production2615 after deletion, under2700;260paths/five gross
+types/12000verification and all earlier costs carry without refund.
+
+Actual retirement source3d0d6cd2 removes exactly8 lines and changes no live
+cause-bearing arm. Debug/optimized constructor controls each pass1/0 with
+411filtered,0.03/0.01s; real closed/already-issued Node original-Work controls
+each pass1/0 with4filtered,0.04/0.01s. Privacy outer tests each pass1/0 with both
+Config/Query intended compiler denials (inner compiler uses dev in both outer
+profiles). Strict workspace/all-feature/all-target Clippy, remote rustdoc and
+formatting pass. Actual logs/exits: /tmp/bombay-legacy-{refusals,node,privacy}-{debug,release}
+and /tmp/bombay-legacy-final-{clippy,doc,fmt}. No zero-selection credit.
+
+Independent source/cause/caller review and full census pass. Complete retained
+production3840/-1225/net2615; tests13107/-8517/net4590; public types5gross/-2
+unchanged, public enum variants2removed;259visible/260charged/untracked0.
+The earlier412-test binding checkpoint retains its exact source scope; this
+deletion reuses the focused live refusal/privacy controls and full strict check.
+No new test, framework, public type or path is authored. All earlier and current
+copy/tool/verification costs remain charged; no refund or certified headroom.
+Full PRD, preceding-source Nix, CI/review and main delivery remain open.
+
+Actual raw receipts, e06546f8-relative eight-line patch, independent source/
+outcome review9c338a2e and complete census58a53c65 are retained in
+/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/export-variant-retirement-qualified-20261022.tar.gz
+SHA256b6741318bd44b4217f76b5a6fd6c966b23eaf88076df3db54d70e846695ac639.
+Review/census metadata snapshots precede the final record additions; source and
+actual command hashes are unchanged. Git owns the remaining inputs.
