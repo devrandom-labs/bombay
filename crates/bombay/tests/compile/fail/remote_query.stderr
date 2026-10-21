@@ -1,0 +1,5 @@
+error[E0616]: field `active` of struct `Export` is private
+ --> tests/compile/fail/remote_query.rs:4:26
+  |
+4 |     let _query = &export.active;
+  |                          ^^^^^^ private field

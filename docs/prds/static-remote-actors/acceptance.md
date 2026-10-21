@@ -1,6 +1,12 @@
 # Static remote actor acceptance
 
-Current-main reconciliation (2026-10-16): mainf25e4a0c includes PR375 and
+The dated prerequisite checkpoints below are historical evidence at their
+stated revisions. The [current feature status](../static-remote-actors.md#current-status-2026-10-21-utc)
+owns current dependency, implementation and verification facts. All full
+acceptance rows remain open; historical failures and passing runs keep their
+original source scope.
+
+Main reconciliation (2026-10-16, historical): mainf25e4a0c includes PR375 and
 the reviewed, CI-passing PR382 test-only compatibility repair. It selects
 Behavior/Actors0.26.0 and complete Application/Work outcomes. The earlier
 connection-entry prototype is retired from current source. Its distinct

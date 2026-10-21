@@ -16,6 +16,10 @@ registrations are removed. Canonical39+5 pass both profiles without exclusions;
 the redundant temporary harness is removed after all21 shared control names
 match both passing canonical inventories. All-feature/all-target strict Clippy
 and formatting now pass. Required Nix/CI/review and main delivery remain open.
+The corrected native-ingress privacy denial has positive/counterexample/exact-
+restoration evidence and local strict checks; both required remote profiles now
+select that target. This scoped Config/Query denial is not full privacy or Nix
+acceptance. The explicit path grant is now260; other budgets remain unchanged.
 The user explicitly approved2700 conservative production lines
 from the same e3 baseline and255 changed paths on2026-10-21. Formatted production
 totals2606. Journal reconciliation proves the earlier6500 verification

@@ -47,6 +47,11 @@ Canonical all-feature all-target strict Clippy now passes. Nix and CI remain
 open. The temporary duplicate
 harness is removed after its21 exact control names pass through canonical
 ApplicationClients in both profiles.
+The corrected private-ingress compile denial and its one-field visibility
+counterexample now qualify locally, with exact restoration and both final
+positive outer profiles. Both required remote profile commands include that
+privacy target. Full public-surface acceptance and actual Nix execution remain
+open; native Config and direct Query-ingress denial are specific scoped laws.
 
 The user explicitly approved both pending scope requests on2026-10-21:
 2700 conservative production lines from the same e3daad58 baseline and255
@@ -38938,13 +38943,13 @@ the R09–R18 independent review, retain the detailed source findings.
 | R05 | Locked SDK/features and local-only builds. | Supported/unsupported wire-version and required-feature exchange matrix. |
 | R06 | Typed native admission and joined-retirement facts. | Complete outbound enqueue/admission/processing and link-loss uncertainty trace. |
 | R07 | Nominal providers and protected scope checks. | Actual ACL/application allow-deny cross-product and gateway caller provenance. |
-| R08 | Held permission loans and Full retries. | Final freshness after decoding/construction and complete controlled expiry matrix. |
+| R08 | Held permission loans, first-attempt freshness regressions and Full retries. | Complete two-provider controlled expiry/revocation matrix. |
 | R09 | Acquired-request counts bound active provider operations. | Measured invalid-principal pressure/recovery, cache lifetime and delegation limits. |
 | R10 | Concrete required provider callbacks and explicit fixture profiles. | Production startup refuses fake/missing required provider before declaration. |
 | R11 | Exact local joined reports and protected Stop controls. | Remote held target-owned resources, independent inability/failure facts and sibling progress. |
 | R12 | Canonical/conflict/retired-target replay and issuer isolation. | Eviction, reconnect, session retirement, restart and identifier-exhaustion cases. |
 | R13 | Native Attempt facts, original Full/Closed and cancelled-wait custody. | Ordinary outbound processing-before-reply-loss and complete transport uncertainty. |
-| R14 | Request counts, diagnostics and per-input JSON maxima. | Aggregate retained bytes including SDK/provider/unread copies; ingress currently times out. |
+| R14 | Request counts, diagnostics, per-input JSON maxima and actual ingress EOF/disconnection controls. | Aggregate retained bytes including SDK/provider/unread copies. |
 | R15 | Specific mailbox FIFO fences and independent replies. | Approved remote ordering scope and whole reorder/reconnect traces. |
 | R16 | Committed startup/binding/foreign-target/second-declaration controls. | Failed initialization has zero ready exports, declaration grant and old-withdrawal replay. |
 | R17 | Exact TLS-only Network mapping and native profile inputs. | Current restored native evidence and actual supported subprocess topology startup/refusal. |
@@ -40492,3 +40497,65 @@ modified verification lines plus measured formatting/generated diagnostics;
 production2606/2700, five gross public types and12000 verification unchanged.
 All earlier costs and historical touched paths carry. Source-only review is
 not a compiler result, full SDK-privacy sweep or acceptance-row completion.
+
+Explicit Approve260paths now grants that exact three-path expansion. Both
+required remote profiles pass484/484 across eleven targets; documentation
+build passes, receipts0. The existing privacy target returns101 because the
+old Query fixture produces missing-diagnostic WIP for removed receive_query
+(E0599), while the concrete native Config denial passes. This is snapshot/
+fixture failure, not a newly demonstrated Query escape. Keep that actual
+epoch separate. Apply the reviewed current-generic private active-field
+fixture and historical umbrella; acquire its real E0616 diagnostic before
+retaining the expected output. Existing public39+5 and full484 controls are
+independent positives. Forecast20–40 verification lines plus measured outputs
+remains carried; production/public types0, charged paths260. No approval is
+pending for this bounded repair.
+
+The new Query diagnostic is actual E0616 at4:26, byte-exact retained output;
+both Config and Query compile-fail cases now pass in each outer debug/release
+privacy invocation (0.63/0.72s). Trybuild uses its dev compiler in both outer
+profiles. Independent source/outcome reviews pass. Select one finite owning
+static counterexample: make ONLY Export.active public, preserving its type and
+all fixture text. Query must then compile unexpectedly while Config remains
+denied. Restore exact HEAD Export-modb0d8452f before final privacy controls.
+Temporary production line replacement1/1, retained production/public types0;
+no runtime or optimized semantic-inversion credit is claimed from this probe.
+
+### Privacy gate — final local qualification
+
+Both actual visibility-counterexample invocations return101 only because Query
+unexpectedly compiles; native Config still receives its intended denial.
+Root executed one controlled active-to-pub-active hunk. A peer contemporaneously
+observed mutant SHA256
+e31f3af16ea8b65509051fe15bd08b0d4ac16559835649efbeaf6d0ac7e158d9;
+no mutant bytes or exact independent diff were saved. The session mutation
+transcript, actual logs and that bounded observation support this controlled
+counterexample, not standalone compiler/source reconstruction. Export mod is
+exactly restored to b0d8452f; final privacy invocations both pass1/0, with both
+Config and Query cases checked (debug5.41s/outer optimized1.85s). Trybuild uses
+the dev compiler in both outer profiles. Final all-feature/all-target strict
+Clippy and formatting pass, receipts0. No inverse or source exclusion remains.
+
+Independent source/outcome and provenance reviews are retained as
+private-ingress-outcomes-independent-20261022.md and
+private-ingress-review-addendum-20261022.md under the session records.
+The only flake changes add remote_surface to both required remote profile
+commands; all twelve exact success guards remain unchanged. Earlier complete
+eleven-target commands pass484/484 in each profile, and docs pass. The stronger
+combined Nix gate still needs actual execution. No CI/main or full privacy
+clearance is inferred.
+
+Complete retained census is production3831/-1225/net2606,
+tests12791/-8513/net4278, remote named public types5gross/-2,
+259visible/260charged paths, untracked0 after staging the new diagnostic.
+This stage changes test source by7/-11/net-4, metadata separately; no production
+or public type is retained. All proposal, capture, copied, generated, mutation,
+restoration, formatting and tool costs carry under12000 from the same grant;
+net deletion provides no verification or path refund and no certified headroom.
+
+Raw actuals, proposals, corrected checkpoint and bounded independent reviews:
+/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/private-ingress-gate-qualified-20261021.tar.gz
+SHA256 e5f001adf12cdd8ac36bf75759f61ccd607ae4ab7439628647d3eaca0e87ddd2.
+Retained Git owns current source; no frozen mutant/transitive closure is claimed.
+The first audit's stale R08/R14 summary cells are also reconciled with scoped
+freshness and actual ingress results; neither full acceptance row closes.
