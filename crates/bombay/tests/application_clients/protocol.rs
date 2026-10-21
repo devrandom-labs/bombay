@@ -7,7 +7,6 @@ use bombay::{
     ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport, RetirementAssessment,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use std::env;
 use std::future::{Ready, ready};
 use std::net::TcpListener;
 use std::num::NonZeroUsize;
@@ -59,20 +58,6 @@ impl ProviderProfile {
         }
     }
 }
-#[derive(Clone, Copy)]
-// Observation selector only: Resend requires an actual production retention mutant.
-pub(super) enum ReadRetention {
-    ReuseFirst,
-    Resend,
-}
-pub(super) fn read_retention() -> ReadRetention {
-    match env::var("BOMBAY_NODE_READ_REPLAY").as_deref() {
-        Err(env::VarError::NotPresent) | Ok("reuse-first") => ReadRetention::ReuseFirst,
-        Ok("resend") => ReadRetention::Resend,
-        original => panic!("unsupported explicit test comparison: {original:?}"),
-    }
-}
-
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct ReadRequest<Operation> {
@@ -124,6 +109,10 @@ pub(super) struct Binding {
 #[derive(Debug)]
 pub(super) enum VerificationError {
     Invalid,
+    #[expect(
+        dead_code,
+        reason = "the shared provider preserves its original JSON cause even when a nominal test cohort does not inspect malformed input"
+    )]
     Declaration(serde_json::Error),
     Unavailable(oneshot::error::RecvError),
 }

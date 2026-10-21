@@ -39846,3 +39846,52 @@ those integration targets are NOT exercised by --lib. No production changes
 occurred. The ingress/Nix gate stage itself is test3/-1 plus Nix8/-8, public0.
 All corrected, rejected, copied, format, tool and unresolved costs remain charged
 under12000; no refund/reset or certified remaining headroom is claimed.
+
+### Receiving controls and construction review — bounded checkpoint
+
+Pinned receiving commands use exactly --test network and
+--test completed_application_receiving with --all-features --offline --locked.
+Debug and --release each exit0:39 receiving cases plus4 network cases,
+0fail/0filtered; debug0.06/0.03s, optimized0.02/0.01s. Strict Clippy on those same
+two targets with -- -D warnings exits0 in4.00s. Receipts are
+/tmp/bombay-receiving-consumers-{debug,release,clippy}.{log,exit}.
+These targets preserve the real live family after root retirement, complete
+family/native shutdown, exact allocations and caller-local Work, independent
+retained/report assessments and both notifications. No new runtime law or
+inverse credit is claimed for adapting an existing public receiving product.
+The shared unused selector is removed; the concrete JSON error remains.
+Three-file formatted cohort is53added/-68/net-15, production/public types0.
+
+Independent construction review found a second finite-test gap: equal reports
+could share a wrong assessment. Restore separate Established and
+NoFailuresFound assertions in all four cases after cleanup, alongside equality.
+Source2b36f4b is553lines; this correction adds9 lines (import plus8 assertions).
+The earlier self-pass is superseded on this point; all correction costs carry.
+Source6ee5's bounded complete bytes/proof registration is otherwise lawful.
+Neither candidate has exercised decoding or protection: these are construction
+and retirement controls, not authentication or wire-exchange acceptance.
+
+For first focused construction compilation, root may temporarily omit only the
+refusals and pressure module declarations in network_replay.rs, leaving their
+files and immutable originals untouched. Restore the exact parent after each
+focused epoch. Those retired-surface modules still prevent canonical external
+compilation; a four-case scoped pass must not be described as the complete
+application_clients target or CI. Apply pinned rustfmt only to frozen
+construction.rs while private pressure authoring continues; no whole-tree
+format or library-test compilation during active private source writes.
+
+Both independent receiving reviews pass on networkbbae748a,
+completed receiving72d46180 and protocol9ed5cf95. Sorted actual test inventories
+match across profiles; no lint findings. Both passes check independent outcomes,
+missing/vacuous cases and unchanged allocation/family/native observations.
+This qualifies the two receiving migrations only, not the seven old Export
+requirements, whole remote lint, CI or full PRD acceptance. Earlier111 raw and
+121 formatted line operations both remain charged where authored/modified.
+
+Focused public construction debug on the corrected and pinned-formatted source
+passes4/0,35filtered in0.02s (build10.38s), exit0 at
+/tmp/bombay-construction-cold-debug.{log,exit}. The temporary parent omits only
+refusals/pressure; the exact canonical parent is restored afterward. Existing
+24 external-test warnings remain and no strict target lint is claimed. This
+executes four construction/retirement controls, not provider/wire laws. Optimized
+and canonical whole-target qualification remain open.

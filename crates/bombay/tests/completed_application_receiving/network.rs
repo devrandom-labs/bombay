@@ -104,7 +104,7 @@ async fn node_keeps_live_family_receiving_and_caller_local_work() {
                     Ok(()) => observer.receive().await,
                     Err(_) => None,
                 };
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 let root_report = application.lifecycle().retirement().await;
                 let admitted_again = observer
                     .send(
@@ -137,7 +137,8 @@ async fn node_keeps_live_family_receiving_and_caller_local_work() {
             })
             .unwrap_or_else(|_| panic!("the entered host issues original Work"));
         execution.await;
-        let (work, root, notifications, families) = receiving.await.into_parts();
+        let (work, retained_root_report, root, notifications, families) =
+            receiving.await.into_parts();
         let closed = node.close().await;
         let WorkOutcome::Completed {
             output:
@@ -237,6 +238,12 @@ async fn node_keeps_live_family_receiving_and_caller_local_work() {
         else {
             panic!("the same live account processes a command after root retirement");
         };
+        let hydrated = hydrated.lock().unwrap_or_else(PoisonError::into_inner);
+        let activation_failures = activation_failures
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let refusals = refusals.lock().unwrap_or_else(PoisonError::into_inner);
+        let forced = forced.lock().unwrap_or_else(PoisonError::into_inner);
         assert_completed_account(&root);
         assert!(admitted.is_ok());
         assert!(admitted_again.is_ok());
@@ -245,6 +252,7 @@ async fn node_keeps_live_family_receiving_and_caller_local_work() {
         assert!(closed.is_ok());
         assert!(matches!(notifications.termination, Ok(())));
         assert!(matches!(notifications.retirement, Ok(())));
+        assert_eq!(retained_root_report, Some(root_report));
         assert_eq!(root_report.retirement(), RetirementAssessment::Established);
         assert_eq!(
             root_report.failures(),
@@ -298,31 +306,10 @@ async fn node_keeps_live_family_receiving_and_caller_local_work() {
             }
         );
         assert!(family.disposal_failure().is_none());
-        assert_eq!(
-            hydrated
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .as_slice(),
-            &[EntityId::new(73)]
-        );
-        assert!(
-            activation_failures
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .is_empty()
-        );
-        assert!(
-            refusals
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .is_empty()
-        );
-        assert!(
-            forced
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .is_empty()
-        );
+        assert_eq!(hydrated.as_slice(), &[EntityId::new(73)]);
+        assert!(activation_failures.is_empty());
+        assert!(refusals.is_empty());
+        assert!(forced.is_empty());
     })
     .await;
     completed.expect("Node work, actual family retirement and close finish within the watchdog");

@@ -6,11 +6,11 @@ mod application_support;
 mod counter;
 
 use application_support::assert_completed;
-use bombay::Application;
 use bombay::actors::ActorExt;
 use bombay::remote::{
     ConnectionEndpoints, CredentialSource, Network, NetworkLayout, NodeStartupRefusal,
 };
+use bombay::{ActorFailureAssessment, Application, RetirementAssessment};
 use counter::{Counter, CounterMessage};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
@@ -90,6 +90,26 @@ async fn host_refusal_returns_original_network_and_usable_application() {
         let CredentialSource::File(private_key) = &listener.private_key else {
             panic!("the original private-key declaration must survive refusal");
         };
+        let outcome = application
+            .run_with(|application| async move {
+                let mut caller = application.client().expect("original Counter client");
+                caller
+                    .send(CounterMessage::Read(caller.recipient()))
+                    .await
+                    .expect("original Counter read");
+                let reply = caller.receive().await.expect("original Counter value");
+                application.shutdown().expect("original Counter stop");
+                reply.message
+            })
+            .await
+            .unwrap_or_else(|_| panic!("the returned Application remains executable"));
+        let (value, retirement) = outcome
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("the original Counter work completes"));
+        let (cleanup, root_report, root, notifications, ()) = retirement.into_parts();
+        let notifications = notifications.expect("original notification receipts");
+        let root_report =
+            root_report.expect("the recovered Application publishes its joined report");
         assert_eq!(listener.addresses.as_ptr(), addresses_allocation);
         assert_eq!(listener.addresses.len(), 1);
         assert_eq!(listener.addresses[0].as_ptr(), address_allocation);
@@ -111,32 +131,17 @@ async fn host_refusal_returns_original_network_and_usable_application() {
         assert_eq!(private_key, &original_private_key);
         assert_eq!(network.max_retained_queries.get(), 2);
         assert!(matches!(
-            cause,
+            &cause,
             NodeStartupRefusal::HostFlavor {
                 flavor: RuntimeFlavor::CurrentThread
             }
         ));
-        let outcome = application
-            .run_with(|application| async move {
-                let mut caller = application.client().expect("original Counter client");
-                caller
-                    .send(CounterMessage::Read(caller.recipient()))
-                    .await
-                    .expect("original Counter read");
-                let reply = caller.receive().await.expect("original Counter value");
-                application
-                    .request_shutdown()
-                    .expect("original Counter stop");
-                reply.message
-            })
-            .await
-            .unwrap_or_else(|_| panic!("the returned Application remains executable"));
-        let (value, retirement) = outcome
-            .try_into_completed()
-            .unwrap_or_else(|_| panic!("the original Counter work completes"));
-        let (cleanup, root, notifications, ()) = retirement.into_parts();
-        let notifications = notifications.expect("original notification receipts");
         assert_completed(root.expect("original native Counter retirement"), None);
+        assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+        assert_eq!(
+            root_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
         assert_eq!(value, 0);
         assert!(cleanup.is_ok());
         assert!(notifications.termination.is_ok());
@@ -167,9 +172,7 @@ async fn network_opens_actual_node_with_local_work_and_complete_retirement() {
                     .await
                     .expect("read admitted");
                 let reply = caller.receive().await.expect("Counter value");
-                application
-                    .request_shutdown()
-                    .expect("Counter stop admitted");
+                application.shutdown().expect("Counter stop admitted");
                 (reply.message, acquired)
             })
             .await
@@ -177,10 +180,16 @@ async fn network_opens_actual_node_with_local_work_and_complete_retirement() {
         let ((value, acquired), retirement) = outcome
             .try_into_completed()
             .unwrap_or_else(|_| panic!("actual Node work completes"));
-        let (cleanup, root, notifications, ()) = retirement.into_parts();
+        let (cleanup, root_report, root, notifications, ()) = retirement.into_parts();
         let notifications = notifications.expect("complete notification receipts");
         let closed = node.close().await;
+        let root_report = root_report.expect("the actual Node retains its joined root report");
         assert_completed(root.expect("actual native Counter retirement"), None);
+        assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+        assert_eq!(
+            root_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
         assert_eq!(value, 1);
         assert!(Rc::ptr_eq(&acquired, &original));
         assert_eq!(*acquired, 41);
