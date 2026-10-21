@@ -858,3 +858,19 @@ tests. This stage changes no executable production or public types and removes
 224 net test lines. Full acceptance, strict gates, minimization, CI/review and
 main delivery remain open. Next is the real synchronized Ledger baseline,
 including independent request/reply loans and actual post-retirement Closed.
+
+The synchronized Ledger pair now qualifies on the current cold contract.
+Actual original-source D/R tests expose false cached-reply Mutex WouldBlock;
+a three-line branch-local request-loan release fixes it while preserving both
+permission checks. Both-profile positives and exact restored34 scoped controls
+per profile pass; native-exclusion inverses fail only the intended guard oracles.
+Two source/outcome/deletion reviews verify these results.
+Original Append allocation and native post-retirement Closed(Read) remain exact.
+Only then is the old940-line Ledger permission owner and its registration removed.
+Twelve of20 laws qualify; eight remain (association2, cancellation2, Requester4).
+Every remaining module is restored. Canonical compilation still fails23 legacy
+errors and executes no tests; strict production-library Clippy separately
+fails31 findings. No complete lint/workspace/CI/main delivery follows. Current
+stage production+3, tests net-455, public types0; cumulative250 paths and all
+approved budgets/costs remain. Full R01–R25/AUTH1/NET1 and final minimization stay
+open; next is the retained reply-association pair.

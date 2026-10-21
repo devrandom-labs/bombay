@@ -207,6 +207,9 @@ where
                 *custody.refusal.borrow_mut() = Some(ExportError::Conflict);
                 return;
             }
+            // A cached reply has no native attempt. Its reply policy must
+            // acquire its own authority loan after request permission ends.
+            drop(permission);
             let verified = original.verified.borrow();
             if let Some(Ok(receipt)) = verified.as_ref()
                 && let Err(cause) = current_reply(receipt, runtime, address)

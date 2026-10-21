@@ -8,12 +8,14 @@ main. Latest-main adoption is a prerequisite. The scoped decoder cleanup fix
 now has current-graph debug/optimized positives and intended original-escape
 inverses; 21 public cold cases and seven owning controls pass both profiles.
 Another 23 owning consumer cases pass both profiles after report migration.
-The latest canonical compilation fails on 32 errors in the retained warm
-consumers. Ten of twenty inventoried consumer laws are migrated; ten
+The latest canonical compilation fails on 23 errors in the retained warm
+consumers. Twelve of twenty inventoried consumer laws are migrated; eight
 remain. General cancellation and double-fault cleanup remain distinct open
 requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
 composition and remote-counter application, repository minimization, required
 CI/review and actual delivery to main remain open.
+The current strict production-library Clippy probe also fails31 findings;
+it is not a full workspace/all-target lint pass.
 
 Local research merge44f6b49 now includes main531ded50 with all textual conflicts resolved.
 Its actual optional root report is forwarded unchanged alongside receiving,
@@ -37315,7 +37317,7 @@ the canonical library/application_clients targets compile.
 | application/node/tests/replay.rs: four Recorded/Scheduled Counter/Ledger cases | Two actual queries reuse the first issued key and native outcome; original byte/proof allocations, complete protected replies or actual reply refusal, and actual cleanup/notifications remain observable. | node_exports/consumer.rs has canonical replay/conflict assertions, but its three cases do not establish both provider profiles for each original protocol or the complete old reply/refusal trace. |
 | replay/association.rs: Counter and Ledger cases | A late extra reply to A cannot become B's value; retain exact A/B recipients and A's late tail after a real FIFO fence. A Ledger request created after actual retirement retains its own native Closed(Read) recipient. | The owning Full Reply test fences duplicate sends, but does not cover A/B late association or a newly constructed post-retirement request. Keep these separate laws. |
 | replay/cancellation.rs: two provider profiles | Cancel a borrowed wait, preserve the operation owner, resume the original A reply, keep B distinct, and retain the actual retired Stash's one unprocessed B command. Query readiness and native-result readiness remain independent. | The cold genuine-Work-absence and provider-panic tests do not establish this ownership/cancellation trace. Whole-operation cancellation remains a separate requirement. |
-| replay/permissions.rs: four Counter/Ledger provider cases | Old traces preserve actual RefCell BorrowError or Mutex TryLockError, removed grants, changed authority scope, held authority in native constructors, later revocation, byte-identical inputs with distinct opaque bindings, duplicate allocations and actual Ledger Closed(Read) originals. Full and explicit binding mismatch remain separate accepted observations; foreign/stale caller-key admission is reconciled by the qualified static denials. | Both current Counter provider cases qualify with real eight-query cold traces and explicit binding mismatch. The synchronized Ledger pair remains unqualified; pressure.rs separately owns fresh authority for native Ledger Full. |
+| replay/permissions.rs: four Counter/Ledger provider cases | Old traces preserve actual RefCell BorrowError or Mutex TryLockError, removed grants, changed authority scope, held authority in native constructors, later revocation, byte-identical inputs with distinct opaque bindings, duplicate allocations and actual Ledger Closed(Read) originals. Full and explicit binding mismatch remain separate accepted observations; foreign/stale caller-key admission is reconciled by the qualified static denials. | All four current provider cases qualify with real eight-query cold traces, explicit binding mismatch and actual native originals. Ledger also establishes independent request/reply mutex loans for cached replies. The obsolete permission owner is removed; pressure.rs separately owns fresh authority for native Ledger Full. |
 | replay/permissions/keys.rs | Keys retain issuer identity across differing reply protocols; duplicates reuse the original key; other declarations cannot acquire authority or construct a command using that key. After actual undeclare and same-path redeclaration, the stale key differs from the renewed key and cannot invoke authority or a constructor. | Cold RequestKey is observational, with no caller-supplied-key admission operation. Preserve issuer/non-authority and stale-key laws through the actual supported surface and static denial; do not restore the retired imperative admission API merely to compile this test. |
 | replay/permissions.rs: opaque diagnostics case | Formatting opaque commands must not require their Debug implementation; original native permission causes remain inspectable by reference without duplication or replacement. | The old Admission/RequestRefusal spelling is retired. Attempt and the retained typed refusal fields own the current observations; passing cold provider tests alone do not prove diagnostic opacity or original source identity. |
 | application/node/tests/requests.rs: two live Requester cases | A genuine typed Actions request reaches another Node, verifies the complete protected reply, and stores the checked Counter value in the actual Requester. Preserve caller/runtime identity, original bytes/proofs, one native publication, correlation and final actor receipt. | Protected outbound typed Actions and the ordinary remote-counter application remain unfinished. The direct cold receiving fixture does not establish this end-to-end outbound law. |
@@ -38076,3 +38078,181 @@ current_request MutexGuard, so a nonreentrant try_lock can return WouldBlock
 for an otherwise authorized cached reply. RefCell shared loans mask this.
 Establish its actual cold Ledger baseline and independent outcome before any
 production selection; do not add another guard wrapper or weaken reply policy.
+
+### Synchronized Ledger permission — pre-edit law and containment
+
+Resume clean6d92bd9; previous turn was progress (qualified Counter pair,
+committed source/records and32-error canonical baseline). Current Cargo.lock
+fa79c780 and selected Behavior/Actors VCS55dbac2d are rechecked; the complete
+selected AGENTS ec0ad868 and canonical research protocol read in the preceding
+turn remain applicable. Source reinspection covers current query/declaration/
+Request/Node ownership, native Ledger Actions and the preserved synchronized
+trace. Address0.3.0, Communication0.1.6, Timers0.2.0, Observe and exact SDK graph
+are unchanged from the freshly verified Counter stage. No dependency or
+architecture substitution is proposed.
+
+Derived loan law: the current request guard must exclude updates through its
+actual synchronous native attempt. A cached duplicate has no new native
+attempt; its independently checked reply policy must be able to acquire the
+same nonreentrant authority owner after that request loan ends. It must still
+recheck revoked request/reply authority and cannot replay or create another
+native command just to obtain a reply. Preserve actual provider facts and all
+native outcomes, including Ledger's terminal Read and fresh post-retirement
+Closed(Read(original endpoint)). This is Bombay composition policy, not a new
+actor-model primitive or permission framework.
+
+First write the two finite Recorded/Scheduled Ledger tests in existing
+node/tests/permissions.rs, reusing permission_originals, permission_replies,
+current provider fixtures, real Node and original Mutex authority enums/helper.
+Use eight actual queries like the Counter sequence, but append the original
+Box first, await actual target retirement after A and require the restored A
+duplicate to publish its cached protected reply. Retain exact append allocation,
+original native User origins, actual Closed B/recipient and all separate
+cleanup/report/notification/withdrawal/close products. Reserve all eight actual
+SDK queries explicitly. No old Ledger source is deleted before qualification.
+Expected verification addition below550 formatted lines plus measured corrections;
+all copied/modified/rejected/external/unknown costs continue to count.
+
+Existing query70 retains request permission across duplicate current_reply.
+The smallest end-to-end falsifier is the actual duplicate's retained reply
+WouldBlock after real cleanup. Establish that baseline in debug/optimized
+before any production edit. Only if it fails for this law, end the existing
+request guard in the canonical duplicate branch before the independent reply
+check. Keep current_request, identity/conflict checks, current_reply and publish
+revalidation, fresh preparation/return storage and Full retry unchanged. A
+source inverse restoring the old guard overlap must recover the same intended
+failure; a separate early-release inverse must still reject lost construction
+exclusion. Compare removal of the prepublication reply check explicitly before
+selecting the smaller guard-lifetime correction: deleting the check would also
+change whether a refused duplicate receives an observational key, an unrelated
+policy/observable change not justified by this blocker.
+
+Expected runtime delta is one existing drop plus a short ownership comment,
+public types+0/-0; no wrapper, trait, observer or additional authority state.
+Existing paths only: permission tests, query owner, eventual old Ledger file/
+registration deletion, PRD/backlog. Current cumulative250 paths, conservative
+production upper net2492, public+5gross/-2 and approved4000-further verification
+window carry without reset/refund or certified headroom. Aggregate/control/
+subordinate alternatives, interpreter topology and public spellings remain
+unchanged. Full PRD acceptance, minimization and actual CI/review/main delivery
+remain open regardless of this scoped result.
+
+Ledger baseline testdd0cf8c5 compiles on the first attempt. Both profiles run the
+two actual cases and fail only the intended cached-reply oracle1038 with
+retained Some(Lock { cause: WouldBlock }),389filtered,0.02s each. Original
+query70 is unchanged. Debug log /tmp/bombay-ledger-permissions-prior-debug.log
+has SHA2562ab5e433; optimized uses the same prefix with release. Actual native
+cleanup/root custody/original append allocation, reports/notifications,
+withdrawal/close, constructor exclusion, eight snapshots and typed request
+refusals precede that failure. Key/native-Closed/wire/count assertions after1038
+are unexecuted and receive no negative credit. Both test source reviews pass;
+this is an actual original-source failure, not a predicted lock outcome.
+
+Select the recorded minimal branch-local permission release, preserving both
+policy calls and refused-key observables. The actual unmodified70 baseline in
+both profiles is already the original-overlap falsifier; do not claim another
+post-fix overlap execution unless it actually runs. Candidate5-case permission
+controls, a separate construction early-release cut and exact restored controls
+remain required. Expected production+3/-0/net3 (one drop and two comment lines),
+public types0, existing paths only. Test addition492/-4 including imports,
+within the stated550-line estimate; all prior/copy/modified/tool costs carry.
+Aggregate/control/subordinate states and alternatives, transition branch count,
+module/public surfaces and owner topology remain unchanged (pass).
+
+### Synchronized Ledger permission — qualified local correction
+
+Exact queryb33e76138f8d6f7fef0252835b3c7798433ac22252cba11a5415839e2c0e8bdc
+adds only the two ownership comments and drop(permission) after canonical/raw
+conflict validation, before independent current_reply. It keeps request/reply
+checks, refusal provenance, duplicate identity, publication revalidation and
+all fresh native/Full-retry guard/storage spans. Exact testdd0cf8c5 remains
+unchanged across red/green/cut/restoration. Both production/source review passes
+accept this concrete lifetime correction; no signature, bound, state, branch,
+public type or interpreter is added. The current capability contract documents
+this distinction without changing source ownership.
+
+Original query70 plus testdd0 fails the cached-reply oracle1038 in both profiles
+(0/2,389filtered,0.02s) with actual retained Mutex WouldBlock. Prior logs have
+SHA2562ab5e433/5e115d86. This actual original-source D/R pair supplies the old
+fault falsifier; no second identical post-fix original-source run is claimed.
+Candidate b33's five permission controls pass both profiles,386filtered,
+0.03/0.01s; candidate logs8229fa54/3e698da1. Ledger reaches actual A User,
+post-retirement native B Closed(Read(original recipient)), distinct clients,
+EOF tails[None], original Append pointer/bytes/from, complete input/receipt
+snapshots, opaque A/B identities with byte-identical inputs, cached-key reuse
+and original publication/count checks. Decoding/construction run twice;
+encoding/protection run once; request permission runs eight times. Only A and
+its authorized duplicate publish protected wire replies. Recorded/Scheduled
+remain finite test providers, not a claim of production authentication.
+
+Separate native-exclusion source inverse b33→85d7812e moves only fresh native
+permission disposal before existing preparation/attempt while keeping the cache
+fix. Actual full group D/R exits101 with one diagnostic control passing and
+four intended Counter542/Ledger961 guard failures,386filtered,0.03/0.01s. Logs
+/tmp/bombay-ledger-permissions-native-inverse-{debug,release}.log have
+SHA256a8333a13/bbd69953. Actual cleanup/report/native custody/notifications,
+withdrawal/close and guard counts execute first; Ledger also checks original
+Append ownership. Later request snapshots/cause/key/native-reply/wire/count
+assertions are unexecuted in these negatives, including duplicate1038. The
+guard Result payloads are not individually printed. Exact b33 is restored;
+no inverse remains.
+
+Relevant restored controls pass in both profiles: permissions5, retained root
+replay4, owning Export4, public cold service21, total34 scoped cases/profile.
+The actual debug durations are0.04/0.02/0.01/0.07s; optimized0.01/0.01/0.00/0.04s.
+Filters are390/391/391 for the unit groups; the public target has0 filtered.
+Logs /tmp/bombay-ledger-permissions-{restored,replay,export,public}-{debug,release}.log
+and their actual .exit files all report0. Both independent outcome passes
+check names, source epochs and limits. Reproduction uses the existing pinned
+Nix shell/environment recorded above; first four commands also ran with the
+actual `--release` flag after `--locked`:
+
+```text
+cargo test --offline --locked -p bombay-rs --all-features --lib application::node::tests::permissions
+cargo test --offline --locked -p bombay-rs --all-features --lib application::node::tests::replay
+cargo test --offline --locked -p bombay-rs --all-features --lib remote::export::tests
+cargo test --offline --locked -p bombay-rs --all-features --test node_service
+cargo clippy --offline --locked -p bombay-rs --all-features --lib -- -D warnings
+```
+
+The Clippy command actually fails31 findings, log2af4949a9652a4692052225905cdc9e877ba63bd0ef3695eba4a081adc90d69e.
+These include seven RefCell loans across await plus documentation, type,
+argument and other style findings. It is a real open strict production-library
+gate, not all-target lint or a pass. No original-code Clippy comparison is
+claimed, and no lint-driven alias/wrapper or broader production rewrite is
+added to this blocker. Every required full PRD/lint/minimization/CI gate carries.
+
+Only after local source/behavior qualification delete the exact940-line old
+Ledger permission owner4de951ec and its final three-line replay registration.
+Two deletion/restoration reviews verify the backup equals HEAD's whole file,
+remaining association/cancellation/Requester owners have no source change,
+canonical outer9dab is exact and replay347835c5 differs from canonical24170
+only by that removed registration. All remaining modules are restored; no
+hidden exclusion remains. Old foreign/stale caller-key UnknownRequest paths
+are deliberately replaced by the qualified absent-API/static key law, not an
+execution claim of those old calls. Public numeric-collision/target ownership
+controls remain separate supporting evidence, not a new foreign Ledger trace.
+No old Full or mismatch observation is invented.
+
+Final pinned formatting and diff whitespace pass. Canonical no-run log
+/tmp/bombay-ledger-permissions-canonical.log SHA256ee836ef12cfdf08e1aeb25acb9c36e7432fbbf7a2adb1c4090182a80f57e5499
+exits101 with23 retained legacy compilation errors/five warnings and no tests.
+The32→23 reduction concerns migration errors, not runtime-defect or acceptance
+counts. Twelve of20 inventory laws qualify; eight remain: association2,
+cancellation2, live Requester2 and pending-protection2. Full R01–R25/AUTH1/NET1,
+outbound Actions/ordinary remote-counter, full security/fault/resource gates,
+three whole-repository scans/minimization, required CI/review and actual main
+delivery remain open. Explicitly deferred requirements are unchanged.
+
+Complete current-stage delta: executable production+3/-0/net3; tests+492/-947/
+net-455; public API+0/-0 types. This is a small capability-correctness fix plus
+a separately measured test replacement, not production code reduction.
+Complete e3-baseline tree remains250 paths/zero untracked; conservative Rust
+production upper+3719/-1224/net2495 includes embedded/comparison tests/rustdoc;
+tests/fixtures+9034/-5694/net3340; remote public API+5 gross/-2 unchanged.
+All initial/copy/modified/inverse/external/unknown verification and earlier costs
+carry without reset/refund or certified headroom under2600/250/five/4000-further.
+Aggregate/control/subordinate alternatives, transition branches, production
+source modules and public spellings are unchanged (pass). The retired module
+and removed three-line registration are test-only ownership changes. Scoped acceptance
+does not mark the feature distilled or delivered.

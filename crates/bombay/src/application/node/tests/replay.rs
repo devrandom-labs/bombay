@@ -998,6 +998,3 @@ mod association;
 
 #[path = "replay/cancellation.rs"]
 mod cancellation;
-
-#[path = "replay/permissions.rs"]
-mod permissions;

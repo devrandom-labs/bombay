@@ -85,6 +85,8 @@ so supplied Work may retrieve a cached result after target retirement. Native
 request reception retains its own target/root retirement observations. Node
 extraction keeps separate original kernel poll and disposal panic payloads.
 Current permission loans span construction and the synchronous native attempt.
+Cached duplicates end the request loan before the independent reply check,
+allowing both policies to use the same nonreentrant authority owner.
 Known Full retains its exact rejected command through the existing capacity
 wait, fresh authority check and synchronous retry. Scoped Ledger and Counter
 pressure controls qualify that path; full pressure acceptance remains open.
