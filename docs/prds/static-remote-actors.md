@@ -16,8 +16,10 @@ double-fault cleanup remain distinct open
 requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
 composition and remote-counter application, repository minimization, required
 CI/review and actual delivery to main remain open.
-The current strict production-library Clippy probe also fails31 findings;
-it is not a full workspace/all-target lint pass.
+Strict all-feature production-library Clippy and default workspace/all-target
+Clippy now pass. Default workspace Nextest passes801 tests with two skipped.
+All-feature canonical library-test compilation still fails23 retained errors;
+the remote test requirements and full remote acceptance remain open.
 
 Local research merge44f6b49 now includes main531ded50 with all textual conflicts resolved.
 Its actual optional root report is forwarded unchanged alongside receiving,
@@ -93,6 +95,8 @@ Consumer tuple/shutdown migrations retain all original observable laws.
 The original failing law must be requalified on the0.29 graph before fixing it.
 This resolves the size checkpoint. Continue within these approved limits;
 all earlier costs and full PRD requirements remain carried.
+The later explicit “Approve 6,500 verification lines” reply raises only the
+latest-grant verification ceiling to6500 total from that same checkpoint.
 
 ## Earlier checkpoint (2026-10-18 UTC)
 
@@ -38391,3 +38395,151 @@ tests/fixtures+9034/-5694/net3340 census is unchanged; it is not a new precise
 runtime classification. Every temporary cut/correction/copy/tool charge carries,
 including this small scoped verification. No larger replacement or new type,
 owner, interpreter, macro, runtime or dependency is selected by these outcomes.
+
+### Strict library gate — pre-edit ownership and scope
+
+Resume cleana35d317. Previous turn is progress: retained live2 qualification,
+original finite failures and exact restoration are committed; full objective
+stays active. Fresh pinned-Nix Clippy on unchanged Rust again exits101 with31
+findings, /tmp/bombay-library-gate-prior.log. Lockfa79/selected AGENTSec0ad868
+remain unchanged: Behavior/Actors0.29 at55dbac2d, Macros0.16, Address0.3,
+Communication0.1.6, Timers0.2 and existing in-tree Observe/SDK owners. Inspect
+current Actions, pure actor template contract, endpoint ownership, Node/execution
+cleanup construction, Request producers, all seven loan spans and existing
+public cold/native outcome consumers. No dependency or architecture is selected.
+
+The blocker is the strict production-library gate, independently of23 retained
+consumer compile errors. Existing accepted typed-custody laws remain unchanged.
+End two avoidable declaration RefMut temporaries before their asynchronous
+undeclare operations by first taking the same owned Option into a local. Keep
+the exact one Queryable, undeclare call, result storage and retirement order.
+Retain the five receipt/native/encoding/terminal-drain loans: private producers
+own mutation, extraction requires unique Rc custody, unrelated requests own
+independent cells, and drain runs after producers end. Removing their retained
+values to silence a heuristic would weaken ownership. Narrow lint expectations
+on the existing request/drain methods must state those reasons; add no async
+block, wrapper, alias, observer or replacement custody.
+
+Replace attached Node.into_parts' repeated check/destructure/expect with one
+owned exhaustive match on its same successful binding+close receipt product;
+every other pattern returns the same Node. Keep the exact public output and
+original payload allocations. Add truthful Errors docs and identifier markup.
+Preserve typed signatures and explicit independent Export inputs: lint-driven
+products/aliases/builders have no domain justification. Any necessary narrow
+type/argument/length expectations must name the existing custody/policy law.
+Do not document an impossible public panic merely because an internally caught
+startup closure contains a proven cleanup expectation; verify its actual scope.
+Ordinary PoisonError method references and equivalent Option if-let syntax
+may remove the remaining style findings without changing native operations.
+
+Forecast existing9 paths: Node, Work, Export declaration/query/request/root,
+user-facing API, PRD and backlog. No new path/public type/test machinery.
+Conservative source increase at most80 lines from2495 to2575 under2600;
+executable branches shrink only in consuming extraction, with the same success/
+refusal truth table. No new control/subordinate alternative, transition law,
+protocol, effect or interpreter. Existing original/alternate cleanup/refusal
+consumers supply regressions; no new semantic law is claimed from a style gate.
+Run strict library Clippy/fmt, public cold21 and existing Application/Node outcome
+controls in both profiles, then restore/record canonical no-run honestly.
+No source exclusions are needed for those integration targets. Public/full
+workspace lint, all23 consumer errors and every PRD/CI/main gate remain open
+unless their exact commands establish otherwise. All budgets and unknown
+verification costs carry; large remaining test rewrites stay unselected.
+
+### Remaining consumer verification — scoped budget request
+
+The three read-only plans above are concrete existing-owner replacements, not
+new runtime design: Counter late reply/covered Ledger association; cold Ledger
+Stash cancellation plus the actual private native-readiness witness if needed;
+and pending protection with actual opaque Rc receipt and independent request2.
+Expected existing paths are replay/association.rs, replay/cancellation.rs,
+node/tests/requests.rs and optionally remote/export/tests.rs, with the existing
+registrations and project records. No new path, production capability, public
+type, wrapper, interpreter or dependency is proposed for those six laws.
+
+The remaining replacement forecasts total roughly1200–1800 authored/modified
+verification lines, before measured corrections and finite inverse controls.
+The current latest-grant minimum is3216 plus unresolved earlier epochs and the
+small live/lint-stage verification charges. The current4000 ceiling cannot be
+treated as a grant for those additional replacements from an uncertified784
+remainder. Request raising only this latest-grant verification ceiling to6500
+total from the same checkpoint, carrying all prior charges and unknown costs.
+The2600 production/250-path/five-gross-public-type ceilings and e3 baseline stay
+fixed. No large replacement authoring begins without that explicit expansion.
+The user explicitly approved this request: “Approve 6,500 verification lines”.
+The latest-grant verification ceiling is now6500 total from its same checkpoint;
+all earlier costs/unknown epochs carry. Production2600, paths250, public types5
+and e3 baseline remain unchanged. No other full-PRD surface expansion follows.
+
+All-feature production-library lint passes, as do public cold21 and outcome24
+controls in both profiles. Broader default-feature workspace/all-target lint
+then exposes one unused private into_absent_with_entities conversion in Work.
+Source search finds its only production consumer is attached Node.run, already
+under the remote feature. Before edit, select the same remote condition for
+that existing conversion implementation. This derives from the real consumer's
+feature ownership, not a new adapter, type, bound or dead-code allowance. It
+adds one cfg line in the already selected Work path; the request budget remains
+within80 conservative source lines. Inspect default and all-feature lint again.
+
+### Strict library gate — qualified bounded correction
+
+Retain the exact six-source change: source+96/-49/net47, no test source changes
+or public types. It preserves every signature, protocol, policy input and typed
+original. Two declaration-cell borrows now end before native withdrawal; five
+necessary lending loans remain with scoped ownership reasons. One owned Node
+match replaces duplicate checks and unreachable extraction paths, preserving
+both Ok/Err binding and close receipts, original panic slots and the exact
+refused Node. The remote-only private Work conversion follows its sole existing
+consumer. Documentation and narrowly fulfilled lint expectations add lines;
+this stage is not production code reduction or a new runtime capability.
+
+Both independent source/counterexample passes approve the actual model. They
+correct two draft descriptions before sealing: kernel panic causes remain in
+Node even when extraction refuses a missing binding result, and permission
+guards end before awaits while receipt/encoding/native loans persist. No new
+aggregate/control/subordinate alternative, state, event, effect, interpreter,
+public spelling, alias, wrapper or bound. Extraction removes redundant branches
+without changing its success/refusal truth table (pass). There is no new semantic
+law or mutation credit from these style/ownership-span changes.
+
+Fresh baseline strict library Clippy exits101 with31 findings, log3d9dd775.
+Final pinned command `cargo clippy --offline --locked -p bombay-rs --all-features --lib -- -D warnings`
+exits0, /tmp/bombay-library-gate-all-features-final.log36734b63. A distinct
+default-feature probe first exits101 for the private unused conversion;
+source-derived feature gating fixes it. Final `cargo clippy --offline --locked --workspace --all-targets -- -D warnings`
+exits0, /tmp/bombay-library-gate-workspace-final.log6da9a873. This is not an
+all-feature workspace/all-target pass; those retained23 unit consumers still
+cannot compile.
+
+Final exact source passes all-feature node_service21, application_outcome19 and
+node_outcome5 in each profile,0filtered: public cold D/R0.08/0.04s, Application
+0.01/0.00s, Node0.02/0.01s. Logs /tmp/bombay-library-gate-final-{debug,release}.log
+have hashes5b31395f/a14b0619; both .exit files0. The actual pinned commands are
+`cargo test --offline --locked -p bombay-rs --all-features --test node_service --test application_outcome --test node_outcome`,
+and the same argv with `--release` after `--locked`. Earlier pre-cfg controls
+remain separate log epochs rather than substituted final-source evidence.
+
+Final `cargo nextest run --offline --locked --workspace` reports801 passed across
+119 binaries, two skipped,65.335s, with actual recorded exit0 in
+/tmp/bombay-library-gate-nextest-final.log and .exit. This is the default feature
+set; two skipped cases are not silently credited. The earlier run also reports
+801 passes/2skipped but did not retain a shell exit receipt, so the final run
+captures that status in one parsed shell group. Exact source remains frozen
+through these runs. Pinned fmt check and diff whitespace pass. Final canonical
+all-feature library --no-run still exits101,23 errors/five warnings/no tests,
+/tmp/bombay-library-gate-canonical-final.log; no module or case was excluded.
+Both independent source reviews and the actual outcome/restoration/documentation
+review pass on these exact source and log epochs before commit.
+
+Complete e3-baseline census reproduces conservative crate/example Rust
+source+3767/-1225/net2542, including embedded/comparison tests and rustdoc;
+test/fixture paths+9034/-5694/net3340, including the existing transport-custody
+comparison. The same source classifier excludes tests/benches/fixtures/fuzz
+paths and files named tests.rs; the comparison fixture is a separate test owner.
+These are not exact runtime production numbers. Cumulative250 paths/zero
+untracked inputs; remote API+5gross/-2 unchanged. All earlier/modified/rejected/
+copied/tool/unknown verification costs carry under the now approved6500 window;
+production2600/paths250/public5 stay fixed. Full R01–R25/AUTH1/NET1, all six
+remaining test requirements, outbound/remote-counter, SDK privacy, broader
+security/fault/resource checks, three repository scans/minimization, required
+CI/review and recorded main delivery remain open.

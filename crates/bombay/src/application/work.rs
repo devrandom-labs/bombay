@@ -360,7 +360,8 @@ impl<Inputs, Invoke, Cleanup, StagingInputs, PreparedInputs>
     }
 }
 
-/// Consume the original caller-local work factory into its exact bare future.
+/// Preserve absent work and original entity inputs for remote execution.
+#[cfg(feature = "remote")]
 impl<Inputs, Invoke, Cleanup, Root, Spaces, Families, Failure, PreparedInputs>
     WorkOutcome<
         Inputs,
@@ -379,6 +380,10 @@ impl<Inputs, Invoke, Cleanup, Root, Spaces, Families, Failure, PreparedInputs>
         ApplicationWorkPresence<(Never, Invoke), ()>,
     >
 {
+    #[expect(
+        clippy::type_complexity,
+        reason = "preserve the existing entity inputs and original staging failure while proving callable absence"
+    )]
     pub(in crate::application) fn into_absent_with_entities(
         self,
     ) -> WorkOutcome<

@@ -19,7 +19,7 @@ use futures_util::{
 };
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Mutex, PoisonError, Weak};
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::{Semaphore, mpsc, oneshot};
 use zenoh::{Session, Wait};
@@ -105,6 +105,10 @@ where
     /// Construct one cold actor export with explicit limits and typed policies.
     /// Node certifies targets and opens declarations before Work. Provider facts
     /// are retained independently; these callbacks run outside Behavior folds.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "each limit, declaration and typed policy is an independent explicit export input"
+    )]
     pub fn new(
         key: impl Into<String>,
         limits: ExportLimits,
@@ -138,6 +142,12 @@ where
             declaration: RefCell::new(None),
         }
     }
+    #[expect(
+        clippy::too_many_arguments,
+        clippy::too_many_lines,
+        clippy::await_holding_refcell_ref,
+        reason = "explicit inputs and one producer preserve immutable receipt/encoding and exclusive native custody across awaits; authority guards end before each await"
+    )]
     async fn request<Control>(
         &self,
         row: usize,
@@ -431,7 +441,8 @@ where
                 }
             }
         }
-        let withdrawal = match self.declaration.borrow_mut().take() {
+        let declaration = self.declaration.borrow_mut().take();
+        let withdrawal = match declaration {
             Some(queryable) => Some(queryable.undeclare().await),
             None => None,
         };
@@ -446,6 +457,10 @@ where
         self.withdrawal = withdrawal;
         self.drain().await;
     }
+    #[expect(
+        clippy::await_holding_refcell_ref,
+        reason = "after all producers end, terminal iteration borrows each native owner until its actual replies and EOF are retained"
+    )]
     async fn drain(&self) {
         for request in self.entries.borrow().iter() {
             let custody = Rc::clone(&request.custody);
@@ -460,9 +475,7 @@ where
 }
 
 fn retain_diagnostic(ingress: &Mutex<Vec<ExportError>>, maximum: usize, cause: ExportError) {
-    let mut ingress = ingress
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut ingress = ingress.lock().unwrap_or_else(PoisonError::into_inner);
     if ingress.len() < maximum {
         ingress.push(cause);
     }
@@ -573,7 +586,7 @@ where
             })
     }
     async fn declare(&mut self, session: &Session) -> Result<(), ()> {
-        let (_, limits, _, ..) = &self.inputs;
+        let (_, limits, ..) = &self.inputs;
         let preparation = if limits.queued_queries.get() > Semaphore::MAX_PERMITS
             || limits.retained_queries.get() > Semaphore::MAX_PERMITS
         {
@@ -633,7 +646,8 @@ where
         }
     }
     async fn withdraw(&mut self) {
-        if let Some(queryable) = self.declaration.borrow_mut().take() {
+        let declaration = self.declaration.borrow_mut().take();
+        if let Some(queryable) = declaration {
             self.withdrawal = Some(queryable.undeclare().await);
         }
         if let Some((mut incoming, _)) = self.active.take() {

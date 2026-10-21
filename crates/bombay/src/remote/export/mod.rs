@@ -15,7 +15,7 @@ use std::cell::RefCell;
 use std::collections::TryReserveError;
 use std::error::Error;
 use std::num::NonZeroUsize;
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Mutex, PoisonError, Weak};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc};
 use zenoh::query::{Query, Queryable};
 
@@ -224,6 +224,10 @@ pub struct Export<Inputs, Declarations, Entry> {
     ingress: Arc<Mutex<Vec<ExportError>>>,
     entries: RefCell<Vec<Entry>>,
     declaration: RefCell<Option<Queryable<()>>>,
+    #[expect(
+        clippy::type_complexity,
+        reason = "active query ingress owns the actual counted query receiver and its issuing namespace"
+    )]
     active: Option<(
         mpsc::Receiver<(Query, OwnedSemaphorePermit)>,
         Weak<Semaphore>,
@@ -231,6 +235,10 @@ pub struct Export<Inputs, Declarations, Entry> {
 }
 impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
     /// Transfer original configuration, declarations and every acquired fact.
+    #[expect(
+        clippy::type_complexity,
+        reason = "consuming extraction transfers the existing configuration, declarations and independent original receipts"
+    )]
     pub fn into_parts(
         self,
     ) -> (
@@ -254,14 +262,10 @@ impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
         drop(declaration.into_inner());
         drop(active);
         let diagnostics = match Arc::try_unwrap(ingress) {
-            Ok(ingress) => ingress
-                .into_inner()
-                .unwrap_or_else(|poisoned| poisoned.into_inner()),
-            Err(ingress) => std::mem::take(
-                &mut *ingress
-                    .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner()),
-            ),
+            Ok(ingress) => ingress.into_inner().unwrap_or_else(PoisonError::into_inner),
+            Err(ingress) => {
+                std::mem::take(&mut *ingress.lock().unwrap_or_else(PoisonError::into_inner))
+            }
         };
         (
             inputs,

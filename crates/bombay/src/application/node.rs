@@ -494,7 +494,7 @@ where
     Families: InstallEntityFamilies<Spaces> + Send,
 {
     /// Attach one closed export product and its actual asynchronous actor binding.
-    /// BindingFn and all target checks precede declaration startup and supplied Work.
+    /// `BindingFn` and all target checks precede declaration startup and supplied Work.
     pub fn exports<Exports, BindingFn, Targets, BindError>(
         self,
         exports: Exports,
@@ -525,6 +525,13 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
 {
     /// Consume exports, binding, post-join close and original kernel panic causes.
     /// Refuse with the same Node until joined execution acquired native close.
+    ///
+    /// # Errors
+    /// Returns the same Node if either its binding result or close result is absent.
+    #[expect(
+        clippy::type_complexity,
+        reason = "consuming extraction preserves each original binding, close and panic value without an aggregate wrapper"
+    )]
     pub fn into_parts(
         self,
     ) -> Result<
@@ -537,32 +544,17 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
         ),
         Self,
     > {
-        if self.closed.is_none()
-            || !matches!(self.binding.as_ref(), Some(Binding::Invoked(Some(_))))
-        {
-            return Err(self);
+        match self {
+            Self {
+                exports,
+                binding: Some(Binding::Invoked(bound @ Some(_))),
+                closed: Some(closed),
+                poll_panic,
+                disposal_panic,
+                ..
+            } => Ok((exports, bound, closed, poll_panic, disposal_panic)),
+            original => Err(original),
         }
-        let Self {
-            exports,
-            binding,
-            closed,
-            poll_panic,
-            disposal_panic,
-            ..
-        } = self;
-        let bound = match binding {
-            Some(Binding::Invoked(receipt)) => receipt,
-            Some(Binding::Uninvoked(_)) | None => {
-                unreachable!("consuming extraction requires the invoked binding")
-            }
-        };
-        Ok((
-            exports,
-            bound,
-            closed.expect("the consuming check preserves its close receipt"),
-            poll_panic,
-            disposal_panic,
-        ))
     }
 }
 
@@ -579,6 +571,15 @@ where
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
     /// Run supplied caller-local work beside the Node-owned exports and join cleanup.
+    ///
+    /// # Errors
+    /// Returns the original callable if execution was already issued, the Session
+    /// is closed, or the Tokio host is absent. Host refusal restores the Application.
+    /// Binding or declaration refusal remains in the joined outcome and receipts.
+    ///
+    /// # Panics
+    /// Native declaration withdrawal and Session close retain their SDK contracts.
+    /// Kernel poll and disposal panic causes remain stored in this Node.
     pub async fn run_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
         &mut self,
         work: Work,
@@ -745,6 +746,15 @@ where
         }
     }
     /// Run exports with genuine Work absence, then retain native cleanup and close.
+    ///
+    /// # Errors
+    /// Refuses if execution was already issued, the Session is closed, or the Tokio
+    /// host is absent. Host refusal restores the Application for another attempt.
+    /// Binding or declaration refusal remains in the joined outcome and receipts.
+    ///
+    /// # Panics
+    /// Native declaration withdrawal and Session close retain their SDK contracts.
+    /// Kernel poll and disposal panic causes remain stored in this Node.
     pub async fn run<Actor, StagingFailure, ChildFailures>(
         &mut self,
     ) -> Result<

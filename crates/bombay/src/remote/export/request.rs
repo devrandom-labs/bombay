@@ -34,6 +34,10 @@ pub struct Request<
     RequestError,
     ReplyError,
 > {
+    #[expect(
+        clippy::type_complexity,
+        reason = "the private producer lease preserves each concrete request, native result and error type"
+    )]
     pub(super) custody: Rc<
         Custody<
             Target,
@@ -140,6 +144,13 @@ impl<
     /// Transfer complete original request and native operation values unchanged.
     /// An unfinished query is deliberately surrendered, disposing it before its
     /// count permit. Successful extraction itself is no cleanup certificate.
+    ///
+    /// # Errors
+    /// Returns the same request while a private producer still owns a custody lease.
+    #[expect(
+        clippy::type_complexity,
+        reason = "consuming extraction retains every original typed value and cause without an aggregate wrapper"
+    )]
     pub fn try_into_parts(
         self,
     ) -> Result<

@@ -245,12 +245,11 @@ where
                     _ = ending => None,
                 }
             };
-            *received = Some(match original {
-                Some(original) => original,
-                None => {
-                    client.close_admission();
-                    client.receive().await
-                }
+            *received = Some(if let Some(original) = original {
+                original
+            } else {
+                client.close_admission();
+                client.receive().await
             });
         })
     }
@@ -609,6 +608,10 @@ where
 pub(crate) trait Target<Root: Protocol<Addr = MailAddr>, Event, Families> {
     type Protocol: Protocol<Addr = MailAddr>;
     type Control;
+    #[expect(
+        clippy::type_complexity,
+        reason = "binding returns the existing exact actor interface and its independent lifecycle authority"
+    )]
     fn bind(
         &self,
         application: &ApplicationHandle<Root, Event, Families>,

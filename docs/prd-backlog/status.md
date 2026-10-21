@@ -888,3 +888,16 @@ are now absent; the remaining eight contain active, unique, dirty or recovery
 work. No additional safe removal is identified. Full PRD acceptance, ordinary
 outbound/remote-counter, minimization, required CI/review and main delivery remain
 open. The PRD retains the concrete next-law plans and unresolved budget charges.
+
+The bounded strict-library stage now passes all-feature production-library
+Clippy and default workspace/all-target Clippy. Final cold21 and outcome24
+controls pass in both profiles; default workspace Nextest reports801 passed,
+two skipped with recorded exit0. Existing typed custody remains intact;
+two unnecessary declaration borrow spans and redundant extraction checks are
+removed, with no public type/test additions. All-feature canonical compilation
+still fails23 legacy errors, with every module enabled. Fourteen of20 retained
+requirements qualify; association2/cancellation2/pending2 remain. The user
+explicitly approved raising only the verification ceiling to6500 total, carrying
+all earlier costs. Production2600, paths250, five gross public types and the
+same baseline stay fixed. Full remote acceptance, minimization, required CI/
+review and main delivery remain open.

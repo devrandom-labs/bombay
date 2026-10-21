@@ -581,7 +581,7 @@ root/child target proofs after staging. `Export::new` selects explicit limits,
 wire decoding, operation declarations, verification/protection, request identity
 and current request/reply permission. `reply`, `submission` and `stop` each
 take operation selection and wire encoding; they require no terminal reporting
-callback. Existing actor behaviors and their ActorExt policies stay unchanged.
+callback. Existing actor behaviors and their `ActorExt` policies stay unchanged.
 
 Run an attached node with `run_with` for supplied caller work or `run` for genuine
 work absence. The node owns declaration startup, receiving, withdrawal, joined
