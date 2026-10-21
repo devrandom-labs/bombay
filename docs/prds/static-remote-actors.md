@@ -38543,3 +38543,50 @@ production2600/paths250/public5 stay fixed. Full R01–R25/AUTH1/NET1, all six
 remaining test requirements, outbound/remote-counter, SDK privacy, broader
 security/fault/resource checks, three repository scans/minimization, required
 CI/review and recorded main delivery remain open.
+
+### Remaining six consumer requirements — selected parallel test stage
+
+Start from clean75a5c985 after the bounded lint commit. The user-approved6500
+verification window now permits the mapped existing-owner replacements; keep
+all prior/unknown costs and the2600/250/five production/path/public-type limits.
+No production edit or new public type/path is selected. Locked dependencies and
+their ownership remain the immediately verified0.29 graph; each author must
+inspect the current owners and complete selected instructions before editing.
+
+Assign disjoint ownership: association.rs to startup_review (Counter late A1
+versus native/wire B2, <=430 new/modified lines plus measured controls),
+cancellation.rs and its private Export cancellation witness to worktree_audit
+(<=550 plus120 witness lines), and the pending half of requests.rs to
+remote_readiness (<=560). Root owns all shared modules, production, records,
+source freezes and pinned commands. Expected combined new/modified verification
+is <=1800 before explicitly measured corrections/cuts. Stop at forecast drift,
+new source paths, a missing owning contract, or new production/API machinery;
+return to the documented law instead of inventing compiler-driven plumbing.
+
+Preserve original source until qualification. Association's existing old child
+modules may receive temporary cfg cuts while the new Counter trace is authored
+at file scope; its Ledger counterpart is reconciled to already qualified exact
+permission traces. Cancellation may temporarily gate the old imports/items;
+do not reindent/copy its whole old body into another wrapper. Pending protection
+retains the complete live requester bodies unchanged and temporarily gates only
+its old function/leaves and obsolete import. These are draft compilation cuts,
+not permanent exclusions or canonical green claims. No cut enters a final
+retained checkpoint. Root retires old bodies only after source/outcome reviews,
+actual D/R positives, finite intended law inverses and exact restored controls.
+
+Cancellation's private borrowing receive needs its own existing Export test
+owner; a wire wait is not that operation. Preserve the native client after
+dropping its borrowing receive future, then resume it and acquire the actual
+User without another Query stimulating progress. Reuse an existing actual actor
+and private Commands/Delivery/Reception composition; no new actor contract,
+visibility change, callback in Behavior or imperative public API. The cold
+Ledger trace separately preserves Stash's unprocessed B and original Append.
+Every final assertion follows acquired native/caller/report/notification/
+withdrawal/close ownership. Negative cuts must finish cleanup and fail the
+intended independent native/wire/state oracle, not merely a watchdog.
+
+Authors run no Cargo/fmt, mutate no shared path, add no tool/probe framework,
+spawn no agents and make no commits. Report source hashes, original-law mapping,
+authored/modified/correction costs and finite inverse proposals, then freeze.
+Root and an independent reader review each candidate twice before accepting it.
+Full R01–R25/AUTH1/NET1 remains the objective regardless of these six outcomes.
