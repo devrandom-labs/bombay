@@ -37179,3 +37179,34 @@ historical/authored/modified/copied/rejected/unknown costs and approved cumulati
 limits carry; integration provides no reset, refund or certified headroom.
 The full R01–R25/AUTH1/NET1 objective, old caller laws, distillation, required
 CI/review and normal main delivery remain open.
+
+### Main integration — before resolving source
+
+The exact published0.29 owner revision is55dbac2d1068b29907498b3a7fa32b3080e0cd30.
+Its full760-line AGENTS was read; SHA256ec0ad8680daf5a03ae74824a8affa208ecc85a2a7632232d4fad7f1e57d2c7dd.
+The current main source, owning DX record and native report tests establish:
+ApplicationOutcome and ApplicationRetirement retain the actual optional root
+report as a fifth independent product (report second); receiving supplies that
+same existing Observe report after cleanup joins. Root shutdown is shutdown(),
+with the original exact ShutdownRejection; InstalledActor keeps its distinct
+operation. New actor holding/timer/worker contracts belong to the published
+owner and already merged main, not a new remote implementation.
+
+Research checkpoint8939e66 preserves all current unaccepted remote source and
+its old-version evidence. Read-only merge-tree comparison with main531ded50
+finds one production conflict (existing application/execution.rs), one diagnostic
+snapshot and six current guidance/coordination conflicts. Resolve by conserving
+both existing asynchronous startup/cleanup observations and main's authoritative
+root report; use main's owning report tuple and shutdown spelling without an
+adapter or compatibility alias. Keep current remote laws and incomplete states
+in their PRD, while retaining the concise current DX coordination record.
+The expected authored resolution has no new public type or semantic owner;
+ordinary consumer migrations may only apply these already proven contracts.
+Any new semantic gap reopens its own focused law before production changes.
+
+The upstream215-path change is separately delivered main code, explicitly
+requested by the standing latest-main instruction. Preserve its provenance
+separately from authored remote/adoption deltas. Record both complete combined
+and feature-relative measurements after resolution; do not silently reset the
+approved e3 baseline or refund any earlier costs. No expanded remote abstraction,
+new policy, or additional verification budget is inferred from this merge.
