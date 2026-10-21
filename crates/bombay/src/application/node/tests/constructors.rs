@@ -141,10 +141,8 @@ async fn constructor_refusal() {
         submission(
             |Append(original)| Ok::<_, Append>(move || LedgerCommand::Append(original)),
             |receipt: &recorded::Receipt<Append>,
-             native: &Result<(), TrySendError<LedgerCommand>>,
-             _runtime: &str,
-             _target: MailAddr| {
-                if native.is_err() {
+             native: &Attempt<Result<(), TrySendError<LedgerCommand>>>| {
+                if !matches!(native, Attempt::Returned(Ok(()))) {
                     return Err(Refusal::Native);
                 }
                 let scope = recorded::projection(receipt);
@@ -157,7 +155,6 @@ async fn constructor_refusal() {
                 .map(Vec::into_boxed_slice)
                 .map_err(Refusal::Json)
             },
-            |unsent, sender, admission| (unsent, sender, admission),
         ),
         &verify,
         &protect,
@@ -276,7 +273,7 @@ async fn constructor_refusal() {
     }
     let (origin, native) = native.expect("original terminal Ledger");
     let notifications = notifications.expect("both independent notification results");
-    let (inputs, declarations, declared, withdrawn, diagnostics, retained_requests) =
+    let (inputs, _declarations, declared, withdrawn, diagnostics, retained_requests) =
         export.into_parts();
     let target = bound
         .expect("actual binding acquired")
@@ -359,7 +356,7 @@ async fn constructor_refusal() {
                 protection_disposal,
             ),
         ) = request
-            .try_into_parts(&declarations)
+            .try_into_parts()
             .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
         assert!(
             verification_factory.is_none()

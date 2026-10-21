@@ -124,7 +124,6 @@ async fn complete(policy: VerificationPolicy) {
                 })
             },
             wire::value,
-            |unsent, client, admission, received, tail| (unsent, client, admission, received, tail),
         ),
         &verify,
         &protect,
@@ -178,7 +177,7 @@ async fn complete(policy: VerificationPolicy) {
         .unwrap_or_else(|_| panic!("the quota execution retains genuine Work absence"));
     let (_, native) = native.expect("actual quota root retirement");
     let notifications = notifications.expect("actual quota notification originals");
-    let (_inputs, declarations, startup, withdrawal, ingress, rows) = export.into_parts();
+    let (_inputs, _declarations, startup, withdrawal, ingress, rows) = export.into_parts();
     let [row] = <[_; 1]>::try_from(rows)
         .unwrap_or_else(|_| panic!("exactly one original row under total quota"));
     let (
@@ -200,7 +199,7 @@ async fn complete(policy: VerificationPolicy) {
             protection_disposal,
         ),
     ) = row
-        .try_into_parts(&declarations)
+        .try_into_parts()
         .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
     bound
         .expect("actual binding result")

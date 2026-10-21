@@ -337,3 +337,6 @@ fn assert_exports(creator: &Creator, exported: &ActorExports) {
     assert_eq!(exported.sibling.recipient(), sibling.actor().recipient());
     assert_eq!(exported.ledger.recipient(), ledger.actor().recipient());
 }
+
+#[path = "node_exports/consumer.rs"]
+mod consumer;

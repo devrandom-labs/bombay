@@ -8,7 +8,7 @@ use crate::local::endpoint::{ActorRef, ExtractLocalEndpoint, SendError, request_
 use crate::local::ingress::{Admission, AdmissionClosure};
 use crate::observe::{Observation, Publisher, pair};
 #[cfg(feature = "remote")]
-use crate::remote::{Export, ExportError, ExportLimits, IngressError};
+use crate::remote::ExportError;
 use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
 use behavior::{
@@ -18,13 +18,11 @@ use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
 use communication::{Consumer, ControlSender, Received, TrySendError, mailbox_channel};
 use core::fmt;
 use core::future::Future;
+#[cfg(feature = "remote")]
+use futures_util::future::Shared;
 use std::sync::{Arc, Weak};
 #[cfg(feature = "remote")]
-use tokio::sync::Semaphore;
-#[cfg(feature = "remote")]
-use zenoh::Session;
-#[cfg(feature = "remote")]
-use zenoh::query::Query;
+use tokio::sync::oneshot;
 
 impl<P, Event, Families> fmt::Debug for ApplicationHandle<P, Event, Families>
 where
@@ -50,7 +48,7 @@ impl<P: Protocol, Event, Families: Clone> Clone for ApplicationHandle<P, Event, 
             client_capacity: self.client_capacity,
             families: self.families.clone(),
             #[cfg(feature = "remote")]
-            session: self.session.clone(),
+            cleanup: self.cleanup.clone(),
         }
     }
 }
@@ -63,6 +61,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         allocations: ApplicationAddresses,
         client_capacity: MailboxCapacity,
         families: Families,
+        #[cfg(feature = "remote")] cleanup: Option<Shared<oneshot::Receiver<()>>>,
     ) -> Self {
         Self {
             root,
@@ -72,8 +71,13 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
             client_capacity,
             families,
             #[cfg(feature = "remote")]
-            session: None,
+            cleanup,
         }
+    }
+
+    #[cfg(feature = "remote")]
+    pub(in crate::application) fn cleanup(&self) -> Option<Shared<oneshot::Receiver<()>>> {
+        self.cleanup.clone()
     }
 
     /// Borrow the exact live root's delivery reference.
@@ -176,69 +180,6 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         match ApplicationClient::establish(target, &self.allocations, self.client_capacity) {
             Ok(client) => Ok(client),
             Err((target, cause)) => Err((target, ExportError::Endpoint { cause })),
-        }
-    }
-
-    /// Declare an actor owned by this Application through its actual Node.
-    ///
-    /// Only Node invocation supplies the native Session. Local-only handles and
-    /// closed Sessions refuse before declaration. Exact native actor ownership
-    /// is checked without allocating a reply endpoint. Each new retained request
-    /// later owns one independently allocated native reply client.
-    ///
-    /// Limits are explicit counts, not byte or whole-service bounds. The supplied
-    /// predicate compares provider-owned logical request identities; it does not
-    /// authenticate them. The refusal callable receives each exact native ingress
-    /// refusal synchronously and must implement the deployment's bounded policy.
-    /// This constructor does not establish readiness, authorization or unique
-    /// targeting across overlapping declarations.
-    ///
-    /// # Errors
-    /// Returns the original target and actual construction cause. Limits and the
-    /// callable are consumed. No native reply endpoint is allocated by construction.
-    /// Cancelling the whole operation surrenders its inputs.
-    #[cfg(feature = "remote")]
-    pub async fn export<Target, Replies, Receipt>(
-        &self,
-        target: EstablishedRecipient<Target>,
-        key: &str,
-        limits: ExportLimits,
-        same_request: fn(&Receipt, &Receipt) -> bool,
-        refused: impl Fn(IngressError<Query>) + Send + Sync + 'static,
-    ) -> Result<Export<Target, Replies, Receipt>, (EstablishedRecipient<Target>, ExportError)>
-    where
-        Target: Protocol<Addr = MailAddr>,
-        Target::Msg: Send + 'static,
-        Replies: Protocol<Addr = MailAddr>,
-        Replies::Msg: Send,
-    {
-        let Some(session) = self.session.as_ref() else {
-            return Err((target, ExportError::NodeAbsent));
-        };
-        if session.is_closed() {
-            return Err((target, ExportError::SessionClosed));
-        }
-        if limits.queued_queries.get() > Semaphore::MAX_PERMITS
-            || limits.retained_queries.get() > Semaphore::MAX_PERMITS
-        {
-            return Err((target, ExportError::QueryCapacity));
-        }
-        if let Err(cause) = self.actor_address(&target) {
-            return Err((target, cause));
-        }
-        let interface = self.interface(target.clone());
-        match Export::declare(
-            session.clone(),
-            interface,
-            key,
-            limits,
-            same_request,
-            refused,
-        )
-        .await
-        {
-            Ok(export) => Ok(export),
-            Err(cause) => Err((target, cause)),
         }
     }
 
@@ -915,7 +856,7 @@ pub struct ApplicationHandle<P: Protocol, Event, Families = ()> {
     client_capacity: MailboxCapacity,
     families: Families,
     #[cfg(feature = "remote")]
-    pub(super) session: Option<Session>,
+    cleanup: Option<Shared<oneshot::Receiver<()>>>,
 }
 
 /// Explicit application lifecycle authority, separate from actor messaging.

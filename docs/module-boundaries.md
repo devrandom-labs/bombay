@@ -45,9 +45,12 @@ their exact shutdown results. Node::run_with joins the existing Application exec
 Node::execute_with retains separate execution and receiving operations.
 Both pass only the ordinary Application handle to work through the same
 invocation owner. Caller-local borrows and non-Send outputs remain supported.
-No remote command is authenticated or admitted by this transport foundation. Typed network exports and multi-node composition remain
-pending;
-transport fixtures do not establish that public surface. Protected Counter
+The unmerged cold-service candidate attaches typed declarations with Node.exports.
+Node owns binding, startup, concurrent serving, withdrawal, joined Application/
+family receiving and native close. The runtime owns operation interpretation;
+wire/security functions remain explicit typed policies. Request extraction is
+optional and transfers original native products without a presentation callback.
+Full remote acceptance remains pending; transport fixtures do not establish it. Protected Counter
 regressions belong to `crates/bombay/tests/protected_counter`, executed by the
 isolated transport-custody package rather than an example binary.
 Ordinary remote Application composition must hide Session ownership, native
@@ -137,7 +140,10 @@ tree:
 | `application/node.rs` | opt-in fresh native Session and one finalized Application declaration, including its Entity families; reuse the existing family execution/receiving owner | `remote::Node`, `NodeExecutionRefusal`; no replacement actor lifecycle or forwarding topology builders |
 | `remote/network.rs` | explicit Network inputs and private fixed TLS configuration construction | Network, NetworkLayout, ConnectionEndpoints and CredentialSource; no public native Config conversion or alternate runtime |
 | `remote/startup.rs` | exact original-input mapping/host/open refusal causes | `remote::NodeStartupRefusal`; actual native causes remain accessible through standard Error sources |
-| `remote/export.rs` | one Node-associated query declaration, retained request originals and independent existing native clients | Merged PR372 delivers `Export`, explicit `ExportLimits`, runtime-issued `RequestKey`, `Admission`, `RequestRefusal` and existing `ExportError`; Application supplies its private Session and certified interface. The dependent concurrent-receive candidate retains actual native waits with the selected futures-util collection and stores acquired originals in the existing owners. Permission providers and native protocol validation retain their own contracts. No default capacity, retry schedule or second mailbox. |
+| `remote/export/mod.rs` | cold Export inputs, explicit limits, keys, attempt states and curated operation/request contracts | Unmerged service candidate; Node alone interprets declarations. No defaults or second mailbox. |
+| `remote/export/declaration.rs` | pure operation selection/encoding and private native admission, reply/EOF draining and exact shutdown interpretation | Reply, Submission and Stop use existing Application clients/senders and exact lifecycle proofs. No stored presentation policy. |
+| `remote/export/query.rs` | declaration startup/withdrawal, bounded query ownership, request interpretation and replay/publication | Existing typed policies and futures-util collection; known-Full waits reuse Communication and fresh request authority. Whole-service unwind remains open. |
+| `remote/export/request.rs` | affine original request facts and independently acquired provider/native results | Original provider results/panics remain outside disposable producers. Consuming extraction returns originals unchanged or the same borrowed Request. |
 | `application/http.rs` | opt-in HTTP preparation, binding and serving over the common execution owner | existing application methods; retains bind, serving and actor failures. The feature-gated outcome mapper remains in `application/execution.rs`. |
 | `local/children.rs` | closed occurrence product, exact creation status, endpoint/control and descendant task retirement | crate-private; creation-order native custody and independent descendant retirement assessments stay with the local actor |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |

@@ -3,6 +3,7 @@ use super::super::super::counter::{Counter, CounterMessage, CounterValue};
 use super::super::assert_retirement;
 use super::{protocol, same_counter, wire};
 use bombay::actors::ActorExt;
+use bombay::behavior::EstablishedRecipient;
 use bombay::prelude::{Application, Completion};
 use bombay::remote::{Export, ExportError, ExportLimits, reply};
 use bombay::{MailAddr, RetirementAssessment, WorkOutcome};
@@ -84,13 +85,7 @@ async fn refused(selection: Selection) {
             },
             limits(),
             wire::decode_counter,
-            reply(
-                wire::counter_read,
-                wire::value,
-                |unsent, client, admission, received, tail| {
-                    (unsent, client, admission, received, tail)
-                },
-            ),
+            reply(wire::counter_read, wire::value),
             &verify,
             &protect,
             same_counter,
@@ -98,29 +93,8 @@ async fn refused(selection: Selection) {
             &current,
         )
     };
-    let (published, foreign_target) = oneshot::channel();
+    let (published, foreign_target) = oneshot::channel::<EstablishedRecipient<Counter>>();
     let (recovered, unused_work) = oneshot::channel();
-    let other =
-        Application::new(Counter::new().stop_on_shutdown()).run_with(|application| async move {
-            let target = application.root().established_recipient();
-            let address = application.root().address();
-            let publication = published.send(target);
-            publication.unwrap_or_else(|_| {
-                panic!("the target consumer waits for a real live foreign actor")
-            });
-            let work = unused_work
-                .await
-                .expect("the exact original Work disposition returns after startup");
-            let result = match work {
-                Some(work) => Ok(work(application).await),
-                None => {
-                    let shutdown = application.request_shutdown();
-                    let retirement = application.retirement().await;
-                    Err((shutdown, retirement))
-                }
-            };
-            (address, result)
-        });
     let scope = configuration_scope.as_str();
     let execution = async {
         let foreign = foreign_target
@@ -186,6 +160,27 @@ async fn refused(selection: Selection) {
             invocations_at_refusal,
         )
     };
+    let other =
+        Application::new(Counter::new().stop_on_shutdown()).run_with(|application| async move {
+            let target = application.root().established_recipient();
+            let address = application.root().address();
+            let publication = published.send(target);
+            publication.unwrap_or_else(|_| {
+                panic!("the target consumer waits for a real live foreign actor")
+            });
+            let work = unused_work
+                .await
+                .expect("the exact original Work disposition returns after startup");
+            let result = match work {
+                Some(work) => Ok(work(application).await),
+                None => {
+                    let shutdown = application.request_shutdown();
+                    let retirement = application.retirement().await;
+                    Err((shutdown, retirement))
+                }
+            };
+            (address, result)
+        });
     let (own, other) = tokio::join!(execution, other);
     let (first, second, bound, closed, native, notifications, refusal, foreign, at_refusal) = own;
     let other =

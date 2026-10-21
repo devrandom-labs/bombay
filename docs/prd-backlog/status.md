@@ -16,8 +16,8 @@ extractions now explicitly refuse outstanding loans; all eight drafts
 (4268 lines) remain unmounted and no cold service build/runtime is credited.
 The [complete change and size checkpoint](../prds/static-remote-actors.md#cold-service--complete-next-change-and-size-checkpoint)
 forecasts950 net production lines over known retained1947, exceeding the
-approved2500 ceiling. Explicit expansion is pending; no production edit is
-made under that forecast. The [duplicate source audit](../prds/static-remote-actors.md#duplicate-progress--current-source-coverage-limit)
+earlier2500 ceiling. The user explicitly approved the bounded1000-net-line,
+five-type, forty-path,4000-verification-line stage on2026-10-17. The [duplicate source audit](../prds/static-remote-actors.md#duplicate-progress--current-source-coverage-limit)
 also requires a causal canonical-inspection witness before protector release;
 queueing duplicate queries alone does not prove that progress. Earlier7509
 missing-contract checks and their scoped reviewb8c7880d remain historical
@@ -655,3 +655,117 @@ crate check pass. Production+209/-184/net25, tests+491/-166/net325, public0,
 carry. This research retention is not reviewed main delivery or full remote
 acceptance. Next is the SDK-free cold Export/Node consumer and integration;
 all R01–R25/AUTH1/NET1 remain open.
+
+
+The integrated cold Export/Node stage is explicitly authorized up to1000 net
+production lines frome3daad58, five gross public additions, forty paths and4000
+additional verification lines. Its first formatted draft measures+1811/-721/net1090
+across nine production and two record paths; tests are unchanged. Further
+production edits stop at the required size checkpoint. The draft fails its
+library check on two borrow errors, and independent source review rejects a
+retirement race that can discard Stop/terminal Read replies plus an unproved
+whole-service unwind cleanup path. Node ownership/close and cold integration
+are incomplete. The PRD records the exact remaining files and a pending
+replacement stage ceiling of2000 from the same baseline; other limits and all
+prior costs carry. This unaccepted draft closes no R01–R25/AUTH1/NET1 row and
+is neither a buildable delivery nor reviewed main acceptance.
+
+Read-only continuation verifies recovery of the unaccepted draft and narrows its
+retirement veto: early target/root retirement is distinct from Work permission
+release and final Application/family cleanup. Stop needs the former report to
+publish its response; pending provider cancellation needs the actual owning
+boundary. No new lifecycle/observation framework is selected. Production1090,
+tests0 and the pending replacement2000 size decision are unchanged; only the
+current records are updated. Full remote acceptance remains open.
+
+Explicit user approval now raises the integrated stage TOTAL ceiling to2000 net
+frome3daad58; five gross public types/forty paths/4000 verification lines and all
+prior charges carry. Pending-size blocker is resolved. The recorded actual-join
+shutdown correction and cold Node integration resume; full acceptance remains open.
+
+
+Cold Node integration now has twenty focused service controls passing in both
+profiles and a finite, post-cleanup retirement inverse failing as intended in
+both profiles, with exact restoration. The latest private remote-only completion
+observation restores the local-only nine-client suite; fresh remote controls on
+that source epoch remain pending. Complete candidate census: production
++2411/-721/net1690, tests+169/-75/net94, public types+5/-2,21 paths. The approved
+replacement total2000/five/forty/4000 limits carry all prior costs. This remains
+an uncommitted, unaccepted candidate; whole-service unwind, causal canonical
+inspection, EOF/permit/staging inversions, caller migration and full remote
+acceptance/CI/reviewed delivery remain open. See the PRD's current status.
+
+
+The cold candidate passes21 focused service cases and owning EOF/constructor
+controls in debug and optimized builds. Constructor outcomes independently
+verifye1a0ffb1. A new owning canonical-comparison case proves real receipt
+inspection during Pending protection under its explicit unit host; the finite
+serialized-serving inverse fails only after native cleanup in both profiles,
+and exact restoration passes. Independent outcome reviewea2f887d verifies
+18 command/log pairs and1219 frozen versions. This
+establishes no Node completion-signal integration or general fairness law.
+All temporary legacy-test exclusions are byte-restored; old callers remain
+unmigrated. Census: production+2411/-721/net1690,tests+551/-93/net458,
+public+5/-2,23 current/24 touched paths. Approved replacement
+total2000/five/forty/4000 and all earlier costs carry, without headroom/reset.
+Fresh origin/main remains49cc8971 and is included; local main points there.
+Whole-service unwind, late duplicates, staging/permit/publication gates, original
+caller migration and full remote acceptance/CI/reviewed delivery remain open.
+The single-decoder-panic model remains unselected, with no double-fault claim.
+
+The user's Counter-example review prioritizes ordinary remote authoring before
+further constructor migration. Both temporary public mounts are restored;
+construction/refusal/pressure sources retain their original laws. The PRD's
+new ordinary-Rust comparison isolates mandatory terminal-presentation callbacks
+from real wire/security policy. No production change, new public type, remote
+example delivery or full acceptance is credited. All existing approvals and
+cumulative costs carry without reset.
+
+The optional terminal-inspection candidate passes the same21 focused service
+cases in debug and optimized builds. Two source/test reviews preserve original
+native results and all existing assertions; operation startup no longer needs
+a terminal presentation callback. Whole current stage is1612 net production,
+318 net tests, five gross public additions and24 current paths. Owning focused
+regressions/inversions, old caller migration and all full remote acceptance,
+distillation, required CI/review and main delivery remain open. Earlier costs
+and the approved total2000/five/forty/4000 limits carry without reset.
+
+Nonterminal native Full is the next active R08 blocker. The cold path retains
+the rejected message but never retries; selected Communication already supplies
+capacity observation. The PRD records fresh exact prerequisites, bounded owner
+changes and a real Node/MailLedger regression before production. Original
+Counter/Ledger pressure laws remain required. This selects no new public type
+or framework and closes no full acceptance row; all existing limits/costs carry.
+
+The owning Ledger Full regressions now pass2/0 in debug/optimized after their
+intended prior-source failures. The existing21 service cases also pass both
+profiles. Capacity waiting and fresh-authority retry add82 net production lines
+within the existing three owners; stage production1694/public+5/-2,29 current
+and30 touched paths. Temporary owning mount is restored; all earlier costs and
+approved total2000/five/forty/4000 limits carry without reset. Next owning Counter
+Reply regression covers that distinct native branch. Broader R08, original
+caller migration, full remote gates, distillation, required CI/review and main
+merges remain open; no complete requirement is claimed from these filtered laws.
+
+The Counter's owning native Reply retry now passes with its actual original
+endpoint, single constructor/canonical callback and one reply/EOF-only tail.
+Both-profile original-body cuts fail only the intended post-cleanup assertion;
+exact restoration passes the three owning controls in both profiles. Two source
+and outcome reviews pass and formatting passes; the temporary mount is restored.
+Stage production1694, tests952, public+5/-2,29 current/30 touched paths. Original
+remote pressure/retirement/replay laws and the full PRD remain open. Existing
+approved limits and all cumulative costs carry without reset or headroom claim.
+
+Next scoped blocker is one nonprovider decoder unwind through cold Node.
+Fresh exact prerequisites and the owning pre-edit regression are recorded in
+the remote PRD. Existing Application cleanup publication and native receiving
+remain the owners; no new runtime or observer is selected. Prove the original
+finite post-cleanup failure in both profiles before production. All accepted
+limits, deferred requirements and existing full PRD/CI/review/merge gates carry.
+
+On2026-10-21 the interrupted decoder prior-source test is confirmed to fail the
+same intended post-cleanup oracle in both profiles. No unwind production edit
+exists. The missing Git link/606 unchanged files were recovered without replacing
+existing edits. Fresh main531ded50 now selects Behavior0.29 and new runtime
+contracts; integrate that reviewed upstream state and requalify consumers before
+further remote lowering. The original stage limits/costs and full PRD scope carry.

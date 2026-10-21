@@ -1,11 +1,13 @@
 //! Actual refusal consumers: original causes, unused Work and acquired native facts coexist.
-use super::super::super::counter::{CounterMessage, CounterProcessed, CounterValue};
+use super::super::super::counter::{
+    CounterIncremented, CounterMessage, CounterProcessed, CounterValue,
+};
 use super::super::super::ledger::{LedgerCommand, Receipts};
 use super::super::actors::{ActorExports, Counters, CountersRole, Creator, Exports, topology};
 use super::super::{assert_exports, assert_retirement};
-use super::{CounterOutcome, LedgerOutcome, peer, protocol, wire};
+use super::{peer, protocol, wire};
 use bombay::actors::ActorExt;
-use bombay::behavior::BehaviorBase;
+use bombay::behavior::{BehaviorBase, User};
 use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
 use bombay::remote::{Attempt, Export, ExportError, ExportLimits};
 use bombay::remote::{reply, stop, submission};
@@ -13,6 +15,7 @@ use bombay::{
     ActorFailureAssessment, ActorRetirement, ApplicationScope, Completion, MailAddr,
     RetirementAssessment, WorkOutcome,
 };
+use futures_util::future::Either;
 use protocol::{
     EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, recorded,
     reserved_address, scheduled,
@@ -30,6 +33,12 @@ use wire::{CounterInput, LedgerInput};
 #[path = "faults.rs"]
 mod faults;
 
+#[derive(Clone, Copy)]
+enum ReplyPermission {
+    Granted,
+    Revoked,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum RefusalStage {
     Binding,
@@ -37,6 +46,7 @@ enum RefusalStage {
     Verification,
     Protection,
     Request,
+    ReplyEncoding,
     Reply,
     VerifiedDisposal,
     RefusedDisposal,
@@ -120,6 +130,15 @@ async fn request_refusal_preserves_the_original_permission_cause() {
     tokio::time::timeout(Duration::from_secs(10), refused(RefusalStage::Request))
         .await
         .expect("finite consumer trace completes before any native query deadline");
+}
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn reply_permission_refusal_prevents_encoding_and_protection() {
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        refused(RefusalStage::ReplyEncoding),
+    )
+    .await
+    .expect("finite permission refusal completes before any native query deadline");
 }
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn reply_refusal_preserves_the_native_reply_and_current_cause() {
@@ -247,6 +266,8 @@ async fn refused(stage: RefusalStage) {
     let counter_entered = RefCell::new(Some(counter_entered));
     let verification_calls = Cell::new(0);
     let protection_calls = Cell::new(0);
+    let encoding_calls = Cell::new(0);
+    let reply_permission = RefCell::new(ReplyPermission::Granted);
     let verify_counter = |bytes: &[u8], proof: &[u8]| {
         verification_calls.set(verification_calls.get() + 1);
         if let RefusalStage::VerificationFactory = stage {
@@ -332,6 +353,9 @@ async fn refused(stage: RefusalStage) {
             _ => wire::protect(bytes, recorded::projection(receipt), &replies, maximum)
                 .map_err(ProtectionRefusal::Provider),
         };
+        if matches!(stage, RefusalStage::Reply) && result.is_ok() {
+            *reply_permission.borrow_mut() = ReplyPermission::Revoked;
+        }
         ready(result)
     };
     let verify_ledger = async |bytes: &[u8], proof: &[u8]| {
@@ -388,23 +412,31 @@ async fn refused(stage: RefusalStage) {
             )
             .map_err(PermissionRefusal::Scope),
         };
-    let current_reply =
-        |receipt: &recorded::Receipt<CounterInput>, runtime: &str, target: MailAddr| match stage {
-            RefusalStage::Reply => Err(PermissionRefusal::Withheld(withhold(
+    let current_reply = |receipt: &recorded::Receipt<CounterInput>,
+                         runtime: &str,
+                         target: MailAddr| match stage {
+        RefusalStage::ReplyEncoding => Err(PermissionRefusal::Withheld(withhold(
+            &configuration,
+            &original_cause,
+            &returned,
+        ))),
+        RefusalStage::Reply if matches!(*reply_permission.borrow(), ReplyPermission::Revoked) => {
+            Err(PermissionRefusal::Withheld(withhold(
                 &configuration,
                 &original_cause,
                 &returned,
-            ))),
-            _ => wire::current(
-                recorded::projection(receipt),
-                runtime,
-                target,
-                wire::binding("counter"),
-                &caller_id,
-                deadline,
-            )
-            .map_err(PermissionRefusal::Scope),
-        };
+            )))
+        }
+        _ => wire::current(
+            recorded::projection(receipt),
+            runtime,
+            target,
+            wire::binding("counter"),
+            &caller_id,
+            deadline,
+        )
+        .map_err(PermissionRefusal::Scope),
+    };
     let current_ledger =
         |receipt: &scheduled::Receipt<LedgerInput>, runtime: &str, target: MailAddr| {
             wire::current(
@@ -430,29 +462,15 @@ async fn refused(stage: RefusalStage) {
         (
             reply(
                 wire::increment,
-                wire::processed,
-                |unsent, client, admission, received, tail| CounterOutcome::Processed {
-                    unsent,
-                    native: (client, admission, received, tail),
+                |receipt: &recorded::Receipt<CounterInput>,
+                 reply: &User<MailAddr, CounterIncremented>| {
+                    encoding_calls.set(encoding_calls.get() + 1);
+                    wire::processed(receipt, reply)
                 },
             ),
             (
-                reply(
-                    wire::counter_read,
-                    wire::value,
-                    |unsent, client, admission, received, tail| CounterOutcome::Value {
-                        unsent,
-                        native: (client, admission, received, tail),
-                    },
-                ),
-                stop(
-                    wire::counter_stop,
-                    wire::stopped,
-                    |admission, retirement| CounterOutcome::Stopped {
-                        admission,
-                        retirement,
-                    },
-                ),
+                reply(wire::counter_read, wire::value),
+                stop(wire::counter_stop, wire::stopped),
             ),
         ),
         &verify_counter,
@@ -471,20 +489,8 @@ async fn refused(stage: RefusalStage) {
         limits(),
         |bytes| wire::decode_ledger(bytes, &ledger_allocation),
         (
-            submission(wire::append, wire::appended, |unsent, sender, admission| {
-                LedgerOutcome::Appended {
-                    unsent,
-                    native: (sender, admission),
-                }
-            }),
-            reply(
-                wire::ledger_read,
-                wire::receipts,
-                |unsent, client, admission, received, tail| LedgerOutcome::Read {
-                    unsent,
-                    native: (client, admission, received, tail),
-                },
-            ),
+            submission(wire::append, wire::appended),
+            reply(wire::ledger_read, wire::receipts),
         ),
         &verify_ledger,
         &protect_ledger,
@@ -706,16 +712,24 @@ async fn refused(stage: RefusalStage) {
     let binding = binding.borrow();
     let (admission, actual, family_admission, family_reply, addresses) =
         binding.as_ref().expect("actual binding trace acquired");
-    let (_counter_inputs, counter_declarations, declared, withdrawn, ingress, counter_requests) =
+    let (_counter_inputs, _counter_declarations, declared, withdrawn, ingress, counter_requests) =
         counter.into_parts();
     let (
         _ledger_inputs,
-        ledger_declarations,
+        _ledger_declarations,
         ledger_declared,
         ledger_withdrawn,
         ledger_ingress,
         ledger_rows,
     ) = ledger.into_parts();
+    match &work {
+        WorkOutcome::Completed { cleanup, .. } | WorkOutcome::NotInvoked { cleanup, .. } => {
+            cleanup
+                .as_ref()
+                .expect("actual Work cleanup succeeds before refusal assertions");
+        }
+        _ => panic!("the actual refusal retains completed or uninvoked Work"),
+    }
     closed.expect("actual Node connection close result");
     peer.closed
         .as_ref()
@@ -872,6 +886,7 @@ async fn refused(stage: RefusalStage) {
                 | RefusalStage::VerificationDoublePanic
                 | RefusalStage::VerificationFactory => 0,
                 RefusalStage::Protection
+                | RefusalStage::ReplyEncoding
                 | RefusalStage::Reply
                 | RefusalStage::ProtectionFactory => 1,
                 _ => unreachable!("only queried refusals acquire a native Counter read"),
@@ -916,7 +931,7 @@ async fn refused(stage: RefusalStage) {
                     protection_disposal,
                 ),
             ) = request
-                .try_into_parts(&counter_declarations)
+                .try_into_parts()
                 .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
             let registered = requests.borrow();
             assert_eq!(registered.len(), 1);
@@ -1046,15 +1061,13 @@ async fn refused(stage: RefusalStage) {
                     );
                 }
                 RefusalStage::Protection
+                | RefusalStage::ReplyEncoding
                 | RefusalStage::Reply
                 | RefusalStage::ProtectionFactory => {
                     verified
                         .expect("actual verification result")
                         .expect("actual receipt");
-                    let Some(CounterOutcome::Processed {
-                        unsent,
-                        native: (client, admission, received, tail),
-                    }) = native
+                    let Some(Either::Left((unsent, client, admission, received, tail))) = native
                     else {
                         panic!("acquired native processing result survives refusal");
                     };
@@ -1070,9 +1083,17 @@ async fn refused(stage: RefusalStage) {
                     );
                     assert_eq!(tail.len(), 1);
                     assert!(matches!(tail.last(), Some(None)));
-                    encoding
-                        .expect("actual reply encoding acquired")
-                        .expect("pure reply encoding succeeded");
+                    match stage {
+                        RefusalStage::ReplyEncoding => assert!(
+                            encoding.is_none(),
+                            "denied reply permission prevents encoding; checked after cleanup"
+                        ),
+                        _ => {
+                            encoding
+                                .expect("actual reply encoding acquired")
+                                .expect("pure reply encoding succeeded");
+                        }
+                    }
                     match stage {
                         RefusalStage::Protection => {
                             let Err(ProtectionRefusal::Withheld(cause)) =
@@ -1092,10 +1113,15 @@ async fn refused(stage: RefusalStage) {
                             assert_eq!(original.as_ptr(), allocation);
                             assert_eq!(original.as_ref(), [37, 41]);
                         }
-                        RefusalStage::Reply => {
-                            protection
-                                .expect("actual protection result")
-                                .expect("actual protected proof");
+                        RefusalStage::ReplyEncoding | RefusalStage::Reply => {
+                            match stage {
+                                RefusalStage::ReplyEncoding => assert!(protection.is_none()),
+                                _ => {
+                                    protection
+                                        .expect("actual protection result")
+                                        .expect("actual protected proof");
+                                }
+                            }
                             let Some(PermissionRefusal::Withheld(cause)) = reply_refusal else {
                                 panic!("original fresh reply current-check cause");
                             };
@@ -1165,7 +1191,7 @@ async fn refused(stage: RefusalStage) {
                     protection_disposal,
                 ),
             ) = request
-                .try_into_parts(&ledger_declarations)
+                .try_into_parts()
                 .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
             let registered = ledger_requests.borrow();
             assert_eq!(registered.len(), 1);
@@ -1204,11 +1230,7 @@ async fn refused(stage: RefusalStage) {
                 .expect("actual sibling encoding retained")
                 .expect("pure Append encoding succeeded");
             faults::assert_panic(protection_disposal, &sibling_panic);
-            let Some(LedgerOutcome::Appended {
-                unsent,
-                native: (sender, admission),
-            }) = native
-            else {
+            let Some(Either::Left((unsent, sender, admission))) = native else {
                 panic!("pending sibling preserves its actual native Append");
             };
             assert!(unsent.is_none());
@@ -1245,6 +1267,11 @@ async fn refused(stage: RefusalStage) {
         (verification_calls.get(), protection_calls.get()),
         expected_calls
     );
+    let expected_encodings = match stage {
+        RefusalStage::Protection | RefusalStage::Reply | RefusalStage::ProtectionFactory => 1,
+        _ => 0,
+    };
+    assert_eq!(encoding_calls.get(), expected_encodings);
     let disposals = disposed.borrow();
     match stage {
         RefusalStage::Binding | RefusalStage::Declaration | RefusalStage::VerificationFactory => {
@@ -1255,9 +1282,8 @@ async fn refused(stage: RefusalStage) {
     match (stage, work) {
         (
             RefusalStage::Binding | RefusalStage::Declaration,
-            WorkOutcome::NotInvoked { work, cleanup, .. },
+            WorkOutcome::NotInvoked { work, .. },
         ) => {
-            cleanup.expect("unused Work retains its actual cleanup result");
             let invocations = invoked.borrow();
             assert!(invocations.is_empty());
             let _original_work = work;
@@ -1266,10 +1292,9 @@ async fn refused(stage: RefusalStage) {
             _,
             WorkOutcome::Completed {
                 output: (scope, payload, report),
-                cleanup,
+                ..
             },
         ) => {
-            cleanup.expect("actual Work cleanup result");
             assert_eq!(scope, configuration);
             assert_eq!(payload.as_ptr(), payload_address);
             assert_eq!(payload.as_ref(), [53, 59]);

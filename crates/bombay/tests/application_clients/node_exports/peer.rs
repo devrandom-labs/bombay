@@ -29,7 +29,7 @@ pub(super) struct Peer {
 }
 
 pub(super) struct Observations {
-    replies: Vec<Reply>,
+    replies: Vec<Option<Reply>>,
     additional: Vec<Reply>,
     refused: Vec<Arc<Mutex<Option<TrySendError<Reply>>>>>,
     pub(super) closed: Result<(), NativeError>,
@@ -37,7 +37,7 @@ pub(super) struct Observations {
 
 impl Observations {
     pub(super) fn received(&self) -> usize {
-        self.replies.len() + self.additional.len()
+        self.replies.iter().flatten().count() + self.additional.len()
     }
 
     pub(super) fn protected(&self) -> Vec<ProtectedMessage> {
@@ -51,6 +51,9 @@ impl Observations {
         self.replies
             .iter()
             .map(|original| {
+                let original = original.as_ref().expect(
+                    "an actual publication precedes query closure; checked after Node cleanup",
+                );
                 let native = original.result();
                 let sample = native
                     .as_ref()
@@ -82,7 +85,7 @@ impl Peer {
         // Query FINAL must be observed while this actor and declaration remain live.
         // Preserve an unexpected reply as an observation and still finish cleanup.
         while let Some(original) = first.recv().await {
-            replies.push(original);
+            replies.push(Some(original));
         }
         self.wait_for(COUNTER).await;
         let (mut second, second_refused) = self.query(COUNTER, &request).await;
@@ -256,12 +259,12 @@ impl Peer {
             .expect("the actual Node has completed cleanup and close");
         let mut replies = Vec::new();
         while let Some(original) = receiving.recv().await {
-            replies.push(original);
+            replies.push(Some(original));
         }
         let mut refused = vec![refused];
         if let Some((receiving, rejected)) = &mut sibling {
             while let Some(original) = receiving.recv().await {
-                replies.push(original);
+                replies.push(Some(original));
             }
             refused.push(Arc::clone(rejected));
         }
@@ -301,27 +304,12 @@ impl Peer {
         };
         let mut replies = Vec::new();
         let (mut appended, append_refused) = self.query(LEDGER, &requests.append).await;
-        replies.push(
-            appended
-                .recv()
-                .await
-                .expect("Ledger progresses while the Counter provider is pending"),
-        );
+        replies.push(appended.recv().await);
         let (mut ledger, ledger_refused) = self.query(LEDGER, &requests.ledger_read).await;
-        replies.push(
-            ledger
-                .recv()
-                .await
-                .expect("actual terminal Ledger reply precedes release"),
-        );
+        replies.push(ledger.recv().await);
         let publication = released.send(());
         publication.expect("the actual pending Counter provider still owns its gate");
-        replies.push(
-            increment
-                .recv()
-                .await
-                .expect("actual correlated Counter processing reply"),
-        );
+        replies.push(increment.recv().await);
         let ((mut duplicate, duplicate_refused), (mut conflict, conflict_refused)) = match repeated
         {
             Some(repeated) => repeated,
@@ -330,20 +318,11 @@ impl Peer {
                 self.query(COUNTER, &requests.conflict).await,
             ),
         };
-        replies.push(
-            duplicate
-                .recv()
-                .await
-                .expect("retained request replay publishes the first reply"),
-        );
+        replies.push(duplicate.recv().await);
         let (mut read, read_refused) = self.query(COUNTER, &requests.read).await;
-        replies.push(read.recv().await.expect("actual Counter value reply"));
+        replies.push(read.recv().await);
         let (mut stop, stop_refused) = self.query(COUNTER, &requests.stop).await;
-        replies.push(
-            stop.recv()
-                .await
-                .expect("exact child joined retirement reply"),
-        );
+        replies.push(stop.recv().await);
         let completion = complete();
         retired
             .await

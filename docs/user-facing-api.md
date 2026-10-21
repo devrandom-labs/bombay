@@ -579,9 +579,9 @@ Await the complete application with
 Work receives the same inferred Application handle as local execution and can
 return caller-local, non-`Send` values. The joined result is the ordinary
 `ApplicationOutcome`, including independent native retirement and both
-notification results. Finish receiving before `node.close().await`, retaining
-the independent close result.
-For independently driven operations, use
+notification results. For the basic transport owner, finish receiving before
+`node.close().await`, retaining the independent close result.
+For independently driven basic transport operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
 
@@ -596,12 +596,28 @@ Declared Entity families use that same Node path. Work selects their existing
 receptionists with `application.entities(role)`; receiving retains the actual
 family shutdown results alongside the root, Work and notifications.
 
-Transport hiding remains unfinished: exported query custody, declarations and
-native receive/retirement results still expose SDK objects. These are
-remaining interface work, not the canonical business callback. Zenoh is Bombay's
-internal network; application authors compose actors and use typed Bombay
-clients and recipients. Both execution entry points preserve the original
-callable on refusal. Missing-host refusal also restores the original declaration;
+The current unmerged remote-service candidate attaches cold declarations with
+`node.exports(exports, binding)`. The asynchronous binding returns the actual
+root/child target proofs after staging. `Export::new` selects explicit limits,
+wire decoding, operation declarations, verification/protection, request identity
+and current request/reply permission. `reply`, `submission` and `stop` each
+take operation selection and wire encoding; they require no terminal reporting
+callback. Existing actor behaviors and their ActorExt policies stay unchanged.
+
+Run an attached node with `run_with` for supplied caller work or `run` for genuine
+work absence. The node owns declaration startup, receiving, withdrawal, joined
+Application/family cleanup and connection close. Optional `node.into_parts()`
+returns exports, the original binding result and actual close result only after
+joined execution has acquired them; otherwise it returns the same Node.
+An export's `into_parts` and a retained Request's `try_into_parts` provide deliberate
+advanced inspection of originals. Request extraction needs no declaration or
+presentation callback and returns the same Request while custody is borrowed.
+
+This candidate is not merged remote support. Whole-service unwind, full retry
+acceptance, outbound typed Actions, full public SDK privacy and resource/security
+acceptance remain open. Zenoh stays an internal networking owner; ordinary
+applications must not assemble its request/reply loops. Refusal preserves the
+original callable. Missing-host refusal also restores the original declaration;
 a second execution returns `NodeExecutionRefusal::ExecutionIssued`, including
 when that already-issued Node's Session is closed.
 
@@ -618,14 +634,14 @@ controls; the private remote service remains required before full interface
 acceptance.
 Whole operation disposal is surrender, not proof of joined retirement.
 
-Node and `ApplicationHandle::export` are delivered on main. Export uses
-its Node's private Session and actual Application ownership. Each request
-retains its originals with an independent reply client and preserves native
-nonwaiting admission results. Concurrent receiving preserves query/native
-acquisitions independently of provider verification, reply protection and
-current permission. Authenticated remote operations and the ordinary multi-node
-API remain pending. The developer experience coordination tracks joined-node
-verification and the remaining SDK configuration/query interfaces to encapsulate.
+The former imperative `ApplicationHandle::export`, `retain`/`attempt`/`retry`
+and manual `undeclare` path is retired in this candidate. Historical main delivery
+is recorded in the remote PRD; it does not select a second current spelling.
+Retained requests preserve original protected bytes, opaque receipts, actual
+native attempts and replies independently of verification, protection and
+permission. In particular, native `Full` preserves its exact rejected command;
+automatic retry waits for native capacity and obtains fresh authority. The
+owning Ledger laws pass locally; Counter Reply and full remote gates remain open.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 

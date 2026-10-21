@@ -11,7 +11,11 @@ mod network;
 pub(crate) mod startup;
 mod verification;
 
-pub use export::{Admission, Export, ExportError, ExportLimits, RequestKey, RequestRefusal};
+pub(crate) use export::Exports;
+pub use export::{
+    Attempt, Export, ExportError, ExportLimits, Reply, Request, RequestKey, Stop, Submission,
+    reply, stop, submission,
+};
 pub use ingress::{IngressError, try_retain};
 pub use metadata::Metadata;
 pub use network::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};

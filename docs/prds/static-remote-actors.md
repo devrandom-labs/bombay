@@ -1,55 +1,73 @@
 # Static remote actors and typed admission
 
-## Current status (2026-10-17 UTC)
+## Current status (2026-10-18 UTC)
 
-The concurrent ownership comparison passes its scoped controls and two reviews.
-The complete cold-service change is recorded at the
-[size checkpoint](#cold-service--complete-next-change-and-size-checkpoint).
-Its forecast950 net production lines would exceed the approved2500 cumulative
-ceiling from known retained1947. Explicit authorization is required before that
-production work; no increased allowance is assumed. The current change has no
-production or public API addition. Latest main49cc8971 was fetched again and
-is already included.
+The user approved the replacement total stage ceiling of 2,000 net production
+lines from e3daad58 (2026-10-17: “I FUCKING APPROVE”). Other limits remain five
+gross public additions, forty changed paths and 4,000 additional authored or
+modified verification lines. Earlier costs carry; this is a replacement total,
+not an additive grant. No further size approval is pending within these limits.
 
-Identity checkpointc6d133f5 is committed and pushed: the two projections from
-existing owners pass389 library and22 client tests per profile, intended source
-inversions, strict lint, formatting and no-default checking. Independent source,
-31-command outcome and recovery reviews pass. Archive078aec83 and the required
-four-bundle chain recover its exact tree. This closes only the local identity
-prerequisite. The cold consumer errors below describe7509c62f, before those
-methods existed; no cold compile or service success is inferred atc6d133f5.
+The uncommitted cold Export/Node candidate now compiles with all features and
+passes twenty-one focused service cases in debug and optimized builds. The
+retirement and pre-encoding-permission inverses fail their intended post-cleanup
+assertions in both profiles; exact restoration passes all twenty-one controls.
+The owning EOF control and intended guard-removal inverse also execute in both
+profiles with exact source and temporary-mount restoration. These are scoped
+laws, not full remote acceptance. The corrected constructor case passes both
+profiles; dropping only the unused original constructor fails its intended
+post-cleanup assertion in both profiles, then exact restoration passes. Original
+legacy-test mounts are restored; old callers still prevent full-target acceptance.
+The owning canonical-comparison case also passes both profiles; a finite serialized-serving inverse fails only
+its post-cleanup comparison oracle in both profiles. This uses an explicit unit
+host and establishes no Node completion-signal or general fairness claim.
 
-Latest main49cc8971 was fetched again and remains included in this research
-branch. The public cold Node path is still unimplemented. Its twenty proposed
-cases now cover healthy mixed protocols/children/families, original refusals,
-constructor exhaustion, pending siblings and borrowed waits, target certification,
-current guard construction, total request custody and distinct provider factory,
-poll and disposal faults. All eight draft files remain unmounted:4268 current lines of
-source after the six consuming-extraction corrections below. They supply no
-passing service or full-requirement evidence.
+Operation declarations now require only selection and encoding. Optional
+Request extraction returns the original native products directly; starting a
+service needs no terminal presentation callback or report enum. The same21
+service cases and three focused owning cases pass in both profiles. Dropping
+only the unused original constructor fails its post-cleanup assertion in both
+profiles; exact restoration passes. Both independent review passes and final
+formatting pass. All temporary mounts and production inversions are restored.
 
-That source cohort adds no production code or public type. Independent two-pass
-source reviews qualify each bounded law. Final debug/optimized consumer checks
-both fail on25 direct missing contracts plus two inference cascades; owning
-constructor checks both fail on five missing contracts. Both final formatting
-checks pass. Outcome reviewb8c7880d checks all25 new command records and1030
-frozen versions twice, including exact restoration of both temporary mounts.
-No successful cold build or runtime test is credited.
+Nonterminal Full now waits for capacity and retries the exact message under
+fresh request authority. Two owning Ledger cases pass debug/optimized after
+their intended prior-source failures in both profiles. Complete original Box,
+sender, constructor and publication or refusal facts survive actual cleanup.
+Both source and outcome reviews pass. The existing21 service cases also pass
+both profiles. The Counter's native Reply retry also passes its focused laws
+and original-body inversion in both profiles. Original remote Counter pressure,
+retirement races and the remaining R08 laws are still open.
 
-The earlier private acquisition608c2326 adds12 net production lines and no public
-type. Its actual original-result and independent poll/disposal controls, intended
-inversions, public verification and22 application-client cases passed in both
-profiles, with strict lint/format checks. That scoped evidence remains separate
-from this source cohort and full Node service acceptance.
+The local-only client suite passes nine tests after confining the shared
+Application completion observation to the existing remote feature. The private
+binding port remains one argument. Fresh remote controls against this feature
+isolation source pass in both profiles; earlier epochs remain separately bound.
 
-Next select and implement one cold Export/Node path against these exact consumer
-contracts, preserving six distinct native provider panic slots, one Request
-vector and existing invocation/retirement owners. The selected total request
-quota deliberately replaces distinct-entry semantics. The discarded third-query
-permit check had a real destructor-order race; permit discharge remains an owning
-runtime/resource gate. Current-guard construction does not prove guard retention
-through result storage/publication or revocation. All full R01–R25/AUTH1/NET1,
-SDK privacy, distillation, required CI/review and normal main delivery stay open.
+Complete tracked and untracked census at this checkpoint:
+
+```text
+production: +2415 / -721 / net 1694
+tests:      +1211 / -259 / net 952
+public API: +5 types / -2 types
+paths:      29 current / 30 touched including the restored owning mount
+```
+
+This is new capability code, not code reduction. The census includes the
+untracked owning EOF/comparison tests as test source and all four new export
+modules.
+Historical, copied, rejected and modified verification costs remain charged;
+these totals do not certify unused verification headroom.
+
+Still open: whole-service nonprovider unwind cleanup, full Node cancellation
+integration, late duplicates, staging-not-invoked custody, permit and later-publication inversions, original caller-law migration,
+public SDK privacy, protected outbound Actions, the remote-counter application,
+two-process/security/fault-host/resource gates, repository minimization, required
+CI/review and normal main delivery. All full R01–R25/AUTH1/NET1 rows remain open.
+A fresh origin/main fetch remains49cc8971, already an ancestor. The unused local
+main ref was fast-forwarded from67a286cf to that exact fetched head. Identity
+c6d133f5 and private custody1c97ab32 remain separately committed prerequisites. The current implementation is an
+unaccepted working-tree candidate above e3daad58.
 
 ## Earlier private-startup checkpoint (2026-10-17 UTC)
 
@@ -35997,3 +36015,1167 @@ All full acceptance, historical costs and prior evidence qualifications carry.
 Checkpoint against1c97ab32, including untracked files: production+0/-0/net0;
 tests+0/-0/net0; public API+0/-0 types; two documentation paths, no untracked
 file. This source-only audit executes no new Rust test or runtime command.
+
+
+### Explicit integrated-stage authorization — 2026-10-17
+
+The user's exact response is “I approve” to the recorded bounded-stage question.
+Authorize1000 additional net production lines frome3daad58 (known retained
+ceiling2947), five gross public additions with Admission removed, forty paths
+and4000 additional authored/modified verification lines. Historical charges,
+prior/copy/rejected/unknown extents and full R01–R25/AUTH1/NET1 remain unchanged.
+The earlier pending-size blocker is resolved; no second approval is required
+within these explicit limits. The existing pre-edit change record supplies the
+complete stage, owners, expected files, concrete twenty-case regressions and
+forecast950. The source audit's causal duplicate-before-release gap remains a
+required owning regression, not a reason to restore serialized processing.
+
+
+Fresh stage prerequisites: lock667a03e9, all13 selected archive checksums/VCS
+and18 manifests match; no patch. Selected Behavior760-line instructions2b7a9195
+are reread completely.37 prior owner-source inputs are unchanged; the seven
+changed inputs are current Node/interface/private acquisition, shared protocol,
+replay and the two records, already inspected at the retained checkpoints and
+re-inspected at their current ownership seams. Existing Behavior/Actors,
+Address, Communication, Observe, Timers, Entity and SDK contracts remain selected.
+
+Pre-edit control model: Export has cold inputs and independent actual startup/
+withdrawal results; its one Request vector retains originals and acquisitions.
+Private request identity is Unassigned, Canonical(key) or Duplicate(key), not
+an inferred ordinal relationship. Provider Results and six actual factory/poll/
+disposal panics live outside their actual producers. One private producer owns
+only polling/result acquisition and individually caught destruction, reusing
+poll_verification; it serves both real verification/protection substitutions.
+The actual request operation's returned unit is acquired outside that operation
+before disposal. That is quiescence, not authentication or successful reply.
+FuturesUnordered drives current operations. A duplicate retains its Query in its
+existing row; a canonical completion revisits matching rows, and a later duplicate
+consults the retained actual completion. No extra observation cell/table is added.
+
+After current request permission, pure declaration selection retains the original
+FnOnce constructor, then invokes existing native client/sender or exact actor
+control. Canonical keys follow actual constructor success. Native Reply owns
+constructor/admission/first User-or-EOF and tail; Submission owns constructor/
+admission without a reply endpoint; Stop owns actual shutdown/retirement facts.
+Native aliases use standard closed products. The declaration products own only
+pure projection, encoding and consuming presentation. They replace the fixed
+Replies row and duplicated caller interpretation; no second Behavior contract.
+Root control is the exact existing root lifecycle after endpoint equality;
+child control comes from the exact EstablishedActor/InstalledActor proof.
+Unsupported control cannot fabricate a shutdown result. Typed ingress policy
+discharges Query before its permit, retains actual capacity causes and explicit
+Full/Closed disposition in bounded diagnostics, as the owning native test does.
+
+Preserve actual operation completion separately from client EOF. At target
+retirement, individually dispose pending producers, withdraw/drain query ingress,
+then drain actual client tails. Node's existing binding starts exports before
+supplied or absent Work; existing paired receiving retains root/family facts.
+Only the post-join close acquisition permits successful consuming Node extraction.
+Before production, refresh the existing complete consumer's intended missing-
+contract denial. Add the causal owning canonical-inspection regression against
+actual Request/producer ownership before retaining the completed implementation;
+its whole-cell inverse must fail after cleanup. Bulk caller migration waits for
+focused debug/optimized acceptance. All fields/branches must map to these laws;
+new compiler-driven surface reopens the model rather than extending it.
+
+Fresh intended prior-source consumer checks return101 in both profiles with23
+diagnostics (six unresolved-import E0432, four missing diagnostics-field E0560,
+thirteen E0599 including two inference cascades). Both temporary mounts are
+restored exactly before production. These are missing-contract denials, not
+runtime acceptance. Production lowering now begins under the explicit grant;
+the full change remains one integrated stage rather than a new prerequisite.
+
+The exact child-control transfer also reuses existing ExtractLocalEndpoint as
+InterpretInstalledActor, adding that owning endpoint path to the forecast.
+This is the existing Behavior transfer port exercised by child_service_stop,
+not a new forwarding wrapper or actor contract. Plain protocol recipients retain
+no child control; same-protocol child recipients cannot receive root lifecycle.
+Root control requires equality of the actual endpoint, not numeric address.
+Remove RequestRefusal with its retired public retain/attempt/retry surface;
+no new cold caller issues those old key operations. Its causes remain represented
+in the new exact request/permission/native facts, not a compatibility alias.
+
+Canonical-key commitment is an internal FnOnce at the existing native dispatch
+seam: after actual endpoint success (or verified exact Stop control), before
+command construction/native entry. Every valid leaf invokes it exactly once;
+missing Stop authority returns without invoking it. This preserves the selected
+no-key constructor refusal and no-retry interrupted-send laws without guessing
+which declaration leaf was chosen. It is not an application callback or effect.
+
+Model correction before the next production batch: a protocol-only child target
+has no exact child retirement/control proof. The first query candidate's None
+control used a permanent pending future; reject that placeholder immediately.
+Keep optional exact-target retirement as genuine absence via OptionFuture, and
+also wait on the existing Application lifecycle's real retirement observation.
+No new observation cell is created. Exact child proof can end its export earlier;
+Application retirement is the final boundary for recipient-only declarations.
+Stop on a recipient lacking exact control returns StopAuthority without a native
+shutdown attempt or canonical key. Consuming the loop's observation is explicit
+wake/boundary policy; request Stop and full Application native results preserve
+independent original reports. No public type or broader shutdown authority.
+All authored/rejected candidate costs remain charged; no refund or reset.
+
+
+### Integrated-stage checkpoint — size stop, 2026-10-17
+
+The approved1000-net-line allowance was underestimated. After the first complete
+formatted Export draft, the complete tracked/untracked stage frome3daad58 is:
+
+```text
+production: +1811 / -721 / net1090
+tests:      +0 / -0 / net0
+public API: +5 gross types / -2 old types
+paths:      11 (nine production, two records)
+```
+
+The five gross additions remain Request promotion, Admission-to-Attempt
+replacement, Reply, Submission and Stop; the removals are Admission and the
+retired RequestRefusal. Export is reshaped, not another added type. The existing
+4268 unmounted consumer/constructor lines are unchanged. Historical retained1947,
+public reservations12, earlier authoring/copy/rejected/unknown charges and all
+verification costs carry; this unaccepted draft does not become retained
+production merely by adding1090 to that historical count. At the first measured
+breach all further production edits stopped, including apparently small compiler
+repairs. No cap is reset through a commit, file split or discarded candidate.
+
+Pinned-Nix approved-cold-owner-library-check terminates101 on unchanged sources:
+two E0505 errors in declaration.rs234/275, where the client field is lent while
+an async closure captures its containing native product. Compiler output vetoes
+that spelling; it does not select Clone, another wrapper or a new semantic model.
+There are also three unused-import warnings. No cold runtime case has passed;
+Node attachment/run/consuming extraction and family-aware absence projection
+are still missing. The old public Handle export path is removed in this draft,
+so old callers are currently incompatible. This is an unaccepted working draft,
+not a buildable or delivered feature.
+
+Independent two-pass source review by the existing remote_readiness reviewer
+finds a stronger veto: query.rs342–369 prioritizes target/application retirement
+before request completions, then drops those operations and discards their
+Queries. Stop awaits the same retirement, so its original report and protected
+reply may never be acquired; terminal Ledger Read can lose its ready native
+reply. Tail draining cannot recover the selected first reply, and Stop has no
+tail drain. Reordering select alone or assuming one opportunistic final poll
+establishes every ready acquisition is not an accepted fix. Neither is waiting
+forever for arbitrary pending provider futures a proved joined-cleanup law.
+
+The correction must conserve the exact Stop report and first native User/EOF,
+including the accepted prefix after actual target retirement, before completing
+the corresponding encoding/protection/publication path. Already issued native
+admission and provider factories cannot be retried during retirement. Pending
+verification/protection disposal retains the actual acquired outputs and fault
+payloads independently. The current full-native RefCell loan across receive
+also prevents closing that client through the same borrowed native product;
+resolve that ownership using existing concrete client/endpoint owners, without
+adding lifecycle authority, a second observation cell or an erased operation.
+Record and verify the final model before any further production lowering.
+
+The review separately rejects whole-service cleanup credit from the local
+provider guard: decoder, equality, permission, command projection/construction,
+encoding and permission destruction can unwind outside that guard. Serving has
+taken its Queryable out of Export.active and performs withdrawal/drain only on
+normal fallthrough. Node's owning containment and cleanup must handle these
+actual boundaries before successful extraction can claim joined cleanup.
+The review confirms the single append-only request vector, pre-factory quota,
+original endpoint refusal/unused constructor, exact actor control, fallible Rc
+extraction and Query-before-permit disposal as source properties only.
+
+The concrete remaining integrated-stage files are the current Export children,
+application/node.rs, application/work.rs, existing old-API owning tests and
+network_replay callers, the privacy fixture, the eight draft consumer files,
+module/capability/API records and these PRD/backlog records. No extra public
+type, SDK-facing compatibility path, dynamic registry or runtime is proposed.
+First repair the retirement/cleanup ownership model and its owning regressions;
+then complete Node's existing startup/binding/work/receiving/close composition,
+prove focused debug/optimized cold controls and intended inversions, and only
+then migrate distinct old caller laws and run the scoped strict gates.
+
+Request a replacement total stage ceiling of2000 net production lines from the
+samee3daad58 baseline, rather than another additive1000 or a reset. The other
+approved limits remain five gross public additions, forty changed paths and4000
+additional authored/modified verification lines, with all historical charges
+carried. This allows at most3947 known historical-plus-stage production if the
+whole permitted candidate were ultimately accepted. It is a ceiling, not a
+forecast or retention claim; the current1090 already counts against it. The
+additional room covers the concrete missing Node/absence composition and the
+rejected retirement/cleanup path, not a broader redesign. Explicit approval of
+this replacement ceiling is pending. AGENTS.md330–333 requires this stop;
+prior approval of1000 and the full completion instruction do not authorize2000.
+All R01–R25/AUTH1/NET1, public remote-counter, two-process/fault-host/resource/
+security/freshness, distillation, review, required CI and normal PR/main merges
+remain open. No full acceptance row or delivery state changes here.
+
+
+### Read-only continuation while size approval is pending
+
+The previous goal turn made progress by producing the actual library veto,
+independent source review, measured size stop and a recoverable draft. No new
+size authorization is inferred from the automatic continuation. The lock remains
+667a03e9 and the production bytes remain identical to the archived draft.
+
+Root recovery verification checks all1122 manifest payloads and10748 direct
+before/after map entries for the five current command records. Starting from
+live exacte3daad58, its binary patch plus four untracked source payloads recover
+all ten changed extant files and the exact export.rs deletion. No historical
+bundle-chain re-audit or successful Rust execution is inferred. The archive is
+remote-cold-draft-20261017T160153Z.tar.gz, SHAe7fe16ef071d8c409ff1825136f87da3bfe5bacd578aebe044c53139cef91677;
+its adjacent recovery record states the base and scope. Inline recovery tooling
+and all historical/copy/modified/unknown verification costs carry.
+
+Read-only ownership inspection narrows the correction further. An existing
+ApplicationClient owns both close_admission and affine receive. A receiver can
+end its borrowed wait before that same owner closes admission and acquires the
+accepted prefix; no cloned client, new public control or external cleanup
+wrapper is justified merely by the two E0505 errors. InstalledActor and root
+lifecycle already provide independent observations of their exact report.
+However, target retirement is also the event an authorized Stop must await
+before encoding/protection/publication. It therefore cannot automatically mean
+cancel every unfinished request. The existing pending-sibling fault consumer
+has a genuinely pending protector whose original native reply and independent
+disposal must survive final Application cleanup; waiting forever for every
+accepted pipeline is also invalid evidence.
+
+The current private Application kernel already separates early root report
+publication from Work's permission release, original root handoff and family
+shutdown (execution.rs1649–1688). Exports continue to be driven while Work is
+pending and beside actual joining after that permission release (1733–1800).
+The draft only receives the earlier retirement observation. A correct lowering
+must use the actual existing ownership boundary for final cancellation, while
+allowing terminal responses before that boundary; an ordinal, Ready-priority
+assumption or synthetic permanently pending future cannot replace it. This is
+an unresolved source-model gate, not approval for another lifecycle/observation
+framework, public type or repeated native admission/provider invocation.
+No model is certified solely because this read-only note describes the gap.
+
+Current production/test/API/path counts remain1090/0/five-gross/eleven. The only
+new repository edits in this continuation update these two current records.
+The pending size question remains pending; no runtime, CI or merged state changes.
+
+
+### Approved resumed lowering: terminal replies and actual Application join
+
+The replacement2000 total stage ceiling is explicitly authorized; no second
+approval within2000/5/40/4000 is required. The pre-edit current production is
++1811/-721/net1090, tests0, five gross public additions/two removals, eleven paths.
+
+Selected-lock667a03e9/no-patch and owning revisions are unchanged. Re-inspection
+includes exact InstalledActor/root observations, ApplicationClient receive/close,
+private invocation/Work release/native receiving, and locked Futures Shared.
+
+Deliberate Bombay policy: target retirement withdraws ingress but does not
+cancel terminal request acquisition. Every accepted request remains driven.
+Its actual client wait can observe exact target/Application retirement, release
+that temporary receive loan, close its same native client, then acquire the
+accepted first User/EOF. Stop independently acquires its actual existing report.
+After withdrawal the actual request collection is drained, not dropped before
+acquisition. Provider interruption is tied to the actual Application cleanup
+join, which already waits for root/task ownership and Work permission/families.
+Use Shared on that existing joined oneshot receiver; kernel and exports observe
+the same native result. Do not create another publisher, lifecycle or cell.
+
+A provider is actually invoked once and its real future polled first; a Ready
+result is stored before disposal even when final cleanup is ready. A genuinely
+Pending provider is disposed once when that actual join settles. Its result
+stays absent, never converted to success; native results and six distinct
+provider fault slots survive. This also permits a terminal provider that is
+immediately Ready after retirement while honestly cancelling a pending one at
+final cleanup. Final cleanup is not a new deadline or a bounded-memory claim.
+
+Expected additional production files: existing application/execution.rs shares
+its exact joined receiver and passes it through its private optional binding;
+node.rs supplies the static Export product/startup/run/close owner; work.rs adds
+the family-aware genuine-absence projection; current Export children correct
+the selected acquisition law. Existing focused private binding tests receive
+that actual join parameter without starting fake services. No new public type.
+Expected total stage production remains below2000; measure formatted complete
+tracked/untracked delta at each batch, not compressed lines. The two E0505
+spelling corrections split disjoint native tuple loans and change no ownership.
+
+The existing twenty cold consumer hypotheses remain the end-to-end law tests,
+including actual terminal Read/Stop and pending sibling disposal. They still
+fail before lowering. Once that path compiles, restore the retirement-first
+source defect and establish intended post-cleanup failures in debug/optimized
+builds before crediting the correction. Add the required owning causal duplicate
+inspection regression, fresh current-permission/publication and permit inversions.
+Provider-local containment is still not whole-service unwind containment:
+retain the actual queryable in Export until owning withdrawal, and use existing
+execution/receiving to join native cleanup before Node close on unwind. Record
+that separate exact model before implementing its panic propagation; no silent
+new public panic result product or reuse of six provider slots is selected.
+
+
+Node lowering uses its existing concrete owner with three additional inferred
+parameters: Exports, Binding and BindResult. Their defaults are the genuine
+empty export product, absent binding and uninhabited result for the existing
+ordinary Node. Attached Node stores the actual export product, optional original
+FnOnce binding, optional original typed binding Result and optional acquired close
+Result. No new wrapper/typestate product is introduced. exports consumes the
+ordinary Node once; attached run/run_with reuse the same existing private kernel
+and independent root/family receiving, then acquire Session close before storing
+its Result. Consuming into_parts returns the complete export product, original
+binding Result and close Result only after that joining/close path. A cancelled
+borrowed wait retains Node outside its operation; whole-operation surrender
+cannot manufacture its close receipt. Plain Node's advanced execute path remains
+until focused controls pass, then SDK privacy/caller migration audits select its
+final public surface. No extra type or compatibility export path is added.
+
+The internal exact-target proof and its associated Control must have the same
+crate-private contract visibility as the existing Node-consuming Exports port;
+their owning declaration module remains private and neither is re-exported.
+This is the selected static ownership transfer between existing internal owners,
+not a public extension port. Keep Commands/Reports hidden behind their owning
+module and allow the deliberate inferred private bounds on public constructors/
+consuming presentation; do not publish interpreter traits to resolve diagnostics.
+
+
+First actual library check of the Node lowering passes. The full application_clients
+check is blocked by18 retired network_replay caller diagnostics plus two draft
+source errors: a slice/Box byte comparison and callable inference through a
+forward-declared oneshot consumer. Correct only those draft spellings: compare
+the same bytes as slices and declare the cold receiving future after its producer
+constrains the channel. Preserve assertions and actual runtime scheduling. A
+short temporary node_service integration target mounts the same actual actors/
+consumer files, isolating the focused law before bulk old-caller migration;
+application_clients remains broken and receives no full verification credit.
+
+
+The focused check exposes a circular inference in the target draft's two
+channels: each cold future needs the other channel's callable/capability type.
+Name the actual foreign port once as oneshot<EstablishedRecipient<Counter>>,
+the already selected domain contract. This adds no actor/adapter type and does
+not alter scheduling or assertions. Moving declarations alone was insufficient;
+retain that failed check as source evidence, not accepted inference syntax.
+
+
+Actual isolated debug runtime:19pass/1fail, all cleanup preceding the lone
+Reply oracle. The fixture always denied the first pre-encoding check while
+expecting actual encoding/protection. Independent two-pass review accepts a
+causal correction: an explicit Granted/Revoked test sum, actual successful
+protection revokes permission, and the fresh real-scope publication check owns
+the original Withheld cause. All original assertions remain; add separate
+first-check denial coverage before claiming that distinct adverse law.
+
+Source review also finds that taking the original binder before staging can
+drop it if staging rejects. Retain &mut Node.binding in the startup closure and
+only take the FnOnce at actual invocation. Successful into_parts also refuses
+while an uninvoked binder remains, returning the same Node and its original
+inputs. No new public product or fabricated binding result. This source repair
+still needs its owning staging inversion; no such execution is inferred.
+
+
+The new EOF source veto receives an owning regression: acquire actual native
+client EOF once after real endpoint construction/admission, poll actual Reply
+tail draining once, then inspect that observed Poll only after Application
+cleanup. First EOF is the original and tail stays empty; the old repoll yields
+Pending and fails after cleanup. No fabricated second EOF. The regression is
+written before the production correction. Existing old-API unit targets still
+block its execution; no passing/inversion credit is inferred yet.
+
+
+All20 focused node_service cases now pass in both debug and optimized builds.
+They do not yet establish intended retirement/source inversions. Strengthen the
+native peer's existing reply observations to retain actual Option<Reply> when
+query closure arrives without a reply, continue its normal completion handshake,
+and assert the missing publication only after Node execution, family receiving
+and Session close. Preserve accepted replies and exact native reply errors;
+never use a timeout or pre-cleanup peer panic as the intended law oracle.
+This lets the existing retirement-first defect complete cleanup before the
+original missing-response assertion fails. No production behavior changes in
+that observer correction. Review each repaired oracle twice before retention.
+
+
+The Option<Reply> observer controls pass20/0 in both profiles. Independent two-pass
+review confirms both missing Ledger and Stop replies allow the normal completion
+handshake, native query disposal and real close. Move the protected-reply oracle
+after actual cleanup/Node and peer close, notifications, family shutdown and
+both declaration-withdrawal success checks. Borrow the peer close Result to
+preserve it while the later observer borrows the whole peer. The intended
+retirement inverse then cannot receive credit from merely acquiring a failing
+cleanup Result it has not checked. Test timeout remains a rejected negative.
+
+
+Retirement inverse now fails its exact missing-publication assertion after
+successful cleanup, both closes, native notifications/family and declaration
+withdrawal checks in both profiles (debug0.06s/optimized0.02s). Exact control
+query source527e7540 is restored; restored full controls pass20/0 debug and
+20/0 optimized. This establishes the scoped retirement/acquisition law only,
+not EOF unit, causal canonical inspection or whole-service unwind acceptance.
+
+Pre-edit Node state audit reopens the two independent optional binding fields:
+the uninvoked FnOnce and returned Result are exclusive capabilities, not two
+coexisting facts. Replace them with one private Binding<Call,Receipt> sum:
+Uninvoked(Call) or Invoked(Option<Receipt>). The latter's optional receipt is
+an actual acquired return or absence, never permission to retry. The optional
+whole Binding means ordinary Node has no attached binder. Application declaration
+and native close remain independent owned values. This adds no public type.
+
+The private sum owns the unique affine callable-or-acquired-result distinction;
+it implements no new actor/event/effect law. The old pair can represent both at
+once and does not express that ownership. It deletes Node.bound and its separate
+mutations; the concrete use is original binding refusal, borrowed result and
+staging-not-invoked custody in the existing cold consumers. No forwarding
+wrapper, builder, runtime or transition authority is introduced. All callbacks
+still run once through the same existing kernel. Forecast under30 net lines in
+node.rs. Before/after ownership states are the same three real possibilities
+(uninvoked, entered-without-return, returned); only invalid simultaneous
+callable+result storage is deleted. Source concerns remain unaccepted pending
+focused controls, inversions and minimization.
+
+
+Scope audit: the new private binding input also reaches cold HTTP and existing
+private invocation probes; none may receive a fake join. Update the existing
+None function type in HTTP and pass the actual new parameter through private
+probes when their migration opens. Ordinary Application has no export consumers:
+share its existing joined receiver only when a real binding is supplied; keep
+the original receiver otherwise using existing Either, without allocating a
+second completion owner for no-binding applications. Both branches own that
+same single native joined channel; only exports require independent waits.
+This changes no public type or ordinary local lifecycle law. It deletes the
+unconditional Shared allocation, not an existing completion fact. Expand the
+existing packed ingress macro statements for readable custody order and import
+existing semantic names once; no admission or ordering change.
+
+
+The no-default-features client build vetoes the unqualified private port: its
+futures-util import is absent outside remote. Fresh manifest/source verification
+confirms futures-util0.3.34 is optional under remote, and Shared/shared require
+std or alloc+spin (normal manifest only selected alloc; dev selected std).
+Do not add the dependency to the local core or rely on dev/SDK unification.
+Explicitly enable std on the existing remote-only dependency; Cargo.lock stays
+at the same exact version/checksum. This selected feature edge is now verified.
+
+Independent source review accepts this narrowed pre-edit correction: preserve
+the existing one-argument private Binding(&ApplicationHandle) port. Under remote
+only, share the existing cleanup-completion receiver for actual Some(binding),
+keep the original receiver for None, and project that actual optional observation
+through the ApplicationHandle's private construction/clone/cleanup accessor.
+Node startup clones that existing observation; no user API, publisher, new cell,
+extra callback parameter, trait or local dependency is added. Remove the extra
+join argument and incidental HTTP migration. The private Handle is already the
+owning Application capability projection; this field has no shutdown/address
+or admission authority. Its remote-enabled layout grows; no zero-size claim.
+The existing completion signal, including closed-receiver disposition, is a
+provider-cancellation boundary, never proof of clean task completion. Actual
+cleanup JoinError, root/family/notification receiving and close remain separate.
+Whole-service unwind and other unverified gates stay open.
+
+
+Before changing the refusal consumer: add the distinct pre-encoding reply
+permission law. A valid original request must retain its actual constructor,
+admission and native reply, but acquire no encoding or protection when its
+first current-reply check refuses. The original borrowed permission cause and
+zero publications must survive normal root/family cleanup and both closes.
+Reuse the existing refused trace with a ReplyEncoding alternative; no production
+or public types change. Expected one test path, under70 authored test lines.
+The current Reply alternative still tests revocation by successful protection
+and denial by the fresh publication check. Do not conflate these traces.
+Check the actual Work cleanup Result before either intended oracle. The owning
+inverse bypasses only the pre-encoding current-reply check; the native result
+and fresh publication check remain actual. It must fail after cleanup on an
+unexpected encoding, never from a watchdog or setup error. Two test reviews and
+debug/optimized control, inverse and exact restoration are required.
+
+Independent counterexample review strengthens the new permission test before
+execution: an empty encoding slot alone cannot exclude an encoder call whose
+Result was discarded. Count the actual configured wire::processed invocation
+and retain the original Result unchanged; compare its count alongside actual
+protector calls after cleanup. This is test observation, not service state.
+The new law must establish both no invocation and no acquired result.
+
+
+Focused owning-test compilation plan: old requests/replay modules still call
+the retired imperative export API. Temporarily remove only those two module
+mounts in application/node/tests/mod.rs and mount its existing constructors
+source. This isolates the new owning EOF/constructor laws without deleting or
+migrating the original law sources. Freeze the exact original mount and restore
+its bytes after these focused commands; the normal library target remains
+unverified until all original laws migrate. This temporary mount carries its
+source/copy verification cost and no full-suite credit. No production code
+change is selected. The owning EOF inverse removes only the actual
+first-EOF drain guard, polls the real drain once, completes normal cleanup and
+must fail on observed Pending. Constructor refusal must preserve the exact
+unused constructor, real native errors and no canonical key/native admission.
+
+The first21-case debug check is a compile veto, not runtime evidence: the
+observing closure does not infer the existing encoder's independent borrowed
+argument lifetimes through generic composition. Spell its exact already-owned
+wire::processed signature (recorded::Receipt<CounterInput> and
+User<MailAddr, CounterIncremented>) and import those existing names at module
+scope. No new bound, lifetime relationship, trait, adapter, ownership port or
+production surface is selected from diagnostics; the observer still calls the
+same encoder and returns its untouched Result. Re-review the corrected source.
+
+
+The new first-reply-permission law passes21/0 focused service controls in both
+profiles. Its exact owning check-removal inverse compiles and fails only the
+post-cleanup unexpected-encoding assertion (debug0.03s/optimized0.01s). Exact
+query source02364bff is restored and full21 controls pass in both profiles.
+Independent outcome review34e05e33 verifies all six logs/maps and1136 frozen
+inputs. This closes neither later-publication
+inversion nor canonical/EOF/unwind/resource/full remote gates. No production
+code was added for this regression. Earlier inference diagnostics remain an
+excluded test-spelling epoch, preserved with its source and logs.
+
+
+The first isolated owning EOF check has no runtime result: the separately
+mounted constructor draft has four argument-shape errors. Its proposed encoder
+still takes native Result plus unused runtime/target arguments; selected
+Submission uses the full existing Attempt<Result> with two inputs, as already
+exercised by the public consumer. Keep that later draft correction separate:
+remove only its temporary module mount for the EOF check and retain its source
+and failed receipt. The original requests/replay law sources remain untouched.
+This narrows test isolation; it does not delete or waive constructor acceptance.
+
+
+The narrowed EOF owning control passes1/0 in both profiles. Its new test still
+ignores the must-use native retirement tuple after receiving it, so this epoch
+is not final acceptance. Before changing that test, independent source review
+accepts binding its actual (origin, root), checking APPLICATION_ROOT and
+root.custody().is_some() before the final EOF/drain oracle. This retains and
+observes the exact native original without asserting error-free retirement;
+owned failure/cancellation remains distinct from successful cleanup-task join.
+No production type/state/behavior changes. Re-review and run fresh controls,
+then the intended guard-removal inverse and exact restoration in both profiles.
+
+
+The refined owning EOF control passes1/0 in both profiles (369 other compiled
+cases filtered, not full-library credit). Its exact three-line first-EOF guard
+removal fails only tests.rs90 after successful cleanup/root-custody/notification
+checks: actual Some(Pending), debug0.01s and optimized0.01s. Declaratione97980f2
+is restored byte-for-byte; restored controls pass1/0 per profile. The temporary
+mountf23e is also restored to originalaa7f72f8. Constructor source and every
+original requests/replay law file are untouched; the constructor argument-shape
+veto and old observer epochs remain excluded. Independent outcome reviewfc5fcf87 verifies all six logs, stable maps and1155
+distinct frozen inputs. This establishes the EOF law, not all-target or
+whole-service safety.
+
+Complete canonical candidate checkpoint: production+2411/-721/net1690,
+tests+234/-89/net145, public types+5/-2,21 currently changed paths;22 touched
+including the restored test mount. The archive builder adds its measured
+physical verification lines, and every earlier/copy/modified/rejected/unknown
+cost carries. Replacement total2000/five/forty/4000 remains the authorized stage
+boundary, without refund/reset or a certified unused allowance. This stage is
+new capability code, still uncommitted/unaccepted; no full remote row, required
+CI, reviewed PR or main merge is claimed.
+
+A next bounded hypothesis is source-reviewed but NOT selected or implemented:
+Node could own actual execution-poll and disposal panic payloads outside its
+borrowed run operation, separate from the six provider payload slots. Its
+existing original receiving/families would stay outside both catches, existing
+row-native accepted tails would drain after actual task cleanup, declarations
+would withdraw and Session close would remain an independent acquired Result.
+The complete Node consuming product would expose both native payloads without
+changing ordinary ApplicationOutcome or adding a public type. Genuine Absent
+Work may already be Completed before a decoder fault and must remain that exact
+fact; never rewrite it Interrupted. Invoked(None) could mean only no binder
+return was acquired after actual joined close, not a fabricated BindError;
+uninvoked binding still requires returning the same Node. Ok(ApplicationOutcome)
+continues to mean issued execution and original local facts, never service success.
+
+That hypothesis only covers a single decoder panic. FuturesUnordered unlinks
+and drops a child during poll unwind; a coexisting user guard destructor panic
+can abort before an outer catch. No arbitrary destructor/double-fault safety is
+proved. Queued unverified network originals owned by the disposable receiver
+would be explicitly discharged on whole-service failure, Query before permit;
+only row-native originals are outside and available to drain, with no queue
+recovery, per-query result or retry claim. A new owning regression must precede
+production: actual verification, decoder panic with original payload, independent
+native outcomes and close. Its inverse must retain the escape/absence, finish
+actual cleanup through the existing completion observation (retirement alone is
+earlier), withdraw/drain still-owned originals and close before asserting.
+Lost receiving products in the inverse cannot be credited as acquired. Forecast
+at most150 net production lines and0 public types is a hypothesis, not acceptance
+or new authorization. Recheck the exact prerequisites and write the failing
+regression before selecting any lowering. Full nonprovider unwind remains open.
+
+
+Canonical draft recovery is independently sealed: durable archive
+remote-node-draft-20261017T174607Z.tar.gz, SHA2515caac, manifest53e14caa,
+1479 payloads/52 command pairs/1258 frozen versions and115852 map entries.
+Root and independent patch-plus-tree recovery match all657 current repository
+files. Independent review7ff3a322/c99e7b6d checks payloads twice. The small base
+bundle still requires1c97 archive5afed and its prior chain; this is neither a
+standalone recovery nor runtime/CI/main acceptance. All cuts/mounts are restored.
+
+Before correcting the separate constructor draft: its selected Submission
+encoder law receives exactly &Receipt and &Attempt<Result<(), native error>>.
+The native attempt is the actual acquisition, not a reconstructed Result.
+Already executed public wire::appended proves this exact policy/syntax. Replace
+the old four-input draft signature (its runtime/target were unused) with those
+two inputs, accepting only actual Returned(Ok(())); other original attempt
+states remain refusal. The existing current guard still validates actual runtime
+and target. Preserve every original constructor/target/error/allocation oracle;
+no production/API/behavior law changes. Expected constructor test plus temporary
+owning module mount, under15 modified test lines before source review. Run fresh
+focused controls, intended original-constructor-loss inverse and exact restore
+in both profiles before retaining its permanent owning mount. Original old
+requests/replay law sources remain untouched; all pending migrations stay open.
+
+
+Constructor law (actual two-input encoder): all six controls/cut/restored
+commands execute the selected case in debug and optimized builds. Each control
+passes1/0; the exact Submission.prepare Err-only native.0 discard fails only at
+constructors.rs419 after actual cleanup/close (0.05s/0.02s). Native cause/target
+are conserved in the cut; later Box identity assertions are unexecuted there.
+Canonical declaratione979 and original module mountaa7f are byte-restored.
+The earlier four-input compiler veto is not runtime evidence. Independent
+actual-outcome reviewe1a0ffb1/2b63bc1b passes: six logs and1173 frozen versions
+checked. No full-library or caller migration credit.
+
+Next scoped test-only change: prove actual canonical comparison during Pending
+protection using the owning Export::serve. Fresh dependency/owner hashes are in
+approved-pending-comparison-prerequisites.json (13 selected archives,66 current
+inputs, old export.rs explicitly retired). Use actual native Query/permit
+originals left in the existing bounded queue; establish queue lengths1/2/3 as
+setup before driving serve. A real Submission avoids actor-reply scheduling
+ambiguity. Keep an exact recorded receipt beside a borrowed comparison ledger;
+the existing fn pointer records original identities and observed protection
+phase, then applies the original identity predicate. Poll actual serving and
+retain its actual Pending result plus real protector Pending evidence. Snapshot
+comparisons before unconditionally releasing protection; all assertions follow
+normal Application cleanup and independent Session close. An existing Tokio
+oneshot held Pending by its fixture-owned sender is only an inert unit-host
+cancellation input, never an Application-completion certificate. No Node signal
+integration credit. The finite serialized-serving inverse must also release,
+finish cleanup and fail the comparison oracle, never rely on a timeout.
+Expected files: owning export tests mount and one test module, about250 test
+lines; production0, public types0. Existing serve, Submission, native endpoint,
+provider receipt, Query, bounded queue, permit and root retirement are reused.
+No production observer, framework, port or API is added. Full remote rows stay
+open. All authored/modified/copied/rejected/unknown verification costs carry.
+
+
+The fixed-host canonical-comparison law now executes with actual native inputs.
+Final observational cuts use query3b025/sourceff3a: awaiting each same request
+serially still finishes native replies, exact Counter value1, original root and
+notifications, joined cleanup, declaration withdrawal and Session close. Only
+comparison.rs306 then fails: an empty pre-release comparison snapshot instead
+of two actual(23,23,Pending) observations (debug0.04s/optimized0.01s). The gate is
+unconditionally released before all oracles, so no timeout earns negative credit.
+Exact query02364 restoration passes1/0 in each profile;370 filtered cases are
+not a full-library pass. Final test22c differs from ff3a only in two formatting
+line breaks; that equivalence is recorded, not described as hash identity.
+Current formatting check passes unchanged. Original node/tests mountaa7f is
+byte-restored, retaining all unmigrated requests/replay source laws.
+
+Earlier test epochs remain distinct: E0716 was compilation only; native
+NoPermits was the shared fixture's capacity2, corrected by explicit test input4
+without changing defaults. A source review missed consumption of non-Copy User
+inside an assertion; extraction is now outside, and both final cuts/restored
+controls use that observational form. Earlier controls/first serial cut are
+historical. The accidental nixfmt version command is not Rust formatting.
+Final independent reviewea2f887d/37c98fe7 verifies all18 relevant command/log
+pairs and1219 frozen versions. No production/API change
+was made for this law; all existing receipt/provider/Query/permit facts remain.
+The fixture uses SessionLocal delivery, selected unconstrained Tokio polling,
+three original queued queries and a real Submission. Its held-Pending oneshot
+is only an inert unit-host cancellation input whose sender outlives serving;
+it never claims actual Application completion or Node cancellation integration.
+Complete canonical census: production+2411/-721/net1690,
+tests+551/-93/net458, public+5/-2,23 current/24 touched paths. Historical,
+modified/copied/rejected/unknown verification costs carry under the approved
+replacement total2000/five/forty/4000 grant, without headroom/reset/refund.
+Whole-service unwind, original caller migration and full acceptance remain open.
+
+
+Public construction caller migration — pre-edit record. The four existing
+Counter/Ledger × Recorded/Scheduled tests still call retired Handle.export and
+Export.undeclare, manually draining SDK sessions/queues. They block the normal
+public test target. Their accepted law is typed construction and complete native
+retirement without Query traffic, not provider/security execution. Preserve all
+four nominal cases, actual roots, shutdown/retirement assessment, original native
+root/notes/cleanup, startup/withdrawal results, empty retained requests and bounded
+diagnostics. The selected Node owns declaration withdrawal and native close;
+consume its actual close Result instead of leaking a Session into test callers.
+Keep one public spelling; do not resurrect old Handle/Export methods.
+
+Fresh lock667a03e9 and13 registry archives/VCS are reverified in
+approved-public-construction-prerequisites.json. Node.exports/into_parts and
+current declaration/interpreter/source tests were inspected; reuse the exact
+selected Behavior/Actors, Address, Communication, Observe and Timers owners.
+No new dependency edge or production gap is selected. Existing immutable3bc544ce
+archive and reviewbbca1b08 recover all658 files at the prior law checkpoint.
+
+Smallest initial regression: compile the existing four construction cases under
+the current public library, with only the still-unmigrated refusal/pressure
+module mounts temporarily isolated. Missing retired export APIs are setup/API
+compatibility failures, not semantic negative evidence. Then migrate this one
+source to cold Export::new + Node.exports + supplied Work, actual joined outcome
+and Node.into_parts. Actual nominal verification functions remain concrete; no
+Query or successful identity-policy execution is claimed by these constructors.
+Record cold binder/Work and request-evaluation observations outside folds.
+
+Expected source paths: construction.rs, temporary network_replay.rs exclusion
+of only refusals/pressure, and temporary node_service.rs cohort mount; docs
+already belong to this stage. Expected production0, public types0, roughly260
+test lines replacing238, plus fewer than10 temporary mount lines. No wrapper,
+builder, runtime, observer, erased error/future or production interpreter is added.
+Current23 paths plus the two new caller paths remain within the approved40;
+all cumulative costs and other2000/five/4000 limits carry without reset/refund.
+Run focused debug/optimized cases and two test reviews, restore temporary parent
+mounts, then record the complete tracked/untracked census. Other callers remain
+explicitly incomplete; no full-target/CI/main delivery is claimed from isolation.
+
+
+### Ordinary remote Counter authoring — user-directed comparison
+
+The user compared the ten-input Export::new sketch with the existing local
+Counter example and approved making the real application path concrete before
+further caller migration. Pause the construction migration; its source remains
+unchanged and both temporary public mounts are byte-restored. Existing Counter
+behavior and its ActorExt shutdown composition remain the actor contract.
+
+Source review with the available independent reviewer identifies one exact
+non-policy input: the required presentation argument of reply/submission/stop.
+Serving never invokes it; only Request.try_into_parts uses it to package native
+constructors, clients, admissions, first replies and tails for inspection. That
+startup requirement exposes verification bookkeeping to ordinary applications.
+Network configuration, exact resource/JSON maxima, operation projection, wire
+encoding, verifier/protector, logical identity and current request/reply authority
+remain real explicit policies. No defaults, erased outcomes, wrapper or macro
+is selected to conceal those decisions. The unchanged Counter main and actor
+are the application comparison; no remote-counter directory currently exists.
+
+Smallest ordinary-Rust comparison: remove only the five presentation arguments
+from the existing actual Counter/Ledger consumer's reply/submission/stop calls,
+retaining all actual wire/security functions, binding and later result assertions.
+Compile the same focused consumer against current production. The expected
+missing-argument denials prove the current syntax gap, not a runtime law. Restore
+the exact consumer afterward. Expected production0/public types0/new paths0;
+only the already-touched consumer and PRD/status records change temporarily.
+All approved replacement2000/five/forty/4000 and earlier costs carry.
+
+Before any production edit, compare optional terminal extraction alternatives
+against complete original ownership, concrete heterogeneous protocols, no-op
+prohibition and static dispatch. The source-level candidate must delete required
+startup presentation and its stored policy without introducing a second actor
+contract or asking an ordinary caller to traverse product paths. No new
+production model or public surface is selected by this compiler comparison.
+Outbound typed Actions and the actual SDK-free two-application example remain
+required; a server-only sketch or a copied network test is not example completion.
+
+The two-argument comparison now returns101 in debug and optimized compilation,
+exactly five E0061 missing-presentation arguments and no other errors. The
+consumer is restored byte-exact4193680f. The first guarded preparation stopped
+before editing source; its unfortunately named required-presentation-denial-debug
+command actually returned0 on unchanged baseline. It is only a no-run control,
+not negative or runtime evidence. Exact receipts and source hashes are retained
+in approved-ordinary-counter-syntax-outcomes.json.
+
+Pre-edit change record — optional terminal inspection. Deliberate Bombay
+composition law: starting a remote operation requires its real wire/security
+policies, never a consumer-specific terminal-report presentation. Consuming
+inspection preserves the existing Native value directly, including original
+FnOnce, actual endpoint/admission, first User-or-EOF, complete drained tail and
+Stop retirement. Failed extraction still returns the same borrowed Request.
+The unchanged Counter and independent Ledger exercise actual heterogeneous
+Reply/Submission/Stop leaves; no equal report type is needed to run them.
+
+Available reviewer inspected the exact source twice and prefers direct existing
+Option<Native> extraction over a new presentation-product interpreter. Advanced
+terminal inspection may inspect the existing closed sum; ordinary startup and
+execution must not traverse it. Do not add identity callbacks, default report
+policies, wrappers, public products, macros, type erasure or serialization of
+internal products. No runtime state/event/effect changes are selected.
+
+Expected production: declaration.rs, query.rs and request.rs, approximately
+100 lines removed and fewer than25 added. Delete Presentation from all three
+declaration types/functions and stored fields, delete consuming report mapping
+and equal-report constraints, and narrow the existing private Reports contract
+to Reception (its existing native receiver draining law). Retain native
+selection/delivery, canonical identity, provider custody, permission checking,
+publication, ready-first EOF and Node lifecycle unchanged. Public types+0/-0;
+existing Reply/Submission/Stop signatures change, no new public owner.
+
+Expected verification edits are the existing complete consumer/refusal/quota
+fixtures and owning EOF/comparison/constructor sources, replacing startup
+presentation and later report patterns with direct acquired products while
+preserving every independent assertion. These are the focused witnesses for
+this interface change, not migration of all older caller laws. Around30 test
+lines added and150 removed, plus formatting epochs; historical copies and all
+unknown verification costs carry. quota.rs is one new changed path; the total
+remains below40. Whole stage remains net-positive capability work under the
+approved total2000/five/forty/4000, not repository cleanup.
+
+Acceptance for this slice: same complete21 service cases in debug/optimized,
+source review of exact retained native products and unchanged runtime bodies,
+then owning constructor/EOF regressions and applicable original-loss inversion
+in both profiles. Review every changed test twice and record scope limitations.
+Complete census must include tracked/untracked and restored temporary mounts.
+Other old caller laws, actual remote application/outbound Actions, nonprovider
+unwind and every full remote acceptance gate remain open.
+
+Optional inspection checkpoint: the corrected focused service cohort passes21/0
+in debug and optimized builds. The initial candidate compiled the library but
+found one remaining third argument in the existing targets.rs fixture; it is
+an API-migration error, not semantic negative evidence. Removing that identity
+callback changes no target-ownership assertion. targets.rs is already a changed
+stage path and joins the six forecast verification sources in both reviews.
+The independent reviewer completed two source/test passes, including that
+additional target fixture: native execution/draining bodies and all assertions
+are unchanged; raw extraction preserves every acquired value and the same
+Request on outstanding custody. No new runtime or public type is added.
+
+Actual commands use the same pinned Nix shell and Cargo target as earlier, now
+directly through Cargo; no custom recorder or new development tool is used:
+`cargo test --offline --locked -p bombay-rs --all-features --test node_service`
+and the same command with `--release`. Both return0 with21 passed/0 failed.
+Logs are `/tmp/bombay-optional-inspection-debug-restored.log` (corrected candidate,
+not restored old API; SHA25606e2db3e8ec643a83880925f6e6ca0121b3846ae372a06891dd5f27d309f0d2b)
+and `/tmp/bombay-optional-inspection-release.log`
+(SHA256ade158433cd2067bbf35d1e3df787f9541ccf4417d9f19bb387e9686c4d64b45).
+
+Measured whole stage: production+2333/-721/net1612, tests+577/-259/net318,
+public+5/-2,24 current paths (25 touched including the restored owning mount).
+The first shell census accidentally reused zsh's path variable, preventing wc/tr
+for untracked files; discard that incomplete output. The corrected census uses
+source_file and includes all seven untracked sources. All historical, copied,
+modified and unknown charges carry; no reset or certified verification headroom.
+
+Next owning gates reuse the earlier temporary requests/replay module isolation
+and constructor mount, after checking the canonical original aa7f72f8 hash.
+Those source laws remain untouched; restore the exact parent afterward. Run
+the EOF/comparison cases and unused original-constructor regression in both
+profiles, then the actual constructor-loss inversion and exact restoration.
+Filtered runs never count as full-library, full-caller, CI or main acceptance.
+
+### Optional inspection — scoped verification, 2026-10-18 UTC
+
+Final owning EOF/comparison controls pass2/0 in each profile (370 filtered);
+the original-constructor control passes1/0 in each (371 filtered). The actual
+Submission endpoint-refusal cut drops only native.0 and hashes tod0c78bb1.
+Both profiles return101 only at constructors.rs418, the missing original FnOnce
+oracle, after native retirement, cleanup, close and exact endpoint-cause checks;
+runtime0.04/0.03s. Later Box identity checks are unexecuted in those negatives.
+Exact declaration0a32233b restoration passes1/0 in both profiles,0.04/0.02s.
+Original owning parent aa7f72f8 is byte-restored. No production inverse or
+temporary mount remains. Final pinned Cargo formatting check returns0.
+
+The available independent reviewer re-read actual logs and source twice,
+confirmed the same21 service/two owning/one constructor controls and exact
+failure location, and excluded the earlier target-fixture E0061 compilation
+failure. Final formatting is separately observed by the coordinator. These
+are local scope results; old callers still prevent full-target acceptance.
+
+All direct commands used the existing pinned Nix shell, target and Cargo graph.
+After `cargo test [--release] --offline --locked -p bombay-rs --all-features`,
+owning filters were `--lib remote::export::tests` and
+`--lib exhausted_endpoint_keeps_the_unused_original_append_constructor`.
+The constructor filter ran for controls, intended cut and exact restoration.
+No Python or new custom verification tool was added for these direct checks.
+Raw logs remain `/tmp/bombay-optional-inspection-*.log`. Their SHA256 prefixes:
+owning debugc5c6f419/release08118fa1, constructor debuga5e37d09/release777c7db8,
+cut debugdd7b1e1f/release9cb3093f, restored debug3ffc8e08/release5b11fcc1,
+final formattingd0c9ee04. Full hashes are retained with the recovery checkpoint.
+
+Current user/API/module/capability guidance is reconciled in its four existing
+documents. It describes the unmerged cold candidate, optional raw inspection,
+retired imperative ports and open Full-retry/outbound/privacy gates. Those four
+document paths were already in the integrated interface-audit scope. The local
+Counter remains unchanged; no example or full remote witness is manufactured
+from this interface reduction. No public type, policy default or facade was added.
+
+Canonical complete tracked/untracked stage census:
+production+2333/-721/net1612, tests+577/-259/net318, public+5/-2,
+28 current/29 touched paths including the restored owning mount. This entire
+stage remains net-positive capability work. All earlier authored, modified,
+copied, rejected and unknown costs and the replacement total2000/five/forty/4000
+limits carry without reset, refund or certified verification headroom.
+
+Next accepted blocker is nonterminal native Full (R08), not deletion of the old
+pressure tests. Fresh source inspection and independent review confirm that
+the cold path retains Full(original) and consumes its constructor once, but
+never waits for capacity or retries. A duplicate only links the canonical row.
+Selected Communication0.1.6 already owns wait_for_capacity; it reserves no slot
+and supplies no authority. The actual same message must survive the wait,
+then a fresh permission loan must span its nonwaiting retry and result storage.
+Uncertain cannot enter retry, and capacity closure cannot fabricate a native
+Closed result. Preserve old Counter/Ledger laws until cold equivalents execute.
+No Full-retry implementation or broader acceptance is credited yet.
+
+The optional-inspection snapshot is recoverable at
+`remote-optional-inspection-20261018T0405Z.tar.gz` in the existing common-Git
+session archive directory, SHA256
+463dd1c35b1039088a660a8b08c9e3063d71dfb9b5aa2df087cb43e2ff2adc18.
+Independent standard git/tar/shasum recovery applies the e3daad58 binary patch
+and only seven untracked sources; all658 captured source hashes pass twice.
+Both control-source hashes and ten reviewed runtime logs match. This binds the
+archived snapshot, not later records or complete historical-chain recovery.
+The earlier0400 archive omitted those seven sources because of tar option
+ordering and is explicitly named incomplete; it receives no recovery credit.
+Fresh origin/main is still49cc8971, already an ancestor (zero missing commits).
+
+### Nonterminal Full — pre-edit law and regression
+
+Fresh inspection re-verifies lock667a03e9, all13 selected registry archive/VCS
+checksums and no patch. Behavior/Actors0.26.0 at98983b4 and complete instructions
+2b7a9195, Address0.3.0/9f058dc, Communication0.1.6/963067e, private Observe,
+Timers0.2.0/9369d1f, SDK1.10.10/c34eb350 and Tokio1.53.1 remain selected.
+Communication's exact wait_for_capacity source, closure semantics and owning
+model tests were inspected. It observes readiness without reserving capacity.
+Address, timers and observation retain their owners and existing contracts;
+this blocker adds no dependency or lifecycle policy.
+
+Accepted R08 law: native Full is nonterminal. Preserve its exact rejected
+message and original sender/endpoint; wait without holding an authority loan,
+then acquire fresh authority and perform the same nonwaiting attempt. Decode,
+verification, endpoint allocation and the original FnOnce are not repeated.
+An already canonical request keeps its key. Uncertain and Closed cannot be
+retried. An observed capacity closure is not a fabricated native Closed return.
+
+Smallest end-to-end regression is a new owning node/tests/pressure.rs using the
+existing MailLedger, nominal Recorded verifier, bounded mailbox and one actual
+Node-owned SessionLocal Query. Reuse the original pressure fixture's single
+blocked actor worker, two admitted prefix messages and independently observed
+native Full. Actual constructor entry precedes release; then either keep grant
+or revoke it before freeing capacity. Real encoder-entry or permission-refusal
+observation gives a finite independent Read/retirement fence, not a completion
+certificate. Acquired root state and typed Read trace must show one permitted
+original Box or no revoked append; retained denied Full must keep its exact Box.
+Complete Node cleanup/close and native outcomes precede the final law oracles.
+The Session clone is deliberate private owning-test access, never a user API or
+two-process/security witness. No I/O enters the existing pure actor folds.
+
+First add only this regression and temporary owning mount, roughly400 authored
+test lines and one new source path. Preserve all old pressure sources. Establish
+both intended prior-source failures in debug and optimized builds; timeout,
+setup and compile failures receive no semantic credit. Two reviews must reject
+vacuous release/fence ordering and check exact ownership before acceptance.
+
+Only after those failures, the bounded production hypothesis reuses the current
+native products, adds an ordinary local Full predicate to Commands, admits the
+retained Full in existing Delivery.attempt without invoking its consumed
+constructor, and reuses Communication capacity observation through the existing
+private ActorRef endpoint. Query owns fresh authority around each actual retry
+and holds no native borrow across the wait; real target/Application retirement
+ends waiting while retaining original facts. No new public type, runtime,
+mailbox, policy default, observation or retry framework. Forecast at most160 net
+production lines across the already changed declaration/query/endpoint owners;
+public+0/-0. Recheck source and complete cumulative census before lowering.
+Current canonical production1612/public five-gross/28 paths and all earlier
+verification charges carry under total2000/five/forty/4000; no reset or certified
+headroom. Counter Reply pressure and all full R08/remote gates remain separate
+until their exact equivalents execute. This selected first regression does not
+authorize deleting old laws or declaring feature completion.
+
+The bounded prior-source regression6ef682a3 now fails only its intended final
+oracles in both profiles: Ledger entries2 rather than3 at pressure.rs349 and
+EncodingEntered rather than PermissionRefused at410, after actual cleanup and
+close (debug0.03s, optimized0.02s). The first compile epoch's Option<Reply> error
+is excluded. An earlier unbounded epoch reached the same laws at340/401; the
+independent review required a whole-trace watchdog before acceptance. Both
+reviews now pass the bounded source. Later pointer assertions are not credited
+to either negative run. Logs: /tmp/bombay-full-pressure-bounded-prior-{debug,release}.log.
+
+Before lowering: production+2333/-721/net1612, tests+1002/-262/net740,
+public+5/-2,30 current/touched paths including the temporary owning mount.
+The additional authored test epochs and copied originals carry under the
+existing cumulative grants; no refund or certified verification headroom.
+Independent review accepts the bounded three-owner design recorded above.
+Waits retain Full unchanged, with no permission or native loan. Each actual
+retry obtains fresh permission, takes only that retained message, records
+Uncertain before the native call and stores its returned value before guard
+release. Canonical assignment occurs only with the original constructor.
+Readiness may race back to Full. Retirement wins a simultaneous readiness
+race and preserves Full; capacity Closed alone still requires an actual native
+attempt to obtain Closed. Existing concrete products remain the sole facts.
+No additional public type or API is selected. Names and borrowing were checked
+against official Rust API Guidelines naming/predictability and the selected
+Behavior instructions. Counter Reply, explicit post-retirement retry and all
+other old pressure laws remain separate required migrations.
+
+### Nonterminal Full — scoped Ledger result and next Reply law
+
+The three-owner change is+97/-15/net82 production lines; no public type was
+added. Complete canonical stage census is+2415/-721/net1694 production,
++1007/-259/net748 tests, public+5/-2,29 current/30 touched paths. Earlier costs
+and the replacement total2000/five/forty/4000 grants carry without reset or
+certified verification headroom. The original temporary owning mount is byte
+restored toaa7f72f8; old replay/requests sources remain required and unmigrated.
+No production inverse remains. Formatting completed before the controls.
+
+Actual commands use the pinned Nix profile and locked/offline all-feature
+bombay-rs graph. The owning pressure filter passes2/0 in debug and optimized
+builds (0.02/0.01s,371 filtered); both independent outcome passes verify complete
+post-cleanup Box identity, sender origin, single constructor and actual protected
+publication, or the exact refused Full with no publication. Prior negatives
+reach only349/410, not their later pointer checks. Candidate declarationf534c37b,
+queryc29e841c, endpoint322d0164 and testb2e2a8f6 have both source reviews.
+Raw logs /tmp/bombay-full-pressure-candidate-debug.log (da89adce) and
+candidate-release.log (f4525cac); bounded prior debug90bc77e8/release1193ebe5.
+The first Option<Reply> compile error receives no semantic credit. The existing
+node_service target passes21/0 in both profiles,0.10/0.04s; logs
+/tmp/bombay-full-pressure-service-debug.log (ccad2fbf) and
+/tmp/bombay-full-pressure-service-release.log (f885cf7e). Known fixture-isolation
+warnings remain; this is not full-library, lint, distillation, CI or merge proof.
+Current API and ownership guidance now describes implemented capacity waiting
+while keeping full retry acceptance explicitly open.
+
+Next regression covers the changed Reply interpreter branch independently:
+reuse the actual Counter with stop_on_shutdown, its real bounded mailbox and
+Application client in remote/export/tests.rs. Block its sole actor worker,
+admit two increments and observe an independent third native Full. Select and
+prepare one Read; attempt it twice while full, retaining its original endpoint.
+Release the worker, obtain an independent ordinary Read to establish capacity,
+retry the retained Read, repeat after admission, and drain actual reply/EOF.
+After actual root retirement, notification and cleanup acquisition, assert one
+constructor/canonical assignment, the same retained reply endpoint, one actual
+native reply from the Counter with value2, and no second reply in the EOF tail.
+The whole trace has a watchdog. A source inversion restoring only the original
+Reply attempt body must produce a finite final Full/missing-reply failure in
+both profiles; no timeout or compile failure receives law credit. This is
+native role interpretation, not fresh-authority or two-process evidence; the
+shared Query authority law has its separate Ledger witness above. Preserve the
+old Counter pressure, explicit post-retirement and canonical replay laws.
+Forecast approximately160 test lines, no production/API change or new path;
+all cumulative costs carry. The exact selected dependencies and existing owners
+above remain unchanged. No additional wrapper, runtime or policy is selected.
+
+### Counter Reply retry — qualified owning result
+
+The final owning source02f50895 passes both independent review passes. Reviews
+removed ownership transfers from assertions and added a second actual ordinary
+Read/reply fence before native admission closes: without it, closure could hide
+a second queued Read. The fence proves preceding reply effects finished while
+the endpoint was open; only then receive/drain acquires the reply and EOF tail.
+All final checks follow actual cleanup, root retirement and both notifications.
+
+Restoring only the original Reply.attempt body (cut236c8320; no Query/Submission
+change) fails only the intended final native-admission assertion at tests.rs196
+in both profiles,0.02/0.01s. Both independent negative reviews verify actual
+cleanup and both fences before that oracle. Later constructor/canonical count,
+endpoint and reply-tail assertions are unexecuted in those negative runs. Raw
+logs /tmp/bombay-full-read-fenced-original-debug.log837e9f22 and
+/tmp/bombay-full-read-fenced-original-release.log0292c436. Earlier epochs before
+borrow/fence corrections remain distinct, not final-source acceptance evidence.
+
+Exact declarationf534c37b is restored. The owning remote::export::tests cohort
+passes3/0 in debug/optimized,371 filtered,0.04/0.01s: new Counter, existing EOF
+and pending canonical-comparison controls. Logs
+/tmp/bombay-full-read-restored-debug.log81cb3ad0 and
+/tmp/bombay-full-read-restored-release.logbbc9aef5. Both independent outcome
+passes confirm all positive endpoint/constructor/canonical-callback/reply/tail
+oracles execute. The original owning mountaa7f72f8 is restored. Pinned formatting
+check passes. No source inverse remains and no old pressure source was deleted.
+
+Complete tracked/untracked stage: production+2415/-721/net1694,
+tests+1211/-259/net952, public+5/-2,29 current/30 touched paths. The actual Counter
+verification delta is204 lines including imports, above the approximate160
+forecast; it adds no production line, public type or source path. All authored,
+modified, corrected, copied, rejected and unknown costs carry under the existing
+replacement total2000/five/forty/4000 limits, without reset or certified headroom.
+This remains net-positive capability work. Existing isolation warnings, original
+remote caller migrations, whole-service unwind/cancellation, full R08 and all
+remote acceptance, distillation, required CI/review and main merges remain open.
+
+The preceding Ledger checkpoint is recovered from existing archive
+remote-full-pressure-20261018T0431Z.tar.gz, SHA256
+571f362caf2fba0530caf5645fb28ae1507942d0aee6bb59f67f3ae41b6f0b46.
+Standard git/tar/shasum recovery verifies all659 captured source hashes and the
+retired export.rs remains absent. This binds that predecessor, not the later
+Counter test or a whole historical-chain/feature acceptance claim.
+
+### Single decoder unwind — fresh prerequisites and pre-edit regression
+
+Fresh pinned-Nix locked/offline all-feature metadata resolves the same graph:
+lock667a03e9, no patch, Behavior/Actors0.26.0 and Macros0.14.2 at98983b4;
+Address0.3.0/9f058dc, Communication0.1.6/963067e, Timers0.2.0/9369d1f,
+SDK1.10.10/c34eb350 and Config1.10.2/5bebbcb, Tokio1.53.1/75fef53,
+Futures Core/Util0.3.34/705e6b5, Serde1.0.229/7fc3b4 and
+Serde JSON1.0.151/de85007. All13 selected archives match locked checksums;
+all13 unpacked VCS files byte-match those verified archives. The attempted
+.cargo-checksum.json lookup was unavailable and receives no verification credit;
+archive/VCS comparison then succeeds. Complete selected Behavior instructions
+remain2b7a9195, already read. Fresh source/API and relevant documentation/tests
+inspection covers pure Behavior folds, owning shutdown templates, generation
+lease Drop, mailbox closure, private independent Observe cancellation, actor
+TimerQueue, private Entity family join, actual Application cleanup publication,
+SDK Session close and provider poll/disposal custody. No dependency changes.
+Address/Communication/Observe/Timers retain their owners. Driver law/strategy
+and current capability/module guidance remain authoritative. The existing owning
+Application execution regression already uses Box::pin plus outside poll catch;
+reuse that ordinary Rust ownership pattern, not a new framework or actor law.
+
+Exact blocker: a nonprovider decoder panic escapes cold Node execution.await,
+skipping independent receiving/families, retained declaration cleanup and Session
+close. Provider panic slots do not own this different fact. Existing Application
+cleanup continues, but ordinary Node execution loses its acquired outcomes.
+
+Before production, add one owning node/tests/unwind.rs regression, approximately
+240 test lines and temporary owning mount; no production/API change. Use the
+real plain MailLedger, one cold Submission, actual Recorded verification and
+Node-owned SessionLocal Query. Only the decoder panics with one original Box;
+no constructor/native attempt/protector may run. Binding exports the actual
+Application cleanup-completion observation to outside custody before Work runs.
+Work sends the actual query then remains pending. Own the real Node operation
+outside an external poll catch and separately dispose it. Await that exact
+cleanup observation; in the original escape path explicitly close the Session
+for finite test cleanup. That external close is not Node finalization evidence.
+After cleanup/close acquisition, consuming Node extraction must succeed. The
+original source must fail only this finite finalization oracle in debug and
+optimized builds, never by timeout/setup/compilation. Keep complete original
+results outside assertions. This private Session access is owning-test evidence,
+not an application spelling or two-process/security witness.
+
+Only after the failing law, evaluate the already reviewed bounded model: retain
+two original kernel poll/disposal Panic facts in existing Node; own/pin its actual
+kernel outside separate catch boundaries; then await existing receiving/families,
+withdraw/discharge queries and drain native receivers through the existing
+Exports/Reception owners, and close the actual Session. Extend existing raw
+Node extraction from3 to5 fields with those two facts; no public type or observer.
+Invoked(None) means no binding result was acquired, never a fabricated BindError.
+Normal genuine Work absence remains Completed, not Interrupted. Extend the test
+with exact original panic allocation, retained verified bytes/receipt, no fake
+native/protection/publication results, actual original root/notifications/cleanup
+and real withdrawal/close. Preserve all existing service assertions and add
+normal empty-kernel-panic checks to their current extraction sites.
+
+Forecast at most150 net production lines in existing application/node.rs and
+remote/export/query.rs, zero public types; existing cold consumer/constructor/
+pressure tests and their current docs own tuple migration. Only unwind.rs is a
+new path, bringing the current29/touched30 to at most30/31 before any later
+change. Production1694/public five-gross and all earlier verification costs carry
+under total2000/five/forty/4000; no reset or certified headroom. No new wrapper,
+trait, runtime, observation, policy default, macro or ownership scheme. This
+stage proves one decoder panic on the selected ordinary host; simultaneous
+callback/destructor abort and whole-operation cancellation remain distinct gates.
+
+### Resumption and current-main integration — 2026-10-21
+
+The interrupted optimized prior-source decoder test completed101, matching
+debug: only the finalization oracle at unwind.rs187 fails after actual cleanup,
+external close, original Box307 identity/value and verify1/constructor0/encode0/
+protect0 checks (both0.02s). Logs /tmp/bombay-node-unwind-prior-{debug,release}.log.
+The first printed panic at71 is the deliberately caught original decoder cause,
+not an uncaught setup failure. Two independent baseline/model reviews qualify
+this narrow failure. No unwind production edit was made. Candidate positives
+must add the exact retained kernel panic and actual native/outcome facts; a bare
+finalization predicate could pass while erasing them. Whole cancellation,
+simultaneous callback/destructor abort and broader finalization remain open.
+
+The resumed directory retained modified sources but lacked its Git link and606
+unchanged files. Before repair, all existing files were archived separately at
+/tmp/bombay-resume-20261021-existing-workspace.tar. The registered worktree still
+points to exact research/remote-service/e3daad58. Recovery archive571f362c and
+all659 predecessor source hashes verify; only absent manifest-listed files were
+copied back. All606 restored files match their captured checksums. Existing
+files were preserved and the deliberately retired export.rs remains absent.
+Current source hashes still match the interrupted node0d1464ca/queryc29e841c/
+declarationf534c37b/unwind4f72e6f6. The temporary owning mount is restoredaa7f.
+
+Fresh origin/main is531ded500dd724fd40920c0a70fbbf25f6ae4856,48 commits ahead
+of this research head. It includes reviewed main delivery through PR386 and
+selects Behavior/Actors0.29.0, Macros0.16.0 plus new shutdown, timer and final-root
+report contracts. The user's standing latest-main instruction requires this
+integration before further feature lowering. Preserve the current candidate as
+an explicitly unaccepted research checkpoint, inspect the exact new Behavior
+instructions/contracts, integrate main, then requalify actual consumers and
+resume the full remote PRD. Prior0.26 evidence remains revision-bound history,
+not acceptance of the new graph. Upstream delivery and our feature/adoption
+changes must remain separately attributable in the complete change record.
+
+Checkpoint census before main integration: production+2415/-721/net1694,
+tests+1405/-259/net1146, public+5/-2,30 current/31 touched paths. All earlier
+historical/authored/modified/copied/rejected/unknown costs and approved cumulative
+limits carry; integration provides no reset, refund or certified headroom.
+The full R01–R25/AUTH1/NET1 objective, old caller laws, distillation, required
+CI/review and normal main delivery remain open.

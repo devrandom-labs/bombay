@@ -361,6 +361,96 @@ impl<Inputs, Invoke, Cleanup, StagingInputs, PreparedInputs>
 }
 
 /// Consume the original caller-local work factory into its exact bare future.
+impl<Inputs, Invoke, Cleanup, Root, Spaces, Families, Failure, PreparedInputs>
+    WorkOutcome<
+        Inputs,
+        ApplicationWorkPresence<(Never, Invoke), ()>,
+        ApplicationWorkPresence<Never, ()>,
+        Cleanup,
+        (
+            Root,
+            Spaces,
+            Families,
+            ApplicationWorkPresence<Never, ()>,
+            Failure,
+            ApplicationScope,
+        ),
+        PreparedInputs,
+        ApplicationWorkPresence<(Never, Invoke), ()>,
+    >
+{
+    pub(in crate::application) fn into_absent_with_entities(
+        self,
+    ) -> WorkOutcome<
+        Inputs,
+        Option<Never>,
+        Option<Never>,
+        Cleanup,
+        (
+            Root,
+            Spaces,
+            Families,
+            Option<Never>,
+            Failure,
+            ApplicationScope,
+        ),
+        PreparedInputs,
+    > {
+        match self {
+            Self::StagingRejected {
+                inputs: (root, spaces, families, work, failure, scope),
+            } => {
+                let work = match work {
+                    ApplicationWorkPresence::Absent(()) => None,
+                    ApplicationWorkPresence::Supplied(never) => match never {},
+                };
+                WorkOutcome::StagingRejected {
+                    inputs: (root, spaces, families, work, failure, scope),
+                }
+            }
+            Self::Unstarted { application, work } => match work {
+                ApplicationWorkPresence::Absent(()) => WorkOutcome::Unstarted {
+                    application,
+                    work: None,
+                },
+                ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
+            },
+            Self::Prepared {
+                inputs,
+                work,
+                cleanup,
+            } => match work {
+                ApplicationWorkPresence::Absent(()) => WorkOutcome::Prepared {
+                    inputs,
+                    work: None,
+                    cleanup,
+                },
+                ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
+            },
+            Self::NotInvoked {
+                work,
+                startup_error,
+                cleanup,
+            } => match work {
+                ApplicationWorkPresence::Absent(()) => WorkOutcome::NotInvoked {
+                    work: None,
+                    startup_error,
+                    cleanup,
+                },
+                ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
+            },
+            Self::Completed { output, cleanup } => match output {
+                ApplicationWorkPresence::Absent(()) => WorkOutcome::Completed {
+                    output: None,
+                    cleanup,
+                },
+                ApplicationWorkPresence::Supplied(never) => match never {},
+            },
+            Self::Interrupted { cleanup } => WorkOutcome::Interrupted { cleanup },
+        }
+    }
+}
+
 pub(in crate::application) fn invoke<Work, WorkFuture, Target, Event, Families>(
     work: Work,
     application: ApplicationHandle<Target, Event, Families>,

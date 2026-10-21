@@ -65,32 +65,31 @@ Full/Closed originals without awaiting capacity. The local service retains its
 permission/time snapshot and retry policy; client construction and attempted
 mailbox admission remain separate facts. Stable Entity resolution still awaits.
 
-Merged PR372 composes those existing owners through
-`ApplicationHandle::export`. Node execution attaches its private Session to
-the ordinary ApplicationHandle; its current Work callback receives no Session.
-The retired connection-entry prototype adds no second invocation path. Native
-configuration and query exposure remain unfinished public-interface work.
-There is no public arbitrary handle/Session pairing.
-`remote::Export` retains protected bytes, proof and opaque provider receipt with
-one independent existing reply client per request. It compares stable provider
-identities, preserves duplicate/conflicting originals, and checks explicit count
-limits before allocating a new endpoint. Final permission/time loans cover one
-nonwaiting mailbox attempt and native result storage. Only a retained native
-Full permits explicit retry; interrupted return remains uncertain. Protocol
-authentication, native reply validation, publication permission, retry waiting
-and full resource/security acceptance remain distinct uncompleted obligations.
-This primitive introduces no second local mailbox or Behavior algebra.
-Its dependent concurrent-receive candidate borrows the existing query channel
-and actual eligible native waits together. The optional normal futures-util
-dependency remains behind `remote`; its direct edge requests `alloc` with defaults
-off, while resolved features follow Cargo's normal feature union.
-An acquired native result stays in its request row; a separate runtime-issued
-key identifies it without declaring protocol validity or business completion.
-Either occupied outside slot prevents further acquisition. Native-first
-selection relies on once-acquired append-only rows for its lifetime request-count
-bound; this is no latency, capacity-wake or whole-memory bound. Temporary future
-collection allocation and rebuild work remain explicit costs. This operation
-does not supply authenticated orchestration or reply publication.
+The unmerged cold-service candidate replaces the earlier imperative
+ApplicationHandle::export path. Node.exports owns binding to actual actor proofs,
+declaration startup, concurrent interpretation, withdrawal and connection close
+after the existing Application/family cleanup. It reuses the same invocation
+spine for supplied Work and genuine absence; it adds no actor contract or mailbox.
+Cold Export inputs retain explicit wire/security policies and limits. Reply,
+Submission and Stop select and encode existing native operations without a
+terminal-presentation callback. Native outcome inspection is optional.
+
+Each retained Request owns original protected/proof bytes, opaque verification,
+exact native attempt/reply/EOF facts and independent provider results/panics.
+Consuming extraction transfers the existing closed native product unchanged,
+or returns the same Request while a producer loan remains. It neither certifies
+cleanup nor grants retry. A runtime-issued key is identity only. The actual
+Node post-join close result remains distinct from actor retirement and Work.
+Current permission loans span construction and the synchronous native attempt.
+Known Full retains its exact rejected command, but the required capacity wait,
+fresh authority check and retry are still missing. Uncertain supplies no proof
+of nonadmission and must not be retried. Original pressure laws remain required.
+
+The optional futures-util dependency remains behind remote with explicit std
+and defaults disabled; it supplies the existing collection/shared-future
+facilities. Count limits do not prove peak memory or callback allocation bounds.
+Full SDK privacy, nonprovider unwind cleanup, outbound Actions, the ordinary
+remote application and complete resource/security gates remain unaccepted.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The

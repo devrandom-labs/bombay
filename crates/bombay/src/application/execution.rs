@@ -29,6 +29,10 @@ use core::future::{Future, Ready, poll_fn};
 use core::ops::AsyncFnOnce;
 use core::pin::pin;
 use core::task::Poll;
+#[cfg(feature = "remote")]
+use futures_util::FutureExt;
+#[cfg(feature = "remote")]
+use futures_util::future::Either;
 use std::io;
 use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::sync::Arc;
@@ -1649,6 +1653,14 @@ where
         let mut authority = Some(authority);
         let (retirement_publication, retirement_observation) = observe::pair();
         let (joined_publication, joined) = oneshot::channel();
+        #[cfg(feature = "remote")]
+        let (export_joined, joined) = match binding.as_ref() {
+            Some(_) => {
+                let joined = joined.shared();
+                (Some(joined.clone()), Either::Left(joined))
+            }
+            None => (None, Either::Right(joined)),
+        };
         let origin = RootOrigin::<Owner>::new(MailAddr::APPLICATION_ROOT);
         let cleanup = executor.spawn(async move {
             // Joining observes the actual actor; it does not request a stop.
@@ -1701,6 +1713,8 @@ where
                     interface_allocations,
                     client_capacity,
                     receptionists,
+                    #[cfg(feature = "remote")]
+                    export_joined,
                 );
                 if let Some(binding) = binding {
                     let bound;

@@ -1,18 +1,16 @@
 //! Proposed complete SDK-free consumer; not mounted until its source review.
-use super::super::counter::{Counter, CounterMessage, CounterProcessed, CounterValue};
-use super::super::ledger::{LedgerCommand, MailLedger, Receipts};
+use super::super::counter::{CounterMessage, CounterProcessed, CounterValue};
 use super::actors::{ActorExports, Counters, CountersRole, Creator, Exports, topology};
 use super::{assert_exports, assert_retirement};
 use bombay::actors::ActorExt;
-use bombay::behavior::{BehaviorBase, EstablishedRecipient, Protocol, User};
+use bombay::behavior::BehaviorBase;
 use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
-use bombay::prelude::{Completion, ShutdownRejection};
+use bombay::prelude::Completion;
 use bombay::remote::{Attempt, Export, ExportError, ExportLimits, reply, stop, submission};
 use bombay::{
-    ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationClient,
-    ApplicationScope, ApplicationSender, ExternalActorError, MailAddr, RetirementAssessment,
-    TrySendError,
+    ActorFailureAssessment, ActorRetirement, ApplicationScope, MailAddr, RetirementAssessment,
 };
+use futures_util::future::Either;
 use std::cell::RefCell;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
@@ -47,61 +45,6 @@ enum Presence {
 enum ProviderStage {
     Verification,
     Protection,
-}
-type CounterReply<Replies: Protocol<Addr = MailAddr>> = (
-    Attempt<
-        Result<
-            ApplicationClient<EstablishedRecipient<Counter>, Replies>,
-            (EstablishedRecipient<Counter>, ExternalActorError),
-        >,
-    >,
-    Attempt<Result<(), TrySendError<CounterMessage>>>,
-    Option<Option<User<MailAddr, <Replies as Protocol>::Msg>>>,
-    Vec<Option<User<MailAddr, <Replies as Protocol>::Msg>>>,
-);
-type LedgerReply = (
-    Attempt<
-        Result<
-            ApplicationClient<EstablishedRecipient<MailLedger>, Receipts>,
-            (EstablishedRecipient<MailLedger>, ExternalActorError),
-        >,
-    >,
-    Attempt<Result<(), TrySendError<LedgerCommand>>>,
-    Option<Option<User<MailAddr, Vec<MailAddr>>>>,
-    Vec<Option<User<MailAddr, Vec<MailAddr>>>>,
-);
-type LedgerSubmission = (
-    Attempt<
-        Result<
-            ApplicationSender<EstablishedRecipient<MailLedger>>,
-            (EstablishedRecipient<MailLedger>, ExternalActorError),
-        >,
-    >,
-    Attempt<Result<(), TrySendError<LedgerCommand>>>,
-);
-enum CounterOutcome<Increment, Read> {
-    Processed {
-        unsent: Option<Increment>,
-        native: CounterReply<CounterProcessed>,
-    },
-    Value {
-        unsent: Option<Read>,
-        native: CounterReply<CounterValue>,
-    },
-    Stopped {
-        admission: Attempt<Result<(), ShutdownRejection>>,
-        retirement: Option<ActorRetirementReport>,
-    },
-}
-enum LedgerOutcome<Append, Read> {
-    Appended {
-        unsent: Option<Append>,
-        native: LedgerSubmission,
-    },
-    Read {
-        unsent: Option<Read>,
-        native: LedgerReply,
-    },
 }
 
 fn same_counter(
@@ -296,10 +239,6 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                     })
                 },
                 wire::processed,
-                |unsent, client, admission, received, tail| CounterOutcome::Processed {
-                    unsent,
-                    native: (client, admission, received, tail),
-                },
             ),
             (
                 reply(
@@ -315,19 +254,8 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                         })
                     },
                     wire::value,
-                    |unsent, client, admission, received, tail| CounterOutcome::Value {
-                        unsent,
-                        native: (client, admission, received, tail),
-                    },
                 ),
-                stop(
-                    wire::counter_stop,
-                    wire::stopped,
-                    |admission, retirement| CounterOutcome::Stopped {
-                        admission,
-                        retirement,
-                    },
-                ),
+                stop(wire::counter_stop, wire::stopped),
             ),
         ),
         &verify_counter,
@@ -355,10 +283,6 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                     })
                 },
                 wire::appended,
-                |unsent, sender, admission| LedgerOutcome::Appended {
-                    unsent,
-                    native: (sender, admission),
-                },
             ),
             reply(
                 |input| {
@@ -373,10 +297,6 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                     })
                 },
                 wire::receipts,
-                |unsent, client, admission, received, tail| LedgerOutcome::Read {
-                    unsent,
-                    native: (client, admission, received, tail),
-                },
             ),
         ),
         &verify_ledger,
@@ -583,10 +503,11 @@ async fn complete(presence: Presence, pending: ProviderStage) {
         .expect("original binding observations remain independent");
     let counter_parts = counter.into_parts();
     let ledger_parts = ledger.into_parts();
-    let wire_replies = peer.protected();
     cleanup.expect("application cleanup joins");
     closed.expect("actual Node connection closes");
-    peer.closed.expect("actual peer closes independently");
+    peer.closed
+        .as_ref()
+        .expect("actual peer closes independently");
     let (counter_target, ledger_target) = binding_result
         .expect("actual binding was acquired")
         .expect("actual binding succeeds");
@@ -664,11 +585,11 @@ async fn complete(presence: Presence, pending: ProviderStage) {
     assert_eq!(represented, 1);
     assert_eq!(entities, [EntityId::new(281)]);
     assert!(family_disposal.is_none());
-    // Consuming extraction invokes the selected application report policy only
+    // Consuming extraction transfers the original native operation values only
     // after every independent application/family/notification/close fact is owned.
     let (
         _counter_inputs,
-        counter_declarations,
+        _counter_declarations,
         counter_declared,
         counter_withdrawn,
         counter_ingress,
@@ -676,7 +597,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
     ) = counter_parts;
     let (
         _ledger_inputs,
-        ledger_declarations,
+        _ledger_declarations,
         ledger_declared,
         ledger_withdrawn,
         ledger_ingress,
@@ -695,6 +616,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
         .expect("actual Ledger declaration withdrawn")
         .expect("Ledger withdrawal succeeded");
     assert!(counter_ingress.is_empty() && ledger_ingress.is_empty());
+    let wire_replies = peer.protected();
     assert_eq!(counter_requests.len(), 5);
     assert_eq!(ledger_requests.len(), 2);
     let mut processed = Vec::new();
@@ -722,7 +644,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                 protection_disposal,
             ),
         ) = request
-            .try_into_parts(&counter_declarations)
+            .try_into_parts()
             .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
         assert!(
             verification_factory.is_none()
@@ -750,11 +672,10 @@ async fn complete(presence: Presence, pending: ProviderStage) {
         assert!(decoded.is_none()); // Every successful input transferred to its native constructor.
         assert!(request_refusal.is_none() && reply_refusal.is_none());
         match native {
-            Some(CounterOutcome::Processed { unsent, native }) => {
+            Some(Either::Left((unsent, client, admission, received, tail))) => {
                 assert!(unsent.is_none() && refusal.is_none());
                 assert_eq!(scope.bombay.request_sequence, 257);
                 assert_eq!(scope.operation, CounterInput::Increment(257));
-                let (client, admission, received, tail) = native;
                 assert!(matches!(admission, Attempt::Returned(Ok(()))));
                 let Attempt::Returned(Ok(client)) = client else {
                     panic!("actual processing client");
@@ -767,11 +688,10 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                 assert_eq!(tail.len(), 1);
                 processed.push((key.expect("installed logical request"), original, client));
             }
-            Some(CounterOutcome::Value { unsent, native }) => {
+            Some(Either::Right(Either::Left((unsent, client, admission, received, tail)))) => {
                 assert!(unsent.is_none() && refusal.is_none());
                 assert_eq!(scope.bombay.request_sequence, 263);
                 assert_eq!(scope.operation, CounterInput::Read);
-                let (client, admission, received, tail) = native;
                 assert!(matches!(client, Attempt::Returned(Ok(_))));
                 assert!(matches!(admission, Attempt::Returned(Ok(()))));
                 assert_eq!(tail.len(), 1);
@@ -783,10 +703,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                         .expect("actual value reply"),
                 ));
             }
-            Some(CounterOutcome::Stopped {
-                admission,
-                retirement,
-            }) => {
+            Some(Either::Right(Either::Right((admission, retirement)))) => {
                 assert!(refusal.is_none());
                 assert_eq!(scope.bombay.request_sequence, 269);
                 assert_eq!(scope.operation, CounterInput::Stop);
@@ -878,7 +795,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                 protection_disposal,
             ),
         ) = request
-            .try_into_parts(&ledger_declarations)
+            .try_into_parts()
             .unwrap_or_else(|_| panic!("joined cleanup releases every actual request loan"));
         assert!(
             verification_factory.is_none()
@@ -896,7 +813,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
         assert_eq!(scope.bombay, declared.bombay);
         assert_eq!(scope.kind, declared.kind);
         assert_eq!(scope.operation, declared.operation);
-        assert_eq!(scheduled::proof(&receipt), original.1);
+        assert_eq!(scheduled::proof(&receipt), original.1.as_ref());
         assert!(
             decoded.is_none()
                 && request_refusal.is_none()
@@ -904,10 +821,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                 && refusal.is_none()
         );
         match native.expect("both Ledger operations were selected") {
-            LedgerOutcome::Appended {
-                unsent,
-                native: (sender, admission),
-            } => {
+            Either::Left((unsent, sender, admission)) => {
                 assert_eq!(scope.bombay.request_sequence, 271);
                 let expected = LedgerInput::Append(Box::from([227, 229]));
                 assert_eq!(scope.operation, expected);
@@ -918,10 +832,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                 append_sender = Some(sender.address());
                 append_key = key;
             }
-            LedgerOutcome::Read {
-                unsent,
-                native: (client, admission, received, tail),
-            } => {
+            Either::Right((unsent, client, admission, received, tail)) => {
                 assert_eq!(scope.bombay.request_sequence, 277);
                 assert_eq!(scope.operation, LedgerInput::Read);
                 assert!(unsent.is_none() && matches!(client, Attempt::Returned(Ok(_))));
