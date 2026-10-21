@@ -1658,6 +1658,3 @@ fn scheduled_ledger_request_keys_reject_other_exports() {
             super::same_scheduled_ledger,
         ));
 }
-
-#[path = "permissions/keys.rs"]
-mod keys;

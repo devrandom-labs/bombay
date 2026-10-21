@@ -834,3 +834,15 @@ Canonical compilation still fails44 legacy errors, all modules restored.
 The249-path current checkpoint adds no production or public types. Full remote
 acceptance, minimization/three repository scans, CI/review and main delivery stay
 open; the PRD records the remaining accepted and explicitly deferred scope.
+
+The request-key law now preserves actual mixed reply protocols, duplicate
+identity and fresh issuers after real same-path withdrawal/redeclaration against
+one live target. Both-profile positives, intended issuer-equality inverses and
+restored owning controls qualify with two independent reviews. Four permanent
+compile denials include a valid concrete Export setup and passing control;
+caller-key admission is absent. Only the old448-line key consumer/registration
+is removed. Eight of20 laws are migrated;12 remain, including all four permission
+cases. Canonical compilation now fails38 legacy errors, with every retained
+module restored. Full remote acceptance, minimization, CI/review and actual main
+delivery remain open. Complete cumulative scope is250 paths; no new production
+semantics or public types are introduced by this verification stage.

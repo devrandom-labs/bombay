@@ -8,8 +8,8 @@ main. Latest-main adoption is a prerequisite. The scoped decoder cleanup fix
 now has current-graph debug/optimized positives and intended original-escape
 inverses; 21 public cold cases and seven owning controls pass both profiles.
 Another 23 owning consumer cases pass both profiles after report migration.
-The latest canonical compilation fails on 44 errors in the retained warm
-consumers. Seven of twenty inventoried consumer laws are migrated; thirteen
+The latest canonical compilation fails on 38 errors in the retained warm
+consumers. Eight of twenty inventoried consumer laws are migrated; twelve
 remain. General cancellation and double-fault cleanup remain distinct open
 requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
 composition and remote-counter application, repository minimization, required
@@ -37778,3 +37778,128 @@ three whole-repository scans/minimization, strict checks, CI/review and main
 delivery remain open. Durability/outbox/reminders, automatic placement/fencing,
 subscription fanout, Kubernetes certification and Selo implementation remain
 explicitly deferred outside this milestone.
+
+### Request identity — pre-edit reconciliation
+
+Fresh remote PR379 inspection confirms merged38774dec with all six successful
+checks; its merge and freshly fetched main531ded50 are ancestors of648f82f.
+The selected lockfa79c780 has no patch and still selects Behavior/Actors0.29
+revision55dbac2d, Macros0.16, Address0.3/9f058dc, Communication0.1.6/963067e,
+Timers0.2/9369d1f, in-tree Observe and SDK1.10.10. Complete selected Behavior
+instructions, current protocol/template and primitive owners, RequestKey,
+actual Request producer/extraction, Exports preflight/declaration/serving/
+withdrawal, native Reply and the old448-line key consumer are inspected.
+
+Accepted law: a key's target protocol is independent of its reply protocol;
+duplicate requests reuse one canonical key, but distinct declarations keep
+distinct issuers even at the same row and actual target. Actual same-path
+withdrawal/redeclaration must not reuse the old issuer. Preserve original raw/
+proof buffers and the opaque receipt, including its complete serialized scope,
+binding and twelve allocation observations. Native processing increments once;
+Read replies observe1 through distinct native clients with empty EOF tails.
+
+Use the existing private Exports test boundary, already exercised by the receipt
+comparison, for sequential real native declarations against one live Counter.
+Ordinary Node still owns its one-target preflight policy. Poll each borrowed
+serving operation alongside actual Query/Reply exchange; dispose only that
+borrow after the real exchange, then await existing withdrawal/drain. The
+explicit uncancelled fixture input is not an Application completion signal.
+All final law observations follow actual root/native/notification cleanup and
+Session close. Keep the old key consumer until both profiles and two reviews
+qualify its complete replacement. A row-only equality inverse must expose issuer
+confusion in both profiles; exact restoration and controls remain required.
+
+Retired caller-key admission/lookup cannot receive a foreign or stale key at
+all. Replace its old runtime UnknownRequest/callback-count assertions with
+documented compile denials for construction, Clone, cross-target exchange and
+caller-key admission. Do not restore the warm Export API or claim runtime
+foreign-key rejection through absent operations. No new runtime, request type,
+authority owner or public type is selected. This is test reconciliation, not
+new remote acceptance or a weaker replacement for same-target redeclaration.
+
+Expected paths: existing Export tests/comparison and RequestKey rustdoc,
+retirement of the old child key source/registration, and PRD/backlog records.
+Share the existing nominal protocol fixture at the Export test root rather
+than adding another fixture. Forecast roughly450 verification lines plus
+about50 rustdoc lines; production semantics+0/-0, public types+0/-0. The full
+tree becomes250 paths when the unchanged old key file is retired. All historical,
+copied, rejected, modified and external verification costs carry. Existing
+2600/250/five/4000 limits and full objective remain; no baseline reset.
+
+### Request identity — qualified reconciliation
+
+Final owning tests.rs b50feca8 uses the existing Counter's two genuine reply
+protocols and one common Vec<RequestKey<Counter>>. Five actual verified Query
+requests cross four sequential native declarations against the same live
+target/Session: processing, reading twice, neighbor, then same-path renewed
+reading after actual withdrawal/drain. The provider-return observations and
+terminal extraction preserve all five raw/proof allocations, complete serialized
+scope, opaque binding and twelve original pointer observations. Full native
+custody, four actual operations, protected replies, original clients, EOF-only
+tails, notifications and cleanup precede final issuer comparisons. The explicit
+test-host signal never publishes Application completion. No callback-death,
+whole-heap, prompt Query EOF or production identity claim follows.
+
+The first compiler attempt had an E0716 temporary-result borrow; it executes no
+test and earns no law credit. Review also moves allocating after-snapshots out
+of assertions and restores the existing complete native-custody check. Final
+debug passes1/0,386filtered,0.05s (log /tmp/bombay-key-debug.log d1d02941).
+The whole owning Export group passes4/0 optimized,383filtered,0.02s (log
+/tmp/bombay-key-owner-release.log e9ba0adc), including the unchanged semantic
+receipt comparison after its fixture/Command/Event move to the test parent.
+
+Initial rustdoc77883524 passes four denials, but its generic caller-key attempt
+receiver alone is a limited proof (/tmp/bombay-key-static.log 1ff75579). A
+separate one-line attempt closure on the real constructed reading Export
+(source612cf21e versus passing b50) fails no-run with exactly one E0599;
+/tmp/bombay-key-concrete-denial.log d2a8534f. Exact b50 is restored before runtime
+inversions. Final rustdoc9bb62d15 makes the fourth permanent denial concrete:
+the public Submission Export construction takes explicit caller limits, and
+only attempt(key) is forbidden. The same setup with public into_parts instead
+passes as a companion control (one compile-pass plus three intended denials,
+/tmp/bombay-key-concrete-control.log 6cb9d255). Exact final-negative restoration
+passes4/0 with actual E0451 private fields, E0599 Clone, E0308 cross-target
+exchange and E0599 concrete caller-key attempt; log
+/tmp/bombay-key-static-final.log 313e2661. Command: pinned cargo test --offline
+--locked -p bombay-rs --all-features --doc RequestKey -- --nocapture. Final9bb
+differs from runtime-qualified778 only in the fourth doctest comments, not
+executable code. Both static source/outcome reviews qualify that relationship.
+Hidden compile-fixture callbacks establish no runtime permission/security law
+or ordinary application recipe. No warm admission API is recreated.
+
+The owning equality inversion removes only issuer equality (mod5f600e3d),
+retaining row comparison. Debug and optimized each execute all four owning
+tests: three controls pass and only the key witness fails523, the explicit
+same-path fresh-issuer inequality after full cleanup. All earlier original,
+native, publication, EOF, count and duplicate-key checks execute; the later
+mixed/neighbor inequalities are unexecuted in those negatives. Logs
+/tmp/bombay-key-inverse-{debug,release}.log have75346a6f/9b7e6bc6,0.02/0.01s.
+This rejects issuer confusion without inferring hidden fields from redacted
+Debug. Exact mod77883524 is restored. Restored owner-group debug/optimized
+each pass4/0,383filtered,0.04/0.02s; logs
+/tmp/bombay-key-restored-{debug,release}.log have78229f22/b86c4e98.
+Owning-group commands use the recorded pinned Nix shell and cargo test
+--offline --locked [--release] -p bombay-rs --all-features --lib
+remote::export::tests. The initial debug command instead filters the single
+request_keys_preserve_declarations_across_reply_protocols case. A persistent
+shell from the same pinned profile avoids
+repeated environment startup; its selected cargo is the pinned Rust1.99 path.
+
+Two independent source, counterexample, outcome and restoration reviews qualify
+these exact results. Only the old448-line key file and its three-line
+registration are removed after qualification; all four old permission cases
+remain required. Outer9dab9264 and replay24170cdf restore every retained module.
+No inverse or exclusion remains. Formatting and diff whitespace pass. Canonical
+no-run now fails38 remaining legacy errors and executes no tests; final9bb log
+/tmp/bombay-key-canonical-final.log retains that actual result. Full remote/strict/
+CI/review/main gates remain open; eight of20 inventory laws are migrated,12 remain.
+
+Stage production semantics+0/-0/net0; tests+514/-475/net39; RequestKey rustdoc
+adds52 lines; public types+0/-0. This is added verification, not production
+reduction. Complete e3-baseline tree has250 paths, no untracked inputs:
+production upper+3716/-1224/net2492 (embedded/comparison tests and rustdoc included),
+tests/fixtures+8058/-4039/net4019; public API remains+5 gross/-2. The unchanged
+budget baseline and every earlier/copy/rejected/modified/external/unknown cost
+carry. The next four permission cases reuse existing changed owner paths; do
+not infer a new path requirement merely from reaching250. Additional source
+and verification work must still respect the approved limits.

@@ -1,27 +1,532 @@
-use super::Attempt;
 use super::declaration::{Commands, Delivery, Reception, reply};
+use super::query::Exports;
+use super::{Attempt, Export, ExportLimits, RequestKey};
 use crate::actors::ActorExt;
 use crate::{
-    ActorFailureAssessment, Application, Completion, MailAddr, MailboxCapacity,
+    ActorFailureAssessment, Application, ApplicationHandle, Completion, MailAddr, MailboxCapacity,
     RetirementAssessment, TrySendError,
 };
-use behavior::{Never, User};
+use behavior::{Behavior, EstablishedRecipient, Never, User};
+use behavior_actors::StopOnShutdown;
 use core::future::{Future, poll_fn};
 use core::pin::pin;
 use core::task::Poll;
-use std::cell::Cell;
+use futures_util::FutureExt;
+use serde::{Deserialize, Serialize};
+use std::cell::{Cell, RefCell};
+use std::num::NonZeroUsize;
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
+use zenoh::Session;
+use zenoh::query::{ConsolidationMode, Reply as QueryReply};
+use zenoh::sample::Locality;
 
 #[path = "../../../../../examples/counter/src/counter.rs"]
 mod counter;
-use counter::{Counter, CounterMessage, CounterValue};
+use counter::{Counter, CounterIncremented, CounterMessage, CounterValue};
+
+#[path = "../../../tests/protected_counter/custody.rs"]
+mod custody;
+#[path = "../../../tests/application_clients/protocol.rs"]
+#[expect(
+    dead_code,
+    reason = "reuse the owning nominal provider and native configuration fixture"
+)]
+mod protocol;
+use custody::completed_actor;
+use protocol::{
+    Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadRequest, ReadRequestRef,
+    VerificationError, configuration, current_scope, limits, metadata, recorded,
+};
+
+type Event = <StopOnShutdown<Counter> as Behavior>::Event;
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+enum Command {
+    Increment,
+    Read,
+}
 
 #[path = "comparison.rs"]
 mod comparison;
+
+fn request_originals(
+    protected: &[u8],
+    proof: &[u8],
+    receipt: &recorded::Receipt<Command>,
+) -> (Vec<u8>, Vec<u8>, Vec<u8>, Binding, [*const u8; 12]) {
+    let scope = recorded::projection(receipt);
+    let claims = &scope.bombay;
+    (
+        protected.to_vec(),
+        proof.to_vec(),
+        serde_json::to_vec(&ReadRequestRef {
+            bombay: claims,
+            kind: scope.kind,
+            operation: &scope.operation,
+        })
+        .unwrap(),
+        *recorded::identity(receipt).0,
+        [
+            protected.as_ptr(),
+            proof.as_ptr(),
+            claims.provider_profile.as_ptr(),
+            claims.deployment.as_ptr(),
+            claims.caller.as_ptr(),
+            claims.caller_session.as_ptr(),
+            claims.controller.as_ptr(),
+            claims.actor.as_ptr(),
+            claims.host.as_ptr(),
+            claims.protocol.as_ptr(),
+            claims.grant_issuer.as_ptr(),
+            claims.runtime_generation.as_ptr(),
+        ],
+    )
+}
+
+async fn query_replies<Declarations>(
+    export: &mut Declarations,
+    application: &ApplicationHandle<Counter, Event>,
+    session: &Session,
+    path: &str,
+    originals: &[&ProtectedMessage],
+) -> Vec<Vec<QueryReply>>
+where
+    Declarations: Exports<Counter, Event, (), EstablishedRecipient<Counter>>,
+{
+    let target = application.root().established_recipient();
+    let controls = export
+        .preflight(application, &target, &mut Vec::new())
+        .unwrap_or_else(|()| panic!("the exact live Counter owns this declaration"));
+    export
+        .declare(session)
+        .await
+        .unwrap_or_else(|()| panic!("the actual native declaration opens"));
+    // A unit-test input only; it neither publishes nor certifies Application cleanup.
+    let (cancellation, uncancelled) = oneshot::channel::<()>();
+    let replies = {
+        let serving = export.serve(controls, session.zid().to_string(), uncancelled.shared());
+        let mut serving = pin!(serving);
+        let exchange = async {
+            let mut replies = Vec::new();
+            for original in originals {
+                let receiving = session
+                    .get(path)
+                    .allowed_destination(Locality::SessionLocal)
+                    .consolidation(ConsolidationMode::None)
+                    .timeout(Duration::from_secs(5))
+                    .payload(original.protected.to_vec())
+                    .attachment(original.proof.to_vec())
+                    .await
+                    .expect("the real local Query starts");
+                let mut observed = Vec::new();
+                while let Ok(reply) = receiving.recv_async().await {
+                    observed.push(reply);
+                }
+                replies.push(observed);
+            }
+            replies
+        };
+        tokio::select! {
+            biased;
+            replies = exchange => replies,
+            () = serving.as_mut() => panic!("serving outlives the real exchange"),
+        }
+    };
+    export.withdraw().await;
+    drop(cancellation);
+    replies
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn request_keys_preserve_declarations_across_reply_protocols() {
+    timeout(Duration::from_secs(40), redeclared_counter())
+        .await
+        .expect("the actual declarations, replies and joined cleanup finish");
+}
+
+async fn redeclared_counter() {
+    let network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    let session = zenoh::open(network.to_configuration().unwrap())
+        .await
+        .expect("the actual private native Session opens");
+    let before = RefCell::new(Vec::new());
+    let decoded = Cell::new(0);
+    let constructed = Cell::new(0);
+    let encoded = Cell::new(0);
+    let protected = Cell::new(0);
+    let authorized = Cell::new(0);
+    let outcome = Application::new(Counter::new().stop_on_shutdown())
+        .run_with(|application| {
+            let session = &session;
+            let before = &before;
+            let decoded = &decoded;
+            let constructed = &constructed;
+            let encoded = &encoded;
+            let protected = &protected;
+            let authorized = &authorized;
+            async move {
+                let target = application.root().established_recipient();
+                let origin = application.actor_address(&target).unwrap();
+                let runtime = session.zid().to_string();
+                let mut claims = metadata(
+                    ProviderProfile::Recorded,
+                    "counter",
+                    runtime.clone(),
+                    runtime,
+                );
+                claims.actor_generation = origin.0;
+                let binding = Binding {
+                    deployment: "two-node-read-study",
+                    caller: "caller",
+                    controller: "owner",
+                    actor: "counter",
+                    host: "receiver",
+                    protocol: "counter",
+                    target_assignment: "one-live-counter",
+                    logical_session: 367,
+                };
+                let records =
+                    [Command::Increment, Command::Read].map(|operation| ProtectedMessage {
+                        protected: serde_json::to_vec(&ReadRequestRef {
+                            bombay: &claims,
+                            kind: Purpose::Request,
+                            operation,
+                        })
+                        .unwrap()
+                        .into_boxed_slice(),
+                        proof: Box::from([7_u8, 11]),
+                    });
+                let maximum = NonZeroUsize::new(2).unwrap();
+                let export_limits = ExportLimits {
+                    queued_queries: maximum,
+                    retained_queries: maximum,
+                    retained_requests: maximum,
+                    diagnostics: maximum,
+                };
+                let decode = |bytes: &[u8]| {
+                    decoded.set(decoded.get() + 1);
+                    serde_json::from_slice::<ReadRequest<Command>>(bytes)
+                };
+                let verify = async |bytes: &[u8], proof: &[u8]| {
+                    let original = ProtectedMessage {
+                        protected: bytes.into(),
+                        proof: proof.into(),
+                    };
+                    let result = recorded::verify::<Command>(&original, &records, binding).await;
+                    if let Ok(receipt) = &result {
+                        before
+                            .borrow_mut()
+                            .push(request_originals(bytes, proof, receipt));
+                    }
+                    result
+                };
+                let protect = async |_: &[u8], _: &recorded::Receipt<Command>| {
+                    protected.set(protected.get() + 1);
+                    Ok::<_, Never>(Box::<[u8]>::from([13_u8, 17]))
+                };
+                let deadline = Instant::now() + Duration::from_secs(30);
+                let current =
+                    |receipt: &recorded::Receipt<Command>, runtime: &str, actor: MailAddr| {
+                        let scope = recorded::projection(receipt);
+                        if scope.bombay.runtime_generation.as_ref() != runtime
+                            || scope.bombay.actor_generation != actor.0
+                            || recorded::identity(receipt).0 != &binding
+                        {
+                            return Err(VerificationError::Invalid);
+                        }
+                        current_scope(scope, &claims, &scope.operation, Purpose::Request, deadline)
+                    };
+                let authorize_request =
+                    |receipt: &recorded::Receipt<Command>, runtime: &str, actor: MailAddr| {
+                        authorized.set(authorized.get() + 1);
+                        current(receipt, runtime, actor)
+                    };
+                let same = |left: &recorded::Receipt<Command>,
+                            right: &recorded::Receipt<Command>| {
+                    recorded::identity(left) == recorded::identity(right)
+                };
+                let mut processing = Export::new(
+                    "bombay/keys/processed",
+                    export_limits,
+                    limits(),
+                    &decode,
+                    reply(
+                        |request: ReadRequest<Command>| match request.operation {
+                            Command::Increment => Ok(move |reply_to| {
+                                constructed.set(constructed.get() + 1);
+                                CounterMessage::IncrementAndReply {
+                                    request_sequence: request.bombay.request_sequence,
+                                    reply_to,
+                                }
+                            }),
+                            Command::Read => Err(request),
+                        },
+                        |_: &recorded::Receipt<Command>,
+                         original: &User<MailAddr, CounterIncremented>| {
+                            encoded.set(encoded.get() + 1);
+                            Ok::<_, Never>(
+                                original
+                                    .message
+                                    .request_sequence
+                                    .to_ne_bytes()
+                                    .to_vec()
+                                    .into_boxed_slice(),
+                            )
+                        },
+                    ),
+                    &verify,
+                    &protect,
+                    same,
+                    &authorize_request,
+                    &current,
+                );
+                let reads = |path: &str| {
+                    Export::new(
+                        path,
+                        export_limits,
+                        limits(),
+                        &decode,
+                        reply(
+                            |request: ReadRequest<Command>| match request.operation {
+                                Command::Read => Ok(move |reply_to| {
+                                    constructed.set(constructed.get() + 1);
+                                    CounterMessage::Read(reply_to)
+                                }),
+                                Command::Increment => Err(request),
+                            },
+                            |_: &recorded::Receipt<Command>, original: &User<MailAddr, u64>| {
+                                encoded.set(encoded.get() + 1);
+                                Ok::<_, Never>(
+                                    original.message.to_ne_bytes().to_vec().into_boxed_slice(),
+                                )
+                            },
+                        ),
+                        &verify,
+                        &protect,
+                        same,
+                        &authorize_request,
+                        &current,
+                    )
+                };
+                let mut reading = reads("bombay/keys/value");
+                let mut neighbor = reads("bombay/keys/neighbor");
+                let mut renewed = reads("bombay/keys/value");
+                let processed = query_replies(
+                    &mut processing,
+                    &application,
+                    session,
+                    "bombay/keys/processed",
+                    &[&records[0]],
+                )
+                .await;
+                let read = query_replies(
+                    &mut reading,
+                    &application,
+                    session,
+                    "bombay/keys/value",
+                    &[&records[1], &records[1]],
+                )
+                .await;
+                let adjacent = query_replies(
+                    &mut neighbor,
+                    &application,
+                    session,
+                    "bombay/keys/neighbor",
+                    &[&records[1]],
+                )
+                .await;
+                // The old same-path declaration has actually withdrawn and drained.
+                let fresh = query_replies(
+                    &mut renewed,
+                    &application,
+                    session,
+                    "bombay/keys/value",
+                    &[&records[1]],
+                )
+                .await;
+                let mut read_rows = Vec::new();
+                let mut declarations = Vec::new();
+                for export in [reading, neighbor, renewed] {
+                    let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+                    declarations.push((startup, withdrawal, diagnostics));
+                    for request in requests {
+                        read_rows.push(request.try_into_parts().unwrap_or_else(|_| {
+                            panic!("no producer loan survives real withdrawal")
+                        }));
+                    }
+                }
+                let (_, _, startup, withdrawal, diagnostics, requests) = processing.into_parts();
+                declarations.push((startup, withdrawal, diagnostics));
+                let [request] = <[_; 1]>::try_from(requests)
+                    .unwrap_or_else(|_| panic!("one actual processing request"));
+                let processing = request.try_into_parts().unwrap_or_else(|_| {
+                    panic!("the processing producer releases its original request")
+                });
+                let shutdown = application.shutdown();
+                (
+                    processing,
+                    read_rows,
+                    declarations,
+                    [processed, read, adjacent, fresh],
+                    origin,
+                    shutdown,
+                    claims.request_sequence,
+                )
+            }
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual Application enters its host"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((processing, read_rows, declarations, replies, origin, shutdown, sequence), cleanup) =
+        work.try_into_completed()
+            .unwrap_or_else(|_| panic!("actual Work and joined cleanup remain acquired"));
+    let closed = session.close().await;
+    cleanup.expect("actual Application cleanup joins");
+    closed.expect("the actual native Session closes");
+    let (root_origin, root) = native.expect("the complete original Counter remains acquired");
+    let root_address = root_origin.address();
+    let _counter = completed_actor(root_origin, root);
+    let report = report.expect("the actual root report remains independent");
+    let notifications = notifications.expect("both actual notification receipts remain");
+    let before = before.into_inner();
+    assert!(shutdown.is_ok() && session.is_closed());
+    assert_eq!(root_address, origin);
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    for (startup, withdrawal, diagnostics) in declarations {
+        assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+        assert!(diagnostics.is_empty());
+    }
+    assert_eq!(
+        replies.iter().map(Vec::len).collect::<Vec<_>>(),
+        [1, 2, 1, 1]
+    );
+    for (index, declaration) in replies.iter().enumerate() {
+        let expected = if index == 0 { sequence } else { 1 }.to_ne_bytes();
+        for query in declaration {
+            assert_eq!(query.len(), 1);
+            for reply in query {
+                let received = reply.result();
+                let sample = received
+                    .as_ref()
+                    .expect("the actual query acquired a native reply");
+                let bytes = sample.payload().to_bytes();
+                let proof = sample
+                    .attachment()
+                    .expect("the actual protection proof remains")
+                    .to_bytes();
+                assert_eq!(bytes.as_ref(), expected);
+                assert_eq!(proof.as_ref(), [13, 17]);
+            }
+        }
+    }
+    let (key, raw, verified, input, native, encoding, protection, publications, refusals, panics) =
+        processing;
+    let key = key.expect("the runtime issued the processing key");
+    let receipt = verified
+        .unwrap_or_else(|| panic!("the actual processing verification remains"))
+        .unwrap_or_else(|_| panic!("the configured processing proof verifies"));
+    let after = request_originals(&raw.0, &raw.1, &receipt);
+    assert_eq!(after, before[0]);
+    assert!(
+        input.is_none()
+            && encoding.as_ref().is_some_and(Result::is_ok)
+            && protection.as_ref().is_some_and(Result::is_ok)
+    );
+    assert!(
+        matches!(refusals, (None, None, None))
+            && matches!(panics, (None, None, None, None, None, None))
+    );
+    assert_eq!(publications.len(), 1);
+    assert!(publications.iter().all(Result::is_ok));
+    let (constructor, client, admission, processed, tail) =
+        native.expect("the actual processing operation remains");
+    let Attempt::Returned(Ok(processing_client)) = client else {
+        panic!("the original processing client remains");
+    };
+    assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+    assert_eq!(
+        processed,
+        Some(Some(User::new(
+            origin,
+            CounterIncremented {
+                request_sequence: sequence
+            }
+        )))
+    );
+    assert_eq!(tail.len(), 1);
+    assert!(tail[0].is_none());
+    let mut keys: Vec<RequestKey<Counter>> = vec![key];
+    let mut recipients = Vec::new();
+    for (
+        index,
+        (key, raw, verified, input, native, encoding, protection, publications, refusals, panics),
+    ) in read_rows.into_iter().enumerate()
+    {
+        keys.push(key.expect("the actual read or duplicate key remains"));
+        let receipt = verified
+            .unwrap_or_else(|| panic!("the original read verification remains"))
+            .unwrap_or_else(|_| panic!("the configured Read proof verifies"));
+        let after = request_originals(&raw.0, &raw.1, &receipt);
+        assert_eq!(after, before[index + 1]);
+        assert!(input.is_none());
+        assert!(
+            matches!(refusals, (None, None, None))
+                && matches!(panics, (None, None, None, None, None, None))
+        );
+        assert_eq!(publications.len(), 1);
+        assert!(publications.iter().all(Result::is_ok));
+        if index == 1 {
+            assert!(native.is_none() && encoding.is_none() && protection.is_none());
+            continue;
+        }
+        assert!(
+            encoding.as_ref().is_some_and(Result::is_ok)
+                && protection.as_ref().is_some_and(Result::is_ok)
+        );
+        let (constructor, client, admission, value, tail) =
+            native.expect("each canonical Read retains its actual operation");
+        let Attempt::Returned(Ok(client)) = client else {
+            panic!("the original Read client remains");
+        };
+        recipients.push(client.address());
+        assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+        assert_eq!(value, Some(Some(User::new(origin, 1))));
+        assert_eq!(tail.len(), 1);
+        assert!(tail[0].is_none());
+    }
+    assert_eq!(before.len(), 5);
+    let [processed, read, duplicate, neighbor, renewed] = keys.as_slice() else {
+        panic!("all five original runtime keys remain");
+    };
+    assert_eq!(recipients.len(), 3);
+    assert_ne!(recipients[0], recipients[1]);
+    assert_ne!(recipients[0], recipients[2]);
+    assert_ne!(recipients[1], recipients[2]);
+    assert_ne!(processing_client.address(), recipients[0]);
+    assert_eq!(
+        (
+            decoded.get(),
+            constructed.get(),
+            encoded.get(),
+            protected.get(),
+            authorized.get()
+        ),
+        (4, 4, 4, 4, 5)
+    );
+    assert_eq!(read, duplicate);
+    assert_ne!(
+        read, renewed,
+        "actual same-path redeclaration must have a fresh issuer"
+    );
+    assert_ne!(processed, read);
+    assert_ne!(read, neighbor);
+}
 
 #[test]
 fn full_read_reuses_its_original_reply_endpoint_once() {

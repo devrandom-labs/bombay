@@ -7,13 +7,11 @@ use crate::actors::ActorExt;
 use crate::{
     ActorFailureAssessment, ApplicationScope, MailAddr, RetirementAssessment, TrySendError,
 };
-use behavior::{Behavior, EstablishedRecipient, Never};
-use behavior_actors::StopOnShutdown;
+use behavior::{EstablishedRecipient, Never};
 use core::future::{Future, poll_fn};
 use core::pin::pin;
 use core::task::Poll;
 use futures_util::FutureExt;
-use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
 use std::num::NonZeroUsize;
 use std::time::Duration;
@@ -22,22 +20,11 @@ use tokio::task::unconstrained;
 use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
 
-#[path = "../../../tests/application_clients/protocol.rs"]
-#[expect(
-    dead_code,
-    reason = "reuse the owning nominal provider and native configuration fixture"
-)]
-mod protocol;
-use protocol::{
+use super::protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadRequest, ReadRequestRef,
     configuration, limits, metadata, recorded, reserved_address,
 };
-
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
-enum Command {
-    Increment,
-    Read,
-}
+use super::{Command, Event};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Protection {
@@ -45,8 +32,6 @@ enum Protection {
     Pending,
     Released,
 }
-
-type Event = <StopOnShutdown<Counter> as Behavior>::Event;
 
 type Comparisons = RefCell<Vec<(u64, u64, Protection)>>;
 type Receipt<'a> = (

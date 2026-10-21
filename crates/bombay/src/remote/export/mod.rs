@@ -125,6 +125,58 @@ pub struct ExportLimits {
 }
 /// One runtime-issued request reference for its target protocol and issuing export.
 /// Fields and construction stay private; a key carries no reply or lifecycle authority.
+/// Keys are observations, not inputs for admission or lookup. Callers cannot
+/// construct them, duplicate ownership, change their target protocol, or use
+/// one to submit work to another declaration.
+///
+/// ```compile_fail,E0451
+/// fn forge() -> bombay::remote::RequestKey<bombay::behavior::MessageProtocol<bombay::MailAddr, u8>> {
+///     bombay::remote::RequestKey {
+///         issuer: std::sync::Weak::new(),
+///         row: 0,
+///         protocol: std::marker::PhantomData,
+///     }
+/// }
+/// ```
+///
+/// ```compile_fail,E0599
+/// fn duplicate(key: bombay::remote::RequestKey<bombay::behavior::MessageProtocol<bombay::MailAddr, u8>>) {
+///     let _duplicate = key.clone();
+/// }
+/// ```
+///
+/// ```compile_fail,E0308
+/// fn retarget(
+///     key: bombay::remote::RequestKey<bombay::behavior::MessageProtocol<bombay::MailAddr, u8>>,
+/// ) -> bombay::remote::RequestKey<bombay::behavior::MessageProtocol<bombay::MailAddr, u64>> {
+///     key
+/// }
+/// ```
+///
+/// ```compile_fail,E0599
+/// # type CounterProtocol = bombay::behavior::MessageProtocol<bombay::MailAddr, u8>;
+/// fn resubmit(
+///     key: &bombay::remote::RequestKey<CounterProtocol>,
+///     limits: bombay::remote::ExportLimits,
+///     json: bombay::remote::json::Limits,
+/// ) {
+/// #   let mut export = bombay::remote::Export::new(
+/// #       "shop/counter", limits, json,
+/// #       |_: &[u8]| Ok::<_, ()>(1_u8),
+/// #       bombay::remote::submission::<_, CounterProtocol, _, _>(
+/// #           |message: u8| Ok::<_, u8>(move || message),
+/// #           |_: &(), _: &bombay::remote::Attempt<Result<(), bombay::TrySendError<u8>>>|
+/// #               Ok::<_, ()>(Box::<[u8]>::from([1_u8])),
+/// #       ),
+/// #       async |_: &[u8], _: &[u8]| Ok::<_, ()>(()),
+/// #       async |_: &[u8], _: &()| Ok::<_, ()>(Box::<[u8]>::from([2_u8])),
+/// #       |left: &(), right: &()| left == right,
+/// #       |_: &(), _: &str, _: bombay::MailAddr| Ok::<_, ()>(()),
+/// #       |_: &(), _: &str, _: bombay::MailAddr| Ok::<_, ()>(()),
+/// #   );
+///     export.attempt(key);
+/// }
+/// ```
 pub struct RequestKey<Target: Protocol<Addr = MailAddr>> {
     issuer: Weak<Semaphore>,
     row: usize,
