@@ -3,15 +3,26 @@
 Current remote expiry comparison: committed d4d69e63 proves two first-attempt
 permission-expiry defects in both profiles. The committed0852abcd borrowed native
 call retains constructed originals and lets Query acquire final permission.
-Complete library runs now pass406/406 in both profiles after fixing the
+Complete library runs pass406/406 in both profiles after fixing the
 fixture's IPv4-listener/IPv6-localhost mismatch. All original ingress oracles
 execute without changing limits or certificate verification. Production Clippy
-passes; external consumer migration and full target gates remain open.
+passes. The final restored library includes three new private controls and
+passes409/409 in both profiles; five intended source inversions reject their
+faults in both profiles and every production owner is restored.
+Two receiving targets pass43 tests in both profiles plus strict target lint.
+Scoped public application clients39 and Node outcomes5 pass both profiles.
+Following explicit approval, the superseded refusal/pressure modules and parent
+registrations are removed. Canonical39+5 pass both profiles without exclusions;
+the redundant temporary harness is removed after all21 shared control names
+match both passing canonical inventories. All-feature/all-target strict Clippy
+and formatting now pass. Required Nix/CI/review and main delivery remain open.
 The user explicitly approved2700 conservative production lines
 from the same e3 baseline and255 changed paths on2026-10-21. Formatted production
 totals2606. Journal reconciliation proves the earlier6500 verification
 allowance exceeded; the user explicitly approved12000 total from the same
-checkpoint, carrying all costs. Five public types remains the limit. Earlier
+checkpoint, carrying all costs. Subsequent explicit approvals raise paths to257
+for parent retirement and the reviewed wire-fixture lint correction; five public
+types remains the limit. Earlier
 ingress diagnostics/failures remain separate from the fixed passing source.
 Full R01–R25/AUTH1/NET1, distillation, required CI/review and
 main delivery remain open; the [feature record](../prds/static-remote-actors.md#first-attempt-expiry--owning-representation-and-repair-plan)
@@ -26,7 +37,15 @@ work; full service/privacy, CI/review and main delivery remain open. The
 [identity record](../prds/static-remote-actors.md#runtime-and-actor-identity--local-verification-and-minimization)
 retains the exact scopes, costs and remaining gates.
 
-Current next remote step: implement the one concurrent cold Export/Node path.
+Current next product step: ordinary Application-owned outbound interpretation,
+then the separate remote-counter application. Inbound cold Export/Node serving
+is implemented; live requester tests still manually interpret actual transport
+in private Work. Require one public SDK-free two-Application requester-to-cold-
+Export trace through existing typed owners before selecting any new interface.
+Remaining security/resource policies and broad adversarial acceptance are real
+work beyond this path. All full rows remain open; no percentage is inferred.
+
+Earlier cold-path preparation checkpoint (2026-10-17):
 The bounded ownership comparison passes4/0 in both profiles, its intended
 whole-cell failures and corrected clone denials, with two reviews. Six draft
 extractions now explicitly refuse outstanding loans; all eight drafts
@@ -57,7 +76,7 @@ remain separate prerequisites. Current5c5910ec selected lock/13 archives/18 mani
 remain unchanged. Full cold service, SDK privacy and all R01–R25/AUTH1/NET1,
 distillation, required CI/review and normal main delivery remain open.
 
-Current integration: user-requested latest main49cc8971 (PR385) selects
+Earlier integration: user-requested main49cc8971 (PR385) selected
 Behavior/Actors0.26.0 and the complete Application/Work outcomes. Superseded
 0.25 remote-entry research is retired; historical evidence below retains
 its original source scope. Full service, SDK privacy and all full remote rows

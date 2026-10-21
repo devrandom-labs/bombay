@@ -4,20 +4,24 @@ use super::protocol::{
     self, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReplyRef, ReadRequest,
     ReadRequestRef, configuration, limits, recorded, reserved_address,
 };
+use crate::actors::ActorExt;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::{ApplicationScope, ExternalActorError, MailboxCapacity};
-use crate::remote::{Attempt, Export, ExportLimits, Metadata, submission};
+use crate::remote::{Attempt, Export, ExportError, ExportLimits, Metadata, submission};
 use crate::{
-    ActorFailureAssessment, ActorRetirement, Completion, RetirementAssessment, TrySendError,
+    ActorFailureAssessment, ActorRetirement, Application, Completion, RetirementAssessment,
+    TrySendError, WorkOutcome,
 };
-use behavior::{AllocationRejection, ClassifySettlement, SettlementStatus};
+use behavior::{AllocationRejection, BehaviorBase, ClassifySettlement, SettlementStatus};
 use futures_util::future::Either;
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+use std::error::Error;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
+use std::ptr;
 use std::time::Duration;
-use tokio::sync::oneshot;
+use tokio::sync::{Semaphore, oneshot};
 use zenoh::Config;
 use zenoh::bytes::ZBytes;
 use zenoh::query::ConsolidationMode;
@@ -452,4 +456,278 @@ async fn constructor_refusal() {
         }
     }
     assert_eq!(keys.len(), 1);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "four distinct native constructor refusals retain every original input, cause and joined cleanup before their independent oracles"
+)]
+async fn cold_declarations_preserve_native_constructor_refusals() {
+    tokio::time::timeout(Duration::from_secs(10), async {
+        let maximum = NonZeroUsize::new(2).unwrap();
+        let valid = ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        };
+        let excessive = NonZeroUsize::new(
+            Semaphore::MAX_PERMITS
+                .checked_add(1)
+                .expect("the native semaphore bound has a representable successor"),
+        )
+        .unwrap();
+        let configurations = [
+            (
+                "bombay/refusals/queued",
+                ExportLimits {
+                    queued_queries: excessive,
+                    ..valid
+                },
+            ),
+            (
+                "bombay/refusals/retained",
+                ExportLimits {
+                    retained_queries: excessive,
+                    ..valid
+                },
+            ),
+            (
+                "bombay/refusals/storage",
+                ExportLimits {
+                    retained_requests: NonZeroUsize::new(usize::MAX).unwrap(),
+                    ..valid
+                },
+            ),
+            ("", valid),
+        ];
+        let binding = protocol::Binding {
+            deployment: "constructor-refusal",
+            caller: "caller",
+            controller: "owner",
+            actor: "ledger",
+            host: "receiver",
+            protocol: "ledger",
+            target_assignment: "ledger",
+            logical_session: 251,
+        };
+        let registered: [ProtectedMessage; 0] = [];
+        let verified = Cell::new(0);
+        let protected = Cell::new(0);
+        let invoked = Cell::new(0);
+        let expected_targets = RefCell::new(Vec::new());
+        let verify = async |bytes: &[u8], proof: &[u8]| {
+            verified.set(verified.get() + 1);
+            recorded::verify::<Append>(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                &registered,
+                binding,
+            )
+            .await
+        };
+        // No request is registered and this fixture issues no reply proof.
+        let protect = async |_: &[u8], _: &recorded::Receipt<Append>| {
+            protected.set(protected.get() + 1);
+            Err::<Box<[u8]>, _>(Refusal::Scope)
+        };
+        let current = |receipt: &recorded::Receipt<Append>, runtime: &str, target: MailAddr| {
+            let scope = recorded::projection(receipt);
+            if scope.kind == Purpose::Request
+                && scope.bombay.runtime_generation.as_ref() == runtime
+                && scope.bombay.actor_generation == target.0
+                && recorded::identity(receipt).0 == &binding
+            {
+                Ok(())
+            } else {
+                Err(Refusal::Scope)
+            }
+        };
+        let declaration = |key: &str, export_limits| {
+            Export::new(
+            key, export_limits, limits(),
+            |bytes: &[u8]| serde_json::from_slice::<ReadRequest<Append>>(bytes)
+                .map(|request| request.operation).map_err(Refusal::Json),
+            submission(
+                |Append(original)| Ok::<_, Append>(move || LedgerCommand::Append(original)),
+                |receipt: &recorded::Receipt<Append>,
+                 admission: &Attempt<Result<(), TrySendError<LedgerCommand>>>| {
+                    if !matches!(admission, Attempt::Returned(Ok(()))) {
+                        return Err(Refusal::Native);
+                    }
+                    let scope = recorded::projection(receipt);
+                    serde_json::to_vec(&ReadReplyRef {
+                        bombay: &scope.bombay, kind: Purpose::Admitted,
+                        operation: &scope.operation, value: &(),
+                    }).map(Vec::into_boxed_slice).map_err(Refusal::Json)
+                },
+            ),
+            &verify, &protect,
+            |left: &recorded::Receipt<Append>, right: &recorded::Receipt<Append>| {
+                recorded::identity(left) == recorded::identity(right)
+            },
+            &current, &current,
+        )
+        };
+        let mut observations = Vec::new();
+        for (key, export_limits) in configurations {
+            let node = Application::new(
+                MailLedger {
+                    entries: Vec::new(),
+                }
+                .stop_on_shutdown(),
+            )
+            .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+            .await
+            .unwrap_or_else(|_| panic!("the actual native refusal Node opens"));
+            let connection = node.session.clone();
+            let initially_closed = connection.is_closed();
+            let mut node = node.exports(declaration(key, export_limits), async |application| {
+                let target = application.root().established_recipient();
+                let checked = application.actor_address(&target);
+                expected_targets
+                    .borrow_mut()
+                    .push((target.clone(), checked));
+                Ok::<_, Refusal>(target)
+            });
+            // Unexpected successful declaration still shuts down through actual Work.
+            let outcome = node
+                .run_with(|application| {
+                    invoked.set(invoked.get() + 1);
+                    async move {
+                        let shutdown = application.shutdown();
+                        let retired = application.lifecycle().retirement().await;
+                        (shutdown, retired)
+                    }
+                })
+                .await
+                .unwrap_or_else(|_| panic!("the actual refusal host accepts execution"));
+            let (export, bound, closed, polling, disposal) = node
+                .into_parts()
+                .unwrap_or_else(|_| panic!("startup always acquires withdrawal and native close"));
+            let (inputs, declarations, startup, withdrawal, diagnostics, requests) =
+                export.into_parts();
+            let (work, report, native, notifications, ()) = outcome.into_parts();
+            observations.push((
+                connection,
+                initially_closed,
+                inputs,
+                declarations,
+                startup,
+                withdrawal,
+                diagnostics,
+                requests,
+                bound,
+                closed,
+                polling,
+                disposal,
+                work,
+                report,
+                native,
+                notifications,
+            ));
+        }
+        // Every actual Node has acquired cleanup and close, including any unexpected success.
+        let expected_targets = expected_targets.borrow();
+        let mut causes = Vec::new();
+        for (((key, export_limits), expected), observation) in configurations
+            .into_iter()
+            .zip(expected_targets.iter())
+            .zip(observations)
+        {
+            let (
+                connection,
+                initially_closed,
+                inputs,
+                _declarations,
+                startup,
+                withdrawal,
+                diagnostics,
+                requests,
+                bound,
+                closed,
+                polling,
+                disposal,
+                work,
+                report,
+                native,
+                notifications,
+            ) = observation;
+            let target = bound
+                .expect("the actual target binding ran")
+                .expect("the owned Ledger binding succeeds");
+            let report = report.expect("the actual root report remains independent");
+            let (origin, native) = native.expect("the complete native Ledger remains");
+            let notifications = notifications.expect("both actual notifications remain");
+            assert!(!initially_closed && connection.is_closed() && closed.is_ok());
+            assert_eq!(inputs.0, key);
+            assert_eq!(inputs.1, export_limits);
+            assert_eq!(target, expected.0);
+            assert!(matches!(&expected.1, Ok(address) if *address == origin.address()));
+            assert!(polling.is_none() && disposal.is_none());
+            assert!(matches!(
+                &work,
+                WorkOutcome::NotInvoked {
+                    startup_error: None,
+                    cleanup: Ok(()),
+                    ..
+                }
+            ));
+            assert_eq!(report.retirement(), RetirementAssessment::Established);
+            assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+            assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+            assert!(withdrawal.is_none() && diagnostics.is_empty() && requests.is_empty());
+            let ActorRetirement::OwnerCancelled {
+                custody,
+                settlements,
+                interpretation,
+                source,
+                ..
+            } = &native
+            else {
+                panic!("startup refusal retains actual owner-cancelled root custody");
+            };
+            assert!(interpretation.is_none() && source.is_none());
+            assert_eq!(custody.child_failures, []);
+            assert!(custody.capability_failures.is_empty());
+            assert!(
+                custody.additional_failures.is_empty() && custody.retirement_failures.is_empty()
+            );
+            assert_eq!(custody.descendants, []);
+            assert_eq!(custody.behavior.base().entries, []);
+            assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
+            causes.push(startup);
+        }
+        assert_eq!((invoked.get(), verified.get(), protected.get()), (0, 0, 0));
+        let [queued, retained, storage, invalid] = <[_; 4]>::try_from(causes)
+            .unwrap_or_else(|_| panic!("all four original constructor outcomes remain"));
+        assert!(matches!(&queued, Some(Err(ExportError::QueryCapacity))));
+        assert!(matches!(&retained, Some(Err(ExportError::QueryCapacity))));
+        let Some(Err(cause @ ExportError::Storage { cause: original })) = &storage else {
+            panic!("actual retained storage refusal remains typed");
+        };
+        let source = cause
+            .source()
+            .expect("original native reserve cause remains exposed");
+        assert_eq!(ptr::from_ref(source).addr(), ptr::from_ref(original).addr());
+        let Some(Err(cause @ ExportError::Declaration { cause: original })) = &invalid else {
+            panic!("actual malformed-key declaration refusal remains typed");
+        };
+        let source = cause
+            .source()
+            .expect("original native declaration cause remains exposed");
+        assert_eq!(
+            ptr::from_ref(source).addr(),
+            ptr::from_ref(original.as_ref()).addr()
+        );
+        let display = cause.to_string();
+        let diagnostic = format!("{cause:?}");
+        assert_eq!(display, "network declaration was refused");
+        assert_eq!(diagnostic, "ExportError(network declaration was refused)");
+    })
+    .await
+    .expect("finite constructor setup and all native cleanup finish");
 }

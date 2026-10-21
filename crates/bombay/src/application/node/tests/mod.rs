@@ -7,6 +7,10 @@
 )]
 mod counter;
 #[path = "../../../../tests/application_clients/ledger.rs"]
+#[expect(
+    clippy::duplicate_mod,
+    reason = "Node and private Export tests independently compile the same Ledger application"
+)]
 mod ledger;
 #[path = "../../../../tests/application_clients/protocol.rs"]
 #[expect(

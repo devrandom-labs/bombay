@@ -5,8 +5,10 @@
 The objective remains the complete R01–R25/AUTH1/NET1 PRD through verified
 implementation, distillation, required review and CI, and recorded merges to
 main. Main531ded50 is integrated through44f6b49. All twenty inventoried internal
-consumer requirements qualify; seven warm external tests across three existing
-files still need migration. The internal inventory is not a PRD percentage.
+consumer requirements qualify. Four public construction controls pass both
+profiles. The superseded refusal/pressure modules and registrations are now
+removed after replacement controls, intended negatives and explicit path
+approval. The internal inventory is not a PRD percentage.
 
 Committed d4d69e63 proves two original first-attempt expiry defects in debug and
 optimized builds, with an independently permitted control. The committed
@@ -16,8 +18,12 @@ mechanism consumers use that same operation without dummy permission policies.
 The three focused cases pass both profiles. The ingress fixture mismatch is
 also corrected: it now reserves the same first localhost address resolved by
 the selected connector, while preserving DNS certificate verification. The
-complete all-feature library runs now pass406/406 in debug and optimized builds,
-0filtered/0ignored,5.47/5.34s. Every original ingress count/refusal/EOF/cleanup
+complete all-feature library runs pass406/406 in debug and optimized builds,
+0filtered/0ignored,5.47/5.34s. With three new private controls, the final restored
+whole library runs pass409/409 in both profiles,0filtered/0ignored,4.82/4.77s.
+All five intended owning-source inversions reject their selected faults in both
+profiles; every production owner is exactly restored. Strict full targets remain open.
+Every original ingress count/refusal/EOF/cleanup
 oracle executes; matching wait and10s/60s limits remain unchanged. Earlier405/406
 runs and unretained diagnostic bypasses retain their distinct failed epochs.
 
@@ -27,10 +33,20 @@ SDK timeout captures can retain capacity beyond reply EOF. Complete key, wire,
 permission, Full retry, first-EOF and cancellation assertions pass both final
 profiles. Production-only all-feature Clippy passes. Strict library/test Clippy
 previously reported three shared-fixture findings and legacy external-consumer
-errors. The unused selector is now removed without erasing JSON causes; the
-two receiving consumers have been migrated and await focused validation.
-Four public construction cases and native refusal/pressure gaps are being
-reconciled separately. No passing all-target remote lint/CI claim follows.
+errors. The unused selector is removed without erasing JSON causes. All43 tests
+in the two receiving targets pass both profiles and their strict target lint.
+The scoped external application_clients39 and node_outcome5 also pass both
+profiles with only two old modules temporarily omitted and exactly restored.
+Native refusal/pressure controls and their five inversions now qualify.
+Canonical ApplicationClients39 and NodeOutcome5 now pass in both profiles
+without exclusions. The shared21-case
+remote fixture cohort passes both profiles after bounded lint corrections.
+The approved parent cleanup removes813 obsolete test lines. The separately
+approved wire correction preserves typed causes and owning callback signatures.
+Canonical all-feature all-target strict Clippy now passes. Nix and CI remain
+open. The temporary duplicate
+harness is removed after its21 exact control names pass through canonical
+ApplicationClients in both profiles.
 
 The user explicitly approved both pending scope requests on2026-10-21:
 2700 conservative production lines from the same e3daad58 baseline and255
@@ -47,8 +63,9 @@ modified/tool/unknown costs carry; no refund, reset or headroom is certified.
 Journal reconciliation proves the earlier6500 verification allowance exceeded
 even before all tool/correction costs are recovered. The subsequent explicit
 “authorized and approved” reply raises that replacement total to12000.
-The production2700/path255/five-type approvals remain unchanged. The new window
-does not reset costs or authorize the full remaining PRD surface.
+Subsequent explicit replies approve256 paths for parent retirement and257 for
+the wire-fixture lint fix. Production2700, five types and12000 verification
+remain unchanged. No earlier cost resets or grants the full remaining surface.
 
 All25 full acceptance rows remain open. Ordinary outbound typed requests,
 the remote-counter application, complete authentication/resource/fault gates,
@@ -39895,3 +39912,532 @@ refusals/pressure; the exact canonical parent is restored afterward. Existing
 24 external-test warnings remain and no strict target lint is claimed. This
 executes four construction/retirement controls, not provider/wire laws. Optimized
 and canonical whole-target qualification remain open.
+
+The same corrected construction2b36f4b passes optimized4/0,35filtered in0.01s,
+build50.87s, actual exit0 /tmp/bombay-construction-cold-release.{log,exit}.
+Each profile uses the explicitly scoped parent; canonical ee7f6111 is restored
+exactly after each. No inverse is active. Both independent amended source passes
+pass on2b36f4b, retaining all four separate assessment assertions and independent
+report equality. Existing24 warnings remain; canonical all-target strict lint
+is still open. No requests were issued, so protector execution is not credited.
+
+### Constructor-refusal ownership — minimized selected migration
+
+Reuse existing public foreign_actor_target_refuses_before_numeric_duplicate_comparison
+in node_exports/targets.rs: real live foreign namespace with colliding numeric
+address, exact foreign binding and UnownedTarget, no declaration/provider/Work,
+then the same recovered borrowed Box Work on the other Application, all cleanup.
+Reuse node_outcome::native_join_returns_original_work_for_closed_and_already_issued_nodes
+for actual closed-before-start SessionClosed, uncalled original Work and exact
+Box allocation/content retry. The removed ApplicationHandle.export operations
+(NodeAbsent and retained-handle-after-close) remain retired operations; do not
+recreate them or pretend old ExportError variants still execute.
+
+Select only existing node/tests/constructors.rs for four remaining native input
+refusals. Forecast250–350 authored/modified lines before measured formatting,
+conservatively350–500 formatted, production/public types/new paths0. Reuse
+concrete Ledger/Append/recorded DTOs, existing Export and native Node; a local
+factory takes explicit key and limits and returns the same concrete Export.
+Use a fresh real Node for each to avoid duplicate-target masking. Retain exact
+bound target, unused Work, input key/limits, startup/withdrawal/diagnostics/
+requests, native root/report/two notes/cleanup and actual close before oracles.
+Unexpected success still executes shutdown-capable Work and completes cleanup.
+Assert QueryCapacity for queued and retained overflow, exact native allocation
+cause/source pointer for storage, and exact boxed declaration cause/source
+pointer and redacted Display/Debug for empty native key. Do not use constant
+successful proof without registering the complete bytes/proof pair. Preserve
+old333-line refusal body until four private cases and existing stronger public
+controls actually qualify in both profiles and two independent reviews.
+
+Construction reconciliation is explicit: old public Session pre/post-close state
+and extracted incoming.try_recv Disconnected are private native observations.
+Current public controls retain actual automatic withdrawal and Node-close
+Results, not SDK objects. The passing original ingress law explicitly asserts
+Disconnected; existing node permission/pending laws assert actual cloned
+Session.is_closed after joined cleanup. The old public intermediate window and
+paired execute_with spelling are retired surfaces, not restored APIs.
+
+To qualify reused foreign/closed controls, select the full current
+application_clients and node_outcome integration targets in both profiles while
+only the two old refusal/pressure declarations are temporarily omitted. The
+first target remains a scoped39-case cohort, not canonical full coverage; restore
+ee7f6111 after each profile. No cfg(test) private library source is compiled
+while the four-input refusal author is active. All actual failures remain open
+until diagnosed; no new production machinery is selected by compilation.
+
+Scoped external debug completes exit0: all39 currently included application
+clients pass (0filtered,75.71s, including both actual compile-denial campaigns)
+and all5 node_outcome cases pass (0filtered,0.03s). Existing live foreign-target
+and closed-before-start/issued Work controls actually execute. Log/receipt:
+/tmp/bombay-cold-external-scoped-debug.{log,exit}. The parent is restored to
+ee7f6111 between profiles; optimized is the next command. During a temporary
+parent omission the actual changed-path count is256; restored canonical count
+is255. No permanent parent edit is authorized by the255-path approval. Final
+old-module retirement must reconcile that additional path before retention.
+
+Scoped optimized external command also exits0:39 application clients pass,
+0filtered,1.40s;5 node_outcome pass,0filtered,0.01s. Actual log/receipt is
+/tmp/bombay-cold-external-scoped-release.{log,exit}; canonical parent ee7f6111
+is restored exactly afterward, returning changed-path count to255. Four cold
+construction controls and both stronger existing refusal laws are now exercised
+in both full scoped consumer cohorts; the two old modules remain registered in
+the canonical source until their remaining private replacements qualify.
+
+Private pressure raw freeze: unwind27ede4e6/exporttestsde0e4679,566added/-6,
+net560; known authored gross591 includes discarded spellings and oracle moves.
+Both author reviews and independent causal/counterexample review preserve the
+original bodies, exact SECOND nativeFull, acquired guard panic and post-retired
+Closed Append. Bind six loan/capability observations outside assertions before
+formatting (four RefCell loans, reply recipient, Ledger original loan); this
+adds6 bindings and changes6 observations, all costs carried. No event, policy,
+owner, timeout, existing oracle or production interface changes.
+Private constructor raw freeze1ff5cc35:185/-4/net181,193 known authoring lines;
+two self-reviews pass, independent review pending. All source writers now
+freeze. Root centrally formats these three owner files before first canonical
+library compilation; actual compiler/runtime and source inverses remain open.
+
+First formatted private compilation exits101 with one missing existing
+BehaviorBase import in constructors and one unnecessary mut in unwind;0 tests
+execute. Log /tmp/bombay-native-refusals-debug.{log,exit}. Correct only that
+module-scope owning trait import and unused mut. No bound/model/API follows
+from compiler suggestions. Initial formatted candidate hashes813b6318,
+c1c082b2,d08e7a2d remain an unsuccessful compilation epoch.
+
+Independent pressure counterexample review limits its claim: unread-prefix
+iteration only classifies present messages and may be empty. It does not prove
+processed-plus-unread count conservation or independently detect skipping an
+otherwise identical Full call. The selected inverse isolates retry native-row
+custody specifically across guard release, with the initial native call intact.
+Existing independently fenced Counter permission controls and the Ledger's real
+terminal Read prove their separate progression/conservation obligations. No new
+Counter state accessor or fixture framework is selected to inflate that scope.
+
+First actual pressure execution disproves the draft's finite-setup claim:
+second-Full runs over60s despite its40s Tokio watchdog; root sends SIGTERM only
+to the exact child96952. Cargo records101/signal15, no completed semantic oracle
+or inverse credit. Recorded verification rejects because the new binder left
+metadata's default deployment while its explicit binding uses another value.
+Work then waits for first-return while holding the only worker blocked; the
+executor cannot drive the Tokio watchdog. Earlier source liveness verdicts are
+withdrawn for this epoch. The separate native Ledger control passes1/0,
+408filtered,0.00s after that child terminates; its own receipt is0.
+
+Correct only the missing deployment assignment and both new worker receive
+watchdogs using std recv_timeout(5s), matching the existing finite setup ack.
+After cleanup require the exact Disconnected disposition, not broad is_err
+which would accidentally accept Timeout. A malformed setup can then release the
+worker and fail finitely; no native watchdog, production limit, permission law,
+owner or actor fold changes. Root independently reviews this correction before
+its new actual attempt; all failed/corrected and formatting costs carry.
+
+Corrected bounded retry source1064d77a passes actual debug1/0,408filtered,
+0.03s, build35.94s, receipt0 /tmp/bombay-second-full-bounded-debug.{log,exit}.
+Both independent amended source passes verify metadata and both exact bounded
+release dispositions. The four-refusal trace separately passes1/0,408filtered,
+0.02s, build34.64s; independent source review dc1e228a binds ee1f8dee. All
+three new owning tests now pass focused debug controls; optimized and intended
+custody-loss inversions remain unqualified. No old external module is removed.
+
+Complete frozen working-tree census from the same e3 baseline, using the sealed
+per-path categories plus the four approved additional test owners:
+
+```text
+conservative source: +3831 / -1225 / net2606
+tests/fixtures:      +12662 / -7638 / net5024
+remote public API:  +5 gross named types / -2, unchanged this stage
+paths:              255 / untracked0
+```
+
+This counts all tracked/untracked work, including unqualified construction and
+three private candidates, not just the current commit. The unchanged approved
+production/type surface stays within2700/five. Raw, rejected, corrected, copied,
+formatted and tool costs remain charged under12000; retained census is not
+verification consumption or a refund. No certified headroom is inferred.
+
+Full canonical optimized library now passes409/409,0filtered/0ignored,4.84s,
+build3m16s, actual receipt0 /tmp/bombay-private-migration-release.{log,exit}.
+All three new owner witnesses execute successfully together with the406 prior
+library cases. Source remains canonical; old external modules still registered.
+
+Select five finite owning-source inversions, independently and with exact
+restoration between them, debug and optimized each. Production changes are
+unretained law probes in existing approved paths, no type/owner additions:
+
+- Query retry only: take its native owner out of Request before preparing the
+  retry and restore only after guard Drop. Leave initial call intact. Expected
+  failure is the LAST missing native Full owner after all independent cleanup,
+  original panic, both worker/refill and permission observations pass.
+- Submission callback: execute actual try_send once, map ONLY native Closed to
+  Uncertain (drop that original), preserve all other outcomes. Expected LAST
+  Closed extraction failure after prefix, terminal Read, retirement, counts and
+  repeated None; later allocation assertions do not execute in the negative.
+- Declaration's common excessive-query guard: misclassify QueryCapacity as
+  RetentionCapacity, retaining same early cleanup. Expected queued classifier
+  failure; the later retained classifier is unexecuted in this combined trace.
+- Storage Error::source only: return Some(self) rather than its actual existing
+  TryReserveError, preserving the original error and cleanup. Expected actual
+  source identity comparison failure.
+- Declaration Error::source only: return Some(self), with Storage restored.
+  Expected actual boxed-source identity comparison failure after all cleanup.
+
+Query must restore938a2342, declaration5dae0887 and Export modb0d8452f before
+new positive/strict checks. None is accepted production policy; actual failure
+points and unexecuted later assertions remain distinct. Source reviews approve
+these exact cuts, not generic mock refusals or synthetic causes. The old pressure
+retirement map3e173f22 records preserved observations and explicitly retired
+imperative timing; deletion still requires actual negatives/restored controls.
+
+Retry-only custody inverse debug actually exits101,0pass/1fail,408filtered,
+0.03s (build35.38s), /tmp/bombay-second-full-inverse-debug.{log,exit}.
+The original guard panic is retained, then the LAST native_reply extraction
+fails at unwind.rs767 with “the actual second Full remains outside its producer”.
+All preceding cleanup, original guard allocation/scope, grants, both blockers,
+refill probes, nominal originals and producer outcomes pass. Recipient/tail
+checks after that extraction remain unexecuted. This rejects the intended row
+custody loss, not a watchdog or unrelated setup. Optimized inverse is building;
+query source remains deliberately inverted until that terminal receipt.
+No PR currently targets main from research/remote-service (read-only gh query);
+no push/CI/review/main delivery has occurred for these scoped commits.
+
+Retry-only optimized inverse also exits101,0pass/1fail,408filtered,0.01s at
+the same LAST native owner extraction767, after the original guard panic321 and
+all preceding independent oracles. Log/receipt
+/tmp/bombay-second-full-inverse-release.{log,exit}. Both source/profile outcomes
+therefore reject the precise local custody loss; later endpoint/tail assertions
+remain unexecuted in both negatives. Restore only Query from its committed
+canonical owner; actual restored SHA938a2342 matches exactly. Other production
+owners remain canonical. Restored final whole positives still remain required.
+
+Closed-only inverse debug exits101,0pass/1fail,408filtered,0.01s (build33.67s)
+at the LAST Closed Append extraction export/tests.rs1430, after all cleanup,
+real Full prefix, terminal Read/state, retirement, original sender, construction/
+canonical counts and repeat None. Log/receipt:
+/tmp/bombay-retired-ledger-inverse-debug.{log,exit}. Later rejected Box pointer/
+byte assertions are unexecuted. The native send still occurs exactly once;
+only its actual Closed original is deliberately discarded. Optimized inverse
+is building on declarationd03b42f9; no restored or canonical success is claimed
+for this source epoch. Query remains restored938a2342.
+
+Closed-only optimized inverse exits101,0pass/1fail,408filtered,0.00s at the same
+LAST Closed extraction1430. Its original-pointer/byte assertions remain
+unexecuted, while preceding cleanup, prefix/state and count/repeat checks pass.
+Receipt /tmp/bombay-retired-ledger-inverse-release.{log,exit}. Restore actual
+Declaration exactly5dae0887 before the next independent inversion. Both pressure
+witnesses now reject their exact owning losses in both profiles; final restored
+whole checks and strict gates still remain. Query's excessive-capacity
+classification is the next separately preselected source probe.
+
+Excessive-capacity classification inverse debug exits101,0pass/1fail,
+408filtered,0.03s, solely at constructors.rs707 queued QueryCapacity assertion.
+All four Nodes have completed acquisition/cleanup and preceding ownership
+oracles. Later retained classification708 and native source/redaction oracles
+are unexecuted. Current Query751a5204 differs only in that one common-guard
+variant substitution. Actual receipts:
+/tmp/bombay-native-capacity-inverse-debug.{log,exit}; optimized remains pending.
+Independent source/outcome review confirms the intended classification failure,
+not a native setup, cleanup, timeout or missing original-work failure.
+
+Capacity-classification optimized inverse also exits101,0pass/1fail,
+408filtered,0.02s at the same queued classifier707. Later retained/source/
+redaction assertions remain unexecuted. Receipt
+/tmp/bombay-native-capacity-inverse-release.{log,exit}. Restore Query exactly
+938a2342 before testing Storage's separately selected Error::source identity.
+Storage's one-line Some(self) cut preserves its actual original error and all
+startup/cleanup behavior; whether the address oracle rejects it is experimental,
+not inferred from enum layout. Declaration Error::source stays canonical.
+
+Storage Some(self) debug actually exits101,0pass/1fail,408filtered,0.02s
+(build33.91s), at constructors.rs715 exact source-address comparison. Returned
+outer address differs from its original native cause by8 on this pinned host;
+no coincident-layout pass occurs in this epoch. Both capacity classifications,
+all four cleanup/native/input/unused-Work oracles and the typed Storage original
+are reached first. Later Declaration source and redaction checks are unexecuted.
+Receipt /tmp/bombay-storage-source-inverse-debug.{log,exit}. Optimized source
+identity remains a separate pending command, not inferred from this address.
+
+Storage source-identity optimized inverse also exits101,0pass/1fail,
+408filtered,0.01s at715: outer source address differs by8 from the original
+native cause. Receipt /tmp/bombay-storage-source-inverse-release.{log,exit}.
+Both capacity classifications and complete four-Node cleanup precede this
+failure; Declaration source/redaction remain unexecuted. Restore Export mod
+exactlyb0d8452f before the separately selected Declaration Some(self) source cut.
+Its Storage arm remains healthy; intended final failure is the actual boxed
+Declaration source-identity oracle. No erased/replaced cause is retained in
+production and no source-liveness/canonical gate is inferred from a negative.
+
+Declaration Some(self) debug exits101,0pass/1fail,408filtered,0.04s at722,
+the actual boxed source identity comparison. Both capacity classifiers, exact
+Storage original/source, typed Declaration original and all four complete Node
+cleanup/input/native/unused-Work checks precede it. The later Display/Debug
+checks remain unexecuted in this negative and retain their distinct positive
+qualification. Actual log/receipt:
+/tmp/bombay-declaration-source-inverse-debug.{log,exit}; optimized is building
+on the one-arm Declaration-only mod48e072b6. No other production owner changes.
+
+### Canonical old-module retirement — concrete scope checkpoint
+
+The minimized cleanup removes the two obsolete warm-only source bodies:
+network_replay/refusals.rs333lines and pressure.rs480lines,813 total. Their
+current laws now belong to existing public cold controls and private owners,
+with explicit retired-operation distinctions and recorded positive/negative
+outcomes. No second public Export spelling or SDK access is restored.
+
+The only additional source path needed is network_replay.rs: remove its two
+path attributes, two module declarations and two separating blank lines,
+then remove its pressure-only CounterValue/Receipts imports and update the
+stale pressure wording in its module description and existing fixture reason.
+Keep construction registered and preserve its four controls. Both old body paths
+are already in the approved255-path set; their parent is not. This concrete
+cleanup therefore requires256 cumulative paths from the same baseline, versus
+approved255. Production remains2606 within2700, gross remote named types5 and
+verification12000 unchanged; all earlier costs carry. No production/type
+expansion or unrelated fixture redesign is bundled into this request.
+
+Do not permanently edit the additional parent or retire either old body until
+all selected source inversions qualify, exact production restoration is checked
+and the extra path is explicitly authorized. Ordinary temporary comparison
+mounts remain distinct and restored; they do not authorize retention. Required
+restored positive/lint/format and canonical full-target/Nix/CI/main gates remain
+open after this deletion; removing uncompilable old modules is not PRD closure.
+
+Declaration source-identity optimized inverse exits101,0pass/1fail,
+408filtered,0.01s at722, with Storage healthy and all earlier four-Node cleanup
+and classification/identity checks passed. Later redaction assertions are
+unexecuted in this negative. Receipt
+/tmp/bombay-declaration-source-inverse-release.{log,exit}. Restore Export mod
+exactlyb0d8452f; actual hashes also confirm Declaration5dae0887 and Query938a2342,
+with all three production diffs empty. No source exclusion or inverse remains.
+All five selected owning inversions now fail at their intended independent
+oracles in both profiles. Final restored positive/lint/format gates remain open.
+
+Concrete17-line parent proposal is
+/tmp/bombay-remote-parent-retirement-proposal.rs; source diff removes only the
+two retired registrations, pressure-only imports and stale module/reason text.
+Independent scope review350a1dd2 verifies exactly one additional cumulative path,
+no production/type expansion, and preserved four construction controls. All17
+proposal verification lines and modified recording costs carry under12000.
+No old source is deleted or permanent parent change retained before explicit
+256-path authorization. This is a scope request, not a merge/CI approval.
+
+Final restored debug on all canonical library owners passes409/409,
+0ignored/filtered,4.81s, exit0 /tmp/bombay-private-restored-debug.{log,exit}.
+Pinned whole-tree format exits0. Default formatting only expands the two exact
+Disconnected assertions: unwind0aae5706 preserves1064 behavior,6added lines;
+constructorsee1f8dee, Exporttestsd08e7a2d and construction2b36f4b stay unchanged.
+Both final independent source/record passes confirm exact production hashes,
+no active inverse/exclusion, retained original decoder/export bodies and all
+six assertion observations outside macros. Final restored optimized is building.
+The256-path question remains pending; old source and parent stay canonical.
+
+Updated complete frozen census, including all four current candidate files:
+
+```text
+conservative source: +3831 / -1225 / net2606
+tests/fixtures:      +12668 / -7638 / net5030
+remote public API:  +5 gross named types / -2, unchanged this stage
+paths:              255 / untracked0
+```
+
+The four-file current stage relative to7ae625e0 is tests1493added/-206/net1287,
+production/public types0. It adds capability verification; it is not production
+reduction. All raw, rejected, corrected, copied, formatted, inverse and tool
+costs remain charged to12000 from the same grant, including the17-line parent
+proposal; retained net5030 is not verification consumption or a refund.
+
+Final restored optimized also passes409/409,0ignored/filtered,5.41s, actual
+receipt0 /tmp/bombay-private-restored-release.{log,exit}. Both current profiles
+now qualify all original library laws plus three new owner controls on restored
+production and final formatted test sources. The source inversions remain
+negative-only epochs. No parent approval, old-module deletion, canonical
+external lint/Nix/CI/main delivery is inferred from these library results.
+The standard canonical library/test Clippy command and final format check are
+next, retaining all original external modules while the256-path question is
+pending. Any diagnostics remain real open gates, not waived as migration noise.
+
+Canonical strict library/test Clippy exits101 with six new private-test style
+findings; fmt-check exits0. Receipts
+/tmp/bombay-private-restored-{clippy,fmt-check}.{log,exit}. Findings: two similar
+channel binding names, the second Ledger fixture mount, two empty-container
+assertion styles and unit_arg in the actual unit DTO projection. These are open
+lint gates, not semantic counterexamples or permission to change the model.
+
+Select bounded test-only corrections in the three current private owners plus
+existing node/tests/mod.rs (already in255 changed paths): distinguish retry
+wait from its release sender; destructure the same typed unit request before
+returning unit; use observable cardinality/value equality for the same empty
+outcomes; narrowly expect duplicate_mod on the Ledger fixture mount, following
+its already-established Counter/protocol owner pattern. The fixture remains
+one source independently compiled by two private owning tests. Forecast20–35
+further authored/modified verification lines before measured formatting,
+production/public types/new paths0. Preserve all actual source inversions and
+complete traces; no fixture framework, bound, suppression group or production
+change is selected. Canonical Clippy may then reach the still-registered old
+external modules while the256-path approval stays pending.
+
+### External fixture lint — selected existing-owner corrections
+
+After the six private style corrections, canonical strict Clippy reaches
+node_service and reports56 findings in existing external fixtures. No private
+six finding repeats; this command still exits101 and is not a strict pass.
+Keep all native/core production owners frozen. Select only already-approved
+node_exports/{consumer,peer,quota,refusals,targets}.rs for the first bounded
+cohort, forecast160–220 authored/modified lines before measured formatting,
+stop/reconcile at250. Production/public types/new paths0 for this cohort.
+
+Preserve every real original cause; variant-local dead-code expectations keep
+payloads intact. The common protocol's unused members are proven live in other
+owning consumers, so a reasoned dead_code expectation at this concrete shared
+fixture mount is appropriate, not global deletion or all-lint suppression.
+Use function-local expectations for the existing complete causal trace sizes
+and the independent native channel product. Borrow terminal Withheld inputs at
+its existing assertion function/callers. Stack-pin the same13 real refusal
+futures before the same timeout; no heap allocation, new future model or bound.
+Shorten only incidental sibling-binding and ledger-entered temporary loans.
+Recorded verification returns an owned Ready: bind its construction before
+awaiting. Scheduled verification deliberately borrows its immutable table
+through actual transfer, so retain that loan with a precise closure-local lint
+reason. Preserve all fault producer loans. Use the same complete empty outcomes,
+semicolons and equivalent if-let terminal disposition, without changing policy.
+
+Do not edit wire.rs: it is unchanged from e3 and adds another path beyond the
+currently pending parent request. Its explicit two-variant projections and exact
+borrowed Stop encoder lint decisions remain a separately reviewable proposal.
+Do not edit the temporary node_service mount yet: its own test inventory and
+baseline/new-file status need reconciliation before choosing retention/deletion.
+Every new source/format/copy/correction cost carries under12000; no source/path
+refund is inferred from future minimization. No production expansion, custom
+framework, wrapper, bound or generic plumbing is selected by these diagnostics.
+
+### Combined cleanup/lint surface — new finding before retention
+
+Fresh strict diagnostics identify one additional baseline-unchanged file:
+node_exports/wire.rs. Its concrete proposal is
+/tmp/bombay-remote-wire-lint-proposal.patch: retain the typed JSON cause with a
+variant-local expectation, spell both Ledger rejection arms exhaustively and
+keep the existing Stop encoder's exact borrowed optional-report signature with
+two function-local lint reasons. The owning production Commands bound expressly
+requires &Option<ActorRetirementReport>; no extra callback/adapter is justified.
+This changes no policy, native operation, original input, type or runtime owner.
+Wire is not in255 and is not covered by the parent-only pending256 request.
+Do not edit it without a combined explicit expansion.
+
+Independent inventory also proves node_service.rs is a new temporary8-line
+harness with zero unique tests. All21 actual node_exports leaves occur in both
+passing39-case ApplicationClients inventories, under the same feature gate and
+identical actor/consumer sources. Retire this duplicate harness only AFTER
+canonical ApplicationClients compilation/control preservation is established;
+its own header says it exists while retired callers await migration. This
+minimization is independently warranted, not permission to reuse path headroom.
+All earlier authored/touched-path costs remain carried without refunds.
+
+The combined conservative charged surface therefore needs257 paths: the prior
+255 plus parent retirement and wire's actual lint corrections. Keep2700 net
+production (actual2606), five gross new types and12000 verification unchanged.
+The existing256 question remains pending and is insufficient for wire; prepare
+and independently review the complete combined proposal before requesting its
+replacement. No unapproved path or old-body/harness deletion has occurred.
+
+### Authorized parent retirement and current fixture controls
+
+The explicit user reply Approve256paths authorizes the parent-only proposal.
+Apply its exact17-line replacement and delete only the superseded333-line
+refusals and480-line pressure modules. Their complete law map and both source
+reviews are retained in pressure-retirement-law-map-20261021.md and
+old-module-retirement-scope-review-20261021.md under the session records. All
+five intended owning-source inversions have now failed at their documented
+oracles in both profiles; all three production owners are exactly restored.
+Latest post-style full library controls pass409/409 in debug4.82s and
+optimized4.77s, actual receipts0 at
+/tmp/bombay-private-lint-restored-{debug,release}.{log,exit}.
+
+Five existing external lint files have independent source reviews and current
+debug21/21 at /tmp/bombay-external-fixture-debug.{log,exit}; optimized and strict
+lint remain running. Formatting and every correction remain charged. Parent
+retirement enables canonical ApplicationClients controls without source
+exclusions; do not claim their result before execution. Keep temporary
+node_service until its same21 controls pass through that canonical target.
+Production2606/2700, gross new public types5, verification12000 all unchanged;
+charged paths now256. Wire remains unchanged and requires explicit257 approval.
+
+Explicit Approve257paths now authorizes exactly the reviewed wire proposal.
+Apply the five narrow lint fixes, retaining the actual typed JSON cause, both
+exhaustive original Ledger rejections and the owning borrowed Stop report.
+Independent two-pass scope/source review is
+remote-retirement-wire-scope-review-20261021.md SHA256
+f38365a8115a541c66e5c16e5911a44b460ef8cdaf4d5e4af81b83ccadce269c.
+The preceding five-file corrections now pass all21 actual controls in debug
+0.07s and optimized0.03s; strict temporary-target lint reaches exactly the six
+expected remaining findings (Counter Increment and these five wire findings),
+actual101. This is not a strict pass. Run canonical ApplicationClients and
+NodeOutcome in both profiles next; retire the temporary duplicate only after
+its21 cases are verified there. No source exclusion or inverse is active.
+All earlier/current costs carry; no refund follows deletion. Forecast wire
+under25 further authored/modified verification lines plus measured formatting.
+
+Canonical controls complete: actual0
+/tmp/bombay-canonical-external-{debug,release}.{log,exit}; ApplicationClients39
+pass4.94/1.43s and NodeOutcome5 pass0.01/0.01s. All21 node_exports success names
+exactly match their standalone profile inventories. No exclusion is active.
+The temporary8-line node_service harness is now removed: zero unique tests,
+same feature and exact fixture mounts. Historical touched paths remain charged
+257 even though its removal reduces the current visible baseline diff to256.
+Canonical all-target all-feature strict Clippy and fmt-check are running;
+their result is not yet credited. No required Nix, CI or main delivery follows.
+
+Complete frozen pre-harness census was independently reproduced using the
+existing categories and seven actual additions: production3831/-1225/net2606;
+tests12768/-8502/net4266; paths257/untracked0; remote public types5gross/-2.
+Removing the new8-line duplicate changes tests to12760/-8502/net4258 and
+visible paths256, while charged257 and every historical cost remain unchanged.
+The private4+construction cohort is1498/-206/net1292 relative to7ae625e0,
+production/new public types0. The external five formatted lint files are
+117/-75=192gross plus4 earlier corrections,196known operations before later
+record/tool costs, under the bounded250 checkpoint. Wire is11/-2, signatures
+unchanged. These figures are retained diffs, not total verification consumption.
+
+Canonical all-target strict Clippy now returns101 with nine remaining
+construction/shared-fixture findings: one duplicate protocol mount, four whole
+construction trace lengths and four original208-byte request rejection types.
+No five-file remote consumer finding repeats. Keep each exact typed original
+request error and complete trace. Select precise per-test expectations for
+too_many_lines/result_large_err, plus the existing fixture-mount duplicate_mod
+expectation pattern. Do not box, erase, invent Infallible or move assertions
+into shared machinery to satisfy lint. Forecast25–40 further verification
+lines before formatting, no production, type or new path. Actual strict pass
+and current source controls remain required after this bounded correction.
+
+### Qualified migration checkpoint and delivery boundary
+
+The24 attribute-only construction amendments independently reconstruct the
+earlier exact test bodies and parent proposal. Actual
+/tmp/bombay-construction-lint-clippy.{log,exit} is0: all-feature/all-target
+strict Clippy passes in2.68s. Current focused construction controls pass4/0,
+35filtered in debug0.03s and optimized0.02s; final pinned fmt-check and Git
+diff whitespace check both pass. No behavioral or error-type change follows
+from lint expectations. Earlier101 diagnostic epochs remain separate.
+
+Complete current census from e3daad58, including every tracked and untracked
+path, using the independently reviewed classification:
+
+```text
+production: +3831 / -1225 / net2606
+tests:      +12784 / -8502 / net4282
+public API: +5 gross named remote types / -2
+paths:      256 visible / 257 charged / untracked0
+```
+
+The private four-file witness stage is988/-11/net977 test lines; production
+and public types0. The remaining public consumer migration/retirement and
+lint corrections form a separate test-only commit. All authored, copied,
+modified, rejected, formatted, inverse and tool costs carry under the same
+12000 verification total; retained diffs neither refund nor certify headroom.
+
+Standard tar archive (raw logs, actual receipts, checkpoint, concrete proposals
+and independent reviews; retained Git commits own current source):
+/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/cold-consumer-migration-qualified-20261021.tar.gz
+SHA256 a6a03fad0fcf897687c671710c3cd491693788f355f1f9e420313565ff698319.
+No competing verifier or report generator was added. Production owners remain
+exact Query938a2342/Declaration5dae0887/Export-modb0d8452f, with no active
+inverse or source exclusion. Required remote-profile gates, current privacy
+denials, full Nix/CI/review and main merge remain open. This is a locally
+qualified migration checkpoint, not full feature completion or merged delivery.

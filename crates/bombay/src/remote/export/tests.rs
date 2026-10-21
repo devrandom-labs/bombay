@@ -34,6 +34,8 @@ use counter::{Counter, CounterIncremented, CounterMessage, CounterValue};
 
 #[path = "../../../tests/protected_counter/custody.rs"]
 mod custody;
+#[path = "../../../tests/application_clients/ledger.rs"]
+mod ledger;
 #[path = "../../../tests/application_clients/protocol.rs"]
 #[expect(
     dead_code,
@@ -41,6 +43,7 @@ mod custody;
 )]
 mod protocol;
 use custody::completed_actor;
+use ledger::{LedgerCommand, MailLedger, Receipts};
 use protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadRequest, ReadRequestRef,
     VerificationError, configuration, current_scope, limits, metadata, recorded,
@@ -1251,4 +1254,185 @@ async fn first_attempt_expiry(expiry: Expiry) {
             assert_eq!(attachment.as_ref(), proof.as_ref());
         }
     }
+}
+
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one native Full-to-Closed trace preserves the exact Append and independent terminal Ledger reply through joined cleanup"
+)]
+fn retired_ledger_retry_keeps_the_original_full_append() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            timeout(Duration::from_secs(40), async {
+                let original = RefCell::new(Some(Box::<[u8]>::from([71, 73])));
+                let allocation = original.borrow().as_ref().unwrap().as_ptr();
+                let constructions = Cell::new(0);
+                let commitments = Cell::new(0);
+                let encodings = Cell::new(0);
+                let declarations = submission(
+                    |()| {
+                        let original = original.borrow_mut().take().ok_or(())?;
+                        let constructions = &constructions;
+                        Ok::<_, ()>(move || {
+                            constructions.set(constructions.get() + 1);
+                            LedgerCommand::Append(original)
+                        })
+                    },
+                    |(): &(), _: &Attempt<Result<(), TrySendError<LedgerCommand>>>| {
+                        encodings.set(encodings.get() + 1);
+                        Ok::<_, Never>(Box::<[u8]>::default())
+                    },
+                );
+                let canonical = || commitments.set(commitments.get() + 1);
+                let outcome = Application::new(MailLedger {
+                    entries: Vec::new(),
+                })
+                .mailbox_capacity(MailboxCapacity::new(2).unwrap())
+                .run_with(|application| async move {
+                    let interface =
+                        application.interface(application.root().established_recipient());
+                    let mut ordinary = application
+                        .client::<Receipts>()
+                        .unwrap_or_else(|_| panic!("the independent Ledger client allocates"));
+                    let caller = ordinary.address();
+                    let mut native = Commands::<(), (), MailLedger>::select(&declarations, ())
+                        .unwrap_or_else(|()| panic!("one actual Append constructor is selected"));
+                    let prepared = Commands::<(), (), MailLedger>::prepare(
+                        &declarations,
+                        &mut native,
+                        &interface,
+                    );
+                    prepared
+                        .expect("Submission owns sender preparation")
+                        .expect("the original native sender allocates");
+                    let (release_worker, released) = mpsc::channel::<()>();
+                    let (announced, entered) = oneshot::channel();
+                    let worker = tokio::spawn(async move {
+                        let announced = announced.send(());
+                        let released = released.recv();
+                        (announced, released)
+                    });
+                    let entered = entered.await;
+                    let prefix = (0..2)
+                        .map(|_| ordinary.try_send(LedgerCommand::Append(Box::from([13]))))
+                        .collect::<Vec<_>>();
+                    let full = ordinary.try_send(LedgerCommand::Append(Box::from([17])));
+                    let control = Some(application.lifecycle());
+                    let first =
+                        Delivery::prepare_attempt(&declarations, &mut native, &control, canonical)
+                            .map(|attempt| attempt.map(|attempt| attempt()));
+                    let retained = match &native.2 {
+                        Attempt::Returned(Err(TrySendError::Full(LedgerCommand::Append(
+                            original,
+                        )))) => Some((original.as_ptr(), original.to_vec())),
+                        _ => None,
+                    };
+                    drop(release_worker);
+                    let worker = worker.await;
+                    let admitted = ordinary
+                        .send(LedgerCommand::Read(ordinary.recipient()))
+                        .await;
+                    let reply = if admitted.is_ok() {
+                        ordinary.receive().await
+                    } else {
+                        None
+                    };
+                    let retired = application.lifecycle().retirement().await;
+                    let retried =
+                        Delivery::prepare_attempt(&declarations, &mut native, &control, canonical)
+                            .map(|attempt| attempt.map(|attempt| attempt()));
+                    let repeated =
+                        Delivery::prepare_attempt(&declarations, &mut native, &control, canonical)
+                            .map(|attempt| attempt.map(|attempt| attempt()));
+                    ordinary.close_admission();
+                    let mut tail = Vec::new();
+                    while let Some(original) = ordinary.receive().await {
+                        tail.push(original);
+                    }
+                    (
+                        caller, entered, worker, prefix, full, first, retained, admitted, reply,
+                        retired, retried, repeated, native, tail,
+                    )
+                })
+                .await
+                .unwrap_or_else(|_| panic!("the actual Ledger Application starts"));
+                let (work, root_report, native, notifications, ()) = outcome.into_parts();
+                let (output, cleanup) = work
+                    .try_into_completed()
+                    .unwrap_or_else(|_| panic!("the original Ledger output survives cleanup"));
+                let (origin, native) = native.expect("the actual Ledger retirement survives");
+                let notifications = notifications.expect("both actual notifications survive");
+                let root_report = root_report.expect("the root report remains independent");
+                let (
+                    caller,
+                    entered,
+                    worker,
+                    prefix,
+                    full,
+                    first,
+                    retained,
+                    admitted,
+                    reply,
+                    retired,
+                    retried,
+                    repeated,
+                    (constructor, sender, attempt),
+                    tail,
+                ) = output;
+                let ledger = completed_actor(origin, native);
+                let (announced, released) = worker.expect("the blocked worker joins");
+                let reply = reply.expect("the independent terminal Ledger Read replies");
+                let Attempt::Returned(Ok(sender)) = sender else {
+                    panic!("the original native Append sender survives");
+                };
+                assert!(cleanup.is_ok() && entered.is_ok());
+                assert!(announced.is_ok() && released.is_err());
+                assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+                assert_eq!(root_report, retired);
+                assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+                assert_eq!(
+                    root_report.failures(),
+                    ActorFailureAssessment::NoFailuresFound
+                );
+                assert_eq!(prefix.len(), 2);
+                assert!(prefix.iter().all(Result::is_ok));
+                let Err(TrySendError::Full(LedgerCommand::Append(probe))) = full else {
+                    panic!("the independent probe observes actual mailbox Full");
+                };
+                assert_eq!(probe.as_ref(), [17]);
+                assert!(matches!(first, Ok(Some(()))));
+                assert_eq!(retained, Some((allocation, vec![71, 73])));
+                assert!(admitted.is_ok());
+                assert_eq!(reply.from, MailAddr::APPLICATION_ROOT);
+                assert_eq!(reply.message, [caller, caller]);
+                assert_eq!(ledger.entries.len(), 2);
+                for (from, original) in &ledger.entries {
+                    assert_eq!(*from, caller);
+                    assert_eq!(original.as_ref(), [13]);
+                }
+                assert!(matches!(retried, Ok(Some(()))));
+                assert!(matches!(repeated, Ok(None)));
+                assert_ne!(sender.address(), caller);
+                let original = original.borrow();
+                assert!(constructor.is_none() && original.is_none());
+                assert_eq!(constructions.get(), 1);
+                assert_eq!(commitments.get(), 1);
+                assert_eq!(encodings.get(), 0);
+                assert_eq!(tail.len(), 0);
+                let Attempt::Returned(Err(TrySendError::Closed(LedgerCommand::Append(rejected)))) =
+                    attempt
+                else {
+                    panic!("actual postretirement retry retains native Closed Append");
+                };
+                assert_eq!(rejected.as_ptr(), allocation);
+                assert_eq!(rejected.as_ref(), [71, 73]);
+            })
+            .await
+            .expect("the original Full-to-Closed trace and cleanup terminate");
+        });
 }
