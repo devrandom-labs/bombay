@@ -9,8 +9,10 @@ now has current-graph debug/optimized positives and intended original-escape
 inverses; 21 public cold cases and seven owning controls pass both profiles.
 Another 23 owning consumer cases pass both profiles after report migration.
 The latest canonical compilation fails on 23 errors in the retained warm
-consumers. Twelve of twenty inventoried consumer laws are migrated; eight
-remain. General cancellation and double-fault cleanup remain distinct open
+consumers. Fourteen of twenty inventoried consumer laws now qualify; six
+remain. The latest pair retains its supported advanced requester bodies;
+it does not implement the ordinary outbound service. General cancellation and
+double-fault cleanup remain distinct open
 requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
 composition and remote-counter application, repository minimization, required
 CI/review and actual delivery to main remain open.
@@ -38256,3 +38258,136 @@ Aggregate/control/subordinate alternatives, transition branches, production
 source modules and public spellings are unchanged (pass). The retired module
 and removed three-line registration are test-only ownership changes. Scoped acceptance
 does not mark the feature distilled or delivered.
+
+### Parallel remaining-consumer review — retained live requester controls
+
+The user explicitly requests parallel work. Three existing agents independently
+inspect association, cancellation and Requester ownership; root owns shared
+records, source freezes and pinned-Nix execution. No agent has mutation or Cargo
+authority during this read-only comparison. This does not expand approved
+2600/250/five/4000-further budgets or reset any prior charge.
+
+Current lockfa79 and selected Behavior AGENTS ec0ad868 still select Behavior/
+Actors0.29 at55dbac2d, Macros0.16, Address0.3, Communication0.1.6, Timers0.2,
+in-tree Observe and the existing SDK/Tokio/Futures owners. No dependency or
+architecture change is selected. Source review finds the retained live Requester
+pair uses supported advanced Node execution, certified native clients and SDK
+Query/Reply values. Only the separate pending-protection half uses retired warm
+Export calls. Preserve both complete live bodies rather than inventing another
+test, interpreter or outbound attachment.
+
+Next run their actual Recorded/Scheduled cases in both profiles. Temporarily
+exclude only the broken replay module and three pending-protection items and
+remove the obsolete Admission import, after saving exact canonical sources.
+Restore those exact sources afterward. These temporary cuts are scoped test
+execution, not a passing canonical suite. Forecast five cut lines plus one
+import edit, no retained Rust change, production+0/-0, public types+0/-0,
+existing paths only. All modified/copied/external charges carry. Before granting
+qualification, independently review the full original Actions/native/wire/
+provider/custody/cleanup assertions and execute the existing documented finite
+forwarding-value inverse. Its intended post-cleanup actor-state failure must
+remain distinct from setup, transport timeout or absent-trigger failures.
+
+These advanced-boundary comparisons cannot establish an ordinary outbound
+service, SDK privacy, remote-counter, full acceptance, distillation or delivery.
+The production residual remains interpreting the existing ActorInterface/
+ExternalActor endpoint inside Application-owned outbound networking/lifecycle.
+No new routing abstraction is selected from these compiler failures.
+
+Parallel source review results: the old Ledger association observations map to
+already qualified permissions.rs rows3/7 in both profiles: original Append
+allocation/from, separate actual reply recipients, actual A User, joined
+retirement before B, exact B Closed(Read(original recipient)), full provider
+snapshots, EOF tails and native/notification/withdrawal/close custody. No old
+association source is deleted by this read-only review. Counter late-A versus
+B remains missing: inject extra A1 through the actual captured recipient outside
+Behavior, observe an independent FIFO Read1 fence, then increment and require
+B2 while retaining A's late1 tail. Forecast430 replacement lines plus a finite
+native-owner swap inverse; no production/type/path addition is selected.
+
+Cancellation must preserve Ledger's real Stash policy and accepted B command,
+not relabel wire-wait disposal as cancellation of the private native receive.
+The existing counter separate_read_ports test owns generic native-wait
+cancellation; node_outcome's borrowed native join proves only that join law.
+A cold A/B/duplicate-B trace must retain one retired Stash message, original
+Append, actual A reply and B EOF without a business reply. Forecast450–550
+replacement lines plus an optional80–120-line private Delivery readiness witness
+in its existing owner; no wider visibility or restored imperative API.
+Pending protection separately needs the actual nominal Rc receipt, unchanged
+producer across borrowed-wait cancellation, independent Read2 while protection
+waits, duplicate/conflict originals and exact recovered allocations. Forecast
+350–500 new and30–60 modified lines; no outbound production addition is required
+for that test. A serialization cut that merely hangs earns no law credit.
+
+Independent budget reconciliation recovers at least3216 verification lines
+after the latest grant: replay1003, retirement242, post-checkpoint unwind87,
+withdrawal additions8, provider95, diagnostic221, keys/rustdoc566, Counter502,
+Ledger492. This excludes unresolved corrections, rejected epochs, temporary
+cuts, report migrations and tools;784 is not certified headroom. Git's apparent
+152 Ledger additions during Counter deletion were alignment of unchanged bodies,
+not separately proven authoring. Keep all earlier costs; do not start the large
+rewrites from the incomplete arithmetic. This continuation qualifies existing
+bodies and records plans without authoring those proposed replacements.
+
+Fresh read-only remote-main verification at2026-10-21T12:49:23Z returns
+531ded500dd724fd40920c0a70fbbf25f6ae4856; research29a already contains it.
+All six historically identified merged worktrees are now absent from disk and
+registrations, with branch refs intact. This audit did not delete them. Eight
+registrations remain: active/unique work, dirty timers/main-2, or the detached
+recovery entry with live shell cwd users. No further safe removal is identified.
+Local main's older49cc ref is not the current research checkout or remote main.
+
+### Retained live requester — current-graph qualification
+
+The two complete existing live bodies qualify without a retained Rust edit.
+Both independent source/counterexample reviews and both outcome/restoration
+passes accept the actual Actions trigger23, native Counter1, protected original
+allocations/metadata/proofs, checked typed forwarding, actual ProtectedConsumed
+Actions fence and final native requester ReadReply1 after both native actors,
+notifications, Queryable withdrawal and Session close. The extra-reply assertion
+observes its ACK select window, not complete wire EOF or an absence of late replies.
+
+Scoped positive requestsdef0b745 removes only obsolete Admission from the import
+and temporarily excludes the three pending-protection items. Outera7c13c excludes
+only the broken replay module. Initial D/R passes2/0 each,391filtered,0.03/0.02s;
+logs /tmp/bombay-parallel-live-{debug,release}.log hash a6ccf085/5dd850cb.
+The single forwarding+1 inversef6487764 preserves actual native/wire value1,
+scope/correlation and the real ACK; both profiles exit101 only at final521 with
+actual [ReadReply(2)] versus [ReadReply(1)],0/2,391filtered,0.03/0.04s.
+Inverse logs /tmp/bombay-parallel-live-inverse-{debug,release}.log have hashes
+f7ee1dd5/4ca14c14. All preceding cleanup/native/provider/wire assertions execute;
+the final disposal of retained local originals after521 is not credited in cuts.
+Exact healthydef0 restoration passes2/0 D/R,0.03/0.52s,391filtered, logs
+/tmp/bombay-parallel-live-restored-{debug,release}.log e8ecc8e2/c3c7c4f9.
+
+All six commands use the existing pinned Nix shell89232, selected Rust1.99,
+unchanged offline/locked graph and target/profile settings recorded above:
+`cargo test --offline --locked -p bombay-rs --all-features --lib live_requester_stores_checked_read_reply`,
+with the actual `--release` flag after `--locked` for each optimized execution.
+The matrix is12 named executions: eight positive/restored passes and four
+intended inverse failures. It is not a canonical-suite or strict-lint pass.
+
+Afterward restore exact canonical requestse146823e and outer9dab9264;
+queryb33 is unchanged and the complete Rust diff against29a is empty. No inverse
+or temporary exclusion remains. Fresh existing native cancellation control
+`cargo test --offline --locked -p bombay-rs --all-features --test counter separate_read_ports_preserve_cancelled_waits_and_refuse_late_replies`
+also passes1/0,4filtered,0.00s in each profile (optimized uses `--release`).
+Logs /tmp/bombay-parallel-native-cancellation-{debug,release}.log hash
+67327189/c5af2673. This supplies only its owning generic native-client law,
+not the unfinished cold Ledger Stash/native-query readiness witness.
+
+Canonical all-feature library `--no-run` again exits101 with23 legacy errors,
+five warnings and no tests: /tmp/bombay-parallel-live-canonical.log9c35f505.
+Pinned `cargo fmt --all -- --check` exits0 (empty log); diff whitespace passes.
+The unchanged strict production-library31 findings remain open. Fourteen of20
+retained laws qualify; six remain: association2, cancellation2, pending2.
+The full PRD, ordinary outbound/remote-counter, security/fault/resource gates,
+minimization/three scans, required CI/review and main merges all remain open.
+
+Retained stage production+0/-0/net0; tests+0/-0/net0; public API+0/-0 types.
+Complete tree has250 changed paths frome3 and zero untracked inputs. Since all
+Rust bytes equal29a, the previous conservative source+3719/-1224/net2495 and
+tests/fixtures+9034/-5694/net3340 census is unchanged; it is not a new precise
+runtime classification. Every temporary cut/correction/copy/tool charge carries,
+including this small scoped verification. No larger replacement or new type,
+owner, interpreter, macro, runtime or dependency is selected by these outcomes.

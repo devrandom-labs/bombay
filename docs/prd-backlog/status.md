@@ -874,3 +874,17 @@ fails31 findings. No complete lint/workspace/CI/main delivery follows. Current
 stage production+3, tests net-455, public types0; cumulative250 paths and all
 approved budgets/costs remain. Full R01–R25/AUTH1/NET1 and final minimization stay
 open; next is the retained reply-association pair.
+
+Parallel review finds the two existing live Requester bodies already use the
+supported advanced execution/client API. Their unmodified bodies now qualify
+in both profiles, with finite forwarding+1 failures at the intended final actor
+state and exact restored passes; two independent reviews accept the evidence.
+Fourteen of20 retained laws qualify; six remain: association2, cancellation2,
+pending-protection2. No retained Rust/public change or full outbound-service
+claim follows. All canonical modules are restored; fresh compilation still
+fails23 legacy errors, and strict production-library31 findings remain open.
+Current remote main531 is already included. The six historical merged worktrees
+are now absent; the remaining eight contain active, unique, dirty or recovery
+work. No additional safe removal is identified. Full PRD acceptance, ordinary
+outbound/remote-counter, minimization, required CI/review and main delivery remain
+open. The PRD retains the concrete next-law plans and unresolved budget charges.
