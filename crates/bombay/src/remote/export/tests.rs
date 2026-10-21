@@ -10,12 +10,15 @@ use behavior::{Behavior, EstablishedRecipient, Never, User};
 use behavior_actors::StopOnShutdown;
 use core::future::{Future, poll_fn};
 use core::pin::pin;
-use core::task::Poll;
+use core::task::{Context, Poll, Waker};
 use futures_util::FutureExt;
+use futures_util::future::OptionFuture;
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
 use std::num::NonZeroUsize;
-use std::sync::mpsc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, mpsc};
+use std::task::Wake;
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
@@ -811,4 +814,134 @@ async fn acquired_first_eof_prevents_another_tail_receive() {
     assert!(matches!(received, Some(None)));
     assert!(tail.is_empty());
     assert_ne!(observed, Some(Poll::Pending));
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn cancelled_native_wait_keeps_its_original_reply_client() {
+    let outcome = timeout(
+        Duration::from_secs(10),
+        Application::new(Counter::new().stop_on_shutdown()).run_with(|application| async move {
+            let declarations = reply(
+                |()| Ok::<_, ()>(CounterMessage::Read),
+                |_: &(), original: &User<MailAddr, u64>| {
+                    Ok::<_, Never>(original.message.to_ne_bytes().to_vec().into_boxed_slice())
+                },
+            );
+            let interface = application.interface(application.root().established_recipient());
+            let mut native = Commands::<(), (), Counter>::select(&declarations, ())
+                .unwrap_or_else(|()| panic!("the actual Read constructor is selected"));
+            let prepared =
+                Commands::<(), (), Counter>::prepare(&declarations, &mut native, &interface);
+            prepared
+                .expect("Reply owns preparation")
+                .expect("the real reply endpoint allocates");
+            let original_endpoint = match &native.1 {
+                Attempt::Returned(Ok(client)) => Some(client.address()),
+                _ => None,
+            };
+            let control = Some(application.lifecycle());
+            let commitments = Cell::new(0);
+            let canonical = || commitments.set(commitments.get() + 1);
+            let admitted = Delivery::attempt(&declarations, &mut native, &control, canonical);
+            let cancelled = if let Some(receiving) = Delivery::receive(
+                &declarations,
+                &mut native,
+                &control,
+                application.retirement(),
+            ) {
+                let mut receiving = pin!(receiving);
+                Some(poll_fn(|cx| Poll::Ready(receiving.as_mut().poll(cx))).await)
+            } else {
+                None
+            };
+            // The whole borrowing receive is now gone; the native tuple/client survives.
+            let unreceived = native
+                .3
+                .as_ref()
+                .map(|original| original.as_ref().map(|reply| (reply.from, reply.message)));
+            let mut ordinary = application.client::<CounterValue>().unwrap();
+            let (waiting, before, after, resumed, incremented, fenced, fence) = {
+                let mut receiving = pin!(OptionFuture::from(Delivery::receive(
+                    &declarations,
+                    &mut native,
+                    &control,
+                    application.retirement(),
+                )));
+                let wakes = Arc::new(ReplyWake(AtomicUsize::new(0)));
+                let waker = Waker::from(Arc::clone(&wakes));
+                let waiting = receiving.as_mut().poll(&mut Context::from_waker(&waker));
+                let before = wakes.0.load(Ordering::SeqCst);
+                let incremented = ordinary.send(CounterMessage::Increment).await;
+                let fenced = ordinary
+                    .send(CounterMessage::Read(ordinary.recipient()))
+                    .await;
+                let fence = ordinary.receive().await;
+                // The root remains alive. Only its native reply can wake this wait.
+                let after = wakes.0.load(Ordering::SeqCst);
+                let resumed = match waiting {
+                    Poll::Pending => {
+                        Some(receiving.as_mut().poll(&mut Context::from_waker(&waker)))
+                    }
+                    Poll::Ready(_) => None,
+                };
+                (waiting, before, after, resumed, incremented, fenced, fence)
+            };
+            if let Some(draining) = declarations.drain(&mut native) {
+                draining.await;
+            }
+            ordinary.close_admission();
+            let mut ordinary_tail = Vec::new();
+            while let Some(original) = ordinary.receive().await {
+                ordinary_tail.push(original);
+            }
+            let shutdown = application.shutdown();
+            let commitments = commitments.get();
+            move |origin: MailAddr| {
+                assert!(shutdown.is_ok());
+                assert_eq!(cancelled, Some(Poll::Pending));
+                assert_eq!(unreceived, None);
+                assert!(admitted.is_ok() && incremented.is_ok() && fenced.is_ok());
+                assert_eq!(fence, Some(User::new(origin, 1)));
+                assert_eq!(resumed, Some(Poll::Ready(Some(()))));
+                let (constructor, client, admission, received, tail) = native;
+                assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+                let Attempt::Returned(Ok(client)) = client else {
+                    panic!("the original native reply client remains");
+                };
+                assert_eq!(Some(client.address()), original_endpoint);
+                assert_ne!(client.address(), origin);
+                assert_eq!(commitments, 1);
+                assert_eq!(received, Some(Some(User::new(origin, 0))));
+                assert!(matches!(tail.as_slice(), [None]));
+                assert!(ordinary_tail.is_empty());
+                assert!(waiting.is_pending() && after > before);
+                drop(ordinary);
+            }
+        }),
+    )
+    .await
+    .expect("the native cancellation, fence and cleanup terminate")
+    .unwrap_or_else(|_| panic!("the actual Counter Application starts"));
+    let (work, report, root, notifications, ()) = outcome.into_parts();
+    let (observations, cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the complete cancellation trace survives cleanup"));
+    let (origin, root) = root.expect("the actual Counter retirement remains owned");
+    let report = report.expect("the actual independent root report remains");
+    let notifications = notifications.expect("both actual native notification receipts remain");
+    assert!(cleanup.is_ok());
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    assert_eq!(root.completion(), Some(&Completion::Stopped));
+    assert!(root.custody().is_some());
+    observations(origin.address());
+}
+
+struct ReplyWake(AtomicUsize);
+
+impl Wake for ReplyWake {
+    fn wake(self: Arc<Self>) {
+        self.0.fetch_add(1, Ordering::SeqCst);
+    }
 }

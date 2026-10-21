@@ -1,18 +1,16 @@
 //! Cold Node replay preserves real Task requests, protected replies and native custody.
 //! Recorded/Scheduled are finite test providers, not shipping authentication.
-use super::counter::CounterValue;
-use super::{Counter, CounterMessage, LedgerCommand, MailLedger, Receipts};
+use super::{Counter, CounterMessage, LedgerCommand, MailLedger};
 use bombay::actors::ActorExt;
-use bombay::behavior::{BehaviorBase, Never, Protocol, User};
+use bombay::behavior::{BehaviorBase, Never, User};
 use bombay::lifecycle::{TaskResult, TaskState};
 use bombay::prelude::{Application, MailAddr};
 use bombay::remote::{
-    Attempt, Export, ExportError, ExportLimits, IngressError, Metadata, RequestKey, json, reply,
-    try_retain, verify,
+    Attempt, Export, ExportLimits, IngressError, Metadata, json, reply, try_retain, verify,
 };
 use bombay::{
     ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, ApplicationCleanupError,
-    ApplicationClient, RootOrigin, SendError, TrySendError,
+    RootOrigin, SendError,
 };
 use core::ops::AsyncFn;
 use serde::{Serialize, de::DeserializeOwned};
@@ -24,9 +22,9 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
+use zenoh::Error as ZenohError;
 use zenoh::handlers::FifoChannel;
-use zenoh::query::{ConsolidationMode, Query, Reply};
-use zenoh::{Error as ZenohError, Session};
+use zenoh::query::{ConsolidationMode, Reply};
 
 #[path = "../../../../tests/application_support/mod.rs"]
 mod application_support;

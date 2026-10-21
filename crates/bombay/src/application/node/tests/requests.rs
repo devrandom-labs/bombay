@@ -15,7 +15,9 @@ use bombay::ApplicationScope;
 use bombay::actors::ActorExt;
 use bombay::behavior::User;
 use bombay::prelude::{Application, MailAddr};
-use bombay::remote::{Admission, ExportError, ExportLimits, Metadata, json, try_retain, verify};
+use bombay::remote::{
+    Attempt, Export, ExportError, ExportLimits, Metadata, json, reply, try_retain, verify,
+};
 use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use core::ops::AsyncFn;
@@ -30,9 +32,11 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
+use tokio::sync::oneshot::error::TryRecvError;
 use tokio::sync::{Semaphore, mpsc, oneshot};
 use tokio::time::timeout;
 use zenoh::query::ConsolidationMode;
+use zenoh::sample::Locality;
 
 fn configuration(address: &str, role: &EndpointRole) -> Network {
     let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -580,13 +584,9 @@ fn scheduled_live_requester_stores_checked_read_reply() {
         ));
 }
 
-// Local ownership comparison only: no Query traffic, protected publication,
-// production identity or finished remote Application interface is exercised.
-#[expect(
-    clippy::too_many_lines,
-    reason = "retain both concrete receipts, native rows and all cleanup before the ownership assertions"
-)]
-async fn pending_protection<Receipt>(
+// Current cold ownership comparison: cancelling a borrowed Node/wire wait does
+// not dispose the actual pending provider owned by that same Node operation.
+async fn cold_pending_protection<Receipt>(
     profile: ProviderProfile,
     provider: impl AsyncFn(
         &ProtectedMessage,
@@ -596,438 +596,700 @@ async fn pending_protection<Receipt>(
         &[u8],
         &Receipt,
         &RefCell<Vec<(Scope, ProtectedMessage)>>,
+    ) -> Result<Box<[u8]>, VerificationError>,
+    gated_protector: impl AsyncFn(
+        &[u8],
+        &Receipt,
+        &RefCell<Vec<(Scope, ProtectedMessage)>>,
         oneshot::Receiver<()>,
     ) -> Result<Box<[u8]>, VerificationError>,
     projection: fn(&Receipt) -> (&ProofScope, Scope),
     evidence: fn(&Receipt) -> Option<&[u8]>,
     same_request: fn(&Rc<Receipt>, &Rc<Receipt>) -> bool,
 ) {
+    let records = (0..4).map(|_| RefCell::new(Vec::new())).collect::<Vec<_>>();
+    let configured = RefCell::new(None);
+    let consumers = RefCell::new(Vec::new());
+    let snapshots = RefCell::new(Vec::new());
+    let verified = Cell::new(0);
+    let constructed = Cell::new(0);
+    let gated_calls = Cell::new(0);
+    let ordinary_calls = Cell::new(0);
+    let pending_polls = Cell::new(0);
+    let (entered, entering) = oneshot::channel();
+    let entered = RefCell::new(Some(entered));
+    let transfers = RefCell::new(Vec::new());
+    let (release, released) = oneshot::channel();
+    let released = RefCell::new(Some(released));
+    let (progressed, mut progress) = oneshot::channel();
+    let (duplicated, duplicate_verified) = oneshot::channel();
+    let duplicated = RefCell::new(Some(duplicated));
+    let (configured_requests, requests) = oneshot::channel();
+    let maximum = NonZeroUsize::new(4).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(60);
     let address = reserved_address();
-    let mut node = Application::new(Counter::new().stop_on_shutdown())
-        .open_node(configuration(&address, &EndpointRole::Receiver))
+    let mut network = configuration(&address, &EndpointRole::Receiver);
+    network.max_retained_queries = maximum;
+    let node = Application::new(Counter::new().stop_on_shutdown())
+        .open_node(network)
         .await
-        .unwrap_or_else(|_| panic!("explicit local comparison Node"));
-    let refusals = Arc::new(Mutex::new(Vec::new()));
-    let recorded_refusals = Arc::clone(&refusals);
-    let connection = node.session.clone();
-    let session = &connection;
-    let (execution, receiving) = node
-        .execute_with(|application| async move {
-            let current = metadata(
-                profile,
-                session.zid().to_string(),
-                session.zid().to_string(),
-            );
-            let mut second = metadata(
-                profile,
-                session.zid().to_string(),
-                session.zid().to_string(),
-            );
-            second.request_sequence = 24;
-            let first_scope = logical_scope();
-            let mut second_scope = first_scope;
-            second_scope.identity.sequence = 24;
-            let first_bytes = serde_json::to_vec(&ReadRequestRef {
-                bombay: &current,
-                kind: Purpose::Request,
-                operation: CounterOperation::Read,
-            })
-            .unwrap();
-            let second_bytes = serde_json::to_vec(&ReadRequestRef {
-                bombay: &second,
-                kind: Purpose::Request,
-                operation: CounterOperation::Read,
-            })
-            .unwrap();
-            // Each configured table permits one request and its protected reply.
-            // Separate finite tables authenticate a newer authority declaration
-            // for the same identity, and the explicit conflicting spelling.
-            let first_records = RefCell::new(vec![(
-                first_scope,
+        .unwrap_or_else(|_| panic!("actual cold Counter opens"));
+    let runtime = node.runtime_id();
+    let session = node.session.clone();
+    let current = |receipt: &Rc<Receipt>, actual: &str, target: MailAddr| {
+        let (claims, _) = projection(receipt);
+        let configured = configured.borrow();
+        let Some((first, second)) = configured.as_ref() else {
+            return Err(VerificationError::Invalid);
+        };
+        let expected = match claims.bombay.request_sequence {
+            23 => first,
+            24 => second,
+            _ => return Err(VerificationError::Invalid),
+        };
+        if claims.bombay.runtime_generation.as_ref() != actual
+            || claims.bombay.actor_generation != target.0
+        {
+            return Err(VerificationError::Invalid);
+        }
+        current_scope(
+            claims,
+            expected,
+            &CounterOperation::Read,
+            Purpose::Request,
+            deadline,
+        )
+    };
+    let export = Export::new(
+        "bombay/protection/cold",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes| serde_json::from_slice::<ReadRequest>(bytes).map(|request| request.operation),
+        reply(
+            |CounterOperation::Read| {
+                let constructed = &constructed;
+                Ok::<_, CounterOperation>(move |reply_to| {
+                    constructed.set(constructed.get() + 1);
+                    CounterMessage::Read(reply_to)
+                })
+            },
+            |receipt: &Rc<Receipt>, original: &User<MailAddr, u64>| {
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &projection(receipt).0.bombay,
+                    kind: Purpose::ReadReply,
+                    operation: CounterOperation::Read,
+                    value: &original.message,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            let index = verified.get();
+            verified.set(index + 1);
+            let original = ProtectedMessage {
+                protected: bytes.into(),
+                proof: proof.into(),
+            };
+            let receipt = Rc::new(provider(&original, &records[index]).await?);
+            let (claims, logical) = projection(&receipt);
+            // This observes every metadata field; verification still uses the
+            // original protected bytes and proof, never this serialization.
+            let observed_metadata = serde_json::to_vec(&claims.bombay)
+                .expect("actual receipt metadata serializes for observation");
+            snapshots.borrow_mut().push((
+                (bytes.as_ptr(), proof.as_ptr()),
+                Rc::as_ptr(&receipt),
+                claims.bombay.caller.as_ptr(),
+                evidence(&receipt).map(<[u8]>::as_ptr),
+                observed_metadata,
+                claims.kind,
+                claims.operation,
+                logical,
+            ));
+            consumers.borrow_mut().push(Rc::clone(&receipt));
+            if index == 2 {
+                let duplicated = duplicated
+                    .borrow_mut()
+                    .take()
+                    .expect("the actual duplicate verification publishes its one receipt fence");
+                transfers.borrow_mut().push(duplicated.send(()));
+            }
+            Ok::<_, VerificationError>(receipt)
+        },
+        async |bytes: &[u8], receipt: &Rc<Receipt>| match projection(receipt)
+            .0
+            .bombay
+            .request_sequence
+        {
+            23 => {
+                gated_calls.set(gated_calls.get() + 1);
+                let released = released
+                    .borrow_mut()
+                    .take()
+                    .expect("the one actual A protection producer owns its release");
+                let mut production = pin!(gated_protector(bytes, receipt, &records[0], released));
+                poll_fn(|context| {
+                    let observation = production.as_mut().poll(context);
+                    if observation.is_pending() {
+                        pending_polls.set(pending_polls.get() + 1);
+                        let entered = entered.borrow_mut().take();
+                        if let Some(entered) = entered {
+                            transfers.borrow_mut().push(entered.send(()));
+                        }
+                    }
+                    observation
+                })
+                .await
+            }
+            24 => {
+                ordinary_calls.set(ordinary_calls.get() + 1);
+                protector(bytes, receipt, &records[1]).await
+            }
+            _ => Err(VerificationError::Invalid),
+        },
+        same_request,
+        &current,
+        &current,
+    );
+    let mut node = node.exports(export, async |application| {
+        let target = application.root().established_recipient();
+        let mut first = metadata(profile, runtime.clone(), runtime.clone());
+        let target_address = application
+            .actor_address(&target)
+            .unwrap_or_else(|_| panic!("the actual root is certified"));
+        first.actor_generation = target_address.0;
+        let mut second = metadata(profile, runtime.clone(), runtime.clone());
+        second.actor_generation = target_address.0;
+        second.request_sequence = 24;
+        let first_scope = logical_scope();
+        let mut second_scope = first_scope;
+        second_scope.identity.sequence = 24;
+        let mut duplicate_scope = first_scope;
+        duplicate_scope.authority_generation = 20;
+        let first_bytes = serde_json::to_vec(&ReadRequestRef {
+            bombay: &first,
+            kind: Purpose::Request,
+            operation: CounterOperation::Read,
+        })
+        .unwrap();
+        let second_bytes = serde_json::to_vec(&ReadRequestRef {
+            bombay: &second,
+            kind: Purpose::Request,
+            operation: CounterOperation::Read,
+        })
+        .unwrap();
+        let mut conflict_bytes = first_bytes.clone();
+        conflict_bytes.push(b' ');
+        let originals = [
+            first_bytes.clone(),
+            second_bytes,
+            first_bytes,
+            conflict_bytes,
+        ]
+        .into_iter()
+        .zip([first_scope, second_scope, duplicate_scope, first_scope])
+        .enumerate()
+        .map(|(index, (bytes, scope))| {
+            records[index].borrow_mut().push((
+                scope,
                 ProtectedMessage {
-                    protected: first_bytes.clone().into_boxed_slice(),
-                    proof: Box::from([7, 11]),
-                },
-            )]);
-            let second_records = RefCell::new(vec![(
-                second_scope,
-                ProtectedMessage {
-                    protected: second_bytes.clone().into_boxed_slice(),
-                    proof: Box::from([7, 11]),
-                },
-            )]);
-            let mut duplicate_scope = first_scope;
-            duplicate_scope.authority_generation = 20;
-            let duplicate_records = RefCell::new(vec![(
-                duplicate_scope,
-                ProtectedMessage {
-                    protected: first_bytes.clone().into_boxed_slice(),
-                    proof: Box::from([7, 11]),
-                },
-            )]);
-            let mut conflict_bytes = first_bytes.clone();
-            conflict_bytes.push(b' ');
-            let conflict_records = RefCell::new(vec![(
-                first_scope,
-                ProtectedMessage {
-                    protected: conflict_bytes.clone().into_boxed_slice(),
-                    proof: Box::from([7, 11]),
-                },
-            )]);
-            let mut verification = Vec::new();
-            for (bytes, records) in [
-                (&first_bytes, &first_records),
-                (&second_bytes, &second_records),
-                (&first_bytes, &duplicate_records),
-                (&conflict_bytes, &conflict_records),
-            ] {
-                let original = ProtectedMessage {
                     protected: bytes.clone().into_boxed_slice(),
                     proof: Box::from([7, 11]),
-                };
-                let allocations = (original.protected.as_ptr(), original.proof.as_ptr());
-                let mut receipt = None;
-                verify(&original, &mut receipt, |request| {
-                    provider(request, records)
-                })
-                .await;
-                let receipt = match receipt {
-                    Some(Ok(receipt)) => Rc::new(receipt),
-                    _ => panic!("explicit registered provider evidence"),
-                };
-                verification.push((original, receipt, allocations));
-            }
-            let mut export = application
-                .export::<_, CounterValue, Rc<Receipt>>(
-                    application.root().established_recipient(),
-                    "bombay/protection/read",
-                    ExportLimits {
-                        queued_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_requests: NonZeroUsize::new(2).unwrap(),
-                    },
-                    same_request,
-                    move |original| recorded_refusals.lock().unwrap().push(original),
-                )
-                .await
-                .unwrap_or_else(|_| panic!("actual Node-associated export"));
-            let mut ordinary = application
-                .export_client::<_, CounterValue>(application.root().established_recipient())
-                .unwrap_or_else(|_| panic!("actual ordinary Counter caller"));
-            let primed = ordinary.try_send(CounterMessage::Increment);
-            let (original, receipt, first_allocations) = verification.remove(0);
-            let receipt_allocation = Rc::as_ptr(&receipt);
-            let claim_allocation = projection(&receipt).0.bombay.caller.as_ptr();
-            let proof_allocation = evidence(&receipt).map(<[u8]>::as_ptr);
-            let first = export
-                .retain(original.protected, original.proof, receipt)
-                .unwrap_or_else(|_| panic!("first retained request"));
-            let deadline = Instant::now() + Duration::from_secs(30);
-            let admitted_first = export
-                .attempt(
-                    &first.0,
-                    |receipt| {
-                        current_scope(
-                            projection(receipt).0,
-                            &current,
-                            &CounterOperation::Read,
-                            Purpose::Request,
-                            deadline,
-                        )?;
-                        Ok::<_, VerificationError>(&current)
-                    },
-                    CounterMessage::Read,
-                )
-                .map(|_| ());
-            let received_first = export.receive_native(&first.0).await;
-            let request = export.request(&first.0).unwrap();
-            let consumer = Rc::clone(request.2);
-            let same_receipt = Rc::as_ptr(&consumer);
-            let references = Rc::strong_count(&consumer);
-            let native_first = request.4.as_ref().and_then(Option::as_ref).unwrap();
-            let reply_bytes = serde_json::to_vec(&ReadReplyRef {
-                bombay: &current,
-                kind: Purpose::ReadReply,
-                operation: CounterOperation::Read,
-                value: &native_first.message,
-            })
-            .unwrap();
-            let calls = Cell::new(0);
-            let (release, released) = oneshot::channel();
-            let mut reply_proof = None;
-            let inputs = (reply_bytes.as_slice(), consumer.as_ref(), &first_records);
-            let (pending, still_pending, released, completed) = {
-                let mut operation = pin!(verify(
-                    &inputs,
-                    &mut reply_proof,
-                    |(bytes, receipt, records)| {
-                        calls.set(calls.get() + 1);
-                        protector(bytes, receipt, records, released)
-                    }
-                ));
-                let pending = {
-                    let mut wait = pin!(poll_fn(|context| operation.as_mut().poll(context)));
-                    wait.as_mut().poll(&mut Context::from_waker(Waker::noop()))
-                };
-                let begun_calls = calls.get();
-                let advanced = ordinary.try_send(CounterMessage::Increment);
-                let (original, receipt, second_allocations) = verification.remove(0);
-                let second_pointer = Rc::as_ptr(&receipt);
-                let retained_second = export
-                    .retain(original.protected, original.proof, receipt)
-                    .unwrap_or_else(|_| {
-                        panic!("second retained request while protection is pending")
-                    });
-                let admitted_second = export
-                    .attempt(
-                        &retained_second.0,
-                        |receipt| {
-                            current_scope(
-                                projection(receipt).0,
-                                &second,
-                                &CounterOperation::Read,
-                                Purpose::Request,
-                                deadline,
-                            )?;
-                            Ok::<_, VerificationError>(&second)
-                        },
-                        CounterMessage::Read,
-                    )
-                    .map(|_| ());
-                let received_second = export.receive_native(&retained_second.0).await;
-                let (original, receipt, duplicate_allocations) = verification.remove(0);
-                let duplicate = export.retain(original.protected, original.proof, receipt);
-                let (original, receipt, conflict_allocations) = verification.remove(0);
-                let conflict = export.retain(original.protected, original.proof, receipt);
-                let still_pending = {
-                    let mut wait = pin!(poll_fn(|context| operation.as_mut().poll(context)));
-                    wait.as_mut().poll(&mut Context::from_waker(Waker::noop()))
-                };
-                let held_references = Rc::strong_count(&consumer);
-                let released = release.send(());
-                operation.await;
-                (
-                    pending,
-                    still_pending,
-                    released,
-                    (
-                        advanced,
-                        retained_second,
-                        admitted_second,
-                        received_second,
-                        second_allocations,
-                        second_pointer,
-                        duplicate,
-                        duplicate_allocations,
-                        conflict,
-                        conflict_allocations,
-                        held_references,
-                        begun_calls,
-                    ),
-                )
-            };
-            drop(consumer);
-            let stopped = application.shutdown();
-            let report = application.lifecycle().retirement().await;
-            ordinary.close_admission();
-            let mut ordinary_tail = Vec::new();
-            while let Some(original) = ordinary.receive().await {
-                ordinary_tail.push(original);
-            }
-            let (undeclared, session, mut incoming, retained) = export.undeclare().await;
-            let mut rows = Vec::new();
-            for (key, protected, proof, receipt, admission, native, mut client) in retained {
-                let pointer = Rc::as_ptr(&receipt);
-                let references = Rc::strong_count(&receipt);
-                let original = Rc::try_unwrap(receipt);
-                client.close_admission();
-                let mut tail = Vec::new();
-                while let Some(value) = client.receive().await {
-                    tail.push(value);
-                }
-                rows.push((
-                    key, protected, proof, original, admission, native, client, tail, pointer,
-                    references,
-                ));
-            }
-            let mut queries = Vec::new();
-            let end = loop {
-                match incoming.try_recv() {
-                    Ok(original) => queries.push(original),
-                    Err(cause) => break cause,
-                }
-            };
-            move || {
-                assert!(undeclared.is_ok() && stopped.is_ok());
-                assert_eq!(report.retirement(), RetirementAssessment::Established);
-                assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
-                assert_eq!(pending, Poll::Pending);
-                assert_eq!(still_pending, Poll::Pending);
-                assert!(released.is_ok());
-                assert_eq!(
-                    calls.get(),
-                    1,
-                    "cancelled borrowed waits must not restart protection"
-                );
-                assert_eq!(references, 2);
-                assert_eq!(same_receipt, receipt_allocation);
-                let (
-                    advanced,
-                    retained_second,
-                    admitted_second,
-                    received_second,
-                    second_allocations,
-                    second_pointer,
-                    duplicate,
-                    duplicate_allocations,
-                    conflict,
-                    conflict_allocations,
-                    held_references,
-                    begun_calls,
-                ) = completed;
-                assert_eq!(
-                    begun_calls, 1,
-                    "protection must begin before the second request"
-                );
-                assert_eq!(held_references, 2);
-                assert_eq!(ordinary_tail, []);
-                assert!(
-                    primed.is_ok()
-                        && advanced.is_ok()
-                        && admitted_first.is_ok()
-                        && admitted_second.is_ok()
-                );
-                assert_eq!(received_first, Some(()));
-                assert_eq!(received_second, Some(()));
-                assert_eq!(rows.len(), 2);
-                for (row, expected, pointers, expected_receipt) in [
-                    (&rows[0], 1, first_allocations, receipt_allocation),
-                    (&rows[1], 2, second_allocations, second_pointer),
-                ] {
-                    assert_eq!(row.1.as_ptr(), pointers.0);
-                    assert_eq!(row.2.as_ptr(), pointers.1);
-                    assert!(row.3.is_ok());
-                    assert!(matches!(row.4, Admission::Returned(Ok(()))));
-                    assert_eq!(
-                        row.5.as_ref().and_then(Option::as_ref).unwrap().message,
-                        expected
-                    );
-                    assert_eq!(
-                        row.5.as_ref().and_then(Option::as_ref).unwrap().from,
-                        MailAddr::APPLICATION_ROOT
-                    );
-                    assert_eq!(row.7, []);
-                    assert_eq!(row.8, expected_receipt);
-                    assert_eq!(row.9, 1);
-                }
-                assert_eq!(rows[0].0, first.0);
-                assert_eq!(rows[1].0, retained_second.0);
-                let recovered = rows[0]
-                    .3
-                    .as_ref()
-                    .unwrap_or_else(|_| panic!("original receipt still shared"));
-                assert_eq!(projection(recovered).0.bombay, current);
-                assert_eq!(
-                    projection(recovered).0.bombay.caller.as_ptr(),
-                    claim_allocation
-                );
-                assert_eq!(evidence(recovered).map(<[u8]>::as_ptr), proof_allocation);
-                let duplicate = duplicate.as_ref().unwrap_or_else(|_| {
-                    panic!("duplicate must recover its original receipt and buffers")
-                });
-                assert_eq!(duplicate.0, first.0);
-                let original = duplicate.1.as_ref().unwrap();
-                let duplicate_scope = projection(&original.2).1;
-                assert_eq!(duplicate_scope.identity, projection(recovered).1.identity);
-                assert_eq!(duplicate_scope.authority_generation, 20);
-                assert_eq!(projection(recovered).1.authority_generation, 19);
-                assert_eq!(
-                    (original.0.as_ptr(), original.1.as_ptr()),
-                    duplicate_allocations
-                );
-                let Err((original, cause)) = &conflict else {
-                    panic!("same identity must refuse changed bytes");
-                };
-                assert!(matches!(cause, ExportError::Conflict));
-                assert_eq!(
-                    (original.0.as_ptr(), original.1.as_ptr()),
-                    conflict_allocations
-                );
-                assert!(matches!(&reply_proof, Some(Ok(proof)) if proof.as_ref() == [13, 17]));
-                let produced: ReadReply = serde_json::from_slice(&reply_bytes).unwrap();
-                assert_eq!(produced.value, 1);
-                assert_eq!(produced.bombay, current);
-                assert_eq!(
-                    projection(
-                        rows[1]
-                            .3
-                            .as_ref()
-                            .unwrap_or_else(|_| panic!("second receipt still shared"))
-                    )
-                    .0
-                    .bombay,
-                    second
-                );
-                assert_eq!(first_records.borrow().len(), 2);
-                assert_eq!(second_records.borrow().len(), 1);
-                assert_eq!(conflict_records.borrow().len(), 1);
-                assert_eq!(duplicate_records.borrow().len(), 1);
-                assert!(queries.is_empty());
-                assert!(matches!(end, mpsc::error::TryRecvError::Disconnected));
-                assert!(refusals.lock().unwrap().is_empty());
-                drop((session, ordinary, rows));
+                },
+            ));
+            ProtectedMessage {
+                protected: bytes.into_boxed_slice(),
+                proof: Box::from([7, 11]),
             }
         })
-        .unwrap_or_else(|_| panic!("actual comparison Work host"));
-    let ((), receiving) = tokio::join!(execution, receiving);
-    let (outcome, _root_report, native, notifications, ()) = receiving.into_parts();
-    let (observations, cleanup) = outcome
+        .collect::<Vec<_>>();
+        *configured.borrow_mut() = Some((first, second));
+        configured_requests
+            .send(originals)
+            .unwrap_or_else(|_| panic!("actual Work retains all configured originals"));
+        Ok::<_, VerificationError>(target)
+    });
+    let mut completed = None;
+    let (first_poll, progress, second_poll, references, begun_calls, released, outcome) = {
+        let session = &session;
+        let mut operation = pin!(node.run_with(move |application| async move {
+            let originals = requests
+                .await
+                .expect("the actual binder supplies four originals");
+            let mut ordinary = application
+                .export_client::<_, CounterValue>(application.root().established_recipient())
+                .unwrap_or_else(|_| panic!("actual ordinary Counter client"));
+            let primed = ordinary.try_send(CounterMessage::Increment);
+            let first_get = session
+                .get("bombay/protection/cold")
+                .allowed_destination(Locality::SessionLocal)
+                .consolidation(ConsolidationMode::None)
+                .timeout(Duration::from_secs(60))
+                .payload(originals[0].protected.to_vec())
+                .attachment(originals[0].proof.to_vec())
+                .await;
+            let first = first_get
+                .as_ref()
+                .expect("actual A Query constructor succeeds");
+            let entering = entering.await;
+            let advanced = ordinary.try_send(CounterMessage::Increment);
+            let second_get = session
+                .get("bombay/protection/cold")
+                .allowed_destination(Locality::SessionLocal)
+                .consolidation(ConsolidationMode::None)
+                .timeout(Duration::from_secs(60))
+                .payload(originals[1].protected.to_vec())
+                .attachment(originals[1].proof.to_vec())
+                .await;
+            let second = second_get
+                .as_ref()
+                .expect("actual B Query constructor succeeds");
+            let mut second_replies = Vec::new();
+            let second_end = loop {
+                match second.recv_async().await {
+                    Ok(original) => second_replies.push(original),
+                    Err(cause) => break Err::<(), _>(cause),
+                }
+            };
+            let duplicate_get = session
+                .get("bombay/protection/cold")
+                .allowed_destination(Locality::SessionLocal)
+                .consolidation(ConsolidationMode::None)
+                .timeout(Duration::from_secs(60))
+                .payload(originals[2].protected.to_vec())
+                .attachment(originals[2].proof.to_vec())
+                .await;
+            let duplicate = duplicate_get
+                .as_ref()
+                .expect("actual duplicate Query starts");
+            let duplicate_verified = duplicate_verified.await;
+            let conflict_get = session
+                .get("bombay/protection/cold")
+                .allowed_destination(Locality::SessionLocal)
+                .consolidation(ConsolidationMode::None)
+                .timeout(Duration::from_secs(60))
+                .payload(originals[3].protected.to_vec())
+                .attachment(originals[3].proof.to_vec())
+                .await;
+            let conflict = conflict_get.as_ref().expect("actual conflict Query starts");
+            let mut conflict_replies = Vec::new();
+            let conflict_end = loop {
+                match conflict.recv_async().await {
+                    Ok(original) => conflict_replies.push(original),
+                    Err(cause) => break Err::<(), _>(cause),
+                }
+            };
+            let first_wait = {
+                let mut receiving = pin!(first.recv_async());
+                receiving
+                    .as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+            };
+            let duplicate_wait = {
+                let mut receiving = pin!(duplicate.recv_async());
+                receiving
+                    .as_mut()
+                    .poll(&mut Context::from_waker(Waker::noop()))
+            };
+            let progressed = progressed.send(());
+            let mut first_replies = Vec::new();
+            let first_end = loop {
+                match first.recv_async().await {
+                    Ok(original) => first_replies.push(original),
+                    Err(cause) => break Err::<(), _>(cause),
+                }
+            };
+            let mut duplicate_replies = Vec::new();
+            let duplicate_end = loop {
+                match duplicate.recv_async().await {
+                    Ok(original) => duplicate_replies.push(original),
+                    Err(cause) => break Err::<(), _>(cause),
+                }
+            };
+            ordinary.close_admission();
+            let mut tail = Vec::new();
+            while let Some(original) = ordinary.receive().await {
+                tail.push(original);
+            }
+            let stopped = application.shutdown();
+            let report = application.lifecycle().retirement().await;
+            (
+                originals,
+                primed,
+                advanced,
+                entering,
+                first_get,
+                second_get,
+                duplicate_get,
+                conflict_get,
+                duplicate_verified,
+                first_wait,
+                duplicate_wait,
+                progressed,
+                first_replies,
+                second_replies,
+                duplicate_replies,
+                conflict_replies,
+                (first_end, second_end, duplicate_end, conflict_end),
+                tail,
+                stopped,
+                report,
+            )
+        }));
+        // This borrowed wait ends only after actual B wire completion and conflict
+        // EOF; it leaves the same Node operation and gated producer owned here.
+        let (first_poll, progress) = {
+            let mut waiting = pin!(poll_fn(|context| {
+                let observation = match operation.as_mut().poll(context) {
+                    Poll::Pending => Poll::Pending,
+                    Poll::Ready(original) => {
+                        completed = Some(original);
+                        Poll::Ready(())
+                    }
+                };
+                match progress.try_recv() {
+                    Ok(original) => Poll::Ready((observation, Ok(original))),
+                    Err(TryRecvError::Empty) if completed.is_none() => Poll::Pending,
+                    Err(cause) => Poll::Ready((observation, Err(cause))),
+                }
+            }));
+            waiting.as_mut().await
+        };
+        let references = consumers.borrow().first().map(Rc::strong_count);
+        let begun_calls = (
+            gated_calls.get(),
+            ordinary_calls.get(),
+            records[0].borrow().len(),
+        );
+        let second_poll = if completed.is_none() {
+            let mut waiting = pin!(poll_fn(|context| operation.as_mut().poll(context)));
+            match waiting
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop()))
+            {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(original) => {
+                    completed = Some(original);
+                    Poll::Ready(())
+                }
+            }
+        } else {
+            Poll::Ready(())
+        };
+        let released = release.send(());
+        let outcome = match completed.take() {
+            Some(original) => original,
+            None => operation.await,
+        };
+        (
+            first_poll,
+            progress,
+            second_poll,
+            references,
+            begun_calls,
+            released,
+            outcome,
+        )
+    };
+    let outcome = outcome.unwrap_or_else(|_| panic!("actual cold Work host entry"));
+    let (export, bound, closed, polling, disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("actual binding and Session close are retained"));
+    let (work, report, native, notes, ()) = outcome.into_parts();
+    let (observations, cleanup) = work
         .try_into_completed()
-        .unwrap_or_else(|_| panic!("complete original comparison Work"));
-    let closed = node.close().await;
-    assert!(cleanup.is_ok() && closed.is_ok());
-    assert!(connection.is_closed());
-    let notifications = notifications.as_ref().unwrap();
-    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
-    let (origin, retirement) = native.unwrap();
-    let _actor = completed_actor(origin, retirement);
-    observations();
+        .unwrap_or_else(|_| panic!("all original Work observations survive"));
+    let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) = export.into_parts();
+    let rows = requests
+        .into_iter()
+        .map(|request| {
+            request
+                .try_into_parts()
+                .unwrap_or_else(|_| panic!("actual producer custody leases end"))
+        })
+        .collect::<Vec<_>>();
+    let (origin, retirement) = native.expect("actual Counter root remains");
+    let root_address = origin.address();
+    let _counter = completed_actor(origin, retirement);
+    let report = report.expect("independent root report remains");
+    let notes = notes.expect("both actual notification receipts remain");
+    let (
+        originals,
+        primed,
+        advanced,
+        entering,
+        first_get,
+        second_get,
+        duplicate_get,
+        conflict_get,
+        duplicate_verified,
+        first_wait,
+        duplicate_wait,
+        progressed,
+        first_replies,
+        second_replies,
+        duplicate_replies,
+        conflict_replies,
+        endings,
+        tail,
+        stopped,
+        work_report,
+    ) = observations;
+    let snapshots = snapshots.borrow();
+    let transfers = transfers.borrow();
+    let consumers = consumers.replace(Vec::new());
+    let same_receipts = consumers.iter().map(Rc::as_ptr).collect::<Vec<_>>();
+    drop(consumers);
+    let record_counts = records
+        .iter()
+        .map(|records| records.borrow().len())
+        .collect::<Vec<_>>();
+    // Every application/native/wire/withdrawal/Session result is owned above.
+    assert!(cleanup.is_ok() && closed.is_ok() && session.is_closed());
+    assert!(notes.termination.is_ok() && notes.retirement.is_ok());
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert_eq!(work_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        work_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
+    assert!(matches!(&bound, Some(Ok(_))) && polling.is_none() && disposal.is_none());
+    assert!(matches!(&startup, Some(Ok(()))) && matches!(&withdrawal, Some(Ok(()))));
+    assert!(diagnostics.is_empty() && primed.is_ok() && advanced.is_ok() && stopped.is_ok());
+    let second_native = rows
+        .get(1)
+        .and_then(|row| row.4.as_ref())
+        .and_then(|native| native.3.as_ref())
+        .and_then(Option::as_ref)
+        .map(|original| (original.from, original.message));
+    assert_eq!(
+        second_native,
+        Some((root_address, 2)),
+        "independent native Read2 completes while A protection remains pending"
+    );
+    assert!(
+        first_get.is_ok() && second_get.is_ok() && duplicate_get.is_ok() && conflict_get.is_ok()
+    );
+    assert!(matches!(first_poll, Poll::Pending) && matches!(second_poll, Poll::Pending));
+    assert!(matches!(first_wait, Poll::Pending) && matches!(duplicate_wait, Poll::Pending));
+    assert!(progress.is_ok() && progressed.is_ok() && entering.is_ok() && released.is_ok());
+    assert!(duplicate_verified.is_ok());
+    assert_eq!(references, Some(2));
+    assert_eq!(begun_calls, (1, 1, 1));
+    assert!(pending_polls.get() >= 1);
+    assert_eq!(
+        (
+            verified.get(),
+            constructed.get(),
+            gated_calls.get(),
+            ordinary_calls.get()
+        ),
+        (4, 2, 1, 1)
+    );
+    assert_eq!(transfers.len(), 2);
+    assert!(transfers.iter().all(Result::is_ok));
+    assert_eq!(record_counts, [2, 2, 1, 1]);
+    assert!(tail.is_empty() && conflict_replies.is_empty());
+    assert!(endings.0.is_err() && endings.1.is_err() && endings.2.is_err() && endings.3.is_err());
+    assert_eq!(rows.len(), 4);
+    assert_eq!(snapshots.len(), 4);
+    let first_key = rows[0].0.as_ref().expect("actual A canonical key");
+    let second_key = rows[1].0.as_ref().expect("actual B canonical key");
+    let duplicate_key = rows[2]
+        .0
+        .as_ref()
+        .expect("actual duplicate canonical identity");
+    assert_eq!(first_key, duplicate_key);
+    assert_ne!(first_key, second_key);
+    assert!(rows[3].0.is_none());
+    assert!(matches!(&rows[3].8.2, Some(ExportError::Conflict)));
+    for (index, row) in rows.into_iter().enumerate() {
+        let (
+            key,
+            raw,
+            receipt,
+            decoded,
+            native,
+            encoding,
+            protection,
+            publications,
+            refusals,
+            panics,
+        ) = row;
+        let receipt = receipt
+            .expect("the actual provider result is retained")
+            .unwrap_or_else(|_| panic!("configured provider accepts the original"));
+        let count = Rc::strong_count(&receipt);
+        let pointer = Rc::as_ptr(&receipt);
+        let receipt = Rc::try_unwrap(receipt).unwrap_or_else(|_| {
+            panic!("the exact nominal receipt returns after producer disposal")
+        });
+        let (claims, logical) = projection(&receipt);
+        let mut expected_scope = logical_scope();
+        if index == 1 {
+            expected_scope.identity.sequence = 24;
+        }
+        if index == 2 {
+            expected_scope.authority_generation = 20;
+        }
+        let snapshot = &snapshots[index];
+        let receipt_proof = evidence(&receipt);
+        let proof_pointer = receipt_proof.map(<[u8]>::as_ptr);
+        let observed_metadata = serde_json::to_vec(&claims.bombay)
+            .expect("terminal receipt metadata serializes for observation");
+        assert_eq!(count, 1);
+        assert_eq!(pointer, snapshot.1);
+        assert_eq!(pointer, same_receipts[index]);
+        assert_eq!((raw.0.as_ptr(), raw.1.as_ptr()), snapshot.0);
+        assert_eq!(raw.0, originals[index].protected);
+        assert_eq!(raw.1, originals[index].proof);
+        assert_eq!(observed_metadata, snapshot.4);
+        assert_eq!(logical, expected_scope);
+        assert_eq!(
+            (claims.kind, claims.operation, logical),
+            (snapshot.5, snapshot.6, snapshot.7)
+        );
+        assert_eq!(claims.bombay.caller.as_ptr(), snapshot.2);
+        assert_eq!(proof_pointer, snapshot.3);
+        if let Some(proof) = receipt_proof {
+            assert_eq!(proof, [7, 11]);
+        }
+        assert!(matches!(&panics, (None, None, None, None, None, None)));
+        assert!(refusals.0.is_none() && refusals.1.is_none());
+        if index < 2 {
+            let (constructor, client, admission, received, tail) =
+                native.expect("real native Read owner");
+            let received = received
+                .expect("actual first receive occurs")
+                .expect("actual User remains");
+            let client = match client {
+                Attempt::Returned(Ok(client)) => client,
+                _ => panic!("actual native client construction succeeds"),
+            };
+            let decoded_reply = serde_json::from_slice::<ReadReply>(
+                encoding
+                    .as_ref()
+                    .expect("actual encoding acquired")
+                    .as_ref()
+                    .expect("actual JSON encoding succeeds"),
+            );
+            let decoded_reply = decoded_reply.expect("actual wire reply retains typed meaning");
+            assert!(constructor.is_none() && decoded.is_none() && key.is_some());
+            assert!(matches!(&admission, Attempt::Returned(Ok(()))));
+            assert_eq!(received.from, root_address);
+            assert_eq!(received.message, index as u64 + 1);
+            assert_eq!(decoded_reply.value, received.message);
+            assert_eq!(decoded_reply.bombay, claims.bombay);
+            assert_eq!(
+                (decoded_reply.kind, decoded_reply.operation),
+                (Purpose::ReadReply, CounterOperation::Read)
+            );
+            assert!(matches!(tail.as_slice(), [None]));
+            assert!(matches!(&protection, Some(Ok(proof)) if proof.as_ref() == [13, 17]));
+            assert_eq!(publications.len(), 1);
+            assert!(publications.iter().all(Result::is_ok) && refusals.2.is_none());
+            drop(client);
+        } else {
+            assert!(
+                decoded.is_none() && native.is_none() && encoding.is_none() && protection.is_none()
+            );
+            if index == 2 {
+                assert!(refusals.2.is_none());
+            }
+            assert_eq!(
+                logical.authority_generation,
+                if index == 2 { 20 } else { 19 }
+            );
+            assert_eq!(publications.len(), if index == 2 { 1 } else { 0 });
+            assert!(publications.iter().all(Result::is_ok));
+        }
+    }
+    for (replies, expected, index) in [
+        (&first_replies, 1, 0),
+        (&second_replies, 2, 1),
+        (&duplicate_replies, 1, 0),
+    ] {
+        assert_eq!(replies.len(), 1);
+        let result = replies[0].result();
+        let sample = result.as_ref().expect("actual protected reply sample");
+        let bytes = sample.payload().to_bytes();
+        let proof = sample.attachment().expect("actual reply proof").to_bytes();
+        let reply = serde_json::from_slice::<ReadReply>(&bytes).expect("actual protected DTO");
+        let reply_metadata = serde_json::to_vec(&reply.bombay)
+            .expect("actual wire metadata serializes for observation");
+        let records = records[index].borrow();
+        let original = &records[1].1;
+        assert_eq!(sample.key_expr().as_str(), "bombay/protection/cold");
+        assert_eq!(reply.value, expected);
+        assert_eq!(reply_metadata, snapshots[index].4);
+        assert_eq!(bytes.as_ref(), original.protected.as_ref());
+        assert_eq!(proof.as_ref(), original.proof.as_ref());
+        assert_eq!(
+            (reply.kind, reply.operation),
+            (Purpose::ReadReply, CounterOperation::Read)
+        );
+        assert_eq!(proof.as_ref(), [13, 17]);
+    }
 }
 
 #[test]
-fn recorded_pending_protection_preserves_other_requests_and_replay() {
+fn recorded_cold_protection_preserves_requests_and_replay() {
     Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
         .build()
         .unwrap()
-        .block_on(pending_protection(
-            ProviderProfile::Recorded,
-            recorded::verify,
-            recorded::protect_when_released,
-            recorded::projection,
-            |_| None,
-            |left, right| {
-                recorded::projection(left).1.identity == recorded::projection(right).1.identity
-            },
-        ));
+        .block_on(async {
+            timeout(
+                Duration::from_secs(40),
+                cold_pending_protection(
+                    ProviderProfile::Recorded,
+                    recorded::verify,
+                    recorded::protect,
+                    recorded::protect_when_released,
+                    recorded::projection,
+                    |_| None,
+                    |left, right| {
+                        recorded::projection(left).1.identity
+                            == recorded::projection(right).1.identity
+                    },
+                ),
+            )
+            .await
+            .expect("finite pending provider trace completes before native expiry");
+        });
 }
 
 #[test]
-fn scheduled_pending_protection_preserves_other_requests_and_replay() {
+fn scheduled_cold_protection_preserves_requests_and_replay() {
     Builder::new_multi_thread()
         .worker_threads(1)
         .enable_all()
         .build()
         .unwrap()
-        .block_on(pending_protection(
-            ProviderProfile::Scheduled,
-            scheduled::verify,
-            scheduled::protect_when_released,
-            scheduled::projection,
-            |receipt| Some(scheduled::proof(receipt)),
-            |left, right| {
-                scheduled::projection(left).1.identity == scheduled::projection(right).1.identity
-            },
-        ));
+        .block_on(async {
+            timeout(
+                Duration::from_secs(40),
+                cold_pending_protection(
+                    ProviderProfile::Scheduled,
+                    scheduled::verify,
+                    scheduled::protect,
+                    scheduled::protect_when_released,
+                    scheduled::projection,
+                    |receipt| Some(scheduled::proof(receipt)),
+                    |left, right| {
+                        scheduled::projection(left).1.identity
+                            == scheduled::projection(right).1.identity
+                    },
+                ),
+            )
+            .await
+            .expect("finite pending provider trace completes before native expiry");
+        });
 }

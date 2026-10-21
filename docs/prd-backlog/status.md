@@ -901,3 +901,17 @@ explicitly approved raising only the verification ceiling to6500 total, carrying
 all earlier costs. Production2600, paths250, five gross public types and the
 same baseline stay fixed. Full remote acceptance, minimization, required CI/
 review and main delivery remain open.
+
+The remaining six retained-consumer requirements now qualify with exact native
+facts, finite intended inverses and restored debug/optimized controls. All20
+inventory requirements qualify; old warm bodies and temporary cuts are removed.
+This does not close the PRD. Uncensored all-feature library execution now
+compiles403 tests per profile:402pass, one unchanged TLS ingress watchdog fails,
+also reproducible alone. All-feature test Clippy reports94 library-test findings
+plus two older external-fixture compilation diagnostics; two untouched external
+remote files still need existing shutdown/five-part report migration. Production
+is unchanged by this test checkpoint. The requested254-path cap (four existing
+files for diagnosis/orphan removal/external consumers) remains pending; other
+approved caps and all carried costs stay fixed. Full outbound Application,
+remote-counter, broader acceptance, minimization, CI/review and main delivery
+remain open.

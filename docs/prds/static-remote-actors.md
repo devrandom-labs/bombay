@@ -6,20 +6,33 @@ The objective remains the complete R01–R25/AUTH1/NET1 PRD through verified
 implementation, distillation, required review and CI, and recorded merges to
 main. Latest-main adoption is a prerequisite. The scoped decoder cleanup fix
 now has current-graph debug/optimized positives and intended original-escape
-inverses; 21 public cold cases and seven owning controls pass both profiles.
-Another 23 owning consumer cases pass both profiles after report migration.
-The latest canonical compilation fails on 23 errors in the retained warm
-consumers. Fourteen of twenty inventoried consumer laws now qualify; six
-remain. The latest pair retains its supported advanced requester bodies;
-it does not implement the ordinary outbound service. General cancellation and
-double-fault cleanup remain distinct open
-requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
+inverses. All twenty inventoried consumer requirements now qualify; the retired
+warm bodies and temporary exclusions have been removed. Eight final focused
+controls pass both profiles, including native cancellation/wakeup and the two
+existing Ledger permission traces. Actual finite owner-association, native-loss,
+canonical-replay and lost-wake inverses fail their intended post-cleanup oracles
+in both profiles, followed by exact source restoration and passing controls.
+This inventory is not a completion percentage for the PRD.
+
+The complete uncensored all-feature library now compiles and executes403 tests
+per profile:402 pass and one unchanged native TLS ingress test hits its10-second
+watchdog. An exact isolated debug rerun also times out; the actual stalled await
+is not yet identified. No semantic failure, flake explanation or larger watchdog
+is inferred. Fresh all-feature library/test Clippy fails94 test findings plus
+two compilation diagnostics in an older external remote fixture. Source audit
+finds two external remote files still using retired shutdown/four-part receiving
+syntax. The next four existing-file additions need the requested254-path cap;
+that approval is pending. Production2600, verification6500 and five gross public
+types remain unchanged. General cancellation and double-fault cleanup remain
+distinct open requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
 composition and remote-counter application, repository minimization, required
 CI/review and actual delivery to main remain open.
 Strict all-feature production-library Clippy and default workspace/all-target
-Clippy now pass. Default workspace Nextest passes801 tests with two skipped.
-All-feature canonical library-test compilation still fails23 retained errors;
-the remote test requirements and full remote acceptance remain open.
+Clippy passed on the unchanged production source; default workspace Nextest
+passed801 tests with two skipped. These earlier gates do not erase the current
+all-feature test failures. Full remote acceptance remains open.
+
+### Earlier main-integration checkpoint
 
 Local research merge44f6b49 now includes main531ded50 with all textual conflicts resolved.
 Its actual optional root report is forwarded unchanged alongside receiving,
@@ -38590,3 +38603,191 @@ spawn no agents and make no commits. Report source hashes, original-law mapping,
 authored/modified/correction costs and finite inverse proposals, then freeze.
 Root and an independent reader review each candidate twice before accepting it.
 Full R01–R25/AUTH1/NET1 remains the objective regardless of these six outcomes.
+
+### Six-consumer drafts — formatted scope before compilation
+
+All three authors froze their disjoint drafts before central pinned formatting.
+The formatted working delta is tests+1837/-1/net1836 in four existing paths,
+production0 and public types0. Actual per-file additions are association445,
+cancellation568, pending requests711 and private native cancellation113. This
+exceeds the individual430/550/560 forecasts and combined1800 estimate; record
+that drift before any acceptance or subsequent correction. The user-approved
+6500 verification ceiling remains the same total checkpoint window; all prior,
+rejected, modified, copied, formatting, control and unknown charges carry.
+Formatting is itself charged; retained delta does not certify remaining
+headroom. No production expansion, new path or new type is authorized here.
+
+Independent source review required two corrections: reserve all three native
+queries in the cancellation Network (the existing SDK quota may outlive query
+EOF), and bind the encoding observation/expected owned value before asserting.
+The pending author also added a real duplicate-verification notification before
+issuing the conflict query, removing a dispatcher-order assumption. Existing
+live requester bodies remain unchanged. Old source remains present under draft
+cuts; no law or canonical green result is credited until execution, intended
+finite inverses, exact restoration and uncensored final compilation. The old
+numeric wake counter is not reproduced numerically: active-root association
+and pending-wire completion must establish observable progress independently
+of retirement. Full PRD scope remains active.
+
+First central compilation rejects four draft-only issues: two unavailable
+Metadata clones, an observation moving a still-borrowed RefCell, and a returned
+provider future borrowing a temporary guard. Corrections reuse the existing
+metadata constructor and complete serialized observations, retain a borrowed
+recipient observation, and bind the existing receipt-table guard. A later
+E0597 rejects borrowing the Work closure's local Session reference; copying that
+reference into the existing owning move closure fixes custody without changing
+an API or bound. Two amendment reviews pass. One subsequent compile reaches
+code generation but fails for disk exhaustion, not a semantic assertion; the
+scoped Cargo cache cleanup also refuses its untagged cache and deletes nothing.
+Space subsequently becomes available; no other project's process/cache is
+changed. Healthy focused debug execution then exits0: six passed/397 filtered,
+0.03s, /tmp/bombay-six-consumers-debug-space.log. The temporary old-source cuts
+still preclude final canonical acceptance. No runtime credit is assigned to the
+failed compiler or disk epochs.
+
+Before temporary source inversions, select these finite falsifiers. After B's
+actual native receive borrow ends in existing query.rs, swap the complete
+native owners of rows1/0 before B encoding. Association A is already wire-closed;
+pending A is causally inside protection, holding encoding/receipt rather than
+native. Both original native clients remain owned and cleanup can finish;
+association's client identity and pending's independent native Read2 should
+fail after cleanup. This is an actual runtime source cut, unlike swapping
+extracted test tuples. Separately, omit retaining the acquired User in Reply's
+receive completion while keeping the original client: the private cancelled
+wait and Stash trace must fail their native/wire ownership oracles after cleanup.
+Finally bypass canonical lookup only for the post-retirement B replay; its
+third constructor/native Closed attempt must violate the no-second-attempt law
+without requiring a watchdog. Restore exact source after each cut and execute
+both profiles with restored controls before retiring old bodies.
+
+Final source review falsifies the earlier wake reconciliation: an active-root
+Counter can reply before its receive is first polled, and protection Pending
+does not imply native-receive Pending. Green association/pending traces prove
+end-to-end progress, not the original forced-Pending wake law. Keep that
+requirement open until the existing private cancellation witness is strengthened.
+In its current-thread host, poll the resumed actual Delivery receive Pending
+with a counted standard Wake before yielding to the Counter; exclude initial
+registration wakes. Keep that SAME future alive while the ordinary FIFO fence
+proves original Read0 and later Increment/Read1 execute with the root active.
+Observe a new wake, resume the same future and retain User0. Actual cleanup and
+all assertions remain outside that interval. Reuse the retired test's ordinary
+Arc/AtomicUsize Wake measurement in the existing Export test owner; no actor,
+public type, runtime mechanism or new path. Forecast at most45 added/modified
+verification lines beyond the measured draft. This is required preservation of
+an original observation, not broader production design. Both source reviews,
+D/R healthy execution and a finite missed-registration oracle are required;
+never credit a watchdog or erase the old wake check because other tests pass.
+
+The three selected source cuts execute in both profiles. Query native-owner
+swap fails only association's actual recipient mismatch and both pending
+Read2 value mismatches after cleanup (0/3,.03/.06s). Exact query restoration
+returns SHA3cc64948. Native User-loss cut fails only the private received User
+and both Stash wire-count oracles (0/3,.03/.02s); later native-tail/row assertions
+are unreached, and false EOF may itself skip native drain, so those acquire no
+negative credit. Exact declaration restoration returns SHA49e4a42. The row2
+canonical bypass fails only both retained-key comparisons (0/2,.03/.01s), not
+later constructor or Closed assertions. Exact query restoration again matches.
+Logs /tmp/bombay-six-consumers-{association,native-loss,replay}-inverse-{debug,release}.log
+retain actual exit101 receipts; independent two-pass reviews acff4ce8,
+35f71c96 and5335d102 accept only these scoped results.
+
+The current private wake amendment adds no runtime/API/path. It uses existing
+OptionFuture to preserve genuine Delivery absence and the same resumed Future;
+root own reviews and independent review require skipping a second poll if the
+first observation was already Ready. The corrected guarded source a6bcf097
+passes eight focused debug cases including both already qualified Ledger
+permission controls (0fail/395filtered,.03s). Earlier unguarded c733 also passed
+eight but is superseded for robustness. The private retained delta is135/-2,
+including ordinary Wake imports/measurement; its original113-line forecast and
+subsequent45-line amendment are measured separately, with all modification and
+format costs carried. Selected finite wake inverse changes only native receive's
+Context to a noop waker; it must preserve actual User0/fence1 and cleanup, then
+fail the saved post-registration wake oracle. Direct Delivery wake is the new
+measured observation; aggregate serving uses the selected FuturesUnordered and
+its separately qualified observable serving comparison, not a fabricated numeric
+equivalence. Old source remains until current guarded controls and wake inverse
+complete in both profiles.
+
+Current wake-last12d source completes the native-context omission in both
+profiles: actual exit101/0passed1failed, .01s each, only the final wake assertion
+fails after original User0/fence1/client/single attempt/tails and cleanup pass.
+Independent review156e0dad accepts those exact observations. Restore declaration
+49e4a42 and query3cc64948; current eight controls then pass debug/optimized with
+actual exit0,.03/.02s in /tmp/bombay-six-consumers-restored-{debug,release}.log.
+No temporary production cut remains. This does not waive canonical compilation,
+strict test lint, full PRD acceptance or main delivery.
+
+Select retirement of obsolete consumer bodies only, following the completed
+source/outcome/restoration reviews. In existing association.rs remove862 lines
+from its old gated Counter/Ledger children; the new Counter trace stays and the
+old Ledger law maps to the two re-executed permission traces. In cancellation.rs
+remove533 old gated import/item/body lines and retain the cold trace, with a
+truthful wire-wait description. In requests.rs remove455 lines of old local
+pending-protection comparison and its two leaves, plus the obsolete gated
+Admission import; retain both original live functions/leaves byte-exact. Remove
+nine now-unused names from the existing replay parent imports. No new path,
+production or public type is selected; current complete census remains250paths,
+source+3767/-1225/net2542 and tests+10901/-5695/net5206 before retirement.
+These source totals conservatively include embedded/comparison tests and are
+not exact runtime production. Pure retirement supplies no refund to already
+authored/modified/cut/format/unknown verification charges. After deletion,
+execute the full uncensored all-feature library cohort and formatting/lint;
+no temporary cfg cut may survive the retained checkpoint.
+
+### Consumer retirement — complete scoped checkpoint
+
+All20 inventoried requirements now have source/outcome/inverse/restoration
+qualification; that is a bounded test inventory, not full PRD acceptance.
+Independent restored reviewcbf6a9eb and retirement review06eee73f accept exact
+source preservation: reinserting only the retired original bodies reconstructs
+the prior qualified association1d7c3af7, cancellationb4a98ac5 and requests7de420fd
+hashes. The original live Requester bodies remain byte-exact; guarded private
+wake source12d remains unchanged. All temporary consumer cuts are absent.
+
+Actual uncensored all-feature library debug and optimized commands each execute
+403 cases with0filtered/0ignored:402pass, one unchanged ingress071a55 watchdog
+fails. Logs /tmp/bombay-six-consumers-canonical-{debug,release}.log record101
+(10.14/10.07s execution).
+The isolated unchanged ingress case also exits101 after10.01s, no semantic
+oracle reached, /tmp/bombay-six-consumers-ingress-debug.log. Do not attribute
+this to parallel load, our new tests, a native defect or a flaky test without
+causal evidence. Existing Query/permit disposal is source-consistent; two
+independent native-source reviews require localizing the actual await next.
+
+The fresh all-feature lib+tests Clippy exits101:94 library-test findings and two
+external-fixture compiler diagnostics. Log
+/tmp/bombay-six-consumers-canonical-clippy.log. Categories include test naming,
+private complete products, intentional lending/authority loans, finite typed
+future sizes, long complete traces, ordinary Rust spellings, three duplicate
+fixture mounts and unused retained error fields/selector. These require a
+separate existing-owner minimization/lint stage, not compiler-driven production
+architecture. External source audit finds exactly three retired no-argument
+shutdown calls and three old four-part result projections in two untouched
+remote integration files; preserve the new independent report and original
+borrowed family evidence when migrating. An apparent usize-dereference error
+must be rechecked after fixing its prior tuple, not patched from its diagnostic.
+
+The user was asked to raise only250paths to254 for the existing ingress test,
+shared protocol fixture and these two external remote consumers. Approval is
+pending; do not edit those four new paths. Production2600, verification6500,
+five gross public types and all earlier authored/modified/cut/format/external/
+unknown costs carry. Read-only origin/main at2026-10-21T14:44:42Z still531ded50,
+already included. No push, PR, CI or merge delivery occurs in this checkpoint.
+
+Final complete working-tree census, including zero untracked files, against
+the same approved e3daad58 baseline:
+
+```text
+conservative source: +3767 / -1225 / net 2542
+tests/fixtures:      +10721 / -7370 / net 3351
+remote public API:   +5 gross types / -2 types
+changed paths:       250
+```
+
+The conservative source classification counts crate/example Rust outside
+test/fixture/bench/fuzz paths; it includes embedded tests and comparison code,
+so it does not claim an exact runtime-production count. This checkpoint alone
+changes five existing test paths (+1701/-1690/net11), two existing records,
+and no production or public API. All authored verification costs carry
+independently of retained net size. Formatting and whitespace checks pass;
+the full execution and lint failures above remain delivery blockers.
