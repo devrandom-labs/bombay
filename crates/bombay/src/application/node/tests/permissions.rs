@@ -1,19 +1,23 @@
 //! Native permission refusal survives redacted diagnostics and complete Node cleanup.
 use super::custody::completed_actor;
 use super::protocol::{
-    Binding, CounterOperation, EndpointRole, ProtectedMessage, ProviderProfile, Purpose,
-    ReadRequest, ReadRequestRef, configuration, limits, metadata, recorded,
+    Binding, CounterOperation, EndpointRole, ProofScope, ProtectedMessage, ProviderProfile,
+    Purpose, ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits,
+    metadata, recorded, same_recorded_counter, same_scheduled_counter, scheduled,
 };
 use super::{Counter, CounterMessage};
 use bombay::actors::ActorExt;
 use bombay::behavior::{Never, User};
-use bombay::remote::{Attempt, Export, ExportLimits, reply};
+use bombay::remote::{Attempt, Export, ExportLimits, Metadata, reply};
 use bombay::{ActorFailureAssessment, Application, MailAddr, RetirementAssessment, TrySendError};
-use std::cell::{BorrowError, Cell, RefCell};
+use core::ops::AsyncFn;
+use serde::Serialize;
+use std::cell::{BorrowError, Cell, Ref, RefCell};
 use std::num::NonZeroUsize;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
-use zenoh::query::ConsolidationMode;
+use zenoh::Session;
+use zenoh::query::{ConsolidationMode, Reply};
 use zenoh::sample::Locality;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -216,4 +220,496 @@ async fn borrowed_permission() {
         ),
         (1, 0, 0, 0, 0)
     );
+}
+
+#[derive(Debug)]
+enum LocalAuthorityRefusal {
+    Borrow { cause: BorrowError },
+    Scope { cause: VerificationError },
+    GrantRemoved,
+    BindingMismatch,
+}
+
+fn local_current<'loan, Receipt, Operation: Eq>(
+    authority: &'loan RefCell<Option<Binding>>,
+    receipt: &Receipt,
+    projection: fn(&Receipt) -> &ProofScope<Operation>,
+    identity: fn(&Receipt) -> (&Binding, u64),
+    current: &Metadata,
+    operation: &Operation,
+    deadline: Instant,
+) -> Result<Ref<'loan, Option<Binding>>, LocalAuthorityRefusal> {
+    let guard = authority
+        .try_borrow()
+        .map_err(|cause| LocalAuthorityRefusal::Borrow { cause })?;
+    current_scope(
+        projection(receipt),
+        current,
+        operation,
+        Purpose::Request,
+        deadline,
+    )
+    .map_err(|cause| LocalAuthorityRefusal::Scope { cause })?;
+    match guard.as_ref() {
+        None => Err(LocalAuthorityRefusal::GrantRemoved),
+        Some(binding) if binding != identity(receipt).0 => {
+            Err(LocalAuthorityRefusal::BindingMismatch)
+        }
+        Some(_) => Ok(guard),
+    }
+}
+
+fn permission_originals<Receipt, Operation: Serialize>(
+    raw: &[u8],
+    proof: &[u8],
+    receipt: &Receipt,
+    projection: fn(&Receipt) -> &ProofScope<Operation>,
+    identity: fn(&Receipt) -> (&Binding, u64),
+) -> (Vec<u8>, Vec<u8>, Vec<u8>, Binding, [*const u8; 12]) {
+    let scope = projection(receipt);
+    let claims = &scope.bombay;
+    (
+        raw.to_vec(),
+        proof.to_vec(),
+        serde_json::to_vec(&ReadRequestRef {
+            bombay: claims,
+            kind: scope.kind,
+            operation: &scope.operation,
+        })
+        .unwrap(),
+        *identity(receipt).0,
+        [
+            raw.as_ptr(),
+            proof.as_ptr(),
+            claims.provider_profile.as_ptr(),
+            claims.deployment.as_ptr(),
+            claims.caller.as_ptr(),
+            claims.caller_session.as_ptr(),
+            claims.controller.as_ptr(),
+            claims.actor.as_ptr(),
+            claims.host.as_ptr(),
+            claims.protocol.as_ptr(),
+            claims.grant_issuer.as_ptr(),
+            claims.runtime_generation.as_ptr(),
+        ],
+    )
+}
+
+async fn permission_replies(
+    session: &Session,
+    path: &str,
+    original: &ProtectedMessage,
+) -> Vec<Reply> {
+    let receiving = session
+        .get(path)
+        .allowed_destination(Locality::SessionLocal)
+        .consolidation(ConsolidationMode::None)
+        .timeout(Duration::from_secs(5))
+        .payload(original.protected.to_vec())
+        .attachment(original.proof.to_vec())
+        .await
+        .expect("the actual Query starts");
+    let mut replies = Vec::new();
+    while let Ok(reply) = receiving.recv_async().await {
+        replies.push(reply);
+    }
+    replies
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one real trace retains every authority outcome and native original through cleanup"
+)]
+async fn counter_permissions<Receipt>(
+    profile: ProviderProfile,
+    provider: impl AsyncFn(
+        &ProtectedMessage,
+        &[ProtectedMessage],
+        Binding,
+    ) -> Result<Receipt, VerificationError>,
+    projection: fn(&Receipt) -> &ProofScope<CounterOperation>,
+    identity: fn(&Receipt) -> (&Binding, u64),
+    proof: fn(&Receipt) -> Option<&[u8]>,
+    same_request: fn(&Receipt, &Receipt) -> bool,
+) {
+    let first_binding = Binding {
+        deployment: "two-node-read-study",
+        caller: "caller",
+        controller: "owner",
+        actor: "counter",
+        host: "receiver",
+        protocol: "counter",
+        target_assignment: "permission-counter",
+        logical_session: 41,
+    };
+    let second_binding = Binding {
+        logical_session: 43,
+        ..first_binding
+    };
+    let authority = RefCell::new(Some(first_binding));
+    let provider_binding = Cell::new(first_binding);
+    let current_claims = RefCell::new(None::<Metadata>);
+    let records = RefCell::new(Vec::<ProtectedMessage>::new());
+    let before = RefCell::new(Vec::new());
+    let guards = RefCell::new(Vec::new());
+    let decoded = Cell::new(0);
+    let constructed = Cell::new(0);
+    let encoded = Cell::new(0);
+    let protected = Cell::new(0);
+    let checked = Cell::new(0);
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let current = |receipt: &Receipt, runtime: &str, target: MailAddr| {
+        let claims = current_claims.borrow();
+        let claims = claims.as_ref().expect("binding precedes serving");
+        if claims.runtime_generation.as_ref() != runtime || claims.actor_generation != target.0 {
+            return Err(LocalAuthorityRefusal::Scope {
+                cause: VerificationError::Invalid,
+            });
+        }
+        local_current(
+            &authority,
+            receipt,
+            projection,
+            identity,
+            claims,
+            &CounterOperation::Read,
+            deadline,
+        )
+    };
+    let maximum = NonZeroUsize::new(8).unwrap();
+    let export = Export::new(
+        "bombay/permission/counter",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes| {
+            decoded.set(decoded.get() + 1);
+            serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes)
+                .map(|request| request.operation)
+        },
+        reply(
+            |CounterOperation::Read| {
+                let authority = &authority;
+                let guards = &guards;
+                let constructed = &constructed;
+                Ok::<_, CounterOperation>(move |reply_to| {
+                    let observation = authority.try_borrow_mut().map(drop);
+                    guards.borrow_mut().push(observation);
+                    constructed.set(constructed.get() + 1);
+                    CounterMessage::Read(reply_to)
+                })
+            },
+            |_: &Receipt, original: &User<MailAddr, u64>| {
+                encoded.set(encoded.get() + 1);
+                serde_json::to_vec(&original.message).map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            let original = ProtectedMessage {
+                protected: bytes.into(),
+                proof: proof.into(),
+            };
+            let result = provider(&original, &records.borrow(), provider_binding.get()).await;
+            if let Ok(receipt) = &result {
+                before.borrow_mut().push(permission_originals(
+                    bytes, proof, receipt, projection, identity,
+                ));
+            }
+            result
+        },
+        async |_: &[u8], _: &Receipt| {
+            protected.set(protected.get() + 1);
+            Ok::<_, Never>(Box::<[u8]>::from([13_u8, 17]))
+        },
+        same_request,
+        |receipt: &Receipt, runtime: &str, target: MailAddr| {
+            checked.set(checked.get() + 1);
+            current(receipt, runtime, target)
+        },
+        &current,
+    );
+    let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    // Native timeout-task destruction may retain capacity after Query EOF.
+    // This permission trace explicitly reserves all eight original queries.
+    network.max_retained_queries = maximum;
+    let node = Application::new(Counter::new().stop_on_shutdown())
+        .open_node(network)
+        .await
+        .unwrap_or_else(|_| panic!("the actual Counter Node opens"));
+    let runtime = node.runtime_id();
+    let session = node.session.clone();
+    let (configured, request) = oneshot::channel();
+    let mut node = node.exports(export, async |application| {
+        let target = application.root().established_recipient();
+        let mut claims = metadata(profile, "counter", runtime.clone(), runtime);
+        claims.actor_generation = application.actor_address(&target).unwrap().0;
+        let original = ProtectedMessage {
+            protected: serde_json::to_vec(&ReadRequestRef {
+                bombay: &claims,
+                kind: Purpose::Request,
+                operation: CounterOperation::Read,
+            })
+            .unwrap()
+            .into_boxed_slice(),
+            proof: Box::from([7_u8, 11]),
+        };
+        records.borrow_mut().push(ProtectedMessage {
+            protected: original.protected.clone(),
+            proof: original.proof.clone(),
+        });
+        *current_claims.borrow_mut() = Some(claims);
+        configured
+            .send(original)
+            .unwrap_or_else(|_| panic!("Work receives the actual request"));
+        Ok::<_, Never>(target)
+    });
+    let outcome = node
+        .run_with(|application| {
+            let session = &session;
+            let authority = &authority;
+            let current_claims = &current_claims;
+            let provider_binding = &provider_binding;
+            async move {
+                let original = request.await.expect("binding supplies the actual request");
+                let sender = application.sender().unwrap();
+                let primed = sender.send(CounterMessage::Increment).await;
+                let path = "bombay/permission/counter";
+                let mut replies = Vec::new();
+                let held = authority.borrow_mut();
+                replies.push(permission_replies(session, path, &original).await);
+                drop(held);
+                *authority.borrow_mut() = None;
+                replies.push(permission_replies(session, path, &original).await);
+                *authority.borrow_mut() = Some(first_binding);
+                current_claims
+                    .borrow_mut()
+                    .as_mut()
+                    .unwrap()
+                    .authority_generation += 1;
+                replies.push(permission_replies(session, path, &original).await);
+                current_claims
+                    .borrow_mut()
+                    .as_mut()
+                    .unwrap()
+                    .authority_generation -= 1;
+                replies.push(permission_replies(session, path, &original).await);
+                *authority.borrow_mut() = None;
+                replies.push(permission_replies(session, path, &original).await);
+                *authority.borrow_mut() = Some(first_binding);
+                replies.push(permission_replies(session, path, &original).await);
+                provider_binding.set(second_binding);
+                replies.push(permission_replies(session, path, &original).await);
+                *authority.borrow_mut() = Some(second_binding);
+                replies.push(permission_replies(session, path, &original).await);
+                let shutdown = application.shutdown();
+                (original, replies, primed, shutdown)
+            }
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual Counter Node enters its host"));
+    let (export, bound, closed, polling, disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("actual Node finalization remains acquired"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((original, replies, primed, shutdown), cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the actual Work remains complete"));
+    cleanup.expect("actual Application cleanup joins");
+    closed.expect("actual Session close succeeds");
+    let (origin, native) = native.expect("the complete native root remains");
+    let _counter = completed_actor(origin, native);
+    let report = report.expect("the root report remains independent");
+    let notifications = notifications.expect("both notification receipts remain");
+    let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    assert!(polling.is_none() && disposal.is_none() && session.is_closed());
+    assert!(
+        matches!(bound, Some(Ok(_)))
+            && matches!(startup, Some(Ok(())))
+            && matches!(withdrawal, Some(Ok(())))
+    );
+    assert!(diagnostics.is_empty() && primed.is_ok() && shutdown.is_ok());
+    let guards = guards.borrow();
+    assert_eq!(guards.len(), 2);
+    assert!(
+        guards.iter().all(Result::is_err),
+        "permission excludes mutation during each actual native constructor"
+    );
+    let mut rows = requests
+        .into_iter()
+        .map(|request| {
+            request
+                .try_into_parts()
+                .unwrap_or_else(|_| panic!("the actual request releases its producer loans"))
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(rows.len(), 8);
+    let after = rows
+        .iter()
+        .map(|row| {
+            permission_originals(
+                &row.1.0,
+                &row.1.1,
+                row.2.as_ref().unwrap().as_ref().unwrap(),
+                projection,
+                identity,
+            )
+        })
+        .collect::<Vec<_>>();
+    let before = before.into_inner();
+    assert_eq!(before, after);
+    let current_claims = current_claims.borrow();
+    let current_claims = current_claims.as_ref().unwrap();
+    for row in &rows {
+        let receipt = row.2.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(row.1.0, original.protected);
+        assert_eq!(row.1.1, original.proof);
+        assert_eq!(projection(receipt).bombay, *current_claims);
+        assert_eq!(projection(receipt).operation, CounterOperation::Read);
+        assert_eq!(projection(receipt).kind, Purpose::Request);
+        if let Some(actual) = proof(receipt) {
+            assert_eq!(actual, [7, 11]);
+        }
+        assert!(row.3.is_none());
+        assert!(row.8.1.is_none() && row.8.2.is_none());
+        assert!(matches!(row.9, (None, None, None, None, None, None)));
+    }
+    let LocalAuthorityRefusal::Borrow { cause } = rows[0].8.0.as_ref().unwrap() else {
+        panic!("actual native BorrowError remains");
+    };
+    let _: &BorrowError = cause;
+    assert!(matches!(
+        rows[1].8.0,
+        Some(LocalAuthorityRefusal::GrantRemoved)
+    ));
+    assert!(matches!(
+        rows[2].8.0,
+        Some(LocalAuthorityRefusal::Scope {
+            cause: VerificationError::Invalid
+        })
+    ));
+    assert!(matches!(
+        rows[4].8.0,
+        Some(LocalAuthorityRefusal::GrantRemoved)
+    ));
+    assert!(matches!(
+        rows[6].8.0,
+        Some(LocalAuthorityRefusal::BindingMismatch)
+    ));
+    for position in [0, 1, 2, 4, 6] {
+        let row = &rows[position];
+        assert!(
+            row.0.is_none()
+                && row.4.is_none()
+                && row.5.is_none()
+                && row.6.is_none()
+                && row.7.is_empty()
+        );
+    }
+    assert!(rows[3].0.is_some() && rows[7].0.is_some());
+    assert_eq!(rows[3].0, rows[5].0);
+    assert_ne!(rows[3].0, rows[7].0);
+    assert_eq!(
+        identity(rows[3].2.as_ref().unwrap().as_ref().unwrap()).0,
+        &first_binding
+    );
+    assert_eq!(
+        identity(rows[7].2.as_ref().unwrap().as_ref().unwrap()).0,
+        &second_binding
+    );
+    let duplicate = &rows[5];
+    assert!(
+        duplicate.4.is_none()
+            && duplicate.5.is_none()
+            && duplicate.6.is_none()
+            && duplicate.8.0.is_none()
+    );
+    let mut recipients = Vec::new();
+    for position in [3, 7] {
+        let row = &mut rows[position];
+        let (constructor, client, admission, received, tail) =
+            row.4.take().expect("the actual native request remains");
+        assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+        let Attempt::Returned(Ok(client)) = client else {
+            panic!("the actual reply client remains");
+        };
+        recipients.push(client.recipient());
+        let original = received
+            .expect("the native receive returned")
+            .expect("the actual actor reply remains");
+        assert_eq!((original.from, original.message), (origin.address(), 1));
+        assert_ne!(client.address(), origin.address());
+        assert!(matches!(tail.as_slice(), [None]));
+        assert!(matches!(row.5.as_ref(), Some(Ok(_))) && matches!(row.6.as_ref(), Some(Ok(_))));
+        assert!(row.8.0.is_none());
+    }
+    assert_ne!(recipients[0], recipients[1]);
+    assert_eq!(
+        (
+            decoded.get(),
+            constructed.get(),
+            encoded.get(),
+            protected.get(),
+            checked.get()
+        ),
+        (2, 2, 2, 2, 8)
+    );
+    assert_eq!(
+        replies.iter().map(Vec::len).collect::<Vec<_>>(),
+        [0, 0, 0, 1, 0, 1, 0, 1]
+    );
+    for (row, replies) in rows.iter().zip(&replies) {
+        assert_eq!(row.7.len(), replies.len());
+        assert!(row.7.iter().all(Result::is_ok));
+        for reply in replies {
+            let result = reply.result();
+            let sample = result
+                .as_ref()
+                .expect("the actual protected reply is successful");
+            let payload = sample.payload().to_bytes();
+            let attachment = sample.attachment().unwrap().to_bytes();
+            assert_eq!(payload.as_ref(), b"1");
+            assert_eq!(attachment.as_ref(), [13, 17]);
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn recorded_counter_permissions_survive_cold_queries() {
+    tokio::time::timeout(
+        Duration::from_secs(40),
+        counter_permissions(
+            ProviderProfile::Recorded,
+            recorded::verify::<CounterOperation>,
+            recorded::projection,
+            recorded::identity,
+            |_| None,
+            same_recorded_counter,
+        ),
+    )
+    .await
+    .expect("the actual authority trace and joined cleanup finish");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn scheduled_counter_permissions_survive_cold_queries() {
+    tokio::time::timeout(
+        Duration::from_secs(40),
+        counter_permissions(
+            ProviderProfile::Scheduled,
+            scheduled::verify::<CounterOperation>,
+            scheduled::projection,
+            scheduled::identity,
+            |receipt| Some(scheduled::proof(receipt)),
+            same_scheduled_counter,
+        ),
+    )
+    .await
+    .expect("the actual authority trace and joined cleanup finish");
 }

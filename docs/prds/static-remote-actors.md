@@ -8,8 +8,8 @@ main. Latest-main adoption is a prerequisite. The scoped decoder cleanup fix
 now has current-graph debug/optimized positives and intended original-escape
 inverses; 21 public cold cases and seven owning controls pass both profiles.
 Another 23 owning consumer cases pass both profiles after report migration.
-The latest canonical compilation fails on 38 errors in the retained warm
-consumers. Eight of twenty inventoried consumer laws are migrated; twelve
+The latest canonical compilation fails on 32 errors in the retained warm
+consumers. Ten of twenty inventoried consumer laws are migrated; ten
 remain. General cancellation and double-fault cleanup remain distinct open
 requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
 composition and remote-counter application, repository minimization, required
@@ -37315,7 +37315,7 @@ the canonical library/application_clients targets compile.
 | application/node/tests/replay.rs: four Recorded/Scheduled Counter/Ledger cases | Two actual queries reuse the first issued key and native outcome; original byte/proof allocations, complete protected replies or actual reply refusal, and actual cleanup/notifications remain observable. | node_exports/consumer.rs has canonical replay/conflict assertions, but its three cases do not establish both provider profiles for each original protocol or the complete old reply/refusal trace. |
 | replay/association.rs: Counter and Ledger cases | A late extra reply to A cannot become B's value; retain exact A/B recipients and A's late tail after a real FIFO fence. A Ledger request created after actual retirement retains its own native Closed(Read) recipient. | The owning Full Reply test fences duplicate sends, but does not cover A/B late association or a newly constructed post-retirement request. Keep these separate laws. |
 | replay/cancellation.rs: two provider profiles | Cancel a borrowed wait, preserve the operation owner, resume the original A reply, keep B distinct, and retain the actual retired Stash's one unprocessed B command. Query readiness and native-result readiness remain independent. | The cold genuine-Work-absence and provider-panic tests do not establish this ownership/cancellation trace. Whole-operation cancellation remains a separate requirement. |
-| replay/permissions.rs: four Counter/Ledger provider cases | Preserve actual RefCell BorrowError or Mutex TryLockError, removed/mismatched grants, authority held through native return storage, fresh authority on later attempts, original Full/Closed payloads, and no work for foreign-issued keys. | cold refusals preserve selected permission causes and pressure.rs covers fresh authority for Ledger Full; the complete original local/synchronized/profile matrix remains unqualified on the new graph. |
+| replay/permissions.rs: four Counter/Ledger provider cases | Old traces preserve actual RefCell BorrowError or Mutex TryLockError, removed grants, changed authority scope, held authority in native constructors, later revocation, byte-identical inputs with distinct opaque bindings, duplicate allocations and actual Ledger Closed(Read) originals. Full and explicit binding mismatch remain separate accepted observations; foreign/stale caller-key admission is reconciled by the qualified static denials. | Both current Counter provider cases qualify with real eight-query cold traces and explicit binding mismatch. The synchronized Ledger pair remains unqualified; pressure.rs separately owns fresh authority for native Ledger Full. |
 | replay/permissions/keys.rs | Keys retain issuer identity across differing reply protocols; duplicates reuse the original key; other declarations cannot acquire authority or construct a command using that key. After actual undeclare and same-path redeclaration, the stale key differs from the renewed key and cannot invoke authority or a constructor. | Cold RequestKey is observational, with no caller-supplied-key admission operation. Preserve issuer/non-authority and stale-key laws through the actual supported surface and static denial; do not restore the retired imperative admission API merely to compile this test. |
 | replay/permissions.rs: opaque diagnostics case | Formatting opaque commands must not require their Debug implementation; original native permission causes remain inspectable by reference without duplication or replacement. | The old Admission/RequestRefusal spelling is retired. Attempt and the retained typed refusal fields own the current observations; passing cold provider tests alone do not prove diagnostic opacity or original source identity. |
 | application/node/tests/requests.rs: two live Requester cases | A genuine typed Actions request reaches another Node, verifies the complete protected reply, and stores the checked Counter value in the actual Requester. Preserve caller/runtime identity, original bytes/proofs, one native publication, correlation and final actor receipt. | Protected outbound typed Actions and the ordinary remote-counter application remain unfinished. The direct cold receiving fixture does not establish this end-to-end outbound law. |
@@ -37903,3 +37903,176 @@ budget baseline and every earlier/copy/rejected/modified/external/unknown cost
 carry. The next four permission cases reuse existing changed owner paths; do
 not infer a new path requirement merely from reaching250. Additional source
 and verification work must still respect the approved limits.
+
+### Current permission queries — pre-edit reconciliation
+
+Resume e55e30a with a clean working tree. The preceding status turn made no
+implementation progress; current sources and the live pinned shell89232/PID52396
+are rechecked before continuing. The goal remains the complete accepted PRD.
+Cargo.lock still has SHA256fa79c780, Behavior/Actors0.29.0 at55dbac2d,
+Macros0.16.0, Address0.3.0 at9f058dc0, Communication0.1.6 at963067e0,
+Timers0.2.0 at9369d1f6, in-tree Observe, Tokio1.53.1, Futures0.3.34 and
+Bombay Zenoh1.10.10/config1.10.2; there are no patches. Re-read the selected
+Behavior AGENTS completely, the canonical research skill and complete protocol,
+and inspect current Actions, StopOnShutdown, Address lease tests, native
+Communication try_send, TimerQueue, Observe, Node, Request and Declaration owners.
+No dependency, public interface or architecture change is selected.
+
+The old four permission traces actually cover RefCell BorrowError / Mutex
+TryLockError::WouldBlock, GrantRemoved, changed authority_generation rejected as
+Scope(Invalid), actual authority held in the command constructor, a later
+revocation check, byte-identical originals with distinct opaque Binding values,
+duplicate original allocations and Ledger's native Closed(Read(original
+recipient)) after retirement. They do not execute Full or an explicit
+BindingMismatch assertion. Correct the inventory's stronger historical reading:
+Full remains with its separately qualified pressure controls; binding mismatch
+requires an explicit new observation. Foreign/stale caller-supplied keys are
+covered by the eighth migrated law's static denials, not an imperative API.
+
+First implement the two Counter/profile traces using existing node/tests/
+permissions.rs, preserving the original four functions until replacement evidence
+qualifies. Each actual cold export receives eight sequential real Queries:
+busy authority, removed grant, changed scope, accepted A, revoked A duplicate,
+restored A duplicate, mismatched B, accepted B. Keep raw/proof/receipt scope and
+allocation snapshots, distinct actual clients, native returns/replies/tails,
+wire publication and complete Application/Node cleanup. Verification and native
+outcomes must be recorded outside assertions. Follow with the synchronized
+Ledger pair; it must retain the original append allocation and actual terminal
+native Closed(Read) after observed retirement. Do not infer a native result
+from a retirement notification.
+
+Falsifier: move only the existing fresh-request permission disposal before the
+existing synchronous preparation/attempt call. Constructors acquire and
+immediately release a mutable borrow/lock on success, retaining the actual
+Result; correct code retains BorrowMutError/WouldBlock. Thus the inverse can
+finish the real exchange and cleanup before the exclusion oracle fails. This
+observes construction-time exclusion and source liveness through the indivisible
+native return-storage call, not a separate post-send instrumentation point.
+
+Expected paths: existing permissions.rs and later replay/permissions.rs,
+PRD/backlog, plus temporary existing canonical registrations; zero new paths.
+Expected executable production+0/-0, public types+0/-0. No new guard wrapper,
+observer, trait, protocol, runtime or policy. Reuse original authority enums,
+RefCell/Mutex, nominal finite Recorded/Scheduled providers and real Node/Export
+owners. Counter/profile verification is expected below450 authored lines;
+Ledger and corrections remain separately measured. All historical/copied/
+rejected/modified/external/unknown costs carry, including the approved4000
+further verification window. Current cumulative250 paths, conservative Rust
+production upper net2492 (includes embedded tests/rustdoc), gross five remote
+public types; no precise production or verification headroom is certified.
+Aggregate/control states and subordinate alternatives remain unchanged; only
+test observations are added. Full PRD gates, three repository scans, actual CI,
+review and main merges remain open.
+
+Counter draft correction: first compilation450-prefix predecessor fails E0505
+(snapshot observation owner still borrowed by the concrete constructor type)
+and E0716 (temporary Reply Result); neither is semantic evidence. Ordinary
+borrow scoping fixes both. Independent two-pass source review of450eff95 then
+passes, including moving snapshot consumption/current claims borrowing and
+native reply byte-view acquisition outside assertions. Actual debug passes2/0,
+387filtered,0.02s. Optimized450 completes compilation but passes only Scheduled;
+Recorded fails Query acquisition with actual NoPermits before its final Work
+extraction (not the permission oracle). Preserve that failed log, rather than
+claiming both profiles pass.
+
+Inspect selected SDK session.rs2744–2800 and its native timeout-destruction
+capacity tests: outgoing capacity remains owned by timeout-task captures even
+when callback EOF is visible. This is the existing exact-capacity contract,
+not an early-release guarantee. The eight-query permission workload must
+configure eight retained native Queries, independent of the shared two-query
+fixture default. Set only this test's existing Network.max_retained_queries to
+the explicit eight-query maximum. No waiting, timing delay, quota waiver,
+production patch or new transport API is introduced. The opaque diagnostic's
+one-query fixture remains unchanged. Corrected positive D/R, source inverse and
+restored controls remain required before retiring either old Counter case.
+Formatted test addition is498/-6 (including imports/shared functions), above the
+initial450-line estimate; all initial, corrected and inverse/copy costs carry.
+
+### Current Counter permission queries — qualified replacement
+
+Exact testc3017b1996e4df3db1ca3ab3980a71290320cb314399f1164e0d8153ed200746
+passes both provider cases in debug/optimized,387filtered,0.03/0.01s. Logs
+/tmp/bombay-counter-permissions-capacity-{debug,release}.log have
+SHA256addf4a12/6a6ee489. Both independent source/counterexample and actual-outcome
+passes qualify the eight actual cold queries: native BorrowError, removed
+grant, changed current scope, admitted A, revoked duplicate, restored cached A,
+explicit binding mismatch and independently admitted byte-identical B. Full
+original raw/proof/receipt scope/Binding/twelve-pointer snapshots, scheduled
+proof, real distinct clients and User1 replies with EOF tails[None], issued keys,
+absence of native work for denials/duplicate, callbacks2/2/2/2/8 and real
+protected wire replies/publications survive actual Application/Node cleanup.
+Root custody/report, both notifications, binding/startup/withdrawal and close
+remain independent actual observations. This is finite-provider permission
+evidence, not production authentication, quota or two-process acceptance.
+
+The only production inverse moves initial drop(permission) before the existing
+fresh native preparation/attempt block: query70b989b8→2477d0ea. It leaves
+canonical insertion, duplicate lookup, capacity retry, receiving and publication
+unchanged. Both profiles terminate101 with both cases failing only exclusion540
+(0.02s each), after native cleanup, custody/report/notifications, actual close,
+startup/withdrawal and guards.len()==2. Logs
+/tmp/bombay-counter-permissions-inverse-{debug,release}.log have
+SHA2560b6608f5/7d1c0378. The failed all-errors predicate does not print each
+individual guard result. Later request extraction/snapshot/raw/cause/key/native/
+reply/count assertions are unexecuted in these negatives; they receive positive
+credit only. No guard wrapper, test hook or runtime interface was needed.
+
+Restore exact query70b989b8. The full current permissions group (two new cases
+plus prior opaque native-error diagnostic) passes3/0 in both profiles,
+386filtered,0.02s each. Logs /tmp/bombay-counter-permissions-restored-{debug,release}.log
+have SHA256a0b4a4be/0d4334bf. Commands ran in the previously recorded live pinned
+Nix shell with identical target/jobs/profile environment:
+
+```text
+cargo test --offline --locked -p bombay-rs --all-features --lib counter_permissions_survive_cold_queries
+cargo test --offline --locked --release -p bombay-rs --all-features --lib counter_permissions_survive_cold_queries
+cargo test --offline --locked -p bombay-rs --all-features --lib application::node::tests::permissions
+cargo test --offline --locked --release -p bombay-rs --all-features --lib application::node::tests::permissions
+```
+
+The first pair is used for the candidate and inverse; the second pair is used
+for restored controls. All commands are terminal. Both reviews independently
+verify source restoration and outcomes.
+
+Only after qualification remove the old Counter function, both Counter wrappers,
+its LocalAuthorityRefusal/local_current and unused Counter/BorrowError/Ref
+imports. Actual old1660-linef6d67497 becomes940-line4de951ec. Both deletion
+reviews compare byte-exact sections: ledger_case including its attribute/body,
+synchronized refusal/helper, shared receipt/retention/undeclaration functions and
+both Ledger wrappers are unchanged. Git's default diff aligns the similar
+Counter/Ledger bodies and therefore reports152 additions/872 deletions rather
+than a pure720-line deletion; it does not represent a Ledger rewrite.
+Foreign/stale caller-key admission stays with the separately qualified eighth
+law's actual identity/static-denial evidence, without claiming zero runtime
+callbacks from a compiler denial. Native Full remains separate owning pressure
+evidence. Synchronized Ledger, general cancellation and full permissions stay
+open.
+
+Canonical outer9dab9264 restores every original module; no test exclusion or
+production inverse remains. Pinned fmt check and diff whitespace pass.
+Canonical library no-run /tmp/bombay-counter-permissions-canonical.log (SHA256cfa7e8d4) exits101
+with32 legacy compilation errors and five warnings; it executes no tests.
+This improves38→32 compilation errors but establishes no complete library,
+strict lint, full workspace, CI, review approval or main-delivery pass.
+
+Current stage: executable production+0/-0/net0; tests+654/-878/net-224;
+public API+0/-0 types. The complete e3-baseline working tree remains250 paths,
+zero untracked, conservative Rust production upper+3716/-1224/net2492 (includes
+embedded/comparison tests and rustdoc), tests/fixtures+8702/-4907/net3795;
+remote public API+5 gross/-2 unchanged. All initial, amended, copied, inverse,
+modified, external and unknown verification costs carry without reset/refund
+or certified headroom under the existing2600/250/five/4000-further authorization.
+Production aggregate/control/subordinate state alternatives and public spellings
+are unchanged; source ownership remains with Node/Export/native primitives.
+Ten of20 inventory laws now qualify; ten remain: two Ledger permission, two
+association, two cancellation and four Requester cases. Full R01–R25/AUTH1/NET1,
+outbound Actions, ordinary remote-counter, real security/fault/resource gates,
+three repository scans/minimization, required CI/review and merges remain open.
+
+The next synchronized witness must use the same actual Mutex authority for
+request and reply checks. Source review identifies a likely distinct gap:
+current duplicate lookup calls current_reply while still holding the acquired
+current_request MutexGuard, so a nonreentrant try_lock can return WouldBlock
+for an otherwise authorized cached reply. RefCell shared loans mask this.
+Establish its actual cold Ledger baseline and independent outcome before any
+production selection; do not add another guard wrapper or weaken reply policy.

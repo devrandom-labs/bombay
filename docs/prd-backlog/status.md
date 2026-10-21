@@ -846,3 +846,15 @@ cases. Canonical compilation now fails38 legacy errors, with every retained
 module restored. Full remote acceptance, minimization, CI/review and actual main
 delivery remain open. Complete cumulative scope is250 paths; no new production
 semantics or public types are introduced by this verification stage.
+
+The two Counter permission/profile cases now qualify with eight actual cold
+queries each, full original/native/wire/cleanup observations, intended early
+permission-release failures and exact restored three-case controls in both
+profiles. Two source/outcome/deletion reviews preserve the synchronized Ledger
+body and shared owners byte-for-byte while removing only the old Counter
+counterparts. Ten of20 laws are migrated; ten remain. Every canonical module is
+restored; canonical compilation still fails32 legacy errors and executes no
+tests. This stage changes no executable production or public types and removes
+224 net test lines. Full acceptance, strict gates, minimization, CI/review and
+main delivery remain open. Next is the real synchronized Ledger baseline,
+including independent request/reply loans and actual post-retirement Closed.
