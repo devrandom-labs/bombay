@@ -1,5 +1,11 @@
 # Backlog status and dependencies
 
+Latest user direction removes all implementation budgets and preapproves their
+expansion: “there is no budget.” Do not request line/path/type/verification
+budget approval again. Historical numbers below retain their source scope;
+ownership, minimization, observable checks, CI/review and main delivery still
+govern completion. The complete remote PRD remains active.
+
 Current remote expiry comparison: committed d4d69e63 proves two first-attempt
 permission-expiry defects in both profiles. The committed0852abcd borrowed native
 call retains constructed originals and lets Query acquire final permission.

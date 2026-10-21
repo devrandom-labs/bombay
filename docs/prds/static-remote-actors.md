@@ -2,6 +2,13 @@
 
 ## Current status (2026-10-21 UTC)
 
+Latest user direction: “there is no budget.” The user explicitly preapproves
+implementation changes and removes all production/test line, path and public
+type ceilings and budget approval checkpoints. Do not ask for budget increases
+again. Keep stages, measurements, ownership proofs and minimization; historical
+costs remain recorded. All budget numbers below are historical, not stop limits.
+Correctness, architecture, actual verification, review and CI remain mandatory.
+
 The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
 serving is implemented; ordinary Node-owned outbound requests and the separate
 remote-counter application remain product development. Full security/resource
@@ -18,9 +25,9 @@ running against preceding commitaedc2897; it cannot qualify this new repair.
 The separate8-line obsolete Export refusal retirement passes focused native
 constructor, live closed-Node Work and privacy controls in both profiles, plus
 strict workspace lint, docs and formatting. No test or public type is added;
-two public enum variants are removed. Current production2615 remains within2700,
-with260 charged paths/five gross
-public types/12000 total verification lines carrying every earlier cost.
+two public enum variants are removed. Current measured production is2615,
+with260 historically charged paths and five gross public types. All earlier
+costs remain recorded; the user has removed the implementation budgets.
 Main531ded50 was fetched again and is already integrated. No current delivery
 or full-feature completion is inferred. Dated records below retain their exact
 historical source and verification scope.
@@ -40779,6 +40786,10 @@ Review/census metadata snapshots precede the final record additions; source and
 actual command hashes are unchanged. Git owns the remaining inputs.
 
 ### Remaining implementation — bounded scope proposal
+
+The user first approved3500lines/285paths/6types, then explicitly removed all
+implementation budgets and future budget questions. The following proposal is
+retained as stage planning and research, with no active numerical stop limits.
 
 Current qualified checkpoint304efc32 has2615 conservative production lines,
 260 charged paths, five gross remote public types and12000 total verification
