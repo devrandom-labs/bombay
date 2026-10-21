@@ -1,5 +1,9 @@
 //! Cold-export constructor refusal at the owning finite address source.
 use super::ledger::{LedgerCommand, MailLedger, Receipts};
+use super::protocol::{
+    self, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReplyRef, ReadRequest,
+    ReadRequestRef, configuration, limits, recorded, reserved_address,
+};
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::{ApplicationScope, ExternalActorError, MailboxCapacity};
 use crate::remote::{Attempt, Export, ExportLimits, Metadata, submission};
@@ -7,10 +11,6 @@ use crate::{
     ActorFailureAssessment, ActorRetirement, Completion, RetirementAssessment, TrySendError,
 };
 use behavior::{AllocationRejection, ClassifySettlement, SettlementStatus};
-use protocol::{
-    EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReplyRef, ReadRequest,
-    ReadRequestRef, configuration, limits, recorded, reserved_address,
-};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::num::NonZeroUsize;
@@ -21,9 +21,6 @@ use zenoh::Config;
 use zenoh::bytes::ZBytes;
 use zenoh::query::ConsolidationMode;
 
-#[path = "../../../../tests/application_clients/protocol.rs"]
-mod protocol;
-
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 struct Append(Box<[u8]>);
 
@@ -31,6 +28,10 @@ struct Append(Box<[u8]>);
 enum Refusal {
     Scope,
     Native,
+    #[expect(
+        dead_code,
+        reason = "retain the original typed JSON refusal even when the valid trace does not select it"
+    )]
     Json(serde_json::Error),
 }
 
@@ -41,6 +42,11 @@ async fn exhausted_endpoint_keeps_the_unused_original_append_constructor() {
         .expect("finite constructor trace completes before either native query deadline");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    clippy::await_holding_refcell_ref,
+    reason = "one complete constructor trace retains all native originals; the immutable provider table remains borrowed through its actual verification"
+)]
 async fn constructor_refusal() {
     let address = reserved_address();
     let scope = ApplicationScope {
@@ -274,7 +280,7 @@ async fn constructor_refusal() {
     }
     let (origin, native) = native.expect("original terminal Ledger");
     let notifications = notifications.expect("both independent notification results");
-    let (inputs, _declarations, declared, withdrawn, diagnostics, retained_requests) =
+    let (_inputs, _declarations, declared, withdrawn, diagnostics, retained_requests) =
         export.into_parts();
     let target = bound
         .expect("actual binding acquired")
@@ -321,11 +327,11 @@ async fn constructor_refusal() {
     else {
         panic!("complete original Ledger custody and successful terminal outcome");
     };
-    assert!(custody.child_failures.is_empty());
+    assert_eq!(custody.child_failures, []);
     assert!(custody.capability_failures.is_empty());
     assert!(custody.additional_failures.is_empty());
     assert!(custody.retirement_failures.is_empty());
-    assert!(custody.descendants.is_empty());
+    assert_eq!(custody.descendants, []);
     assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
     let [(sender, accepted)] = custody.behavior.entries.as_slice() else {
         panic!("one real append");
@@ -442,5 +448,4 @@ async fn constructor_refusal() {
         }
     }
     assert_eq!(keys.len(), 1);
-    let _original_inputs = inputs;
 }

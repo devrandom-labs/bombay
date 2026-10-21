@@ -915,3 +915,11 @@ files for diagnosis/orphan removal/external consumers) remains pending; other
 approved caps and all carried costs stay fixed. Full outbound Application,
 remote-counter, broader acceptance, minimization, CI/review and main delivery
 remain open.
+
+The subsequent existing-owner test lint pass preserves all qualified observations
+and changes no runtime behavior or public types. Canonical debug/optimized runs
+still report402/1, with the unchanged ingress watchdog as the only failure.
+Library-test lint findings fall94to3 in the untouched shared protocol fixture;
+the same older external compile diagnostics remain. All250 paths and carried
+budgets remain fixed while the separate254-path question is pending. Full remote
+acceptance and reviewed main delivery remain open.

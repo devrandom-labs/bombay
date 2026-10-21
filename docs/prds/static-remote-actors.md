@@ -18,8 +18,9 @@ The complete uncensored all-feature library now compiles and executes403 tests
 per profile:402 pass and one unchanged native TLS ingress test hits its10-second
 watchdog. An exact isolated debug rerun also times out; the actual stalled await
 is not yet identified. No semantic failure, flake explanation or larger watchdog
-is inferred. Fresh all-feature library/test Clippy fails94 test findings plus
-two compilation diagnostics in an older external remote fixture. Source audit
+is inferred. Existing-owner lint work reduces all-feature library/test findings
+from94 to3 in an untouched shared fixture; two compilation diagnostics remain
+in an older external remote fixture. Source audit
 finds two external remote files still using retired shutdown/four-part receiving
 syntax. The next four existing-file additions need the requested254-path cap;
 that approval is pending. Production2600, verification6500 and five gross public
@@ -38791,3 +38792,89 @@ changes five existing test paths (+1701/-1690/net11), two existing records,
 and no production or public API. All authored verification costs carry
 independently of retained net size. Formatting and whitespace checks pass;
 the full execution and lint failures above remain delivery blockers.
+
+### Existing-owner test lint — selected bounded stage
+
+Start from consumer checkpoint d115fdd. The unchanged Cargo.lock SHAfa79c780
+selects Behavior/Actors0.29.0 (source55dbac2d), Macros0.16.0, Address0.3.0,
+Communication0.1.6, Timers0.2.0 and the in-tree Observe owner; no patch changes.
+The complete selected Behavior instructions and research protocol were reread.
+No dependency, actor law, effect product, interpreter or runtime contract changes.
+
+The failing regression is the actual canonical all-feature test Clippy command
+above:94 library-test findings. Retain every qualified typed custody, lifecycle,
+replay, cancellation and independent cleanup oracle. Reuse the parent protocol
+fixture in constructors, ordinary Rust naming/let-else/exhaustive patterns and
+complete empty-value comparisons. End unnecessary observation borrows before
+await where their work has already finished. Keep deliberately held permission
+loans and immutable provider-table borrows with narrowly scoped explanations.
+Complete native products, finite concrete futures and complete causal traces
+may receive item-local lint expectations; they may not acquire new aliases,
+wrappers, boxing, erasure, visibility or policies merely to satisfy diagnostics.
+Separate private test owners may compile the same public example/fixture source;
+explain that on their three existing module mounts rather than adding a shared
+fixture framework. Move the existing endpoint test module after its owning
+implementation without changing production bodies.
+
+Expected existing paths: replay.rs, replay/{association,cancellation}.rs,
+requests.rs, constructors.rs, pressure.rs, unwind.rs, retirement.rs,
+permissions.rs, node/tests/mod.rs, remote/export/{tests,comparison}.rs and
+local/endpoint.rs, plus this PRD and the status index. All are already within
+the approved250-path census. Expected runtime production delta0; public types
++0/-0; verification forecast at most500 authored/modified/copied lines including
+the moved existing test module. All earlier corrections, formatting, inverses,
+copies and unknown charges still count toward6500. This is not certified
+remaining headroom. Production2600 and gross remote public types5 stay fixed.
+The four pending254-path additions remain untouched.
+
+Assign the two disjoint existing test cohorts in parallel, with root owning
+shared mounts, private Export tests/comparison and endpoint ordering. Freeze all
+source before central pinned formatting/checks. Review each change twice against
+its original independent observations; execute relevant debug/optimized controls
+and strict library-test lint. Keep the ingress timeout and external migration
+failures visible; this bounded stage cannot claim whole-PRD completion.
+
+Both authors completed two source reviews and froze before central formatting.
+The first four-path cohort authored61/-21 (82 conservative line operations);
+the second five-path cohort authored49/-19 (68 operations). Root then removed
+three unnecessary explicit Never spellings, retaining those earlier costs.
+Central formatting passes and changes no production body. Root's four-path
+edits retain exact native refusals, same pending-wake ordering and all cleanup
+assertions; the existing11-line identity interpreter is moved byte-exact before
+the endpoint test module. Item-local expectations explain the original domain
+obligations; no new abstraction or blanket lint suppression is added.
+
+Formatted stage Rust delta is176/-66/net110 across13 existing paths:165/-55
+are test edits,11/-11 are the exact unchanged interpreter relocation. Runtime
+production semantics and public types remain unchanged. The conservative
+complete e3 census is now source3771/-1225/net2546, tests10829/-7372/net3457,
+250paths and0untracked; differences in gross Git alignment are not additional
+authored credit or a refund. All authorship/copy/format/correction costs carry.
+
+Actual strict lib+tests Clippy exits101 in
+/tmp/bombay-test-lint-clippy.log: library-test findings fall from94 to3, all in
+the untouched shared protocol source (orphan ReadRetention/read_retention and
+retained Declaration native JSON cause). The same two external compilation
+diagnostics remain. No unfulfilled item expectation is reported. Actual
+uncensored debug execution in /tmp/bombay-test-lint-debug.log exits101:
+402pass/1ingress-watchdog/0filtered/0ignored,10.28s. Optimized execution in
+/tmp/bombay-test-lint-release.log also exits101 with402pass/1same-watchdog,
+0filtered/0ignored,10.14s. Independent two-pass source review accepts all13
+post-format paths and reconstructs the exact endpoint baseline by moving back
+the byte-identical interpreter. Every qualified observation and typed original
+remains intact. These executions pass the edited cohorts but leave the complete
+gate red. The three shared-fixture findings, two external migrations and ingress
+diagnosis still require the pending254-path scope; none is suppressed or given
+delivery credit. No push, PR, CI or main merge occurs in this checkpoint.
+
+A separate read-only comparison binds the older passing native11-case runs
+(0.56/0.52s, debug/optimized exit0) to their actual executed0f74bc8 source,
+before recording commit0d041ea5. Network configuration e68aa154, try_retain
+05919fb6, ingress071a55, all seven TLS fixture files and both Nix files are
+byte-identical through d115fdd. Selected SDK/config/protocol/Tokio dependency
+versions are unchanged; the six lock changes are Behavior/workspace releases.
+Futures std was already enabled for those tests. Thus the direct native inputs
+are comparable, but host/global-runtime execution is not proven equivalent.
+This identifies no actual changed native cause and cannot justify a Node fix,
+longer watchdog or dismissal of the current reproducible failure. Await-stage
+localization is still the next diagnostic once its file is within scope.

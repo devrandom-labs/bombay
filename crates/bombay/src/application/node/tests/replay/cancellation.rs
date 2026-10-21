@@ -43,7 +43,8 @@ fn ledger_claim_allocations(scope: &ProofScope<LedgerOperation>) -> [*const u8; 
 
 #[expect(
     clippy::too_many_lines,
-    reason = "retain the complete cold Stash, wire cancellation, native originals and joined retirement trace"
+    clippy::await_holding_refcell_ref,
+    reason = "retain the complete Stash and cancellation trace while verification borrows immutable registered fixtures without any concurrent mutation"
 )]
 async fn stashed_ledger_reads<Receipt>(
     profile: ProviderProfile,
@@ -475,7 +476,7 @@ async fn stashed_ledger_reads<Receipt>(
     );
     assert!(matches!(rows[0].4.as_ref().unwrap().4.as_slice(), [None]));
     assert!(matches!(rows[1].4.as_ref().unwrap().3, Some(None)));
-    assert!(rows[1].4.as_ref().unwrap().4.is_empty());
+    assert_eq!(rows[1].4.as_ref().unwrap().4.as_slice(), []);
     assert!(rows[2].4.is_none() && rows[2].5.is_none() && rows[2].6.is_none());
     assert_eq!(
         (decoded.get(), constructed.get(), protected.get()),

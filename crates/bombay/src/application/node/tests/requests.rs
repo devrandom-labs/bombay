@@ -586,6 +586,10 @@ fn scheduled_live_requester_stores_checked_read_reply() {
 
 // Current cold ownership comparison: cancelling a borrowed Node/wire wait does
 // not dispose the actual pending provider owned by that same Node operation.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one causal trace retains pending provider custody, independent progress, replay and all cleanup before its oracles"
+)]
 async fn cold_pending_protection<Receipt>(
     profile: ProviderProfile,
     provider: impl AsyncFn(
@@ -1117,7 +1121,7 @@ async fn cold_pending_protection<Receipt>(
             decoded,
             native,
             encoding,
-            protection,
+            reply_protection,
             publications,
             refusals,
             panics,
@@ -1168,9 +1172,8 @@ async fn cold_pending_protection<Receipt>(
             let received = received
                 .expect("actual first receive occurs")
                 .expect("actual User remains");
-            let client = match client {
-                Attempt::Returned(Ok(client)) => client,
-                _ => panic!("actual native client construction succeeds"),
+            let Attempt::Returned(Ok(client)) = client else {
+                panic!("actual native client construction succeeds");
             };
             let decoded_reply = serde_json::from_slice::<ReadReply>(
                 encoding
@@ -1191,13 +1194,16 @@ async fn cold_pending_protection<Receipt>(
                 (Purpose::ReadReply, CounterOperation::Read)
             );
             assert!(matches!(tail.as_slice(), [None]));
-            assert!(matches!(&protection, Some(Ok(proof)) if proof.as_ref() == [13, 17]));
+            assert!(matches!(&reply_protection, Some(Ok(proof)) if proof.as_ref() == [13, 17]));
             assert_eq!(publications.len(), 1);
             assert!(publications.iter().all(Result::is_ok) && refusals.2.is_none());
             drop(client);
         } else {
             assert!(
-                decoded.is_none() && native.is_none() && encoding.is_none() && protection.is_none()
+                decoded.is_none()
+                    && native.is_none()
+                    && encoding.is_none()
+                    && reply_protection.is_none()
             );
             if index == 2 {
                 assert!(refusals.2.is_none());
@@ -1206,7 +1212,7 @@ async fn cold_pending_protection<Receipt>(
                 logical.authority_generation,
                 if index == 2 { 20 } else { 19 }
             );
-            assert_eq!(publications.len(), if index == 2 { 1 } else { 0 });
+            assert_eq!(publications.len(), usize::from(index == 2));
             assert!(publications.iter().all(Result::is_ok));
         }
     }
@@ -1239,6 +1245,10 @@ async fn cold_pending_protection<Receipt>(
 }
 
 #[test]
+#[expect(
+    clippy::large_futures,
+    reason = "poll the complete finite recorded provider trace with its concrete retained native outcomes"
+)]
 fn recorded_cold_protection_preserves_requests_and_replay() {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -1267,6 +1277,10 @@ fn recorded_cold_protection_preserves_requests_and_replay() {
 }
 
 #[test]
+#[expect(
+    clippy::large_futures,
+    reason = "poll the complete finite scheduled provider trace with its concrete retained native outcomes"
+)]
 fn scheduled_cold_protection_preserves_requests_and_replay() {
     Builder::new_multi_thread()
         .worker_threads(1)

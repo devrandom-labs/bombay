@@ -21,6 +21,11 @@ use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[expect(
+    clippy::too_many_lines,
+    clippy::await_holding_refcell_ref,
+    reason = "one unwind trace preserves every independent cleanup and original panic fact; its provider table is immutable throughout verification"
+)]
 async fn decoder_unwind_preserves_joined_node_finalization() {
     timeout(Duration::from_secs(40), async {
         let requests = RefCell::new(Vec::<ProtectedMessage>::new());
@@ -199,9 +204,8 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
         );
         let (export, bound, closed, polling, disposal) =
             finalized.unwrap_or_else(|_| panic!("the Node acquired its actual post-join close"));
-        let outcome = match caught {
-            Ok(Poll::Ready(Ok(outcome))) => outcome,
-            _ => panic!("the actual Node operation must return its acquired outcome"),
+        let Ok(Poll::Ready(Ok(outcome))) = caught else {
+            panic!("the actual Node operation must return its acquired outcome");
         };
         let (work, root_report, native, notifications, ()) = outcome.into_parts();
         let (origin, native) =

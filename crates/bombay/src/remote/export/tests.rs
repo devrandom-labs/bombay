@@ -151,6 +151,11 @@ async fn request_keys_preserve_declarations_across_reply_protocols() {
         .expect("the actual declarations, replies and joined cleanup finish");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    reason = "one redeclaration trace preserves complete original request refusals and native cleanup before its independent key comparisons"
+)]
 async fn redeclared_counter() {
     let network = configuration("tls/localhost:0", &EndpointRole::Receiver);
     let session = zenoh::open(network.to_configuration().unwrap())
@@ -532,6 +537,10 @@ async fn redeclared_counter() {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one capacity trace retains the exact constructor, reply endpoint, admission and terminal native tail through cleanup"
+)]
 fn full_read_reuses_its_original_reply_endpoint_once() {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -549,7 +558,7 @@ fn full_read_reuses_its_original_reply_endpoint_once() {
                             CounterMessage::Read(reply_to)
                         })
                     },
-                    |_: &(), original: &User<MailAddr, u64>| {
+                    |(): &(), original: &User<MailAddr, u64>| {
                         Ok::<_, Never>(original.message.to_ne_bytes().to_vec().into_boxed_slice())
                     },
                 );
@@ -728,7 +737,7 @@ fn full_read_reuses_its_original_reply_endpoint_once() {
                     .map(|reply| (reply.from, reply.message));
                 assert_eq!(received, Some((origin.address(), 2)));
                 assert_eq!(tail.len(), 1);
-                assert!(matches!(tail[0], None));
+                assert!(tail[0].is_none());
             })
             .await
             .expect("the complete Counter admission and cleanup trace terminates");
@@ -741,7 +750,7 @@ async fn acquired_first_eof_prevents_another_tail_receive() {
         .run_with(|application| async move {
             let declarations = reply(
                 |()| Ok::<_, ()>(CounterMessage::Read),
-                |_: &(), original: &User<MailAddr, u64>| {
+                |(): &(), original: &User<MailAddr, u64>| {
                     Ok::<_, Never>(original.message.to_ne_bytes().to_vec().into_boxed_slice())
                 },
             );
@@ -759,7 +768,7 @@ async fn acquired_first_eof_prevents_another_tail_receive() {
             let control = Some(application.lifecycle());
             let mut commitment = None;
             let admitted = Delivery::attempt(&declarations, &mut native, &control, || {
-                commitment = Some(())
+                commitment = Some(());
             });
             if let Some(receiving) = Delivery::receive(
                 &declarations,
@@ -812,18 +821,22 @@ async fn acquired_first_eof_prevents_another_tail_receive() {
     assert!(matches!(client, Attempt::Returned(Ok(_))));
     assert!(matches!(admission, Attempt::Returned(Ok(()))));
     assert!(matches!(received, Some(None)));
-    assert!(tail.is_empty());
+    assert_eq!(tail, []);
     assert_ne!(observed, Some(Poll::Pending));
 }
 
 #[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one cancellation trace observes the same pending native wait and its wake, independent FIFO fence, exact client and joined cleanup"
+)]
 async fn cancelled_native_wait_keeps_its_original_reply_client() {
     let outcome = timeout(
         Duration::from_secs(10),
         Application::new(Counter::new().stop_on_shutdown()).run_with(|application| async move {
             let declarations = reply(
                 |()| Ok::<_, ()>(CounterMessage::Read),
-                |_: &(), original: &User<MailAddr, u64>| {
+                |(): &(), original: &User<MailAddr, u64>| {
                     Ok::<_, Never>(original.message.to_ne_bytes().to_vec().into_boxed_slice())
                 },
             );
@@ -867,17 +880,17 @@ async fn cancelled_native_wait_keeps_its_original_reply_client() {
                     &control,
                     application.retirement(),
                 )));
-                let wakes = Arc::new(ReplyWake(AtomicUsize::new(0)));
-                let waker = Waker::from(Arc::clone(&wakes));
+                let awakenings = Arc::new(ReplyWake(AtomicUsize::new(0)));
+                let waker = Waker::from(Arc::clone(&awakenings));
                 let waiting = receiving.as_mut().poll(&mut Context::from_waker(&waker));
-                let before = wakes.0.load(Ordering::SeqCst);
+                let before = awakenings.0.load(Ordering::SeqCst);
                 let incremented = ordinary.send(CounterMessage::Increment).await;
                 let fenced = ordinary
                     .send(CounterMessage::Read(ordinary.recipient()))
                     .await;
                 let fence = ordinary.receive().await;
                 // The root remains alive. Only its native reply can wake this wait.
-                let after = wakes.0.load(Ordering::SeqCst);
+                let after = awakenings.0.load(Ordering::SeqCst);
                 let resumed = match waiting {
                     Poll::Pending => {
                         Some(receiving.as_mut().poll(&mut Context::from_waker(&waker)))
@@ -913,7 +926,7 @@ async fn cancelled_native_wait_keeps_its_original_reply_client() {
                 assert_eq!(commitments, 1);
                 assert_eq!(received, Some(Some(User::new(origin, 0))));
                 assert!(matches!(tail.as_slice(), [None]));
-                assert!(ordinary_tail.is_empty());
+                assert_eq!(ordinary_tail, []);
                 assert!(waiting.is_pending() && after > before);
                 drop(ordinary);
             }

@@ -29,6 +29,11 @@ async fn retired_target_replays_while_work_remains_live() {
         .expect("actual replay and joined cleanup finish within the watchdog");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    clippy::await_holding_refcell_ref,
+    reason = "one causal retirement and replay trace retains all cleanup originals; the configured verification table stays immutable during its provider wait"
+)]
 async fn replay_after_retirement() {
     let records = RefCell::new(Vec::<ProtectedMessage>::new());
     let decoded = Cell::new(0);
@@ -55,7 +60,7 @@ async fn replay_after_retirement() {
                     constructed.set(constructed.get() + 1);
                     CounterMessage::Increment
                 }),
-                command => Err(command),
+                command @ Command::Read => Err(command),
             },
             |_: &recorded::Receipt<Command>,
              admission: &Attempt<Result<(), TrySendError<CounterMessage>>>| {

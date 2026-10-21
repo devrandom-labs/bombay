@@ -418,6 +418,17 @@ pub struct SendError<M>(M);
 
 pub(crate) struct ExtractLocalEndpoint;
 
+#[cfg(feature = "remote")]
+impl<B> InterpretInstalledActor<B> for ExtractLocalEndpoint
+where
+    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+{
+    type Output = InstalledActor<B>;
+    fn interpret_actor(&mut self, installed: InstalledActor<B>) -> Self::Output {
+        installed
+    }
+}
+
 #[cfg(test)]
 mod delivery_rejection {
     use crate::address::MailAddr;
@@ -511,16 +522,5 @@ mod delivery_rejection {
 
         let rejected_message = error.into_message();
         assert_eq!(rejected_message, "application-owned-payload");
-    }
-}
-
-#[cfg(feature = "remote")]
-impl<B> InterpretInstalledActor<B> for ExtractLocalEndpoint
-where
-    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-{
-    type Output = InstalledActor<B>;
-    fn interpret_actor(&mut self, installed: InstalledActor<B>) -> Self::Output {
-        installed
     }
 }

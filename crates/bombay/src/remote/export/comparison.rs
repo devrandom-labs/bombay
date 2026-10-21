@@ -54,6 +54,10 @@ async fn pending_protection_keeps_canonical_receipt_readable() {
         .expect("setup and real cleanup finish before native query deadlines");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one finite comparison retains pending protection, complete native custody and cleanup before checking its trace"
+)]
 async fn compare() {
     let address = reserved_address();
     let mut network = configuration(&address, &EndpointRole::Receiver);
@@ -134,7 +138,7 @@ async fn compare() {
                             submission(
                                 |command| match command {
                                     Command::Increment => Ok(|| CounterMessage::Increment),
-                                    command => Err(command),
+                                    command @ Command::Read => Err(command),
                                 },
                                 move |_: &Receipt<'_>,
                                       admission: &Attempt<
@@ -187,7 +191,7 @@ async fn compare() {
                     .unwrap();
                 <_ as Exports<Counter, Event, (), EstablishedRecipient<Counter>>>::declare(
                     &mut export,
-                    &session,
+                    session,
                 )
                 .await
                 .expect("actual native declaration");

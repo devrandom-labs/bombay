@@ -21,7 +21,8 @@ use zenoh::sample::Locality;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[expect(
     clippy::too_many_lines,
-    reason = "one actual late-reply trace preserves both request owners and all cleanup before checking isolation"
+    clippy::await_holding_refcell_ref,
+    reason = "the complete late-reply trace retains both owners and cleanup while verification borrows immutable registered fixtures"
 )]
 async fn cold_counter_request_keeps_its_own_reply_and_late_tail() {
     tokio::time::timeout(Duration::from_secs(40), async {

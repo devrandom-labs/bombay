@@ -51,6 +51,11 @@ async fn admission_diagnostics_preserve_opaque_commands_and_native_permission_ca
         .expect("the actual permission refusal and joined cleanup complete");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    clippy::await_holding_refcell_ref,
+    reason = "the exclusive authority loan deliberately remains held until its Query returns BorrowError; the verification table stays immutable during the provider wait"
+)]
 async fn borrowed_permission() {
     let permission = RefCell::new(());
     let checks = Cell::new(0);
@@ -320,7 +325,8 @@ async fn permission_replies(
 
 #[expect(
     clippy::too_many_lines,
-    reason = "one real trace retains every authority outcome and native original through cleanup"
+    clippy::await_holding_refcell_ref,
+    reason = "the first Query must observe the deliberately held exclusive authority loan; immutable provider records and all native originals survive the actual waits"
 )]
 async fn counter_permissions<Receipt>(
     profile: ProviderProfile,
@@ -718,7 +724,9 @@ async fn scheduled_counter_permissions_survive_cold_queries() {
 
 #[expect(
     clippy::too_many_lines,
-    reason = "one real trace retains every authority outcome and native original through cleanup"
+    clippy::await_holding_refcell_ref,
+    clippy::await_holding_lock,
+    reason = "the first Query must observe the actual held MutexGuard as WouldBlock; immutable provider records and complete native originals survive the actual waits"
 )]
 async fn ledger_permissions<Receipt>(
     profile: ProviderProfile,

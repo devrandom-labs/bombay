@@ -34,6 +34,10 @@ use application_support::assert_completed;
 struct ProtectedReply<Operation, Receipt, Value> {
     issued: Result<(), ZenohError>,
     originals: Vec<(Reply, OwnedSemaphorePermit)>,
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain each original native reply admission result without an alias or erased cause"
+    )]
     publications: Arc<Mutex<Vec<Result<(), IngressError<Reply>>>>>,
     original: Option<ProtectedMessage>,
     shape: Option<Result<(), json::Error>>,
@@ -54,6 +58,10 @@ struct ReadExchange<Operation, Receipt, Value> {
     first_retirement: Option<ActorRetirementReport>,
     cleanup: Result<(), ApplicationCleanupError>,
     report: Option<ActorRetirementReport>,
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain the original typed root identity, native retirement and receiving error together"
+    )]
     native: Result<
         (
             RootOrigin<SenderRoot>,
@@ -68,7 +76,8 @@ struct ReadExchange<Operation, Receipt, Value> {
 #[expect(
     clippy::too_many_arguments,
     clippy::too_many_lines,
-    reason = "one peer trace preserves actual typed Task, protected replies and all independent cleanup products"
+    clippy::await_holding_refcell_ref,
+    reason = "one peer trace preserves actual typed Task, protected replies and cleanup; verification borrows immutable registered fixtures across its await"
 )]
 async fn read_queries<Operation, Receipt, Value, FirstRetirement>(
     address: &str,
@@ -195,7 +204,7 @@ where
                 {
                     for request in originals {
                         let capacity = Arc::new(Semaphore::new(2));
-                        let (published, mut received) = mpsc::channel(2);
+                        let (published, mut reply_stream) = mpsc::channel(2);
                         let publications = Arc::new(Mutex::new(Vec::new()));
                         let observed = Arc::clone(&publications);
                         let issued = connection
@@ -219,7 +228,7 @@ where
                             verification: None,
                             scope: None,
                         };
-                        while let Some(original) = received.recv().await {
+                        while let Some(original) = reply_stream.recv().await {
                             acquired.originals.push(original);
                         }
                         if let Some((reply, _permit)) = acquired.originals.first()
@@ -394,7 +403,9 @@ fn assert_verification<Receipt>(verification: Option<&Result<Receipt, Verificati
 
 #[expect(
     clippy::too_many_lines,
-    reason = "one actual Counter Node trace retains protected replies and original native outcomes before inspection"
+    clippy::await_holding_refcell_ref,
+    clippy::large_futures,
+    reason = "the finite concrete Counter trace retains all outcomes and borrows immutable registered fixtures during verification without boxing the producer"
 )]
 async fn read_counter<Receipt>(
     profile: ProviderProfile,
@@ -603,9 +614,8 @@ async fn read_counter<Receipt>(
     let (constructor, client, admission, received, tail) =
         first.4.expect("the actual first native read remains");
     assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
-    let client = match client {
-        Attempt::Returned(Ok(client)) => client,
-        _ => panic!("the original native reply client remains"),
+    let Attempt::Returned(Ok(client)) = client else {
+        panic!("the original native reply client remains");
     };
     let received = received
         .expect("the first native reception was acquired")
@@ -632,7 +642,9 @@ async fn read_counter<Receipt>(
 
 #[expect(
     clippy::too_many_lines,
-    reason = "one terminating Ledger trace retains original append, native read and actual post-retirement replay"
+    clippy::await_holding_refcell_ref,
+    clippy::large_futures,
+    reason = "the finite concrete Ledger trace retains append, read and retirement originals and borrows immutable registered fixtures during verification without boxing the producer"
 )]
 async fn read_ledger<Receipt>(
     profile: ProviderProfile,
@@ -871,9 +883,8 @@ async fn read_ledger<Receipt>(
     let (constructor, client, admission, received, tail) =
         first.4.expect("the actual first native read remains");
     assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
-    let client = match client {
-        Attempt::Returned(Ok(client)) => client,
-        _ => panic!("the original native reply client remains"),
+    let Attempt::Returned(Ok(client)) = client else {
+        panic!("the original native reply client remains");
     };
     let received = received
         .expect("the first native reception was acquired")
@@ -899,6 +910,10 @@ async fn read_ledger<Receipt>(
     assert_completed(exchange.native.unwrap(), None);
 }
 #[test]
+#[expect(
+    clippy::large_futures,
+    reason = "poll the complete finite recorded Counter trace with its concrete native outcomes"
+)]
 fn recorded_counter_node_reuses_first_read_outcome() {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -922,6 +937,10 @@ fn recorded_counter_node_reuses_first_read_outcome() {
         });
 }
 #[test]
+#[expect(
+    clippy::large_futures,
+    reason = "poll the complete finite scheduled Counter trace with its concrete native outcomes"
+)]
 fn scheduled_counter_node_reuses_first_read_outcome() {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -945,6 +964,10 @@ fn scheduled_counter_node_reuses_first_read_outcome() {
         });
 }
 #[test]
+#[expect(
+    clippy::large_futures,
+    reason = "poll the complete finite recorded Ledger trace with its concrete native outcomes"
+)]
 fn recorded_ledger_node_reuses_first_read_outcome() {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -968,6 +991,10 @@ fn recorded_ledger_node_reuses_first_read_outcome() {
         });
 }
 #[test]
+#[expect(
+    clippy::large_futures,
+    reason = "poll the complete finite scheduled Ledger trace with its concrete native outcomes"
+)]
 fn scheduled_ledger_node_reuses_first_read_outcome() {
     Builder::new_multi_thread()
         .worker_threads(1)

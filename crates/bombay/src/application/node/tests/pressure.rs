@@ -41,6 +41,10 @@ enum AdmissionObservation {
 #[derive(Debug)]
 enum PermissionRefusal {
     Revoked,
+    #[expect(
+        dead_code,
+        reason = "retain the actual typed scope refusal independently of the selected revocation trace"
+    )]
     Scope(VerificationError),
 }
 
@@ -49,6 +53,10 @@ enum Refusal {
     Scope,
     Native,
     Capacity,
+    #[expect(
+        dead_code,
+        reason = "preserve the original JSON failure rather than replacing an unselected typed cause"
+    )]
     Json(serde_json::Error),
 }
 
@@ -86,6 +94,11 @@ fn revoked_full_append_keeps_the_original_without_admission() {
         });
 }
 
+#[expect(
+    clippy::too_many_lines,
+    clippy::await_holding_refcell_ref,
+    reason = "one causal Full trace retains complete native custody; request and reply proof tables stay immutable through actual verification"
+)]
 async fn append_after_full(next_permission: Permission) {
     let requests = RefCell::new(Vec::<ProtectedMessage>::new());
     let replies = RefCell::new(Vec::<ProtectedMessage>::new());
@@ -369,8 +382,11 @@ async fn append_after_full(next_permission: Permission) {
     );
     assert_eq!(reply.message.len(), expected_count);
     assert_eq!(constructors.get(), 1);
-    let allocations = allocations.borrow();
-    assert_eq!(allocations.len(), 1);
+    let allocation = {
+        let allocations = allocations.borrow();
+        assert_eq!(allocations.len(), 1);
+        allocations[0]
+    };
     let [request] = <[_; 1]>::try_from(rows)
         .unwrap_or_else(|_| panic!("exactly one original request is retained"));
     let (
@@ -403,7 +419,7 @@ async fn append_after_full(next_permission: Permission) {
             assert!(refused.is_none() && matches!(attempt, Attempt::Returned(Ok(()))));
             let (origin, accepted) = &custody.behavior.entries[2];
             assert_eq!(*origin, sender.address());
-            assert_eq!(accepted.as_ptr(), allocations[0]);
+            assert_eq!(accepted.as_ptr(), allocation);
             assert_eq!(accepted.as_ref(), [107, 109]);
             assert_eq!(reply.message[2], sender.address());
             encoded.expect("actual admitted encoding").unwrap();
@@ -430,7 +446,7 @@ async fn append_after_full(next_permission: Permission) {
             else {
                 panic!("revocation preserves the actual original Full message");
             };
-            assert_eq!(original.as_ptr(), allocations[0]);
+            assert_eq!(original.as_ptr(), allocation);
             assert_eq!(original.as_ref(), [107, 109]);
             assert!(encoded.is_none() && protected.is_none() && published.is_empty());
             assert!(publications.is_empty());
