@@ -12,7 +12,7 @@ Canonical compilation now fails on 55 errors in the retained warm consumers.
 General
 cancellation and double-fault cleanup remain distinct open requirements.
 
-The in-progress merge of main531ded50 has no unresolved textual conflicts.
+Local research merge44f6b49 now includes main531ded50 with all textual conflicts resolved.
 Its actual optional root report is forwarded unchanged alongside receiving,
 family cleanup and Work. Two independent source reviews pass. The pinned-Nix,
 offline, locked all-feature library check completed successfully; formatting
@@ -20,7 +20,7 @@ and diff whitespace checks pass. This does not qualify the old consumer tests,
 the diagnostic snapshot, runtime acceptance or the combined candidate for merge.
 The library log is /tmp/bombay-main-531ded50-library-check.log.
 
-Canonical library-test compilation was also attempted without excluding any
+The first canonical library-test compilation was attempted without excluding any
 original consumer. It exits101 with78 compiler errors: retired warm Export
 consumers still use Admission/RequestRefusal and imperative export methods;
 other retained consumers use the previous shutdown spelling and receiving
@@ -37680,3 +37680,25 @@ controller, purpose, profile, actor binding and generation. Acquire the final
 RefCell observation guard before assertions. Establish both profiles and two
 reviews before deleting the old copies. No new provider, actor or runtime API
 is selected; source version and scope remain the pinned0.29 graph.
+
+### Provider-only consumers — qualified ownership move
+
+The93-line protection.rs b48408f0 retains both provider cases and the original
+six-input helper, differing only in imports and the final observation guard.
+Pinned debug and optimized each pass2/0,387filtered,0.00s; log
+/tmp/bombay-provider-move-controls.log SHA2563797ca2d. Both independent source
+and outcome passes confirm exact relocation, meaningful negative oracles and
+no guard acquisition inside assertions. These negative tests alone permit an
+always-refusing provider; positive provider and native integration acceptance
+remain separate. No new semantic inversion is claimed for moving unchanged laws.
+
+Only the original82-line helper/two-case block is deleted from requests.rs;
+independent byte comparison confirms the other four live/pending cases remain.
+Canonical replay24170cdf and outer096054c0 restore every old module and register
+protection. Formatting and diff whitespace pass. Canonical compilation remains
+44 legacy errors and executes no tests; log
+/tmp/bombay-provider-move-canonical-compilation.log SHA256d41fcd07.
+Six of20 inventory laws are migrated;14 remain. No production/public addition,
+no inverse/exclusion/running command. This test ownership move adds93+2/-82,
+net13 test lines and one cumulative path (248). It is not source reduction or
+full provider/security/remote acceptance. All costs and full delivery gates carry.

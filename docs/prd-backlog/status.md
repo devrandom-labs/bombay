@@ -817,3 +817,10 @@ Canonical mounts are restored, but compilation still fails44 legacy errors;
 keeps the exact scopes/costs. Next, move the two provider-only refusal cases
 out of the unrelated unported Requester module. No full remote row or delivery
 status changes.
+
+Both direct-provider refusal cases now run from the owning Node protection
+module:2/0 each profile, unchanged six-input negative matrix, two independent
+reviews and only the old duplicate82-line block removed. Six of20 retained
+consumer laws are migrated;14 remain. Canonical compilation still fails44
+legacy errors, with all original modules restored. Production/public delta0;
+this is local test ownership work, not remote acceptance or main delivery.
