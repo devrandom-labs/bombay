@@ -21,6 +21,7 @@ use behavior::{
 };
 use core::fmt;
 use core::future::{Future, Ready, poll_fn};
+use core::pin::pin;
 use core::task::Poll;
 use std::any::Any;
 use std::error::Error;
@@ -525,6 +526,8 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
 {
     /// Consume exports, binding, post-join close and original kernel panic causes.
     /// Refuse with the same Node until joined execution acquired native close.
+    /// A returned binding result survives disposal of its producer future,
+    /// including when that disposal panics.
     ///
     /// # Errors
     /// Returns the same Node if either its binding result or close result is absent.
@@ -695,8 +698,15 @@ where
                 }
             };
             *binding = Some(Binding::Invoked(None));
-            let receipt = call(application).await;
-            *binding = Some(Binding::Invoked(Some(receipt)));
+            {
+                let mut invocation = pin!(call(application));
+                poll_fn(|context| {
+                    invocation.as_mut().poll(context).map(|receipt| {
+                        *binding = Some(Binding::Invoked(Some(receipt)));
+                    })
+                })
+                .await;
+            }
             let Some(Binding::Invoked(Some(Ok(targets)))) = binding.as_ref() else {
                 return Err(());
             };
@@ -865,8 +875,15 @@ where
                 }
             };
             *binding = Some(Binding::Invoked(None));
-            let receipt = call(application).await;
-            *binding = Some(Binding::Invoked(Some(receipt)));
+            {
+                let mut invocation = pin!(call(application));
+                poll_fn(|context| {
+                    invocation.as_mut().poll(context).map(|receipt| {
+                        *binding = Some(Binding::Invoked(Some(receipt)));
+                    })
+                })
+                .await;
+            }
             let Some(Binding::Invoked(Some(Ok(targets)))) = binding.as_ref() else {
                 return Err(());
             };

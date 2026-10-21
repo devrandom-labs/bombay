@@ -1,20 +1,26 @@
 //! Binding completes before the original caller-local Work is invoked.
-use super::super::counter::{CounterIncremented, CounterProcessed};
+use super::super::counter::{CounterIncremented, CounterProcessed, CounterValue};
 use super::super::custody::completed_actor;
+use super::super::protocol::{
+    self, CounterOperation, EndpointRole, ProtectedMessage, Purpose, ReadReplyRef, ReadRequest,
+    configuration, limits, recorded,
+};
 use super::super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
 use crate::application::work::invoke;
-use crate::behavior::{Behavior, Never, User};
+use crate::behavior::{Behavior, EstablishedRecipient, Never, User};
+use crate::remote::{Export, ExportLimits, reply};
 use crate::{
     ActorFailureAssessment, ActorRetirement, Application, ApplicationHandle, ApplicationScope,
-    RetirementAssessment, WorkOutcome,
+    MailAddr, RetirementAssessment, WorkOutcome,
 };
 use behavior_actors::StopOnShutdown;
 use core::future::{Future, Ready, poll_fn, ready};
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::num::NonZeroUsize;
 use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
 use std::ptr;
 use std::rc::Rc;
@@ -318,4 +324,310 @@ async fn binding_disposal_preserves_original_work(progress: BindingProgress) {
     })
     .await
     .expect("failure-only watchdog; never the disposal or cancellation oracle");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn public_binding_refusal_preserves_its_original_after_disposal() {
+    public_binding_refusal(None).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn public_binding_refusal_preserves_its_original_after_disposal_panic() {
+    public_binding_refusal(Some(Arc::new(vec![229, 233]))).await;
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one actual cold Node retains the original binder result, unused Work, panic and every joined cleanup before extraction"
+)]
+async fn public_binding_refusal(disposal: Option<Arc<Vec<u8>>>) {
+    timeout(Duration::from_secs(10), async {
+        let expected_panic = disposal.as_ref().map(Arc::clone);
+        let original_refusal = Box::<[u8]>::from([223, 227]);
+        let refusal_allocation = original_refusal.as_ptr();
+        let verified = Cell::new(0);
+        let protected = Cell::new(0);
+        let constructions = Cell::new(0);
+        let registered: [ProtectedMessage; 0] = [];
+        let binding = protocol::Binding {
+            deployment: "binding-disposal", caller: "caller", controller: "owner",
+            actor: "counter", host: "receiver", protocol: "counter",
+            target_assignment: "counter", logical_session: 257,
+        };
+        let verify = async |bytes: &[u8], proof: &[u8]| {
+            verified.set(verified.get() + 1);
+            recorded::verify::<CounterOperation>(
+                &ProtectedMessage { protected: bytes.into(), proof: proof.into() },
+                &registered, binding,
+            ).await
+        };
+        let protect = async |_: &[u8], _: &recorded::Receipt<CounterOperation>| {
+            protected.set(protected.get() + 1);
+            Err::<Box<[u8]>, _>(protocol::VerificationError::Invalid)
+        };
+        let current = |receipt: &recorded::Receipt<CounterOperation>, runtime: &str, target: MailAddr| {
+            let scope = recorded::projection(receipt);
+            if scope.kind == Purpose::Request
+                && scope.bombay.runtime_generation.as_ref() == runtime
+                && scope.bombay.actor_generation == target.0
+                && recorded::identity(receipt).0 == &binding {
+                Ok(())
+            } else { Err(protocol::VerificationError::Invalid) }
+        };
+        let maximum = NonZeroUsize::new(2).unwrap();
+        let export = Export::new(
+            "bombay/binding-disposal/read",
+            ExportLimits { queued_queries: maximum, retained_queries: maximum,
+                retained_requests: maximum, diagnostics: maximum },
+            limits(),
+            |bytes: &[u8]| serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes)
+                .map(|request| request.operation),
+            reply(
+                |CounterOperation::Read| Ok::<_, CounterOperation>(|reply_to: EstablishedRecipient<CounterValue>| {
+                    constructions.set(constructions.get() + 1);
+                    CounterMessage::Read(reply_to)
+                }),
+                |receipt: &recorded::Receipt<CounterOperation>, original: &User<MailAddr, u64>| {
+                    let scope = recorded::projection(receipt);
+                    serde_json::to_vec(&ReadReplyRef {
+                        bombay: &scope.bombay, kind: Purpose::ReadReply,
+                        operation: &scope.operation, value: &original.message,
+                    }).map(Vec::into_boxed_slice)
+                },
+            ),
+            &verify, &protect,
+            |left: &recorded::Receipt<CounterOperation>, right: &recorded::Receipt<CounterOperation>| {
+                recorded::identity(left) == recorded::identity(right)
+            },
+            &current, &current,
+        );
+        let calls = Rc::new(Cell::new(0));
+        let invoked = Rc::clone(&calls);
+        let output = Box::new(239_u64);
+        let output_allocation = ptr::from_ref(output.as_ref());
+        let work = Box::new(move |application: CounterHandle| {
+            invoked.set(invoked.get() + 1);
+            async move {
+                let shutdown = application.shutdown();
+                let retired = application.retirement().await;
+                (output, shutdown, retired)
+            }
+        });
+        let work_allocation = ptr::from_ref(work.as_ref()).cast::<()>();
+        let polls = Rc::new(Cell::new(0));
+        let disposals = Rc::new(Cell::new(0));
+        let polled = Rc::clone(&polls);
+        let disposed = Rc::clone(&disposals);
+        let application = &RefCell::new(None);
+        let acquired = application;
+        let refusal = &original_refusal;
+        let node = Application::new(Counter::new().stop_on_shutdown())
+            .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver)).await
+            .unwrap_or_else(|_| panic!("the actual cold Counter Node opens"));
+        let connection = node.session.clone();
+        let initially_closed = connection.is_closed();
+        let mut node = node.exports(export, move |application: &CounterHandle| {
+            *acquired.borrow_mut() = Some(application.clone());
+            BindingDisposal {
+                binding: Box::pin(ready(Err::<EstablishedRecipient<<Counter as Behavior>::Protocol>, _>(refusal))),
+                cause: disposal, polls: polled, disposals: disposed,
+            }
+        });
+        let outcome = node.run_with(work).await
+            .unwrap_or_else(|_| panic!("the actual cold declaration accepts execution"));
+        let (work, root_report, native, notifications, ()) = outcome.into_parts();
+        let application = application.borrow_mut().take()
+            .expect("the actual binder acquired its root handle");
+        let retired = application.retirement().await;
+        let (origin, native) = native.expect("the original native root is independently received");
+        let notifications = notifications.expect("both original notifications are received");
+        let closed = node.closed.as_ref().expect("Node acquires native close before returning");
+        assert!(!initially_closed && connection.is_closed() && closed.is_ok());
+        assert_eq!(root_report, Some(retired));
+        assert_eq!(origin.address(), application.root().address());
+        assert!(matches!(&native, ActorRetirement::OwnerCancelled { .. }));
+        assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+        assert_eq!(polls.get(), 1);
+        assert_eq!(disposals.get(), 1);
+        assert_eq!(calls.get(), 0);
+        assert_eq!((verified.get(), protected.get(), constructions.get()), (0, 0, 0));
+        assert!(node.disposal_panic.is_none());
+        match (&expected_panic, &node.poll_panic) {
+            (Some(expected), Some(original)) => {
+                let original = original.downcast_ref::<Arc<Vec<u8>>>()
+                    .expect("the actual original binder disposal panic remains typed");
+                assert!(Arc::ptr_eq(original, expected));
+                assert_eq!(original.as_slice(), [229, 233]);
+            }
+            (None, None) => {}
+            _ => panic!("the actual binder disposal determines the original poll panic"),
+        }
+        let WorkOutcome::NotInvoked { work, startup_error: None, cleanup: Ok(()) } = work else {
+            panic!("binding refusal returns the original unused Work after actual cleanup");
+        };
+        assert_eq!(ptr::from_ref(work.as_ref()).cast::<()>(), work_allocation);
+        let recovered = invoke(work, application).await;
+        assert_eq!(calls.get(), 1);
+        assert_eq!(ptr::from_ref(recovered.0.as_ref()), output_allocation);
+        assert_eq!(*recovered.0, 239);
+        assert_eq!(recovered.2, retired);
+        let (export, bound, closed, polling, disposal) = match node.into_parts() {
+            Ok(originals) => originals,
+            Err(node) => {
+                let closed = node.closed.as_ref().expect("the refused extraction still owns close");
+                assert!(closed.is_ok() && connection.is_closed());
+                assert!(node.disposal_panic.is_none());
+                assert_eq!(node.poll_panic.is_some(), expected_panic.is_some());
+                panic!("the actual Ready binding refusal must survive producer disposal for public extraction");
+            }
+        };
+        let Err(refusal) = bound.expect("the actual binder returned its original result") else {
+            panic!("the actual binder returned the original borrowed refusal");
+        };
+        assert_eq!(refusal.as_ptr(), refusal_allocation);
+        assert!(ptr::eq(refusal, ptr::from_ref(&original_refusal)));
+        assert_eq!(refusal.as_ref(), [223, 227]);
+        assert!(closed.is_ok() && disposal.is_none());
+        assert_eq!(polling.is_some(), expected_panic.is_some());
+        let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) = export.into_parts();
+        assert!(startup.is_none() && withdrawal.is_none());
+        assert!(diagnostics.is_empty() && requests.is_empty());
+    }).await.expect("failure-only watchdog; actual binding and cleanup supply the oracles");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one genuine absent Work trace retains actual successful binding, its producer panic and every independent cleanup before extraction"
+)]
+async fn public_binding_target_survives_disposal_with_genuine_work_absence() {
+    timeout(Duration::from_secs(10), async {
+        let verified = Cell::new(0);
+        let protected = Cell::new(0);
+        let constructions = Cell::new(0);
+        let registered: [ProtectedMessage; 0] = [];
+        let binding = protocol::Binding {
+            deployment: "binding-disposal", caller: "caller", controller: "owner",
+            actor: "counter", host: "receiver", protocol: "counter",
+            target_assignment: "counter", logical_session: 263,
+        };
+        let verify = async |bytes: &[u8], proof: &[u8]| {
+            verified.set(verified.get() + 1);
+            recorded::verify::<CounterOperation>(
+                &ProtectedMessage { protected: bytes.into(), proof: proof.into() },
+                &registered, binding,
+            ).await
+        };
+        let protect = async |_: &[u8], _: &recorded::Receipt<CounterOperation>| {
+            protected.set(protected.get() + 1);
+            Err::<Box<[u8]>, _>(protocol::VerificationError::Invalid)
+        };
+        let current = |receipt: &recorded::Receipt<CounterOperation>, runtime: &str, target: MailAddr| {
+            let scope = recorded::projection(receipt);
+            if scope.kind == Purpose::Request
+                && scope.bombay.runtime_generation.as_ref() == runtime
+                && scope.bombay.actor_generation == target.0
+                && recorded::identity(receipt).0 == &binding {
+                Ok(())
+            } else { Err(protocol::VerificationError::Invalid) }
+        };
+        let maximum = NonZeroUsize::new(2).unwrap();
+        let export = Export::new(
+            "bombay/binding-disposal/absent-read",
+            ExportLimits { queued_queries: maximum, retained_queries: maximum,
+                retained_requests: maximum, diagnostics: maximum },
+            limits(),
+            |bytes: &[u8]| serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes)
+                .map(|request| request.operation),
+            reply(
+                |CounterOperation::Read| Ok::<_, CounterOperation>(|reply_to: EstablishedRecipient<CounterValue>| {
+                    constructions.set(constructions.get() + 1);
+                    CounterMessage::Read(reply_to)
+                }),
+                |receipt: &recorded::Receipt<CounterOperation>, original: &User<MailAddr, u64>| {
+                    let scope = recorded::projection(receipt);
+                    serde_json::to_vec(&ReadReplyRef {
+                        bombay: &scope.bombay, kind: Purpose::ReadReply,
+                        operation: &scope.operation, value: &original.message,
+                    }).map(Vec::into_boxed_slice)
+                },
+            ),
+            &verify, &protect,
+            |left: &recorded::Receipt<CounterOperation>, right: &recorded::Receipt<CounterOperation>| {
+                recorded::identity(left) == recorded::identity(right)
+            },
+            &current, &current,
+        );
+        let cause = Arc::new(vec![241_u8, 251]);
+        let expected_cause = Arc::clone(&cause);
+        let polls = Rc::new(Cell::new(0));
+        let disposals = Rc::new(Cell::new(0));
+        let polled = Rc::clone(&polls);
+        let disposed = Rc::clone(&disposals);
+        let application = &RefCell::new(None);
+        let acquired = application;
+        let expected_target = &RefCell::new(None);
+        let observed_target = expected_target;
+        let node = Application::new(Counter::new().stop_on_shutdown())
+            .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver)).await
+            .unwrap_or_else(|_| panic!("the actual absent Work Counter Node opens"));
+        let connection = node.session.clone();
+        let initially_closed = connection.is_closed();
+        let mut node = node.exports(export, move |application: &CounterHandle| {
+            let target = application.root().established_recipient();
+            *observed_target.borrow_mut() = Some(target.clone());
+            *acquired.borrow_mut() = Some(application.clone());
+            BindingDisposal {
+                binding: Box::pin(ready(Ok::<_, Never>(target))),
+                cause: Some(cause), polls: polled, disposals: disposed,
+            }
+        });
+        let outcome = node.run().await
+            .unwrap_or_else(|_| panic!("actual Node issues execution without supplied Work"));
+        let (work, root_report, native, notifications, ()) = outcome.into_parts();
+        let application = application.borrow_mut().take()
+            .expect("the actual binder acquired its root handle before Ready");
+        let retired = application.retirement().await;
+        let (origin, native) = native.expect("the original native root remains independent");
+        let notifications = notifications.expect("both original notifications are acquired");
+        let closed = node.closed.as_ref().expect("actual Node acquired native close");
+        let panic = node.poll_panic.as_ref()
+            .expect("the actual successful binder producer panics during disposal");
+        let panic = panic.downcast_ref::<Arc<Vec<u8>>>()
+            .expect("the original binder disposal payload retains its type");
+        assert!(!initially_closed && connection.is_closed() && closed.is_ok());
+        assert_eq!(root_report, Some(retired));
+        assert_eq!(origin.address(), application.root().address());
+        assert!(matches!(&native, ActorRetirement::OwnerCancelled { .. }));
+        assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+        assert!(matches!(&work, WorkOutcome::NotInvoked {
+            work: None, startup_error: None, cleanup: Ok(())
+        }));
+        assert_eq!(polls.get(), 1);
+        assert_eq!(disposals.get(), 1);
+        assert!(Arc::ptr_eq(panic, &expected_cause));
+        assert_eq!(panic.as_slice(), [241, 251]);
+        assert!(node.disposal_panic.is_none());
+        assert_eq!((verified.get(), protected.get(), constructions.get()), (0, 0, 0));
+        let (export, bound, closed, polling, disposal) = match node.into_parts() {
+            Ok(originals) => originals,
+            Err(node) => {
+                let closed = node.closed.as_ref().expect("refused extraction still owns native close");
+                assert!(closed.is_ok() && connection.is_closed());
+                assert!(node.poll_panic.is_some() && node.disposal_panic.is_none());
+                panic!("the actual Ready binding target must survive producer disposal for public extraction");
+            }
+        };
+        let target = bound.expect("the actual successful binding result remains")
+            .expect("the binder returned its actual root target");
+        let expected_target = expected_target.borrow();
+        let expected_target = expected_target.as_ref().expect("actual target was observed before Ready");
+        let root_target = application.root().established_recipient();
+        assert_eq!(&target, expected_target);
+        assert_eq!(target, root_target);
+        assert!(closed.is_ok() && polling.is_some() && disposal.is_none());
+        let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) = export.into_parts();
+        assert!(startup.is_none() && withdrawal.is_none());
+        assert!(diagnostics.is_empty() && requests.is_empty());
+    }).await.expect("failure-only watchdog; actual absent Work and binding originals supply the oracles");
 }

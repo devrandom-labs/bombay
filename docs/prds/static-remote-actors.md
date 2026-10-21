@@ -2,6 +2,27 @@
 
 ## Current status (2026-10-21 UTC)
 
+The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
+serving is implemented; ordinary Node-owned outbound requests and the separate
+remote-counter application remain product development. Full security/resource
+acceptance, three repository scans, distillation, CI/review and main delivery
+remain open. The twenty-five full acceptance rows are not closed by prerequisites.
+
+The current binding-result repair preserves both Ready Err with supplied Work
+and Ready Ok with genuine Work absence before producer disposal. Original-code
+replays fail only at the intended final extraction in both profiles, after
+independent cleanup. The final complete library passes412/412 debug and
+optimized,4.79/6.94s; strict workspace/all-feature/all-target lint and formatting
+pass. Full Nix is
+running against preceding commitaedc2897; it cannot qualify this new repair.
+Current production2623 remains within2700, with260 charged paths/five gross
+public types/12000 total verification lines carrying every earlier cost.
+Main531ded50 was fetched again and is already integrated. No current delivery
+or full-feature completion is inferred. Dated records below retain their exact
+historical source and verification scope.
+
+### Earlier ingress and privacy checkpoint
+
 The objective remains the complete R01–R25/AUTH1/NET1 PRD through verified
 implementation, distillation, required review and CI, and recorded merges to
 main. Main531ded50 is integrated through44f6b49. All twenty inventoried internal
@@ -40559,3 +40580,150 @@ SHA256 e5f001adf12cdd8ac36bf75759f61ccd607ae4ab7439628647d3eaca0e87ddd2.
 Retained Git owns current source; no frozen mutant/transitive closure is claimed.
 The first audit's stale R08/R14 summary cells are also reconciled with scoped
 freshness and actual ingress results; neither full acceptance row closes.
+
+### Next blocker — acquired public binding result before producer disposal
+
+Audit pass2 identifies an unexecuted source hypothesis at Node's two attached
+run paths: call(application).await completes before Binding::Invoked(Some(result))
+is stored. A producer returning Ready(Err(original)) then panicking in Drop may
+erase that acquired binding result. Existing private-kernel disposal tests
+preserve unused Work but do not test this inner public binding adapter. Require
+an actual original failure before selecting any production repair.
+
+Current lock remains fa79c780 with no patches: Behavior/Actors0.29 revision
+55dbac2d, Macros0.16, Address0.3, Communication0.1.6, Timers0.2 and in-tree
+Observe. Fresh outbound-oriented inspection reverified selected archives/source
+and complete Behavior instructions. Exact Actions, recipient/lease, native
+Full/Closed, independent observation and branded timers remain with their
+existing owners. Binding result custody belongs to Node's existing Binding;
+the generic direct-poll acquisition operation already exists in verification.
+No new macro, trait, public type, registry or runtime is selected.
+
+First stage touches only already-charged
+application/node/tests/invocation/startup.rs: reuse BindingDisposal with a real
+cold Counter Export/Node, original borrowed boxed refusal, actual unused Work,
+root/native/notifications, close, and exact producer panic. Compare Ready Err
+with and without actual Drop panic. Acquire all independent cleanup facts before
+the final public into_parts/original receipt oracle; retain any returned Node
+on refusal. Unexpected Work invocation must still shut down the real root.
+Forecast180–220 authored/modified test lines before formatting, stop/reconcile
+at240. Root alone runs pinned commands; original debug and optimized outcomes
+and two source/outcome reviews precede production selection.
+
+Retained production0/public types0/new paths0 for this initial witness. Only if
+its actual intended failure qualifies, forecast at most20 net production in
+existing node.rs to store the exact result before producer disposal at both
+existing sites, reusing current acquisition/Binding owners. No production edit
+is yet selected. Subsequent Ok and genuinely absent Work cases are separate
+required coverage, not credited by this initial pair. All2700/260/five/12000
+limits and prior costs carry; no headroom is certified.
+
+Eight unexpected live-file deletions were recorded as HEAD plus exact D-list
+in the common Git archive unexpected-deletions-local20261022.txt (ea1262d4),
+then only those absent files were restored from aedc2897. No existing file
+content was overwritten and Git now matches HEAD; the origin remains unknown.
+The full Nix check continues against its captured aedc source. Its eventual
+result cannot qualify this prospective new witness or repair.
+
+Original source qualification: frozen startup witness7db32cdb runs exactly two
+cases in each profile. Debug and optimized each exit101 with one control pass
+and one failure at the final public extraction481 after all independent cleanup,
+native, notification, original panic and recovered Work observations. The actual
+Drop panic197 is caught; it is not itself the failing oracle. Both finish0.02s;
+raw receipts are /tmp/bombay-binding-original-{debug,release}.{log,exit}.
+Independent two-pass source review c2e020af passes this bounded witness.
+
+Selected repair, before production editing: node.rs only, forecast15–20 net
+production lines, public types0, new paths0. At both attached startup adapters,
+locally pin the one actual binder future and use existing poll_fn plus Poll::map
+to move Ready's complete Result directly into existing Binding::Invoked. End
+that producer scope before target inspection or any preflight/declaration effect.
+Pending remains Pending; no result conversion, clone, second call, new slot,
+wrapper or shared mechanism is introduced. Keep remote's provider-specific
+poll_verification private rather than widening its ownership solely for reuse.
+Node's Uninvoked/Invoked and absent/acquired result alternatives, branches,
+modules and public spellings stay unchanged. The acquired Result is the exact
+value required by into_parts; no arrival-history state or second authority is
+added. Aggregate review disposition pass for this existing-state repair.
+
+Standard-library sources checked2026-10-21: pin!1.68 and poll_fn1.64 predate the
+selected Rust1.99/MSRV1.96; https://doc.rust-lang.org/std/pin/macro.pin.html and
+https://doc.rust-lang.org/std/future/fn.poll_fn.html document local pinning and
+direct delegated polling. Public naming remains unchanged and was checked
+against https://rust-lang.github.io/api-guidelines/naming.html. No dependency
+change or broader cancellation/double-fault acceptance is selected.
+
+The repaired frozen node1fd2cf2e/startup7db32cdb passes both initial cases:
+debug0/2pass409filtered0.03s, optimized0/2pass409filtered0.02s, under
+/tmp/bombay-binding-repair-{debug,release}.{log,exit}. Pinned workspace and
+direct-file formatting checks pass; no formatting source delta. Independent
+actual-negative and repair-source reviews pass. This qualifies supplied Work
+with Ready Err, not yet the genuine-absence adapter or Ready Ok.
+
+Next bounded test-only stage, before authoring: append one concrete Ready Ok
+with original producer Drop panic to the same startup.rs, calling public
+Node.run() with genuine absence. Reuse BindingDisposal and the actual cold
+Counter Read Export; copied setup is charged, with no return-type facade or
+generic test matrix. Retain target and original Arc, NotInvoked work:None,
+root/native/two notifications/close, one poll/drop, no provider/construction,
+and unattempted Export startup/withdrawal before final extraction. Forecast
+140–180 additional authored/copied lines, stop/reconcile200. Require its actual
+original-source inversion in debug and optimized by reverting only the absent
+adapter while retaining the qualified supplied repair; restore exactly.
+Production/types/new paths0 for this stage, all prior costs carry under12000.
+Node into_parts documentation may add at most two production lines describing
+this result-preservation promise, within the already forecast15–20 repair.
+
+### Binding result — qualified repair and complete change record
+
+Final Node95497c1b retains both exact Ready results before producer disposal;
+the same existing Binding states, target validation, declaration and cleanup
+owners remain. Actual stage production21/-4/net17 includes two documentation
+lines; no public type, state, module or path is added. This is capability repair,
+not net-negative cleanup. Ready Err/supplied and Ready Ok/genuine-absent laws are
+qualified; their full2x2 cross-product, Pending cancellation, construction/poll
+panics and double-panic abort are not inferred from these three controls.
+
+Raw startup ece837d5 contains the original496-line7db32cdb prefix plus the
+137-line actual Ready Ok/absent trace. Exact second-adapter original replay
+cecb702a leaves the first repair intact: debug/optimized exit101 with two
+supplied controls passing and only the new final extraction618 failing, after
+actual Drop197 and every earlier cleanup/panic/absence observation. Later
+target equality and Export fields are unexecuted in those negative epochs.
+Both source patches are retained relative to aedc2897. An initial wrong-site
+preparation654ac520 was caught before any command, reversed exactly, and saved
+separately; it receives no semantic credit. Restore exit0/hash95497c1b is actual.
+
+The raw restored whole library passes412/412 D/R5.23/4.85s. Strict lint then
+rejects only an implicit raw-pointer borrow in the new test. Final e601caa8
+changes that one observational expression to explicit ptr::from_ref; reversing
+it reconstructs ece837d5 exactly. No effect, allocation, oracle or production
+code changes. Final exact-source whole library passes412/412 D/R4.79/6.94s,
+0filtered/0ignored. Strict workspace/all-feature/all-target Clippy and formatting
+pass. These are ordinary test durations under concurrent Nix work, not a
+performance improvement claim. Every command runs through the pinned shell.
+
+Actual receipts: /tmp/bombay-binding-original-{debug,release},
+binding-repair-{debug,release}, binding-complete-debug,
+binding-absent-original-{debug,release}, binding-absent-restore,
+binding-restored-library-{debug,release}, binding-final-clippy,
+binding-pointer-{clippy,fmt}, binding-final-library-{debug,release}; each actual
+command has its log and exit beside it. Initial lint101 remains distinct.
+Two-pass independent source, counterexample, actual-negative, restoration and
+pointer-equivalence reviews pass; final actual review is retained with the raw
+receipts. All raw/copied/modified/formatting/cut/tool costs carry under12000.
+Known test authoring/correction operations356 are not the full verification
+charge or certified headroom; frozen patch copies and every earlier cost carry.
+
+Complete retained canonical census: production3848/-1225/net2623;
+tests13107/-8517/net4590; remote named public types5gross/-2;
+259visible/260charged paths, untracked0. This stage test delta316/-4/net312.
+All2700/260/five/12000 approvals retain their original checkpoints and costs.
+Full Nix50279 remains running on captured aedc; CI/review/main delivery and the
+full remote PRD remain open. No inverse or source exclusion remains.
+
+Qualified raw receipts, base-relative source patches, unexecuted preparation,
+three independent reviews and complete census are retained in the40-member
+archive /Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/binding-result-qualified-20261022.tar.gz
+SHA2561f66a4799ed56b950f3c0f4d847688fb70aabc02ce693f8076743af0a4a96db7.
+Git owns unchanged inputs; this is not a frozen transitive compiler closure.

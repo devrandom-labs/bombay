@@ -20,9 +20,18 @@ The corrected native-ingress privacy denial has positive/counterexample/exact-
 restoration evidence and local strict checks; both required remote profiles now
 select that target. This scoped Config/Query denial is not full privacy or Nix
 acceptance. The explicit path grant is now260; other budgets remain unchanged.
+Current result-preservation blocker: the original Node binder loses Ready Err
+if producer disposal panics, confirmed by intended final public-extraction
+failures in both profiles after cleanup. The17-net-line body/documentation
+repair preserves Ready Err with supplied Work and Ready Ok with genuine
+absence. Both original-code replays reject only their intended final extraction;
+the final restored library passes412/412 debug/optimized plus strict lint/fmt.
+No remote acceptance
+row closes from this scoped result. Full Nix continues on the preceding source.
 The user explicitly approved2700 conservative production lines
-from the same e3 baseline and255 changed paths on2026-10-21. Formatted production
-totals2606. Journal reconciliation proves the earlier6500 verification
+from the same e3 baseline and255 changed paths on2026-10-21. Before this repair,
+production totals2606; its body and documentation currently add17net.
+Journal reconciliation proves the earlier6500 verification
 allowance exceeded; the user explicitly approved12000 total from the same
 checkpoint, carrying all costs. Subsequent explicit approvals raise paths to257
 for parent retirement and the reviewed wire-fixture lint correction; five public
