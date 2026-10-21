@@ -40777,3 +40777,67 @@ outcome review9c338a2e and complete census58a53c65 are retained in
 SHA256b6741318bd44b4217f76b5a6fd6c966b23eaf88076df3db54d70e846695ac639.
 Review/census metadata snapshots precede the final record additions; source and
 actual command hashes are unchanged. Git owns the remaining inputs.
+
+### Remaining implementation — bounded scope proposal
+
+Current qualified checkpoint304efc32 has2615 conservative production lines,
+260 charged paths, five gross remote public types and12000 total verification
+lines from the original grants. Ordinary outbound interpretation remains absent:
+the existing Requester emits real Actions into an affine ExternalActor, but
+private tests still protect, issue native Get, verify and forward replies from
+Work. Neither the current Node nor inbound Export owns that outgoing operation.
+This is missing product capability, not cleanup or an API spelling change.
+
+Proposed maximum scope:3500 conservative production lines,285 charged paths,
+six gross public types;12000 total verification stays unchanged. All earlier
+costs, checkpoints, rejected epochs and unknown charges carry. These are stop
+limits, not targets or certified headroom, and do not select an abstraction.
+
+First, establish the actual SDK-free external consumer failure, then compare
+ordinary library functions and inherent composition on the existing Node.
+Compare an opaque owner with a standard consuming typed-product bound against
+one named outbound owner. Both must support run and consuming extraction of
+actual Counter/Ledger/provider originals, move-only refusal recovery, genuine
+outbound-only execution and simultaneous real incoming declarations. No fake
+Query, unused inbound Export, dummy binding/Work or presentation callback is
+allowed. Serving privacy alone does not prove usable typed extraction. A sixth
+public owner is eligible only if that measured comparison proves its need.
+
+The outbound owner, if selected, owns the affine request source, explicit wire/
+security policies, bounded pending originals and returned/uncertain outcomes;
+it interprets source -> protected Get -> checked typed actor communication.
+Existing Export requires a real incoming Query and cannot substitute for this
+ownership. Node retains the one Session, kernel and cleanup lifetime; Behavior,
+Driver, Communication, Address, Observe and Timers keep their current contracts.
+Moving an ExternalActor proves custody, not same-Application actor association.
+Do not weaken actor_address or create another lane, actor, driver or registry.
+
+Forecast150–250 production lines for outbound ownership,250–450 for the separate
+remote-counter application, and at most100 for independently proved resource
+gaps:2615+800=3415 before further deletion, under proposed3500. Reuse the current
+Node, remote module and owning request/consumer tests; the anticipated new
+runtime owner is remote/client.rs, whose public name remains unselected.
+Example files belong only in examples/remote-counter, with real public API,
+configuration, actor-template composition and ordinary output/error handling.
+No transport loop, test harness, cleanup sequence or verification ledger belongs
+in its main or domain modules. Verify actual security-provider fitness before
+choosing dependencies or example policies; none is selected by this forecast.
+
+The extra path allowance covers that owner, separate example files, necessary
+consumer/static-denial fixtures, and retiring the seven existing Python owners
+plus their current Nix/CI references. Preserve their meaningful product/defect
+checks through maintained Cargo/Nix capabilities before deletion; do not rewrite
+the machinery into a custom tool suite. The driver-law missing-positive finding
+still requires its actual falsifier before any correction. Exact pre-edit files,
+types, failing laws and smaller stage budgets remain mandatory for every phase.
+
+First runtime acceptance is one SDK-free two-Node checked Read through existing
+Requester Actions, with the actual processing fence and joined native outcomes.
+The existing value+1 forwarding inverse must fail only the final Requester law.
+Pending siblings, producer disposal, cancellation, exact refusals, replay,
+permissions and retained-byte limits require their own observable controls.
+Initial comparison forecast100–180 verification lines plus30–60 temporary owner
+signature lines; initial runtime forecast200–350 verification lines. All copies,
+cuts, formatting and earlier costs carry under12000; no remaining allowance is
+certified. The full25 rows, three scans, minimization, CI/review and main merges
+stay open until their actual gates and delivery qualify.
