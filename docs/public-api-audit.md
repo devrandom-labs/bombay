@@ -124,10 +124,11 @@ The Engine surface is exercised by its
 
 The JSON prerequisite delivered by PR368 has five public shape/limit tests
 in remote_json.rs and two actual Node Counter/MailLedger consumers in
-application_clients/json_receiving.rs. They reuse the existing actor definitions
+application/node/tests/json.rs. They reuse the existing actor definitions
 and receiving owners. SessionLocal deterministic records establish neither a
 network handshake nor production authentication. Full remote export/admission
-composition remains pending.
+acceptance remains pending; the current cold Export/Node candidate supplies
+inbound composition, with ordinary outbound and full acceptance still open.
 
 Merged PR370 adds public root/sibling/nested-child and closed-target
 checks in fixed_supervisor_recovery.rs, plus a separate unhosted same-address

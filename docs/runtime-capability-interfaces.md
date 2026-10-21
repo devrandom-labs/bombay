@@ -42,9 +42,11 @@ Bombay Network inputs, constructs the fixed private configuration, and returns
 original Application/Network on refusal. Its focused real Counter startup/work/
 retirement controls establish no full remote service or peer handshake.
 Native transport fixtures remain scoped verification consumers.
-The user requires this transport ownership to stay entirely private. Current
-native Session/Query/declaration exposure through Export remains provisional
-and must be removed from all public APIs, including advanced ones. Startup now
+The user requires this transport ownership to stay entirely private. The current
+cold Export/Node candidate keeps Session, Query ingress and native declarations
+in private owner fields; consuming Request extraction discharges its native
+Query instead of returning it. Full public-surface/privacy acceptance remains
+open, including the current compile-denial diagnostic. Startup now
 accepts only Network and rejects a concrete native Config at compile time. Networking startup, service work and
 retirement must reuse Application ownership; users compose Bombay contracts.
 The next release/API delivery is held until the remote PRD's session-free

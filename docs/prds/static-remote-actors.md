@@ -40451,3 +40451,44 @@ lint and formatting are the actual receipts above. This is test consolidation;
 the complete conservative production delta stays net2606. All charged257 paths
 and historical verification costs remain carried after deletion. Neither local
 commit is pushed, CI-verified, reviewed for merge or delivered to main yet.
+
+### Current guide reconciliation and next privacy gate
+
+Retained consumer migration is146de2a1. The first repository composition scan
+finds no executable warm-Export caller; it is one audit lens, not three full
+audits or distillation. Four already-charged guides are corrected by11/-7
+lines: JSON consumers now point to owning application/node/tests/json.rs;
+current cold Session/Query custody is described as private without claiming
+full privacy acceptance; Counter Reply's locally qualified laws are recorded
+while ordinary outbound/full gates remain open. Independent source review
+confirms these facts against the actual owners. Production/test/public types0.
+
+The primary archive's checkpoint.next was stale and it omitted the initial
+constructor compiler-veto pair. Preserve that archive unchanged. A separate
+supplement retains the corrected checkpoint plus those actual101/no-tests
+initial logs and the independent custody review:
+/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/cold-consumer-migration-supplement-20261021.tar.gz
+SHA256 e93363a48496b3bd3b9e4a9b4529739797eef9d97bdab5bacd752204e67e6d2d.
+No standalone full-source/compiler-input or filesystem-immutability claim is
+made. Retained Git commits and prior archives remain required recovery inputs.
+
+The exact required remote debug target list now passes484 total across eleven
+targets, actual0 /tmp/bombay-required-remote-debug.{log,exit}; its six required
+exact success-line guards all match. Optimized, docs and existing privacy
+execution remain pending. The Query fixture is stale removed-method syntax
+and lacks its required diagnostic. Independently reviewed concrete proposals
+are /tmp/bombay-remote-query-private-proposal.rs (seven lines, current generic
+axes, direct private active field) and
+/tmp/bombay-remote-acceptance-history-proposal.patch. The expected E0616 is
+direct native-ingress privacy only; actual compiler output is not yet acquired.
+Current public39+5 and Request extraction supply independent positive controls.
+
+Explicit260-path approval is requested for exactly three new charged paths:
+the existing Query fixture, its missing compiler diagnostic and acceptance.md's
+historical-evidence label. No unapproved file edit is made. If approved, qualify
+the actual denial and then add remote_surface to both existing required remote
+profile commands, preserving all twelve exact guards. Forecast20–40 authored/
+modified verification lines plus measured formatting/generated diagnostics;
+production2606/2700, five gross public types and12000 verification unchanged.
+All earlier costs and historical touched paths carry. Source-only review is
+not a compiler result, full SDK-privacy sweep or acceptance-row completion.

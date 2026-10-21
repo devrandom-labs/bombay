@@ -624,7 +624,8 @@ Retained requests preserve original protected bytes, opaque receipts, actual
 native attempts and replies independently of verification, protection and
 permission. In particular, native `Full` preserves its exact rejected command;
 automatic retry waits for native capacity and obtains fresh authority. The
-owning Ledger laws pass locally; Counter Reply and full remote gates remain open.
+owning Ledger and Counter Reply laws pass locally, including original Full retry
+custody. Ordinary outbound composition and full remote gates remain open.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 

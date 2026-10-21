@@ -34,7 +34,7 @@ It preserves native syntax causes and leaves original protected/proof buffers
 with the caller. Concrete Serde protocols still own required/unique fields;
 provider, replay and permission policy remain separate. Token materialization
 precedes its token check, so no peak-heap bound is claimed. Actual Node consumers
-reuse Counter and terminating MailLedger in application_clients/json_receiving.rs;
+reuse Counter and terminating MailLedger in application/node/tests/json.rs;
 they are tests rather than a second production receiver. The optional remote graph now names the pinned controlled SDK and configuration
 owners. Private application/node.rs owns one finalized Application and one fresh
 Session; Application::open_node consumes Network and constructs private
