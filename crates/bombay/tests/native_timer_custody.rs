@@ -124,7 +124,7 @@ async fn conversion_panic_returns_timer_custody(clock: ReminderClock) {
     };
     let notes = Box::<[u8]>::from([31, 37]);
     let allocation = notes.as_ptr();
-    let (work, native, notifications, ()) = Application::new(Reminders { notes })
+    let (work, _root_report, native, notifications, ()) = Application::new(Reminders { notes })
         .run_with(|application| async move {
             let sender = application.sender().expect("ordinary application sender");
             sender

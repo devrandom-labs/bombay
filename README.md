@@ -57,7 +57,7 @@ caller values and need not be `Send`; independently spawned actor tasks retain
 their actual `Send + 'static` requirements.
 
 Returning from Work does not stop the actor. Use
-`application.request_shutdown()` and `application.termination()` directly.
+`application.shutdown()` and `application.termination()` directly.
 Project `application.lifecycle()` when a separate consumer needs only lifecycle
 authority. Termination retains the exact incarnation fact. A boundary-owned `Result<T, E>` remains the exact bare supplied Work output.
 A user-returned `Option<T>` also remains unchanged, including `None`. The output

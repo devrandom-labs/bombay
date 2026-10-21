@@ -1,4 +1,4 @@
-//! Proposed complete SDK-free consumer; not mounted until its source review.
+//! Ordinary cold exports retain borrowed Work and independent native outcomes.
 use super::super::counter::{CounterMessage, CounterProcessed, CounterValue};
 use super::actors::{ActorExports, Counters, CountersRole, Creator, Exports, topology};
 use super::{assert_exports, assert_retirement};
@@ -419,7 +419,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                     published.expect("supplied Work awaits actual peer completion");
                     None
                 }
-                Presence::Absent => Some(lifecycle.request_shutdown()),
+                Presence::Absent => Some(lifecycle.shutdown()),
             },
             server_retired,
         )
@@ -449,12 +449,12 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                             .await;
                         let value = values.receive().await;
                         work_observations.borrow_mut().push((admission, value));
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         (configuration.as_str(), shutdown)
                     })
                     .await
                     .unwrap_or_else(|_| panic!("supplied Node execution is issued"));
-                let (work, native, notes, families) = outcome.into_parts();
+                let (work, root_report, native, notes, families) = outcome.into_parts();
                 let ((configuration, shutdown), cleanup) = work
                     .try_into_completed()
                     .unwrap_or_else(|_| panic!("original borrowed Work result remains complete"));
@@ -462,6 +462,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                     Some(configuration),
                     Some(shutdown),
                     cleanup,
+                    root_report,
                     native,
                     notes,
                     families,
@@ -472,7 +473,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                     .run()
                     .await
                     .unwrap_or_else(|_| panic!("genuine absent Node execution is issued"));
-                let (work, native, notes, families) = outcome.into_parts();
+                let (work, root_report, native, notes, families) = outcome.into_parts();
                 let (absence, cleanup) = work
                     .try_into_completed()
                     .unwrap_or_else(|_| panic!("actual startup grant retains work absence"));
@@ -480,7 +481,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                     None => {}
                     Some(never) => match never {},
                 }
-                (None, None, cleanup, native, notes, families)
+                (None, None, cleanup, root_report, native, notes, families)
             }
         };
         let publication = server_closed.send(());
@@ -489,10 +490,12 @@ async fn complete(presence: Presence, pending: ProviderStage) {
     };
     let (execution, (peer, absent_shutdown)) = tokio::join!(running, exchange);
     // No explicit drop, native close, undeclaration or borrow-ending scope.
-    let ((counter, ledger), binding_result, closed) = node.into_parts().unwrap_or_else(|_| {
-        panic!("actual joined Node has transferred its application and binder")
-    });
-    let (work, supplied_shutdown, cleanup, native, notifications, (family, ())) = execution;
+    let ((counter, ledger), binding_result, closed, polling, disposal) =
+        node.into_parts().unwrap_or_else(|_| {
+            panic!("actual joined Node has transferred its application and binder")
+        });
+    let (work, supplied_shutdown, cleanup, root_report, native, notifications, (family, ())) =
+        execution;
     let (origin, native) = native.expect("original joined root and descendant reports");
     let notifications = notifications.expect("both original notification results");
     let (_, family) = family.expect("the original nonempty family report");
@@ -508,6 +511,13 @@ async fn complete(presence: Presence, pending: ProviderStage) {
     peer.closed
         .as_ref()
         .expect("actual peer closes independently");
+    let root_report = root_report.expect("the joined root retains its runtime report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
+    assert!(polling.is_none() && disposal.is_none());
     let (counter_target, ledger_target) = binding_result
         .expect("actual binding was acquired")
         .expect("actual binding succeeds");

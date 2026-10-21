@@ -81,7 +81,7 @@ fn invocation_disposal_keeps_original_staging_rejection() {
                         >| {
                             let _original_disposal = &disposal;
                             invoked.set(invoked.get() + 1);
-                            async move { (work, application.request_shutdown()) }
+                            async move { (work, application.shutdown()) }
                         },
                     )),
                     None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
@@ -108,7 +108,7 @@ fn invocation_disposal_keeps_original_staging_rejection() {
                 .await
             };
             move || {
-                let (Poll::Ready((work, root, notifications)), Poll::Ready(())) =
+                let (Poll::Ready((work, root_report, root, notifications)), Poll::Ready(())) =
                     (outcome, families)
                 else {
                     panic!("both original receivers must be ready after execution surrender");
@@ -116,6 +116,7 @@ fn invocation_disposal_keeps_original_staging_rejection() {
                 let work = work.into_supplied_with_entities();
                 assert!(root.is_err());
                 assert!(notifications.is_err());
+                assert!(root_report.is_none());
                 let WorkOutcome::StagingRejected {
                     inputs: (_counter, _spaces, (), work, failure, _scope),
                 } = work

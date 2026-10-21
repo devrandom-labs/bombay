@@ -172,8 +172,8 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
-| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): paired owning PRD tracks DX01–DX28; bounded application-result consumption is in progress. Topology/terminal inference and full acceptance remain open. |
-| NET1 | blocked | AUTH1; external: verified Communication capacity observation, typed composition, protocol/security and resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md) retains the selected profile and open remote gates. Its nine controlled dependencies are published, reviewed and merged, with passing registry-only consumer proof. Joined-retirement prerequisite [PR330](https://github.com/devrandom-labs/bombay/pull/330) merged at2026-10-10T08:11:03Z, commit017ec7603e0193e26129e0af6d10b8c04fdad78e, after independent source review and all four observed CI checks passed on690e628. Local debug/optimized controls, intended source inversions, actual report-construction denials, standard cleanup-panic custody, full workspace/docs/all-target tests and strict Clippy pass; exact evidence and limitations remain in the PRD. The isolated exact-recipient capacity-nonwaiting service admission prerequisite passes public/owning debug and optimized controls, intended inversions, full local checks and independent minimization review; [PR331](https://github.com/devrandom-labs/bombay/pull/331) merged at2026-10-10T09:45:37Z, commit9fc225ee0e96e697f0b48b619abe6ea8c6721e7c, after independent review and all four observed checks passed (required Nix38039822580). [Research PR332](https://github.com/devrandom-labs/bombay/pull/332) merged at2026-10-10T11:47:54Z, commita3a018790b4a0edb61d67e190d8978b1ce38464f, after independent review and all six observed checks passed, including both actual Linux TLS campaigns (16 cases/profile); its local scope/transport prerequisites do not close full remote witnesses. The owning closure-diagnostic correction is reviewed, merged and actually published as Communication0.1.4; the candidate selects only that corrected registry node, preserving all other178 locked records. Exact local child shutdown [PR333](https://github.com/devrandom-labs/bombay/pull/333) merged acb6cc188f03ded29863d8d2565e3fd093e65558 at2026-10-10T13:25:15Z after independent review and all six checks (Nix38051236713) passed. Real root-owned-work waiting [PR334](https://github.com/devrandom-labs/bombay/pull/334) merged fbc714c176792411ea00fdf73876c30aa17fd4ca at13:27:30Z after exact final main scope review and all six checks (Nix38052058178) passed; its two-Application local witness does not close child/shared-session R11. Controlled Zenoh pressure [PR3](https://github.com/devrandom-labs/bombay-zenoh/pull/3) merged1291c3e019de19c2a2e1e713380383526347bb59 after required38048704318 passed; observed native retention is not quota enforcement. Protected remote admission, two-process/fault-host correctness, exact versus ambiguous delivery and bounded remote ownership remain unimplemented; all full R01–R25 witnesses remain unexecuted. Choices use delegated recommended selections. |
+| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): owning PRD tracks DX01–DX28. One Application/topology path, policy Config/startup closures and strict124-fixture verification are implemented with bounded evidence. Owner-inference publication, automatic timers, complete custody/cost coverage and final gates remain open. |
+| NET1 | blocked | AUTH1; external: verified typed composition, protocol/security and resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md) retains the selected profile and open remote gates. Its nine controlled dependencies are published, reviewed and merged, with passing registry-only consumer proof. Joined-retirement prerequisite [PR330](https://github.com/devrandom-labs/bombay/pull/330) merged at2026-10-10T08:11:03Z, commit017ec7603e0193e26129e0af6d10b8c04fdad78e, after independent source review and all four observed CI checks passed on690e628. Local debug/optimized controls, intended source inversions, actual report-construction denials, standard cleanup-panic custody, full workspace/docs/all-target tests and strict Clippy pass; exact evidence and limitations remain in the PRD. The isolated exact-recipient capacity-nonwaiting service admission prerequisite passes public/owning debug and optimized controls, intended inversions, full local checks and independent minimization review; [PR331](https://github.com/devrandom-labs/bombay/pull/331) merged at2026-10-10T09:45:37Z, commit9fc225ee0e96e697f0b48b619abe6ea8c6721e7c, after independent review and all four observed checks passed (required Nix38039822580). [Research PR332](https://github.com/devrandom-labs/bombay/pull/332) merged at2026-10-10T11:47:54Z, commita3a018790b4a0edb61d67e190d8978b1ce38464f, after independent review and all six observed checks passed, including both actual Linux TLS campaigns (16 cases/profile); its local scope/transport prerequisites do not close full remote witnesses. The owning closure-diagnostic correction is reviewed, merged and actually published as Communication0.1.4; the candidate selects only that corrected registry node, preserving all other178 locked records. Exact local child shutdown [PR333](https://github.com/devrandom-labs/bombay/pull/333) merged acb6cc188f03ded29863d8d2565e3fd093e65558 at2026-10-10T13:25:15Z after independent review and all six checks (Nix38051236713) passed. Real root-owned-work waiting [PR334](https://github.com/devrandom-labs/bombay/pull/334) merged fbc714c176792411ea00fdf73876c30aa17fd4ca at13:27:30Z after exact final main scope review and all six checks (Nix38052058178) passed; its two-Application local witness does not close child/shared-session R11. Controlled Zenoh pressure [PR3](https://github.com/devrandom-labs/bombay-zenoh/pull/3) merged1291c3e019de19c2a2e1e713380383526347bb59 after required38048704318 passed; observed native retention is not quota enforcement. Protected remote admission, two-process/fault-host correctness, exact versus ambiguous delivery and bounded remote ownership remain unimplemented; all full R01–R25 witnesses remain unexecuted. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |
 | MNE1 | blocked | External: Mnesis-Bombay release and dependency-graph alignment | PLACE1, DIST1, SELO1 | [Durability](durability-and-operations.md): select current Bombay and compatible Behavior; hydrate before routability and retain exact admission, decision, conflict, uncertain commit and durable completion outcomes. Local migration can proceed independently of NET1; complete distributed writer fencing with PLACE1. |
@@ -377,7 +377,7 @@ Historical release pointers (not the current selection): Behavior Core/Actors
 `5ca96444f0a66e9a013b6989e3e53d345cbabf65`. The Driver and template
 manifests retain revision-bound evidence. Earlier EXEC notes selected 0.17.0:
 their hashes, source inventories and open representation experiments are
-historical; EXEC's published selection and current manifests now use
+historical; at that checkpoint EXEC's published selection and manifests used
 Core/Actors 0.23.0 and Macros 0.14.0 at
 `d69f992b371c12ab34e73b18e45b8112c90a1508`.
 
@@ -769,3 +769,51 @@ exists. The missing Git link/606 unchanged files were recovered without replacin
 existing edits. Fresh main531ded50 now selects Behavior0.29 and new runtime
 contracts; integrate that reviewed upstream state and requalify consumers before
 further remote lowering. The original stage limits/costs and full PRD scope carry.
+
+The resolved main531ded50 candidate now passes its pinned-Nix, offline/locked
+all-feature library check and both independent source reviews. Runtime and
+consumer requalification remain open. The combined e3-baseline checkpoint
+has237 paths and a conservative2388 net production count including embedded
+and owning comparison tests; the inherited2081 split remains unqualified.
+This crosses the
+approved2000/forty limits. Further production edits stop pending the explicit
+surface checkpoint recorded in the remote PRD: proposed total2600/250 paths,
+unchanged five remote public additions and4000 further verification lines.
+All prior costs carry. Decoder unwind and the full R01–R25/AUTH1/NET1 objective
+remain unfinished; the main adoption is only a prerequisite.
+
+Read-only migration inventory now identifies20 original retained tests and
+their distinct laws; independent source review confirms the count and adds
+explicit stale-key denial after same-path redeclaration. No original test
+was removed or migrated by that inventory. Existing Application/advanced Node
+outcome controls pass19+5 cases in both debug and optimized builds on the
+combined0.29 candidate. Canonical library-test compilation still fails on
+retired callers; cold-export unwind acceptance remains open. Production/test
+source/API deltas are zero for this continuation; the pending expanded-surface
+decision and full R01–R25/AUTH1/NET1 scope carry unchanged.
+
+On2026-10-21 the user explicitly authorized the recorded expansion (“yeah
+authorized”): replacement total2600 net production frome3daad58,250 paths,
+unchanged five gross remote public types,4000 further verification lines from
+that checkpoint. Earlier costs remain charged. The size block is resolved;
+resume the scoped decoder cleanup regression/fix and retained caller migration.
+Full acceptance, distillation, CI/review and actual main delivery remain open.
+
+Current0.29 scoped decoder cleanup passes debug/optimized positive and intended
+original-escape controls, with two independent reviews. Public cold21 and owning7
+controls, plus23 report-migration cases, pass both profiles. Canonical mounts
+retain every old module; full library compilation still fails on55 retired warm
+consumer errors. Next is the retained post-retirement replay law, with a finite
+pre-edit regression before any correction. The [current PRD checkpoint](../prds/static-remote-actors.md#decoder-cleanup--final-current-graph-checkpoint)
+records the246-path census and approved2600/250 surface. Full R01–R25/AUTH1/NET1,
+strict gates, distillation, required review/CI and recorded main delivery stay open.
+
+The retained four Recorded/Scheduled Counter/Ledger replay cases now use the
+single cold export path. Both profiles pass; restoring the original serving
+cutoff breaks only the two genuinely post-retirement Ledger replays. Restored
+28 owning and21 public controls pass each profile with two independent reviews.
+Canonical mounts are restored, but compilation still fails44 legacy errors;
+16 retained consumer laws remain. The [migration record](../prds/static-remote-actors.md#cold-replay-consumers--completed-scoped-migration)
+keeps the exact scopes/costs. Next, move the two provider-only refusal cases
+out of the unrelated unported Requester module. No full remote row or delivery
+status changes.

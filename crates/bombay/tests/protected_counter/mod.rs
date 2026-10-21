@@ -255,9 +255,9 @@ enum CounterStopAuthority {
     Child(InstalledActor<StopOnShutdown<Counter>>),
 }
 impl CounterStopAuthority {
-    fn request_shutdown(&self) -> Result<(), ShutdownRejection> {
+    fn shutdown(&self) -> Result<(), ShutdownRejection> {
         match self {
-            Self::Root(root) => root.request_shutdown(),
+            Self::Root(root) => root.shutdown(),
             Self::Child(child) => child.request_shutdown(Ingress::<_, Here>::new()),
         }
     }
@@ -665,7 +665,7 @@ impl<R> CounterAuthorization<R> {
                     refusal,
                 },
                 None => match &self.stop {
-                    Some(stop) => CounterDelivery::StopRequested(stop.request_shutdown()),
+                    Some(stop) => CounterDelivery::StopRequested(stop.shutdown()),
                     None => CounterDelivery::Refused {
                         command: CounterCommand::Stop,
                         refusal: CounterRefusal::Grant,
@@ -1827,7 +1827,7 @@ async fn run_counter_profile<R>(
                                                     snapshot = replies.receive().await;
                                                 }
                                             }
-                                            requester_stopped = Some(lifecycle.request_shutdown());
+                                            requester_stopped = Some(lifecycle.shutdown());
                                             requester_permission =
                                                 Some(requester_permitted.send(()));
                                         };
@@ -1842,7 +1842,7 @@ async fn run_counter_profile<R>(
                                     if matches!(execution.as_mut().output_mut(), Some(Err(_)))
                                         && requester_stopped.is_none()
                                     {
-                                        requester_stopped = Some(lifecycle.request_shutdown());
+                                        requester_stopped = Some(lifecycle.shutdown());
                                     }
                                 }
                                 None => {}
@@ -1881,7 +1881,7 @@ async fn run_counter_profile<R>(
                             originals.push(authorization.consume(correlation));
                         }
                     }
-                    stopped = (Some(lifecycle.request_shutdown()), Some(permitted.send(())));
+                    stopped = (Some(lifecycle.shutdown()), Some(permitted.send(())));
                 }
             }
             None => {}
@@ -1937,6 +1937,7 @@ async fn run_counter_profile<R>(
             ));
             let (
                 WorkOutcome::Interrupted { cleanup: Ok(()) },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -1955,6 +1956,7 @@ async fn run_counter_profile<R>(
                         cleanup: Ok(()),
                         output: (publication, permission),
                     },
+                    _root_report,
                     Ok((origin, retirement)),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -2017,6 +2019,7 @@ async fn run_counter_profile<R>(
             ));
             let (
                 WorkOutcome::Interrupted { cleanup: Ok(()) },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -2047,6 +2050,7 @@ async fn run_counter_profile<R>(
                     cleanup: Ok(()),
                     output: counter_work_receipts,
                 },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -2090,6 +2094,7 @@ async fn run_counter_profile<R>(
             output: (publication, permission),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -2132,6 +2137,7 @@ async fn run_counter_profile<R>(
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -2593,12 +2599,12 @@ async fn run_protected_counter_profile<R>(
                     .0
                     .as_ref()
                     .ok()
-                    .map(|(lifecycle, ..)| lifecycle.request_shutdown());
+                    .map(|(lifecycle, ..)| lifecycle.shutdown());
                 let sibling_stop = publications
                     .1
                     .as_ref()
                     .ok()
-                    .map(|(lifecycle, ..)| lifecycle.request_shutdown());
+                    .map(|(lifecycle, ..)| lifecycle.shutdown());
                 #[cfg(not(test))]
                 let counter_release = counter_permit.send(());
                 #[cfg(test)]
@@ -2732,7 +2738,7 @@ async fn run_protected_counter_profile<R>(
                         #[cfg(test)]
                         {
                             if execution_case == CounterWorkCase::RequesterCompletedAfterPublication {
-                                first_requester_shutdown = Some(requester_lifecycle.request_shutdown());
+                                first_requester_shutdown = Some(requester_lifecycle.shutdown());
                             }
                             if matches!(execution_case, CounterWorkCase::RequesterAfterPublication | CounterWorkCase::RequesterCompletedAfterPublication) {
                                 requester_release = Some(permitted.take().expect("original requester permission").send(()));
@@ -2761,7 +2767,7 @@ async fn run_protected_counter_profile<R>(
                                                 earlier_counter_release = Some(counter_permit.take().expect("original Counter permission").send(()));
                                                 counter_retirement_before_rescue = Some(lifecycle.retirement().await);
                                                 counter_processing_after = Some(received.as_mut().now_or_never());
-                                                first_requester_shutdown = Some(requester_lifecycle.request_shutdown());
+                                                first_requester_shutdown = Some(requester_lifecycle.shutdown());
                                                 requester_release = Some(permitted.take().expect("original requester permission").send(()));
                                             }
                                             received.as_mut().await;
@@ -2868,7 +2874,7 @@ async fn run_protected_counter_profile<R>(
                     }
                 }
                 let stopped = handoff.as_ref().and_then(|original| original.as_ref().ok())
-                    .map(|(lifecycle, ..)| lifecycle.request_shutdown());
+                    .map(|(lifecycle, ..)| lifecycle.shutdown());
                 let permitted = match requester_release.take() {
                     Some(original) => original,
                     None => permitted.take().expect("original requester permission").send(()),
@@ -2901,8 +2907,8 @@ async fn run_protected_counter_profile<R>(
             (sibling_increment, sibling_read, sibling_value,
                 audit_values.recipient(), sibling_values.recipient())
         }).catch_unwind().await;
-        let original_cleanup = lifecycle.request_shutdown();
-        let sibling_cleanup = sibling_lifecycle.request_shutdown();
+        let original_cleanup = lifecycle.shutdown();
+        let sibling_cleanup = sibling_lifecycle.shutdown();
         #[cfg(not(test))]
         let counter_release = counter_permit.send(());
         #[cfg(test)]
@@ -2986,6 +2992,7 @@ async fn run_protected_counter_profile<R>(
         );
         let (
             WorkOutcome::Interrupted { cleanup: Ok(()) },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3002,6 +3009,7 @@ async fn run_protected_counter_profile<R>(
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3046,6 +3054,7 @@ async fn run_protected_counter_profile<R>(
             .expect_err("original Counter Work panic");
         let (
             WorkOutcome::Interrupted { cleanup: Ok(()) },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3096,6 +3105,7 @@ async fn run_protected_counter_profile<R>(
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((requester_origin, requester_retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3111,6 +3121,7 @@ async fn run_protected_counter_profile<R>(
                 output: (sibling_publication, sibling_permission),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((sibling_origin, sibling_retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3268,6 +3279,7 @@ async fn run_protected_counter_profile<R>(
             first_requester_original_pointers.expect("original pointers before publication");
         let (
             outcome,
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3348,6 +3360,7 @@ async fn run_protected_counter_profile<R>(
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -3636,6 +3649,7 @@ async fn run_protected_counter_profile<R>(
                 output: (publication, permission),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -3678,6 +3692,7 @@ async fn run_protected_counter_profile<R>(
                         output: (publication, permission),
                         cleanup: Ok(()),
                     },
+                    _root_report,
                     Ok((origin, retirement)),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -4266,14 +4281,14 @@ mod pending_verification {
                             },
                         ));
                         let Some(Ok(authorization)) = authorization_storage.as_mut() else {
-                            return application.lifecycle().request_shutdown();
+                            return application.lifecycle().shutdown();
                         };
                         *reservation_storage = Some(
                             authorization
                                 .reserve(original_storage.take().expect("caller-held original")),
                         );
                         let Some(Ok(correlation)) = reservation_storage.as_ref() else {
-                            return application.lifecycle().request_shutdown();
+                            return application.lifecycle().shutdown();
                         };
                         let correlation = *correlation;
                         let held_bytes = authorization.reserved_bytes;
@@ -4341,7 +4356,7 @@ mod pending_verification {
                             *native = Some((sent, snapshot, address));
                             *admission = authorization.consume(correlation);
                         }
-                        application.lifecycle().request_shutdown()
+                        application.lifecycle().shutdown()
                     })
                     .unwrap_or_else(|_| panic!("entered host"));
                 let execution = AssertUnwindSafe(execution).catch_unwind().await;
@@ -4351,6 +4366,7 @@ mod pending_verification {
                         output: stopped,
                         cleanup: Ok(()),
                     },
+                    _root_report,
                     Ok((origin, retirement)),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -4529,14 +4545,14 @@ mod full_retry {
                         },
                     ));
                     let Some(Ok(authorization)) = authorization_storage.as_mut() else {
-                        return application.lifecycle().request_shutdown();
+                        return application.lifecycle().shutdown();
                     };
                     *reservation_storage = Some(
                         authorization
                             .reserve(original_storage.take().expect("caller-owned original")),
                     );
                     let Some(Ok(correlation)) = reservation_storage.as_ref() else {
-                        return application.lifecycle().request_shutdown();
+                        return application.lifecycle().shutdown();
                     };
                     let correlation = *correlation;
                     let request_limits = counter_test_json_limits();
@@ -4640,7 +4656,7 @@ mod full_retry {
                         expired_at,
                     ));
                     // Full raw/R/native-error remains in the outside owner.
-                    application.lifecycle().request_shutdown()
+                    application.lifecycle().shutdown()
                 })
                 .unwrap_or_else(|original| {
                     drop(original);
@@ -4653,6 +4669,7 @@ mod full_retry {
                     output: stopped,
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -5774,7 +5791,7 @@ mod allocation_profile {
                             *received = observed;
                         }
                     }
-                    application.lifecycle().request_shutdown()
+                    application.lifecycle().shutdown()
                 })
                 .unwrap_or_else(|_| panic!("entered host"));
             let execution = AssertUnwindSafe(execution).catch_unwind().await;
@@ -5784,6 +5801,7 @@ mod allocation_profile {
                     output: stopped,
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -6706,7 +6724,7 @@ mod proof_rotation {
                                 originals.push((proof, correlation, original));
                             }
                         }
-                        stopped = Some(lifecycle.request_shutdown());
+                        stopped = Some(lifecycle.shutdown());
                     }
                 }
                 let permitted = permitted.send(());
@@ -6730,6 +6748,7 @@ mod proof_rotation {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -6931,7 +6950,7 @@ mod closed_counter {
                 match ports.await {
                     Ok((lifecycle, target, requests, replies)) => {
                         handoff = Some(Ok(()));
-                        stopped = Some(lifecycle.request_shutdown());
+                        stopped = Some(lifecycle.shutdown());
                         retirement = Some(lifecycle.retirement().await);
                         authorization = Some(CounterAuthorization::new(
                             StartupMode::ExplicitTest,
@@ -6995,6 +7014,7 @@ mod closed_counter {
                     output: (publication, permission),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, native_retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -7309,7 +7329,7 @@ mod stop_admission {
                     .send(&sibling, CounterMessage::Read(sibling_values.recipient()))
                     .await;
                 let sibling_reply = sibling_values.receive().await;
-                let sibling_stop = sibling_lifecycle.request_shutdown();
+                let sibling_stop = sibling_lifecycle.shutdown();
                 let target_release = target_permit.send(());
                 let sibling_release = sibling_permit.send(());
                 (
@@ -7365,6 +7385,7 @@ mod stop_admission {
                     output: (publication, continued),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, retirement)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -7705,7 +7726,7 @@ mod stop_admission {
                 let sibling_stop = sibling_export.installed.unwrap();
                 let sibling_stopped = sibling_stop.request_shutdown(Ingress::<_, Here>::new());
                 let sibling_retired = sibling_stop.retirement().await;
-                let parent_stopped = lifecycle.request_shutdown();
+                let parent_stopped = lifecycle.shutdown();
                 let released = permit.send(());
                 (
                     exported,
@@ -7761,6 +7782,7 @@ mod stop_admission {
                 output: (publication, continued),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, native)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -8192,7 +8214,7 @@ mod protected_application {
                             &[CounterProofPurpose::Refused],
                         ));
                     }
-                    let stopped = application.lifecycle().request_shutdown();
+                    let stopped = application.lifecycle().shutdown();
                     (
                         receipt,
                         expired_receipt,
@@ -8216,6 +8238,7 @@ mod protected_application {
                         (receipt, expired_receipt, stale, unavailable, authorization, outcomes, stopped),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, native)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -8819,7 +8842,7 @@ mod protected_application {
                             meaning: CounterProtectedMeaning::ReadReply(67),
                         },
                     );
-                    let stopped = application.lifecycle().request_shutdown();
+                    let stopped = application.lifecycle().shutdown();
                     (
                         outcomes,
                         refused,
@@ -8855,6 +8878,7 @@ mod protected_application {
                         ),
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, native)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),

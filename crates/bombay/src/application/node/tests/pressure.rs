@@ -7,7 +7,10 @@ use super::protocol::{
 use super::{LedgerCommand, MailLedger, Receipts};
 use crate::application::{Application, MailboxCapacity};
 use crate::remote::{Attempt, Export, ExportLimits, Metadata, submission};
-use crate::{ActorRetirement, Completion, MailAddr, TrySendError};
+use crate::{
+    ActorFailureAssessment, ActorRetirement, Completion, MailAddr, RetirementAssessment,
+    TrySendError,
+};
 use behavior::Never;
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
@@ -313,10 +316,10 @@ async fn append_after_full(next_permission: Permission) {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Node execution starts"));
-    let (export, bound, closed) = node
+    let (export, bound, closed, polling, disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("the real Node acquired cleanup and close"));
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, root_report, native, notifications, ()) = outcome.into_parts();
     let ((worker_entered, worker, prefix, full, observation, admission, reply, incoming), cleanup) =
         work.try_into_completed()
             .unwrap_or_else(|_| panic!("the original caller output survives cleanup"));
@@ -332,6 +335,13 @@ async fn append_after_full(next_permission: Permission) {
         publications.push(original);
     }
     let notifications = notifications.expect("both native notification results survive");
+    let root_report = root_report.expect("the joined root retains its actual report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
+    assert!(polling.is_none() && disposal.is_none());
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert!(worker_entered.is_ok());
     let (announced, released) = worker.expect("the actual blocked worker joins");

@@ -142,11 +142,7 @@ impl Behavior for Node {
                 Leaf {
                     payload: Box::from([13]),
                 }
-                .with_one_shot(
-                    bombay::prelude::TimerId(41),
-                    Duration::from_secs(60),
-                    leaf_deadline_reached,
-                )
+                .with_one_shot(Duration::from_secs(60), leaf_deadline_reached)
                 .stop_on_shutdown(),
             )),
         ));
@@ -381,17 +377,13 @@ fn inspect_node(
 #[tokio::test(flavor = "current_thread")]
 async fn recursive_reports_return_full_native_retirement() {
     pure_alias_definitions();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Grow { remaining: 3 }),
             trace: None,
             readiness: Vec::new(),
         }
-        .with_one_shot(
-            bombay::prelude::TimerId(37),
-            Duration::from_secs(10),
-            root_deadline_reached,
-        )
+        .with_one_shot(Duration::from_secs(10), root_deadline_reached)
         .stop_on_shutdown(),
         Arc::new(Spaces::new()),
     )
@@ -468,18 +460,14 @@ async fn recursive_reports_return_full_native_retirement() {
 #[tokio::test(flavor = "current_thread")]
 async fn recursive_reports_keep_custody_with_outer_timer() {
     pure_alias_definitions();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Grow { remaining: 3 }),
             trace: None,
             readiness: Vec::new(),
         }
         .stop_on_shutdown()
-        .with_one_shot(
-            bombay::prelude::TimerId(37),
-            Duration::from_secs(10),
-            stopped_root_deadline_reached,
-        ),
+        .with_one_shot(Duration::from_secs(10), stopped_root_deadline_reached),
         Arc::new(Spaces::new()),
     )
     .run_with(|application| async move {
@@ -571,7 +559,7 @@ async fn recursive_scope_returns_original_initialization_refusal() {
         }
         .stop_on_shutdown(),
     );
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Refuse { creation }),
             trace: None,

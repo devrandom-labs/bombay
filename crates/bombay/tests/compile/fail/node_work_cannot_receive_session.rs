@@ -18,7 +18,7 @@ async fn receive_session(
     session: &Session,
 ) -> Result<(), ShutdownRejection> {
     assert!(!session.is_closed());
-    application.request_shutdown()
+    application.shutdown()
 }
 
 async fn actor_work(network: Network) {

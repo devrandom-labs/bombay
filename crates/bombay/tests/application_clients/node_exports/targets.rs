@@ -6,7 +6,7 @@ use bombay::actors::ActorExt;
 use bombay::behavior::EstablishedRecipient;
 use bombay::prelude::{Application, Completion};
 use bombay::remote::{Export, ExportError, ExportLimits, reply};
-use bombay::{MailAddr, RetirementAssessment, WorkOutcome};
+use bombay::{ActorFailureAssessment, MailAddr, RetirementAssessment, WorkOutcome};
 use protocol::{EndpointRole, ProtectedMessage, configuration, limits, recorded, reserved_address};
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
@@ -122,7 +122,7 @@ async fn refused(selection: Selection) {
                     let target = application.root().address();
                     let admitted = client.send(CounterMessage::Read(client.recipient())).await;
                     let original = client.receive().await;
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     let retirement = application.retirement().await;
                     (
                         scope, payload, target, admitted, original, shutdown, retirement,
@@ -131,10 +131,11 @@ async fn refused(selection: Selection) {
             })
             .await
             .unwrap_or_else(|_| panic!("actual host accepts the cold Node operation"));
-        let ((first, second), bound, closed) = node.into_parts().unwrap_or_else(|_| {
-            panic!("actual startup refusal cleanup and native close are acquired")
-        });
-        let (work, native, notifications, ()) = outcome.into_parts();
+        let ((first, second), bound, closed, polling, disposal) =
+            node.into_parts().unwrap_or_else(|_| {
+                panic!("actual startup refusal cleanup and native close are acquired")
+            });
+        let (work, root_report, native, notifications, ()) = outcome.into_parts();
         let (work, refusal) = match work {
             WorkOutcome::NotInvoked {
                 work,
@@ -153,6 +154,9 @@ async fn refused(selection: Selection) {
             second,
             bound,
             closed,
+            root_report,
+            polling,
+            disposal,
             native,
             notifications,
             refusal,
@@ -174,7 +178,7 @@ async fn refused(selection: Selection) {
             let result = match work {
                 Some(work) => Ok(work(application).await),
                 None => {
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     let retirement = application.retirement().await;
                     Err((shutdown, retirement))
                 }
@@ -182,10 +186,23 @@ async fn refused(selection: Selection) {
             (address, result)
         });
     let (own, other) = tokio::join!(execution, other);
-    let (first, second, bound, closed, native, notifications, refusal, foreign, at_refusal) = own;
+    let (
+        first,
+        second,
+        bound,
+        closed,
+        root_report,
+        polling,
+        disposal,
+        native,
+        notifications,
+        refusal,
+        foreign,
+        at_refusal,
+    ) = own;
     let other =
         other.unwrap_or_else(|_| panic!("the other real Application host accepts execution"));
-    let (work, other_native, other_notifications, ()) = other.into_parts();
+    let (work, other_report, other_native, other_notifications, ()) = other.into_parts();
     let ((foreign_address, recovered), other_cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the other Work completes after either original disposition"));
@@ -219,11 +236,19 @@ async fn refused(selection: Selection) {
         .unwrap_or_else(|_| {
             panic!("the exact original callable must be recovered and invoked once")
         });
+    assert_eq!(other_report, Some(retirement));
     cleanup.expect("refused startup uses ordinary Application cleanup");
     assert!(startup_error.is_none());
     assert_eq!(retirement.retirement(), RetirementAssessment::Established);
     other_cleanup.expect("recovered callable uses ordinary Application cleanup");
     closed.expect("actual Node network close result");
+    let root_report = root_report.expect("the joined root retains its runtime report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
+    assert!(polling.is_none() && disposal.is_none());
     notifications
         .termination
         .expect("Node termination publication");

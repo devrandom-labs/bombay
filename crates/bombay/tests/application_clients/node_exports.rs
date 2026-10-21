@@ -114,7 +114,7 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
                 })
                 .await;
             let family_reply = family.receive().await;
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             (
                 export_admission,
                 exported,
@@ -137,7 +137,13 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
         .await
         .unwrap_or_else(|_| panic!("the concrete fixture's host is entered"));
     // Acquire every independent outcome before inspecting this fixture's observations.
-    let (work, native, notifications, families) = outcome.into_parts();
+    let (work, root_report, native, notifications, families) = outcome.into_parts();
+    let root_report = root_report.expect("the joined root retains its runtime report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
     let (output, cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the fixture retains the complete supplied Work result"));

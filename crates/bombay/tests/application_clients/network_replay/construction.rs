@@ -41,13 +41,13 @@ async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bo
                     move |original| observed.lock().unwrap().push(original),
                 )
                 .await;
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (declaration, stopped, report)
         })
         .await
         .unwrap_or_else(|_| panic!("actual Counter execution host"));
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let ((declaration, stopped, report), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Counter Work acquired"));
@@ -133,13 +133,13 @@ async fn ledger_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> boo
                     move |original| observed.lock().unwrap().push(original),
                 )
                 .await;
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (declaration, stopped, report)
         })
         .unwrap_or_else(|_| panic!("actual Ledger execution host"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let ((declaration, stopped, report), cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("original Ledger Work acquired"));

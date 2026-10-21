@@ -787,7 +787,7 @@ async fn recipient(
             Ok(())
         }
         .await;
-        let shutdown = application.lifecycle().request_shutdown();
+        let shutdown = application.lifecycle().shutdown();
         (
             work,
             shutdown,
@@ -827,6 +827,7 @@ async fn recipient(
                         cleanup: Ok(()),
                         ..
                     },
+                    _,
                     Ok(_),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -859,6 +860,7 @@ async fn recipient(
                 ),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1161,7 +1163,7 @@ async fn caller(
                 Ok(())
             }
             .await;
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             (
                 work,
                 shutdown,
@@ -1200,6 +1202,7 @@ async fn caller(
                         cleanup: Ok(()),
                         ..
                     },
+                    _,
                     Ok(_),
                     Ok(ActorNotificationReceipts {
                         termination: Ok(()),
@@ -1231,6 +1234,7 @@ async fn caller(
                 ),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

@@ -4,7 +4,9 @@ use super::super::request::Identity;
 use super::super::{Attempt, Export, ExportError, ExportLimits, submission};
 use super::counter::{Counter, CounterMessage, CounterValue};
 use crate::actors::ActorExt;
-use crate::{ApplicationScope, MailAddr, TrySendError};
+use crate::{
+    ActorFailureAssessment, ApplicationScope, MailAddr, RetirementAssessment, TrySendError,
+};
 use behavior::{Behavior, EstablishedRecipient, Never};
 use behavior_actors::StopOnShutdown;
 use core::future::{Future, poll_fn};
@@ -251,18 +253,26 @@ async fn compare() {
                             .send(&target, CounterMessage::Read(values.recipient()))
                             .await;
                         let native_value = values.receive().await;
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         (observed, admission, native_value, shutdown)
                     };
-                    let ((), observed) = tokio::join!(serving.as_mut(), exchange);
+                    let observed = tokio::select! {
+                        biased;
+                        observed = exchange => observed,
+                        () = serving.as_mut() => panic!("serving remains live through the actual exchange"),
+                    };
                     (first, snapshot, (released, observed))
                 };
+                <_ as Exports<Counter, Event, (), EstablishedRecipient<Counter>>>::withdraw(
+                    &mut export,
+                )
+                .await;
                 (export, first, snapshot, observed)
             }
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Application host is entered"));
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, root_report, native, notifications, ()) = outcome.into_parts();
     let ((export, first, snapshot, (released, (replies, admission, value, shutdown))), cleanup) =
         work.try_into_completed()
             .unwrap_or_else(|_| panic!("actual Work and native cleanup complete"));
@@ -271,6 +281,12 @@ async fn compare() {
     cleanup.expect("the actual Application cleanup joins");
     closed.expect("the independent native Session closes");
     let (origin, root) = native.expect("original native root remains acquired");
+    let root_report = root_report.expect("the runtime retains its actual root report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert!(root.custody().is_some());
     let notifications = notifications.expect("both actual receipts remain acquired");

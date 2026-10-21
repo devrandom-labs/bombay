@@ -57,7 +57,7 @@ async fn checked_actor_address_refuses_numeric_collision_and_reply_endpoint() {
                         let own = second.actor_address(&target);
                         let foreign = second.actor_address(&foreign);
                         let reply = second.actor_address(&external.recipient());
-                        let shutdown = second.request_shutdown();
+                        let shutdown = second.shutdown();
                         let retirement = second.retirement().await;
                         let after_retirement = second.actor_address(&target);
                         (
@@ -72,7 +72,7 @@ async fn checked_actor_address_refuses_numeric_collision_and_reply_endpoint() {
                     })
                     .await
                     .unwrap_or_else(|_| panic!("the second actual host accepts execution"));
-                let shutdown = first.request_shutdown();
+                let shutdown = first.shutdown();
                 let retirement = first.retirement().await;
                 (first_address, second, shutdown, retirement)
             })
@@ -81,11 +81,11 @@ async fn checked_actor_address_refuses_numeric_collision_and_reply_endpoint() {
     })
     .await
     .expect("both actual applications join without a timing delay");
-    let (work, first_native, first_notifications, ()) = outcome.into_parts();
+    let (work, first_report, first_native, first_notifications, ()) = outcome.into_parts();
     let ((first_address, second, first_shutdown, first_retirement), first_cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("first actual Work completes"));
-    let (work, second_native, second_notifications, ()) = second.into_parts();
+    let (work, second_report, second_native, second_notifications, ()) = second.into_parts();
     let (
         (second_address, own, after_retirement, foreign, reply, second_shutdown, second_retirement),
         second_cleanup,
@@ -114,6 +114,8 @@ async fn checked_actor_address_refuses_numeric_collision_and_reply_endpoint() {
     let actual_second = second_origin.address();
     let _first = completed_actor(first_origin, first_native);
     let _second = completed_actor(second_origin, second_native);
+    assert_eq!(first_report, Some(first_retirement));
+    assert_eq!(second_report, Some(second_retirement));
     assert_eq!(
         first_retirement.retirement(),
         RetirementAssessment::Established

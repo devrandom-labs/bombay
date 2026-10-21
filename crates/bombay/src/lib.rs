@@ -24,8 +24,8 @@ pub use crate::address::MailAddr;
 pub use crate::application::{ActorInterface, ExternalActor, ExternalActorError, ExternalTarget};
 pub use ::behavior;
 pub use ::behavior_actors::{
-    atomic, composition, discovery, lifecycle, operations, persistence, routing, time as timing,
-    workflow,
+    composition, diagnostic, discovery, lifecycle, operations, persistence, pool, proxy, routing,
+    supervisor, time as timing, worker, workflow,
 };
 pub mod actors;
 pub use crate::application::{

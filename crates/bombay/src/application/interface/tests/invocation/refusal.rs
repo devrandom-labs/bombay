@@ -4,7 +4,10 @@ use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
 use crate::application::work::invoke;
 use crate::behavior::{Behavior, BehaviorBase, Never};
-use crate::{ActorRetirement, Application, ApplicationHandle, ShutdownLedger, WorkOutcome};
+use crate::{
+    ActorFailureAssessment, ActorRetirement, Application, ApplicationHandle, RetirementAssessment,
+    ShutdownLedger, WorkOutcome,
+};
 use behavior_actors::StopOnShutdown;
 use core::future::{Future, Ready, poll_fn, ready};
 use core::pin::pin;
@@ -78,19 +81,17 @@ async fn refused_binding_returns_original_work_after_joined_cancellation() {
         })
         .await;
         let application = receiving.await;
-        let fallback = application
-            .as_ref()
-            .ok()
-            .map(ApplicationHandle::request_shutdown);
+        let fallback = application.as_ref().ok().map(ApplicationHandle::shutdown);
         match refused {
             Poll::Pending => execution.await,
             Poll::Ready(()) => {}
         }
-        let (work, root, notifications) = received.await;
+        let (work, root_report, root, notifications) = received.await;
         let work = work.into_supplied_with_entities();
         let families = received_families.await;
         (
             work,
+            root_report,
             root,
             notifications,
             families,
@@ -103,10 +104,17 @@ async fn refused_binding_returns_original_work_after_joined_cancellation() {
     .expect("startup, owning cancellation and joined cleanup watchdog; never an inverse oracle");
 
     // Acquire every independent result before any semantic assertion.
-    let (outcome, root, notifications, (), application, fallback, refused) = observations;
+    let (outcome, root_report, root, notifications, (), application, fallback, refused) =
+        observations;
     let (origin, native) = root.expect("the actual joined root remains available");
     let notifications = notifications.expect("both actual notification receipts remain available");
     let application = application.expect("the original live root capability was transferred");
+    let root_report = root_report.expect("the joined root retains its actual report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
     assert_eq!(origin.address(), application.root().address());
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert!(matches!(&native, ActorRetirement::OwnerCancelled { .. }));

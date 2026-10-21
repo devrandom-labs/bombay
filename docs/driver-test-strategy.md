@@ -32,18 +32,20 @@ it cannot be used to pass or block an Engine law.
 ## Actor-template boundary inventory
 
 `driver-template-manifest.json` schema 3 is the revision-bound ownership
-inventory checked against published Behavior Actors 0.26.0. It records the exact
+inventory for the selected Behavior Actors source. This feature requires
+unpublished candidate `648896595e45e9d97db3c87d1e72e2d6205e8a1d`, currently version0.27.0;
+its registry manifest/lock still need the compatible normal release. It records the
 45 public Behavior compositions by family, public spelling, event boundary,
 ordered effect lanes, composition edge, owning source, and upstream evidence.
 It separately records all 19 actor-owned interpreter-request/source-action
-types, their emitters, and whether Bombay currently has a matching
+families, their emitters, and whether Bombay source mentions a matching
 `InterpretItem` implementation. Behavior-owned delivery, child-input,
 creation, and parent-report products are listed as structural lanes rather
 than redefined as actor capabilities.
 
 `engine_does_not_mirror_actor_template_laws` compares both inventories with
 independent exact sets, rejects duplicate or malformed rows, checks each
-template record has its boundary fields, derives interpreter status from the
+template record has its boundary fields, inventories interpreter spellings in the
 Bombay source, requires an empty mirror list, and rejects an Engine dependency
 or import of Behavior Actors. Removing one template or adding one mirror is a
 failing mutation. This remains an Engine ownership gate only: the manifest
@@ -51,7 +53,7 @@ points to upstream source/tests and does not copy template transition law into
 Engine.
 
 The audit identified six Bombay interpreter boundaries in the locked
-atomic surface: `BeginActivation`, `CustomerDelivery`, `DiagnosticAction`,
+supervisor/pool surface: `StartWorker`, `CustomerDelivery`, `DiagnosticAction`,
 `InitializeWorker`, `AssignWorker`, and `ProxyOperation`. Each now has a
 typed Bombay interpreter and a compile-contract witness under ARC-010; the
 manifest records all 19 actor-owned request types as implemented. The
@@ -63,15 +65,24 @@ proof. `ObserveEstablishedCreation` and `CancelObservation` are
 public capability contracts with no current public-template emitter and stay
 listed so a later emitter cannot appear outside the inventory.
 
-The earlier identity audit was source-revalidated at
-`2bb4510077bfa5aed82e08d25453c146b3184285`; that is historical evidence,
-not fresh revalidation of the current `98983b4` selection.
-The 45 template and 19 capability entries retain their declared boundaries;
-initial-factory preparation and creation-refusal custody changed within Actors.
-Conditional child membership, private-input recovery and composed send routing
-remain Behavior-owned. Revision fields bind the current reproduction contract;
-old execution receipts remain historical. The law and inventory gates must run
-again against this integrated selection before acceptance.
+The published base is `b8307d1a763dfd2998ef140dba488f32eb15d010`. Its four
+ordinary timer wrappers remain named there. The candidate uses
+EventLayer<OwnedTimerElapsed, B::Event> and the shared timer::ScheduleAt/After
+family with closed TimerId/Here targets. Lease, Presence, CircuitBreaker and
+template restart requests retain their named contracts. These are source-selected
+proofs, not execution against the unchanged registry graph.
+The inventory follows the current supervisor, pool, proxy and worker owners;
+all45 template and19 capability-family entries remain. The presence scan includes
+test source and checks no complete type equation; its green result is catalogue
+consistency, not runtime interpreter correctness. Native/static consumer tests
+own that evidence. Conditional child membership, private-input recovery and
+composed send routing remain Behavior-owned.
+
+The law manifest's top-level selection identifies the current reproduction
+contract. Its24 evidence revisions preserve the historical98983 baseline and
+are checked separately. They neither certify a new execution nor change when
+the selected package changes. The evidence script copies these labels; current
+verification requires actual commands and separately bound source/results.
 
 ## Schema-2 manifest
 

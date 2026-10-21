@@ -4,27 +4,24 @@
 mod worker;
 
 use bombay::Application;
-use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, BacklogCapacity, DiagnosticDisposition, FifoCommand,
-    FifoOutcome, Interruption, OrderedRoles, PoolFailureReaction, PoolRecovery, SubmissionId,
-    WorkerSubmission, fifo,
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
+use bombay::pool::queue::{self, FifoCommand};
+use bombay::pool::{
+    BacklogCapacity, Interruption, PoolFailureReaction, PoolRecovery, SubmissionId,
 };
-use bombay::behavior::MessageProtocol;
-use bombay::prelude::MailAddr;
-use worker::{SearchJob, SearchResult, SearchWorker};
+use bombay::worker::{OrderedRoles, StartupLimit, WorkerSubmission};
+use worker::{SearchJob, SearchWorker};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum WorkerRole {
     Primary,
 }
 
-type CustomerProtocol = MessageProtocol<MailAddr, FifoOutcome<WorkerRole, SearchJob, SearchResult>>;
-
 bombay::topology! {
     search_application {
         root { Worker => worker; }
         worker {}
-        hosts { customers: CustomerProtocol; }
     }
 }
 
@@ -32,16 +29,19 @@ bombay::topology! {
 async fn main() {
     let roles =
         OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
-    let pool = fifo(
-        |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
+    let pool = queue::new(
+        |_| WorkerSubmission::immediate(SearchWorker),
         roles,
-        ActivationPolicy::new(1).expect("one worker has positive capacity"),
-        PoolRecovery::temporary(PoolFailureReaction::RetireRole),
-        BacklogCapacity::new(8),
-        Interruption::Retry,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        queue::Config {
+            startup: StartupLimit::new(1).expect("one worker has positive capacity"),
+            recovery: PoolRecovery::temporary(PoolFailureReaction::RetireRole),
+            backlog: BacklogCapacity::new(8),
+            interruption: Interruption::Retry,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
+    .build()
     .unwrap_or_else(|_| panic!("the search worker is prepared"));
 
     let outcome = Application::with_topology(pool, search_application::Topology::new())
@@ -72,7 +72,6 @@ async fn main() {
                 .send(FifoCommand::shutdown())
                 .await
                 .expect("orderly pool shutdown");
-            println!("actor retirement: {:?}", application.retirement().await);
             result
         })
         .await
@@ -80,6 +79,10 @@ async fn main() {
     let (result, retirement) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the search work completes"));
+    let report = retirement
+        .root_report()
+        .expect("the joined pool published its report");
+    println!("actor retirement: {report:?}");
     println!("search matches: {}", result.matches);
     // Execution already performed cleanup; these reports are optional inspection.
     println!(

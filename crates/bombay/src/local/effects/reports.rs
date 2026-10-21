@@ -1363,7 +1363,7 @@ mod parent_report_custody {
         MessageProtocol, Never, NoSends, ParentReportReason, ReportToParent, SendSettlements,
         SettledItem, SettlementStatus, SourceCustody, SourceProgress, Step, User, UserEvent,
     };
-    use behavior_actors::{OneShot, StopOnShutdown, TimerId};
+    use behavior_actors::{OneShot, StopOnShutdown};
     use communication::{Config, mailbox_channel};
     use std::future::Future;
     use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -1772,8 +1772,7 @@ mailbox_capacity: MailboxCapacity::default(),
         };
         let shutdown_outer = catch_unwind(AssertUnwindSafe(|| {
             report_through_parent(
-                OneShot::new(parent, TimerId(7), Duration::ZERO, parent_deadline)
-                    .stop_on_shutdown(),
+                OneShot::new(parent, Duration::ZERO, parent_deadline).stop_on_shutdown(),
             );
         }));
         let parent = ReportParent {
@@ -1783,7 +1782,6 @@ mailbox_capacity: MailboxCapacity::default(),
         let timer_outer = catch_unwind(AssertUnwindSafe(|| {
             report_through_parent(OneShot::new(
                 parent,
-                TimerId(11),
                 Duration::ZERO,
                 shutdown_parent_deadline,
             ));

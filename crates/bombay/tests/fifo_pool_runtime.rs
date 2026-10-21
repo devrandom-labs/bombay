@@ -1,17 +1,20 @@
 use bombay::WorkOutcome;
+use bombay::composition::replies::ExactReplies;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::convert::Infallible;
 use core::time::Duration;
 use tokio::runtime::Builder;
 
 use behavior_actors::Exit;
-use behavior_actors::atomic::{
-    ActivationPlan, ActivationPolicy, ActorDrainPolicy, AdmissionRejection, BacklogCapacity,
-    DiagnosticDisposition, FifoCommand, FifoOutcome, FifoPool, Interruption, OrderedRoles,
-    PoolFailureReaction, PoolRecovery, SubmissionId, WorkerSubmission, fifo,
+use behavior_actors::diagnostic::DiagnosticDisposition;
+use behavior_actors::lifecycle::ActorDrainPolicy;
+use behavior_actors::pool::queue::{self, AdmissionRejection, FifoCommand, FifoPool};
+use behavior_actors::pool::{
+    BacklogCapacity, Interruption, PoolFailureReaction, PoolRecovery, SubmissionId,
 };
+use behavior_actors::worker::{OrderedRoles, StartupLimit, StartupPlan, WorkerSubmission};
 use bombay::Application;
-use bombay::behavior::{MessageProtocol, Never};
+use bombay::behavior::Never;
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
 use tokio::sync::oneshot;
 
@@ -30,11 +33,11 @@ struct ActivationNotice {
     released: oneshot::Receiver<()>,
 }
 
-impl ActivationPlan for ActivationNotice {
+impl StartupPlan for ActivationNotice {
     type Ready = ();
     type Rejection = Never;
 
-    async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
+    async fn start(self) -> Result<Self::Ready, Self::Rejection> {
         self.started
             .send(())
             .unwrap_or_else(|()| panic!("the application awaits worker activation"));
@@ -53,14 +56,13 @@ type Pool = FifoPool<
     Infallible,
     SearchJob,
     SearchResult,
+    ExactReplies,
 >;
-type CustomerProtocol = MessageProtocol<MailAddr, FifoOutcome<WorkerRole, SearchJob, SearchResult>>;
 
 bombay::topology! {
     pool_application {
         root { Worker => worker; }
         worker {}
-        hosts { customers: CustomerProtocol; }
     }
 }
 
@@ -75,21 +77,24 @@ fn prepared_pool(
     });
     let roles =
         OrderedRoles::new(WorkerRole::Primary, []).expect("the single declared role is unique");
-    fifo(
+    queue::new(
         move |_: &WorkerRole| {
             let activation = initial_activation
                 .take()
                 .expect("the initial role owns one activation notice");
-            WorkerSubmission::activated(SearchWorker, activation)
+            WorkerSubmission::with_startup(SearchWorker, activation)
         },
         roles,
-        ActivationPolicy::new(1).expect("one activation is positive capacity"),
-        PoolRecovery::temporary(PoolFailureReaction::RetireRole),
-        backlog,
-        Interruption::Retry,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        queue::Config {
+            startup: StartupLimit::new(1).expect("one activation is positive capacity"),
+            recovery: PoolRecovery::temporary(PoolFailureReaction::RetireRole),
+            backlog,
+            interruption: Interruption::Retry,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
+    .build()
     .unwrap_or_else(|_| panic!("the declared worker is prepared"))
 }
 
@@ -171,6 +176,7 @@ fn fifo_pool_admits_queued_job_before_activation_and_drains_worker() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -299,6 +305,7 @@ fn fifo_pool_returns_the_exact_payload_when_backlog_is_full() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -388,16 +395,19 @@ fn fifo_search_completes_and_drains_its_worker() {
     let pool = {
         let roles =
             OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
-        fifo(
+        queue::new(
             |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
             roles,
-            ActivationPolicy::new(1).expect("one activation is positive capacity"),
-            PoolRecovery::temporary(PoolFailureReaction::RetireRole),
-            BacklogCapacity::new(8),
-            Interruption::Retry,
-            ActorDrainPolicy::WaitForActorGraph,
-            DiagnosticDisposition::terminate(),
+            queue::Config {
+                startup: StartupLimit::new(1).expect("one activation is positive capacity"),
+                recovery: PoolRecovery::temporary(PoolFailureReaction::RetireRole),
+                backlog: BacklogCapacity::new(8),
+                interruption: Interruption::Retry,
+                shutdown: ActorDrainPolicy::WaitForActorGraph,
+                diagnostics: DiagnosticDisposition::terminate(),
+            },
         )
+        .build()
         .unwrap_or_else(|_| panic!("the declared search worker is prepared"))
     };
     let spaces = pool_application::Topology::new();
@@ -461,6 +471,7 @@ fn fifo_search_completes_and_drains_its_worker() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

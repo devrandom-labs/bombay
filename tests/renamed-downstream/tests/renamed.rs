@@ -185,6 +185,7 @@ mod tests {
                 cleanup: Ok(()),
                 ..
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -256,7 +257,7 @@ mod tests {
             .await
             .unwrap_or_else(|_| panic!("the actual caller owns the entered host"))
             .into_parts();
-        let (outcome, native, notifications, ()) = outcome;
+        let (outcome, _root_report, native, notifications, ()) = outcome;
         let ((), cleanup) = outcome
             .try_into_completed()
             .unwrap_or_else(|_| panic!("the caller completes independently of cleanup"));

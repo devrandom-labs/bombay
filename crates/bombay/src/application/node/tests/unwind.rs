@@ -6,7 +6,7 @@ use super::protocol::{
 use super::{LedgerCommand, MailLedger};
 use crate::application::Application;
 use crate::remote::{Attempt, Export, ExportLimits, Metadata, submission};
-use crate::{MailAddr, TrySendError};
+use crate::{ActorRetirement, MailAddr, TrySendError, WorkOutcome};
 use behavior::Never;
 use core::future::{pending, poll_fn};
 use core::task::Poll;
@@ -26,6 +26,8 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
         let requests = RefCell::new(Vec::<ProtectedMessage>::new());
         let claims = RefCell::new(None::<Metadata>);
         let joined = RefCell::new(None);
+        let retirement = RefCell::new(None);
+        let decoded_allocation = Cell::new(None);
         let cause = Box::new(307_u64);
         let allocation = ptr::from_ref(cause.as_ref());
         let cause = RefCell::new(Some(cause));
@@ -66,7 +68,8 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
                 diagnostics: maximum,
             },
             limits(),
-            |_: &[u8]| -> Result<(), Never> {
+            |bytes: &[u8]| -> Result<(), Never> {
+                decoded_allocation.set(Some(bytes.as_ptr()));
                 let original = cause.take().expect("one original decoder panic allocation");
                 panic_any(original);
             },
@@ -133,6 +136,7 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
             });
             *claims.borrow_mut() = Some(actual);
             *joined.borrow_mut() = application.cleanup();
+            *retirement.borrow_mut() = Some(application.lifecycle().retirement());
             let transferred = configured.send(ProtectedMessage { protected, proof });
             transferred.unwrap_or_else(|_| panic!("the actual Work awaits its configured request"));
             Ok::<_, Never>(target)
@@ -170,13 +174,18 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
             None
         };
         let finalized = node.into_parts();
+        let retirement = retirement
+            .take()
+            .expect("startup retains a separate consumer of the existing root observation")
+            .await;
+        let remaining_cause = cause.borrow();
         assert!(joined.is_ok() && disposed.is_ok() && session.is_closed());
         assert!(external_close.as_ref().is_none_or(Result::is_ok));
         assert_eq!(verifications.get(), 1);
         assert_eq!(constructors.get(), 0);
         assert_eq!(encodings.get(), 0);
         assert_eq!(protections.get(), 0);
-        assert!(cause.borrow().is_none());
+        assert!(remaining_cause.is_none());
         if let Err(original) = &caught {
             let original = original
                 .downcast_ref::<Box<u64>>()
@@ -187,6 +196,81 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
         assert!(
             finalized.is_ok(),
             "the Node must preserve its finalization facts after a decoder unwind"
+        );
+        let (export, bound, closed, polling, disposal) =
+            finalized.unwrap_or_else(|_| panic!("the Node acquired its actual post-join close"));
+        let outcome = match caught {
+            Ok(Poll::Ready(Ok(outcome))) => outcome,
+            _ => panic!("the actual Node operation must return its acquired outcome"),
+        };
+        let (work, root_report, native, notifications, ()) = outcome.into_parts();
+        let (origin, native) =
+            native.expect("actual root cancellation remains independently owned");
+        let notifications = notifications.expect("both actual root notifications remain owned");
+        let (_, _, startup, withdrawal, diagnostics, requests_retained) = export.into_parts();
+        let rows = requests_retained
+            .into_iter()
+            .map(|request| {
+                request
+                    .try_into_parts()
+                    .unwrap_or_else(|_| panic!("kernel disposal releases the actual request lease"))
+            })
+            .collect::<Vec<_>>();
+        let [row] = rows.as_slice() else {
+            panic!("one original verified request survives finalization");
+        };
+        let receipt = row
+            .2
+            .as_ref()
+            .expect("verification returned")
+            .as_ref()
+            .unwrap();
+        let expected = requests.borrow();
+        let [expected] = expected.as_slice() else {
+            panic!("one independently configured protected request");
+        };
+        let polling = polling.expect("retain the actual kernel poll panic outside its producer");
+        let polling = polling.downcast_ref::<Box<u64>>().unwrap();
+        let ActorRetirement::OwnerCancelled { custody, .. } = native else {
+            panic!("kernel disposal cancels the original still-running Ledger");
+        };
+        let claims = claims.borrow();
+        let claims = claims
+            .as_ref()
+            .expect("actual startup metadata remains available");
+        assert!(matches!(
+            &work,
+            WorkOutcome::Interrupted { cleanup: Ok(()) }
+        ));
+        assert_eq!(root_report, Some(retirement));
+        assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+        assert!(matches!(&bound, Some(Ok(_))) && closed.is_ok());
+        assert!(external_close.is_none() && disposal.is_none());
+        assert_eq!(ptr::from_ref(polling.as_ref()), allocation);
+        assert_eq!(**polling, 307);
+        assert_eq!(origin.address().0, claims.actor_generation);
+        assert!(custody.behavior.entries.is_empty() && custody.user.is_empty());
+        assert!(custody.capability_failures.is_empty() && custody.additional_failures.is_empty());
+        assert!(
+            custody.unread_owner_cancellation.is_none() && custody.retirement_failures.is_empty()
+        );
+        assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+        assert!(diagnostics.is_empty() && row.0.is_none());
+        assert_eq!(row.1.0.as_ref(), expected.protected.as_ref());
+        assert_eq!(row.1.1.as_ref(), expected.proof.as_ref());
+        assert_eq!(Some(row.1.0.as_ptr()), decoded_allocation.get());
+        assert_eq!(&recorded::projection(receipt).bombay, claims);
+        assert_eq!(recorded::projection(receipt).kind, Purpose::Request);
+        assert!(row.3.is_none() && row.4.is_none());
+        assert!(row.5.is_none() && row.6.is_none() && row.7.is_empty());
+        assert!(row.8.0.is_none() && row.8.1.is_none() && row.8.2.is_none());
+        assert!(
+            row.9.0.is_none()
+                && row.9.1.is_none()
+                && row.9.2.is_none()
+                && row.9.3.is_none()
+                && row.9.4.is_none()
+                && row.9.5.is_none()
         );
     })
     .await

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.3...bombay-engine-v0.3.0) - 2026-10-17
+
+### Changed
+
+- **Breaking:** use Behavior 0.29 in the public Driver and Environment contracts.
+  Callers must use the same Behavior release; this cannot ship as Engine 0.2.4.
+
 ## [0.2.3](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.2...bombay-engine-v0.2.3) - 2026-10-14
 
 ### Other

@@ -80,10 +80,15 @@ Consuming extraction transfers the existing closed native product unchanged,
 or returns the same Request while a producer loan remains. It neither certifies
 cleanup nor grants retry. A runtime-issued key is identity only. The actual
 Node post-join close result remains distinct from actor retirement and Work.
+Declaration/cache lifetime follows the existing Application cleanup publication,
+so supplied Work may retrieve a cached result after target retirement. Native
+request reception retains its own target/root retirement observations. Node
+extraction keeps separate original kernel poll and disposal panic payloads.
 Current permission loans span construction and the synchronous native attempt.
-Known Full retains its exact rejected command, but the required capacity wait,
-fresh authority check and retry are still missing. Uncertain supplies no proof
-of nonadmission and must not be retried. Original pressure laws remain required.
+Known Full retains its exact rejected command through the existing capacity
+wait, fresh authority check and synchronous retry. Scoped Ledger and Counter
+pressure controls qualify that path; full pressure acceptance remains open.
+Uncertain supplies no proof of nonadmission and must not be retried.
 
 The optional futures-util dependency remains behind remote with explicit std
 and defaults disabled; it supplies the existing collection/shared-future

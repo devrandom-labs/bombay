@@ -175,10 +175,10 @@ where
             None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         ) {
             Ok((execution, (receiving, received_families))) => Ok((execution, async move {
-                let (work, root, notifications) = receiving.await;
+                let (work, root_report, root, notifications) = receiving.await;
                 let work = work.into_supplied_with_entities();
                 let families = received_families.await;
-                ApplicationOutcome::new(work, root, notifications, families)
+                ApplicationOutcome::new(work, root_report, root, notifications, families)
             })),
             Err((application, work, cause)) => {
                 let (work, _invoke) = work.into_supplied();
@@ -229,6 +229,7 @@ where
                             (Actor, Arc<Spaces>, ApplicationScope),
                             ApplicationWorkPresence<(Work, Invoke), NoWork>,
                         >,
+                        Option<ActorRetirementReport>,
                         Result<
                             (
                                 RootOrigin<Root>,
@@ -723,8 +724,14 @@ where
             None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         );
         let receiving = async move {
-            let (work, root, termination_notification) = receiving.await;
-            ApplicationOutcome::new(work.into_supplied(), root, termination_notification, ())
+            let (work, root_report, root, termination_notification) = receiving.await;
+            ApplicationOutcome::new(
+                work.into_supplied(),
+                root_report,
+                root,
+                termination_notification,
+                (),
+            )
         };
         Ok((execution, receiving))
     }
@@ -908,8 +915,14 @@ where
             None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         );
         let receiving = async move {
-            let (work, root, termination_notification) = receiving.await;
-            ApplicationOutcome::new(work.into_absent(), root, termination_notification, ())
+            let (work, root_report, root, termination_notification) = receiving.await;
+            ApplicationOutcome::new(
+                work.into_absent(),
+                root_report,
+                root,
+                termination_notification,
+                (),
+            )
         };
         Ok((execution, receiving))
     }
@@ -1421,6 +1434,7 @@ pub(in crate::application) fn execute_application_with<
                 (Actor, Spaces, ApplicationScope),
                 ColdWork,
             >,
+            Option<ActorRetirementReport>,
             Result<
                 (
                     RootOrigin<Owner>,
@@ -1586,7 +1600,7 @@ where
                     installed_families,
                     family_publications,
                 ) {
-                    match cleanup_publication.send(cleanup) {
+                    match cleanup_publication.send((cleanup, None)) {
                         Ok(()) => {}
                         Err(cleanup) => drop(cleanup),
                     }
@@ -1698,7 +1712,7 @@ where
                 Ok(()) | Err(()) => {}
             }
         });
-        match cleanup_publication.send(cleanup) {
+        match cleanup_publication.send((cleanup, Some(retirement_observation.clone()))) {
             Ok(()) => {}
             Err(cleanup) => drop(cleanup),
         }
@@ -1817,24 +1831,30 @@ where
     };
     let result = async move {
         let custody = work_result.await;
-        let outcome = match custody {
+        let (outcome, root_report) = match custody {
             Ok(ApplicationWorkCustody::Unstarted(application, work)) => {
-                WorkOutcome::Unstarted { application, work }
+                (WorkOutcome::Unstarted { application, work }, None)
             }
             Ok(ApplicationWorkCustody::StagingRejected(inputs)) => {
-                WorkOutcome::StagingRejected { inputs }
+                (WorkOutcome::StagingRejected { inputs }, None)
             }
             custody => {
                 // Publication failure does not classify actor or task existence.
                 // Retain its actual error alongside the acquired work custody.
-                let cleanup = match cleanup_result.await {
-                    Ok(cleanup) => match cleanup.await {
-                        Ok(cleanup) => Ok(cleanup),
-                        Err(error) => Err(ApplicationCleanupError::TaskFailed(error)),
-                    },
-                    Err(error) => Err(ApplicationCleanupError::PublicationClosed(error)),
+                let (cleanup, root_report) = match cleanup_result.await {
+                    Ok((cleanup, retirement)) => {
+                        let cleanup = match cleanup.await {
+                            Ok(cleanup) => Ok(cleanup),
+                            Err(error) => Err(ApplicationCleanupError::TaskFailed(error)),
+                        };
+                        // Read only after joining the existing producer. An absent
+                        // publication remains absent, including cleanup failure.
+                        let report = retirement.and_then(|retirement| retirement.try_get());
+                        (cleanup, report)
+                    }
+                    Err(error) => (Err(ApplicationCleanupError::PublicationClosed(error)), None),
                 };
-                match custody {
+                let outcome = match custody {
                     Ok(ApplicationWorkCustody::Prepared(inputs, work)) => WorkOutcome::Prepared {
                         inputs,
                         work,
@@ -1857,12 +1877,13 @@ where
                     Ok(ApplicationWorkCustody::Unstarted(_, _)) => {
                         unreachable!("the original untouched input branch already returned")
                     }
-                }
+                };
+                (outcome, root_report)
             }
         };
         let root = received_root.await;
         let termination_notification = received_notification.await;
-        (outcome, root, termination_notification)
+        (outcome, root_report, root, termination_notification)
     };
     (execution, result)
 }
@@ -1994,13 +2015,11 @@ mod startup {
                                            application: ApplicationHandle<
                             <ShutdownLedger as Behavior>::Protocol,
                             <StopOnShutdown<ShutdownLedger> as Behavior>::Event,
-                        >| {
-                            async move {
-                                work.1.set(work.1.get() + 1);
-                                let stopped = application.request_shutdown();
-                                let report = application.lifecycle().retirement().await;
-                                (work, owner, published, stopped, report)
-                            }
+                        >| async move {
+                            work.1.set(work.1.get() + 1);
+                            let stopped = application.shutdown();
+                            let report = application.lifecycle().retirement().await;
+                            (work, owner, published, stopped, report)
                         };
                         Ok((
                             ApplicationWorkPublication {
@@ -2027,7 +2046,7 @@ mod startup {
                 })
                 .await;
                 drop(execution);
-                let (outcome, native, notifications) = receiving.await;
+                let (outcome, _root_report, native, notifications) = receiving.await;
                 let acquired = match observed.await {
                     Ok(mut receiver) => Ok(receiver.try_recv()),
                     Err(cause) => Err(cause),

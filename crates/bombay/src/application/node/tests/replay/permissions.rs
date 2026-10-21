@@ -400,13 +400,13 @@ async fn counter_case<Receipt>(
                     )
                     .await;
                     let retained = retain_verified(&mut export, &mut original, &mut verified);
-                    let stopped = foreign_application.request_shutdown();
+                    let stopped = foreign_application.shutdown();
                     let report = foreign_application.lifecycle().retirement().await;
                     (export, retained, original, verified, stopped, report)
                 })
                 .unwrap_or_else(|_| panic!("foreign Counter execution"));
             let ((), foreign_outcome) = tokio::join!(foreign_execution, foreign_receiving);
-            let (foreign_outcome, foreign_native, foreign_notifications, ()) =
+            let (foreign_outcome, _root_report, foreign_native, foreign_notifications, ()) =
                 foreign_outcome.into_parts();
             let (
                 (
@@ -635,7 +635,7 @@ async fn counter_case<Receipt>(
                     second_receive = Some(first.receive_native(key).await);
                 }
             }
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (
                 first,
@@ -682,7 +682,7 @@ async fn counter_case<Receipt>(
         })
         .unwrap_or_else(|_| panic!("first Counter execution"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let (
         (
             first,
@@ -1059,13 +1059,13 @@ async fn ledger_case<Receipt>(
                     )
                     .await;
                     let retained = retain_verified(&mut export, &mut original, &mut verified);
-                    let stopped = foreign_application.request_shutdown();
+                    let stopped = foreign_application.shutdown();
                     let report = foreign_application.lifecycle().retirement().await;
                     (export, retained, original, verified, stopped, report)
                 })
                 .unwrap_or_else(|_| panic!("foreign Ledger execution"));
             let ((), foreign_outcome) = tokio::join!(foreign_execution, foreign_receiving);
-            let (foreign_outcome, foreign_native, foreign_notifications, ()) =
+            let (foreign_outcome, _root_report, foreign_native, foreign_notifications, ()) =
                 foreign_outcome.into_parts();
             let (
                 (
@@ -1299,7 +1299,7 @@ async fn ledger_case<Receipt>(
                 }
             }
             let stopped = if first_report.is_none() {
-                Some(application.request_shutdown())
+                Some(application.shutdown())
             } else {
                 None
             };
@@ -1352,7 +1352,7 @@ async fn ledger_case<Receipt>(
         })
         .unwrap_or_else(|_| panic!("first Ledger execution"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let (
         (
             first,

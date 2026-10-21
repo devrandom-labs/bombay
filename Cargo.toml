@@ -31,9 +31,9 @@ repository = "https://github.com/devrandom-labs/bombay"
 tokio = { version = "1.47", default-features = false, features = ["rt-multi-thread"] }
 # The pure Behavior algebra (Actions/Envelope/Create/the capability stack) —
 # depended on, never copied.
-behavior = { package = "bombay-behavior", version = "0.26.0" }
-behavior-actors = { package = "bombay-behavior-actors", version = "0.26.0" }
-bombay-engine = { version = "0.2.3", path = "crates/bombay-engine" }
+behavior = { package = "bombay-behavior", version = "0.29.0" }
+behavior-actors = { package = "bombay-behavior-actors", version = "0.29.0" }
+bombay-engine = { version = "0.3.0", path = "crates/bombay-engine" }
 bombay-address = "0.3.0"
 communication = { package = "bombay-communication", version = "0.1.6" }
 timers = { package = "bombay-timers", version = "0.2.0" }

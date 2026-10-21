@@ -1,6 +1,93 @@
 # Static remote actors and typed admission
 
-## Current status (2026-10-18 UTC)
+## Current status (2026-10-21 UTC)
+
+The objective remains the complete R01–R25/AUTH1/NET1 PRD through verified
+implementation, distillation, required review and CI, and recorded merges to
+main. Latest-main adoption is a prerequisite. The scoped decoder cleanup fix
+now has current-graph debug/optimized positives and intended original-escape
+inverses; 21 public cold cases and seven owning controls pass both profiles.
+Another 23 owning consumer cases pass both profiles after report migration.
+Canonical compilation now fails on 55 errors in the retained warm consumers.
+General
+cancellation and double-fault cleanup remain distinct open requirements.
+
+The in-progress merge of main531ded50 has no unresolved textual conflicts.
+Its actual optional root report is forwarded unchanged alongside receiving,
+family cleanup and Work. Two independent source reviews pass. The pinned-Nix,
+offline, locked all-feature library check completed successfully; formatting
+and diff whitespace checks pass. This does not qualify the old consumer tests,
+the diagnostic snapshot, runtime acceptance or the combined candidate for merge.
+The library log is /tmp/bombay-main-531ded50-library-check.log.
+
+Canonical library-test compilation was also attempted without excluding any
+original consumer. It exits101 with78 compiler errors: retired warm Export
+consumers still use Admission/RequestRefusal and imperative export methods;
+other retained consumers use the previous shutdown spelling and receiving
+tuple. These errors identify unfinished migration, not78 newly proven runtime
+defects. All original laws must survive migration. No tests executed in this
+attempt. Log /tmp/bombay-main-531ded50-library-test-compilation.log,
+SHA256ca2ed2674e25dd77222ddc6758ace71f8057bf76aa26c62f3faadb9c3111343b.
+
+Existing public outcome controls now pass on the combined0.29 candidate in
+debug and optimized builds: application_outcome19/0 and node_outcome5/0 in
+each profile. No test source changed or test was excluded from either target.
+These exercise ordinary Application/advanced Node ownership, host refusal,
+borrowed waits, interruption and root-report consumers. They do not prove cold
+Export finalization or erase the canonical library-test compilation failure.
+Both commands ran with CARGO_TARGET_DIR=/tmp/bombay-protected-counter-application/target,
+CARGO_BUILD_JOBS=2, CARGO_INCREMENTAL=0 and DEV/TEST/RELEASE profile DEBUG=0,
+through nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c:
+
+```text
+cargo test --offline --locked -p bombay-rs --all-features --test application_outcome --test node_outcome
+cargo test --offline --locked --release -p bombay-rs --all-features --test application_outcome --test node_outcome
+```
+
+Logs /tmp/bombay-main-531ded50-outcomes-{debug,release}.log;
+debug SHA2561794a1fc66c499f90dd391e631efcdd2e196d78b76f9ce6ddb30ef929c35c57f,
+optimized SHA256aa244aaa64806d93e683f35b4c6503fb36c210a9f75dc994c1e386375546881d.
+The continuation added no production, test source or public types. The combined
+237-path census and all pending surface/cost decisions remain unchanged.
+
+The complete combined working tree from the approved e3daad58 baseline has
+237 changed paths and no untracked files. The inherited source/test classification
+at merge resolution reports the following, but its detailed classifier has not
+been recovered and these gross totals are not independently qualified:
+
+```text
+production: +3316 / -1235 / net 2081
+tests:      +4745 / -1463 / net 3282
+public API: remote stage +5 types / -2 types; upstream API belongs to main
+```
+
+A separate independently reproduced conservative count treating non-test-directory crate/example
+Rust as production gives +3611/-1223/net2388; it includes owning comparison and
+embedded test code. Test/fixture paths separately give +5911/-2581/net3330.
+These are different classifications, not additional changes. The inherited
+figures have an unexplained ten-line gross difference in each direction from
+the pure Rust Git totals; they must not be used as accepted precision or
+headroom. The conservative production bound exceeds the approved2000 total;
+237 paths exceed forty. All historical,
+copied, rejected, modified and unknown verification charges remain carried.
+There is no certified verification headroom or baseline reset.
+
+The user explicitly authorized the expanded surface on2026-10-21:
+“yeah authorized”. The approved replacement is total2600 net production
+from the same e3 baseline,250 paths, unchanged five gross remote public types,
+and4000 further authored/modified verification lines from this checkpoint.
+This request includes the already reviewed upstream main adoption. It does not
+claim earlier costs vanished or grant the whole remaining PRD an unlimited
+surface. The next bounded change remains the recorded decoder-unwind law:
+at most150 net production in existing Node/query owners, no public types,
+retaining original kernel poll/disposal causes and joining existing native
+receiving/family cleanup before query withdrawal and actual Session close.
+Consumer tuple/shutdown migrations retain all original observable laws.
+The original failing law must be requalified on the0.29 graph before fixing it.
+This resolves the size checkpoint. Continue within these approved limits;
+all earlier costs and full PRD requirements remain carried.
+
+## Earlier checkpoint (2026-10-18 UTC)
 
 The user approved the replacement total stage ceiling of 2,000 net production
 lines from e3daad58 (2026-10-17: “I FUCKING APPROVE”). Other limits remain five
@@ -37210,3 +37297,386 @@ separately from authored remote/adoption deltas. Record both complete combined
 and feature-relative measurements after resolution; do not silently reset the
 approved e3 baseline or refund any earlier costs. No expanded remote abstraction,
 new policy, or additional verification budget is inferred from this merge.
+
+### Retained consumer migration — law inventory, 2026-10-21
+
+Read-only inspection after the canonical compilation failure distinguishes the
+old application spelling from the independently observable laws. The canonical
+mount remains intact. No tests or production source changed for this inventory.
+The public focused mount is crates/bombay/tests/node_service.rs, which imports
+the same node_exports cohort; it is not a second implementation or proof that
+the canonical library/application_clients targets compile.
+
+| Retained owner | Required observations that migration must preserve | Current cold evidence and remaining gap |
+| --- | --- | --- |
+| application/node/tests/replay.rs: four Recorded/Scheduled Counter/Ledger cases | Two actual queries reuse the first issued key and native outcome; original byte/proof allocations, complete protected replies or actual reply refusal, and actual cleanup/notifications remain observable. | node_exports/consumer.rs has canonical replay/conflict assertions, but its three cases do not establish both provider profiles for each original protocol or the complete old reply/refusal trace. |
+| replay/association.rs: Counter and Ledger cases | A late extra reply to A cannot become B's value; retain exact A/B recipients and A's late tail after a real FIFO fence. A Ledger request created after actual retirement retains its own native Closed(Read) recipient. | The owning Full Reply test fences duplicate sends, but does not cover A/B late association or a newly constructed post-retirement request. Keep these separate laws. |
+| replay/cancellation.rs: two provider profiles | Cancel a borrowed wait, preserve the operation owner, resume the original A reply, keep B distinct, and retain the actual retired Stash's one unprocessed B command. Query readiness and native-result readiness remain independent. | The cold genuine-Work-absence and provider-panic tests do not establish this ownership/cancellation trace. Whole-operation cancellation remains a separate requirement. |
+| replay/permissions.rs: four Counter/Ledger provider cases | Preserve actual RefCell BorrowError or Mutex TryLockError, removed/mismatched grants, authority held through native return storage, fresh authority on later attempts, original Full/Closed payloads, and no work for foreign-issued keys. | cold refusals preserve selected permission causes and pressure.rs covers fresh authority for Ledger Full; the complete original local/synchronized/profile matrix remains unqualified on the new graph. |
+| replay/permissions/keys.rs | Keys retain issuer identity across differing reply protocols; duplicates reuse the original key; other declarations cannot acquire authority or construct a command using that key. After actual undeclare and same-path redeclaration, the stale key differs from the renewed key and cannot invoke authority or a constructor. | Cold RequestKey is observational, with no caller-supplied-key admission operation. Preserve issuer/non-authority and stale-key laws through the actual supported surface and static denial; do not restore the retired imperative admission API merely to compile this test. |
+| replay/permissions.rs: opaque diagnostics case | Formatting opaque commands must not require their Debug implementation; original native permission causes remain inspectable by reference without duplication or replacement. | The old Admission/RequestRefusal spelling is retired. Attempt and the retained typed refusal fields own the current observations; passing cold provider tests alone do not prove diagnostic opacity or original source identity. |
+| application/node/tests/requests.rs: two live Requester cases | A genuine typed Actions request reaches another Node, verifies the complete protected reply, and stores the checked Counter value in the actual Requester. Preserve caller/runtime identity, original bytes/proofs, one native publication, correlation and final actor receipt. | Protected outbound typed Actions and the ordinary remote-counter application remain unfinished. The direct cold receiving fixture does not establish this end-to-end outbound law. |
+| requests.rs: two pending-protection cases | A Pending protector cannot block another request or duplicate inspection; retain original receipt/proof identity, exact cache/conflict behavior and native outcomes through actual cleanup. | The owning comparison test proves a narrower explicit-unit-host overlap. It is not acceptance of Node completion integration or both original provider profiles. |
+| requests.rs: two outbound-provider refusal cases | Untrusted declarations yield the actual typed provider refusal without producing a protected request. | These two tests use provider contracts directly; their containing module currently fails on other retired consumers. Preserve the tests rather than rewriting an unrelated provider law. |
+
+This inventory identifies20 retained tests across these owners:18 whose
+retired consumer spelling or diagnostic contract needs reconciliation, plus
+the two provider-only cases. It does not classify any as redundant. The existing
+focused public cohort has21 cases: one concrete topology/family control,
+three ordinary cold-consumer cases, thirteen refusal/provider-fault cases,
+two quota cases and two target-ownership cases. Those counts are scope markers,
+not interchangeable acceptance or completion percentages.
+
+Independent source review confirms both counts, actual canonical/focused
+mounts and the nonreplacement claims. Its sole refinement was the explicit
+stale-key/same-path-redeclaration law above. This is source inventory only,
+not acceptance on the selected graph; no new test law or passing migration
+is credited.
+
+The current0.29 report/shutdown migration also affects interface invocation,
+Node attachment/identity/invocation, owning export tests and the public cold
+cohort. Every acquired optional root report must remain beside the original
+Work, native root, notifications and families; do not erase it to fit an old
+tuple. InstalledActor's distinct request_shutdown operation remains valid.
+The new pressure/unwind modules remain unmounted in the canonical owning
+module; mounting filtered tests cannot establish full-target acceptance.
+
+Independent census review reproduces237 paths, no omitted untracked inputs,
+conservative source+3611/-1223 and test/fixture+5911/-2581. The inherited detailed
+split remains unqualified. Upstream215 is measured from common main49cc8971
+to531ded50, not from e3; those path counts are not additive. Production remains
+stopped pending the recorded expanded-surface decision. This inventory changes
+only existing project records and grants no implementation or verification
+budget. The full R01–R25/AUTH1/NET1 objective remains active.
+
+Read-only worktree inspection finds15 registered entries. Six are clean and
+fully reachable from main531ded50: devx-adapters, devx-owned-timers,
+devx-stash-custody, devx-stash-limits, devx-timer-custody and lionfish. Actual
+lsof cwd observations still show live processes in every one, so none is
+proven unused and none was removed. Other entries include unique commits or
+dirty files. Even the prunable detached bombay-remote-service entry has live
+cwd users and48 commits outside main; do not prune its recovery metadata from
+the Git prunable label alone. The user's merged/unused-worktree cleanup remains
+pending evidence of release. No process was killed or unrelated work discarded.
+
+### Decoder cleanup — authorized0.29 continuation
+
+User authorization of2600/250/five-remote-types/4000-further-verification is
+recorded above. Fresh pinned metadata and unchanged lockfa79c780 select
+Behavior/Actors0.29.0, Macros0.16.0, Address0.3.0, Communication0.1.6 and
+Timers0.2.0 without patches. The full selected Behavior AGENTS remains
+ec0ad868 at revision55dbac2d. Observe stays the existing in-tree owner.
+Existing primitive source, native cleanup receiving and the owning outside-
+poll-catch test are inspected; the0.29 optional root report remains independent.
+No dependency change or new library is needed: standard pinned Future/poll_fn,
+Box::pin and catch_unwind already express the selected ownership law.
+
+The exact blocker, two-cause model, <=150 net production forecast and existing
+Node/query ownership remain the earlier single-decoder record. Independent
+current-graph source review finds no model veto: keep receiving/families outside
+both catches, dispose the actual pinned Box, preserve withdrawal when already
+acquired, reuse one native drain body, and retain the current binding guard.
+Do not rerun any decoder, admission, protector or publication during recovery.
+No new public type, trait, observer, runtime or policy is selected. The raw
+Node parts expand from3 to5 solely for the two actual standard panic payloads.
+Scope is still one decoder fault after successful binding, not general
+cancellation or simultaneous double-fault safety.
+
+For focused current-graph prior failure, save exact canonical node/tests/mod.rs
+and application/interface.rs outside the tree before temporarily excluding
+their unmigrated unit-test modules. The original decoder source stays unchanged.
+The owning export controls receive the current shutdown spelling and actual
+root-report tuple with assertions; no old observable check is deleted.
+Restore both canonical mounts after scoped gates; all old consumers remain
+required by the20-test inventory. These temporary exclusions are no full-suite
+acceptance. Forecast two owner production edits, existing test/record migrations,
+zero public type additions and unchanged237 current paths; all earlier costs
+and newly authored verification lines remain charged.
+
+The unchanged prior regression fails only finalization187 under0.29 in both
+profiles (0.03/0.02s): actual cleanup and original decoder allocation are
+acquired first. Prior logs /tmp/bombay-decoder-029-prior-{debug,release}.log
+have SHA25687da66dc/9ad51c9e. The retained candidate adds53 net production
+lines across Node(+57/-8) and existing query(+4/-0), with zero public types.
+The first compiler attempt rejected the overlapping startup temporary loan;
+retaining the actual outcome Result until that temporary ends fixes its scope
+without changing owners, bounds or outcomes. No compiler failure is law evidence.
+
+Both source-review passes qualify final node0bc57c11/queryf142b792 and owning
+test78272774. They corrected RefCell acquisition inside assertions, including
+the inherited baseline cause borrow. The final test acquires those guards
+before observing them. Candidate final debug/optimized both pass1/0,0.02/0.01s,
+362 filtered; logs /tmp/bombay-decoder-029-final-{debug,release}.log
+83305cc2/84af90df. It checks the original307 panic allocation, absent disposal
+panic, actual interrupted Work/cleanup, independent existing root observation
+beside the optional root report, full native cancellation custody, both
+notifications, actual binding/withdrawal/close, original raw allocation and
+verified receipt, and no native/encoding/protection/publication acquisition.
+Temporary-mount unused-fixture warnings remain; no strict lint/full-target
+acceptance is claimed. Final-test original-escape cut4848023e fails only the
+post-cleanup finalization196 in both profiles (0.02s each); the original decoder
+panic74 is deliberately caught. All later extraction assertions are unexecuted
+in that negative. Logs /tmp/bombay-decoder-029-inverse-{debug,release}.log
+86080be8/81560c9d. Both independent outcome reviews qualify the actual positive
+and intended negative results. Exact node0bc57c11 is restored; no inverse is active.
+
+Existing cold consumers now retain main's actual root report and Node's two
+kernel panic options while preserving every original assertion. Two sequencing
+reviews require carrying facts past peer close/recovered-Work transfer before
+new assertions; those corrections are applied. The earlier21/0 capture before
+this correction is a separate epoch, not current acceptance. The amended debug
+controls pass21 public cases plus7 owning cases (0.10/0.04s): existing
+constructor, first EOF, pending comparison, Counter Full, Ledger Full/authority
+and new decoder. Log /tmp/bombay-decoder-029-controls-debug.log. Optimized controls
+and final migration review remain pending. Current temporary owning mounts
+include pressure/constructors/unwind and exclude old unmigrated modules; restore
+canonical inclusion and retain the new owning laws before full-target checks.
+No full R01–R25/AUTH1/NET1 requirement, general cancellation/double-fault law,
+distillation, CI or merge is claimed from this focused result.
+
+### Decoder cleanup — final current-graph checkpoint
+
+The final current-graph controls pass debug and optimized:21 public cold cases
+plus seven owning controls. Logs /tmp/bombay-decoder-029-controls-{debug,release}.log
+have SHA256c2e7d25b/6bd6aae4. Eight additional existing report/shutdown consumers
+retain the actual optional report beside their original outcomes; all23 selected
+owning adoption cases pass in each profile. Final adoption logs
+/tmp/bombay-decoder-029-adoption-final-{debug,release}.log have
+SHA25632a5565a/4cbbaa34. Both independent source and outcome reviews pass.
+Seven inherited guard/result acquisitions were moved before assertions without
+removing their observable checks. These filtered runs have fixture warnings;
+they are not strict/full-target gates. Canonical mounts are restored, including
+all original replay/requests modules and the new constructors/pressure/unwind
+registrations. There is no active production inverse or test exclusion.
+Canonical final compilation exits101 with55 retired warm-consumer errors:
+/tmp/bombay-decoder-029-canonical-final-compilation.log. No full library pass,
+CI acceptance or main delivery is claimed.
+
+The complete246-path working tree has no untracked files. Reproducible e3-baseline
+classification counts all files under tests/test/fixtures/fixture/fuzz or the
+feature research subtree, and tests.rs files, as tests/fixtures; remaining Rust
+files form a conservative production upper bound (including examples and
+embedded tests). It yields production upper bound+3673/-1224/net2449;
+tests/fixtures+6204/-2666/net3538. The previous narrower fixture count3534
+excluded15 added/11 removed research non-Rust lines; neither classifier is an
+exact embedded-test production split. Remote public types remain+5 gross/-2,
+with zero new types in this continuation. The scoped decoder change itself is
+production+61/-8/net53. All historical verification costs and changed epochs
+carry; no cost reset or newly certified verification headroom is claimed.
+
+### Retired consumer migration — post-retirement replay hypothesis
+
+The retained Ledger law requires a duplicate arriving after actual target
+retirement, while supplied Work remains live, to reuse the original result.
+Current query serving selects target/root retirement to withdraw the native
+queryable. This is a source hypothesis, not yet an accepted defect. Before any
+production edit, extend the existing owning receipt comparison with a finite
+actual cold Node trace: complete one real query, await actual root retirement,
+issue an identical second query, acquire actual cleanup and Session close, then
+check both replies, one native construction/encoding/protection, original keys
+and typed outcomes. A native-query deadline may make the negative finite but
+must not be called successful replay. Preserve target and root retirement facts.
+
+Expected scope: existing comparison test, query owner and current PRD/backlog;
+zero new public types, <=10 net production lines if the existing Work-owned
+serving scope suffices. Reuse existing Request identity/cache, authorization,
+native declaration and Node execution ownership; no second admission surface,
+observer or lifecycle policy. Establish debug/optimized pre-edit failure and
+independent test reviews before retaining a correction. Other20-consumer laws,
+full cancellation, outbound Actions and all full PRD acceptance remain open.
+
+The replay witness belongs in application/node/tests/retirement.rs because
+Session access is private to Node; the initial comparison-module placement was
+rejected by privacy rather than widening visibility. A subsequent async-capture
+compiler error was corrected by ordinary local borrowing. Neither setup failure
+is behavioral evidence. The new owning module is the247th changed path and uses
+only existing public Request extraction. Its final sourcee7edf58f checks actual
+Established/NoFailures retirement and native Stopped before the reply-count
+oracle, retains both actual stream-ending errors, and binds received byte views
+before assertions. Fixed local authorization and proof bytes qualify only this
+cache/lifetime witness, never provider security or fresh-authority acceptance.
+
+The proposed runtime law is deliberate Bombay export policy: cached replies
+remain addressable for the existing supplied-Work lifetime, including after
+actual target/root retirement. Request delivery still uses actual per-request
+retirement and native results. The existing cleanup Shared future is published
+only after Work permission, actual root joining and family shutdown; its clone
+can terminate serving without a new lifecycle signal or duplicate state. Node
+still owns final withdrawal/close. No Behavior fold, protocol, actor policy,
+Address/Communication/Observe/Timer primitive or public signature changes.
+
+Aggregate checkpoint before correction: Request identity remains exactly
+Unassigned/Canonical/Duplicate, with original typed receipt/native operation and
+provider/panic facts independent and unchanged. No subordinate alternative or
+public spelling is added. The serving select reduces four alternatives to
+three by replacing two early retirement exits with existing cleanup completion;
+target/root retirement remain with their existing request and Application
+consumers. The source retirement observations being removed are not retained
+facts: the old loop discarded their reports. The intended production delta is
++1/-4/net-3, plus a law comment, in the existing query owner. No new abstraction
+or wrapper is justified. Cross-check execution.rs1668–1828, module/capability
+ownership, Driver cancellation and PRD replay law; disposition awaits actual
+prior optimized failure and independent source review.
+
+One lower-level existing receipt-comparison fixture supplies a deliberately
+uncancelled cleanup input and joins serving inside Work. It cannot use the real
+cleanup barrier while Work awaits it. Preserve its complete query/duplicate/
+conflict/protection observations, then release its borrowed serving operation
+and call the existing owning withdraw operation after that borrow ends. The
+new cold Node witness separately exercises real automatic cleanup. Do not
+fabricate cleanup publication to keep the older fixture passing. Other owning
+controls do not drive this serving loop directly.
+
+The unchanged final retirement witnesse7edf58f fails the intended reply count198
+in both profiles on original queryf142b792: observed[1,0], required[1,1], after
+actual cleanup, native Stopped/Established/NoFailures, binding, withdrawal and
+Session close. Both tests finish0.02/0.01s, exit101, with382 filtered. Log
+/tmp/bombay-retired-replay-prior-both.log, SHA256bbfdbccf. Later key/native
+assertions are unexecuted in these negatives. Two independent source passes
+qualify the test and the proposed lifetime model. The single query correction
+now replaces only the outer early retirement exits; per-request retirement,
+provider cleanup and all actual outcome storage remain unchanged. The existing
+lower-level comparison explicitly withdraws after releasing its serve borrow.
+Candidate behavior remains unqualified until positive gates complete.
+
+### Post-retirement replay — qualified scoped correction
+
+Final query70b989b8 polls the existing mutable Shared directly, avoiding a new
+clone on each serving iteration. Compared with priorf142b792, production is
++3/-5/net-2 with no state/type/public API addition. Identity alternatives and
+per-request retirement are unchanged; serving select alternatives reduce4→3.
+The only new owning module is the242-line retirement test; the existing
+comparison adds eight lines for actual explicit withdrawal. The source-known
+cycle check and both independent source reviews pass. Both outcome passes
+independently confirm intended pre-edit failures and the final positive names.
+Aggregate checkpoint disposition: pass within this declaration-lifetime law;
+no independent retirement engine, repeated cause or semantic boolean added.
+
+Final pinned offline/locked controls in both profiles pass24 owning and21 public
+cold cases (45 each). Debug times0.05/0.07s; optimized0.03/0.04s, owning359
+filtered. Log /tmp/bombay-retired-replay-final-controls.log has SHA256
+9f4f82075996f8262f43fad0b8900d656512341d0595aa4bb5355bb6f31dd5c6.
+The same final teste7edf58f reaches all retained key/original/native/publication
+oracles. Native cached admission replay does not prove Counter processing or
+provider security. Four existing current API/capability/module documents match
+the source after independent review. Pinned cargo fmt --all -- --check and
+Git diff whitespace check pass. The full canonical module is restored with all
+original replay/requests and four new owning registrations, SHA2566caeb8fa.
+No test exclusion, production inverse or running command remains.
+
+Complete tree:247 changed paths including the one untracked retirement source;
+conservative production upper bound+3679/-1224/net2455 (includes embedded tests
+and the lower-level comparison); tests/fixtures+6448/-2666/net3782, including
+that242-line untracked test. Public API remains+5 gross/-2 removed. The actual
+combined decoder+replay production changes are+64/-13/net51. These are scoped
+local gates, not canonical library, strict CI, distillation or delivery. The
+retained20 warm-consumer laws and full R01–R25/AUTH1/NET1 objective stay open.
+
+### Cold replay consumers — pre-edit migration record
+
+The next stage changes tests only: migrate the four existing Recorded/Scheduled
+Counter/Ledger first-read cases from imperative ApplicationHandle.export to
+cold Export::new/Node.exports/run_with. The production law is already isolated
+by the current post-retirement replay regression. Keep actual Task Actions
+batch delivery, distinct real TLS Session identities, exact batch allocations,
+raw request/proof/receipt custody, typed verified request and reply scopes,
+one native read/client, duplicate key equality, one successful protected reply
+per query, native first value and EOF/tail, actual root/Task native custody,
+both reports/notifications and all real close/withdrawal results. Ledger's
+second query must follow its actual first retirement, retaining the original
+append allocation and sender identity. Counter still reads its primed value.
+
+Retire only test-owned imperative acquisition machinery that the library now
+owns. Assert its actual Request outputs and Export diagnostics/publications
+instead; never synthesize unavailable Query ownership or issue request keys.
+Remove the research-only Resend switch from these four consumers: intended
+source failures remain the negative controls. Existing association,
+cancellation, permission/key and Requester laws remain separate and required.
+
+Expected paths: existing replay.rs and this PRD/backlog only; production0,
+public types0, approximately600–850 replacement verification lines versus the
+existing997-line parent (historical versions and all modifications still
+charged). Shared peer observation may group actual independent protected reply
+and Task cleanup outcomes; it must not introduce another admission API, actor
+contract or runtime. Two provider and two native protocol substitutions justify
+only those test generics. Focused debug/optimized execution and two reviews
+must retain the complete original law inventory before replacement is accepted.
+
+The replacement's first formatted debug run passes4/0. Two source-review passes
+then identify missing independent Task-original→retained-row byte/proof links,
+explicit typed request scope observations, and a decoder invocation count.
+Those are restored, with allocation-vector length and actual protection-call
+count. One capture exposes a missing fixture protection increment: all four
+fail with(1,1,0), an instrumentation error only. It earns no production-law
+credit. A temporary-exclusion path-attribute parsing error is also setup only.
+The final callbacks perform the actual increments outside assertions, and
+source review finds no remaining unique old-oracle loss in these four cases.
+
+Final parent7fc7af44 (1003 formatted lines versus original992, not997) passes4/0
+debug0.05s and optimized0.02s,383 filtered, in
+/tmp/bombay-cold-replay-migration-qualified-positive.log. Two private test
+products replace the old independent wire/Task acquisition products; no public
+or production addition. Fixed current/proof policies remain finite fixtures.
+No historical/copied/rejected/modified verification cost is refunded. This is
+a test migration with11 net test lines, not code reduction.
+
+The final unchanged four-case source is now undergoing a controlled original
+query-lifetime inversion: queryf142b792 replaces only the scoped correction's
+query70b989b8. Exact candidate backup is
+/tmp/bombay-cold-replay-query-candidate.rs. Expected discrimination is two Counter
+controls passing and two Ledger cases failing after their first actual retirement
+because no second protected reply arrives. Logs and both profiles must establish
+the actual reason; an exit101 alone is insufficient. Restore exact70b989b8 and
+all original child/outer registrations before accepting a checkpoint. The three
+replay child modules and requests remain retained, temporarily excluded only
+for scoped compilation. No full canonical library/CI/PRD delivery is claimed.
+
+### Cold replay consumers — completed scoped migration
+
+Final7fc7af44 positives pass4/0 in both profiles; log SHA256ebf0a008. The same
+four tests under original queryf142b792 produce exactly2 Counter controls
+passing and2 Ledger failures in each profile, only publications356:0 instead
+of1. Inverse log /tmp/bombay-cold-replay-migration-inverse-both.log has
+SHA2563778d8c4; actual summaries debug0.05s, optimized0.52s, exit101 each.
+Both Nodes' actual cleanup/close, reports/notifications and Task batch custody
+precede the negative oracle; later Ledger Box/native User/client/tail/key and
+once-only observations are unexecuted in those negatives. The positive runs
+reach all of them. Both independent source and outcome passes qualify this
+specific mapping and discrimination.
+
+Exact query70b989b8 is restored. Broader restored controls pass28 owning and21
+public cases per profile, including all four migrated cases. Debug0.06/0.09s,
+optimized0.52/0.04s, owning359filtered. Log
+/tmp/bombay-cold-replay-migration-restored-controls.log has SHA256eae58d17.
+Canonical replay24170cdf differs from tested7fc only in restoring the three
+original child registrations; direct prefix comparison and independent diff
+review confirm identical test bodies. Outer canonical6caeb8fa is restored.
+Pinned formatting and Git whitespace checks pass. No inverse, exclusion or
+running command remains. Canonical compilation still exits101, now44 legacy
+errors, no tests run; log /tmp/bombay-cold-replay-migration-canonical-compilation.log
+SHA256370a67e7. Four inventory laws are migrated;16 remain required.
+
+Complete e3-baseline tree remains247 paths including the242-line untracked
+retirement test. Conservative production upper bound stays+3679/-1224/net2455;
+tests/fixtures are+7237/-3444/net3793 including that untracked source. Public
+API remains+5 gross/-2, with no production or public addition in this migration.
+The parent test replacement is+799/-788/net11 versus its actual992-line prior;
+this is migration, not code reduction. All historic, external draft, copied,
+rejected and corrected verification work remains charged. Full R01–R25/AUTH1/
+NET1, the remaining16 laws, minimization/three whole-repo scans, strict checks,
+required review/CI and recorded main delivery stay open.
+
+### Provider-only consumers — pre-edit ownership move
+
+Two of the remaining16 laws are direct outbound provider refusals, currently
+blocked from execution by unrelated imperative consumers in requests.rs.
+Move their unchanged six-input matrix and two provider cases to the Node-owned
+protection.rs test module. It owns only request-proof refusal; keep actual
+Requester and pending-protection laws in requests.rs. Expected three test/module
+paths plus records, one additional tracked path (248 total), production0 and
+public types0, about100 moved verification lines. Preserve typed Invalid,
+nonempty original bytes and zero proof registrations for every invalid caller,
+controller, purpose, profile, actor binding and generation. Acquire the final
+RefCell observation guard before assertions. Establish both profiles and two
+reviews before deleting the old copies. No new provider, actor or runtime API
+is selected; source version and scope remain the pinned0.29 graph.

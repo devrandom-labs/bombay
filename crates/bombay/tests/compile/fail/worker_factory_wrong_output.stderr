@@ -5,7 +5,7 @@ error[E0277]: the trait bound `u8: InitialWorkerPreparation` is not satisfied
   |                           ^^^^^^^^^^^^^^^^^^^^^ the trait `InitialWorkerPreparation` is not implemented for `u8`
   |
 help: the following other types implement trait `InitialWorkerPreparation`
- --> $CARGO/bombay-behavior-actors-$VERSION/src/atomic/worker/roster.rs
+ --> $CARGO/bombay-behavior-actors-$VERSION/src/templates/worker/roster.rs
   |
   |   impl<Worker, Plan> InitialWorkerPreparation for WorkerSubmission<Worker, Plan> {
   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `WorkerSubmission<Worker, Plan>`
@@ -29,7 +29,7 @@ error[E0277]: the trait bound `u8: InitialWorkerPreparation` is not satisfied
   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `InitialWorkerPreparation` is not implemented for `u8`
   |
 help: the following other types implement trait `InitialWorkerPreparation`
- --> $CARGO/bombay-behavior-actors-$VERSION/src/atomic/worker/roster.rs
+ --> $CARGO/bombay-behavior-actors-$VERSION/src/templates/worker/roster.rs
   |
   |   impl<Worker, Plan> InitialWorkerPreparation for WorkerSubmission<Worker, Plan> {
   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `WorkerSubmission<Worker, Plan>`

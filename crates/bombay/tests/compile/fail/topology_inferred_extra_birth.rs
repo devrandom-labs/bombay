@@ -98,7 +98,7 @@ async fn main() {
     .run_with(|application| async move {
         application
             .lifecycle()
-            .request_shutdown()
+            .shutdown()
             .expect("real shutdown operation");
     })
     .await;

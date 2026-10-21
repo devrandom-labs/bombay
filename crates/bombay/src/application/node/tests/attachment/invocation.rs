@@ -83,7 +83,7 @@ fn internal_exports_keep_originals_when_ready_work_disposal_panics() {
                                                 })
                                                 .await;
                                             let processed = client.receive().await;
-                                            let stopped = lifecycle.request_shutdown();
+                                            let stopped = lifecycle.shutdown();
                                             let report = lifecycle.retirement().await;
                                             client.close_admission();
                                             let tail = client.receive().await;
@@ -106,12 +106,13 @@ fn internal_exports_keep_originals_when_ready_work_disposal_panics() {
                 })
                 .await;
                 drop(execution);
-                let (work, native, notifications) = receiving.await;
+                let (work, root_report, native, notifications) = receiving.await;
                 let work = work.into_supplied_with_entities();
                 let () = received_families.await;
                 move || {
-                    let (admitted, processed, stopped, _report, tail) = retained_native
+                    let (admitted, processed, stopped, report, tail) = retained_native
                         .expect("actual native outcomes stored before Work was made Ready");
+                    assert_eq!(root_report, Some(report));
                     admitted.expect("actual correlated command admitted");
                     stopped.expect("actual lifecycle shutdown request");
                     let (origin, native) = native.expect("original native actor retirement");
@@ -146,7 +147,8 @@ fn internal_exports_keep_originals_when_ready_work_disposal_panics() {
                         .unwrap();
                     assert_eq!(Rc::as_ptr(&receipt), original_provider);
                     assert_eq!(receipt.as_slice(), [103, 107]);
-                    assert_eq!(*provider_calls.borrow(), [original_request]);
+                    let provider_calls = provider_calls.borrow();
+                    assert_eq!(*provider_calls, [original_request]);
                     assert_eq!(
                         processed,
                         Some(User::new(
@@ -157,11 +159,9 @@ fn internal_exports_keep_originals_when_ready_work_disposal_panics() {
                         ))
                     );
                     assert!(tail.is_none());
-                    assert!(
-                        retained_publication
-                            .expect("original Work publication disposition retained")
-                            .is_ok()
-                    );
+                    let retained_publication = retained_publication
+                        .expect("original Work publication disposition retained");
+                    assert!(retained_publication.is_ok());
                 }
             })
             .await

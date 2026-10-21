@@ -8,7 +8,7 @@ impl Protocol for RootProtocol {
 }
 
 fn request_application_shutdown(root: ActorRef<RootProtocol>) {
-    let _accepted = root.request_shutdown();
+    let _accepted = root.shutdown();
 }
 
 fn main() {}

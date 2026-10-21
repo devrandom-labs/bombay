@@ -48,6 +48,8 @@ invocation owner. Caller-local borrows and non-Send outputs remain supported.
 The unmerged cold-service candidate attaches typed declarations with Node.exports.
 Node owns binding, startup, concurrent serving, withdrawal, joined Application/
 family receiving and native close. The runtime owns operation interpretation;
+the existing Application cleanup publication ends declaration/cache serving,
+while native requests independently observe actual target/root retirement.
 wire/security functions remain explicit typed policies. Request extraction is
 optional and transfers original native products without a presentation callback.
 Full remote acceptance remains pending; transport fixtures do not establish it. Protected Counter

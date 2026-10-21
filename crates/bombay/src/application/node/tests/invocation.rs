@@ -131,17 +131,18 @@ fn absent_work_still_drives_correlated_counter_operations() {
                         .unwrap_or_else(|_| panic!("independent actual reader allocates"));
                     let read = reader.send(CounterMessage::Read(reader.recipient())).await;
                     let value = reader.receive().await;
-                    let stopped = application.request_shutdown();
+                    let stopped = application.shutdown();
                     let report = application.lifecycle().retirement().await;
                     reader.close_admission();
                     let tail = reader.receive().await;
                     (export_finished, read, value, stopped, report, tail)
                 };
                 let ((), observer) = tokio::join!(execution, observer);
-                let (work, native, notifications) = receiving.await;
+                let (work, root_report, native, notifications) = receiving.await;
                 let work = work.into_absent();
                 move || {
-                    let (export_finished, read, value, stopped, _report, read_tail) = observer;
+                    let (export_finished, read, value, stopped, report, read_tail) = observer;
+                    assert_eq!(root_report, Some(report));
                     read.expect("the independent read is admitted even when exporting is omitted");
                     stopped.expect("independent native control retires the actual root");
                     let (origin, native) = native.expect("original root retirement");
@@ -161,7 +162,8 @@ fn absent_work_still_drives_correlated_counter_operations() {
                     else {
                         panic!("genuine absent work completes without a fabricated work future");
                     };
-                    assert!(transferred.expect("one invocation").is_ok());
+                    let transferred = transferred.expect("one invocation");
+                    assert!(transferred.is_ok());
                     assert!(read_tail.is_none());
                     assert_eq!(
                         value,
@@ -169,7 +171,8 @@ fn absent_work_still_drives_correlated_counter_operations() {
                         "independent native value proves export progress"
                     );
                     assert!(export_finished.is_ok());
-                    assert!(admission.expect("actual command attempt retained").is_ok());
+                    let admission = admission.expect("actual command attempt retained");
+                    assert!(admission.is_ok());
                     assert_eq!(
                         processed,
                         Some(Some(User::new(
@@ -304,10 +307,11 @@ fn absent_work_still_drives_move_only_ledger_append() {
                     (export_finished, read, origins, report, tail)
                 };
                 let ((), observer) = tokio::join!(execution, observer);
-                let (work, native, notifications) = receiving.await;
+                let (work, root_report, native, notifications) = receiving.await;
                 let work = work.into_absent();
                 move || {
-                    let (export_finished, read, origins, _report, tail) = observer;
+                    let (export_finished, read, origins, report, tail) = observer;
+                    assert_eq!(root_report, Some(report));
                     read.expect("independent terminal read stops even an empty ledger");
                     let (origin, native) = native.expect("original terminal actor custody");
                     let root = origin.address();
@@ -326,7 +330,8 @@ fn absent_work_still_drives_move_only_ledger_append() {
                     else {
                         panic!("genuine absent work completes without a fabricated work future");
                     };
-                    assert!(transferred.expect("one invocation").is_ok());
+                    let transferred = transferred.expect("one invocation");
+                    assert!(transferred.is_ok());
                     assert!(tail.is_none());
                     assert_eq!(
                         ledger.entries.len(),
@@ -339,7 +344,8 @@ fn absent_work_still_drives_move_only_ledger_append() {
                     assert_eq!(sender_origin, Some(*sender));
                     assert_eq!(origins, Some(User::new(root, vec![*sender])));
                     assert!(export_finished.is_ok());
-                    assert!(admission.expect("original admission retained").is_ok());
+                    let admission = admission.expect("original admission retained");
+                    assert!(admission.is_ok());
                 }
             })
             .await

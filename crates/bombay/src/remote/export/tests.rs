@@ -1,7 +1,10 @@
 use super::Attempt;
 use super::declaration::{Commands, Delivery, Reception, reply};
 use crate::actors::ActorExt;
-use crate::{Application, Completion, MailAddr, MailboxCapacity, TrySendError};
+use crate::{
+    ActorFailureAssessment, Application, Completion, MailAddr, MailboxCapacity,
+    RetirementAssessment, TrySendError,
+};
 use behavior::{Never, User};
 use core::future::{Future, poll_fn};
 use core::pin::pin;
@@ -126,7 +129,7 @@ fn full_read_reuses_its_original_reply_endpoint_once() {
                         if let Some(draining) = declarations.drain(&mut native) {
                             draining.await;
                         }
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         (
                             entered,
                             worker,
@@ -148,13 +151,19 @@ fn full_read_reuses_its_original_reply_endpoint_once() {
                     })
                     .await
                     .unwrap_or_else(|_| panic!("the actual Counter Application starts"));
-                let (work, root, notifications, ()) = outcome.into_parts();
+                let (work, root_report, root, notifications, ()) = outcome.into_parts();
                 let (output, cleanup) = work
                     .try_into_completed()
                     .unwrap_or_else(|_| panic!("the original caller output survives cleanup"));
                 cleanup.expect("the actual Application cleanup joins");
                 let (origin, root) = root.expect("the original Counter retirement survives");
                 let notifications = notifications.expect("both native notifications survive");
+                let root_report = root_report.expect("the runtime retains its actual root report");
+                assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+                assert_eq!(
+                    root_report.failures(),
+                    ActorFailureAssessment::NoFailuresFound
+                );
                 let (
                     entered,
                     worker,
@@ -258,12 +267,12 @@ async fn acquired_first_eof_prevents_another_tail_receive() {
             } else {
                 None
             };
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             (commitment, admitted, observed, native, shutdown)
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Application host is entered"));
-    let (work, native_root, notifications, ()) = outcome.into_parts();
+    let (work, root_report, native_root, notifications, ()) = outcome.into_parts();
     let (
         (
             commitment,
@@ -279,6 +288,12 @@ async fn acquired_first_eof_prevents_another_tail_receive() {
     cleanup.expect("the Application cleanup task joins");
     let (origin, root) =
         native_root.expect("the actual root retirement remains independently owned");
+    let root_report = root_report.expect("the runtime retains its actual root report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert!(root.custody().is_some());
     let notifications = notifications.expect("both actual notification receipts survive");

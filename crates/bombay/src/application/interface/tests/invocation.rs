@@ -171,12 +171,12 @@ async fn absent_work_drives_root_and_nonempty_family_retirement() {
                 .await
                 .expect("actual startup transfers independent shutdown authority");
             let finished = export_finished.await;
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (finished, stopped, report)
         };
         let ((), observer) = tokio::join!(execution, observer);
-        let (work, native, notifications) = receiving.await;
+        let (work, root_report, native, notifications) = receiving.await;
         let families = received_families.await;
         match work {
             WorkOutcome::Completed {
@@ -189,6 +189,7 @@ async fn absent_work_drives_root_and_nonempty_family_retirement() {
             }
         }
         let (finished, stopped, report) = observer;
+        assert_eq!(root_report, Some(report));
         let (family, ()) = families;
         let (_role, family) = family.expect("the exact nonempty family retirement is received");
         let (shutdown, metrics, disposal) = family.into_parts();

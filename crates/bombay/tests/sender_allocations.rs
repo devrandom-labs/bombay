@@ -110,7 +110,7 @@ async fn one_way_senders_need_no_reply_storage_and_keep_complete_delivery() {
                 .unwrap_or_else(|_| panic!("read admitted"));
             let reply = client.receive().await.expect("actual counter reply");
             assert_eq!(reply.from, root_address);
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             (
                 allocations,

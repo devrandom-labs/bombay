@@ -85,7 +85,7 @@ fn node_work_uses_only_actor_capabilities_and_returns_original_work_for_retry() 
                 .await
                 .unwrap_or_else(|_| panic!("the read is admitted"));
             let reply = caller.receive().await.expect("the actual typed reply");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             (
                 original,
                 original_file,
@@ -212,7 +212,7 @@ fn native_join_resumes_after_a_borrowed_wait_and_retains_caller_local_work() {
                 let published = entered.send(application.root().address());
                 let permitted = permission.await;
                 let current = application.root().address();
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (original, published, permitted, current, shutdown)
             });
             let mut operation = pin!(operation);
@@ -300,7 +300,7 @@ fn node_execution_uses_actor_capabilities_and_returns_original_work_for_retry() 
                 .await
                 .unwrap_or_else(|_| panic!("the read is admitted"));
             let reply = caller.receive().await.expect("the actual typed reply");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             (
                 original,
                 original_file,
@@ -381,7 +381,7 @@ fn node_execution_resumes_original_futures_with_borrowed_caller_local_work() {
                     let published = entered.send(application.root().address());
                     let permitted = permission.await;
                     let current = application.root().address();
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     (original, calls, published, permitted, current, shutdown)
                 })
                 .unwrap_or_else(|_| panic!("caller-local paired work is issued"));
@@ -461,7 +461,7 @@ fn native_join_returns_original_work_for_closed_and_already_issued_nodes() {
         let Err(NodeExecutionRefusal::SessionClosed { work }) = closed_node
             .run_with(|application| async move {
                 calls.set(calls.get() + 1);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (original, shutdown)
             })
             .await
@@ -504,7 +504,7 @@ fn native_join_returns_original_work_for_closed_and_already_issued_nodes() {
         let Err(NodeExecutionRefusal::ExecutionIssued { work }) = node
             .run_with(|application| async move {
                 calls.set(calls.get() + 1);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (original, shutdown)
             })
             .await

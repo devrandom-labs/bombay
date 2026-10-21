@@ -110,6 +110,7 @@ async fn recorded_creation_correlation_rejects_the_original_child_and_keeps_late
                 startup_error: Some(_),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((root_origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),

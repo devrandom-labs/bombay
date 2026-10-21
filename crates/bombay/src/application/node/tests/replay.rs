@@ -1,584 +1,387 @@
-//! Node-owned native connection drivers and complete typed actor retirement.
-//! Finite profiles and this Read-only schema are test inputs, not a shipping contract.
-//! Positive provider equations only: fixed current authority/permission and one
-//! exact replay key; no stale/unavailable/revocation/window/Stop witness here.
+//! Cold Node replay preserves real Task requests, protected replies and native custody.
+//! Recorded/Scheduled are finite test providers, not shipping authentication.
 use super::counter::CounterValue;
 use super::{Counter, CounterMessage, LedgerCommand, MailLedger, Receipts};
 use bombay::actors::ActorExt;
-use bombay::behavior::{BehaviorBase, EstablishedRecipient, Never, Protocol, User};
+use bombay::behavior::{BehaviorBase, Never, Protocol, User};
 use bombay::lifecycle::{TaskResult, TaskState};
 use bombay::prelude::{Application, MailAddr};
 use bombay::remote::{
-    Admission, Export, ExportError, ExportLimits, IngressError, Metadata, RequestKey,
-    RequestRefusal, json, try_retain, verify,
+    Attempt, Export, ExportError, ExportLimits, IngressError, Metadata, RequestKey, json, reply,
+    try_retain, verify,
 };
 use bombay::{
-    ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, ApplicationClient,
-    RootOrigin, SendError, TrySendError,
+    ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, ApplicationCleanupError,
+    ApplicationClient, RootOrigin, SendError, TrySendError,
 };
 use core::ops::AsyncFn;
 use serde::{Serialize, de::DeserializeOwned};
+use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
 use std::future::{Future, Ready};
 use std::num::NonZeroUsize;
-use std::ptr;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
+use zenoh::handlers::FifoChannel;
 use zenoh::query::{ConsolidationMode, Query, Reply};
 use zenoh::{Error as ZenohError, Session};
 
 #[path = "../../../../tests/application_support/mod.rs"]
 mod application_support;
+use super::protocol::*;
 use application_support::assert_completed;
 
-use super::protocol::*;
-
-struct ReadAcquisition<Operation, Receipt, WireValue, Target: Protocol<Addr = MailAddr>> {
-    invocation: Result<(), ZenohError>,
-    query_publication: Option<IngressError<Query>>,
-    #[expect(
-        clippy::option_option,
-        reason = "retain not acquired, acquired closure and acquired Query independently"
-    )]
-    query: Option<Option<(Query, OwnedSemaphorePermit)>>,
+struct ProtectedReply<Operation, Receipt, Value> {
+    issued: Result<(), ZenohError>,
+    originals: Vec<(Reply, OwnedSemaphorePermit)>,
+    publications: Arc<Mutex<Vec<Result<(), IngressError<Reply>>>>>,
     original: Option<ProtectedMessage>,
     shape: Option<Result<(), json::Error>>,
-    declaration: Option<Result<ReadRequest<Operation>, serde_json::Error>>,
+    declaration: Option<Result<ReadReply<Value, Operation>, serde_json::Error>>,
     verification: Option<Result<Receipt, VerificationError>>,
     scope: Option<Result<(), VerificationError>>,
-    attempt: Option<Result<(), RequestRefusal<VerificationError>>>,
-    #[expect(
-        clippy::type_complexity,
-        reason = "retain first or duplicate originals and every exact refusal in the acquisition that received them"
-    )]
-    retained: Option<
-        Result<
-            (RequestKey<Target>, Option<(Box<[u8]>, Box<[u8]>, Receipt)>),
-            ((Box<[u8]>, Box<[u8]>, Receipt), ExportError),
-        >,
-    >,
-    original_allocations: Option<(*const u8, *const u8)>,
-    source: Option<usize>,
-    #[expect(
-        clippy::option_option,
-        reason = "distinguish no native acquisition from an acquired closed stream"
-    )]
-    native_acquisition: Option<Option<()>>,
-    reply_publication: Option<Result<(), ZenohError>>,
-    reply: Option<(Reply, OwnedSemaphorePermit)>,
-    reply_original: Option<ProtectedMessage>,
-    reply_shape: Option<Result<(), json::Error>>,
-    reply_declaration: Option<Result<ReadReply<WireValue, Operation>, serde_json::Error>>,
-    reply_verification: Option<Result<Receipt, VerificationError>>,
-    reply_scope: Option<Result<(), VerificationError>>,
 }
-struct ReadStudy<Target, Replies, Operation, Receipt, WireValue>
-where
-    Target: Protocol<Addr = MailAddr>,
-    Replies: Protocol<Addr = MailAddr>,
-{
+
+struct ReadExchange<Operation, Receipt, Value> {
     current: Metadata,
     binding: Binding,
-    target: MailAddr,
-    caller_zid: String,
-    receiver_zid: String,
+    caller: String,
+    receiver: String,
     batch: Option<User<MailAddr, TaskResult<Vec<ProtectedMessage>>>>,
-    batch_allocations: Vec<(*const u8, *const u8)>,
+    allocations: Vec<(*const u8, *const u8)>,
     begun: Result<(), SendError<BatchCommand>>,
-    acquisitions: Vec<ReadAcquisition<Operation, Receipt, WireValue, Target>>,
-    #[expect(
-        clippy::type_complexity,
-        reason = "retain every affine request original, native client and drained tail without another owner"
-    )]
-    requests: Vec<(
-        RequestKey<Target>,
-        Box<[u8]>,
-        Box<[u8]>,
-        Receipt,
-        Admission<Target::Msg>,
-        Option<Option<User<MailAddr, Replies::Msg>>>,
-        ApplicationClient<EstablishedRecipient<Target>, Replies>,
-        Vec<User<MailAddr, Replies::Msg>>,
-    )>,
+    replies: Vec<ProtectedReply<Operation, Receipt, Value>>,
     first_retirement: Option<ActorRetirementReport>,
-    #[expect(
-        clippy::type_complexity,
-        reason = "retain each original Query refusal and its native callback publication"
-    )]
-    query_callbacks: Arc<Mutex<Vec<Result<(), mpsc::error::TrySendError<IngressError<Query>>>>>>,
-    #[expect(
-        clippy::type_complexity,
-        reason = "retain the original Reply and native ingress cause for every callback"
-    )]
-    reply_callbacks: Vec<Arc<Mutex<Vec<Result<(), IngressError<Reply>>>>>>,
-    query_drain: Vec<(Query, OwnedSemaphorePermit)>,
-    query_end: mpsc::error::TryRecvError,
-    refusal_drain: Vec<IngressError<Query>>,
-    refusal_end: mpsc::error::TryRecvError,
-    undeclared: Result<(), ZenohError>,
-    sender_cleanup: Result<(), bombay::ApplicationCleanupError>,
-    #[expect(
-        clippy::type_complexity,
-        reason = "retain the concrete Task root and every original native retirement lane"
-    )]
-    sender_native: Result<
+    cleanup: Result<(), ApplicationCleanupError>,
+    report: Option<ActorRetirementReport>,
+    native: Result<
         (
             RootOrigin<SenderRoot>,
             ActorRetirement<SenderRoot, Never, Vec<Never>>,
         ),
         oneshot::error::RecvError,
     >,
-    sender_notifications: Result<ActorNotificationReceipts, oneshot::error::RecvError>,
-    sender_closed: Result<(), ZenohError>,
-}
-
-impl<Target, Replies, Operation, Receipt, WireValue>
-    ReadStudy<Target, Replies, Operation, Receipt, WireValue>
-where
-    Target: Protocol<Addr = MailAddr>,
-    Replies: Protocol<Addr = MailAddr>,
-{
-    fn native_outcomes(&self) -> impl Iterator<Item = &User<MailAddr, Replies::Msg>> {
-        self.requests
-            .iter()
-            .filter_map(|entry| entry.5.as_ref().and_then(Option::as_ref))
-    }
-
-    fn request_original<'a>(
-        &'a self,
-        acquired: &'a ReadAcquisition<Operation, Receipt, WireValue, Target>,
-    ) -> Option<(&'a [u8], &'a [u8], &'a Receipt)> {
-        match acquired.retained.as_ref()? {
-            Ok((key, None)) => {
-                let (_, protected, proof, receipt, _, _, _, _) =
-                    self.requests.iter().find(|entry| &entry.0 == key)?;
-                Some((protected, proof, receipt))
-            }
-            Ok((_, Some(original))) | Err((original, _)) => {
-                Some((&original.0, &original.1, &original.2))
-            }
-        }
-    }
+    notifications: Result<ActorNotificationReceipts, oneshot::error::RecvError>,
+    closed: Result<(), ZenohError>,
 }
 
 #[expect(
     clippy::too_many_arguments,
     clippy::too_many_lines,
-    clippy::type_complexity,
-    reason = "one causal trace keeps explicit policy inputs and all original acquisition and cleanup products together"
+    reason = "one peer trace preserves actual typed Task, protected replies and all independent cleanup products"
 )]
-async fn read_study<Target, Replies, Operation, Receipt, WireValue, FirstRetirement>(
-    mut export: Export<Target, Replies, Receipt>,
-    mut announcements: mpsc::Receiver<IngressError<Query>>,
-    query_callbacks: Arc<Mutex<Vec<Result<(), mpsc::error::TrySendError<IngressError<Query>>>>>>,
-    receiver_session: &Session,
+async fn read_queries<Operation, Receipt, Value, FirstRetirement>(
     address: &str,
-    target: MailAddr,
+    receiver: &str,
     protocol: &str,
     binding: Binding,
     operation: Operation,
     profile: ProviderProfile,
-    expected: WireValue,
-    read: fn(EstablishedRecipient<Replies>) -> Target::Msg,
-    encode: fn(&Replies::Msg) -> WireValue,
+    expected: Value,
+    records: &RefCell<Vec<ProtectedMessage>>,
+    claims: &RefCell<Option<Metadata>>,
     mut first_retirement: Option<FirstRetirement>,
-    provider: impl AsyncFn(
+    provider: &impl AsyncFn(
         &ProtectedMessage,
         &[ProtectedMessage],
         Binding,
     ) -> Result<Receipt, VerificationError>,
     projection: fn(&Receipt) -> &ProofScope<Operation>,
-    identity: fn(&Receipt) -> (&Binding, u64),
-) -> ReadStudy<Target, Replies, Operation, Receipt, WireValue>
+) -> ReadExchange<Operation, Receipt, Value>
 where
-    Target: Protocol<Addr = MailAddr>,
-    Target::Msg: Send + 'static,
-    Replies: Protocol<Addr = MailAddr>,
-    Replies::Msg: Send,
     Operation: Copy + Eq + Serialize + DeserializeOwned,
-    WireValue: Serialize + DeserializeOwned,
+    Value: Serialize + DeserializeOwned,
     FirstRetirement: Future<Output = ActorRetirementReport>,
 {
+    let deadline = Instant::now() + Duration::from_secs(30);
     let mut sender = Application::new(RequestTask::new().stop_on_shutdown())
         .open_node(configuration(address, &EndpointRole::Caller))
         .await
-        .unwrap_or_else(|_| panic!("explicit caller Node setup"));
-    // The owner is outside borrowed Sender Work; no fresh runtime is opened.
-    let retained_export = &mut export;
-    let refused_queries = &mut announcements;
+        .unwrap_or_else(|_| panic!("the actual Task Node opens"));
     let connection = sender.session.clone();
-    let caller_session = &connection;
-    let (execution, receiving) = sender.execute_with(|application| async move {
-        let caller_zid = caller_session.zid().to_string();
-        let receiver_zid = receiver_session.zid().to_string();
-        let current = metadata(profile, protocol, caller_zid.clone(), receiver_zid.clone());
-        let deadline = Instant::now() + Duration::from_secs(30);
-        let request_bytes = serde_json::to_vec(&ReadRequestRef {
-            bombay: &current, kind: Purpose::Request, operation,
-        }).unwrap();
-        let reply_bytes = serde_json::to_vec(&ReadReplyRef {
-            bombay: &current, kind: Purpose::ReadReply, operation, value: &expected,
-        }).unwrap();
-        let records = vec![
-            ProtectedMessage { protected: request_bytes.clone().into_boxed_slice(), proof: Box::from([7, 11]) },
-            ProtectedMessage { protected: reply_bytes.into_boxed_slice(), proof: Box::from([13, 17]) },
-        ];
-        let originals = (0..2).map(|_| ProtectedMessage {
-            protected: request_bytes.clone().into_boxed_slice(), proof: Box::from([7, 11]),
-        }).collect::<Vec<_>>();
-        let batch_allocations = originals.iter().map(|r| (r.protected.as_ptr(), r.proof.as_ptr())).collect();
-        let mut requests = application.external::<RequestBatch>().unwrap();
-        let begun = requests.send(&application.root().established_recipient(), BatchCommand::Complete {
-            result: originals, reply_to: requests.recipient(),
-        }).await;
-        let batch = if begun.is_ok() { requests.receive().await } else { None };
-        let mut acquisitions = Vec::new();
-        let mut reply_callbacks = Vec::new();
-        let mut joined_first = None;
-        if let Some(User { message: TaskResult::Completed(originals), .. }) = &batch {
-            for request in originals {
-                let reply_capacity = Arc::new(Semaphore::new(2));
-                let (incoming_reply, mut received_reply) = mpsc::channel(2);
-                let publications = Arc::new(Mutex::new(Vec::new()));
-                let callback_publications = Arc::clone(&publications);
-                let invocation = caller_session.get("bombay/replay/read")
-                    .consolidation(ConsolidationMode::None).timeout(Duration::from_secs(3))
-                    .payload(request.protected.to_vec()).attachment(request.proof.to_vec())
-                    .callback(move |reply| {
-                        let retained = try_retain(&incoming_reply, &reply_capacity, reply);
-                        callback_publications.lock().unwrap().push(retained);
-                    }).await;
-                let mut acquired = ReadAcquisition {
-                    invocation, query_publication: None, query: None, original: None, shape: None,
-                    declaration: None, verification: None, scope: None, attempt: None,
-                    retained: None, original_allocations: None, source: None, native_acquisition: None,
-                    reply_publication: None, reply: None, reply_original: None, reply_shape: None, reply_declaration: None,
-                    reply_verification: None, reply_scope: None,
+    let caller = sender.runtime_id();
+    let current = metadata(profile, protocol, caller.clone(), receiver.to_owned());
+    *claims.borrow_mut() = Some(metadata(
+        profile,
+        protocol,
+        caller.clone(),
+        receiver.to_owned(),
+    ));
+    let request = serde_json::to_vec(&ReadRequestRef {
+        bombay: &current,
+        kind: Purpose::Request,
+        operation,
+    })
+    .unwrap();
+    let response = serde_json::to_vec(&ReadReplyRef {
+        bombay: &current,
+        kind: Purpose::ReadReply,
+        operation,
+        value: &expected,
+    })
+    .unwrap();
+    records.borrow_mut().extend([
+        ProtectedMessage {
+            protected: request.clone().into_boxed_slice(),
+            proof: Box::from([7, 11]),
+        },
+        ProtectedMessage {
+            protected: response.into_boxed_slice(),
+            proof: Box::from([13, 17]),
+        },
+    ]);
+    let outcome = sender
+        .run_with(|application| {
+            let connection = &connection;
+            let current = &current;
+            async move {
+                let querier = connection
+                    .declare_querier("bombay/replay/read")
+                    .await
+                    .unwrap();
+                let matching = querier
+                    .matching_listener()
+                    .with(FifoChannel::new(2))
+                    .await
+                    .unwrap();
+                loop {
+                    let status = matching
+                        .recv_async()
+                        .await
+                        .expect("the real declaration is discovered");
+                    if status.matching() {
+                        break;
+                    }
+                }
+                matching
+                    .undeclare()
+                    .await
+                    .expect("the matching listener withdraws");
+                querier
+                    .undeclare()
+                    .await
+                    .expect("the setup querier withdraws");
+                let originals = (0..2)
+                    .map(|_| ProtectedMessage {
+                        protected: request.clone().into_boxed_slice(),
+                        proof: Box::from([7, 11]),
+                    })
+                    .collect::<Vec<_>>();
+                let allocations = originals
+                    .iter()
+                    .map(|r| (r.protected.as_ptr(), r.proof.as_ptr()))
+                    .collect();
+                let mut client = application.external::<RequestBatch>().unwrap();
+                let begun = client
+                    .send(
+                        &application.root().established_recipient(),
+                        BatchCommand::Complete {
+                            result: originals,
+                            reply_to: client.recipient(),
+                        },
+                    )
+                    .await;
+                let batch = if begun.is_ok() {
+                    client.receive().await
+                } else {
+                    None
                 };
-                if acquired.invocation.is_ok() {
-                    tokio::select! {
-                        () = retained_export.receive_query(&mut acquired.query) => {},
-                        refusal = refused_queries.recv() => acquired.query_publication = refusal,
-                        reply = received_reply.recv() => acquired.reply = reply,
-                    }
-                    if let Some(Some((query, _permit))) = &acquired.query {
-                            if let (Some(payload), Some(proof)) = (query.payload(), query.attachment()) {
-                                acquired.original = Some(ProtectedMessage {
-                                    protected: payload.to_bytes().into_owned().into_boxed_slice(),
-                                    proof: proof.to_bytes().into_owned().into_boxed_slice(),
-                                });
-                                let original = acquired.original.as_ref().unwrap();
-                                acquired.original_allocations = Some((original.protected.as_ptr(), original.proof.as_ptr()));
-                                acquired.shape = Some(json::check(&original.protected, &original.proof, &limits()));
-                                if matches!(&acquired.shape, Some(Ok(()))) {
-                                    acquired.declaration = Some(serde_json::from_slice(&original.protected));
-                                    verify(original, &mut acquired.verification, |r| provider(r, &records, binding)).await;
-                                }
-                                if let (Some(Ok(declared)), Some(Ok(receipt))) = (&acquired.declaration, &acquired.verification) {
-                                    acquired.scope = Some(current_scope(projection(receipt), &current, &operation,
-                                        Purpose::Request, deadline));
-                                    if matches!(&acquired.scope, Some(Ok(()))) && declared.bombay == current
-                                        && declared.kind == Purpose::Request && declared.operation == operation
-                                        && identity(receipt).0 == &binding {
-                                        let original = acquired.original.take().unwrap();
-                                        let Some(Ok(receipt)) = acquired.verification.take() else {
-                                            panic!("the observed original success moves into retained ownership");
-                                        };
-                                        acquired.retained = Some(retained_export.retain(
-                                            original.protected, original.proof, receipt,
-                                        ));
-                                        let key = match &acquired.retained {
-                                            Some(Ok((key, duplicate))) => {
-                                                if duplicate.is_none() {
-                                                    acquired.attempt = Some(retained_export.attempt(key, |receipt| {
-                                                        current_scope(projection(receipt), &current, &operation, Purpose::Request, deadline)?;
-                                                        Ok(&current)
-                                                    }, read).map(|_| ()));
-                                                    tokio::select! {
-                                                        original = retained_export.receive_native(key) => acquired.native_acquisition = Some(original),
-                                                        reply = received_reply.recv() => acquired.reply = reply,
-                                                    }
-                                                }
-                                                Some(key)
-                                            }
-                                            Some(Err(_)) | None => None,
-                                        };
-                                        let source = key.and_then(|key| retained_export.request(key))
-                                            .and_then(|request| request.4.as_ref().and_then(Option::as_ref));
-                                        if let Some(source) = source {
-                                            acquired.source = Some(ptr::from_ref(source).addr());
-                                            let actual = encode(&source.message);
-                                            let bytes = serde_json::to_vec(&ReadReplyRef {
-                                                bombay: &current, kind: Purpose::ReadReply, operation, value: &actual,
-                                            }).unwrap();
-                                            acquired.reply_publication = Some(query.reply("bombay/replay/read", bytes)
-                                                .attachment(vec![13, 17]).await);
-                                        } else {
-                                            acquired.reply_publication = Some(query.reply_err("native read refused").await);
-                                        }
-                                    }
-                                }
-                            }
-                            if acquired.reply_publication.is_none() {
-                                acquired.reply_publication = Some(query.reply_err("protected read refused").await);
-                            }
-                    } else if let Some(refusal) = &acquired.query_publication {
-                        let query = match refusal {
-                            IngressError::Capacity { original, .. }
-                            | IngressError::Queue { cause: mpsc::error::TrySendError::Full((original, _))
-                                | mpsc::error::TrySendError::Closed((original, _)) } => original,
+                let mut replies = Vec::new();
+                let mut retired = None;
+                if let Some(User {
+                    message: TaskResult::Completed(originals),
+                    ..
+                }) = &batch
+                {
+                    for request in originals {
+                        let capacity = Arc::new(Semaphore::new(2));
+                        let (published, mut received) = mpsc::channel(2);
+                        let publications = Arc::new(Mutex::new(Vec::new()));
+                        let observed = Arc::clone(&publications);
+                        let issued = connection
+                            .get("bombay/replay/read")
+                            .consolidation(ConsolidationMode::None)
+                            .timeout(Duration::from_secs(5))
+                            .payload(request.protected.to_vec())
+                            .attachment(request.proof.to_vec())
+                            .callback(move |reply| {
+                                let original = try_retain(&published, &capacity, reply);
+                                observed.lock().unwrap().push(original);
+                            })
+                            .await;
+                        let mut acquired = ProtectedReply {
+                            issued,
+                            originals: Vec::new(),
+                            publications,
+                            original: None,
+                            shape: None,
+                            declaration: None,
+                            verification: None,
+                            scope: None,
                         };
-                        acquired.reply_publication = Some(query.reply_err("retained query refused").await);
-                    }
-                    if acquired.reply.is_none() { acquired.reply = received_reply.recv().await; }
-                    if let Some((reply, _permit)) = &acquired.reply
-                        && let Ok(sample) = reply.result() {
-                            acquired.reply_original = Some(ProtectedMessage {
-                                protected: sample.payload().to_bytes().into_owned().into_boxed_slice(),
-                                proof: sample.attachment().map(|p| p.to_bytes().into_owned().into_boxed_slice()).unwrap_or_default(),
+                        while let Some(original) = received.recv().await {
+                            acquired.originals.push(original);
+                        }
+                        if let Some((reply, _permit)) = acquired.originals.first()
+                            && let Ok(sample) = reply.result()
+                        {
+                            acquired.original = Some(ProtectedMessage {
+                                protected: sample
+                                    .payload()
+                                    .to_bytes()
+                                    .into_owned()
+                                    .into_boxed_slice(),
+                                proof: sample
+                                    .attachment()
+                                    .map(|proof| proof.to_bytes().into_owned().into_boxed_slice())
+                                    .unwrap_or_default(),
                             });
-                            let original = acquired.reply_original.as_ref().unwrap();
-                            acquired.reply_shape = Some(json::check(&original.protected, &original.proof, &limits()));
-                            if matches!(&acquired.reply_shape, Some(Ok(()))) {
-                                acquired.reply_declaration = Some(serde_json::from_slice(&original.protected));
-                                verify(original, &mut acquired.reply_verification, |r| provider(r, &records, binding)).await;
-                                if let Some(Ok(receipt)) = &acquired.reply_verification {
-                                    acquired.reply_scope = Some(current_scope(projection(receipt), &current, &operation,
-                                        Purpose::ReadReply, deadline));
+                            let original = acquired.original.as_ref().unwrap();
+                            acquired.shape =
+                                Some(json::check(&original.protected, &original.proof, &limits()));
+                            if matches!(acquired.shape, Some(Ok(()))) {
+                                acquired.declaration =
+                                    Some(serde_json::from_slice(&original.protected));
+                                let records = records.borrow();
+                                verify(original, &mut acquired.verification, |r| {
+                                    provider(r, &records, binding)
+                                })
+                                .await;
+                                if let Some(Ok(receipt)) = &acquired.verification {
+                                    acquired.scope = Some(current_scope(
+                                        projection(receipt),
+                                        current,
+                                        &operation,
+                                        Purpose::ReadReply,
+                                        deadline,
+                                    ));
                                 }
                             }
+                        }
+                        if matches!(acquired.verification, Some(Ok(_)))
+                            && retired.is_none()
+                            && let Some(retirement) = first_retirement.take()
+                        {
+                            retired = Some(retirement.await);
+                        }
+                        replies.push(acquired);
                     }
                 }
-                if acquired.source.is_some()
-                    && joined_first.is_none()
-                    && let Some(retirement) = first_retirement.take() {
-                    joined_first = Some(retirement.await);
-                }
-                reply_callbacks.push(publications);
-                acquisitions.push(acquired);
+                (batch, allocations, begun, replies, retired, client)
             }
-        }
-        (current, caller_zid, receiver_zid, batch, batch_allocations, begun,
-            acquisitions, reply_callbacks, joined_first, requests)
-    }).unwrap_or_else(|_| panic!("the concrete sender Application enters its host"));
-    let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, sender_native, sender_notifications, ()) = outcome.into_parts();
-    let (output, sender_cleanup) = outcome
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual Task Node enters its host"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((batch, allocations, begun, replies, first_retirement, client), cleanup) = work
         .try_into_completed()
-        .unwrap_or_else(|_| panic!("original sender Work is independently received"));
-    let (
-        current,
-        caller_zid,
-        receiver_zid,
-        batch,
-        batch_allocations,
-        begun,
-        acquisitions,
-        reply_callbacks,
-        joined_first,
-        requests,
-    ) = output;
-    drop(requests);
-    let sender_closed = sender.close().await;
-    assert!(connection.is_closed());
-    let (undeclared, session, mut incoming, retained) = export.undeclare().await;
-    assert_eq!(session.zid(), receiver_session.zid());
-    let mut requests = Vec::new();
-    for (key, protected, proof, receipt, admission, native, mut client) in retained {
-        client.close_admission();
-        let mut tail = Vec::new();
-        while let Some(original) = client.receive().await {
-            tail.push(original);
-        }
-        requests.push((
-            key, protected, proof, receipt, admission, native, client, tail,
-        ));
-    }
-    let mut query_drain = Vec::new();
-    let query_end = loop {
-        match incoming.try_recv() {
-            Ok(original) => query_drain.push(original),
-            Err(cause) => break cause,
-        }
-    };
-    let mut refusal_drain = Vec::new();
-    let refusal_end = loop {
-        match announcements.try_recv() {
-            Ok(original) => refusal_drain.push(original),
-            Err(cause) => break cause,
-        }
-    };
-    drop(session);
-    ReadStudy {
+        .unwrap_or_else(|_| panic!("the original Task Work completes"));
+    drop(client);
+    let closed = sender.close().await;
+    ReadExchange {
         current,
         binding,
-        target,
-        caller_zid,
-        receiver_zid,
+        caller,
+        receiver: receiver.to_owned(),
         batch,
-        batch_allocations,
+        allocations,
         begun,
-        acquisitions,
-        requests,
-        first_retirement: joined_first,
-        query_callbacks,
-        reply_callbacks,
-        query_drain,
-        query_end,
-        refusal_drain,
-        refusal_end,
-        undeclared,
-        sender_cleanup,
-        sender_native,
-        sender_notifications,
-        sender_closed,
+        replies,
+        first_retirement,
+        cleanup,
+        report,
+        native,
+        notifications,
+        closed,
     }
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "observe the complete independent request, provider, native and cleanup trace before accepting the replay result"
-)]
-fn assert_study<Target, Replies, Operation, Receipt, WireValue>(
-    study: &ReadStudy<Target, Replies, Operation, Receipt, WireValue>,
-    expected: &WireValue,
+fn assert_exchange<Operation, Receipt, Value>(
+    exchange: &ReadExchange<Operation, Receipt, Value>,
+    expected: &Value,
     operation: Operation,
-    retention: ReadRetention,
     identity: fn(&Receipt) -> (&Binding, u64),
+    proof: fn(&Receipt) -> Option<&[u8]>,
 ) where
-    Target: Protocol<Addr = MailAddr>,
-    Replies: Protocol<Addr = MailAddr>,
     Operation: Copy + Eq + Debug,
-    WireValue: Eq + Debug,
+    Value: Eq + Debug,
 {
-    assert!(study.sender_cleanup.is_ok());
-    assert!(study.sender_closed.is_ok());
-    let notifications = study.sender_notifications.as_ref().unwrap();
-    assert!(notifications.termination.is_ok());
-    assert!(notifications.retirement.is_ok());
-    let (_, retirement) = study.sender_native.as_ref().unwrap();
-    let custody = retirement.custody().unwrap();
+    assert!(exchange.cleanup.is_ok() && exchange.closed.is_ok());
+    assert_notifications(&exchange.notifications);
+    let report = exchange.report.expect("the actual Task report is retained");
+    assert_report(report);
+    let (_, native) = exchange
+        .native
+        .as_ref()
+        .expect("the original Task root is retained");
+    let custody = native
+        .custody()
+        .expect("the complete original Task remains owned");
     assert_eq!(custody.behavior.base().state(), TaskState::Completed);
     assert!(custody.capability_failures.is_empty() && custody.additional_failures.is_empty());
     assert!(custody.unread_owner_cancellation.is_none() && custody.retirement_failures.is_empty());
-    assert!(study.begun.is_ok() && study.undeclared.is_ok());
-    assert!(study.query_drain.is_empty() && study.refusal_drain.is_empty());
-    for request in &study.requests {
-        assert!(request.7.is_empty());
-    }
-    assert!(matches!(
-        study.query_end,
-        mpsc::error::TryRecvError::Disconnected
-    ));
-    assert!(matches!(
-        study.refusal_end,
-        mpsc::error::TryRecvError::Disconnected
-    ));
-    assert_ne!(study.caller_zid, study.receiver_zid);
-    assert_eq!(study.current.caller_session.as_ref(), study.caller_zid);
+    assert!(exchange.begun.is_ok());
+    assert_ne!(exchange.caller, exchange.receiver);
+    assert_eq!(exchange.current.caller_session.as_ref(), exchange.caller);
     assert_eq!(
-        study.current.runtime_generation.as_ref(),
-        study.receiver_zid
+        exchange.current.runtime_generation.as_ref(),
+        exchange.receiver
     );
-    assert_eq!(study.current.actor_generation, 0);
-    assert_eq!(study.target, MailAddr::APPLICATION_ROOT);
-    let batch = study.batch.as_ref().unwrap();
+    assert_eq!(
+        exchange.current.actor_generation,
+        MailAddr::APPLICATION_ROOT.0
+    );
+    let batch = exchange
+        .batch
+        .as_ref()
+        .expect("the actual typed Task batch is received");
     assert_eq!(batch.from, MailAddr::APPLICATION_ROOT);
     let TaskResult::Completed(originals) = &batch.message else {
-        panic!("the actual Task sends its complete batch");
+        panic!("the Task completes its original batch");
     };
     assert_eq!(originals.len(), 2);
-    for (original, (protected, proof)) in originals.iter().zip(&study.batch_allocations) {
-        assert_eq!(original.protected.as_ptr(), *protected);
-        assert_eq!(original.proof.as_ptr(), *proof);
+    assert_eq!(exchange.allocations.len(), originals.len());
+    for (original, allocation) in originals.iter().zip(&exchange.allocations) {
+        assert_eq!(
+            (original.protected.as_ptr(), original.proof.as_ptr()),
+            *allocation
+        );
     }
-    let callbacks = study.query_callbacks.lock().unwrap();
-    assert_eq!(callbacks.len(), 0);
-    for result in callbacks.iter() {
-        assert!(result.is_ok());
-    }
-    assert_eq!(study.acquisitions.len(), 2);
-    let first = &study.acquisitions[0];
-    let Some(Ok((first_key, _))) = &first.retained else {
-        panic!("first actual retained key");
-    };
-    let first_admission = &study
-        .requests
-        .iter()
-        .find(|entry| &entry.0 == first_key)
-        .unwrap()
-        .4;
-    assert!(matches!(first_admission, Admission::Returned(Ok(()))));
-    assert!(matches!(first.attempt, Some(Ok(()))));
-    assert!(matches!(first.native_acquisition, Some(Some(()))));
-    assert!(study.native_outcomes().next().is_some());
-    for actual in study.native_outcomes() {
-        assert_eq!(actual.from, study.target);
-    }
-    for (index, acquisition) in study.acquisitions.iter().enumerate() {
-        assert!(acquisition.invocation.is_ok());
-        assert!(acquisition.query_publication.is_none());
-        assert!(matches!(&acquisition.query, Some(Some(_))));
-        assert!(matches!(&acquisition.shape, Some(Ok(()))));
-        if let Some(original) = &acquisition.verification {
-            assert_verification(Some(original));
-        }
-        let (protected, proof, receipt) = study.request_original(acquisition).unwrap();
-        let (logical_binding, sequence) = identity(receipt);
-        assert_eq!(logical_binding, &study.binding);
-        assert_eq!(sequence, study.current.request_sequence);
-        assert_eq!(protected, originals[index].protected.as_ref());
-        assert_eq!(proof, originals[index].proof.as_ref());
-        let (protected_allocation, proof_allocation) = acquisition.original_allocations.unwrap();
-        assert_eq!(protected.as_ptr(), protected_allocation);
-        assert_eq!(proof.as_ptr(), proof_allocation);
-        if let Some(Err(refusal)) = &acquisition.attempt {
-            match refusal {
-                RequestRefusal::Authority { cause } => {
-                    panic!("original current authority refusal: {cause:?}")
-                }
-                RequestRefusal::UnknownRequest => panic!("the export refused its own issued key"),
-            }
-        }
-        if let Some(Err((_, refusal))) = &acquisition.retained {
-            panic!("actual production retention refusal: {refusal}");
-        }
-
-        let declared = acquisition.declaration.as_ref().unwrap().as_ref().unwrap();
-        assert_eq!(declared.bombay, study.current);
-        assert_eq!(declared.kind, Purpose::Request);
-        assert_eq!(declared.operation, operation);
-        assert!(matches!(&acquisition.scope, Some(Ok(()))));
-        assert!(matches!(&acquisition.reply_publication, Some(Ok(()))));
-        let publications = study.reply_callbacks[index].lock().unwrap();
+    assert_eq!(exchange.replies.len(), 2);
+    for reply in &exchange.replies {
+        let publications = reply.publications.lock().unwrap();
+        assert!(reply.issued.is_ok());
         assert_eq!(publications.len(), 1);
-        for result in publications.iter() {
-            assert!(result.is_ok());
-        }
-        let (reply, _permit) = acquisition.reply.as_ref().unwrap();
-        if let Some(Ok(declared)) = &acquisition.reply_declaration {
-            let sample = reply.result().unwrap();
-            assert_eq!(sample.key_expr().as_str(), "bombay/replay/read");
-            let raw = acquisition.reply_original.as_ref().unwrap();
-            let actual_payload = sample.payload().to_bytes();
-            assert_eq!(raw.protected.as_ref(), actual_payload.as_ref());
-            assert_eq!(raw.proof.as_ref(), [13, 17]);
-            assert_eq!(declared.bombay, study.current);
-            assert_eq!(declared.kind, Purpose::ReadReply);
-            assert_eq!(declared.operation, operation);
-            assert_eq!(&declared.value, expected);
-            assert!(matches!(&acquisition.reply_shape, Some(Ok(()))));
-            assert_verification(acquisition.reply_verification.as_ref());
-            assert!(acquisition.reply_original.is_some());
-            assert!(matches!(&acquisition.reply_scope, Some(Ok(()))));
-        } else {
-            assert!(matches!(retention, ReadRetention::Resend));
-            assert_eq!(index, 1);
-            let refusal = reply.result().unwrap_err();
-            let actual_refusal = refusal.payload().to_bytes();
-            assert_eq!(actual_refusal.as_ref(), b"native read refused");
+        assert!(publications.iter().all(Result::is_ok));
+        assert_eq!(reply.originals.len(), 1);
+        assert!(matches!(reply.shape, Some(Ok(()))) && matches!(reply.scope, Some(Ok(()))));
+        let original = reply
+            .original
+            .as_ref()
+            .expect("actual protected reply bytes remain");
+        let sample = reply.originals[0]
+            .0
+            .result()
+            .expect("the actual Query reply succeeds");
+        let payload = sample.payload().to_bytes();
+        assert_eq!(original.protected.as_ref(), payload.as_ref());
+        assert_eq!(sample.key_expr().as_str(), "bombay/replay/read");
+        assert_eq!(original.proof.as_ref(), [13, 17]);
+        let declared = reply.declaration.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(declared.bombay, exchange.current);
+        assert_eq!(declared.kind, Purpose::ReadReply);
+        assert_eq!(declared.operation, operation);
+        assert_eq!(&declared.value, expected);
+        assert_verification(reply.verification.as_ref());
+        let receipt = reply.verification.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(
+            identity(receipt),
+            (&exchange.binding, exchange.current.request_sequence)
+        );
+        if let Some(actual) = proof(receipt) {
+            assert_eq!(actual, [13, 17]);
         }
     }
 }
@@ -586,19 +389,16 @@ fn assert_study<Target, Replies, Operation, Receipt, WireValue>(
 fn assert_verification<Receipt>(verification: Option<&Result<Receipt, VerificationError>>) {
     match verification {
         Some(Ok(_)) => {}
-        Some(Err(VerificationError::Declaration(cause))) => panic!("original declaration: {cause}"),
-        Some(Err(VerificationError::Unavailable(cause))) => {
-            panic!("original provider publication: {cause}")
-        }
-        Some(Err(VerificationError::Invalid)) => panic!("exact byte/proof/profile refused"),
+        Some(Err(cause)) => panic!("original provider refusal: {cause:?}"),
         None => panic!("the actual provider result was not acquired"),
     }
 }
+
 #[expect(
     clippy::too_many_lines,
-    reason = "keep the complete independent Counter trace and acquired cleanup products in one witness"
+    reason = "one actual Counter Node trace retains protected replies and original native outcomes before inspection"
 )]
-async fn counter_case<Receipt>(
+async fn read_counter<Receipt>(
     profile: ProviderProfile,
     provider: impl AsyncFn(
         &ProtectedMessage,
@@ -610,124 +410,233 @@ async fn counter_case<Receipt>(
     proof: fn(&Receipt) -> Option<&[u8]>,
     same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
-    let retention = read_retention();
     let address = reserved_address();
-    let mut node = Application::new(Counter::new().stop_on_shutdown())
+    let records = RefCell::new(Vec::new());
+    let claims = RefCell::new(None::<Metadata>);
+    let allocations = RefCell::new(Vec::new());
+    let encoded = RefCell::new(Vec::new());
+    let constructors = Cell::new(0);
+    let decoded = Cell::new(0);
+    let protected = Cell::new(0);
+    let binding = Binding {
+        deployment: "two-node-read-study",
+        caller: "caller",
+        controller: "owner",
+        actor: "counter",
+        host: "receiver",
+        protocol: "counter",
+        target_assignment: "counter-root-test-assignment",
+        logical_session: 41,
+    };
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let current = |receipt: &Receipt, runtime: &str, target: MailAddr| {
+        let current = claims.borrow();
+        let actual = current.as_ref().ok_or(VerificationError::Invalid)?;
+        current_scope(
+            projection(receipt),
+            actual,
+            &CounterOperation::Read,
+            Purpose::Request,
+            deadline,
+        )?;
+        if actual.runtime_generation.as_ref() != runtime || actual.actor_generation != target.0 {
+            return Err(VerificationError::Invalid);
+        }
+        Ok(current)
+    };
+    let maximum = NonZeroUsize::new(2).unwrap();
+    let export = Export::new(
+        "bombay/replay/read",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes| {
+            decoded.set(decoded.get() + 1);
+            serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes)
+                .map(|request| request.operation)
+        },
+        reply(
+            |CounterOperation::Read| {
+                let constructors = &constructors;
+                Ok::<_, CounterOperation>(move |reply_to| {
+                    constructors.set(constructors.get() + 1);
+                    CounterMessage::Read(reply_to)
+                })
+            },
+            |receipt: &Receipt, original: &User<MailAddr, u64>| {
+                encoded.borrow_mut().push((original.from, original.message));
+                let scope = projection(receipt);
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &scope.bombay,
+                    kind: Purpose::ReadReply,
+                    operation: scope.operation,
+                    value: &original.message,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            allocations
+                .borrow_mut()
+                .push((bytes.as_ptr(), proof.as_ptr()));
+            let original = ProtectedMessage {
+                protected: bytes.into(),
+                proof: proof.into(),
+            };
+            provider(&original, &records.borrow(), binding).await
+        },
+        async |_: &[u8], _: &Receipt| {
+            protected.set(protected.get() + 1);
+            Ok::<_, Never>(Box::<[u8]>::from([13_u8, 17]))
+        },
+        same_request,
+        &current,
+        &current,
+    );
+    let node = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
-        .unwrap_or_else(|_| panic!("explicit receiver Node setup"));
-    let connection = node.session.clone();
-    let session = &connection;
-    let (execution, receiving) = node
-        .execute_with(|application| async move {
-            let target = application.root().established_recipient();
-            let target_address = application.root().address();
-            let (announced, announcements) = mpsc::channel(2);
-            let query_callbacks = Arc::new(Mutex::new(Vec::new()));
-            let observed = Arc::clone(&query_callbacks);
-            let export = application
-                .export::<_, CounterValue, Receipt>(
-                    target,
-                    "bombay/replay/read",
-                    ExportLimits {
-                        queued_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_requests: NonZeroUsize::new(2).unwrap(),
-                    },
-                    same_request,
-                    move |original| {
-                        let published = announced.try_send(original);
-                        observed.lock().unwrap().push(published);
-                    },
+        .unwrap_or_else(|_| panic!("the actual receiving Counter Node opens"));
+    let runtime = node.runtime_id();
+    let mut node = node.exports(export, async |application| {
+        Ok::<_, Never>(application.root().established_recipient())
+    });
+    let outcome = node
+        .run_with(|application| {
+            let address = &address;
+            let runtime = &runtime;
+            let records = &records;
+            let claims = &claims;
+            let provider = &provider;
+            async move {
+                let sender = application.sender().unwrap();
+                let primed = sender.send(CounterMessage::Increment).await;
+                let exchange = read_queries(
+                    address,
+                    runtime,
+                    "counter",
+                    binding,
+                    CounterOperation::Read,
+                    profile,
+                    1_u64,
+                    records,
+                    claims,
+                    None::<Ready<ActorRetirementReport>>,
+                    provider,
+                    projection,
                 )
-                .await
-                .unwrap_or_else(|_| panic!("actual Node-associated export"));
-            let sender = application.sender().unwrap();
-            let primed = sender.send(CounterMessage::Increment).await;
-            let study = read_study(
-                export,
-                announcements,
-                query_callbacks,
-                session,
-                &address,
-                target_address,
-                "counter",
-                Binding {
-                    deployment: "two-node-read-study",
-                    caller: "caller",
-                    controller: "owner",
-                    actor: "counter",
-                    host: "receiver",
-                    protocol: "counter",
-                    target_assignment: "counter-root-test-assignment",
-                    logical_session: 41,
-                },
-                CounterOperation::Read,
-                profile,
-                1,
-                CounterMessage::Read,
-                |value| *value,
-                None::<Ready<ActorRetirementReport>>,
-                provider,
-                projection,
-                identity,
-            )
-            .await;
-            let stopped = application.request_shutdown();
-            let report = application.lifecycle().retirement().await;
-            (study, primed, stopped, report)
+                .await;
+                let shutdown = application.shutdown();
+                let retirement = application.lifecycle().retirement().await;
+                (exchange, primed, shutdown, retirement)
+            }
         })
-        .unwrap_or_else(|_| panic!("receiver host entry"));
-    let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
-    let ((study, primed, stopped, report), cleanup) = outcome
+        .await
+        .unwrap_or_else(|_| panic!("the receiving Counter Node enters its host"));
+    let (export, bound, closed, polling, disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("the actual Counter Node finalizes"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((exchange, primed, shutdown, retirement), cleanup) = work
         .try_into_completed()
-        .unwrap_or_else(|_| panic!("original receiver Work output"));
-    let closed = node.close().await;
-    assert!(connection.is_closed());
-    let native = native.unwrap();
-    assert!(closed.is_ok() && cleanup.is_ok());
+        .unwrap_or_else(|_| panic!("the original Counter Work completes"));
+    cleanup.expect("actual Counter cleanup joins");
+    closed.expect("actual Counter connection closes");
     assert_notifications(&notifications);
-    assert_report(report);
-    assert!(primed.is_ok() && stopped.is_ok());
-    assert_study(&study, &1, CounterOperation::Read, retention, identity);
-    assert_provider_proof(&study, proof);
-    let first = study.native_outcomes().next().unwrap();
-    assert_eq!(first.from, study.target);
-    assert_eq!(first.message, 1);
-    let first_source = study.acquisitions[0]
-        .source
-        .expect("first actual in-owner native observation");
-    let sources = study
-        .acquisitions
-        .iter()
-        .map(|a| a.source)
-        .collect::<Vec<_>>();
-    let attempts = study
-        .acquisitions
-        .iter()
-        .filter(|a| a.attempt.is_some())
-        .count();
-    let native_outcome_count = study.native_outcomes().count();
-    let sender_native = study.sender_native.unwrap();
-    assert_completed(native, None);
-    assert_completed(sender_native, None);
-    // Counter Read is nonmutating: this observes local attempts and two real
-    // correlated Replies, not an actor-internal read counter or a replay protocol.
+    assert_report(retirement);
+    assert_eq!(report, Some(retirement));
+    assert!(primed.is_ok() && shutdown.is_ok() && polling.is_none() && disposal.is_none());
+    assert!(matches!(bound, Some(Ok(_))));
+    assert_exchange(&exchange, &1, CounterOperation::Read, identity, proof);
+    assert!(exchange.first_retirement.is_none());
+    let (origin, native) = native.expect("the complete Counter root remains owned");
+    let (_, _, startup, withdrawal, diagnostics, rows) = export.into_parts();
+    assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+    assert!(diagnostics.is_empty());
+    let [first, second] =
+        <[_; 2]>::try_from(rows).unwrap_or_else(|_| panic!("two actual requests remain retained"));
+    let first = first
+        .try_into_parts()
+        .unwrap_or_else(|_| panic!("the first request releases all producer loans"));
+    let second = second
+        .try_into_parts()
+        .unwrap_or_else(|_| panic!("the duplicate releases all producer loans"));
+    assert!(first.0.is_some());
+    assert_eq!(first.0, second.0);
+    assert_eq!(first.1, second.1);
+    let batch = exchange
+        .batch
+        .as_ref()
+        .expect("the actual Task batch remains acquired");
+    let TaskResult::Completed(originals) = &batch.message else {
+        panic!("the actual Task completed its original request batch");
+    };
+    for (raw, original) in [&first.1, &second.1].into_iter().zip(originals) {
+        assert_eq!(raw.0.as_ref(), original.protected.as_ref());
+        assert_eq!(raw.1.as_ref(), original.proof.as_ref());
+    }
+    let allocations = allocations.borrow();
     assert_eq!(
-        attempts, 1,
-        "a duplicate must reuse the first actual native outcome"
+        allocations.as_slice(),
+        [
+            (first.1.0.as_ptr(), first.1.1.as_ptr()),
+            (second.1.0.as_ptr(), second.1.1.as_ptr())
+        ]
     );
-    assert_eq!(native_outcome_count, 1);
-    assert_eq!(sources, [Some(first_source), Some(first_source)]);
-    assert!(study.acquisitions[1].attempt.is_none());
+    for receipt in [&first.2, &second.2] {
+        assert_verification(receipt.as_ref());
+        let receipt = receipt.as_ref().unwrap().as_ref().unwrap();
+        let scope = projection(receipt);
+        assert_eq!(scope.bombay, exchange.current);
+        assert_eq!(scope.kind, Purpose::Request);
+        assert_eq!(scope.operation, CounterOperation::Read);
+        assert_eq!(
+            identity(receipt),
+            (&binding, exchange.current.request_sequence)
+        );
+        if let Some(actual) = proof(receipt) {
+            assert_eq!(actual, [7, 11]);
+        }
+    }
+    let (constructor, client, admission, received, tail) =
+        first.4.expect("the actual first native read remains");
+    assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+    let client = match client {
+        Attempt::Returned(Ok(client)) => client,
+        _ => panic!("the original native reply client remains"),
+    };
+    let received = received
+        .expect("the first native reception was acquired")
+        .expect("the actual first User remains");
+    assert_eq!((received.from, received.message), (origin.address(), 1));
+    assert_ne!(client.address(), origin.address());
+    assert!(matches!(tail.as_slice(), [None]));
+    assert!(second.3.is_none() && second.4.is_none() && second.5.is_none() && second.6.is_none());
+    assert_eq!(
+        (decoded.get(), constructors.get(), protected.get()),
+        (1, 1, 1)
+    );
+    let encoded = encoded.borrow();
+    assert_eq!(encoded.as_slice(), [(origin.address(), 1)]);
+    assert!(matches!(first.5, Some(Ok(_))) && matches!(first.6, Some(Ok(_))));
+    assert_eq!((first.7.len(), second.7.len()), (1, 1));
+    assert!(first.7.iter().all(Result::is_ok) && second.7.iter().all(Result::is_ok));
+    assert!(matches!(first.8, (None, None, None)) && matches!(second.8, (None, None, None)));
+    assert!(matches!(first.9, (None, None, None, None, None, None)));
+    assert!(matches!(second.9, (None, None, None, None, None, None)));
+    assert_completed((origin, native), None);
+    assert_completed(exchange.native.unwrap(), None);
 }
 
 #[expect(
     clippy::too_many_lines,
-    reason = "the terminating Ledger trace preserves all native originals through cleanup before its replay oracle"
+    reason = "one terminating Ledger trace retains original append, native read and actual post-retirement replay"
 )]
-async fn ledger_case<Receipt>(
+async fn read_ledger<Receipt>(
     profile: ProviderProfile,
     provider: impl AsyncFn(
         &ProtectedMessage,
@@ -739,9 +648,102 @@ async fn ledger_case<Receipt>(
     proof: fn(&Receipt) -> Option<&[u8]>,
     same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
-    let retention = read_retention();
     let address = reserved_address();
-    let mut node = Application::new(
+    let records = RefCell::new(Vec::new());
+    let claims = RefCell::new(None::<Metadata>);
+    let allocations = RefCell::new(Vec::new());
+    let encoded = RefCell::new(Vec::new());
+    let constructors = Cell::new(0);
+    let decoded = Cell::new(0);
+    let protected = Cell::new(0);
+    let binding = Binding {
+        deployment: "two-node-read-study",
+        caller: "caller",
+        controller: "owner",
+        actor: "ledger",
+        host: "receiver",
+        protocol: "ledger",
+        target_assignment: "ledger-root-test-assignment",
+        logical_session: 41,
+    };
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let current = |receipt: &Receipt, runtime: &str, target: MailAddr| {
+        let current = claims.borrow();
+        let actual = current.as_ref().ok_or(VerificationError::Invalid)?;
+        current_scope(
+            projection(receipt),
+            actual,
+            &LedgerOperation::Read,
+            Purpose::Request,
+            deadline,
+        )?;
+        if actual.runtime_generation.as_ref() != runtime || actual.actor_generation != target.0 {
+            return Err(VerificationError::Invalid);
+        }
+        Ok(current)
+    };
+    let maximum = NonZeroUsize::new(2).unwrap();
+    let export = Export::new(
+        "bombay/replay/read",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes| {
+            decoded.set(decoded.get() + 1);
+            serde_json::from_slice::<ReadRequest<LedgerOperation>>(bytes)
+                .map(|request| request.operation)
+        },
+        reply(
+            |LedgerOperation::Read| {
+                let constructors = &constructors;
+                Ok::<_, LedgerOperation>(move |reply_to| {
+                    constructors.set(constructors.get() + 1);
+                    LedgerCommand::Read(reply_to)
+                })
+            },
+            |receipt: &Receipt, original: &User<MailAddr, Vec<MailAddr>>| {
+                encoded
+                    .borrow_mut()
+                    .push((original.from, original.message.clone()));
+                let scope = projection(receipt);
+                let value = original
+                    .message
+                    .iter()
+                    .copied()
+                    .map(u64::from)
+                    .collect::<Vec<_>>();
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &scope.bombay,
+                    kind: Purpose::ReadReply,
+                    operation: scope.operation,
+                    value: &value,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            allocations
+                .borrow_mut()
+                .push((bytes.as_ptr(), proof.as_ptr()));
+            let original = ProtectedMessage {
+                protected: bytes.into(),
+                proof: proof.into(),
+            };
+            provider(&original, &records.borrow(), binding).await
+        },
+        async |_: &[u8], _: &Receipt| {
+            protected.set(protected.get() + 1);
+            Ok::<_, Never>(Box::<[u8]>::from([13_u8, 17]))
+        },
+        same_request,
+        &current,
+        &current,
+    );
+    let node = Application::new(
         MailLedger {
             entries: Vec::new(),
         }
@@ -749,174 +751,155 @@ async fn ledger_case<Receipt>(
     )
     .open_node(configuration(&address, &EndpointRole::Receiver))
     .await
-    .unwrap_or_else(|_| panic!("explicit Ledger Node setup"));
-    let connection = node.session.clone();
-    let session = &connection;
-    let (execution, receiving) = node
-        .execute_with(|application| async move {
-            let target = application.root().established_recipient();
-            let target_address = application.root().address();
-            let (announced, announcements) = mpsc::channel(2);
-            let query_callbacks = Arc::new(Mutex::new(Vec::new()));
-            let observed = Arc::clone(&query_callbacks);
-            let export = application
-                .export::<_, Receipts, Receipt>(
-                    target,
-                    "bombay/replay/read",
-                    ExportLimits {
-                        queued_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_requests: NonZeroUsize::new(2).unwrap(),
-                    },
-                    same_request,
-                    move |original| {
-                        let published = announced.try_send(original);
-                        observed.lock().unwrap().push(published);
-                    },
+    .unwrap_or_else(|_| panic!("the actual receiving Ledger Node opens"));
+    let runtime = node.runtime_id();
+    let mut node = node.exports(export, async |application| {
+        Ok::<_, Never>(application.root().established_recipient())
+    });
+    let outcome = node
+        .run_with(|application| {
+            let address = &address;
+            let runtime = &runtime;
+            let records = &records;
+            let claims = &claims;
+            let provider = &provider;
+            async move {
+                let sender = application.sender().unwrap();
+                let caller = sender.address();
+                let original = Box::<[u8]>::from([59, 61]);
+                let allocation = original.as_ptr();
+                let primed = sender.send(LedgerCommand::Append(original)).await;
+                let expected = vec![u64::from(caller)];
+                let exchange = read_queries(
+                    address,
+                    runtime,
+                    "ledger",
+                    binding,
+                    LedgerOperation::Read,
+                    profile,
+                    expected,
+                    records,
+                    claims,
+                    Some(application.lifecycle().retirement()),
+                    provider,
+                    projection,
                 )
-                .await
-                .unwrap_or_else(|_| panic!("actual Node-associated export"));
-            let sender = application.sender().unwrap();
-            let caller = sender.address();
-            let original = Box::<[u8]>::from([59, 61]);
-            let allocation = original.as_ptr();
-            let primed = sender.send(LedgerCommand::Append(original)).await;
-            let expected = vec![u64::from(caller)];
-            let study = read_study(
-                export,
-                announcements,
-                query_callbacks,
-                session,
-                &address,
-                target_address,
-                "ledger",
-                Binding {
-                    deployment: "two-node-read-study",
-                    caller: "caller",
-                    controller: "owner",
-                    actor: "ledger",
-                    host: "receiver",
-                    protocol: "ledger",
-                    target_assignment: "ledger-root-test-assignment",
-                    logical_session: 41,
-                },
-                LedgerOperation::Read,
-                profile,
-                expected,
-                LedgerCommand::Read,
-                |origins| origins.iter().copied().map(u64::from).collect::<Vec<_>>(),
-                Some(application.lifecycle().retirement()),
-                provider,
-                projection,
-                identity,
-            )
-            .await;
-            (study, primed, caller, allocation)
+                .await;
+                (exchange, primed, caller, allocation)
+            }
         })
-        .unwrap_or_else(|_| panic!("Ledger host entry"));
-    let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
-    let ((study, primed, caller, allocation), cleanup) = outcome
+        .await
+        .unwrap_or_else(|_| panic!("the receiving Ledger Node enters its host"));
+    let (export, bound, closed, polling, disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("the actual Ledger Node finalizes"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((exchange, primed, caller, allocation), cleanup) = work
         .try_into_completed()
-        .unwrap_or_else(|_| panic!("original Ledger Work output"));
-    let closed = node.close().await;
-    assert!(connection.is_closed());
-    let native = native.unwrap();
-    let (_, retirement) = &native;
-    let ledger = retirement.custody().unwrap().behavior.base();
-    assert!(closed.is_ok() && cleanup.is_ok());
+        .unwrap_or_else(|_| panic!("the original Ledger Work completes"));
+    cleanup.expect("actual Ledger cleanup joins");
+    closed.expect("actual Ledger connection closes");
     assert_notifications(&notifications);
-    let first_report = study.first_retirement.unwrap();
-    assert_report(first_report);
-    assert!(primed.is_ok());
-    let [(origin, original)] = ledger.entries.as_slice() else {
-        panic!("one original append survives");
-    };
-    assert_eq!(*origin, caller);
-    assert_eq!(original.as_ptr(), allocation);
-    assert_eq!(original.as_ref(), [59, 61]);
-    assert_study(
-        &study,
+    let retirement = exchange
+        .first_retirement
+        .expect("actual Ledger retirement precedes the duplicate");
+    assert_report(retirement);
+    assert_eq!(report, Some(retirement));
+    assert!(primed.is_ok() && polling.is_none() && disposal.is_none());
+    assert!(matches!(bound, Some(Ok(_))));
+    assert_exchange(
+        &exchange,
         &vec![u64::from(caller)],
         LedgerOperation::Read,
-        retention,
         identity,
+        proof,
     );
-    assert_provider_proof(&study, proof);
-    let first = study.native_outcomes().next().unwrap();
-    assert_eq!(first.from, study.target);
-    assert_eq!(first.message.as_slice(), [caller]);
-    let first_source = study.acquisitions[0]
-        .source
-        .expect("first actual in-owner native observation");
-    let sources = study
-        .acquisitions
-        .iter()
-        .map(|a| a.source)
-        .collect::<Vec<_>>();
-    let attempts = study
-        .acquisitions
-        .iter()
-        .filter(|a| a.attempt.is_some())
-        .count();
-    let second = &study.acquisitions[1];
-    match retention {
-        ReadRetention::Resend => {
-            // The stateless baseline must establish the genuine native cause
-            // before the intended one-attempt oracle; a timeout is not this fact.
-            let Some(Ok((key, _))) = &second.retained else {
-                panic!("second actual retained key");
-            };
-            let entry = study.requests.iter().find(|entry| &entry.0 == key).unwrap();
-            let Admission::Returned(Err(TrySendError::Closed(LedgerCommand::Read(original)))) =
-                &entry.4
-            else {
-                panic!("the second actual attempt returns its original Closed(Read)");
-            };
-            let expected_reply = entry.6.recipient();
-            assert_eq!(original, &expected_reply);
-            let (reply, _) = second.reply.as_ref().unwrap();
-            assert!(reply.result().is_err());
-        }
-        ReadRetention::ReuseFirst => {
-            assert!(second.attempt.is_none());
-            let (reply, _) = second.reply.as_ref().unwrap();
-            assert!(reply.result().is_ok());
-        }
+    let (origin, native) = native.expect("the complete Ledger root remains owned");
+    let ledger = native.custody().unwrap().behavior.base();
+    let [(sender, original)] = ledger.entries.as_slice() else {
+        panic!("the original append remains in the Ledger");
+    };
+    assert_eq!(*sender, caller);
+    assert_eq!(original.as_ptr(), allocation);
+    assert_eq!(original.as_ref(), [59, 61]);
+    let (_, _, startup, withdrawal, diagnostics, rows) = export.into_parts();
+    assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+    assert!(diagnostics.is_empty());
+    let [first, second] =
+        <[_; 2]>::try_from(rows).unwrap_or_else(|_| panic!("two actual requests remain retained"));
+    let first = first
+        .try_into_parts()
+        .unwrap_or_else(|_| panic!("the first request releases all producer loans"));
+    let second = second
+        .try_into_parts()
+        .unwrap_or_else(|_| panic!("the duplicate releases all producer loans"));
+    assert!(first.0.is_some());
+    assert_eq!(first.0, second.0);
+    assert_eq!(first.1, second.1);
+    let batch = exchange
+        .batch
+        .as_ref()
+        .expect("the actual Task batch remains acquired");
+    let TaskResult::Completed(originals) = &batch.message else {
+        panic!("the actual Task completed its original request batch");
+    };
+    for (raw, original) in [&first.1, &second.1].into_iter().zip(originals) {
+        assert_eq!(raw.0.as_ref(), original.protected.as_ref());
+        assert_eq!(raw.1.as_ref(), original.proof.as_ref());
     }
-    let native_outcome_count = study.native_outcomes().count();
-    let sender_native = study.sender_native.unwrap();
-    assert_completed(native, None);
-    assert_completed(sender_native, None);
+    let allocations = allocations.borrow();
     assert_eq!(
-        attempts, 1,
-        "the terminating Ledger's duplicate must reuse its first native outcome"
+        allocations.as_slice(),
+        [
+            (first.1.0.as_ptr(), first.1.1.as_ptr()),
+            (second.1.0.as_ptr(), second.1.1.as_ptr())
+        ]
     );
-    assert_eq!(native_outcome_count, 1);
-    assert_eq!(sources, [Some(first_source), Some(first_source)]);
-}
-
-fn assert_provider_proof<Target, Replies, Operation, Receipt, Value>(
-    study: &ReadStudy<Target, Replies, Operation, Receipt, Value>,
-    proof: fn(&Receipt) -> Option<&[u8]>,
-) where
-    Target: Protocol<Addr = MailAddr>,
-    Replies: Protocol<Addr = MailAddr>,
-{
-    for acquired in &study.acquisitions {
-        if let Some((_, _, receipt)) = study.request_original(acquired)
-            && let Some(original_proof) = proof(receipt)
-        {
-            assert_eq!(original_proof, [7, 11]);
-        }
-        if let Some(Ok(receipt)) = &acquired.reply_verification
-            && let Some(original_proof) = proof(receipt)
-        {
-            assert_eq!(original_proof, [13, 17]);
+    for receipt in [&first.2, &second.2] {
+        assert_verification(receipt.as_ref());
+        let receipt = receipt.as_ref().unwrap().as_ref().unwrap();
+        let scope = projection(receipt);
+        assert_eq!(scope.bombay, exchange.current);
+        assert_eq!(scope.kind, Purpose::Request);
+        assert_eq!(scope.operation, LedgerOperation::Read);
+        assert_eq!(
+            identity(receipt),
+            (&binding, exchange.current.request_sequence)
+        );
+        if let Some(actual) = proof(receipt) {
+            assert_eq!(actual, [7, 11]);
         }
     }
+    let (constructor, client, admission, received, tail) =
+        first.4.expect("the actual first native read remains");
+    assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+    let client = match client {
+        Attempt::Returned(Ok(client)) => client,
+        _ => panic!("the original native reply client remains"),
+    };
+    let received = received
+        .expect("the first native reception was acquired")
+        .expect("the actual first User remains");
+    assert_eq!(received.from, origin.address());
+    assert_eq!(received.message.as_slice(), [caller]);
+    assert_ne!(client.address(), origin.address());
+    assert!(matches!(tail.as_slice(), [None]));
+    assert!(second.3.is_none() && second.4.is_none() && second.5.is_none() && second.6.is_none());
+    assert_eq!(
+        (decoded.get(), constructors.get(), protected.get()),
+        (1, 1, 1)
+    );
+    let encoded = encoded.borrow();
+    assert_eq!(encoded.as_slice(), [(origin.address(), vec![caller])]);
+    assert!(matches!(first.5, Some(Ok(_))) && matches!(first.6, Some(Ok(_))));
+    assert_eq!((first.7.len(), second.7.len()), (1, 1));
+    assert!(first.7.iter().all(Result::is_ok) && second.7.iter().all(Result::is_ok));
+    assert!(matches!(first.8, (None, None, None)) && matches!(second.8, (None, None, None)));
+    assert!(matches!(first.9, (None, None, None, None, None, None)));
+    assert!(matches!(second.9, (None, None, None, None, None, None)));
+    assert_completed((origin, native), None);
+    assert_completed(exchange.native.unwrap(), None);
 }
-
 #[test]
 fn recorded_counter_node_reuses_first_read_outcome() {
     Builder::new_multi_thread()
@@ -924,14 +907,21 @@ fn recorded_counter_node_reuses_first_read_outcome() {
         .enable_all()
         .build()
         .unwrap()
-        .block_on(counter_case(
-            ProviderProfile::Recorded,
-            recorded::verify::<CounterOperation>,
-            recorded::projection,
-            recorded::identity,
-            |_| None,
-            same_recorded_counter,
-        ));
+        .block_on(async {
+            tokio::time::timeout(
+                Duration::from_secs(40),
+                read_counter(
+                    ProviderProfile::Recorded,
+                    recorded::verify::<CounterOperation>,
+                    recorded::projection,
+                    recorded::identity,
+                    |_| None,
+                    same_recorded_counter,
+                ),
+            )
+            .await
+            .expect("the complete replay and cleanup trace terminates");
+        });
 }
 #[test]
 fn scheduled_counter_node_reuses_first_read_outcome() {
@@ -940,14 +930,21 @@ fn scheduled_counter_node_reuses_first_read_outcome() {
         .enable_all()
         .build()
         .unwrap()
-        .block_on(counter_case(
-            ProviderProfile::Scheduled,
-            scheduled::verify::<CounterOperation>,
-            scheduled::projection,
-            scheduled::identity,
-            |receipt| Some(scheduled::proof(receipt)),
-            same_scheduled_counter,
-        ));
+        .block_on(async {
+            tokio::time::timeout(
+                Duration::from_secs(40),
+                read_counter(
+                    ProviderProfile::Scheduled,
+                    scheduled::verify::<CounterOperation>,
+                    scheduled::projection,
+                    scheduled::identity,
+                    |receipt| Some(scheduled::proof(receipt)),
+                    same_scheduled_counter,
+                ),
+            )
+            .await
+            .expect("the complete replay and cleanup trace terminates");
+        });
 }
 #[test]
 fn recorded_ledger_node_reuses_first_read_outcome() {
@@ -956,14 +953,21 @@ fn recorded_ledger_node_reuses_first_read_outcome() {
         .enable_all()
         .build()
         .unwrap()
-        .block_on(ledger_case(
-            ProviderProfile::Recorded,
-            recorded::verify::<LedgerOperation>,
-            recorded::projection,
-            recorded::identity,
-            |_| None,
-            same_recorded_ledger,
-        ));
+        .block_on(async {
+            tokio::time::timeout(
+                Duration::from_secs(40),
+                read_ledger(
+                    ProviderProfile::Recorded,
+                    recorded::verify::<LedgerOperation>,
+                    recorded::projection,
+                    recorded::identity,
+                    |_| None,
+                    same_recorded_ledger,
+                ),
+            )
+            .await
+            .expect("the complete replay and cleanup trace terminates");
+        });
 }
 #[test]
 fn scheduled_ledger_node_reuses_first_read_outcome() {
@@ -972,14 +976,21 @@ fn scheduled_ledger_node_reuses_first_read_outcome() {
         .enable_all()
         .build()
         .unwrap()
-        .block_on(ledger_case(
-            ProviderProfile::Scheduled,
-            scheduled::verify::<LedgerOperation>,
-            scheduled::projection,
-            scheduled::identity,
-            |receipt| Some(scheduled::proof(receipt)),
-            same_scheduled_ledger,
-        ));
+        .block_on(async {
+            tokio::time::timeout(
+                Duration::from_secs(40),
+                read_ledger(
+                    ProviderProfile::Scheduled,
+                    scheduled::verify::<LedgerOperation>,
+                    scheduled::projection,
+                    scheduled::identity,
+                    |receipt| Some(scheduled::proof(receipt)),
+                    same_scheduled_ledger,
+                ),
+            )
+            .await
+            .expect("the complete replay and cleanup trace terminates");
+        });
 }
 
 #[path = "replay/association.rs"]

@@ -417,7 +417,7 @@ where
         };
         canonical();
         *admission = Attempt::Uncertain;
-        *admission = Attempt::Returned(control.request_shutdown::<Path>());
+        *admission = Attempt::Returned(control.shutdown::<Path>());
         Ok(())
     }
     fn retirement(&self) -> Option<impl Future<Output = ActorRetirementReport>> {

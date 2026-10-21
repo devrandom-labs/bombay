@@ -55,7 +55,7 @@ async fn pending_binding_preserves_work_until_native_reply_is_acquired() {
             let mut original = Some(output);
             poll_fn(move |_context| {
                 polled.set(polled.get() + 1);
-                *stop = Some(application.request_shutdown());
+                *stop = Some(application.shutdown());
                 Poll::Ready(original.take().expect("one original bare Work output"))
             })
         });
@@ -105,13 +105,19 @@ async fn pending_binding_preserves_work_until_native_reply_is_acquired() {
             (acquired, observations, released)
         };
         let ((), startup) = tokio::join!(execution, observer);
-        let (work, native, notifications) = receiving.await;
+        let (work, root_report, native, notifications) = receiving.await;
         let work = work.into_supplied_with_entities();
         let () = received_families.await;
         let (origin, native) = native.expect("actual joined native result");
         let root = origin.address();
         let notifications = notifications.expect("both independent notification results");
         let (acquired, before_work, released) = startup;
+        let root_report = root_report.expect("the joined root retains its actual report");
+        assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+        assert_eq!(
+            root_report.failures(),
+            ActorFailureAssessment::NoFailuresFound
+        );
         let WorkOutcome::Completed { output, cleanup } = work else {
             panic!("only successfully bound Work may complete");
         };
@@ -267,12 +273,14 @@ async fn binding_disposal_preserves_original_work(progress: BindingProgress) {
         .await;
         let dropped = catch_unwind(AssertUnwindSafe(|| drop(execution)));
         let started = binding_started.try_recv();
-        let (work, native, notifications) = receiving.await;
+        let (work, root_report, native, notifications) = receiving.await;
         let work = work.into_supplied_with_entities();
         let () = received_families.await;
         let (origin, native) = native.expect("actual cancelled root is independently acquired");
         let notifications = notifications.expect("both actual notification receipts acquired");
         let application = application.expect("actual binding transferred the original root handle");
+        let report = application.retirement().await;
+        assert_eq!(root_report, Some(report));
         assert_eq!(origin.address(), application.root().address());
         assert!(matches!(native, ActorRetirement::OwnerCancelled { .. }));
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());

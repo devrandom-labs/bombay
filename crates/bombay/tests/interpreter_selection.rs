@@ -71,7 +71,7 @@ async fn explicit_unit_interpreter_performs_real_io_and_retains_complete_rejecti
     let expected_rejected = rejected.clone();
     let original = Box::new([97, 101]);
     let actor_pointer = original.as_ptr();
-    let (work, native, notifications, ()) = Application::new(Document {
+    let (work, _root_report, native, notifications, ()) = Application::new(Document {
         files: vec![
             OpenFile {
                 path,

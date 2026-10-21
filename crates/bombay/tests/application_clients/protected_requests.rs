@@ -383,7 +383,7 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
                 };
                 replies.close_admission();
                 let exhausted = replies.receive().await;
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (
                     checked, admitted, read, exhausted, shutdown, caller, replies,
                 )
@@ -392,7 +392,7 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
     };
     let (counter_result, spare) = match case {
         RequestCase::Retargeted => {
-            let (work, native, notices, ()) = Box::pin(
+            let (work, _root_report, native, notices, ()) = Box::pin(
                 Application::new(Counter::new().stop_on_shutdown()).run_with(
                     |application| async move {
                         let binding = request_authority(
@@ -405,7 +405,7 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
                         .binding;
                         let hosted = (binding, application.root().established_recipient());
                         let counter = run_counter(Some(hosted)).await;
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         (counter, shutdown)
                     },
                 ),
@@ -456,7 +456,7 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
         let exhausted = replies.receive().await;
         let shutdown = match &admitted {
             Some(Ok(())) => None,
-            _ => Some(application.request_shutdown()),
+            _ => Some(application.shutdown()),
         };
         (
             checked, admitted, read, exhausted, shutdown, caller, replies,
@@ -464,10 +464,10 @@ async fn counter_and_ledger_reads<CounterReceipt, LedgerReceipt>(
     })
     .await;
     // Every actual Application receiving product is acquired before semantic oracles.
-    let (counter_work, counter_native, counter_notifications, ()) = counter_result
+    let (counter_work, _root_report, counter_native, counter_notifications, ()) = counter_result
         .unwrap_or_else(|_| panic!("entered Counter host"))
         .into_parts();
-    let (ledger_work, ledger_native, ledger_notifications, ()) = ledger
+    let (ledger_work, _root_report, ledger_native, ledger_notifications, ()) = ledger
         .unwrap_or_else(|_| panic!("entered Ledger host"))
         .into_parts();
     let (

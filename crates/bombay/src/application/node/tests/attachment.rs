@@ -109,7 +109,7 @@ fn projected_handoff_keeps_ready_work_and_provider_result() {
                         })
                         .await;
                     let processed = client.receive().await;
-                    let stopped = lifecycle.request_shutdown();
+                    let stopped = lifecycle.shutdown();
                     let report = lifecycle.retirement().await;
                     client.close_admission();
                     let unread = client.receive().await;
@@ -130,17 +130,19 @@ fn projected_handoff_keeps_ready_work_and_provider_result() {
                     fault
                 };
                 let (fault, companion) = tokio::join!(kernel, companion);
-                let (work, native, notifications) = receiving.await;
+                let (work, root_report, native, notifications) = receiving.await;
                 let work = work.into_supplied_with_entities();
                 let () = received_families.await;
                 move || {
                     let (admitted, processed, stopped, report, unread, published) = companion;
+                    assert_eq!(root_report, Some(report));
                     let transfer = transferred.expect("Invoke attempted its actual handoff");
                     assert!(transfer.is_ok());
                     let receipt = retained.expect("provider returned").unwrap();
                     assert_eq!(Rc::as_ptr(&receipt), original_provider);
                     assert_eq!(receipt.as_slice(), [41, 43]);
-                    assert_eq!(*provider_calls.borrow(), [original_request]);
+                    let provider_calls = provider_calls.borrow();
+                    assert_eq!(*provider_calls, [original_request]);
                     admitted.expect("actual command admission");
                     stopped.expect("exact root shutdown request");
                     assert_eq!(report.retirement(), RetirementAssessment::Established);
@@ -204,7 +206,7 @@ fn missing_host_returns_original_work_before_handoff() {
     let work = move |application: ApplicationHandle<_, _>| {
         work_calls.set(work_calls.get() + 1);
         async move {
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let report = application.lifecycle().retirement().await;
             (original, stopped, report)
         }
@@ -242,7 +244,7 @@ fn missing_host_returns_original_work_before_handoff() {
                 execution.await;
                 let outcome = receiving.await;
                 move || {
-                    let (work, native, notifications, ()) = outcome.into_parts();
+                    let (work, root_report, native, notifications, ()) = outcome.into_parts();
                     assert!(cause.is_missing_context());
                     assert_eq!(before, (0, 0));
                     assert!(matches!(&received, Err(TryRecvError::Closed)));
@@ -266,6 +268,7 @@ fn missing_host_returns_original_work_before_handoff() {
                         panic!("the recovered original callable runs exactly once");
                     };
                     stopped.expect("the recovered Work requests actual shutdown");
+                    assert_eq!(root_report, Some(report));
                     assert_eq!(report.retirement(), RetirementAssessment::Established);
                     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
                     assert_eq!(ptr::from_ref(original.as_ref()), original_pointer);

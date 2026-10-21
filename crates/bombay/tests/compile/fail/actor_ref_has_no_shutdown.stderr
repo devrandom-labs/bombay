@@ -1,5 +1,5 @@
-error[E0599]: no method named `request_shutdown` found for struct `bombay::ActorRef<P>` in the current scope
+error[E0599]: no method named `shutdown` found for struct `bombay::ActorRef<P>` in the current scope
   --> tests/compile/fail/actor_ref_has_no_shutdown.rs:11:26
    |
-11 |     let _accepted = root.request_shutdown();
-   |                          ^^^^^^^^^^^^^^^^ method not found in `bombay::ActorRef<RootProtocol>`
+11 |     let _accepted = root.shutdown();
+   |                          ^^^^^^^^ method not found in `bombay::ActorRef<RootProtocol>`

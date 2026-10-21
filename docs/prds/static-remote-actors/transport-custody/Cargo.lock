@@ -205,9 +205,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior"
-version = "0.26.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c3a8988ead92a6772aa3c9aa012cb66cad3021d6fffd9cdfe6eeaf90d63cb01"
+checksum = "3d22b69ce159ff90c25e9b5a599f0d2fb750835b8a05426daa1bfb47083ef4f6"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
@@ -215,9 +215,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-actors"
-version = "0.26.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78662d4f467c193b77b82b885b17459ea77fb892f22b876e269a20321dbb0959"
+checksum = "abb764bdd37460ea42374a3370f3ea45374eade86f374418264137a06443b549"
 dependencies = [
  "bombay-behavior",
  "bombay-behavior-macros",
@@ -226,9 +226,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-macros"
-version = "0.14.2"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed0c7ca28319afeb7d199bdfc76ae778b0b7a9bf28bea7aa6f0ca851a8487e54"
+checksum = "2c72e980d373e4f422f93b4a1efd156d875a4ac60abc5e39e3030f0f4c98c45e"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -249,7 +249,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-engine"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "bombay-behavior",
  "thiserror",
@@ -257,7 +257,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-macros"
-version = "0.1.3"
+version = "0.2.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -267,7 +267,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-rs"
-version = "0.1.3"
+version = "0.2.0"
 dependencies = [
  "bombay-address",
  "bombay-behavior",

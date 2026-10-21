@@ -1,10 +1,11 @@
-//! Proposed cold-export constructor refusal at the owning finite address source.
-//! Unmounted until source review; this is not a successful public consumer.
+//! Cold-export constructor refusal at the owning finite address source.
 use super::ledger::{LedgerCommand, MailLedger, Receipts};
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::{ApplicationScope, ExternalActorError, MailboxCapacity};
 use crate::remote::{Attempt, Export, ExportLimits, Metadata, submission};
-use crate::{ActorRetirement, Completion, TrySendError};
+use crate::{
+    ActorFailureAssessment, ActorRetirement, Completion, RetirementAssessment, TrySendError,
+};
 use behavior::{AllocationRejection, ClassifySettlement, SettlementStatus};
 use protocol::{
     EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReplyRef, ReadRequest,
@@ -260,10 +261,10 @@ async fn constructor_refusal() {
     let (outcome, (withdrawal, retirement, publications, admission, original, peer_closed)) =
         tokio::join!(execution, exchange);
     let outcome = outcome.unwrap_or_else(|_| panic!("actual absent-Work execution issued"));
-    let (export, bound, closed) = node
+    let (export, bound, closed, polling, disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("issued cleanup acquired"));
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, root_report, native, notifications, ()) = outcome.into_parts();
     let (absence, cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("actual work absence"));
@@ -283,6 +284,13 @@ async fn constructor_refusal() {
     peer_closed.expect("independent peer close");
     withdrawal.expect("native listener withdrawn");
     retirement.expect("native querier retired");
+    let root_report = root_report.expect("the joined root retains its actual report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
+    assert!(polling.is_none() && disposal.is_none());
     declared
         .expect("actual declaration issued")
         .expect("actual declaration succeeded");

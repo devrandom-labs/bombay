@@ -377,7 +377,7 @@ where
         control: Control,
         runtime: String,
         application: ApplicationLifecycle<Root, Event>,
-        joined: Shared<oneshot::Receiver<()>>,
+        mut joined: Shared<oneshot::Receiver<()>>,
     ) where
         Declarations: Delivery<Native, Control>,
         Control: Retirement,
@@ -391,14 +391,12 @@ where
             .clone()
             .interpret(&mut ExtractLocalEndpoint)
             .address();
-        let mut retired = pin!(OptionFuture::from(control.retirement()));
-        let mut ending = pin!(application.retirement());
         let mut requests = FuturesUnordered::new();
         loop {
             tokio::select! {
                 biased;
-                Some(_) = &mut retired => break,
-                _ = &mut ending => break,
+                // Work may still request a cached result after its target retires.
+                _ = &mut joined => break,
                 Some(()) = requests.next(), if !requests.is_empty() => { self.publish(&runtime, address); }
                 original = incoming.recv() => {
                     let Some((query, permit)) = original else { break; };
@@ -443,6 +441,9 @@ where
         }
         drop(requests);
         self.withdrawal = withdrawal;
+        self.drain().await;
+    }
+    async fn drain(&self) {
         for request in self.entries.borrow().iter() {
             let custody = Rc::clone(&request.custody);
             discard_query(custody.query.borrow_mut().take());
@@ -638,6 +639,7 @@ where
                 discard_query(Some(original));
             }
         }
+        self.drain().await;
     }
     fn serve(
         &mut self,

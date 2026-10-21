@@ -20,11 +20,16 @@ use behavior::{
     ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
 use core::fmt;
-use core::future::{Future, Ready};
+use core::future::{Future, Ready, poll_fn};
+use core::task::Poll;
+use std::any::Any;
 use std::error::Error;
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use tokio::runtime::{Handle, RuntimeFlavor, TryCurrentError};
 use zenoh::Session;
+
+type Panic = Box<dyn Any + Send>;
 
 enum Binding<Call, Receipt> {
     Uninvoked(Call),
@@ -51,6 +56,8 @@ pub struct Node<
     exports: Exports,
     binding: Option<Binding<BindingFn, BindResult>>,
     closed: Option<Result<(), zenoh::Error>>,
+    poll_panic: Option<Panic>,
+    disposal_panic: Option<Panic>,
 }
 
 impl<Root, Spaces, Members, Families, Exports, BindingFn, BindResult> fmt::Debug
@@ -159,6 +166,8 @@ impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Familie
                 exports: (),
                 binding: None,
                 closed: None,
+                poll_panic: None,
+                disposal_panic: None,
             }),
             Err(cause) => Err((self, network, NodeStartupRefusal::Open { cause })),
         }
@@ -455,10 +464,10 @@ where
             None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         ) {
             Ok((execution, (receiving, received_families))) => Ok((execution, async move {
-                let (work, root, notifications) = receiving.await;
+                let (work, root_report, root, notifications) = receiving.await;
                 let work = work.into_supplied_with_entities();
                 let families = received_families.await;
-                ApplicationOutcome::new(work, root, notifications, families)
+                ApplicationOutcome::new(work, root_report, root, notifications, families)
             })),
             Err((application, work, cause)) => {
                 self.application = Some(application);
@@ -506,13 +515,15 @@ where
             exports,
             binding: Some(Binding::Uninvoked(binding)),
             closed: None,
+            poll_panic: self.poll_panic,
+            disposal_panic: self.disposal_panic,
         }
     }
 }
 impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
     Node<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>
 {
-    /// Consume the exports, original binding result and actual post-join close result.
+    /// Consume exports, binding, post-join close and original kernel panic causes.
     /// Refuse with the same Node until joined execution acquired native close.
     pub fn into_parts(
         self,
@@ -521,6 +532,8 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
             Exports,
             Option<Result<Targets, BindError>>,
             Result<(), zenoh::Error>,
+            Option<Panic>,
+            Option<Panic>,
         ),
         Self,
     > {
@@ -533,6 +546,8 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
             exports,
             binding,
             closed,
+            poll_panic,
+            disposal_panic,
             ..
         } = self;
         let bound = match binding {
@@ -545,6 +560,8 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
             exports,
             bound,
             closed.expect("the consuming check preserves its close receipt"),
+            poll_panic,
+            disposal_panic,
         ))
     }
 }
@@ -686,23 +703,45 @@ where
             exports.declare(session).await?;
             Ok(Some(exports.serve(controls, runtime, joined)))
         };
-        match application.execute_with_entities_invocation(
+        let outcome = match application.execute_with_entities_invocation(
             ApplicationWorkPresence::Supplied((work, invoke)),
             Some(startup),
         ) {
             Ok((execution, (receiving, families))) => {
-                execution.await;
-                let (work, native, notes) = receiving.await;
+                let mut execution = Box::pin(execution);
+                self.poll_panic = poll_fn(|context| {
+                    match catch_unwind(AssertUnwindSafe(|| execution.as_mut().poll(context))) {
+                        Ok(Poll::Pending) => Poll::Pending,
+                        original => Poll::Ready(original),
+                    }
+                })
+                .await
+                .err();
+                self.disposal_panic = catch_unwind(AssertUnwindSafe(|| drop(execution))).err();
+                let (work, root_report, native, notes) = receiving.await;
                 let work = work.into_supplied_with_entities();
                 let families = families.await;
-                self.closed = Some(self.session.close().await);
-                Ok(ApplicationOutcome::new(work, native, notes, families))
+                Ok(ApplicationOutcome::new(
+                    work,
+                    root_report,
+                    native,
+                    notes,
+                    families,
+                ))
             }
             Err((application, work, cause)) => {
                 self.application = Some(application);
                 let (work, _invoke) = work.into_supplied();
                 Err(NodeExecutionRefusal::Host { work, cause })
             }
+        };
+        match outcome {
+            Ok(outcome) => {
+                self.exports.withdraw().await;
+                self.closed = Some(self.session.close().await);
+                Ok(outcome)
+            }
+            Err(cause) => Err(cause),
         }
     }
     /// Run exports with genuine Work absence, then retain native cleanup and close.
@@ -825,7 +864,7 @@ where
             exports.declare(session).await?;
             Ok(Some(exports.serve(controls, runtime, joined)))
         };
-        match application
+        let outcome = match application
             .execute_with_entities_invocation::<Actor, StagingFailure, ChildFailures, Never, fn(
                 Never,
                 ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
@@ -834,17 +873,39 @@ where
                 Some(startup),
             ) {
             Ok((execution, (receiving, families))) => {
-                execution.await;
-                let (work, native, notes) = receiving.await;
+                let mut execution = Box::pin(execution);
+                self.poll_panic = poll_fn(|context| {
+                    match catch_unwind(AssertUnwindSafe(|| execution.as_mut().poll(context))) {
+                        Ok(Poll::Pending) => Poll::Pending,
+                        original => Poll::Ready(original),
+                    }
+                })
+                .await
+                .err();
+                self.disposal_panic = catch_unwind(AssertUnwindSafe(|| drop(execution))).err();
+                let (work, root_report, native, notes) = receiving.await;
                 let work = work.into_absent_with_entities();
                 let families = families.await;
-                self.closed = Some(self.session.close().await);
-                Ok(ApplicationOutcome::new(work, native, notes, families))
+                Ok(ApplicationOutcome::new(
+                    work,
+                    root_report,
+                    native,
+                    notes,
+                    families,
+                ))
             }
             Err((application, _, cause)) => {
                 self.application = Some(application);
                 Err(NodeExecutionRefusal::Host { work, cause })
             }
+        };
+        match outcome {
+            Ok(outcome) => {
+                self.exports.withdraw().await;
+                self.closed = Some(self.session.close().await);
+                Ok(outcome)
+            }
+            Err(cause) => Err(cause),
         }
     }
 }

@@ -5,6 +5,7 @@ use super::{peer, protocol, same_counter, wire};
 use bombay::actors::ActorExt;
 use bombay::prelude::{Application, MailAddr};
 use bombay::remote::{Attempt, Export, ExportError, ExportLimits, reply};
+use bombay::{ActorFailureAssessment, RetirementAssessment};
 use protocol::{
     EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, recorded,
     reserved_address,
@@ -161,17 +162,22 @@ async fn complete(policy: VerificationPolicy) {
     };
     let exchange = async {
         let (request, lifecycle, address) = configured.await.expect("actual quota binding");
-        let (peer, shutdown) = peer
-            .quota(request, || lifecycle.request_shutdown(), retired)
-            .await;
+        let (peer, shutdown) = peer.quota(request, || lifecycle.shutdown(), retired).await;
         (peer, shutdown, address)
     };
     let ((outcome, publication), (peer, shutdown, target)) = tokio::join!(execution, exchange);
     let outcome = outcome.unwrap_or_else(|_| panic!("actual quota execution is issued"));
-    let (export, bound, closed) = node
+    let (export, bound, closed, polling, disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("actual quota cleanup and network close complete"));
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, root_report, native, notifications, ()) = outcome.into_parts();
+    let root_report = root_report.expect("the joined root retains its runtime report");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
+    assert!(polling.is_none() && disposal.is_none());
     let (absence, cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the quota execution retains genuine Work absence"));

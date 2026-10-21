@@ -1,11 +1,14 @@
 use core::time::Duration;
 use std::time::Instant;
 
-use behavior::{Behavior, BehaviorAddr, BehaviorMessage, EndpointAddress, Never, Protocol};
+use behavior::{
+    Behavior, BehaviorAddr, BehaviorMessage, EndpointAddress, Never, Protocol, SendsFor, User,
+};
 use behavior_actors::{
-    Deadline, DeadlineReaction, EstablishedTerminationMonitor, EstablishedTerminationReaction,
-    FinalizeOnShutdown, ObserveEstablished, OneShot, Periodic, ReceiveTimeout, ShutdownReaction,
-    Stash, StashRoute, StaticallyInfallible, StopOnShutdown, TimedReaction, TimerId,
+    Deadline, DeadlineReaction, DeliveryRoute, EstablishedTerminationMonitor,
+    EstablishedTerminationReaction, FinalizeOnShutdown, ObserveEstablished, OneShot, Periodic,
+    ReceiveTimeout, ShutdownReaction, Stash, StashRoute, StaticallyInfallible, StopOnShutdown,
+    TimedReaction,
 };
 
 /// Discover and compose reusable wrappers from any concrete actor behavior.
@@ -15,62 +18,64 @@ use behavior_actors::{
 /// type and remains semantically significant. No policy is selected unless it
 /// is supplied explicitly by the application.
 pub trait ActorExt: Behavior + Sized {
-    /// Stash selected messages using a pure decision over the inner behavior and message.
+    /// Hold selected original inputs up to `limit`, returning overflow to `refusals`.
     ///
     /// Replay observes the inner state returned by each preceding transition.
     /// The inner transition must be statically infallible: replay cannot undo
-    /// actions already produced by earlier messages.
+    /// actions already produced by earlier messages. A refusal sends the whole
+    /// original User, including its sender, and continues without changing the
+    /// inner actor. Zero refuses all newly selected held inputs; delivery,
+    /// release and non-user events remain available.
     #[must_use]
-    fn with_stash(self, route: fn(&Self, &BehaviorMessage<Self>) -> StashRoute) -> Stash<Self>
+    fn with_stash<R>(
+        self,
+        limit: usize,
+        refusals: R,
+        route: fn(&Self, &BehaviorMessage<Self>) -> StashRoute,
+    ) -> Stash<Self, R>
     where
         Self: Behavior<Ph = Never>,
         Self::Error: StaticallyInfallible,
+        R: DeliveryRoute + Clone,
+        R::Protocol: Protocol<
+                Addr = BehaviorAddr<Self>,
+                Msg = User<BehaviorAddr<Self>, BehaviorMessage<Self>>,
+            >,
+        R::Sends: SendsFor<Self::Event>,
     {
-        Stash::new(self, route)
+        Stash::new(self, limit, refusals, route)
     }
 
     /// React once after the relative delay.
     #[must_use]
-    fn with_one_shot(
-        self,
-        id: TimerId,
-        after: Duration,
-        on_elapsed: TimedReaction<Self>,
-    ) -> OneShot<Self> {
-        OneShot::new(self, id, after, on_elapsed)
+    fn with_one_shot(self, after: Duration, on_elapsed: TimedReaction<Self>) -> OneShot<Self> {
+        OneShot::new(self, after, on_elapsed)
     }
 
     /// React after each relative interval while the behavior continues.
     #[must_use]
-    fn with_periodic(
-        self,
-        id: TimerId,
-        every: Duration,
-        on_elapsed: TimedReaction<Self>,
-    ) -> Periodic<Self> {
-        Periodic::new(self, id, every, on_elapsed)
+    fn with_periodic(self, every: Duration, on_elapsed: TimedReaction<Self>) -> Periodic<Self> {
+        Periodic::new(self, every, on_elapsed)
     }
 
     /// React once at an optional absolute deadline.
     #[must_use]
     fn with_deadline(
         self,
-        id: TimerId,
         at: Option<Instant>,
         on_reached: DeadlineReaction<Self>,
     ) -> Deadline<Self> {
-        Deadline::new(self, id, at, on_reached)
+        Deadline::new(self, at, on_reached)
     }
 
     /// React after one idle period, rearmed by successful user messages.
     #[must_use]
     fn with_receive_timeout(
         self,
-        id: TimerId,
         after: Duration,
         on_elapsed: TimedReaction<Self>,
     ) -> ReceiveTimeout<Self> {
-        ReceiveTimeout::new(self, id, after, on_elapsed)
+        ReceiveTimeout::new(self, after, on_elapsed)
     }
 
     /// React once to the exact selected recipient's terminal report.

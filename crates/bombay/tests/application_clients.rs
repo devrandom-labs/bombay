@@ -11,7 +11,6 @@ use communication::TrySendError;
 #[path = "../../../examples/counter/src/counter.rs"]
 mod counter;
 
-use bombay::prelude::TimerId;
 use core::future::Future;
 use core::pin::pin;
 use core::task::{Context, Poll, Waker};
@@ -99,14 +98,14 @@ async fn explicit_targets_and_one_shared_caller_preserve_protocols_origins_and_r
                 assert_eq!(payload.as_ptr(), allocation);
                 assert_eq!(&*payload, &[67, 71]);
             }
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             original
         })
         .await
         .unwrap_or_else(|_| panic!("the actual caller owns the entered host"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -156,13 +155,13 @@ async fn exported_targets_use_the_same_client_and_sender_authority() {
                 .expect("the exported counter replies");
             assert_eq!(reply.from, application.root().address());
             assert_eq!(reply.message, 1);
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         })
         .await
         .unwrap_or_else(|_| panic!("the actual caller host is entered"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -198,7 +197,7 @@ async fn inferred_root_client_reads_counter_without_an_interface_product() {
                 .expect("read admitted");
             let reply = client.receive().await.expect("the exact business reply");
             assert_eq!(reply.from, application.root().address());
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));
@@ -207,7 +206,7 @@ async fn inferred_root_client_reads_counter_without_an_interface_product() {
         .await
         .unwrap_or_else(|_| panic!("the caller owns the entered host"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -298,7 +297,7 @@ async fn sender_and_client_keep_distinct_origins_and_exact_closed_root_rejection
     .await
     .unwrap_or_else(|_| panic!("the caller owns the entered host"))
     .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -327,7 +326,7 @@ async fn sender_and_client_keep_distinct_origins_and_exact_closed_root_rejection
 #[tokio::test(flavor = "current_thread")]
 async fn root_client_protocol_survives_both_timer_shutdown_orders() {
     let actor = Counter::new()
-        .with_one_shot(TimerId(13), Duration::from_secs(3600), |_| Actions::stop())
+        .with_one_shot(Duration::from_secs(3600), |_| Actions::stop())
         .stop_on_shutdown();
     let outcome = Application::new(actor)
         .mailbox_capacity(bombay::MailboxCapacity::new(2).expect("two bounded actor slots"))
@@ -343,14 +342,14 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
                 .await
                 .expect("read admitted");
             let reply = client.receive().await.expect("the exact counter reply");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             reply.message
         })
         .await
         .unwrap_or_else(|_| panic!("the actual caller owns the entered host"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -365,11 +364,9 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
     cleanup.expect("actual application cleanup completes");
     let (_, retirement) = native.expect("timer and shutdown retirement retained");
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let actor = Counter::new().stop_on_shutdown().with_one_shot(
-        TimerId(17),
-        Duration::from_secs(3600),
-        |_| Actions::stop(),
-    );
+    let actor = Counter::new()
+        .stop_on_shutdown()
+        .with_one_shot(Duration::from_secs(3600), |_| Actions::stop());
     let outcome = Application::new(actor)
         .mailbox_capacity(bombay::MailboxCapacity::new(2).expect("two bounded actor slots"))
         .client_capacity(bombay::MailboxCapacity::new(2).expect("two bounded reply slots"))
@@ -384,14 +381,14 @@ async fn root_client_protocol_survives_both_timer_shutdown_orders() {
                 .await
                 .expect("read admitted");
             let reply = client.receive().await.expect("the exact counter reply");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             reply.message
         })
         .await
         .unwrap_or_else(|_| panic!("the actual caller owns the entered host"))
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -463,7 +460,7 @@ async fn closing_root_client_preserves_accepted_reply_and_then_exhausts() {
     .await
     .unwrap_or_else(|_| panic!("the actual host is entered"))
     .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -549,7 +546,7 @@ async fn bound_sender_preserves_nonwaiting_full_retry_prefix_and_closed_commands
             }
             let drained = peer.receive().await;
             assert!(drained.is_none());
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             (accepted, closed, shutdown)
         })
         .await
@@ -675,7 +672,7 @@ async fn certified_client_try_send_preserves_full_retry_and_exact_root_closure()
             while let Some(reply) = client.receive().await {
                 after.push(reply);
             }
-            let stopped = application.request_shutdown();
+            let stopped = application.shutdown();
             let termination = application.termination().await;
             let report = application.lifecycle().retirement().await;
             let closed = client.try_send(CounterMessage::Read(expected_reply.clone()));
@@ -701,7 +698,7 @@ async fn certified_client_try_send_preserves_full_retry_and_exact_root_closure()
         })
         .await
         .unwrap_or_else(|_| panic!("the real current-thread Application starts"));
-    let (outcome, native, notifications, ()) = received.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = received.into_parts();
     let (output, cleanup) = outcome
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the independent Work results are retained"));
@@ -830,7 +827,7 @@ async fn certified_reply_client_uses_the_application_capacity() {
             else {
                 panic!("both original replies retain their commands");
             };
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             (first, second, third, shutdown)
         })
         .await
