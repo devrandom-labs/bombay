@@ -824,3 +824,13 @@ reviews and only the old duplicate82-line block removed. Six of20 retained
 consumer laws are migrated;14 remain. Canonical compilation still fails44
 legacy errors, with all original modules restored. Production/public delta0;
 this is local test ownership work, not remote acceptance or main delivery.
+
+The opaque diagnostics/native permission cause case now uses the cold Node
+and direct typed BorrowError ownership. Debug/optimized positives, intended
+error-erasure inverses and exact restored controls qualify with two independent
+reviews. Only its obsolete wrapper-specific copy is removed; four permission
+matrix cases and child key law remain. Seven of20 laws are migrated;13 remain.
+Canonical compilation still fails44 legacy errors, all modules restored.
+The249-path current checkpoint adds no production or public types. Full remote
+acceptance, minimization/three repository scans, CI/review and main delivery stay
+open; the PRD records the remaining accepted and explicitly deferred scope.

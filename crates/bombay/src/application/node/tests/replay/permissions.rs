@@ -15,9 +15,7 @@ use bombay::{ActorFailureAssessment, ApplicationClient, RetirementAssessment, Tr
 use core::ops::AsyncFn;
 use serde::Serialize;
 use std::cell::{BorrowError, Ref, RefCell};
-use std::error::Error;
 use std::num::NonZeroUsize;
-use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 use std::time::{Duration, Instant};
@@ -1659,66 +1657,6 @@ fn scheduled_ledger_request_keys_reject_other_exports() {
             scheduled::identity,
             super::same_scheduled_ledger,
         ));
-}
-
-#[test]
-fn admission_diagnostics_preserve_opaque_commands_and_native_permission_causes() {
-    // CounterMessage has no Debug implementation; formatting must not require one.
-    let admissions = [
-        Admission::<CounterMessage>::Unattempted,
-        Admission::Uncertain,
-        Admission::Returned(Ok(())),
-        Admission::Returned(Err(TrySendError::Full(CounterMessage::Increment))),
-        Admission::Returned(Err(TrySendError::Closed(CounterMessage::Increment))),
-    ];
-    let diagnostics = admissions
-        .iter()
-        .map(|admission| format!("{admission:?}"))
-        .collect::<Vec<_>>();
-    assert_eq!(
-        diagnostics,
-        [
-            "Unattempted",
-            "Uncertain",
-            "Returned(Ok(()))",
-            "Returned(Err(Full(..)))",
-            "Returned(Err(Closed(..)))"
-        ]
-    );
-    let opaque = RequestRefusal::<CounterMessage>::UnknownRequest;
-    let opaque_diagnostic = format!("{opaque:?}");
-    assert_eq!(opaque_diagnostic, "UnknownRequest");
-    let display_only = RequestRefusal::Authority { cause: 47u64 };
-    let displayed = display_only.to_string();
-    assert_eq!(displayed, "current permission refused: 47");
-    let unknown = RequestRefusal::<BorrowError>::UnknownRequest;
-    let unknown_diagnostic = unknown.to_string();
-    assert_eq!(unknown_diagnostic, "request was not issued by this export");
-    let unknown_source = unknown.source();
-    assert!(unknown_source.is_none());
-
-    let permission = RefCell::new(0u8);
-    let loan = permission.borrow_mut();
-    let cause = permission
-        .try_borrow()
-        .expect_err("actual mutable loan refuses another borrow");
-    let refused = RequestRefusal::Authority { cause };
-    drop(loan);
-    let diagnostic = format!("{refused:?}");
-    let displayed = refused.to_string();
-    let source = refused
-        .source()
-        .expect("retain the actual native permission cause");
-    let source = source
-        .downcast_ref::<BorrowError>()
-        .expect("source is the original native type");
-    let RequestRefusal::Authority { cause } = &refused else {
-        panic!("the same native cause remains in the typed refusal");
-    };
-    let expected_display = format!("current permission refused: {cause}");
-    assert_eq!(diagnostic, "Authority { .. }");
-    assert_eq!(displayed, expected_display);
-    assert!(ptr::eq(source, cause));
 }
 
 #[path = "permissions/keys.rs"]

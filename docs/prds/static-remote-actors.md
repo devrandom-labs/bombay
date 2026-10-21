@@ -8,9 +8,12 @@ main. Latest-main adoption is a prerequisite. The scoped decoder cleanup fix
 now has current-graph debug/optimized positives and intended original-escape
 inverses; 21 public cold cases and seven owning controls pass both profiles.
 Another 23 owning consumer cases pass both profiles after report migration.
-Canonical compilation now fails on 55 errors in the retained warm consumers.
-General
-cancellation and double-fault cleanup remain distinct open requirements.
+The latest canonical compilation fails on 44 errors in the retained warm
+consumers. Seven of twenty inventoried consumer laws are migrated; thirteen
+remain. General cancellation and double-fault cleanup remain distinct open
+requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
+composition and remote-counter application, repository minimization, required
+CI/review and actual delivery to main remain open.
 
 Local research merge44f6b49 now includes main531ded50 with all textual conflicts resolved.
 Its actual optional root report is forwarded unchanged alongside receiving,
@@ -37702,3 +37705,76 @@ Six of20 inventory laws are migrated;14 remain. No production/public addition,
 no inverse/exclusion/running command. This test ownership move adds93+2/-82,
 net13 test lines and one cumulative path (248). It is not source reduction or
 full provider/security/remote acceptance. All costs and full delivery gates carry.
+
+### Native permission diagnostics — pre-edit reconciliation
+
+The remaining opaque diagnostic case uses retired Admission/RequestRefusal
+wrappers. Current Attempt deliberately redacts every Returned value and has no
+payload Debug bound; Request extraction exposes the actual typed permission
+error directly, so a retired wrapper's Error::source forwarding obligation is
+discharged by that stronger direct ownership, not recreated in another wrapper.
+Preserve opaque command formatting, all five attempted/native Full/Closed input
+values, and an actual standard BorrowError available by reference after cleanup.
+
+Use a real cold Counter Node and a held RefCell mutable loan. Verification must
+succeed from the existing Recorded fixture, then actual request permission must
+return its native BorrowError before decoding/construction. Await the real Query
+ending, shutdown and complete Application/Node cleanup; inspect the returned
+Request's typed error, untouched raw/proof/receipt and absent later stages.
+Counters observe actual permission, decoding, construction, encoding and
+protection callbacks. No fake custody writes or reconstructed native error.
+Existing completed_actor checks full native custody. A one-field owning-source
+error-erasure cut must fail this new witness in both profiles, then restore.
+
+Fresh lockfa79c780 still selects Behavior/Actors0.29/Macros0.16, Address0.3,
+Communication0.1.6, in-tree Observe and Timers0.2 with no patch. The selected
+Behavior instructions, current Reply admission/query ordering and Request
+extraction, Counter/StopOnShutdown and current Node cleanup owners are inspected.
+No dependency or production change is needed. Expected new owning Node
+permissions.rs plus existing registration/retired-case removal/records:249 total
+paths, approximately200 new verification lines, production0/public types0.
+Keep the four old permission-matrix cases and key law required; no fresh-authority
+or whole permission/security acceptance is inferred from this one borrow refusal.
+
+### Native permission diagnostics — qualified reconciliation
+
+The219-line owning permissions.rs511c835b passes1/0 in debug and optimized,
+385filtered,0.02/0.01s. The same unchanged test under the one-field owning-source
+cut request_refusal.into_inner()→None fails only its explicit missing-cause
+expect201 in both profiles,0.02/0.01s. These are actual test failures after
+Application cleanup, Node close, complete Counter custody, independent root
+report/notifications and startup/withdrawal observations. Later key/raw/proof,
+verification, absent-stage/panic and callback-count assertions are unexecuted
+in those negatives; both positives reach them. This proves preservation of the
+typed native cause, not fresh authority, prompt Query EOF or full security.
+
+Exact Request7db106fc is restored. Restored debug/optimized each pass1/0,
+385filtered,0.02/0.01s; logs /tmp/bombay-permission-diagnostics-restored-{debug,release}.log
+have SHA256d9434d44/7b4e94e9. Positive logs use the same prefix without restored,
+SHA256345a6460/0bc97a7b; inverse-{debug,release}.log have3331a5af/537bee61.
+Commands use the recorded pinned Nix environment and cargo test --offline
+--locked [--release] -p bombay-rs --all-features --lib
+admission_diagnostics_preserve_opaque_commands_and_native_permission_causes.
+Both independent source and outcome review passes qualify these exact results.
+
+Only the old diagnostic function and two unused Error/ptr imports are removed
+from replay/permissions.rs; all four permission-matrix cases and child key law
+remain required. Old RequestRefusal-specific strings/source forwarding are
+retired with that wrapper; direct typed cause ownership is the selected API.
+Canonical outer9dab9264 restores replay and requests and adds permissions;
+parent replay24170cdf is unchanged. No inverse, exclusion or command remains.
+Pinned formatting and diff whitespace pass. Canonical no-run compilation still
+fails44 legacy errors and executes no tests; log
+/tmp/bombay-permission-diagnostics-canonical.log SHA256c9cf2ae0.
+
+This stage has production+0/-0/net0, tests+221/-62/net159, public types+0/-0.
+Complete e3-baseline tree including the untracked new test is249 paths;
+production upper+3679/-1224/net2455 includes embedded tests, while separately
+classified tests/fixtures are+7553/-3588/net3965. Public API remains+5 gross/-2.
+This adds verification rather than reducing source. All copied, rejected,
+modified, external and unknown costs carry without reset or certified headroom.
+Seven of20 inventory laws are migrated;13 remain. Full accepted PRD scope,
+three whole-repository scans/minimization, strict checks, CI/review and main
+delivery remain open. Durability/outbox/reminders, automatic placement/fencing,
+subscription fanout, Kubernetes certification and Selo implementation remain
+explicitly deferred outside this milestone.
