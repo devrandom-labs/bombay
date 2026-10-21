@@ -6,6 +6,7 @@ use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use tokio::net::lookup_host;
 use tokio::sync::mpsc::{self, error::TrySendError};
 use tokio::sync::{Semaphore, TryAcquireError};
 use zenoh::qos::CongestionControl;
@@ -101,7 +102,8 @@ async fn refused_queries_complete_while_accepted_queries_remain_retained() {
                 WhatAmI::Router => "router",
                 WhatAmI::Client => unreachable!("the controlled listener is a Peer or Router"),
             };
-            let reservation = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+            let address = lookup_host(("localhost", 0)).await.unwrap().next().unwrap();
+            let reservation = TcpListener::bind(address).unwrap();
             let endpoint = reservation.local_addr().unwrap();
             drop(reservation);
             let listener = network(NetworkLayout::Peer {

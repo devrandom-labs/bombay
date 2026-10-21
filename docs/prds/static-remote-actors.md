@@ -9,35 +9,46 @@ consumer requirements qualify; seven warm external tests across three existing
 files still need migration. The internal inventory is not a PRD percentage.
 
 Committed d4d69e63 proves two original first-attempt expiry defects in debug and
-optimized builds, with an independently permitted control. The working-tree
-repair prepares one borrowed native-call capability, keeps the constructed
+optimized builds, with an independently permitted control. The committed
+0852abcd repair prepares one borrowed native-call capability, keeps the constructed
 command outside it, then acquires fresh permission before invoking it. Native
 mechanism consumers use that same operation without dummy permission policies.
-The three focused cases pass both profiles. Final uncensored all-feature library
-runs each execute406 tests:405pass/1fail,0filtered/0ignored,10.12/10.08s. Only the
-unchanged native ingress10-second watchdog fails; its stalled await remains
-unidentified. No flake explanation or increased watchdog is selected.
+The three focused cases pass both profiles. The ingress fixture mismatch is
+also corrected: it now reserves the same first localhost address resolved by
+the selected connector, while preserving DNS certificate verification. The
+complete all-feature library runs now pass406/406 in debug and optimized builds,
+0filtered/0ignored,5.47/5.34s. Every original ingress count/refusal/EOF/cleanup
+oracle executes; matching wait and10s/60s limits remain unchanged. Earlier405/406
+runs and unretained diagnostic bypasses retain their distinct failed epochs.
 
 The five older request-check expectations now include the final checks for
 actual native attempts. The key fixture reserves its five real native queries;
 SDK timeout captures can retain capacity beyond reply EOF. Complete key, wire,
 permission, Full retry, first-EOF and cancellation assertions pass both final
 profiles. Production-only all-feature Clippy passes. Strict library/test Clippy
-still reports three old shared-fixture findings and legacy external-consumer
-errors. The final command reaches application_clients first (19 diagnostics);
-the preceding command's four network errors remain unresolved. No lint in the
-changed capability/test files is reported.
+previously reported three shared-fixture findings and legacy external-consumer
+errors. The unused selector is now removed without erasing JSON causes; the
+two receiving consumers have been migrated and await focused validation.
+Four public construction cases and native refusal/pressure gaps are being
+reconciled separately. No passing all-target remote lint/CI claim follows.
 
 The user explicitly approved both pending scope requests on2026-10-21:
 2700 conservative production lines from the same e3daad58 baseline and255
-changed paths. Five gross new public types and6500 verification lines from
-the same verification checkpoint remain unchanged. The raw candidate is2598
+changed paths. Five gross new public types remain unchanged. The user then
+explicitly approved12000 verification lines from the same verification
+checkpoint, carrying every earlier cost. The raw candidate was2598
 production; required formatting adds8 to2606. The approved five additional
 paths cover ingress localization, the shared protocol fixture, two external
 receiving consumers and stale Nix gate names. The formatted expiry repair now
 passes its three focused cases in both profiles, production lint and formatting;
 full feature verification, distillation and delivery remain open. All earlier/rejected/copied/
 modified/tool/unknown costs carry; no refund, reset or headroom is certified.
+
+Journal reconciliation proves the earlier6500 verification allowance exceeded
+even before all tool/correction costs are recovered. The subsequent explicit
+“authorized and approved” reply raises that replacement total to12000.
+The production2700/path255/five-type approvals remain unchanged. The new window
+does not reset costs or authorize the full remaining PRD surface.
 
 All25 full acceptance rows remain open. Ordinary outbound typed requests,
 the remote-counter application, complete authentication/resource/fault gates,
@@ -39519,3 +39530,319 @@ it is not a production reduction. The user-approved2700/255/6500/five totals
 carry all historical and failed costs. A fresh origin/main fetch remains
 531ded500dd724fd40920c0a70fbbf25f6ae4856, already integrated; no merge is claimed.
 Next stage is test-owned ingress localization, not additional production design.
+
+### Native ingress localization and required gate names — bounded test stage
+
+The formatted expiry repair is committed at0852abcd after both independent
+reviews; review expiry-formatted-checkpoint-independent-20261021.json1539f499
+binds the exact source, actual four passing gates and complete census.
+
+Select only two now-authorized existing owners: ingress.rs and flake.nix.
+Production/API delta0; expected21 temporary task-side stage messages plus eight
+required test-name corrections, within the forecast33 verification lines before
+measured controls. Preserve ingress source071a55e4 after stripping just messages:
+all native calls, callbacks, originals, permits, waits, cleanup, whole10-second
+watchdog, native60-second expiry and post-cleanup oracles remain unchanged.
+Messages precede existing awaits and never print from transport callbacks.
+A watchdog still proves no semantic inverse; its last stage localizes work only.
+
+For Nix, reconcile four leaf names in each profile against the actual final406
+logs: pending protection now uses the cold names; declaration refusal belongs
+to protection rather than requests. Keep exact-line matching, both profiles,
+all Cargo targets, lint and documentation commands. Six current required leaves
+pass once each in both logs, whose whole result still fails for ingress.
+No gate is removed or softened, and no Nix success is claimed.
+
+Independent budget reconciliation recovers at least5644 latest-window lines;
+remaining856 is arithmetic only. Targeted root-journal recovery identifies the
+same4000 authorization08:26:39Z and6500 expansion13:15:34Z, with unresolved
+intermediate author/copy/tool costs carried. No proven6500 overrun is found;
+this small bounded diagnostic stage is selected without claiming certified
+headroom. The180-gross outcome migration and seven warm-law replacements remain
+unselected while their larger cost is reconciled. No budget reset or refund.
+
+The first diagnostic run exits101,0pass/1watchdog,405filtered,10.01s; log
+/tmp/bombay-ingress-localization-debug.log9d058bb8. Its final stage is Peer/2
+matching notice, before every query submission. Fresh selected SDK source and
+its matching test prove default BestMatching accepts incomplete queryables;
+listener registration emits initial true but no false. Add one bound actual
+matching_status result plus task-side status prints (three further lines,
+combined32 verification lines including Nix). This distinguishes current native
+route state from listener delivery; it changes no completeness, target, timeout,
+matching wait, query or oracle and does not justify a production repair.
+
+The snapshot run also exits101 (0pass/1watchdog,405filtered,10.03s): actual
+matching_status is Ok(false), and no notice arrives before the same watchdog.
+No query is submitted. This rules out a received-but-ignored true notice, not
+all native propagation causes. SessionGetBuilder calls Session::query with no
+Querier identity and no matching prerequisite. For one isolated comparison,
+remove only the matching-notice wait, retaining its Querier, listener, original
+receiver scope and both actual withdrawal receipts. The intentionally unpolled
+notice receiver keeps its native observer alive. Every actual Get, accepted
+A/B original, overflow refusal/EOF-before-release, quota and cleanup assertion
+remains. The A transfer and received original are actual readiness evidence for
+this ingress law. A pass would establish unnecessary observer waiting here;
+it would not explain or repair SDK matching. No sleeps or timeout changes.
+One modified receiver binding adds one measured verification line beyond32.
+
+### Ingress comparison outcome and verification allowance stop
+
+The direct-transfer comparison exits101,0pass/1watchdog,405filtered,10.03s
+(build45.56s), log /tmp/bombay-ingress-direct-transfer-debug.log. Matching is
+actually false. The original first SessionGet submits successfully, then waits
+for its transfer; no accepted callback or original Query is observed. Removing
+only the matching wait therefore does not repair ingress, and is not retained.
+No native admission, overflow refusal or disposal/EOF assertion is reached.
+The cause of query routing/delivery remains unproved; selected routing code can
+forward toward unfinalized interests, so matching false alone is insufficient.
+
+Restore ingress.rs exactly to071a55e478485f0ba49fd3d2077256bea8dd06ff328cd7da51e001ea7352423a.
+All temporary messages, status acquisition, observer-wait removal and receiver
+binding changes are gone. Their authored/modified/correction costs remain
+charged; restoration refunds nothing. The three diagnostic runs are distinct
+from original406-case and formatted three-case epochs. No production changed.
+
+The Nix correction remains exactly8 required-name replacements, with both live
+leaves unchanged. All12 exact-line assertions (six per profile) match exactly
+one actual success in the preceding complete debug/release logs, which remain
+overall405/406. Pinned-input offline evaluation of
+checks.aarch64-darwin.bombay-remote-debug.drvPath exits0; receipts are
+/tmp/bombay-remote-gate-nix-eval.{log,stderr,exit}. This proves evaluation only,
+not a successful Nix build, test, lint, documentation gate or CI delivery.
+The source reviews preserve every Cargo command, profile and exact-line guard.
+
+Verification reconciliation now proves an actual6500 ceiling breach. Independent
+review excludes the emitted JSON/report text and counts executable helper
+source:37 already-authored read/hash/report programs contain1109 physical lines;
+global nonblank-line deduplication leaves939. Excluding every line matching
+tracked Rust leaves917 distinct helper lines outside the earlier test-only5606
+floor. Even deducting all18 source-cut lines again as an overlap allowance gives
+5606+917-18=6505. This deliberately understates total costs: root programs,
+other-author helpers, current diagnostics and unresolved corrections remain
+charged too. This is a proven overrun, not an assertion that unknown cost means
+zero remaining allowance. Further verification authoring stops immediately.
+
+Use existing Cargo/Nix/standard commands and concise prose reviews from here;
+do not add further bespoke verification/report-generator programs. Preserve the
+existing raw logs, source hashes and review evidence. Larger test migrations
+remain unselected pending an explicit replacement total from the same original
+verification checkpoint; production2700/paths255/five gross types remain fixed.
+
+### Verification replacement total — explicit approval
+
+The user explicitly replied “authorized and approved” to the pending12000-line
+verification request. Approved total is now12000 from the same original latest-
+grant checkpoint, carrying the proven6500 overrun and every earlier authored,
+modified, copied, rejected, formatting, tool and unresolved cost. Production2700
+from e3,255 paths and five gross new public types remain independent ceilings.
+This is not5500 certified remaining headroom or a grant for the whole PRD.
+
+The scoped remaining forecast is roughly1500–2500 further verification lines:
+seven retained external tests (four construction cases, one seven-refusal trace,
+two pressure cases), two retirement consumers/shared fixture, and the current
+first-ingress-callback investigation. Source review must select truthful owners:
+native Session/Query and cold-service mechanism laws belong in existing Node or
+Export tests; ordinary public consumers retain public Application contracts.
+No retired public SDK or imperative Export surface is restored to migrate a test.
+Preserve every independent original/refusal/native cleanup observation, qualify
+focused debug/optimized controls and intended owning-source inversions before
+retiring old copies. No new production abstraction, public type, path, fixture
+framework or bespoke verifier/report-generator program is selected. Record each
+cohort forecast and actuals before broadening. A new dependency or composition
+law reopens its design rather than becoming compiler-driven migration plumbing.
+
+### Receiving-consumer cohort — selected existing-owner migration
+
+Select exactly tests/network.rs, tests/completed_application_receiving/network.rs
+and tests/application_clients/protocol.rs. Production0/public types0; forecast
+up to180 gross authored/modified verification lines before measured formatting
+and corrections. Reuse existing five-part Application receiving/retirement,
+actual retained root report and independent lifecycle report, shutdown(),
+Entity family shutdown/metrics/native retirement and existing provider fixtures.
+Preserve original allocations, caller-local borrowed/non-Send Work, live Entity
+after root retirement, same owner identities, complete native originals and both
+notifications. Acquire cleanup before assertions. Remove only the source-proven
+unused ReadRetention selector; preserve the actual JSON error payload. No new
+fixture, adapter, protocol, bound, default or production law is selected.
+Root owns pinned focused debug/release tests and strict target lint; the author
+reviews invariant/outcome and counterexample/vacuity passes before submission.
+The seven warm Export laws remain in their old modules until owning cold-law
+migration is independently qualified; registration/deletion stays with root.
+
+### First Peer transfer — selected native trace
+
+The selected transport is bombay-zenoh-transport1.10.4 and protocol is
+zenoh-protocol1.10.1; earlier registry glob matches at other versions are not
+build evidence. Pipeline source attempts available batches before its zero
+refill deadline, so wait_before_drop(0) is not itself proof all sends are lost.
+No Network policy or production correction is selected without actual evidence.
+
+For one further isolated diagnostic, retain the same original SessionGets,
+Querier/listener interests and withdrawal receipts, skip only the already
+localized matching wait, and enable the SDK's existing environment logger.
+Use native session/routing/transport tracing to distinguish route selection,
+transmission, incoming callback and link closure. No new logger crate, helper,
+wrapper, query, timeout, target, completeness or semantic oracle is introduced.
+The deliberately unpolled notice receiver preserves its original observer scope.
+All effects remain test-owned outside Behavior. Restore the original test after
+this unretained diagnostic; no failed or timed-out trace earns semantic credit.
+
+### Native ingress fixture — resolved localhost address
+
+The native connection trace identifies the actual setup defect:
+/tmp/bombay-ingress-connection-trace-debug.log repeatedly reports connection
+refused at[::1]:62614, while the fixture listener is127.0.0.1:62614. Both
+Sessions open, but Peer connection retries in the background; native query
+routes are empty and immediately return FINAL. Thus no Query can reach ingress.
+The SDK's get_tls_addr resolves with tokio::net::lookup_host(...).next(); it
+does not try the other localhost address family. Selected TLS link1.10.4 and
+link-commons1.10.2 sources match this actual error. This is neither a mailbox,
+permission, query-capacity nor EOF defect. No SDK or production fix is selected.
+
+Pinned OpenSSL inspection of both recipient and Router certificates confirms
+DNS:localhost only. Keep hostname verification and all supplied certificates;
+do not switch the connecting identity to an uncertified numeric IP. Restore
+original ingress071, then use Tokio's existing hostname resolver to select the
+same first localhost address for the ephemeral listener reservation. Retain
+localhost on connect, original Peer/Router modes, actual matching wait, all
+owners/cleanup/oracles and10s/60s limits. Forecast one existing test path,
+about8 added/modified verification lines; production/API0, no helper or newtype.
+This restores the fixture's intended same-endpoint precondition, not a new
+Bombay network law or a promise of SDK DNS-address fallback.
+
+Source review must check actual resolver/address-family equivalence and TLS
+identity; focused original/fixed debug and optimized outcomes remain distinct.
+After the setup correction, all count/refusal/EOF assertions must actually run;
+a positive connection alone earns no ingress-law credit. No diagnostic logger,
+matching-wait bypass or unpolled-placeholder observer remains in the candidate.
+
+### Public cold construction — selected four nominal cases
+
+Select existing application_clients/network_replay/construction.rs only,
+forecast200–350 authored/modified verification lines before measured corrections,
+formatting and old-copy retirement; production/API/path additions0. Four real
+Recorded/Scheduled by Counter/Ledger constructions use existing Export::new,
+Node.exports, attached run_with and concrete provider DTOs/encoders. No generic
+provider facade, bound, wrapper or SDK escape hatch is selected. Acquire actual
+binding target, startup/withdrawal/native close Results, empty request/diagnostic
+collections, original Work/root/report/two notifications and cleanup before
+assertions. Preserve exact Debug redaction and all four nominal combinations.
+
+Raw Session liveness during successful Work and after joined run remains an
+internal owner law. The old incoming receiver is no longer a public extraction
+product; its Disconnected obligation stays explicitly open in ingress until
+that native test reaches and passes its actual oracle. The old public window
+between manual withdrawal and Session close is retired by cold ownership, not
+reintroduced. Root controls registrations and old-copy deletion after scoped
+qualification; no legacy test is declared covered from a nominal count alone.
+
+Construction candidate preservation uses the immutable0852abcd Git source as
+its original baseline, not another copied/gated implementation in the worktree.
+Replace only the candidate file; it remains unretained until the new law mapping,
+actual controls, source inversions and both reviews qualify it. Root can restore
+that exact committed original if rejected. Do not add cfg(any()) dead versions
+or duplicate test names merely to preserve bytes already retained by Git.
+
+### Pressure custody — selected exact retry and retired-native laws
+
+Select existing node/tests/unwind.rs and remote/export/tests.rs, production0,
+public types0 and new paths0. Forecast650–900 authored/modified verification
+lines before formatting/corrections, stop/reconcile at1000. Keep qualified cold
+Ledger granted/revoked Full and private Counter full_read controls unchanged.
+
+The missing guard-panic witness must exercise the real SECOND nativeFull retry,
+not substitute firstFull. Actual capacity wake enables that retry; its current
+permission callback reblocks the sole real worker and an independent ordinary
+sender refills capacity before native retry. Work owns the worker release so
+cleanup/unwind cannot strand it. Use finite setup acknowledgement watchdogs,
+no sleeps or I/O inside Behavior, and coherent borrowed authority. A granted
+loan snapshots its own release policy; a constructor must not retroactively
+change that earlier guard's Drop behavior. Preserve actual original panic,
+exact Full command/reply endpoint, Request row and complete Node/root/notes/
+Session/native cleanup before assertions. Model fault phases with a closed sum.
+
+The precise finite inverse changes ONLY retry custody around permission release:
+keep native owner locally until after guard Drop rather than in its Request
+row. A real destructor panic then loses that Full row, so the complete original
+post-cleanup custody oracle must fail while first admission remains unchanged.
+Merely moving guard Drop earlier is not an adequate killer if firstFull remains
+identical. Record actual inverse/restored debug and optimized outcomes.
+
+The old explicit post-retirement Closed law belongs to native Delivery, since
+Query may lawfully select retirement before retry. Use actual Ledger Full,
+acquired retirement, same borrowed native retry capability and exact original
+Append allocation in Closed; repeat no-work and constructor/canonical counts.
+Reuse existing Ledger/Counter fixtures and native owners, no new runtime or
+public imperative API. Do not retire old pressure tests until their exact
+observations are covered; a firstFull-only panic cannot certify secondFull.
+
+Construction review catches a real finite-provider defect before acceptance:
+the draft reply protector validated scope but returned a constant token without
+recording the bytes/proof pair. Withdraw that source-readiness verdict; it does
+not implement the selected finite recorded/scheduled provider law. Existing
+node_exports/wire.rs and protected_counter/providers.rs validate and register
+the complete pair before returning. Correct only this existing candidate file:
+use a caller-owned bounded reply registry in each concrete case, register exact
+bytes/proof under the existing validated scope, and retain an empty-registry
+observation after cleanup. No generic producer facade, new error wrapper,
+public type or visibility widening is justified. Empty request registration
+still deliberately denies unsolicited inputs; successful dummy proof does not.
+Forecast40–60 further authored/modified lines before actual formatting.
+
+Measured construction draft is298 raw lines (279 added/219 retired), then495
+formatted (456 added/199 retired). The rejected first duplicate-path patch and
+repeated draft/correction/formatting costs all carry without refunds; the raw
+forecast was not a formatted limit or certified remaining headroom. Candidate
+remains unretained until the real provider correction and focused verification.
+
+### Native ingress correction and gate names — actual qualification
+
+Focused corrected ingress passes debug1/0/405filtered in0.57s and optimized
+1/0/405filtered in0.53s. After pinned default formatting, source670dae4d is
+only3added/-1 from071: the standard resolver import and first-address listener
+reservation. No temporary logger, matching-wait bypass or extra query remains.
+Both independent source passes verify the exact SDK resolver, DNS-only
+certificates, callback/owner conservation and unchanged oracles/timeouts.
+
+On formatted ingress670dae4d and shared provider9ed5cf95, actual pinned commands:
+
+```text
+cargo test --offline --locked -p bombay-rs --all-features --lib
+cargo test --offline --locked --release -p bombay-rs --all-features --lib
+cargo clippy --offline --locked -p bombay-rs --all-features --lib -- -D warnings
+cargo fmt --all -- --check
+```
+
+All exit0. Each complete library run executes406 cases,406pass/0fail,
+0filtered/0ignored,debug5.47s/optimized5.34s. Production lint0.66s; format log
+empty. Logs/actual exit receipts are
+/tmp/bombay-ingress-fixed-library-{debug,release}.{log,exit},
+/tmp/bombay-ingress-fixed-production-clippy.{log,exit} and
+/tmp/bombay-ingress-fixed-fmt.{log,exit}. Full libraries include the unchanged
+actual ingress post-cleanup count, typed refusal, native EOF-before-release,
+capacity return, disconnection and both session-close assertions for both roles
+and quotas; a setup-only success is not substituted. The original IPv4 fixture
+failures prove its setup mismatch, not a semantic count/disposal inverse.
+
+Nix98a8a2da retains all twelve exact-line guards and unchanged build/lint/doc
+commands; eight stale spellings now name the actual passing cases. Its prior
+0 derivation evaluation and exact success-line comparison remain scoped checks,
+not a full nix flake check or CI/main delivery. Shared selector deletion retains
+original concrete JSON cause; no library test-build warning remains.
+
+Complete central-format snapshot, before subsequent unretained author changes:
+
+```text
+conservative source: +3831 / -1225 / net2606
+tests/fixtures:      +11641 / -7641 / net4000
+remote public API:  +5 gross named types / -2, unchanged this stage
+paths:              255 / untracked0
+```
+
+This reuses the independently sealed0852 complete classification and all current
+Git deltas: test512/-268/net244 across ingress and the four external candidate
+files. It includes the unqualified four-construction and receiving candidates;
+those integration targets are NOT exercised by --lib. No production changes
+occurred. The ingress/Nix gate stage itself is test3/-1 plus Nix8/-8, public0.
+All corrected, rejected, copied, format, tool and unresolved costs remain charged
+under12000; no refund/reset or certified remaining headroom is claimed.

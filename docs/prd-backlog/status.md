@@ -1,14 +1,19 @@
 # Backlog status and dependencies
 
 Current remote expiry comparison: committed d4d69e63 proves two first-attempt
-permission-expiry defects in both profiles. The working-tree borrowed native
+permission-expiry defects in both profiles. The committed0852abcd borrowed native
 call retains constructed originals and lets Query acquire final permission.
-Final complete library runs each pass405/406; only the unchanged ingress
-watchdog fails. Production Clippy passes; test lint/legacy external consumers
-remain open. The user explicitly approved2700 conservative production lines
+Complete library runs now pass406/406 in both profiles after fixing the
+fixture's IPv4-listener/IPv6-localhost mismatch. All original ingress oracles
+execute without changing limits or certificate verification. Production Clippy
+passes; external consumer migration and full target gates remain open.
+The user explicitly approved2700 conservative production lines
 from the same e3 baseline and255 changed paths on2026-10-21. Formatted production
-totals2606;6500 verification and five public types remain unchanged, with
-all earlier costs carried. Full R01–R25/AUTH1/NET1, distillation, required CI/review and
+totals2606. Journal reconciliation proves the earlier6500 verification
+allowance exceeded; the user explicitly approved12000 total from the same
+checkpoint, carrying all costs. Five public types remains the limit. Earlier
+ingress diagnostics/failures remain separate from the fixed passing source.
+Full R01–R25/AUTH1/NET1, distillation, required CI/review and
 main delivery remain open; the [feature record](../prds/static-remote-actors.md#first-attempt-expiry--owning-representation-and-repair-plan)
 retains actual outcomes, rejected comparisons, native consumers and budgets.
 
