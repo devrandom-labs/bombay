@@ -35,6 +35,10 @@ async fn foreign_actor_target_refuses_before_numeric_duplicate_comparison() {
         .expect("finite foreign-target startup and both cleanups complete");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "both actual Applications join before checking target refusal and original Work custody"
+)]
 async fn refused(selection: Selection) {
     let address = reserved_address();
     let configuration_scope = String::from("borrowed target refusal scope");
@@ -50,8 +54,9 @@ async fn refused(selection: Selection) {
             protected: bytes.into(),
             proof: proof.into(),
         };
-        recorded::verify::<CounterInput>(&request, &records.borrow(), wire::binding("counter"))
-            .await
+        let verification =
+            recorded::verify::<CounterInput>(&request, &records.borrow(), wire::binding("counter"));
+        verification.await
     };
     let maximum = NonZeroUsize::new(2).unwrap();
     let protect = async |bytes: &[u8], receipt: &recorded::Receipt<CounterInput>| {
@@ -175,13 +180,12 @@ async fn refused(selection: Selection) {
             let work = unused_work
                 .await
                 .expect("the exact original Work disposition returns after startup");
-            let result = match work {
-                Some(work) => Ok(work(application).await),
-                None => {
-                    let shutdown = application.shutdown();
-                    let retirement = application.retirement().await;
-                    Err((shutdown, retirement))
-                }
+            let result = if let Some(work) = work {
+                Ok(work(application).await)
+            } else {
+                let shutdown = application.shutdown();
+                let retirement = application.retirement().await;
+                Err((shutdown, retirement))
             };
             (address, result)
         });

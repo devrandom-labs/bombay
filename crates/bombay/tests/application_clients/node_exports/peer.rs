@@ -210,6 +210,10 @@ impl Peer {
         (receiving, refused)
     }
 
+    #[expect(
+        clippy::type_complexity,
+        reason = "the sibling owns separate native request and causal oneshot originals"
+    )]
     pub(super) async fn rejected(
         self,
         request: ProtectedMessage,

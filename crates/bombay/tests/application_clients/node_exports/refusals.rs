@@ -63,16 +63,28 @@ struct Withheld<'scope> {
 }
 #[derive(Debug)]
 enum VerificationRefusal<'scope> {
+    #[expect(
+        dead_code,
+        reason = "retain the actual provider cause even when this trace selects Withheld"
+    )]
     Provider(protocol::VerificationError),
     Withheld(Withheld<'scope>),
 }
 #[derive(Debug)]
 enum ProtectionRefusal<'scope> {
+    #[expect(
+        dead_code,
+        reason = "retain the actual provider cause even when this trace selects Withheld"
+    )]
     Provider(wire::Refusal),
     Withheld(Withheld<'scope>),
 }
 #[derive(Debug)]
 enum PermissionRefusal<'scope> {
+    #[expect(
+        dead_code,
+        reason = "retain the actual scope cause even when this trace selects Withheld"
+    )]
     Scope(wire::Refusal),
     Withheld(Withheld<'scope>),
 }
@@ -95,7 +107,7 @@ fn withhold<'scope>(
     Withheld { scope, original }
 }
 
-fn assert_withheld(refusal: Withheld<'_>, scope: &str, allocation: *const u8) {
+fn assert_withheld(refusal: &Withheld<'_>, scope: &str, allocation: *const u8) {
     assert_eq!(refusal.scope, scope);
     assert_eq!(refusal.original.as_ptr(), allocation);
     assert_eq!(refusal.original.as_ref(), [37, 41]);
@@ -103,110 +115,106 @@ fn assert_withheld(refusal: Withheld<'_>, scope: &str, allocation: *const u8) {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn binding_refusal_preserves_unused_work_and_borrowed_cause() {
-    tokio::time::timeout(Duration::from_secs(10), refused(RefusalStage::Binding))
+    let operation = pin!(refused(RefusalStage::Binding));
+    tokio::time::timeout(Duration::from_secs(10), operation)
         .await
         .expect("finite consumer trace completes before any native query deadline");
 }
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn second_declaration_refusal_withdraws_the_first_before_close() {
-    tokio::time::timeout(Duration::from_secs(10), refused(RefusalStage::Declaration))
+    let operation = pin!(refused(RefusalStage::Declaration));
+    tokio::time::timeout(Duration::from_secs(10), operation)
         .await
         .expect("finite consumer trace completes before any native query deadline");
 }
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn verification_refusal_preserves_the_original_provider_cause() {
-    tokio::time::timeout(Duration::from_secs(10), refused(RefusalStage::Verification))
+    let operation = pin!(refused(RefusalStage::Verification));
+    tokio::time::timeout(Duration::from_secs(10), operation)
         .await
         .expect("finite consumer trace completes before any native query deadline");
 }
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn protection_refusal_preserves_the_acquired_native_reply() {
-    tokio::time::timeout(Duration::from_secs(10), refused(RefusalStage::Protection))
+    let operation = pin!(refused(RefusalStage::Protection));
+    tokio::time::timeout(Duration::from_secs(10), operation)
         .await
         .expect("finite consumer trace completes before any native query deadline");
 }
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn request_refusal_preserves_the_original_permission_cause() {
-    tokio::time::timeout(Duration::from_secs(10), refused(RefusalStage::Request))
+    let operation = pin!(refused(RefusalStage::Request));
+    tokio::time::timeout(Duration::from_secs(10), operation)
         .await
         .expect("finite consumer trace completes before any native query deadline");
 }
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn reply_permission_refusal_prevents_encoding_and_protection() {
-    tokio::time::timeout(
-        Duration::from_secs(10),
-        refused(RefusalStage::ReplyEncoding),
-    )
-    .await
-    .expect("finite permission refusal completes before any native query deadline");
+    let operation = pin!(refused(RefusalStage::ReplyEncoding));
+    tokio::time::timeout(Duration::from_secs(10), operation)
+        .await
+        .expect("finite permission refusal completes before any native query deadline");
 }
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn reply_refusal_preserves_the_native_reply_and_current_cause() {
-    tokio::time::timeout(Duration::from_secs(10), refused(RefusalStage::Reply))
+    let operation = pin!(refused(RefusalStage::Reply));
+    tokio::time::timeout(Duration::from_secs(10), operation)
         .await
         .expect("finite consumer trace completes before any native query deadline");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn verified_receipt_survives_its_producer_destructor_panic() {
-    tokio::time::timeout(
-        Duration::from_secs(10),
-        refused(RefusalStage::VerifiedDisposal),
-    )
-    .await
-    .expect("finite Ready-Ok disposal trace completes before native expiry");
+    let operation = pin!(refused(RefusalStage::VerifiedDisposal));
+    tokio::time::timeout(Duration::from_secs(10), operation)
+        .await
+        .expect("finite Ready-Ok disposal trace completes before native expiry");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn refused_receipt_survives_its_producer_destructor_panic() {
-    tokio::time::timeout(
-        Duration::from_secs(10),
-        refused(RefusalStage::RefusedDisposal),
-    )
-    .await
-    .expect("finite Ready-Err disposal trace completes before native expiry");
+    let operation = pin!(refused(RefusalStage::RefusedDisposal));
+    tokio::time::timeout(Duration::from_secs(10), operation)
+        .await
+        .expect("finite Ready-Err disposal trace completes before native expiry");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn poll_panic_preserves_pending_sibling_native_result_and_disposal() {
-    tokio::time::timeout(
-        Duration::from_secs(10),
-        refused(RefusalStage::VerificationPoll),
-    )
-    .await
-    .expect("finite poll fault and sibling disposal complete before native expiry");
+    let operation = pin!(refused(RefusalStage::VerificationPoll));
+    tokio::time::timeout(Duration::from_secs(10), operation)
+        .await
+        .expect("finite poll fault and sibling disposal complete before native expiry");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn poll_and_destructor_panics_preserve_all_three_original_payloads() {
-    tokio::time::timeout(
-        Duration::from_secs(10),
-        refused(RefusalStage::VerificationDoublePanic),
-    )
-    .await
-    .expect("finite independent producer disposals complete before native expiry");
+    let operation = pin!(refused(RefusalStage::VerificationDoublePanic));
+    tokio::time::timeout(Duration::from_secs(10), operation)
+        .await
+        .expect("finite independent producer disposals complete before native expiry");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn verification_factory_panic_has_no_provider_result_or_disposal() {
-    tokio::time::timeout(
-        Duration::from_secs(10),
-        refused(RefusalStage::VerificationFactory),
-    )
-    .await
-    .expect("finite verification construction fault completes before native expiry");
+    let operation = pin!(refused(RefusalStage::VerificationFactory));
+    tokio::time::timeout(Duration::from_secs(10), operation)
+        .await
+        .expect("finite verification construction fault completes before native expiry");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn protection_factory_panic_preserves_the_actual_native_reply() {
-    tokio::time::timeout(
-        Duration::from_secs(10),
-        refused(RefusalStage::ProtectionFactory),
-    )
-    .await
-    .expect("finite protection construction fault completes before native expiry");
+    let operation = pin!(refused(RefusalStage::ProtectionFactory));
+    tokio::time::timeout(Duration::from_secs(10), operation)
+        .await
+        .expect("finite protection construction fault completes before native expiry");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete refusal trace preserves native, provider, family, Work and cleanup originals"
+)]
 async fn refused(stage: RefusalStage) {
     let address = reserved_address();
     let reports = Arc::new(Mutex::new(Vec::new()));
@@ -358,6 +366,10 @@ async fn refused(stage: RefusalStage) {
         }
         ready(result)
     };
+    #[expect(
+        clippy::await_holding_refcell_ref,
+        reason = "Scheduled verification borrows its immutable registered table through the actual transfer"
+    )]
     let verify_ledger = async |bytes: &[u8], proof: &[u8]| {
         let request = ProtectedMessage {
             protected: bytes.into(),
@@ -377,9 +389,10 @@ async fn refused(stage: RefusalStage) {
             | RefusalStage::VerificationPoll
             | RefusalStage::VerificationDoublePanic => {
                 let permission = ledger_scope.borrow_mut();
+                let entered = ledger_entered.borrow_mut().take();
                 return faults::Protection {
                     permission,
-                    entered: ledger_entered.borrow_mut().take(),
+                    entered,
                     loans: &ledger_loans,
                     disposed: &ledger_disposals,
                     panic: Some(Arc::clone(&sibling_panic)),
@@ -804,7 +817,7 @@ async fn refused(stage: RefusalStage) {
                             retirement.as_ref(),
                             ActorRetirement::OwnerCancelled { .. }
                         ));
-                        assert!(entries.is_empty());
+                        assert_eq!(entries.as_slice(), []);
                     }
                 }
             }
@@ -848,7 +861,7 @@ async fn refused(stage: RefusalStage) {
             let Err(refusal) = bound.expect("actual binding was attempted") else {
                 panic!("actual binding refused");
             };
-            assert_withheld(refusal, &configuration, allocation);
+            assert_withheld(&refusal, &configuration, allocation);
             assert!(
                 declared.is_none()
                     && withdrawn.is_none()
@@ -975,7 +988,7 @@ async fn refused(stage: RefusalStage) {
                 | RefusalStage::VerificationDoublePanic => {
                     match stage {
                         RefusalStage::VerificationDoublePanic => {
-                            faults::assert_panic(verification_poll, &polling_panic)
+                            faults::assert_panic(verification_poll, &polling_panic);
                         }
                         _ => assert!(verification_poll.is_none()),
                     }
@@ -1001,7 +1014,7 @@ async fn refused(stage: RefusalStage) {
                     else {
                         panic!("original verifier refusal");
                     };
-                    assert_withheld(cause, &configuration, allocation);
+                    assert_withheld(&cause, &configuration, allocation);
                     assert!(
                         key.is_none()
                             && native.is_none()
@@ -1058,7 +1071,7 @@ async fn refused(stage: RefusalStage) {
                     let Some(PermissionRefusal::Withheld(cause)) = request_refusal else {
                         panic!("original request current-check refusal");
                     };
-                    assert_withheld(cause, &configuration, allocation);
+                    assert_withheld(&cause, &configuration, allocation);
                     assert!(
                         key.is_none()
                             && native.is_none()
@@ -1108,7 +1121,7 @@ async fn refused(stage: RefusalStage) {
                             else {
                                 panic!("original protection cause");
                             };
-                            assert_withheld(cause, &configuration, allocation);
+                            assert_withheld(&cause, &configuration, allocation);
                             assert!(reply_refusal.is_none());
                         }
                         RefusalStage::ProtectionFactory => {
@@ -1132,7 +1145,7 @@ async fn refused(stage: RefusalStage) {
                             let Some(PermissionRefusal::Withheld(cause)) = reply_refusal else {
                                 panic!("original fresh reply current-check cause");
                             };
-                            assert_withheld(cause, &configuration, allocation);
+                            assert_withheld(&cause, &configuration, allocation);
                         }
                         _ => unreachable!("only the two acquired-native refusal cases enter"),
                     }
@@ -1282,7 +1295,7 @@ async fn refused(stage: RefusalStage) {
     let disposals = disposed.borrow();
     match stage {
         RefusalStage::Binding | RefusalStage::Declaration | RefusalStage::VerificationFactory => {
-            assert!(disposals.is_empty())
+            assert!(disposals.is_empty());
         }
         _ => assert_eq!(disposals.as_slice(), [stage]),
     }

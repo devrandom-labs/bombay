@@ -1,109 +1,387 @@
-//! Public Node-associated export construction; no network Query exchange.
-use super::{Counter, CounterOperation, EndpointRole, LedgerOperation, MailLedger};
-use super::{CounterValue, Receipts, assert_completed, assert_notifications};
-use super::{configuration, recorded, scheduled};
+//! Public cold declaration construction; no protected requests or native Query traffic.
+use super::{Binding, Counter, CounterMessage, CounterOperation, EndpointRole};
+use super::{LedgerCommand, LedgerOperation, MailLedger, ProtectedMessage, Purpose};
+use super::{ReadReply, ReadReplyRef, ReadRequest, VerificationError};
+use super::{assert_completed, assert_notifications, configuration, limits, recorded, scheduled};
 use bombay::actors::ActorExt;
-use bombay::prelude::Application;
-use bombay::remote::{ExportLimits, IngressError};
+use bombay::behavior::User;
+use bombay::prelude::{Application, MailAddr};
+use bombay::remote::{Export, ExportLimits, reply};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
-use std::error::Error;
+use std::cell::RefCell;
 use std::num::NonZeroUsize;
-use std::sync::{Arc, Mutex};
-use tokio::runtime::Builder;
-use tokio::sync::mpsc;
-use zenoh::query::Query;
 
-async fn counter_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bool) {
-    let refusals = Arc::new(Mutex::new(Vec::<IngressError<Query>>::new()));
-    let observed = Arc::clone(&refusals);
-    let mut node = Application::new(Counter::new().stop_on_shutdown())
+const COUNTER_BINDING: Binding = Binding {
+    deployment: "two-node-read-study",
+    caller: "caller",
+    controller: "owner",
+    actor: "counter",
+    host: "receiver",
+    protocol: "counter",
+    target_assignment: "construction",
+    logical_session: 41,
+};
+const LEDGER_BINDING: Binding = Binding {
+    actor: "ledger",
+    protocol: "ledger",
+    ..COUNTER_BINDING
+};
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    reason = "one complete construction trace preserves its exact original request rejection type"
+)]
+async fn recorded_counter_joined_node_issues_export() {
+    let maximum = NonZeroUsize::new(2).unwrap();
+    // An empty registered set denies every unsolicited request; these leaves issue none.
+    let records: [ProtectedMessage; 0] = [];
+    let protected_replies = RefCell::new(Vec::<ProtectedMessage>::new());
+    let current =
+        |receipt: &recorded::Receipt<CounterOperation>, runtime: &str, target: MailAddr| {
+            let scope = recorded::projection(receipt);
+            if scope.kind == Purpose::Request
+                && scope.operation == CounterOperation::Read
+                && scope.bombay.runtime_generation.as_ref() == runtime
+                && scope.bombay.actor_generation == target.0
+                && recorded::identity(receipt).0 == &COUNTER_BINDING
+            {
+                Ok(())
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        };
+    let export = Export::new(
+        "bombay/public/counter",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes: &[u8]| serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes),
+        reply(
+            |request: ReadRequest<CounterOperation>| match request.operation {
+                CounterOperation::Read => {
+                    Ok::<_, ReadRequest<CounterOperation>>(CounterMessage::Read)
+                }
+            },
+            |receipt: &recorded::Receipt<CounterOperation>, original: &User<MailAddr, u64>| {
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &recorded::projection(receipt).bombay,
+                    kind: Purpose::ReadReply,
+                    operation: CounterOperation::Read,
+                    value: &original.message,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            recorded::verify::<CounterOperation>(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                &records,
+                COUNTER_BINDING,
+            )
+            .await
+        },
+        async |bytes: &[u8], receipt: &recorded::Receipt<CounterOperation>| {
+            let reply: ReadReply<u64, CounterOperation> =
+                serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+            if reply.bombay == recorded::projection(receipt).bombay
+                && reply.kind == Purpose::ReadReply
+                && reply.operation == CounterOperation::Read
+            {
+                let mut replies = protected_replies.borrow_mut();
+                if replies.len() >= maximum.get() {
+                    return Err(VerificationError::Invalid);
+                }
+                let proof = Box::<[u8]>::from([13, 17]);
+                replies.push(ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.clone(),
+                });
+                Ok(proof)
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        },
+        |left, right| recorded::identity(left) == recorded::identity(right),
+        &current,
+        &current,
+    );
+    let node = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
         .await
-        .unwrap_or_else(|(_, _, cause)| {
-            panic!(
-                "actual configured Counter Node: {cause:?}; source: {:?}",
-                cause.source()
-            )
-        });
+        .unwrap_or_else(|_| panic!("the actual Counter Node opens"));
+    let mut node = node.exports(export, async |application| {
+        Ok::<_, VerificationError>(application.root().established_recipient())
+    });
     let outcome = node
         .run_with(|application| async move {
             let target = application.root().established_recipient();
-            let declaration = application
-                .export::<_, CounterValue, Receipt>(
-                    target,
-                    "bombay/public/counter",
-                    ExportLimits {
-                        queued_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_requests: NonZeroUsize::new(2).unwrap(),
-                    },
-                    same_request,
-                    move |original| observed.lock().unwrap().push(original),
-                )
-                .await;
             let stopped = application.shutdown();
-            let report = application.lifecycle().retirement().await;
-            (declaration, stopped, report)
+            let retired = application.lifecycle().retirement().await;
+            (target, stopped, retired)
         })
         .await
-        .unwrap_or_else(|_| panic!("actual Counter execution host"));
-    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
-    let ((declaration, stopped, report), cleanup) = outcome
+        .unwrap_or_else(|_| panic!("the actual Counter enters its host"));
+    let (export, bound, closed, polling, disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("joined Node finalization remains acquired"));
+    let diagnostic = format!("{export:?}");
+    let (_, _, declared, withdrawn, diagnostics, requests) = export.into_parts();
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((expected, stopped, retired), cleanup) = work
         .try_into_completed()
-        .unwrap_or_else(|_| panic!("original Counter Work acquired"));
-    let declaration = match declaration {
-        Ok(export) => {
-            let diagnostic = format!("{export:?}");
-            let (undeclared, session, mut incoming, retained) = export.undeclare().await;
-            let mut rows = Vec::new();
-            for (key, protected, proof, receipt, admission, native, mut client) in retained {
-                client.close_admission();
-                let mut tail = Vec::new();
-                while let Some(original) = client.receive().await {
-                    tail.push(original);
-                }
-                rows.push((
-                    key, protected, proof, receipt, admission, native, client, tail,
-                ));
-            }
-            let mut queries = Vec::new();
-            let end = loop {
-                match incoming.try_recv() {
-                    Ok(original) => queries.push(original),
-                    Err(cause) => break cause,
-                }
-            };
-            Ok((undeclared, session, rows, queries, end, diagnostic))
-        }
-        Err(original) => Err(original),
-    };
-    if let Ok((_, session, ..)) = &declaration {
-        assert!(
-            !session.is_closed(),
-            "the Node connection remains open before close"
-        );
-    }
-    let closed = node.close().await;
-    let native = native.expect("complete Counter native original");
+        .unwrap_or_else(|_| panic!("the original Work and cleanup remain acquired"));
+    let target = bound
+        .expect("binding was invoked")
+        .expect("the root binding succeeds");
+    let report = report.expect("the independent root report remains acquired");
+    let native = native.expect("the complete original Counter remains acquired");
+    let protected_replies = protected_replies.borrow();
     assert_completed(native, None);
     assert_notifications(&notifications);
     assert!(cleanup.is_ok() && closed.is_ok() && stopped.is_ok());
-    let (undeclared, session, rows, queries, end, diagnostic) = declaration
-        .unwrap_or_else(|(_, cause)| panic!("actual Node must issue its public export: {cause:?}"));
-    assert_eq!(diagnostic, "Export { .. }");
-    assert!(undeclared.is_ok());
-    assert!(session.is_closed());
-    assert!(rows.is_empty() && queries.is_empty());
-    assert!(matches!(end, mpsc::error::TryRecvError::Disconnected));
+    assert_eq!(target, expected);
+    assert_eq!(report, retired);
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
-    assert!(refusals.lock().unwrap().is_empty());
+    assert!(polling.is_none() && disposal.is_none());
+    assert_eq!(diagnostic, "Export { .. }");
+    assert!(matches!(&declared, Some(Ok(()))) && matches!(&withdrawn, Some(Ok(()))));
+    assert!(requests.is_empty() && diagnostics.is_empty());
+    assert!(protected_replies.is_empty());
 }
 
-async fn ledger_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> bool) {
-    let refusals = Arc::new(Mutex::new(Vec::<IngressError<Query>>::new()));
-    let observed = Arc::clone(&refusals);
-    let mut node = Application::new(
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    reason = "one complete construction trace preserves its exact original request rejection type"
+)]
+async fn scheduled_counter_joined_node_issues_export() {
+    let maximum = NonZeroUsize::new(2).unwrap();
+    let records: [ProtectedMessage; 0] = [];
+    let protected_replies = RefCell::new(Vec::<ProtectedMessage>::new());
+    let current =
+        |receipt: &scheduled::Receipt<CounterOperation>, runtime: &str, target: MailAddr| {
+            let scope = scheduled::projection(receipt);
+            if scope.kind == Purpose::Request
+                && scope.operation == CounterOperation::Read
+                && scope.bombay.runtime_generation.as_ref() == runtime
+                && scope.bombay.actor_generation == target.0
+                && scheduled::identity(receipt).0 == &COUNTER_BINDING
+            {
+                Ok(())
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        };
+    let export = Export::new(
+        "bombay/public/counter",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes: &[u8]| serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes),
+        reply(
+            |request: ReadRequest<CounterOperation>| match request.operation {
+                CounterOperation::Read => {
+                    Ok::<_, ReadRequest<CounterOperation>>(CounterMessage::Read)
+                }
+            },
+            |receipt: &scheduled::Receipt<CounterOperation>, original: &User<MailAddr, u64>| {
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &scheduled::projection(receipt).bombay,
+                    kind: Purpose::ReadReply,
+                    operation: CounterOperation::Read,
+                    value: &original.message,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            scheduled::verify::<CounterOperation>(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                &records,
+                COUNTER_BINDING,
+            )
+            .await
+        },
+        async |bytes: &[u8], receipt: &scheduled::Receipt<CounterOperation>| {
+            let reply: ReadReply<u64, CounterOperation> =
+                serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+            if reply.bombay == scheduled::projection(receipt).bombay
+                && reply.kind == Purpose::ReadReply
+                && reply.operation == CounterOperation::Read
+            {
+                let mut replies = protected_replies.borrow_mut();
+                if replies.len() >= maximum.get() {
+                    return Err(VerificationError::Invalid);
+                }
+                let proof = Box::<[u8]>::from([13, 17]);
+                replies.push(ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.clone(),
+                });
+                Ok(proof)
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        },
+        |left, right| scheduled::identity(left) == scheduled::identity(right),
+        &current,
+        &current,
+    );
+    let node = Application::new(Counter::new().stop_on_shutdown())
+        .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+        .await
+        .unwrap_or_else(|_| panic!("the actual Counter Node opens"));
+    let mut node = node.exports(export, async |application| {
+        Ok::<_, VerificationError>(application.root().established_recipient())
+    });
+    let outcome = node
+        .run_with(|application| async move {
+            let target = application.root().established_recipient();
+            let stopped = application.shutdown();
+            let retired = application.lifecycle().retirement().await;
+            (target, stopped, retired)
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual Counter enters its host"));
+    let (export, bound, closed, polling, disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("joined Node finalization remains acquired"));
+    let diagnostic = format!("{export:?}");
+    let (_, _, declared, withdrawn, diagnostics, requests) = export.into_parts();
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((expected, stopped, retired), cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the original Work and cleanup remain acquired"));
+    let target = bound
+        .expect("binding was invoked")
+        .expect("the root binding succeeds");
+    let report = report.expect("the independent root report remains acquired");
+    let native = native.expect("the complete original Counter remains acquired");
+    let protected_replies = protected_replies.borrow();
+    assert_completed(native, None);
+    assert_notifications(&notifications);
+    assert!(cleanup.is_ok() && closed.is_ok() && stopped.is_ok());
+    assert_eq!(target, expected);
+    assert_eq!(report, retired);
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(polling.is_none() && disposal.is_none());
+    assert_eq!(diagnostic, "Export { .. }");
+    assert!(matches!(&declared, Some(Ok(()))) && matches!(&withdrawn, Some(Ok(()))));
+    assert!(requests.is_empty() && diagnostics.is_empty());
+    assert!(protected_replies.is_empty());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    reason = "one complete construction trace preserves its exact original request rejection type"
+)]
+async fn recorded_ledger_public_node_issues_export() {
+    let maximum = NonZeroUsize::new(2).unwrap();
+    let records: [ProtectedMessage; 0] = [];
+    let protected_replies = RefCell::new(Vec::<ProtectedMessage>::new());
+    let current =
+        |receipt: &recorded::Receipt<LedgerOperation>, runtime: &str, target: MailAddr| {
+            let scope = recorded::projection(receipt);
+            if scope.kind == Purpose::Request
+                && scope.operation == LedgerOperation::Read
+                && scope.bombay.runtime_generation.as_ref() == runtime
+                && scope.bombay.actor_generation == target.0
+                && recorded::identity(receipt).0 == &LEDGER_BINDING
+            {
+                Ok(())
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        };
+    let export = Export::new(
+        "bombay/public/ledger",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes: &[u8]| serde_json::from_slice::<ReadRequest<LedgerOperation>>(bytes),
+        reply(
+            |request: ReadRequest<LedgerOperation>| match request.operation {
+                LedgerOperation::Read => Ok::<_, ReadRequest<LedgerOperation>>(LedgerCommand::Read),
+            },
+            |receipt: &recorded::Receipt<LedgerOperation>,
+             original: &User<MailAddr, Vec<MailAddr>>| {
+                let origins = original
+                    .message
+                    .iter()
+                    .copied()
+                    .map(u64::from)
+                    .collect::<Vec<_>>();
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &recorded::projection(receipt).bombay,
+                    kind: Purpose::ReadReply,
+                    operation: LedgerOperation::Read,
+                    value: &origins,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            recorded::verify::<LedgerOperation>(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                &records,
+                LEDGER_BINDING,
+            )
+            .await
+        },
+        async |bytes: &[u8], receipt: &recorded::Receipt<LedgerOperation>| {
+            let reply: ReadReply<Vec<u64>, LedgerOperation> =
+                serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+            if reply.bombay == recorded::projection(receipt).bombay
+                && reply.kind == Purpose::ReadReply
+                && reply.operation == LedgerOperation::Read
+            {
+                let mut replies = protected_replies.borrow_mut();
+                if replies.len() >= maximum.get() {
+                    return Err(VerificationError::Invalid);
+                }
+                let proof = Box::<[u8]>::from([13, 17]);
+                replies.push(ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.clone(),
+                });
+                Ok(proof)
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        },
+        |left, right| recorded::identity(left) == recorded::identity(right),
+        &current,
+        &current,
+    );
+    let node = Application::new(
         MailLedger {
             entries: Vec::new(),
         }
@@ -111,128 +389,185 @@ async fn ledger_constructor<Receipt>(same_request: fn(&Receipt, &Receipt) -> boo
     )
     .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
     .await
-    .unwrap_or_else(|(_, _, cause)| {
-        panic!(
-            "actual configured Ledger Node: {cause:?}; source: {:?}",
-            cause.source()
-        )
+    .unwrap_or_else(|_| panic!("the actual Ledger Node opens"));
+    let mut node = node.exports(export, async |application| {
+        Ok::<_, VerificationError>(application.root().established_recipient())
     });
-    let (execution, receiving) = node
-        .execute_with(|application| async move {
+    let outcome = node
+        .run_with(|application| async move {
             let target = application.root().established_recipient();
-            let declaration = application
-                .export::<_, Receipts, Receipt>(
-                    target,
-                    "bombay/public/ledger",
-                    ExportLimits {
-                        queued_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_queries: NonZeroUsize::new(2).unwrap(),
-                        retained_requests: NonZeroUsize::new(2).unwrap(),
-                    },
-                    same_request,
-                    move |original| observed.lock().unwrap().push(original),
-                )
-                .await;
             let stopped = application.shutdown();
-            let report = application.lifecycle().retirement().await;
-            (declaration, stopped, report)
+            let retired = application.lifecycle().retirement().await;
+            (target, stopped, retired)
         })
-        .unwrap_or_else(|_| panic!("actual Ledger execution host"));
-    let ((), outcome) = tokio::join!(execution, receiving);
-    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
-    let ((declaration, stopped, report), cleanup) = outcome
+        .await
+        .unwrap_or_else(|_| panic!("the actual Ledger enters its host"));
+    let (export, bound, closed, polling, disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("joined Node finalization remains acquired"));
+    let diagnostic = format!("{export:?}");
+    let (_, _, declared, withdrawn, diagnostics, requests) = export.into_parts();
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((expected, stopped, retired), cleanup) = work
         .try_into_completed()
-        .unwrap_or_else(|_| panic!("original Ledger Work acquired"));
-    let declaration = match declaration {
-        Ok(export) => {
-            let diagnostic = format!("{export:?}");
-            let (undeclared, session, mut incoming, retained) = export.undeclare().await;
-            let mut rows = Vec::new();
-            for (key, protected, proof, receipt, admission, native, mut client) in retained {
-                client.close_admission();
-                let mut tail = Vec::new();
-                while let Some(original) = client.receive().await {
-                    tail.push(original);
-                }
-                rows.push((
-                    key, protected, proof, receipt, admission, native, client, tail,
-                ));
-            }
-            let mut queries = Vec::new();
-            let end = loop {
-                match incoming.try_recv() {
-                    Ok(original) => queries.push(original),
-                    Err(cause) => break cause,
-                }
-            };
-            Ok((undeclared, session, rows, queries, end, diagnostic))
-        }
-        Err(original) => Err(original),
-    };
-    if let Ok((_, session, ..)) = &declaration {
-        assert!(
-            !session.is_closed(),
-            "the Node connection remains open before close"
-        );
-    }
-    let closed = node.close().await;
-    let native = native.expect("complete Ledger native original");
+        .unwrap_or_else(|_| panic!("the original Work and cleanup remain acquired"));
+    let target = bound
+        .expect("binding was invoked")
+        .expect("the root binding succeeds");
+    let report = report.expect("the independent root report remains acquired");
+    let native = native.expect("the complete original Ledger remains acquired");
+    let protected_replies = protected_replies.borrow();
     assert_completed(native, None);
     assert_notifications(&notifications);
     assert!(cleanup.is_ok() && closed.is_ok() && stopped.is_ok());
-    let (undeclared, session, rows, queries, end, diagnostic) =
-        declaration.unwrap_or_else(|_| panic!("actual Node must issue its public export"));
-    assert_eq!(diagnostic, "Export { .. }");
-    assert!(undeclared.is_ok());
-    assert!(session.is_closed());
-    assert!(rows.is_empty() && queries.is_empty());
-    assert!(matches!(end, mpsc::error::TryRecvError::Disconnected));
+    assert_eq!(target, expected);
+    assert_eq!(report, retired);
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
-    assert!(refusals.lock().unwrap().is_empty());
+    assert!(polling.is_none() && disposal.is_none());
+    assert_eq!(diagnostic, "Export { .. }");
+    assert!(matches!(&declared, Some(Ok(()))) && matches!(&withdrawn, Some(Ok(()))));
+    assert!(requests.is_empty() && diagnostics.is_empty());
+    assert!(protected_replies.is_empty());
 }
 
-#[test]
-fn recorded_counter_joined_node_issues_export() {
-    Builder::new_multi_thread()
-        .worker_threads(1)
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(counter_constructor::<recorded::Receipt<CounterOperation>>(
-            |a, b| recorded::identity(a) == recorded::identity(b),
-        ));
-}
-#[test]
-fn scheduled_counter_joined_node_issues_export() {
-    Builder::new_multi_thread()
-        .worker_threads(1)
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(counter_constructor::<scheduled::Receipt<CounterOperation>>(
-            |a, b| scheduled::identity(a) == scheduled::identity(b),
-        ));
-}
-#[test]
-fn recorded_ledger_public_node_issues_export() {
-    Builder::new_multi_thread()
-        .worker_threads(1)
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(ledger_constructor::<recorded::Receipt<LedgerOperation>>(
-            |a, b| recorded::identity(a) == recorded::identity(b),
-        ));
-}
-#[test]
-fn scheduled_ledger_public_node_issues_export() {
-    Builder::new_multi_thread()
-        .worker_threads(1)
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(ledger_constructor::<scheduled::Receipt<LedgerOperation>>(
-            |a, b| scheduled::identity(a) == scheduled::identity(b),
-        ));
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    reason = "one complete construction trace preserves its exact original request rejection type"
+)]
+async fn scheduled_ledger_public_node_issues_export() {
+    let maximum = NonZeroUsize::new(2).unwrap();
+    let records: [ProtectedMessage; 0] = [];
+    let protected_replies = RefCell::new(Vec::<ProtectedMessage>::new());
+    let current =
+        |receipt: &scheduled::Receipt<LedgerOperation>, runtime: &str, target: MailAddr| {
+            let scope = scheduled::projection(receipt);
+            if scope.kind == Purpose::Request
+                && scope.operation == LedgerOperation::Read
+                && scope.bombay.runtime_generation.as_ref() == runtime
+                && scope.bombay.actor_generation == target.0
+                && scheduled::identity(receipt).0 == &LEDGER_BINDING
+            {
+                Ok(())
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        };
+    let export = Export::new(
+        "bombay/public/ledger",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes: &[u8]| serde_json::from_slice::<ReadRequest<LedgerOperation>>(bytes),
+        reply(
+            |request: ReadRequest<LedgerOperation>| match request.operation {
+                LedgerOperation::Read => Ok::<_, ReadRequest<LedgerOperation>>(LedgerCommand::Read),
+            },
+            |receipt: &scheduled::Receipt<LedgerOperation>,
+             original: &User<MailAddr, Vec<MailAddr>>| {
+                let origins = original
+                    .message
+                    .iter()
+                    .copied()
+                    .map(u64::from)
+                    .collect::<Vec<_>>();
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &scheduled::projection(receipt).bombay,
+                    kind: Purpose::ReadReply,
+                    operation: LedgerOperation::Read,
+                    value: &origins,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            scheduled::verify::<LedgerOperation>(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                &records,
+                LEDGER_BINDING,
+            )
+            .await
+        },
+        async |bytes: &[u8], receipt: &scheduled::Receipt<LedgerOperation>| {
+            let reply: ReadReply<Vec<u64>, LedgerOperation> =
+                serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+            if reply.bombay == scheduled::projection(receipt).bombay
+                && reply.kind == Purpose::ReadReply
+                && reply.operation == LedgerOperation::Read
+            {
+                let mut replies = protected_replies.borrow_mut();
+                if replies.len() >= maximum.get() {
+                    return Err(VerificationError::Invalid);
+                }
+                let proof = Box::<[u8]>::from([13, 17]);
+                replies.push(ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.clone(),
+                });
+                Ok(proof)
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        },
+        |left, right| scheduled::identity(left) == scheduled::identity(right),
+        &current,
+        &current,
+    );
+    let node = Application::new(
+        MailLedger {
+            entries: Vec::new(),
+        }
+        .stop_on_shutdown(),
+    )
+    .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+    .await
+    .unwrap_or_else(|_| panic!("the actual Ledger Node opens"));
+    let mut node = node.exports(export, async |application| {
+        Ok::<_, VerificationError>(application.root().established_recipient())
+    });
+    let outcome = node
+        .run_with(|application| async move {
+            let target = application.root().established_recipient();
+            let stopped = application.shutdown();
+            let retired = application.lifecycle().retirement().await;
+            (target, stopped, retired)
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual Ledger enters its host"));
+    let (export, bound, closed, polling, disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("joined Node finalization remains acquired"));
+    let diagnostic = format!("{export:?}");
+    let (_, _, declared, withdrawn, diagnostics, requests) = export.into_parts();
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((expected, stopped, retired), cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the original Work and cleanup remain acquired"));
+    let target = bound
+        .expect("binding was invoked")
+        .expect("the root binding succeeds");
+    let report = report.expect("the independent root report remains acquired");
+    let native = native.expect("the complete original Ledger remains acquired");
+    let protected_replies = protected_replies.borrow();
+    assert_completed(native, None);
+    assert_notifications(&notifications);
+    assert!(cleanup.is_ok() && closed.is_ok() && stopped.is_ok());
+    assert_eq!(target, expected);
+    assert_eq!(report, retired);
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(polling.is_none() && disposal.is_none());
+    assert_eq!(diagnostic, "Export { .. }");
+    assert!(matches!(&declared, Some(Ok(()))) && matches!(&withdrawn, Some(Ok(()))));
+    assert!(requests.is_empty() && diagnostics.is_empty());
+    assert!(protected_replies.is_empty());
 }

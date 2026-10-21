@@ -40441,3 +40441,13 @@ exact Query938a2342/Declaration5dae0887/Export-modb0d8452f, with no active
 inverse or source exclusion. Required remote-profile gates, current privacy
 denials, full Nix/CI/review and main merge remain open. This is a locally
 qualified migration checkpoint, not full feature completion or merged delivery.
+
+Private witnesses are retained as15cc77a3, test-only988/-11/net977. The separate
+public migration stage measures665/-1103/net-438 test lines: four real cold
+construction controls, bounded source-preserving lint corrections, retirement
+of the two superseded modules and duplicate8-line harness. Production/public
+types0. Its current canonical39+5 D/R, final construction4 D/R, strict all-target
+lint and formatting are the actual receipts above. This is test consolidation;
+the complete conservative production delta stays net2606. All charged257 paths
+and historical verification costs remain carried after deletion. Neither local
+commit is pushed, CI-verified, reviewed for merge or delivered to main yet.

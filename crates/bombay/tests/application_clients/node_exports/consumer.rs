@@ -20,6 +20,10 @@ use tokio::sync::oneshot;
 #[path = "peer.rs"]
 mod peer;
 #[path = "../protocol.rs"]
+#[expect(
+    dead_code,
+    reason = "the shared nominal protocol also serves Task, replay and permission owners"
+)]
 mod protocol;
 #[path = "quota.rs"]
 mod quota;
@@ -89,6 +93,10 @@ async fn pending_verification_allows_other_actor_requests() {
     .expect("finite consumer trace completes before any native query deadline");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one causal two-target trace retains all native, provider, family and cleanup originals"
+)]
 async fn complete(presence: Presence, pending: ProviderStage) {
     let address = reserved_address();
     let reports = Arc::new(Mutex::new(Vec::new()));
@@ -143,9 +151,17 @@ async fn complete(presence: Presence, pending: ProviderStage) {
             protected: bytes.into(),
             proof: proof.into(),
         };
-        recorded::verify::<CounterInput>(&original, &requests.borrow(), wire::binding("counter"))
-            .await
+        let verification = recorded::verify::<CounterInput>(
+            &original,
+            &requests.borrow(),
+            wire::binding("counter"),
+        );
+        verification.await
     };
+    #[expect(
+        clippy::await_holding_refcell_ref,
+        reason = "Scheduled verification borrows its immutable registered table through the actual transfer"
+    )]
     let verify_ledger = async |bytes: &[u8], proof: &[u8]| {
         let original = ProtectedMessage {
             protected: bytes.into(),
@@ -439,13 +455,14 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                         peer_finished
                             .await
                             .expect("real peer completed without a Work-owned service loop");
-                        let bound = bound.borrow();
-                        let (_, exported, _, _, _) = bound.as_ref().expect("binding precedes Work");
+                        let sibling = {
+                            let bound = bound.borrow();
+                            let (_, exported, _, _, _) =
+                                bound.as_ref().expect("binding precedes Work");
+                            exported.message.sibling.recipient()
+                        };
                         let admission = values
-                            .send(
-                                &exported.message.sibling.recipient(),
-                                CounterMessage::Read(values.recipient()),
-                            )
+                            .send(&sibling, CounterMessage::Read(values.recipient()))
                             .await;
                         let value = values.receive().await;
                         work_observations.borrow_mut().push((admission, value));

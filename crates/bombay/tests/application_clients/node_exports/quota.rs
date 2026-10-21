@@ -44,6 +44,10 @@ async fn provider_refusal_consumes_request_custody_before_the_next_factory() {
     .expect("finite full-quota refusal finishes before native query expiry");
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete quota trace retains original causes, native outcomes and both closes"
+)]
 async fn complete(policy: VerificationPolicy) {
     let address = reserved_address();
     let node = Application::new(Counter::new().stop_on_shutdown())

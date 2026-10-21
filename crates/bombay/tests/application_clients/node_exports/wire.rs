@@ -54,6 +54,10 @@ pub(super) enum Refusal {
     Scope,
     Capacity,
     Native,
+    #[expect(
+        dead_code,
+        reason = "retain the original typed JSON cause even when a finite consumer trace selects only valid encodings"
+    )]
     Json(serde_json::Error),
 }
 
@@ -156,7 +160,7 @@ pub(super) fn counter_stop(input: CounterInput) -> Result<(), CounterInput> {
 pub(super) fn append(input: LedgerInput) -> Result<impl FnOnce() -> LedgerCommand, LedgerInput> {
     match input {
         LedgerInput::Append(original) => Ok(move || LedgerCommand::Append(original)),
-        original => Err(original),
+        original @ LedgerInput::Read => Err(original),
     }
 }
 
@@ -165,7 +169,7 @@ pub(super) fn ledger_read(
 ) -> Result<impl FnOnce(EstablishedRecipient<Receipts>) -> LedgerCommand, LedgerInput> {
     match input {
         LedgerInput::Read => Ok(LedgerCommand::Read),
-        original => Err(original),
+        original @ LedgerInput::Append(_) => Err(original),
     }
 }
 
@@ -263,6 +267,11 @@ pub(super) fn value(
     encode(scope, Purpose::ReadReply, original.message)
 }
 
+#[expect(
+    clippy::ref_option,
+    clippy::trivially_copy_pass_by_ref,
+    reason = "the existing Stop encoder borrows its original optional retirement report without adapter callbacks"
+)]
 pub(super) fn stopped(
     receipt: &recorded::Receipt<CounterInput>,
     admission: &Attempt<Result<(), ShutdownRejection>>,
