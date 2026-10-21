@@ -11,6 +11,7 @@ use crate::{
     ActorFailureAssessment, ActorRetirement, Completion, RetirementAssessment, TrySendError,
 };
 use behavior::{AllocationRejection, ClassifySettlement, SettlementStatus};
+use futures_util::future::Either;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::num::NonZeroUsize;
@@ -429,7 +430,10 @@ async fn constructor_refusal() {
                     panic!("actual address exhaustion cause");
                 };
                 assert_eq!(original_target, target);
-                let original = unsent.expect("original selected FnOnce remains unused")();
+                let Some(Either::Left(constructor)) = unsent else {
+                    panic!("original selected FnOnce remains unused");
+                };
+                let original = constructor();
                 let LedgerCommand::Append(rejected) = original else {
                     panic!("exact original append constructor");
                 };

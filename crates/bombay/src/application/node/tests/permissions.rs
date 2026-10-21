@@ -666,7 +666,8 @@ async fn counter_permissions<Receipt>(
             protected.get(),
             checked.get()
         ),
-        (2, 2, 2, 2, 8)
+        // Eight initial checks and two fresh native-attempt checks.
+        (2, 2, 2, 2, 8 + 2)
     );
     assert_eq!(
         replies.iter().map(Vec::len).collect::<Vec<_>>(),
@@ -1112,7 +1113,7 @@ async fn ledger_permissions<Receipt>(
             protected.get(),
             checked.get()
         ),
-        (2, 2, 1, 1, 8)
+        (2, 2, 1, 1, 8 + 2)
     );
     assert_eq!(
         replies.iter().map(Vec::len).collect::<Vec<_>>(),

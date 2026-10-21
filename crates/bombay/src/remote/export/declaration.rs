@@ -70,7 +70,7 @@ pub fn stop<Input, Path, Projection, Encode>(
 }
 
 type ReplyOriginal<Target, Replies, Constructor> = (
-    Option<Constructor>,
+    Option<Either<Constructor, <Target as Protocol>::Msg>>,
     Attempt<
         Result<
             ApplicationClient<EstablishedRecipient<Target>, Replies>,
@@ -82,7 +82,7 @@ type ReplyOriginal<Target, Replies, Constructor> = (
     Vec<Option<User<MailAddr, <Replies as Protocol>::Msg>>>,
 );
 type SubmissionOriginal<Target, Constructor> = (
-    Option<Constructor>,
+    Option<Either<Constructor, <Target as Protocol>::Msg>>,
     Attempt<
         Result<
             ApplicationSender<EstablishedRecipient<Target>>,
@@ -113,12 +113,12 @@ pub(super) trait Commands<Input, Receipt, Target: Protocol<Addr = MailAddr>> {
     ) -> Option<Result<Box<[u8]>, Self::EncodingError>>;
 }
 pub(super) trait Delivery<Native, Control> {
-    fn attempt(
-        &self,
-        native: &mut Native,
-        control: &Control,
-        canonical: impl FnOnce(),
-    ) -> Result<(), ExportError>;
+    fn prepare_attempt<'native>(
+        &'native self,
+        native: &'native mut Native,
+        control: &'native Control,
+        canonical: impl FnOnce() + 'native,
+    ) -> Result<Option<impl FnOnce() + 'native>, ExportError>;
     fn receive<'native>(
         &'native self,
         native: &'native mut Native,
@@ -152,7 +152,7 @@ where
     fn select(&self, input: Input) -> Result<Self::Native, Input> {
         (self.projection)(input).map(|constructor| {
             (
-                Some(constructor),
+                Some(Either::Left(constructor)),
                 Attempt::Unattempted,
                 Attempt::Unattempted,
                 None,
@@ -196,30 +196,44 @@ where
     Constructor: FnOnce(EstablishedRecipient<Replies>) -> Target::Msg,
     Control: Retirement,
 {
-    fn attempt(
-        &self,
-        native: &mut ReplyOriginal<Target, Replies, Constructor>,
-        _: &Control,
-        canonical: impl FnOnce(),
-    ) -> Result<(), ExportError> {
-        if let Attempt::Returned(Ok(client)) = &native.1 {
-            let command = if let Some(constructor) = native.0.take() {
-                canonical();
-                constructor(client.recipient())
-            } else if matches!(native.2, Attempt::Returned(Err(TrySendError::Full(_)))) {
-                let Attempt::Returned(Err(TrySendError::Full(command))) =
-                    mem::replace(&mut native.2, Attempt::Uncertain)
-                else {
-                    unreachable!("only the retained native Full enters retry")
+    fn prepare_attempt<'native>(
+        &'native self,
+        native: &'native mut ReplyOriginal<Target, Replies, Constructor>,
+        _: &'native Control,
+        canonical: impl FnOnce() + 'native,
+    ) -> Result<Option<impl FnOnce() + 'native>, ExportError> {
+        let (construction, client, admission, _, _) = native;
+        if let Attempt::Returned(Ok(client)) = client {
+            if let Some(original) = construction.take() {
+                *construction = Some(Either::Right(match original {
+                    Either::Left(constructor) => {
+                        canonical();
+                        constructor(client.recipient())
+                    }
+                    Either::Right(command) => command,
+                }));
+            }
+            if construction.is_none()
+                && !matches!(admission, Attempt::Returned(Err(TrySendError::Full(_))))
+            {
+                return Ok(None);
+            }
+            return Ok(Some(move || {
+                let command = if let Some(Either::Right(command)) = construction.take() {
+                    command
+                } else {
+                    let Attempt::Returned(Err(TrySendError::Full(command))) =
+                        mem::replace(admission, Attempt::Uncertain)
+                    else {
+                        unreachable!("only the retained native Full enters retry")
+                    };
+                    command
                 };
-                command
-            } else {
-                return Ok(());
-            };
-            native.2 = Attempt::Uncertain;
-            native.2 = Attempt::Returned(client.try_send(command));
+                *admission = Attempt::Uncertain;
+                *admission = Attempt::Returned(client.try_send(command));
+            }));
         }
-        Ok(())
+        Ok(None)
     }
     fn receive<'native>(
         &'native self,
@@ -310,7 +324,7 @@ where
     fn select(&self, input: Input) -> Result<Self::Native, Input> {
         (self.projection)(input).map(|constructor| {
             (
-                Some(constructor),
+                Some(Either::Left(constructor)),
                 Attempt::Unattempted,
                 Attempt::Unattempted,
             )
@@ -345,30 +359,44 @@ where
     Target::Msg: Send + 'static,
     Constructor: FnOnce() -> Target::Msg,
 {
-    fn attempt(
-        &self,
-        native: &mut SubmissionOriginal<Target, Constructor>,
-        _: &Control,
-        canonical: impl FnOnce(),
-    ) -> Result<(), ExportError> {
-        if let Attempt::Returned(Ok(sender)) = &native.1 {
-            let command = if let Some(constructor) = native.0.take() {
-                canonical();
-                constructor()
-            } else if matches!(native.2, Attempt::Returned(Err(TrySendError::Full(_)))) {
-                let Attempt::Returned(Err(TrySendError::Full(command))) =
-                    mem::replace(&mut native.2, Attempt::Uncertain)
-                else {
-                    unreachable!("only the retained native Full enters retry")
+    fn prepare_attempt<'native>(
+        &'native self,
+        native: &'native mut SubmissionOriginal<Target, Constructor>,
+        _: &'native Control,
+        canonical: impl FnOnce() + 'native,
+    ) -> Result<Option<impl FnOnce() + 'native>, ExportError> {
+        let (construction, sender, admission) = native;
+        if let Attempt::Returned(Ok(sender)) = sender {
+            if let Some(original) = construction.take() {
+                *construction = Some(Either::Right(match original {
+                    Either::Left(constructor) => {
+                        canonical();
+                        constructor()
+                    }
+                    Either::Right(command) => command,
+                }));
+            }
+            if construction.is_none()
+                && !matches!(admission, Attempt::Returned(Err(TrySendError::Full(_))))
+            {
+                return Ok(None);
+            }
+            return Ok(Some(move || {
+                let command = if let Some(Either::Right(command)) = construction.take() {
+                    command
+                } else {
+                    let Attempt::Returned(Err(TrySendError::Full(command))) =
+                        mem::replace(admission, Attempt::Uncertain)
+                    else {
+                        unreachable!("only the retained native Full enters retry")
+                    };
+                    command
                 };
-                command
-            } else {
-                return Ok(());
-            };
-            native.2 = Attempt::Uncertain;
-            native.2 = Attempt::Returned(sender.try_send(command));
+                *admission = Attempt::Uncertain;
+                *admission = Attempt::Returned(sender.try_send(command));
+            }));
         }
-        Ok(())
+        Ok(None)
     }
     fn receive<'native>(
         &'native self,
@@ -394,11 +422,11 @@ where
 }
 
 pub(super) trait Shutdown<Path> {
-    fn request(
-        &self,
-        admission: &mut Attempt<Result<(), ShutdownRejection>>,
-        canonical: impl FnOnce(),
-    ) -> Result<(), ExportError>;
+    fn prepare_shutdown<'native>(
+        &'native self,
+        admission: &'native mut Attempt<Result<(), ShutdownRejection>>,
+        canonical: impl FnOnce() + 'native,
+    ) -> Result<impl FnOnce() + 'native, ExportError>;
     fn retirement(&self) -> Option<impl Future<Output = ActorRetirementReport>>;
 }
 impl<P, Event, Path> Shutdown<Path> for Option<ApplicationLifecycle<P, Event>>
@@ -406,18 +434,19 @@ where
     P: Protocol<Addr = MailAddr>,
     Event: InjectEvent<ShutdownRequested, Path>,
 {
-    fn request(
-        &self,
-        admission: &mut Attempt<Result<(), ShutdownRejection>>,
-        canonical: impl FnOnce(),
-    ) -> Result<(), ExportError> {
+    fn prepare_shutdown<'native>(
+        &'native self,
+        admission: &'native mut Attempt<Result<(), ShutdownRejection>>,
+        canonical: impl FnOnce() + 'native,
+    ) -> Result<impl FnOnce() + 'native, ExportError> {
         let Some(control) = self else {
             return Err(ExportError::StopAuthority);
         };
-        canonical();
-        *admission = Attempt::Uncertain;
-        *admission = Attempt::Returned(control.shutdown::<Path>());
-        Ok(())
+        Ok(move || {
+            canonical();
+            *admission = Attempt::Uncertain;
+            *admission = Attempt::Returned(control.shutdown::<Path>());
+        })
     }
     fn retirement(&self) -> Option<impl Future<Output = ActorRetirementReport>> {
         self.as_ref().map(ApplicationLifecycle::retirement)
@@ -428,16 +457,17 @@ where
     B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     B::Event: InjectEvent<ShutdownRequested, Path>,
 {
-    fn request(
-        &self,
-        admission: &mut Attempt<Result<(), ShutdownRejection>>,
-        canonical: impl FnOnce(),
-    ) -> Result<(), ExportError> {
-        canonical();
-        *admission = Attempt::Uncertain;
-        *admission =
-            Attempt::Returned(self.request_shutdown(Ingress::<ShutdownRequested, Path>::new()));
-        Ok(())
+    fn prepare_shutdown<'native>(
+        &'native self,
+        admission: &'native mut Attempt<Result<(), ShutdownRejection>>,
+        canonical: impl FnOnce() + 'native,
+    ) -> Result<impl FnOnce() + 'native, ExportError> {
+        Ok(move || {
+            canonical();
+            *admission = Attempt::Uncertain;
+            *admission =
+                Attempt::Returned(self.request_shutdown(Ingress::<ShutdownRequested, Path>::new()));
+        })
     }
     fn retirement(&self) -> Option<impl Future<Output = ActorRetirementReport>> {
         Some(self.retirement())
@@ -480,13 +510,13 @@ where
 impl<Input, Path, Projection, Encode, Control: Shutdown<Path>> Delivery<StopOriginal, Control>
     for Stop<Input, Path, Projection, Encode>
 {
-    fn attempt(
-        &self,
-        native: &mut StopOriginal,
-        control: &Control,
-        canonical: impl FnOnce(),
-    ) -> Result<(), ExportError> {
-        control.request(&mut native.0, canonical)
+    fn prepare_attempt<'native>(
+        &'native self,
+        native: &'native mut StopOriginal,
+        control: &'native Control,
+        canonical: impl FnOnce() + 'native,
+    ) -> Result<Option<impl FnOnce() + 'native>, ExportError> {
+        control.prepare_shutdown(&mut native.0, canonical).map(Some)
     }
     fn receive<'native>(
         &'native self,
@@ -565,16 +595,28 @@ where
     Left: Delivery<LeftNative, Control>,
     Right: Delivery<RightNative, Control>,
 {
-    fn attempt(
-        &self,
-        native: &mut Either<LeftNative, RightNative>,
-        control: &Control,
-        canonical: impl FnOnce(),
-    ) -> Result<(), ExportError> {
-        match native {
-            Either::Left(native) => self.0.attempt(native, control, canonical),
-            Either::Right(native) => self.1.attempt(native, control, canonical),
-        }
+    fn prepare_attempt<'native>(
+        &'native self,
+        native: &'native mut Either<LeftNative, RightNative>,
+        control: &'native Control,
+        canonical: impl FnOnce() + 'native,
+    ) -> Result<Option<impl FnOnce() + 'native>, ExportError> {
+        let attempt = match native {
+            Either::Left(native) => self
+                .0
+                .prepare_attempt(native, control, canonical)?
+                .map(Either::Left),
+            Either::Right(native) => self
+                .1
+                .prepare_attempt(native, control, canonical)?
+                .map(Either::Right),
+        };
+        Ok(attempt.map(|attempt| {
+            move || match attempt {
+                Either::Left(attempt) => attempt(),
+                Either::Right(attempt) => attempt(),
+            }
+        }))
     }
     fn receive<'native>(
         &'native self,

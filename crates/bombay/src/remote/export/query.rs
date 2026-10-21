@@ -255,18 +255,31 @@ where
             if matches!(self.declarations.prepare(native, interface), Some(Err(_))) {
                 return;
             }
-            if let Err(cause) = self.declarations.attempt(native, control, || {
+            let attempt = match self.declarations.prepare_attempt(native, control, || {
                 *custody.identity.borrow_mut() = Identity::Canonical(RequestKey {
                     issuer,
                     row,
                     protocol: PhantomData,
                 });
             }) {
-                *custody.refusal.borrow_mut() = Some(cause);
-                return;
-            }
+                Ok(Some(attempt)) => attempt,
+                Ok(None) => return,
+                Err(cause) => {
+                    *custody.refusal.borrow_mut() = Some(cause);
+                    return;
+                }
+            };
+            drop(permission);
+            let permission = match current_request(receipt, runtime, address) {
+                Ok(permission) => permission,
+                Err(cause) => {
+                    *custody.request_refusal.borrow_mut() = Some(cause);
+                    return;
+                }
+            };
+            attempt();
+            drop(permission);
         }
-        drop(permission);
         let mut ending = pin!(ending);
         let mut retired = pin!(OptionFuture::from(control.retirement()));
         while {
@@ -286,24 +299,29 @@ where
                     Capacity::Available | Capacity::Closed => {}
                 },
             }
-            let permission = match current_request(receipt, runtime, address) {
-                Ok(permission) => permission,
-                Err(cause) => {
-                    *custody.request_refusal.borrow_mut() = Some(cause);
-                    return;
-                }
-            };
             {
                 let mut native = custody.native.borrow_mut();
                 let Some(native) = native.as_mut() else {
                     return;
                 };
-                if let Err(cause) = self.declarations.attempt(native, control, || {}) {
-                    *custody.refusal.borrow_mut() = Some(cause);
-                    return;
-                }
+                let attempt = match self.declarations.prepare_attempt(native, control, || {}) {
+                    Ok(Some(attempt)) => attempt,
+                    Ok(None) => return,
+                    Err(cause) => {
+                        *custody.refusal.borrow_mut() = Some(cause);
+                        return;
+                    }
+                };
+                let permission = match current_request(receipt, runtime, address) {
+                    Ok(permission) => permission,
+                    Err(cause) => {
+                        *custody.request_refusal.borrow_mut() = Some(cause);
+                        return;
+                    }
+                };
+                attempt();
+                drop(permission);
             }
-            drop(permission);
         }
         {
             let mut native = custody.native.borrow_mut();

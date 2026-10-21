@@ -1,5 +1,17 @@
 # Backlog status and dependencies
 
+Current remote expiry comparison: committed d4d69e63 proves two first-attempt
+permission-expiry defects in both profiles. The working-tree borrowed native
+call retains constructed originals and lets Query acquire final permission.
+Final complete library runs each pass405/406; only the unchanged ingress
+watchdog fails. Production Clippy passes; test lint/legacy external consumers
+remain open. The user explicitly approved2700 conservative production lines
+from the same e3 baseline and255 changed paths on2026-10-21. Formatted production
+totals2606;6500 verification and five public types remain unchanged, with
+all earlier costs carried. Full R01–R25/AUTH1/NET1, distillation, required CI/review and
+main delivery remain open; the [feature record](../prds/static-remote-actors.md#first-attempt-expiry--owning-representation-and-repair-plan)
+retains actual outcomes, rejected comparisons, native consumers and budgets.
+
 Current identity prerequisite: Node runtime text and checked actor addresses
 project their existing owners through two methods, with no new public type or
 state. Owning389 tests and public clients22 pass in both profiles, including

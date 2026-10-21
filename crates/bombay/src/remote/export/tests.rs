@@ -12,7 +12,7 @@ use core::future::{Future, poll_fn};
 use core::pin::pin;
 use core::task::{Context, Poll, Waker};
 use futures_util::FutureExt;
-use futures_util::future::OptionFuture;
+use futures_util::future::{Either, OptionFuture};
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
 use std::num::NonZeroUsize;
@@ -158,7 +158,9 @@ async fn request_keys_preserve_declarations_across_reply_protocols() {
     reason = "one redeclaration trace preserves complete original request refusals and native cleanup before its independent key comparisons"
 )]
 async fn redeclared_counter() {
-    let network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    // All five native Queries may retain timeout captures beyond reply EOF.
+    network.max_retained_queries = NonZeroUsize::new(5).unwrap();
     let session = zenoh::open(network.to_configuration().unwrap())
         .await
         .expect("the actual private native Session opens");
@@ -526,7 +528,8 @@ async fn redeclared_counter() {
             protected.get(),
             authorized.get()
         ),
-        (4, 4, 4, 4, 5)
+        // Five protected queries; four have a fresh native attempt.
+        (4, 4, 4, 4, 5 + 4)
     );
     assert_eq!(read, duplicate);
     assert_ne!(
@@ -596,16 +599,26 @@ fn full_read_reuses_its_original_reply_endpoint_once() {
                         let independent = ordinary.try_send(CounterMessage::Increment);
                         let control = Some(application.lifecycle());
                         let canonical = || canonical_count.set(canonical_count.get() + 1);
-                        let first =
-                            Delivery::attempt(&declarations, &mut native, &control, canonical);
+                        let first = Delivery::prepare_attempt(
+                            &declarations,
+                            &mut native,
+                            &control,
+                            canonical,
+                        )
+                        .map(|attempt| attempt.map(|attempt| attempt()));
                         let retained = match &native.2 {
                             Attempt::Returned(Err(TrySendError::Full(CounterMessage::Read(
                                 reply_to,
                             )))) => Some(reply_to.clone()),
                             _ => None,
                         };
-                        let repeated_full =
-                            Delivery::attempt(&declarations, &mut native, &control, canonical);
+                        let repeated_full = Delivery::prepare_attempt(
+                            &declarations,
+                            &mut native,
+                            &control,
+                            canonical,
+                        )
+                        .map(|attempt| attempt.map(|attempt| attempt()));
                         let still_retained = match &native.2 {
                             Attempt::Returned(Err(TrySendError::Full(CounterMessage::Read(
                                 reply_to,
@@ -622,10 +635,20 @@ fn full_read_reuses_its_original_reply_endpoint_once() {
                         } else {
                             None
                         };
-                        let retried =
-                            Delivery::attempt(&declarations, &mut native, &control, canonical);
-                        let repeated =
-                            Delivery::attempt(&declarations, &mut native, &control, canonical);
+                        let retried = Delivery::prepare_attempt(
+                            &declarations,
+                            &mut native,
+                            &control,
+                            canonical,
+                        )
+                        .map(|attempt| attempt.map(|attempt| attempt()));
+                        let repeated = Delivery::prepare_attempt(
+                            &declarations,
+                            &mut native,
+                            &control,
+                            canonical,
+                        )
+                        .map(|attempt| attempt.map(|attempt| attempt()));
                         // Keep reply admission open until every preceding Read
                         // has completed its reply effect on the actual actor.
                         let fence_after = ordinary
@@ -711,12 +734,14 @@ fn full_read_reuses_its_original_reply_endpoint_once() {
                     independent,
                     Err(TrySendError::Full(CounterMessage::Increment))
                 ));
-                assert!(first.is_ok() && repeated_full.is_ok() && fence.is_ok());
+                assert!(matches!(first, Ok(Some(()))) && matches!(repeated_full, Ok(Some(()))));
+                assert!(fence.is_ok());
                 let before = before.as_ref().map(|reply| (reply.from, reply.message));
                 assert_eq!(before, Some((origin.address(), 2)));
                 assert!(retained.is_some());
                 assert_eq!(retained, still_retained);
-                assert!(retried.is_ok() && repeated.is_ok());
+                assert!(matches!(retried, Ok(Some(()))));
+                assert!(matches!(repeated, Ok(None)));
                 assert!(fence_after.is_ok());
                 let after = after.as_ref().map(|reply| (reply.from, reply.message));
                 assert_eq!(after, Some((origin.address(), 2)));
@@ -768,9 +793,10 @@ async fn acquired_first_eof_prevents_another_tail_receive() {
             }
             let control = Some(application.lifecycle());
             let mut commitment = None;
-            let admitted = Delivery::attempt(&declarations, &mut native, &control, || {
+            let admitted = Delivery::prepare_attempt(&declarations, &mut native, &control, || {
                 commitment = Some(());
-            });
+            })
+            .map(|attempt| attempt.map(|attempt| attempt()));
             if let Some(receiving) = Delivery::receive(
                 &declarations,
                 &mut native,
@@ -817,7 +843,7 @@ async fn acquired_first_eof_prevents_another_tail_receive() {
     let notifications = notifications.expect("both actual notification receipts survive");
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert_eq!(commitment, Some(()));
-    assert!(admitted.is_ok());
+    assert!(matches!(admitted, Ok(Some(()))));
     assert!(constructor.is_none());
     assert!(matches!(client, Attempt::Returned(Ok(_))));
     assert!(matches!(admission, Attempt::Returned(Ok(()))));
@@ -856,7 +882,9 @@ async fn cancelled_native_wait_keeps_its_original_reply_client() {
             let control = Some(application.lifecycle());
             let commitments = Cell::new(0);
             let canonical = || commitments.set(commitments.get() + 1);
-            let admitted = Delivery::attempt(&declarations, &mut native, &control, canonical);
+            let admitted =
+                Delivery::prepare_attempt(&declarations, &mut native, &control, canonical)
+                    .map(|attempt| attempt.map(|attempt| attempt()));
             let cancelled = if let Some(receiving) = Delivery::receive(
                 &declarations,
                 &mut native,
@@ -914,7 +942,8 @@ async fn cancelled_native_wait_keeps_its_original_reply_client() {
                 assert!(shutdown.is_ok());
                 assert_eq!(cancelled, Some(Poll::Pending));
                 assert_eq!(unreceived, None);
-                assert!(admitted.is_ok() && incremented.is_ok() && fenced.is_ok());
+                assert!(matches!(admitted, Ok(Some(()))));
+                assert!(incremented.is_ok() && fenced.is_ok());
                 assert_eq!(fence, Some(User::new(origin, 1)));
                 assert_eq!(resumed, Some(Poll::Ready(Some(()))));
                 let (constructor, client, admission, received, tail) = native;
@@ -1151,7 +1180,6 @@ async fn first_attempt_expiry(expiry: Expiry) {
     let _counter = completed_actor(origin, root);
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
-    // Retain every native/decoded result without guessing the selected repair's custody shape.
     let originals = (key, decoded, native);
     assert!(admitted.is_ok() && shutdown.is_ok());
     let fence = fence.expect("the independent FIFO Read completes");
@@ -1166,10 +1194,7 @@ async fn first_attempt_expiry(expiry: Expiry) {
     );
     assert_eq!(clock.get(), deadline);
     assert_eq!(decoded_count.get(), 1);
-    match expiry {
-        Expiry::Decode => assert!(constructed.get() <= 1),
-        Expiry::Construction | Expiry::AfterAttempt => assert_eq!(constructed.get(), 1),
-    }
+    assert_eq!(constructed.get(), 1);
     assert_eq!(before.as_slice(), expected_originals);
     assert!(matches!(panics, (None, None, None, None, None, None)));
     assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
@@ -1183,7 +1208,16 @@ async fn first_attempt_expiry(expiry: Expiry) {
             assert!(encoding.is_none() && protection.is_none());
             assert_eq!(publications.len(), 0);
             assert_eq!(replies[0].len(), 0);
-            drop(originals);
+            let (key, decoded, native) = originals;
+            let (command, sender, admission) =
+                native.expect("the exact constructed command stays in its original native owner");
+            assert!(key.is_some() && decoded.is_none());
+            assert!(matches!(
+                command,
+                Some(Either::Right(CounterMessage::Increment))
+            ));
+            assert!(matches!(sender, Attempt::Returned(Ok(_))));
+            assert!(matches!(admission, Attempt::Unattempted));
         }
         Expiry::AfterAttempt => {
             let (key, decoded, native) = originals;

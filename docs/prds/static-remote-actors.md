@@ -4,44 +4,46 @@
 
 The objective remains the complete R01–R25/AUTH1/NET1 PRD through verified
 implementation, distillation, required review and CI, and recorded merges to
-main. Latest-main adoption is a prerequisite. The scoped decoder cleanup fix
-now has current-graph debug/optimized positives and intended original-escape
-inverses. All twenty inventoried consumer requirements now qualify; the retired
-warm bodies and temporary exclusions have been removed. Eight final focused
-controls pass both profiles, including native cancellation/wakeup and the two
-existing Ledger permission traces. Actual finite owner-association, native-loss,
-canonical-replay and lost-wake inverses fail their intended post-cleanup oracles
-in both profiles, followed by exact source restoration and passing controls.
-This inventory is not a completion percentage for the PRD.
+main. Main531ded50 is integrated through44f6b49. All twenty inventoried internal
+consumer requirements qualify; seven warm external tests across three existing
+files still need migration. The internal inventory is not a PRD percentage.
 
-At the preceding61eca7a6 checkpoint, the uncensored all-feature library executes403 tests
-per profile:402 pass and one unchanged native TLS ingress test hits its10-second
-watchdog. An exact isolated debug rerun also times out; the actual stalled await
-is not yet identified. No semantic failure, flake explanation or larger watchdog
-is inferred. Existing-owner lint work reduces all-feature library/test findings
-from94 to3 in an untouched shared fixture; older remote consumer compilation
-failures remain in two external files. Source audit
-finds two external remote files still using retired shutdown/four-part receiving
-syntax. The required Nix recipes also name four retired test paths; their six
-current replacement leaves pass, but the recipes need correction. The request
-is now255 paths for five existing files, superseding pending254; approval is
-pending. Production2600, verification6500 and five gross public
-types remain unchanged. General cancellation and double-fault cleanup remain
-distinct open requirements. Full R01–R25/AUTH1/NET1 acceptance, the outbound typed request
-composition and remote-counter application, repository minimization, required
-CI/review and actual delivery to main remain open.
-The whole-PRD audit keeps all25 full rows open. Three new expiry cases bring
-the current uncensored library to406 tests in both profiles:403pass/3fail,
-0filtered/0ignored. Besides the unchanged ingress watchdog, both original
-first-attempt expiry cases fail the intended post-cleanup Counter1-versus0
-oracle; the matched permitted control passes. This proves the existing
-permission check before decoder/constructor work is insufficient. Production
-remains unchanged; the constructed-original custody model and repair remain
-unselected. No whole-feature passing or delivery claim follows.
-Strict all-feature production-library Clippy and default workspace/all-target
-Clippy passed on the unchanged production source; default workspace Nextest
-passed801 tests with two skipped. These earlier gates do not erase the current
-all-feature test failures. Full remote acceptance remains open.
+Committed d4d69e63 proves two original first-attempt expiry defects in debug and
+optimized builds, with an independently permitted control. The working-tree
+repair prepares one borrowed native-call capability, keeps the constructed
+command outside it, then acquires fresh permission before invoking it. Native
+mechanism consumers use that same operation without dummy permission policies.
+The three focused cases pass both profiles. Final uncensored all-feature library
+runs each execute406 tests:405pass/1fail,0filtered/0ignored,10.12/10.08s. Only the
+unchanged native ingress10-second watchdog fails; its stalled await remains
+unidentified. No flake explanation or increased watchdog is selected.
+
+The five older request-check expectations now include the final checks for
+actual native attempts. The key fixture reserves its five real native queries;
+SDK timeout captures can retain capacity beyond reply EOF. Complete key, wire,
+permission, Full retry, first-EOF and cancellation assertions pass both final
+profiles. Production-only all-feature Clippy passes. Strict library/test Clippy
+still reports three old shared-fixture findings and legacy external-consumer
+errors. The final command reaches application_clients first (19 diagnostics);
+the preceding command's four network errors remain unresolved. No lint in the
+changed capability/test files is reported.
+
+The user explicitly approved both pending scope requests on2026-10-21:
+2700 conservative production lines from the same e3daad58 baseline and255
+changed paths. Five gross new public types and6500 verification lines from
+the same verification checkpoint remain unchanged. The raw candidate is2598
+production; required formatting adds8 to2606. The approved five additional
+paths cover ingress localization, the shared protocol fixture, two external
+receiving consumers and stale Nix gate names. The formatted expiry repair now
+passes its three focused cases in both profiles, production lint and formatting;
+full feature verification, distillation and delivery remain open. All earlier/rejected/copied/
+modified/tool/unknown costs carry; no refund, reset or headroom is certified.
+
+All25 full acceptance rows remain open. Ordinary outbound typed requests,
+the remote-counter application, complete authentication/resource/fault gates,
+three repository scans, minimization, required Nix/CI/review and actual main
+merges remain. Prior default workspace Nextest801pass/2skip and default strict
+lint retain their earlier source scope; they do not erase current remote gates.
 
 ### Earlier main-integration checkpoint
 
@@ -39069,3 +39071,451 @@ remote public+5gross/-2. This test/audit stage adds no production/public type;
 test delta261/-1/net260 remains separate from authored/modified/copy/format costs.
 This is an intentionally failing regression checkpoint, not a fix, distillation,
 full R08 acceptance, required CI, PR or main delivery.
+
+### First-attempt expiry — owning representation and repair plan
+
+The d4d69e63 original-source failures qualify the R08 deliberate Bombay law:
+an initial authority loan still spans decode, selection, endpoint preparation
+and actual FnOnce construction, but a fresh loan must be acquired after that
+work and held through the nonwaiting native call. Constructor entry remains
+canonical even when construction panics or later permission refuses admission.
+The ordinary Export/submission/reply application syntax stays unchanged.
+
+Compare the ordinary owned representations before lowering:
+
+| Representation | Ownership and disposition |
+| --- | --- |
+| Existing constructor Option plus native Attempt | Cannot retain the actual returned command when final permission refuses before send; the qualified construction regression exposes that gap. |
+| Two constructor/message Options | Adds correlated alternatives; reject in favor of one closed sum. |
+| A new public construction enum | Can name the alternatives but adds no independent law beyond a two-way owned sum; would also require a sixth public-type authorization. |
+| A private construction enum in extracted Native | External consumers cannot inspect its private variants; inference does not provide the necessary original-value recovery. Reject additional extraction machinery. |
+| Existing Option<Either<Constructor, Target::Msg>> | Left retains the unused constructor, Right the exact constructed unsent command, None neither. The separate native Attempt retains actual call entry/result, including the exact rejected Full command. Select this existing sum for the focused comparison. |
+
+This is futures-util0.3.34's existing future::Either, already used by the
+declaration product, not the separate either crate. Its selected source exposes
+an unconstrained two-variant owned enum; no new dependency, wrapper or allocation
+is required. Rust API naming guidance was checked at
+https://rust-lang.github.io/api-guidelines/naming.html on2026-10-21.
+Lockfa79c780/no patch and selected Behavior/Actors0.29.0/55dbac2d remain unchanged.
+Fresh source inspection reconfirms Communication0.1.6's actual Full/Closed
+originals, ApplicationClient/ApplicationSender nonwaiting calls, Actors'
+StopOnShutdown, Address0.3/Timers0.2 ownership and the existing Observe receipts.
+No primitive, actor fold, effect product, mailbox or clock service is replaced.
+
+Extend the existing private Delivery::attempt and Shutdown::request operations
+with the actual final permission acquirer and its exact typed error. Guard and
+request-error substitutions already exist in real loan-bearing and unit-guard
+policies. Their Result uses the existing Either for native versus permission
+causes; query stores each in its existing independent refusal owner. The first
+acquirer consumes and ends the old loan before asking for fresh permission;
+retry acquirers ask directly. Every selected leaf invokes the real acquirer;
+no new no-op policy, public trait or general interpretation framework is added.
+
+Reply and Submission store the returned command in Right before the acquirer
+runs, then move it only under fresh permission into the actual try_send.
+Fresh refusal or panic leaves that command intact and admission Unattempted.
+The constructor-entry identity is preserved before FnOnce runs; no returned
+command exists if that constructor panics. Native entry sets Uncertain only
+immediately before try_send; its actual result is stored before guard disposal.
+Full retries acquire fresh permission before moving the exact retained Full
+command, so refusal leaves Full unchanged. Stop first preserves absent-control
+StopAuthority, then acquires permission and marks canonical immediately before
+its existing shutdown operation. Tuple declarations route those same operations.
+
+Pre-edit change record: existing declaration.rs and query.rs only for production;
+existing export/tests.rs for complete constructed-original/refusal oracles;
+existing PRD/status/runtime-capability documentation for the changed contract.
+Forecast40–54 net conservative source lines, zero new/removed public types,
+no new changed path, at most100 additional authored/modified test lines before
+formatting. The whole e3 census currently has source net2546, so the existing
+2600 ceiling is binding: stop before further production edits if the measured
+candidate reaches it. Do not compress or weaken the law to fit a count. All
+earlier/corrected/copied/tool/unknown costs remain charged under6500; no refund,
+reset or certified verification headroom. The pending255-path request remains
+unanswered, and all five named untouched files remain untouched.
+
+Focused verification will run the matched permitted control and both existing
+expiry regressions in debug and optimized builds, with complete exact native
+custody assertions after cleanup. Follow with existing constructor reentrancy,
+Full retry, duplicate/canonical, Stop and complete library controls. Two source
+reviews must challenge ownership and counterexamples before execution; the
+already-qualified d4d original-source failures supply the actual defect proof.
+Any compiler veto reopens the model rather than supplying new architecture.
+
+The first unformatted production candidate measures92/-50/net42 in the two
+recorded files; conservative e3 source is2588 with250paths and no new public
+type. Production freezes for independent source review. The inferred extracted
+Native shape changes even though no named public type is added: its first
+slot now exposes Left(original constructor) or Right(constructed command).
+Source audit finds one existing minimum consuming witness that invokes a
+retained unused constructor in node/tests/constructors.rs. Before compiling,
+extend the test-file forecast by that already-counted existing path and at
+most6 authored/modified lines to explicitly recover Left, preserving its exact
+allocation-pointer/cause oracle. This is focused extraction fallout, not a new
+policy or a catalogue migration. Each actual native attempt uses the real
+final acquirer; absent endpoints and absent Stop control preserve their existing
+refusal without inventing an additional policy call.
+
+Independent pre-execution review rejects the first callback ownership: an
+unused first acquirer owns the old guard, so its disposal on absent Stop control
+can panic before query stores the returned StopAuthority. Revise before any
+compiler run: query retains that old guard in one local Option; the acquirer
+borrows it and consumes it with take only when actually invoked. An unused
+callback then owns no guard destructor, and query records the refusal before
+its own remaining loan is disposed. This preserves the existing acquisition
+law without duplicating control checks or inventing another error owner.
+The rejected authored epoch remains charged. Review also finds that calling
+the private native operation in an already completed state would ask permission
+without sending. The only production calls are fresh selected construction and
+the is_full-gated retry; neither completed state is reachable there. Establish
+that call-site precondition rather than adding unsupported native transitions.
+
+The first focused debug compile exits101 with six E0061 diagnostics and zero
+executed tests (/tmp/bombay-expiry-repair-focused-debug.log). The dot-call
+inventory missed six UFCS Delivery::attempt calls in this same owning test
+file: the Full/repeated-attempt, first-EOF and cancellation laws. The repeated
+successful no-op call also falsifies the claimed whole-private-consumer
+precondition. Root and independent source reviews missed that inventory edge;
+the earlier source-only eligibility is superseded, not runtime acceptance.
+No call site is repaired and no placeholder acquirer is added. In particular,
+inventing an irrelevant permission cell or Ok-unit policy merely to compile
+would violate the selected Behavior no-op rule. Reopen the design checkpoint
+before a second caller: native delivery and request authorization have distinct
+owners, and the native mechanism witnesses must remain meaningful. Production
+and tests are frozen at the recorded candidate while ordinary shared-operation
+composition is compared; no further production lowering is authorized by a
+compiler diagnostic. All candidate/rejected epochs and command costs carry.
+
+Disposition: reject and remove the mandatory-permission-callback candidate,
+its inferred-shape consumer edits and its provisional current-contract prose.
+Preserve the exact rejected diff outside source for provenance; the committed
+d4d69e63 failing regressions remain. Their original two expiry failures still
+define the blocker. Removal refunds no authored/modified/copied/correction or
+command costs and changes none of the approved ceilings.
+
+The next ordinary Rust comparison is one native preparation operation returning
+an optional borrowed FnOnce capability, rather than a mandatory policy or a
+second sending implementation. Preparation owns actual construction and stores
+the returned unsent original; invocation alone performs the native call and
+stores its result. Query can then drop the initial loan, acquire the fresh loan
+and invoke that exact capability. Native tests invoke it directly with no new
+permission policy; a completed native operation returns None. Full remains in
+its original result until invocation. Stop checks control presence before
+returning its real shutdown capability, with canonical entry inside invocation.
+Tuple dispatch must remain a closed concrete composition of those capabilities.
+This is a proposal only; its exact signatures, lifetime ownership and measured
+surface still require comparison and a pre-edit record. No production lowering
+or additional budget is selected by this paragraph.
+
+The rejected five-path source/prose diff is retained as
+/tmp/bombay-rejected-expiry-permission-callback.patch, SHAa2ee5b50. Restoring
+the exact d4d source gives query3cc64948/declaration49e4a42/tests f7167d7c;
+only this PRD remains modified. Conservative source returns to2546, with no
+refund or reset of historical costs. The independent source reviewer withdraws
+the eligibility verdict of0dab224d because its UFCS inventory was incomplete.
+
+Pre-edit capability comparison record: reuse the same two private production
+owners and the same exact regression/consumer files. Delivery::prepare_attempt
+borrows self, Native and Control for one explicit native-call lifetime and
+returns Result<Option<impl FnOnce()>, ExportError>. Canonical's lifetime belongs
+to that same pending call because Stop must retain it until actual shutdown.
+Preparation retains Right after actual construction; the returned closure
+captures only borrows, never the unsent command or actual Full original.
+Invoking that closure moves the original and stores the actual native result.
+Dropping it before invocation therefore preserves all original custody.
+
+Shutdown::prepare_shutdown checks actual control presence before returning its
+borrowed native call. It has no no-work alternative for a valid exact control;
+Delivery wraps that call in Some. Reply/Submission return None for absent native
+endpoint or completed non-Full state. Tuple dispatch uses the existing closed
+Either of the two concrete native calls and one exhaustive invocation closure;
+there is still one actual send/control implementation per owning leaf.
+
+Query records preparation errors before its initial guard leaves scope. For
+Some(call), it drops the initial loan, acquires actual fresh permission, invokes
+that same call and drops the fresh loan only after native result storage. A
+fresh refusal drops only the borrowing call, preserving Right or Full outside.
+Native-only tests select and invoke Some(call) directly, assert genuine None
+for the repeated completed operation and retain all existing native oracles.
+No extra policy, entry point, wrapper, named public type or trait is added.
+
+Forecast40–54 net source lines over2546, same250 paths, zero new/removed public
+types, at most100 authored/modified verification lines plus formatting for this
+new candidate; every rejected prior epoch still carries under6500. Measure the
+two-file candidate before any further production edit; the2600 cap is a stop,
+not a reason to compress the model. Compiler evidence may veto the declared
+borrowed capability, but may not originate another bound, trait or type.
+
+The raw borrowed-call candidate measures production164/-112/net52, cumulative
+conservative2598,250paths and zero new named public types. The read-only pinned
+format preview exits1 and proves the required default formatting adds8 production
+lines in tuple routing, projecting2606. This exceeds the2600 ceiling. Freeze
+production before applying formatting or any further production edit; the
+unformatted source is a provisional comparison, not a retained workaround or
+completion. Existing test files now consume all six actual native capabilities;
+the completed repetition requires Ok(None), the actual attempts Ok(Some(())),
+and the native originals/EOF/cancellation oracles remain. Independent exact
+source/test review and focused debug/optimized comparison may proceed without
+changing production. Any proposal to retain the complete normally formatted
+candidate needs explicit expanded production authorization, with all earlier
+costs carried. The separate255-path request remains unanswered.
+
+The new capability's first focused debug command exits101 before executing
+tests: LLVM reports No space left on device, with only the same three old
+shared-fixture warnings and no Rust type diagnostic. This is an environment
+failure, not passing compilation or semantic evidence. The filesystem has167MB
+available. After checking no other compiler uses this task target, remove only
+13 precisely named task-owned debug test artifacts (667966368 bytes), including
+the rebuildable preceding test binary and this failed command's rcgu objects.
+Dependency artifacts, source, evidence, other projects and caches remain.
+The narrow cleanup completes and restores810MB; one same-source debug retry
+is queued under a distinct log. No production edit or formatter is applied.
+
+That retry exits101 at native linking, errno28, with zero tests. Narrow removal
+of11 explicitly named older task-owned test executables frees1356295376 bytes;
+dependency/source/evidence files remain. The next same-source debug command
+actually passes3/0/403filtered,.05s after32.72s build in
+/tmp/bombay-expiry-capability-focused-debug-space.log. Optimized focused
+/tmp/bombay-expiry-capability-focused-release.log passes3/0/403filtered,.02s
+after3m06 build. Both run exactly the two original expiry regressions and their
+matched admitted control. New negative positives reach the actual retained
+Right(Increment), senderOk, admissionUnattempted, key and exact Expired assertions
+after full cleanup. Earlier original negative failures reached only Counter1
+versus0. These scopes remain distinct; no source change was inferred from a
+compiler diagnostic. Source/test reviewab1d3db3 binds the frozen four hashes;
+the withdrawal e560a674 supersedes the earlier callback eligibility.
+
+The uncensored406-case library runs then execute in both profiles:
+/tmp/bombay-expiry-capability-library-{debug,release}.log each exits101 with
+400pass/6fail/0filtered/0ignored,10.27/10.06s. Five newly exposed failures are
+only the old request-policy count assertions: Counter two-provider8 versus10,
+Ledger two-provider8 versus10 and declaration keys5 versus9. The sixth is the
+unchanged ingress watchdog; its stalled await still has no cause attribution.
+Existing native constructor, Full retry, first-EOF and cancellation cases pass.
+Do not describe this as a passing complete library or finished repair.
+
+Before changing those test expectations, derive the expected counts from their
+actual application traces: each permission trace issues eight protected queries,
+all with initial permission checks; only its fourth A and eighth B construct
+and attempt a native command. Both need the new final check, including Ledger
+B's actual Closed refusal, while the cached sixth query issues no native call.
+Expected request checks therefore8+2. The key trace has five protected requests
+and four distinct native commands; the duplicate uses the cached result, so
+expected5+4. Keep all existing payload/endpoint/guard/refusal/cleanup assertions.
+This is the focused observation fallout of the already proven new final check,
+not permission to weaken an admission oracle or add production. Extend the
+test-file list by existing node/tests/permissions.rs, already counted within250;
+forecast at most8 authored/modified lines for this reconciliation, with all
+previous costs carried. Independent trace review precedes the edits.
+
+The required-format projection remains2606; the new request for2700 total
+production lines from the same checkpoint is PENDING, not approval.6500 further
+verification and five gross public types remain unchanged; the separate255-path
+request is still pending. No formatter, production edit, semantic source cut,
+required CI or delivery is performed while that production decision is pending.
+
+Both independent source reviewers derive8+2/5+4 from the actual query/native
+topology before edits. The test-only amendment preserves every prior typed,
+guard, pointer, DTO, refusal, cleanup, wire and key oracle. The old failing
+epoch reached cleanup and native custody observations before its scalar count;
+later reply/key assertions after that failure receive no credit. Exact amended
+export c38dc28b/permissions d7dfc4ac and unchanged constructor388f62aa pass two
+independent source-review passes. Combined test delta63/-26/net37 includes
+only three scalar expectation reconciliations, two causal comments, the
+six genuine native capability callers, retained-original assertions and the
+already-previewed test formatting. Production f2f5100d/938a2342 remains frozen
+at164/-112/net52; no production formatting is applied. Fresh complete406-case
+debug/optimized reruns are queued with distinct reconciled log names; do not
+credit corrected counts or later assertions before those commands finish.
+
+The reconciled debug library run exits101 with405pass/1fail,0filtered/0ignored,
+10.15s; only the unchanged ingress watchdog remains. Its corrected counts and
+following key/wire assertions now execute successfully. Reconciled optimized
+exits101 with404pass/2fail,10.07s: the same ingress watchdog plus the key trace's
+actual NoPermits at query_replies128, before its semantic/key assertions. Keep
+that new setup failure separate from the now-passing four permission traces
+and from the fixed expiry assertions; no successful whole-library claim follows.
+
+Fresh locked-SDK inspection establishes the setup problem: the key trace opens
+one Session with the shared fixture's two retained-query permits, but issues
+five native Gets (processing1, read2 including duplicate, neighbor1, renewed1).
+SDK1.10.10 session.rs2744 acquires the original permit and its timeout_owners
+capture keeps a clone beyond callback EOF. Its owning
+retained_query_capacity_waits_for_native_timeout_destruction test independently
+rejects treating empty native query inventory as reusable capacity. This is the
+same already selected SDK contract used by the eight-query permission fixtures.
+
+Before editing, both reviewers independently derive that exact five-Get budget.
+Amend only this existing key test's Network.max_retained_queries to5, with one
+causal comment, at most4 authored/modified lines. Per-export capacity2, all
+timeouts/watchdogs, trace order and complete semantic assertions stay unchanged.
+No waiting, scheduling delay, production limit change or new test machinery.
+The actual optimized NoPermits log remains the before-correction evidence;
+fresh focused and complete debug/optimized outcomes remain required. Production
+f2f5/938a and the two pending authorization decisions remain unchanged.
+
+Exact quota amendment6fd9339a reverses byte-for-byte to c38dc28b by removing only
+the mutable Network binding, causal comment and max5 assignment (3/-1). Both
+source-review passes accept that bounded fixture correction; no later key
+assertion is credited before rerun. Final uncensored debug/optimized commands
+are queued under /tmp/bombay-expiry-capability-final-{debug,release}.log, with
+the same frozen production and no suppressed tests.
+
+The prior strict checks on unchanged production complete: all-feature
+production-only Clippy exits0 in2.70s. All-feature library/test Clippy exits101
+with precisely three old shared-protocol dead-code findings and four retired
+API/projection errors in tests/network.rs. It reports no new capability, native
+unit-map or changed-test lint. Read-only fmt exits1 with only the known tuple
+routing changes in declaration.rs, whose default formatting adds8 net source
+lines. This is not a formatting pass. Production remains raw2598/projected2606;
+2700 is still requested, not approved. The five untouched255-request files
+remain unchanged.
+
+Fresh external-consumer inventory also finds seven live warm tests across
+three already-counted files: application_clients/network_replay/construction,
+refusals and pressure. Their old Export calls are actual migration debt, with
+retained empty-declaration/refusal/native pressure and exact Closed(Append)
+obligations; the internal twenty-consumer inventory never qualified them.
+The two external receiving migrations remain outside250 and pending255. Query
+privacy's old compile-fail setup is a separate unverified gate; the isolated
+transport-custody workspace is not a root workspace target. No external law is
+silently deleted or declared replaced from this read-only source inventory.
+
+The commands below run inside the existing pinned shell, started with
+`nix develop --profile /tmp/bombay-pr365-ci-review/pinned-bombay-shell -c bash --noprofile --norc`.
+Its task target is /tmp/bombay-protected-counter-application/target, jobs2,
+incremental0 and dev/test/release debug0. No host Rust tool or binary is used.
+
+```text
+cargo test --offline --locked -p bombay-rs --all-features --lib -- decoding_expiry_prevents_the_first_native_attempt construction_expiry_prevents_the_first_native_attempt later_expiry_preserves_the_admitted_increment
+cargo test --offline --locked --release -p bombay-rs --all-features --lib -- decoding_expiry_prevents_the_first_native_attempt construction_expiry_prevents_the_first_native_attempt later_expiry_preserves_the_admitted_increment
+cargo test --offline --locked -p bombay-rs --all-features --lib
+cargo test --offline --locked --release -p bombay-rs --all-features --lib
+cargo clippy --offline --locked -p bombay-rs --all-features --lib -- -D warnings
+cargo clippy --offline --locked -p bombay-rs --all-features --lib --tests -- -D warnings
+cargo fmt --all -- --check
+```
+
+Every earlier failed command remains separate from its positive or later
+candidate. The native NoPermits setup failure does not count as a key-law
+inversion, the disk-full failures execute no tests, and none of these local
+commands supplies required CI/review, a PR merge or full R01–R25 acceptance.
+
+### Borrowed native call — final unretained verification checkpoint
+
+Final quota-corrected source6fd9339a/d7dfc4ac/388f62aa executes the complete
+406-case library in both profiles. Debug exits101 with405pass/1fail,10.12s
+after32.57s build; optimized exits101 with405pass/1fail,10.08s after3m03 build.
+Both have0filtered/0ignored. The only failure is the unchanged ingress watchdog
+at its existing298 assertion. Both expiry refusals, the admitted control, all
+five request-count observations and subsequent key/wire assertions now pass,
+as do the native Full/no-work, EOF, cancellation and constructor-custody laws.
+No semantic source cut, increased deadline or test exclusion is active. The
+original expiry failures, rejected callback model, disk-full failures, count
+epoch and NoPermits epoch remain distinct records rather than being erased.
+
+Production f2f5100d/938a2342 remains unchanged throughout the final commands.
+Its strict all-feature library Clippy exits0. Final library/test Clippy exits101
+with three shared-fixture findings and19 diagnostics in application_clients:
+retired Admission/RequestRefusal imports, imperative export calls, old limit
+products, duplicate loading of the shared protocol module and a source-pointer
+expression in the old refusal test. This target was reached before the earlier
+network target, whose four errors remain open. No new capability/test lint is
+reported in the five amended Rust files. This final failure set is not the
+earlier three-plus-four set, nor a passing workspace check.
+
+Final read-only formatting exits1 solely for declaration.rs tuple routing.
+Applying its required13/-5/net8 would take conservative production2598 to2606,
+six above approved2600. No formatter is applied to production, no model is
+compressed to fit, and no unformatted comparison is claimed retained. Explicit
+2700 production and separate255-path requests remain PENDING. All five named
+untouched files remain unchanged.6500 verification and five gross public types
+are unchanged; all previous/corrected/rejected/copied/tool/unknown costs carry.
+Reconcile verification costs before any further substantial test authoring;
+neither a clean working tree nor deleting an old epoch would refund those costs.
+
+Complete current tracked/untracked census from e3daad58:
+
+```text
+conservative source: +3823 / -1225 / net2598
+tests/fixtures:      +11129 / -7373 / net3756
+remote public API:  +5 gross named types / -2 types, unchanged this stage
+paths:              250 / untracked0
+```
+
+Current d4d69e63-stage source delta is164/-112/net52; tests66/-27/net39 across
+three existing test files. No named public type is added or removed. The
+caller-visible inferred Native first slot changes to the existing owned
+constructor/message sum; the constructor consumer explicitly recovers Left.
+The pending required-format delta is separate from retained raw source and
+from authored/modified verification costs. Seven existing paths are dirty;
+branch research/remote-service and committed head d4d69e63 remain unchanged.
+No push, focused PR, required CI, main merge, full R08 acceptance or goal
+completion is recorded. The full R01–R25/AUTH1/NET1 objective remains active.
+
+### Scope approval — formatted expiry repair and five gate owners
+
+The user replied “approved” to the pending2700 production and255-path
+requests. Both replace the totals from the same checkpoints; neither is an
+additive grant or a reset. Verification6500 and five gross new public types
+remain unchanged. All authored, modified, rejected, copied, formatting, tool
+and unresolved historical costs carry. Before any substantial new verification
+authoring, reconcile the latest-grant costs.
+
+First finish the current expiry blocker: apply only the already reviewed
+declaration tuple formatting13/-5/net8, yielding conservative source2606
+within2700; no new public type, state, effect, bound or runtime law. Reuse the
+existing borrowed native operation and exact constructor/message custody.
+Re-run the three focused cases in both profiles and formatting/production lint
+before retaining a focused checkpoint. The original d4d failing regressions
+and final405/406 runs remain distinct evidence epochs. Only then localize the
+unchanged ingress watchdog within its now authorized existing test owner;
+retain the ten-second limit, accepted owners, typed refusal and EOF oracles.
+No broad production cleanup or fullPRD acceptance follows from this approval.
+
+### Formatted first-attempt expiry repair — local qualification
+
+Pinned formatting changes only declaration tuple routing,13/-5/net8 relative
+to the reviewed raw candidate. Independent source review reverses exactly that
+block and reproduces f2f5100d; current declaration is5dae08876623893b236a2d4487ed8063b4fb5ec7a6e69b10333d6a37e33f4eb9.
+Query938a2342, tests6fd9339a, permissionsd7dfc4ac and constructors388f62aa
+remain byte-identical to their final405/406 epoch. No new semantic operation,
+public type, bound, state, capability or drop order follows from formatting.
+Both source/counterexample reviews retain the exact constructed-original,
+retainedFull and unused-constructor laws; original d4d debug/optimized failures
+remain the defect evidence, not inferred from the repaired assertions.
+
+Actual pinned, offline, locked commands after formatting:
+
+```text
+cargo test --offline --locked -p bombay-rs --all-features --lib expiry
+cargo test --offline --locked --release -p bombay-rs --all-features --lib expiry
+cargo clippy --offline --locked -p bombay-rs --all-features --lib -- -D warnings
+cargo fmt --all -- --check
+```
+
+All exit0. Each test command runs3 cases,3pass/0fail,403filtered; debug0.03s,
+optimized0.01s. These are the two expiry-before-admission negatives and the
+permitted after-attempt control. Logs and actual exit receipts are
+/tmp/bombay-expiry-approved-{debug,release,clippy,fmt-check}.{log,exit}.
+Production lint takes2.66s; the test builds still report the three known shared
+fixture warnings. This is not a passing test-lint/workspace/Nix or fullR08 gate.
+The preceding complete406-case runs remain405/406 with the ingress watchdog;
+no filtered command substitutes for that unresolved result.
+
+Fresh complete e3-relative census at this checkpoint:
+
+```text
+conservative source: +3831 / -1225 / net2606
+tests/fixtures:      +11129 / -7373 / net3756
+remote public API:  +5 gross named types / -2, unchanged this stage
+paths:              250 / untracked0
+```
+
+The d4d-stage production delta is172/-112/net60; tests66/-27/net39, with no
+new or removed named public type. The inferred Native first slot explicitly
+changes to the existing constructor/message sum. This adds capability code;
+it is not a production reduction. The user-approved2700/255/6500/five totals
+carry all historical and failed costs. A fresh origin/main fetch remains
+531ded500dd724fd40920c0a70fbbf25f6ae4856, already integrated; no merge is claimed.
+Next stage is test-owned ingress localization, not additional production design.
