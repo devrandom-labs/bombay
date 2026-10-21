@@ -9,6 +9,12 @@ again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
 
+Current CI blocker: PR387's Deny job rejects two newly reported TLS advisories.
+The next isolated stage updates rustls-webpki0.103.15 to0.103.16 and
+webpki-roots1.0.9 to1.0.10 in the root and transport-custody Cargo.lock files.
+It changes no SDK version, feature, manifest, application policy or exemption.
+Outbound production implementation follows this dependency correction.
+
 The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
 serving is implemented; ordinary Node-owned outbound requests and the separate
 remote-counter application remain product development. Full security/resource
@@ -20,8 +26,8 @@ and Ready Ok with genuine Work absence before producer disposal. Original-code
 replays fail only at the intended final extraction in both profiles, after
 independent cleanup. The binding checkpoint's complete library passes412/412 debug and
 optimized,4.79/6.94s; strict workspace/all-feature/all-target lint and formatting
-pass. Full Nix is
-running against preceding commitaedc2897; it cannot qualify this new repair.
+pass. The local full Nix run captured preceding commitaedc2897 and was stopped
+after the current lock correction began; it cannot qualify this new repair.
 The separate8-line obsolete Export refusal retirement passes focused native
 constructor, live closed-Node Work and privacy controls in both profiles, plus
 strict workspace lint, docs and formatting. No test or public type is added;
@@ -40852,3 +40858,125 @@ signature lines; initial runtime forecast200–350 verification lines. All copie
 cuts, formatting and earlier costs carry under12000; no remaining allowance is
 certified. The full25 rows, three scans, minimization, CI/review and main merges
 stay open until their actual gates and delivery qualify.
+
+### TLS advisory correction — pre-edit record (2026-10-21 UTC)
+
+Actual PR387 Deny run39692001627/job119540179942 fails advisories; licenses,
+bans and sources pass. The selected root and isolated transport-custody locks
+both contain rustls-webpki0.103.15 and webpki-roots1.0.9. The Engine fuzz lock
+contains neither. This is a selected TLS dependency defect, independent of the
+outbound feature. Original failure evidence is the actual Deny log, not an
+invented local certificate test.
+
+Primary sources freshly checked on2026-10-21:
+[RUSTSEC-2026-0382](https://rustsec.org/advisories/RUSTSEC-2026-0382.html)
+requires webpki0.103.16 to reject distrusted intermediate keys;
+[RUSTSEC-2026-0381](https://rustsec.org/advisories/RUSTSEC-2026-0381.html)
+requires roots1.0.10 to remove the affected emSign root. Both replacements are
+published, not yanked, Rust1.71-compatible, and admitted by the selected SDK and
+rustls0.23.46 caret requirements. Upstream patches are
+[webpki546](https://github.com/rustls/webpki/pull/546) and
+[roots133](https://github.com/rustls/webpki-roots/pull/133). The non-exhaustive
+webpki error adds CertDistrusted; selected rustls preserves unrecognized errors
+inside CertificateError::Other. No local translation or public interface is
+needed. Behavior/Actors0.29 at55dbac2d and Address, Communication, Observe,
+Timers and Driver ownership remain unchanged; no patch override is selected.
+
+Expected changes: the two existing lockfiles and this PRD/backlog record;
+production0, test source0, public types0. Reuse the existing TLS verifier,
+trust-store owner, native TLS controls, Cargo resolution and required Deny CI.
+Do not add a direct dependency, advisory ignore, SDK feature or test framework.
+Run exact pinned Cargo patch updates, inspect the complete resolution delta and
+fresh selected source, then locked metadata for both manifests and relevant
+native TLS controls in debug and optimized builds. Obtain fresh required CI at
+the resulting head. The pinned development shell has no cargo-deny executable;
+the existing GitHub Deny job remains the actual advisory gate. No local Deny
+success is inferred from a build. Any additional package resolution reopens the
+scope review before retention. Intended security behavior changes are the
+upstream correction; local controls establish supported integration behavior.
+
+Read-only diagnosis: /tmp/bombay-prd-resumption/pr387-deny/diagnosis.md,
+SHA256439ea30df55eca9e3d0f5ea0b12d971aec1ed6ca9b8e2052bffa1ffc0d2ab483;
+actual failed job log SHA25649180706841dd4ed737b80e3dd2b771bc3939dff0df4badf88e0b378c3f66d07.
+No lock edit or passing patched verification is credited by this pre-edit record.
+
+Updated resolution: all four exact Cargo updates exit0. Cargo also moved four
+unrelated Windows dependency edges in the root lock; their selected ranges
+permit the original0.52 versions, so those edges were restored. Final full
+diffs are exactly+4/-4 per lock, comprising only the two package versions and
+published checksums. Locked metadata exits0 for both final manifests; both
+format checks exit0. Root SHA256976839a3369cc773087a554c396f280c1180657c6532d5d2a77adb0dbcacde01;
+isolated SHA2563c9a6dd4f6e7cd1c3b228927ef6140374636638263fb9fd6d88cca368ed1d577.
+Independent two-pass actual source/scope review is
+/tmp/bombay-prd-resumption/pr387-deny/lock-source-independent.md,
+SHA256ea7b66bb675fd419e47ccb9ecde13512c7f68fc59f1d4e64ac1e51c2c92619e6.
+The root's four existing real TLS request cases pass both profiles,4/0 each,
+0.03s debug and0.52s optimized,408 filtered. Exact commands are
+`cargo test --locked -p bombay-rs --all-features --lib application::node::tests::requests::`
+and the same with `--release`, through the pinned shell. Raw receipts are
+/tmp/bombay-tls-requests-{debug,release}.{log,exit}, both0. Isolated native
+controls remain running at this record. No new-head Deny result is available.
+The old local full Nix sourceaedc2897 was explicitly interrupted
+by this agent to prioritize current-source verification; actual saved exit1,
+log/tmp/bombay-current-flake-check.log, not a full pass or a product regression.
+
+Retained security stage: production+0/-0/net0; tests+0/-0/net0;
+public API+0/-0 types. Two existing locks each+4/-4; PRD/backlog records keep
+verification and next independently scoped stages explicit. No untracked
+repository file or temporary inverse is present. Native fixture and required
+new-head CI remain delivery gates, not inferred successes.
+
+### Outbound consumer comparison — next stage, no production edit yet
+
+The existing private live-read test proves an actor's Actions can reach an
+ExternalActor, but Work still owns protection, Get, reply checking and delivery.
+The missing product law is one ordinary caller whose Work contains none of
+those mechanisms. First prepare a compile-only external consumer and an
+SDK-free runtime test with a genuine pure one-shot Reader: initialization emits
+the typed request, a checked reply updates its state, and terminal Actions send
+the actual processing acknowledgement. Inspect the retired root after joined
+cleanup; changing only the forwarded value by one must fail that final oracle.
+No dummy counter/reply endpoints from the old admission-only Requester fixture
+are permitted. All comparisons use actual ApplicationScope, Node and typed
+established actor capabilities, never a model runtime or effects in a fold.
+
+Reuse the verified Behavior/Actors0.29, current local endpoint extraction,
+ExternalActor admission, Node startup/binding and owned Session lifetime. SDK
+source shows Get entry occurs synchronously in IntoFuture. Stable per-key
+Querier undeclaration removes pending queries; callback join is feature-gated,
+so actual callback receiver EOF must independently establish disposal. No
+unstable SDK feature or parallel interpreter is selected. Proof/authorization
+providers remain concrete and caller-local. Check the actual bound actor with
+actor_address and every incoming User.from; source custody alone is insufficient.
+
+Compare an ordinary function returning an opaque standard typed conversion
+against a named Client with same-owner extraction refusal. Measure actual
+consumer syntax, compiler diagnostics, complete terminal extraction, outbound-
+only attachment and a real mixed incoming/outgoing product before selecting
+the public interface. Candidate sources may be prepared outside the repository;
+root runs every compiler command through pinned Nix. Existing APIs remain
+unchanged until that comparison and the isolated TLS correction qualify.
+
+### Borrowed ingress limits — independent regression preparation
+
+Fresh selected-source inspection finds query.rs serving materializes payload
+and attachment before request's json::check. This violates the existing R02/R14
+borrowed-limit requirement recorded under Shipping service above. SDK1.10.10
+Query exposes borrowed ZBytes and allocation-free lengths; fragmented
+to_bytes may allocate a contiguous copy. Prepare an owning Export regression
+using a real native Query with independently oversized fragmented payload and
+proof. Reuse the existing thread-local library allocation counter; measure one
+actual serving poll with transport setup, input construction and diagnostic
+reservation outside that scope. A copy-then-discard inverse must fail the
+allocation observation even when provider/admission/refusal checks still pass.
+Do not invent a copy hook, allocator, SDK Query or public validation interface.
+
+Potential correction belongs solely in existing serving before either copy:
+borrowed length rejection, existing bounded Json diagnostics, existing native
+Query-before-permit disposal. Missing attachment versus empty proof is a
+separate unqualified requirement and must not be silently collapsed into this
+byte-only law. Expected production owner query.rs, test owner export/tests.rs,
+PRD/backlog; no new public type or interface. No production edit until the TLS
+stage qualifies and the actual original-source allocation regression fails.
+The claim is limited to preventing Bombay's oversized materialization, not
+bounding prior SDK reception, fragment traversal, parser or provider heaps.

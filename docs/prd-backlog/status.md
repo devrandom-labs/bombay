@@ -6,6 +6,12 @@ budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
 
+PR387 currently fails Deny on rustls-webpki0.103.15/RUSTSEC-2026-0382 and
+webpki-roots1.0.9/RUSTSEC-2026-0381. The pre-recorded isolated correction updates
+only their patch records in both existing TLS lockfiles, then verifies locked
+integration and new-head CI. Outbound implementation remains pending; this
+dependency correction closes no full remote acceptance row.
+
 Current remote expiry comparison: committed d4d69e63 proves two first-attempt
 permission-expiry defects in both profiles. The committed0852abcd borrowed native
 call retains constructed originals and lets Query acquire final permission.
