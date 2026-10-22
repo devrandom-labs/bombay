@@ -1,97 +1,30 @@
 ---
 name: local-dev
-description: Re-enter the verified local dev environment for devrandom-labs/bombay — Rust 2024 workspace inside the pinned Nix flake dev shell.
-version: 1.0.0
+description: Use Bombay's repository-owned pinned Nix environment for Rust development and checks.
+version: 1.1.0
 author: obvious-autobuild
 created: 2026-09-17
 ---
 
-# local-dev — devrandom-labs/bombay
+# Local development
 
-Installed 2026-09-17. Everything below was actually executed and verified in
-the repo sandbox (`cmp_wGrjXzFn`, Debian 13, 8 cores, 7.8 GB RAM); snapshot
-`mojxxu1gj5hbcaqq9is7:default` captures this exact state.
+Read the repository's AGENTS.md and README.md first. The checked-in .envrc uses
+the flake; `direnv allow` is its existing environment entry point. Alternatively,
+enter that same environment with `nix develop`. Never run host Cargo, Rust,
+formatting, lint, test or example binaries.
 
-## Prerequisites (verified runtime matrix)
+The toolchain declaration and Nix lock are authoritative. Cargo.lock selects
+the dependency versions; inspect any actual patch entries instead of assuming
+a sibling checkout. Do not install another Rust toolchain or replace personal
+Nix configuration to reproduce an old sandbox snapshot.
 
-| Runtime | Version | Notes |
-|---|---|---|
-| Nix | 2.35.2 | Not preinstalled on the fresh sandbox — install below |
-| rustc | 1.96.0 | Pinned by `rust-toolchain.toml`, provided by the flake dev shell |
-| cargo | 1.96.0 | Same — never use a host cargo |
-| Network | required at first build | crates.io + github.com for the `[patch.crates-io]` git siblings |
+Use `nix develop -c cargo check --locked -p <package>` for focused type checking,
+`nix develop -c cargo test --locked -p <package> --test <target>` for focused
+tests, and the selected feature PRD for debug/optimized or adversarial gates.
+Run formatting and strict lint through the same shell. `nix flake check -L`
+is the repository gate; see flake.nix for its actual current targets.
 
-## Install commands (fresh sandbox, in order)
-
-```bash
-curl -L https://nixos.org/nix/install -o /tmp/nix-install.sh
-sh /tmp/nix-install.sh --no-daemon
-mkdir -p ~/.config/nix
-cat > ~/.config/nix/nix.conf <<'CFG'
-experimental-features = nix-command flakes
-accept-flake-config = true
-cores = 4
-max-jobs = 1
-CFG
-. ~/.nix-profile/etc/profile.d/nix.sh
-nix develop -c cargo --version   # ~7 min cold: builds dev shell closure (~4.4G store)
-```
-
-The dev shell closure does NOT include the flake `checks`; `nix develop` alone
-is quick after the first build. The 2026-10-02 audit subsequently ran all 21
-flake checks on the current source; the sandbox measurements below remain a
-dated 2026-09-17 snapshot.
-
-## Environment setup
-
-- No env vars required. No `.env` / `.env.example`. `.envrc` only contains `use flake` (direnv).
-- AGENTS.md mandate: every cargo/rustc/example/lint/test command goes through `nix develop -c ...`.
-
-## Start commands (verified, actual ports parsed from output)
-
-- `nix develop -c cargo run -p bombay-example-counter` — exits 0 after the
-  typed flow completes; no port, no server.
-- `nix develop -c cargo run -p bombay-example-axum` — HTTP server, actual
-  listen address `127.0.0.1:3000` (confirmed with `ss -tlnp`). Routes:
-  `POST /orders` (body `{"order_id":u64,"customer_id":u64,"sku":String,"quantity":u32}`),
-  `DELETE /admin/shutdown` (graceful stop, exit 0).
-
-## Primary flow verified (evidence)
-
-1. Counter example: Application boots counter actor → typed external customer
-   sends `Increment` then `Read` → reply asserted `1` → lifecycle shutdown →
-   terminal asserted → exit 0. Log: `/tmp/` run transcripts; summary PNG:
-   `/home/user/.obvious-install/screenshots/dev-stack-evidence.png`.
-2. Axum example: server up on 127.0.0.1:3000 → `POST /orders` twice →
-   HTTP 202, body echoes the exact admitted order → malformed body → HTTP 422
-   → `DELETE /admin/shutdown` → HTTP 202, process exits 0.
-   Transcript + PNG: `/home/user/.obvious-install/screenshots/axum-order-flow/`.
-
-## Verified check commands
-
-- Typecheck/build: `nix develop -c cargo build --workspace` (exit 0, 21s, 88 crates)
-- Lint: `nix develop -c cargo clippy --workspace --all-targets -- -D warnings` (exit 0)
-- Format: `nix develop -c cargo fmt --all -- --check` (exit 0)
-- Tests: `nix develop -c cargo test --workspace -- --test-threads=1` (exit 0, 55 result blocks, 0 failed)
-- Scoped current command: `nix develop -c cargo check --locked -p bombay-engine`. The 2026-09-17 `bombay-machine` check belongs to the dated snapshot; that crate was removed by the architecture audit.
-
-## Known blockers and workarounds
-
-- **No preinstalled toolchain on the fresh sandbox** (`runtime_unavailable` → resolved): install single-user Nix as above; no sudo-free alternative was viable. Passwordless sudo is available.
-- **2026-09-17 test-parallelism snapshot (subsequently resolved):** `cargo test --workspace` at default
-  parallelism can fail 1–2 `entity_runtime` tests
-  (`passivation_reports_superseded_after_incarnation_replacement`,
-  `fence_failures_preserve_the_forced_retirement_stage`) on many-core hosts —
-  their bounded spin budgets (1,000 `thread::yield_now()`) expire while spawned
-  retirement threads compete with 8 test threads. Reproduced at 8 threads and
-  under `taskset -c 0-3`; passes with `--test-threads=1` (11/11) and per-test
-  with `--exact`. CI is green (tests run inside the Nix build sandbox with
-  restricted affinity). The 2026-10-02 locked workspace suite passed at default
-  parallelism; use its current command above.
-- Memory: 7.8 GB RAM is comfortable for the whole suite; Nix `cores = 4` keeps
-  builds well within budget.
-
-## Snapshot
-
-- Snapshot ID: `mojxxu1gj5hbcaqq9is7:default` (captured 2026-09-17T15:40:39Z)
-- After restore: `. ~/.nix-profile/etc/profile.d/nix.sh`, then `nix develop -c cargo build --workspace` (incremental, seconds).
+The backlog and feature-local PRDs own blockers, verification and delivery
+status. Keep historical observations separate from current source results.
+Previous sandbox timings, test counts, package names and parallelism workarounds
+remain available in Git history and are not current setup instructions.

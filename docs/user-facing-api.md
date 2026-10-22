@@ -10,8 +10,10 @@ Implementation status is separate from this target contract. Local application,
 external interface, timer, Entity, supervisor, and worker-pool paths have
 executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
-or multithread execution. Durability and crate-owned remote networking remain
-planned. The merged optional `remote` feature provides `remote::verify` for
+or multithread execution. Durability remains planned. PR387 merged the cold
+remote Export/Node service; the local outbound Client slice described below is
+not yet merged. Complete remote acceptance remains open. The optional `remote`
+feature also provides `remote::verify` for
 provider-result custody. The merged ingress primitive adds `remote::try_retain`
 for nonwaiting count retention (PR363). Neither supplies
 authentication, actor admission or multi-node Application assembly.
@@ -62,7 +64,7 @@ not itself request a stop, and dropping a future does not promise completed
 asynchronous cleanup.
 This executable fragment checks that complete handoff.
 Ordinary actor composition uses the domain client/template path below; the
-simple multi-node application surface remains pending.
+complete multi-node contract and separate remote-counter application remain pending.
 
 ```rust
 # struct Service;
@@ -575,7 +577,7 @@ Declared Entity families use that same Node path. Work selects their existing
 receptionists with `application.entities(role)`; receiving retains the actual
 family shutdown results alongside the root, Work and notifications.
 
-The current unmerged remote-service candidate attaches cold declarations with
+The cold service merged through PR387 attaches declarations with
 `node.exports(exports, binding)`. The asynchronous binding returns the actual
 root/child target proofs after staging. `Export::new` selects explicit limits,
 wire decoding, operation declarations, verification/protection, request identity
@@ -596,9 +598,70 @@ An export's `into_parts` and a retained Request's `try_into_parts` provide delib
 advanced inspection of originals. Request extraction needs no declaration or
 presentation callback and returns the same Request while custody is borrowed.
 
-This candidate is not merged remote support. Whole-service unwind, full retry
-acceptance, outbound typed Actions, full public SDK privacy and resource/security
-acceptance remain open. Zenoh stays an internal networking owner; ordinary
+The local outgoing slice attaches a `Client` through the same
+`node.exports(client, binding)` owner. The binding returns the actual actor
+recipient that will receive checked replies; Node checks its Application
+association. Construct the source with `ApplicationScope::external` before
+building the actor, and give its recipient to that actor's typed send lane.
+The actor returns ordinary `Actions`; Work contains no network loop.
+
+`Client::new` takes the original source, query key, required `ClientLimits`,
+separate `json::Limits`, native query timeout, and the concrete encoder,
+protector, verifier, decoder and current request/reply permission policies.
+For example, with caller-supplied nonzero maxima:
+
+```text
+let client = Client::new(
+    source,
+    key,
+    ClientLimits {
+        concurrent_requests,
+        retained_requests,
+        retained_responses,
+    },
+    json_limits,
+    query_timeout,
+    encode,
+    protect,
+    verify,
+    decode,
+    current_request,
+    current_reply,
+);
+let mut node = node.exports(client, binding);
+let outcome = node.run().await?;
+```
+
+The encoder's `Ok(None)` selects no Get, for example for a protocol
+acknowledgment. Concurrent requests bounds operations holding a permit through
+protection, Get and response handling. Retained requests bounds acquired source
+rows, including no-Get messages; reaching it closes admission and keeps any
+accepted unread prefix in the original source. Retained responses bounds charged
+native replies per query across queue and acquired responses. The first refused
+original is retained separately, so native reply custody is at most that count
+plus one; later overflow is explicitly discharged. These are not aggregate byte,
+provider allocation or accepted-prefix bounds. The query timeout does not
+certify actor termination. The public read consumer uses the existing
+`ActorExt::with_deadline` policy for its actual one-shot actor lifetime.
+
+Node owns outgoing protection, native queries, callback retirement and joined
+cleanup. The source capability and the checked return recipient are separate:
+comparing declared numeric origins is routing policy, not authentication.
+Optional consuming `Client::into_parts` returns the original source and policy
+inputs, actual startup/withdrawal/joined/EOF observations and original request
+rows. A quota stop is not EOF; the returned source keeps its unread accepted
+prefix. An acquired `Response` offers borrowed payload/proof fragments and the
+actual error through standard `Error`, with no public SDK type. Its consuming
+handoff preserves typed results and deliberately disposes unused native
+success-envelope metadata. A returned native error retains its original cause
+and count charge until that error is dropped. `ClientError` distinguishes
+declared-route mismatch, JSON refusal and absent proof without exposing payloads
+in its outer diagnostics. Advanced inspection is optional, not a reporting
+callback required to run the application.
+
+This outgoing slice is locally verified, not merged or complete remote support.
+Full cancellation/unwind, pressure/retry, public privacy/authentication and
+resource acceptance remain open. Zenoh stays an internal networking owner; ordinary
 applications must not assemble its request/reply loops. Refusal preserves the
 original callable. Missing-host refusal also restores the original declaration;
 a second execution returns `NodeExecutionRefusal::ExecutionIssued`, including
@@ -613,19 +676,19 @@ credential parsing remains native; construction establishes no peer handshake.
 Opening requires an entered multithreaded Tokio host. Native startup timeout
 and retry defaults establish no bounded startup or readiness guarantee. The
 input-privacy stage passes its focused mapping, caller and original-input
-controls; the private remote service remains required before full interface
-acceptance.
+controls; those scoped results do not establish complete interface acceptance.
 Whole operation disposal is surrender, not proof of joined retirement.
 
 The former imperative `ApplicationHandle::export`, `retain`/`attempt`/`retry`
-and manual `undeclare` path is retired in this candidate. Historical main delivery
+and manual `undeclare` path is retired by the cold service. Historical main delivery
 is recorded in the remote PRD; it does not select a second current spelling.
 Retained requests preserve original protected bytes, opaque receipts, actual
 native attempts and replies independently of verification, protection and
 permission. In particular, native `Full` preserves its exact rejected command;
 automatic retry waits for native capacity and obtains fresh authority. The
 owning Ledger and Counter Reply laws pass locally, including original Full retry
-custody. Ordinary outbound composition and full remote gates remain open.
+custody. The local public read/provider/count controls exercise the outgoing
+slice; the separate remote-counter application and full remote gates remain open.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 

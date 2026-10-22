@@ -6,24 +6,70 @@ budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
 
+PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,
+with all six required checks passing on e1eab601. Its source tree is identical
+to that verified head. Repository-owner merge and independent local reviews are
+recorded; no GitHub review submission is recorded. Main is integrated and the
+remaining outgoing work continues on feat/remote-client. This is delivery of
+the scoped cold Export/resource implementation, not full remote acceptance.
+
+The public Client slice is committed as f863b7cd and carries actual
+outbound requests through the existing Node lifecycle. Its named count inputs
+and distinct-count verification are committed as66fa106a, followed by current
+guidance in fa6717f3. The pushed slice is submitted in
+[PR388](https://github.com/devrandom-labs/bombay/pull/388). An external public read
+passes, and the three public
+Ready/disposal provider cases pass in both profiles while preserving acquired
+results and exact panic causes. Native response handoff and bounded outer
+diagnostics pass; the early-release inverse fails as intended in both profiles.
+Repository-native tests replace the temporary mounts. A deterministic capacity
+wake rejects the acquired-prefix selection race in both profiles, after all
+original-message and cleanup checks. The two-site repair passes418 library and
+43 external tests in both profiles. Final source passes498 tests across12
+remote targets in EACH profile, with no failures, ignored or filtered cases;
+strict workspace/all-feature/all-target lint, formatting and remote rustdoc
+pass. Audit2 identifies current onboarding/EOF guidance and gate/Python
+retirement obligations; onboarding/EOF guidance is now reconciled, while audit3
+and distillation remain open. Next are the separate remote-counter application
+and remaining full acceptance matrices. No full R01–R25/AUTH1/NET1 row is
+closed here; new-head Nix/CI/review and main delivery remain pending.
+
+Named ClientLimits and its distinct P1/N2/R3, P1/N4/R2 controls now qualify
+the full selected remote matrix501/501 in each profile,12 targets/no skips or
+filters. Required-field E0063 is compiler-produced and paired with a compiling
+complete product. All three individual count substitutions now fail ONLY
+their intended post-cleanup count oracles in BOTH profiles; exact healthy
+restoration and fresh four-case Client controls pass in each profile. Final
+strict workspace/all-feature/all-target lint, fmt and remote rustdoc pass.
+Current guidance is reconciled and passes8 affected compiler tests plus final
+strict lint, fmt and rustdoc. PR388's five visible CI jobs are running;
+new-head CI success, review and main delivery remain pending. No full
+resource/security or remote-counter row closes from these count controls.
+
 PR387's TLS advisory correction d9a5a092 selects rustls-webpki0.103.16 and
 webpki-roots1.0.10 in both existing locks, with fresh Deny CI passing. Four real
 TLS request cases and three isolated native custody cases pass in each profile.
-All required CI checks pass on that exact pushed head. Outbound implementation
-remains pending; this dependency correction closes no full remote acceptance row.
+All required CI checks pass on that exact earlier pushed head. The subsequent
+outbound implementation is submitted separately in PR388; this dependency
+correction closes no full remote acceptance row.
 
-The next resource correction rejects oversized borrowed payload/proof lengths
+The merged resource correction rejects oversized borrowed payload/proof lengths
 before materializing either. Separate payload/proof copy inversions each fail
 only their intended largest-allocation oracle in debug and optimized execution;
 the other two cases pass. The independent measurement control also rejects
 recording an old realloc size as the new request. All healthy owners are restored;
 final whole-library debug/optimized each pass416/416, with strict workspace
-all-feature/all-target lint and formatting passing. Fresh exact-head CI remains
-pending for this resource correction.
+all-feature/all-target lint and formatting passing. All exact-head required CI
+checks pass for this resource correction, now merged through PR387.
 These narrow results do not close aggregate resource, missing-proof, outbound
 or full remote acceptance requirements.
 
-Current remote expiry comparison: committed d4d69e63 proves two first-attempt
+### Earlier expiry, binding and approval checkpoints
+
+The following source epochs and numerical approvals are historical; the current
+unbounded execution and PR388 submission are described above.
+
+Earlier remote expiry comparison: committed d4d69e63 proves two first-attempt
 permission-expiry defects in both profiles. The committed0852abcd borrowed native
 call retains constructed originals and lets Query acquire final permission.
 Complete library runs pass406/406 in both profiles after fixing the
@@ -78,13 +124,13 @@ work; full service/privacy, CI/review and main delivery remain open. The
 [identity record](../prds/static-remote-actors.md#runtime-and-actor-identity--local-verification-and-minimization)
 retains the exact scopes, costs and remaining gates.
 
-Current next product step: ordinary Application-owned outbound interpretation,
-then the separate remote-counter application. Inbound cold Export/Node serving
-is implemented; live requester tests still manually interpret actual transport
-in private Work. Require one public SDK-free two-Application requester-to-cold-
-Export trace through existing typed owners before selecting any new interface.
-Remaining security/resource policies and broad adversarial acceptance are real
-work beyond this path. All full rows remain open; no percentage is inferred.
+Current next product step: the separate remote-counter application through the
+existing Node-owned Client and Export. The actual external two-Application read
+trace now exercises that SDK-free public path, including pure actor Actions.
+Advanced native requester tests remain scoped mechanism consumers. Trusted
+cross-process test-identity provisioning, the full Increment/Read/Stop journey
+and security/resource/fault acceptance still need their actual witnesses.
+All full rows remain open; no percentage is inferred.
 
 Earlier cold-path preparation checkpoint (2026-10-17):
 The bounded ownership comparison passes4/0 in both profiles, its intended

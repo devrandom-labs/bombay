@@ -1,0 +1,5 @@
+error[E0063]: missing field `retained_responses` in initializer of `ClientLimits`
+ --> tests/compile/fail/client_limits_require_responses.rs:5:19
+  |
+5 |     let _limits = ClientLimits {
+  |                   ^^^^^^^^^^^^ missing `retained_responses`

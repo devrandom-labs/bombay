@@ -395,7 +395,8 @@ where
     }
 
     /// Receive the next typed reply and its actual emitting actor's identity.
-    /// Closed admission yields its accepted prefix before returning `None`.
+    /// Closed admission yields its accepted prefix followed by one terminal
+    /// `None`. Stop receiving after `None`; see [`ExternalActor::receive`].
     pub async fn receive(&mut self) -> Option<User<MailAddr, Replies::Msg>> {
         self.caller.receive().await
     }
@@ -812,7 +813,8 @@ where
     /// Receive the next message and its truthful actor origin.
     ///
     /// Returns `None` after admission closes and every accepted message has
-    /// been yielded.
+    /// been yielded. This end marker is delivered once: stop receiving after
+    /// `None`. Receiving again can wait while the control lane remains open.
     pub async fn receive(&mut self) -> Option<User<MailAddr, P::Msg>> {
         match self.receiver.recv().await? {
             Received::User(message) => Some(message),

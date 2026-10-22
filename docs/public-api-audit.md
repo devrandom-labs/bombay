@@ -1,9 +1,8 @@
 # Retained public API audit
 
-This retains ARC-020's owner inventory and reconciles the EXEC application
-surface against published Behavior Core/Actors 0.26.0 at archive revision
-`98983b456c4a8f7cd0911982eaf9488455b6d8bc`, Macros 0.14.2, Address 0.3.0,
-Communication 0.1.6, private Observe, and published Timers 0.2.0 in `Cargo.lock`. It covers Bombay-owned
+This retains ARC-020's owner inventory. Current dependency contracts follow
+Cargo.lock and the feature-local source verification, rather than the original
+audit's older published revisions. It covers Bombay-owned
 items reachable from the `bombay`, `bombay::entity`, `bombay::actors`,
 `bombay::remote`, and `bombay_engine` roots. Re-exported Behavior and Behavior Actors families retain
 their upstream ownership. The [Rust API Guidelines checklist](https://rust-lang.github.io/api-guidelines/checklist.html)
@@ -11,10 +10,10 @@ informs names, traits, error behavior, and examples; exact ownership follows
 the selected Behavior instructions and [module map](module-boundaries.md).
 
 The user requires Zenoh to remain private to Bombay, including advanced APIs.
-Current Node/Export rows below inventory provisional transport-facing contracts;
-they do not approve retaining those contracts for complete remote delivery.
-Native Config, Session, Query, Reply, declaration and transport callback types
-must leave the public surface. Networking belongs to Application construction,
+Current Node/Export rows inventory the cold service merged through PR387; the
+Client/Response rows describe the local unmerged outgoing slice. Neither closes
+complete remote acceptance. Native Config, Session, Query, Reply, declaration
+and transport callback types remain private. Networking belongs to Application construction,
 execution and retirement, with Bombay errors preserving original causes. The
 remote PRD and acceptance matrix record the required ordinary public witness.
 
@@ -36,14 +35,16 @@ The root entry checks are owned by the [application topology](../examples/applic
 [external caller test](../crates/bombay/tests/actor_interface.rs), and
 [authoring compile matrix](../crates/bombay/tests/macro_last_authoring.rs) establish narrower
 positive and negative boundaries. These references identify the owning checks;
-the combined integration still requires its final full verification. No ordinary
-multi-node remote API is implemented by this reconciliation. The subsequent
+the combined integration still requires its final full verification. The
+[outgoing public consumers](../crates/bombay/tests/application_clients/outbound.rs)
+exercise actual Node-owned reads and provider disposal; the separate ordinary
+remote-counter application and full multi-node contract remain pending. The subsequent
 merged opt-in `remote` feature provides `remote::verify`: one ordinary function over
 a borrowed request, a caller-owned standard result slot and a concrete provider
 future. It adds no public type, trait or bound beyond `FnOnce` and `Future`.
 Its owning verification and protected Application tests cover result custody,
-borrowed-wait cancellation and occupied-slot suppression; network composition
-remains pending. Reviewed [PR363](https://github.com/devrandom-labs/bombay/pull/363)
+borrowed-wait cancellation and occupied-slot suppression; this primitive alone
+does not supply network composition. Reviewed [PR363](https://github.com/devrandom-labs/bombay/pull/363)
 delivers `remote::try_retain` and `IngressError<Original>`, reusing existing Tokio
 ownership products without a new dependency or actor protocol. Reviewed PR364 delivers four types: raw Metadata, one Node and two
 original-bearing refusal sums, with passing required CI and scoped minimization
@@ -86,13 +87,17 @@ The Engine surface is exercised by its
 | `ApplicationHandle::root`, `interface`, `client`, `sender`, `client_to`, `sender_to`, `external`, `lifecycle`, `entities`, `passivate_entity` | Live Bombay application; external boundary receives this handle only after activation. Each method projects an existing endpoint, family, or lifecycle authority. | Conditional `Clone`, redacted `Debug`; no equality for live capability identity. Passivation yields closed `Passivation` disposition. |
 | `ApplicationHandle::export_client` (`remote`, merged PR370) | Certify one actual root or descendant recipient against this Application's existing allocation source before constructing the existing reply client. | Foreign actors and external reply endpoints return their original recipient before reply allocation. Closed owned actors remain associated. No network publication, readiness, authentication, permission or lifecycle authority is issued. |
 | `remote::ExportError` | Typed target, declaration, input, count, replay, exact-stop and ingress refusals. Historical main contributions remain recorded in the remote PRD. | Bounded outer Display/Debug; standard Error sources preserve actual causes. No cloning or new target registry. Unproduced `NodeAbsent` and `SessionClosed` variants are retired; live Node lifecycle refusal and original Work remain with `NodeExecutionRefusal`. |
-| `Node::exports`, attached `run`/`run_with`, `into_parts` (unmerged candidate) | Attach cold exports and an asynchronous binding to actual root/child proofs. Node owns startup, serving, withdrawal, existing Application/family cleanup and native close. | Work can be supplied or genuinely absent. Optional extraction returns exports, original binding result, actual close result and independent original kernel poll/disposal panic payloads after close and a binding result are acquired; otherwise the same Node. The existing Application cleanup publication ends cache serving, so cached results remain available after target retirement while supplied Work continues. No arbitrary Application/Session pairing. Single decoder unwind is locally qualified; general cancellation/double-fault unwind remains open. |
+| `Node::exports`, attached `run`/`run_with`, `into_parts` (cold service merged PR387) | Attach cold exports and an asynchronous binding to actual root/child proofs. Node owns startup, serving, withdrawal, existing Application/family cleanup and native close. The local outgoing Client uses this same composition. | Work can be supplied or genuinely absent. Optional extraction returns exports, original binding result, actual close result and independent original kernel poll/disposal panic payloads after close and a binding result are acquired; otherwise the same Node. The existing Application cleanup publication ends cache serving, so cached results remain available after target retirement while supplied Work continues. No arbitrary Application/Session pairing. Single decoder unwind is locally qualified; general cancellation/double-fault unwind remains open. |
 | `remote::ExportLimits` | Four explicit nonzero maxima: queued queries, retained queries, retained requests and diagnostics. | Clone/Copy/Debug/equality, no defaults. Count acceptance does not establish whole-service heap bounds. |
-| `remote::Export::new`, `into_parts` (unmerged candidate) | Cold key, limits, decoding, closed operation declarations and explicit verification/protection/identity/current-permission policies. | Redacted Debug, no Clone. Node interprets the private transport; extraction retains inputs, declarations, actual startup/withdrawal, diagnostics and request originals. Former Handle.export and imperative request/undeclare methods are retired. |
-| `remote::Reply`, `Submission`, `Stop`; `reply`, `submission`, `stop` (unmerged candidate) | Pure operation selection and wire encoding over existing native clients/senders or exact shutdown control. | Two function inputs; no stored terminal presentation or uniform-report requirement. Native interpretation stays private. No new actor/effect algebra. |
-| `remote::Request::try_into_parts` (unmerged candidate) | Consume original protected bytes, typed verification/decoding/native facts, encoding/protection/publication, refusals and independent provider panics. | Returns the same Request while custody is borrowed. Transfers the original heterogeneous native product unchanged; advanced inspection needs no declaration or mapping callback. Extraction is not joined-cleanup evidence. |
+| `remote::Export::new`, `into_parts` (merged PR387) | Cold key, limits, decoding, closed operation declarations and explicit verification/protection/identity/current-permission policies. | Redacted Debug, no Clone. Node interprets the private transport; extraction retains inputs, declarations, actual startup/withdrawal, diagnostics and request originals. Former Handle.export and imperative request/undeclare methods are retired. |
+| `remote::Reply`, `Submission`, `Stop`; `reply`, `submission`, `stop` (merged PR387) | Pure operation selection and wire encoding over existing native clients/senders or exact shutdown control. | Two function inputs; no stored terminal presentation or uniform-report requirement. Native interpretation stays private. No new actor/effect algebra. |
+| `remote::Request::try_into_parts` (merged PR387) | Consume original protected bytes, typed verification/decoding/native facts, encoding/protection/publication, refusals and independent provider panics. | Returns the same Request while custody is borrowed. Transfers the original heterogeneous native product unchanged; advanced inspection needs no declaration or mapping callback. Extraction is not joined-cleanup evidence. |
 | `remote::RequestKey` | Opaque target protocol, issuing declaration and retained request identity; no public constructor or command authority. | Redacted Debug and equality, no Clone/Copy. Weak issuer identity owns no endpoint. Keys no longer authorize imperative attempt/retry. |
-| `remote::Attempt` (unmerged replacement for Admission) | Unattempted, Uncertain entry without an acquired return, or the complete Returned native result. | State-only Debug without payload bounds. Known Full retains its exact message through native capacity waiting and fresh-authority retry; broader retry acceptance remains open. Uncertain never grants retry. RequestRefusal is retired; original permission causes remain in their typed request/reply fields. |
+| `remote::Attempt` (merged PR387 replacement for Admission) | Unattempted, Uncertain entry without an acquired return, or the complete Returned native result. | State-only Debug without payload bounds. Known Full retains its exact message through native capacity waiting and fresh-authority retry; broader retry acceptance remains open. Uncertain never grants retry. RequestRefusal is retired; original permission causes remain in their typed request/reply fields. |
+| `remote::Client::new`, `into_parts` (local unmerged outgoing slice) | Original ExternalActor source, query key, required ClientLimits and separate JSON limits/timeout, concrete encode/protect/verify/decode/current request/reply policies. Bound to an actual Application-associated reply actor through existing Node.exports. | Redacted no-bound Debug; affine, no Clone/Default. Node owns query startup, concurrent operations, withdrawal, callback EOF and joined cleanup. Extraction returns the exact source/policy inputs, actual lifecycle observations and typed original rows; unread accepted prefix stays in the closed source. An encoder Ok(None) selects no Get. Standard native Error causes and independent provider/operation panics remain owned. No public SDK type is exposed. |
+| `remote::ClientLimits` (local unmerged) | Three required NonZeroUsize fields: concurrent_requests, retained_requests and retained_responses; json::Limits remains separate. | Clone/Copy/Debug/equality; no Default, builder or old tuple overload. P bounds permit-held operations, N acquired rows including no-Get ACKs, R charged native replies per query. One separately retained first refusal makes native custody R+1; later overflow is discharged. No aggregate byte/provider allocation or unread accepted-prefix bound. |
+| `remote::Response::payload`, `proof`, `cause`, `into_parts` (local unmerged) | An actual native response with its original count charge and independent wire/shape/verification/decode/admission/permission/provider facts. | Redacted no-bound Debug, no Clone/public constructor. Borrowed fragment iterators copy no payload and retain absent versus empty success proof. cause borrows the actual standard Error. Consuming handoff transfers typed results, explicitly disposes unused success-envelope metadata before releasing its charge, and keeps an actual native error/cause plus charge owned until disposal. |
+| `remote::ClientError` (local unmerged) | Origin{expected}, Json{cause}, or MissingProof boundary refusal; each request/response retains its original facts separately. | thiserror Error with bounded outer Display and redacted Debug; framing preserves its actual source. No cloned payload or erased provider error. Declared numeric origin comparison is routing policy, never sender authentication. |
 | `ApplicationLifecycle::shutdown`, `termination`, `retirement` | Bombay lifecycle projection; caller holds root control separately from message delivery. | `Clone`, redacted `Debug`; shutdown returns exact `ShutdownRejection`, termination awaits the exact root generation; retirement independently observes the runtime-issued joined-subtree report while Work remains live. |
 | `ApplicationCleanupError` | Application result receiving owns actual cleanup-publication or cleanup-task failure. | Flat `PublicationClosed(RecvError)` and `TaskFailed(JoinError)` retain the original source; actor native failure remains `ActorRetirement::ActorTaskFailed`. No actor absence is inferred from channel closure. |
 | `RunError` | Existing owner of the two actual owned-executor failures. | Flat `BlockingInEnteredRuntime` and `Runtime(io::Error)` variants; Debug/Display/Error and truthful native source. No generic root/staging/terminal aggregate; originals coexist beside it. |
@@ -127,8 +132,11 @@ in remote_json.rs and two actual Node Counter/MailLedger consumers in
 application/node/tests/json.rs. They reuse the existing actor definitions
 and receiving owners. SessionLocal deterministic records establish neither a
 network handshake nor production authentication. Full remote export/admission
-acceptance remains pending; the current cold Export/Node candidate supplies
-inbound composition, with ordinary outbound and full acceptance still open.
+acceptance remains pending. The merged cold Export/Node service supplies inbound
+composition and the local outgoing Client slice has public read/provider/count
+controls. Full privacy/authentication, cancellation/unwind, pressure/resource
+matrices, the ordinary remote-counter application, CI/review and main delivery
+of that outgoing slice remain separate open gates.
 
 Merged PR370 adds public root/sibling/nested-child and closed-target
 checks in fixed_supervisor_recovery.rs, plus a separate unhosted same-address
