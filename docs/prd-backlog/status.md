@@ -29,8 +29,8 @@ original-message and cleanup checks. The two-site repair passes418 library and
 remote targets in EACH profile, with no failures, ignored or filtered cases;
 strict workspace/all-feature/all-target lint, formatting and remote rustdoc
 pass. Audit2 identifies current onboarding/EOF guidance and gate/Python
-retirement obligations; audit3 and distillation remain open. Next is the
-named count input experiment and distinct-limit controls, then remote-counter
+retirement obligations; onboarding/EOF guidance is now reconciled, while audit3
+and distillation remain open. Next are the separate remote-counter application
 and remaining full acceptance matrices. No full R01–R25/AUTH1/NET1 row is
 closed here; new-head Nix/CI/review and main delivery remain pending.
 
@@ -49,8 +49,9 @@ resource/security or remote-counter row closes from these count controls.
 PR387's TLS advisory correction d9a5a092 selects rustls-webpki0.103.16 and
 webpki-roots1.0.10 in both existing locks, with fresh Deny CI passing. Four real
 TLS request cases and three isolated native custody cases pass in each profile.
-All required CI checks pass on that exact pushed head. Outbound implementation
-remains pending; this dependency correction closes no full remote acceptance row.
+All required CI checks pass on that exact earlier pushed head. The subsequent
+outbound implementation is submitted separately in PR388; this dependency
+correction closes no full remote acceptance row.
 
 The merged resource correction rejects oversized borrowed payload/proof lengths
 before materializing either. Separate payload/proof copy inversions each fail
@@ -63,7 +64,12 @@ checks pass for this resource correction, now merged through PR387.
 These narrow results do not close aggregate resource, missing-proof, outbound
 or full remote acceptance requirements.
 
-Current remote expiry comparison: committed d4d69e63 proves two first-attempt
+### Earlier expiry, binding and approval checkpoints
+
+The following source epochs and numerical approvals are historical; the current
+unbounded execution and PR388 submission are described above.
+
+Earlier remote expiry comparison: committed d4d69e63 proves two first-attempt
 permission-expiry defects in both profiles. The committed0852abcd borrowed native
 call retains constructed originals and lets Query acquire final permission.
 Complete library runs pass406/406 in both profiles after fixing the
