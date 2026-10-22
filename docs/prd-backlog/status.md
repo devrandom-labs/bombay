@@ -1079,14 +1079,15 @@ reducer with inline pinned jq and removes its52-line Python script/source input.
 The producer, four owner floors and artifacts remain unchanged. Final synthetic
 matrix47 invocations passes, with all four reproduced original false passes
 rejected; two-pass independent source/outcome review is recorded in the remote
-PRD. The actual unchanged owning Nix coverage build is still running. Other
-Python owners, actual coverage acceptance, CI and delivery remain pending.
-PR388's submitted outbound source is unchanged by this separate experiment.
+PRD. At that initial checkpoint the actual owning Nix build was still running.
+Its completed result follows. Other Python owners, CI and delivery remain pending.
+PR388's outbound source is unchanged by this separate experiment.
 
 The scoped coverage experiment now passes its unchanged actual owning Nix
 coverage derivation on aarch64-darwin:737/818 Driver,1006/1048 execution,95/97
 outcome,502/525 Observe, with the same90/93/90/90 floors. Pinned Nix formatting
 and extra max-safe/below-by-one/restored arithmetic controls pass. The retained
 verification machinery delta is+47/-56/net-9; no Rust/API change. Final
-independent result review, focused commit and new-head CI/delivery remain
-separate from this local acceptance; the rest of Python retirement stays open.
+independent result review passes and the focused implementation is committed
+as6e70adad. New-head CI/delivery remain separate from this local acceptance;
+the rest of Python retirement stays open.
