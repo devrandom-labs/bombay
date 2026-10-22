@@ -42065,3 +42065,147 @@ strengthened/restored/final source, raw profile logs/exits and both reviews.
 Member reads verify final sourcefd631426 and review243ee976. Records precede
 this pointer. No executable/compiler closure, current/MSRV matrix retirement,
 new-head CI or merged delivery is inferred from this archive.
+
+### Full Counter protocol — ordinary public consumer comparison
+
+The named-child prerequisite is committedd906a80a; no inverse remains applied.
+Start a separate compiler comparison for the outstanding actual remote-counter
+product, without selecting new runtime/API machinery from compiler errors.
+Fresh Cargo.lock inspection still selects registry Behavior/Actors0.29.0,
+Macros0.16.0, Address0.3.0, Communication0.1.6 and Timers0.2.0, no patches.
+Re-read Behavior algebra exports and complete selected AGENTS, Actors deadline/
+shutdown implementations and selected timer-request tests, Bombay ActorExt,
+Address claim/lease and registration tests, Communication recv/end-marker,
+Timers schedule/cancel/pop and differential tests, Observe unique publication,
+actual Node startup/serving and Metadata/public consumer contracts. Existing
+owners remain authoritative; there is no dependency or ownership change.
+
+The owning composition is one nested reply(Increment)/reply(Read)/stop(Stop)
+Export plus one Node-owned Client and the original local Counter source.
+Caller returns only typed Actions for actual processed correlation→Read→Stop.
+Three operation source rows suffice; no ACK/no-Get mechanism belongs in this
+ordinary application. Concrete finite TEST grants are independently provisioned
+from actual issued bindings; local Mode is the sole policy input and is absent
+from the controller's response. New deploymentc18c2fd1 preserves olddc90 as an
+unselected source epoch. No SDK, mutable received-claim registry or second
+runtime is proposed.
+
+Frozen outside consumer c2f01ddc (239lines), protocol7b65ae1f (140) and deployment
+c18c2fd1 (201) have author source review241215ac. Root reads their complete
+bodies before mounting. Expected initial mutation is only a temporary three-line
+module mount in existing application_clients.rs; production+0/-0, public types
++0/-0, no retained source/API selection. All outside authored/copied epochs
+remain historical costs; the user has removed numerical budgets. First run only
+the owning public target's --no-run compiler check through pinned Nix. Any
+setup errors are not semantic falsifiers. Remove the mount byte-exact before
+retaining records or broadening verification.
+
+Independent source review already identifies two UNRESOLVED semantic gaps:
+counts/report presence alone do not check complete acquired row facts, and
+simultaneously released bindings do not causally prove peer queryable readiness.
+Actual Get may precede remote route propagation and receive immediate FINAL.
+The current source is eligible for compiler-fitness comparison only. Runtime
+acceptance needs genuine existing-owner readiness evidence and post-cleanup
+row/report observations. No sleep, enlarged watchdog, SDK escape hatch or new
+public facade is selected. R01/R23 two-process/ordinary application and broad
+security/resource acceptance remain open; a one-process prototype cannot close
+them. Actor deadline and pure ProductionRequired refusal remain separately
+scoped policies, not readiness or native production-preflight evidence.
+
+Actual first pinned `cargo test --offline --locked -p bombay-rs --features remote
+--test application_clients --no-run` exits0 in11.27s against the exact frozen
+sources. The ordinary existing tuple operations, three typed protocols, pure
+Caller sends, borrowed callbacks/bindings and current outcome projections
+compile without a new public type, bound, facade or runtime edit. Eight warnings
+remain in this deliberately incomplete probe (unused exact errors/configuration
+fields and duplicate inclusion's unused local Increment variant); no strict-lint
+or runtime acceptance is claimed. Do not erase error payloads to silence them.
+The temporary module mount is removed and the original whole parent compares
+byte-exact to its saved source before any records are retained. Compiler fitness
+does not resolve the independent observation/readiness gaps or qualify R01/R23.
+
+Next gather one explicitly exploratory debug execution of the same frozenv1,
+without accepting its incomplete oracles. This can establish an actual complete
+journey on one schedule or an actual setup failure; either outcome remains
+separate from stable readiness, R01/R23 acceptance and the uncompiled stronger
+observation proposald484b3f8. Reinstall only the same temporary public test mount,
+run exactly the one named case, acquire actual terminal output, then remove the
+whole mount byte-exact. No production source/policy edit is authorized by a
+passing or failing exploratory schedule alone. The initial native match race
+and incomplete fact observations remain documented blockers to acceptance.
+
+The exact frozenv1 exploratory debug run exits0: one actual named case passes
+in.05s,43others filtered (log576952f8). It establishes one observed complete
+journey, not adversarial readiness, strict lint, optimized execution, full fact
+conservation or two-process delivery. The whole parent is restored byte-exact
+again. The stronger observation proposal remains a distinct uncompiled source.
+
+Next compiler-only comparison: outside counter-bootstrap-control.rs3e4bbba7
+(213lines), author review0b42c9ed, uses two actual live Node bindings and the
+same complete six-pair configuration. Test mode must reach declaration/Work;
+local ProductionRequired must retain typed refusal before either. It issues no
+Get, so this isolates preflight policy from unresolved route readiness. Expected
+mutation is again only the temporary three-line application_clients module mount;
+production/API0, no selected production edit. Root reads the whole candidate;
+require returned unused Work to be Some before semantic acceptance. First use
+--no-run; actual profile controls, original guard-bypass inversion, both profiles,
+strict/source minimization and compiler static denials remain unqualified.
+
+The original bootstrap control3e4bbba7 compiles0 in10.73s, with16 unused-code
+warnings from its deliberately shared full protocol module. No runtime or lint
+credit. Restore the test parent again. Before execution, copy the control and
+c18 deployment to separate policy comparison files, preserving both frozen
+originals. Strengthen only unused Work presence to Some and point the control
+at its separately mutable deployment copy. Healthy two-case debug/optimized
+execution must precede the single ProductionRequired guard-bypass inversion;
+restore the exact healthy deployment before final positives. These are external
+probes with a temporary test mount, not selected production/application files.
+
+Root's proposed Some assertion is statically wrong: the supplied Work projection
+returns the actual concrete unused closure, not Option. Both setup attempts
+exit101/E0308 only at that assertion; no case executes. Preserve b24fc887 and
+option-{debug,release} logs as rejected setup, withdraw that assertion and keep
+the original3e control body (only its deployment path names the isolated copy).
+Existing static ownership already proves returned supplied Work presence; no
+new state, wrapper or runtime repair is warranted. Subsequent healthy receipts
+have separate names and do not overwrite those setup failures.
+
+The bootstrap comparison completes all six semantic commands: healthy and exact-
+restored debug/optimized each pass both named cases; guard-only inverseec9b6f42
+exits101 in each profile with Test still passing and ONLY ProductionRequired's
+line192 typed-binding-refusal assertion failing. Both native outcomes, closes,
+reports/notifications and common checks precede that oracle. Its later receiving
+Work cleanup/startup/presence assertions are unexecuted negatives; healthy and
+restored cases execute them. Private deployment is restored byte-exactc18c2fd1;
+the whole test parent is restored byte-exactf8a4fb08, with no Rust diff or mount.
+Two-pass actual source/outcome review3ee725ba records the scoped result. Its
+Option-error execution count needs correction: the two option-* logs are copies
+of the two original setup logs, not two repeated commands. There were TWO E0308
+setup attempts, six subsequent semantic commands, no credit for duplicate files.
+
+This proves the finite Test guard can refuse a complete valid profile before
+actual public Node declaration/Work, with a matched Test positive and guard-only
+falsifier. It establishes neither production-provider success, full R10, route
+readiness, two OS processes nor static construction/privacy. Fixture warnings
+and source conformance remain unqualified; no external probe becomes production
+or retained test code here. Complete current repository delta is this PRD only;
+Rust production/tests/public API+0/-0. No inverse or temporary mount remains.
+
+PR388 delivery is now authoritative: merged2026-10-22T21:05:52Z as
+8557f0d80bae833e2484988749aed4d29d53842c, all six checks SUCCESS on exact8157bba1.
+The Nix job120030581670 finished successfully20:59:56Z; native TLS both profiles,
+Deny and both CodeQL checks also passed. Fresh origin/main selects8557f0d8;
+its tree6f0a32450c57492e9afb8efbe23957312010d1c5 equals the verified PR head.
+The submitted outbound/count/guidance slice is delivered; full R01–R25/AUTH1/NET1
+remains active. Main integration and current guidance reconciliation follow in
+the focused coverage retirement branch; unrelated worktrees remain preserved.
+
+Durable `counter-public-comparison-20261023.tar.gz` in the common Git archive
+has SHA2562e3f906a2118369aaed7285558e160cf5679e9014ad59bc3ccce0fc5f0147735.
+It preserves the frozen compiler/exploratory and bootstrap sources, raw outputs,
+exit receipts, reviewed count correctionf5a86215, and actual PR388 delivery.
+Its separate proposals directory labels the stronger/conforming sources
+UNCOMPILED and UNSELECTED. Member reads verify the restored deploymentc18c2fd1
+and count correction. Records precede this archive pointer. This is scoped
+comparison evidence, not a complete build closure or full remote acceptance.
+Checkpoint delta: one PRD path; production/tests/public API+0/-0.
