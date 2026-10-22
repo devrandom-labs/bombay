@@ -13,11 +13,15 @@ planned scope with Bombay-owned Zenoh networking, typed identity integration
 and distributed hosting. Zenoh is the only planned production networking
 substrate; deterministic test hosts remain supported. Selo's KERI integration
 is supplied by Selo, which builds on Bombay, Mnesis and `mnesis-bombay`;
-there is no reverse Bombay dependency. These are planned ownership boundaries,
-not additional source modules or currently implemented public APIs.
+there is no reverse Bombay dependency. The complete distributed scope remains
+planned; the cold Export/Node service merged through PR387 and the local outgoing
+Client slice below implement narrower source owners without closing that scope.
 With the opt-in `remote` feature, `remote::verify` owns storing the provider's
 returned result before its future is disposed. Its private verification module
-uses an outside standard result slot and owns no authentication policy.
+uses an outside standard result slot and owns no authentication policy. The same
+private module owns the existing provider factory/poll/disposal containment used
+by both inbound Export and outbound Client; the owner was moved without copying
+its semantic implementation.
 The merged ingress primitive's private `remote/ingress.rs` owns the nonwaiting
 acquire-and-transfer operation exported as `remote::try_retain` and its two native
 refusal causes in `IngressError`; reviewed PR363 records delivery. The caller
@@ -45,12 +49,12 @@ their exact shutdown results. Node::run_with joins the existing Application exec
 Node::execute_with retains separate execution and receiving operations.
 Both pass only the ordinary Application handle to work through the same
 invocation owner. Caller-local borrows and non-Send outputs remain supported.
-The unmerged cold-service candidate attaches typed declarations with Node.exports.
+The cold service merged through PR387 attaches typed declarations with Node.exports.
 Node owns binding, startup, concurrent serving, withdrawal, joined Application/
 family receiving and native close. The runtime owns operation interpretation;
 the existing Application cleanup publication ends declaration/cache serving,
 while native requests independently observe actual target/root retirement.
-wire/security functions remain explicit typed policies. Request extraction is
+Wire/security functions remain explicit typed policies. Request extraction is
 optional and transfers original native products without a presentation callback.
 Full remote acceptance remains pending; transport fixtures do not establish it. Protected Counter
 regressions belong to `crates/bombay/tests/protected_counter`, executed by the
@@ -142,10 +146,11 @@ tree:
 | `application/node.rs` | opt-in fresh native Session and one finalized Application declaration, including its Entity families; reuse the existing family execution/receiving owner | `remote::Node`, `NodeExecutionRefusal`; no replacement actor lifecycle or forwarding topology builders |
 | `remote/network.rs` | explicit Network inputs and private fixed TLS configuration construction | Network, NetworkLayout, ConnectionEndpoints and CredentialSource; no public native Config conversion or alternate runtime |
 | `remote/startup.rs` | exact original-input mapping/host/open refusal causes | `remote::NodeStartupRefusal`; actual native causes remain accessible through standard Error sources |
-| `remote/export/mod.rs` | cold Export inputs, explicit limits, keys, attempt states and curated operation/request contracts | Unmerged service candidate; Node alone interprets declarations. No defaults or second mailbox. |
+| `remote/export/mod.rs` | cold Export inputs, explicit limits, keys, attempt states and curated operation/request contracts | Service merged through PR387; Node alone interprets declarations. No defaults or second mailbox. |
 | `remote/export/declaration.rs` | pure operation selection/encoding and private native admission, reply/EOF draining and exact shutdown interpretation | Reply, Submission and Stop use existing Application clients/senders and exact lifecycle proofs. No stored presentation policy. |
 | `remote/export/query.rs` | declaration startup/withdrawal, bounded query ownership, request interpretation and replay/publication | Existing typed policies and futures-util collection; known-Full waits reuse Communication and fresh request authority. Whole-service unwind remains open. |
 | `remote/export/request.rs` | affine original request facts and independently acquired provider/native results | Original provider results/panics remain outside disposable producers. Consuming extraction returns originals unchanged or the same borrowed Request. |
+| `remote/client.rs` | outgoing source custody, concrete provider/query/reply interpretation and native retirement through the existing Node lifecycle | Local unmerged Client, Response, ClientError and required ClientLimits; no actor, mailbox, registry or observation publisher. Private SDK envelopes/Querier stay owned through real retirement or explicit consuming discharge. Counts select active operations, source rows and charged replies plus one first refusal; no aggregate heap bound. |
 | `application/http.rs` | opt-in HTTP preparation, binding and serving over the common execution owner | existing application methods; retains bind, serving and actor failures. The feature-gated outcome mapper remains in `application/execution.rs`. |
 | `local/children.rs` | closed occurrence product, exact creation status, endpoint/control and descendant task retirement | crate-private; creation-order native custody and independent descendant retirement assessments stay with the local actor |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |

@@ -115,13 +115,13 @@ work; full service/privacy, CI/review and main delivery remain open. The
 [identity record](../prds/static-remote-actors.md#runtime-and-actor-identity--local-verification-and-minimization)
 retains the exact scopes, costs and remaining gates.
 
-Current next product step: ordinary Application-owned outbound interpretation,
-then the separate remote-counter application. Inbound cold Export/Node serving
-is implemented; live requester tests still manually interpret actual transport
-in private Work. Require one public SDK-free two-Application requester-to-cold-
-Export trace through existing typed owners before selecting any new interface.
-Remaining security/resource policies and broad adversarial acceptance are real
-work beyond this path. All full rows remain open; no percentage is inferred.
+Current next product step: the separate remote-counter application through the
+existing Node-owned Client and Export. The actual external two-Application read
+trace now exercises that SDK-free public path, including pure actor Actions.
+Advanced native requester tests remain scoped mechanism consumers. Trusted
+cross-process test-identity provisioning, the full Increment/Read/Stop journey
+and security/resource/fault acceptance still need their actual witnesses.
+All full rows remain open; no percentage is inferred.
 
 Earlier cold-path preparation checkpoint (2026-10-17):
 The bounded ownership comparison passes4/0 in both profiles, its intended

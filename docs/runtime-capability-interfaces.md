@@ -13,8 +13,10 @@ Selo identity support supplied from Selo. Zenoh is the only planned production
 networking substrate; a deterministic network test host is a verification seam.
 Selo builds on Bombay, Mnesis and `mnesis-bombay`; Bombay does not depend on
 Selo or Mnesis. The new document's proposed distributed contracts are not
-implemented capabilities or additions to the current Engine port. The ordinary
-multi-node Application API remains pending. The merged opt-in `remote` feature
+implemented capabilities or additions to the current Engine port. PR387 merged
+the cold Export/Node service; the local unmerged Client slice adds a narrower
+ordinary actor request/reply path. The complete multi-node Application contract
+and separate remote-counter application remain pending. The optional `remote` feature
 provides provider-result acquisition through `remote::verify`; the
 merged ingress primitive adds `remote::try_retain` for count retention (PR363).
 Neither establishes authentication, actor admission or a networking runtime.
@@ -43,10 +45,10 @@ original Application/Network on refusal. Its focused real Counter startup/work/
 retirement controls establish no full remote service or peer handshake.
 Native transport fixtures remain scoped verification consumers.
 The user requires this transport ownership to stay entirely private. The current
-cold Export/Node candidate keeps Session, Query ingress and native declarations
+cold Export/Node service keeps Session, Query ingress and native declarations
 in private owner fields; consuming Request extraction discharges its native
-Query instead of returning it. Full public-surface/privacy acceptance remains
-open, including the current compile-denial diagnostic. Startup now
+Query instead of returning it. Complete public-surface/privacy acceptance
+remains open; scoped compile denials do not close that matrix. Startup
 accepts only Network and rejects a concrete native Config at compile time. Networking startup, service work and
 retirement must reuse Application ownership; users compose Bombay contracts.
 The next release/API delivery is held until the remote PRD's session-free
@@ -67,7 +69,7 @@ Full/Closed originals without awaiting capacity. The local service retains its
 permission/time snapshot and retry policy; client construction and attempted
 mailbox admission remain separate facts. Stable Entity resolution still awaits.
 
-The unmerged cold-service candidate replaces the earlier imperative
+The cold service merged through PR387 replaces the earlier imperative
 ApplicationHandle::export path. Node.exports owns binding to actual actor proofs,
 declaration startup, concurrent interpretation, withdrawal and connection close
 after the existing Application/family cleanup. It reuses the same invocation
@@ -94,11 +96,44 @@ wait, fresh authority check and synchronous retry. Scoped Ledger and Counter
 pressure controls qualify that path; full pressure acceptance remains open.
 Uncertain supplies no proof of nonadmission and must not be retried.
 
+The local outgoing `Client` reuses this same Node startup/serving/withdrawal and
+Application cleanup ownership. It owns the original ExternalActor source and
+concrete encoding/protection/verification/decoding and permission policies.
+The actor emits ordinary typed Actions to that source; the binding returns a
+real Application-associated reply actor. Source capability possession and
+declared numeric origin do not authenticate an actor. Verification and current
+permission remain explicit receiving policy, separate from local association.
+
+Required `ClientLimits` supplies independent nonzero maxima for concurrent
+operations, acquired source rows and charged native responses per query;
+`json::Limits` remains a separate constructor input. No defaults or tuple
+overload select policy implicitly. No-Get acknowledgments count as source rows.
+Quota exhaustion closes source admission and retains its accepted unread prefix,
+with no fabricated EOF. Charged response originals span queued and acquired
+custody; one additional first-refusal original remains diagnostic custody and
+later overflow is explicitly discharged. These count limits establish no
+aggregate byte/provider allocation or accepted-prefix bound.
+
+Each acquired `Response` keeps its real native original and charge beside
+verification, decoded/native admission, permission and producer results. Borrowed
+payload/proof inspection exposes no SDK owner. Consuming extraction explicitly
+discharges unused success-envelope metadata; a native error retains its actual
+cause and permit in one standard Error owner until disposal. Callback refusal
+handoff retains the exact original error and charge. Client extraction returns
+the original source/policies and actual rows/startup/withdrawal/joined/EOF facts;
+it does not synthesize native outcomes or certify authentication. Existing
+factory/poll/disposal acquisition semantics are shared with inbound Export.
+The private native Session/Querier and callback loops never become actor effects
+or user Work. The one-shot public read uses ActorExt's existing deadline policy;
+the native query deadline is not a global actor termination policy.
+
 The optional futures-util dependency remains behind remote with explicit std
 and defaults disabled; it supplies the existing collection/shared-future
 facilities. Count limits do not prove peak memory or callback allocation bounds.
-Full SDK privacy, nonprovider unwind cleanup, outbound Actions, the ordinary
-remote application and complete resource/security gates remain unaccepted.
+Full SDK privacy/authentication, general cancellation/unwind and pressure/retry,
+the ordinary remote-counter application and complete resource/security gates
+remain unaccepted. Local outgoing read/provider/count controls establish only
+their recorded slice; new-head CI/review and main delivery remain separate.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The

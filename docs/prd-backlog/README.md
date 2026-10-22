@@ -103,10 +103,14 @@ Behavior lanes and other runtime capabilities are outside that denominator.
 
 EXEC delivered caller-host async execution and configured Builder-only owned
 blocking over one paired execution/result owner. Its accepted gates,
-verification and actual PR326 merge are recorded in the EXEC PRD. There is no standard
-integrated Zenoh, verified remote identity, distributed placement or
-Mnesis-backed actor execution path in this checkout. Neighboring repositories
-contain useful code; they are not interchangeable with a working integration.
+verification and actual PR326 merge are recorded in the EXEC PRD. The optional
+`remote` feature now supplies Node-owned Zenoh sessions and cold inbound Export
+composition. The current outbound Client slice interprets typed actor requests
+through the same Node lifecycle; its local evidence and delivery state belong
+to the static remote actor PRD. The ordinary two-process remote-counter and
+full remote acceptance remain incomplete. Production identity, distributed
+placement and Mnesis-backed execution retain their separate backlog scopes;
+neighboring source is not evidence of a completed integration here.
 
 ## Candidate PRDs and dependency order
 

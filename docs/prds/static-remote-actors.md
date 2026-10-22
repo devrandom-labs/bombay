@@ -41793,3 +41793,73 @@ source, original static diagnostics, compared mutants and raw paired receipts,
 reviews/records/locks. Mutants are comparison artifacts only. It certifies no
 new-head Nix/CI, executable/compiler closure, full acceptance or merge; its
 record snapshots precede this pointer and the separate documentation stage.
+
+### Public guidance reconciliation after count qualification
+
+Named-input capability is committed locally as66fa106a following the retained
+source/negative/restored/final-check evidence above. The separate documentation
+stage repairs the actual PR-readiness gap before submission: current user/API/
+module/capability guides must describe the one Node-owned outbound path, while
+the ordinary two-process remote-counter and full acceptance remain pending.
+Also repair the backlog overview's stale absence claim, the status index's
+pre-Client next-step text, one-shot receive guidance and obsolete onboarding.
+Expected source edit is documentation only in application/interface.rs:
+production+4/-2/net2 comment lines, public types+0/-0, tests+0/-0. Existing
+private prefix regression and locked Communication0.1.6 establish why a caller
+must stop after terminal None; no fused state/latch or runtime change is added.
+
+Expected paths are that interface, docs/user-facing-api.md, public-api-audit.md,
+module-boundaries.md, runtime-capability-interfaces.md, prd-backlog/README.md,
+both feature/status records and the three .obvious onboarding files. Outside
+EOF patchc5ed483d and onboarding patch17b440a7 pass two source/scope reviews
+(76a86732). They reuse AGENTS, Cargo.lock, rust-toolchain.toml, flake.lock and
+the actual PRD workflow as authorities, deleting stale copied versions, a
+missing ledger link and current-looking historical setup/check-count claims.
+Earlier sandbox evidence remains in Git. No environment, dependency, command
+runner or setup policy changes. Four-guide proposal remains under review.
+Run pinned formatting/rustdoc/strict checks plus affected public compiler
+fixtures; new-head Nix/CI/review/delivery still require actual execution.
+
+The four-guide patchf8e8c250 is reviewed against actual Client0f3, Node and
+the external consumers; author review9fa0db60 records both passes. Expected
+documentation delta+155/-44/net111, no Rust/API change. Root additionally
+qualifies the API table's opaque native error handoff as exposing no public
+SDK TYPE, rather than claiming no underlying SDK owner can survive through
+standard Error. The actual cause and charge remain owned as required. The
+constructor text example is a syntax guide, not a newly compiled example or
+two-process witness. Full privacy/auth/resource/cancellation and delivery
+limits remain explicit. Apply this coherent current-guidance update before
+the focused PR; historical PRD receipts retain their original source labels.
+
+Mounted guidance passes the affected public compiler targets: actor_interface5,
+node_borrowing1 and remote_surface2, all8 pass/no filters (e924fb69); nested UI
+cases are separate and not double-counted. Final pinned formatting passes,
+strict workspace/all-feature/all-target Clippy passes15.53s (1f3a50d9), and
+remote rustdoc passes2.09s (81fcc0e7). No diagnostic fixture required alteration.
+Independent mounted review confirms three guides byte-match their proposal,
+the API guide differs only by the SDK TYPE qualification, EOF/onboarding match
+their reviewed patches, and README/status retain pending full acceptance.
+Client0f3/testsc8 are unchanged; the sole Rust delta is the recorded doc comment.
+The four-guide PR-readiness gap is resolved. This11-path documentation stage
+has production+4/-2/net2, tests+0/-0 and public types+0/-0. Complete branch
+delta against current main3625 is production+1413/-76/net1337;
+tests+2491/-46/net2445; public types+4/-0;30 paths including records.
+All tracked/untracked paths are included; historical authored costs remain.
+Fresh fetch still selects main3625. No new-head Nix/CI, PR or merged delivery
+is claimed; the next action is the focused PR and its actual required gates.
+
+The closed mounted-guidance independent seal is
+`/tmp/bombay-outbound-client-comparison/outbound-mounted-guidance-independent.md`,
+SHA256 `e119611bec5b959c7f2d526ddcf4b109f0fc650bda85e478e7893f465e0e38b0`.
+Both review passes bind the actual mounted source and final receipt hashes.
+It resolves the scoped guidance gap and permits PR preparation; it does not
+certify new-head CI, a GitHub review submission, merged delivery or full PRD
+acceptance. Subsequent record appendices have their own byte epochs.
+
+Durable documentation-stage archive `outbound-guidance-qualified-20261022.tar.gz`
+in the same common-Git archive directory has SHA256
+`d1b0f0245a6fdfde475904d68fa054e93b70786dbfa9d0e68cb327dc96ee8ae4`.
+It retains the complete eleven-path patch against66fa106a, mounted review and
+raw focused compiler/format/lint/rustdoc receipts. Its record snapshot precedes
+this archive pointer. It does not replace the separately archived501/profile
+source and inverse evidence or add fresh CI/delivery evidence.
