@@ -1,7 +1,7 @@
 # Static remote actor acceptance
 
 The dated prerequisite checkpoints below are historical evidence at their
-stated revisions. The [current feature status](../static-remote-actors.md#current-status-2026-10-21-utc)
+stated revisions. The [current feature status](../static-remote-actors.md#current-status-2026-10-23-utc)
 owns current dependency, implementation and verification facts. All full
 acceptance rows remain open; historical failures and passing runs keep their
 original source scope.

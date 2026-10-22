@@ -1,6 +1,6 @@
 # Static remote actors and typed admission
 
-## Current status (2026-10-22 UTC)
+## Current status (2026-10-23 UTC)
 
 Latest user direction: “there is no budget.” The user explicitly preapproves
 implementation changes and removes all production/test line, path and public
@@ -14,8 +14,8 @@ Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 e1eab601. The repository owner marked it ready and merged it; no GitHub review
 submission is recorded. Independent source/results reviews remain in the
 feature evidence. Main is fetched and integrated; its tree equals e1eab601.
-Continuing work is submitted as PR388 from feat/remote-client, with the
-outbound implementation committed and pushed. PR387 delivers the scoped cold Export/resource changes,
+PR388 also merged, delivering the outbound Client as recorded below.
+PR387 delivers the scoped cold Export/resource changes,
 not the complete R01–R25/AUTH1/NET1 PRD.
 
 PR387's TLS advisory blocker is corrected in d9a5a092: both existing locks now
@@ -23,8 +23,8 @@ select rustls-webpki0.103.16 and webpki-roots1.0.10. Fresh Deny CI passes.
 Four real TLS request controls and three isolated native custody controls
 pass in each profile. No SDK
 version, feature, manifest, application policy or exemption changes. All required
-CI checks pass on exact d9a5a092. The subsequent outbound slice is submitted
-separately in PR388; its CI and merge remain pending.
+CI checks pass on exact d9a5a092. The subsequent outbound slice is delivered
+separately in PR388.
 
 The subsequent borrowed-ingress correction adds12 production lines, using
 existing refusal/disposal owners before either oversized contiguous copy.
@@ -42,9 +42,12 @@ The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
 serving is merged. Public Client's first verified slice is committed as
 f863b7cd and executes a real external read through the existing Node lifecycle.
 Named limits and their controls are committed as66fa106a, followed by current
-guidance in fa6717f3. All are pushed and submitted in
-[PR388](https://github.com/devrandom-labs/bombay/pull/388). Its five visible CI
-jobs are running; no new-head CI success or merged delivery is claimed.
+guidance in fa6717f3. [PR388](https://github.com/devrandom-labs/bombay/pull/388)
+merged2026-10-22T21:05:52Z as8557f0d80bae833e2484988749aed4d29d53842c.
+All six checks passed on exact8157bba1, including Nix Flake Check and both
+native TLS profiles. Its merge tree equals that verified head. Independent
+source/results review is recorded; no GitHub approval submission is claimed.
+Main is fetched and integrated into the coverage retirement branch.
 Three public Ready/disposal provider
 cases and native response handoff pass in both profiles; the deliberate
 early-release inverse rejects its defect in both profiles. Temporary mounts are
@@ -56,8 +59,9 @@ tests across12 remote targets in EACH debug and optimized profile, with no
 failed, ignored or filtered tests. Formatting and remote rustdoc also pass.
 The separate remote-counter application
 and complete ordinary outbound acceptance remain product development. Full security/resource
-acceptance, three repository scans, distillation, CI/review and main delivery
-remain open. The twenty-five full acceptance rows are not closed by prerequisites.
+acceptance, the final repository scan, distillation, and delivery of the
+remaining slices stay open. The twenty-five full acceptance rows are not closed
+by prerequisites.
 The final named-limit matrix passes501 tests/profile across the same12 targets;
 three independent count substitutions fail their intended laws in both profiles,
 followed by exact source restoration and passing owning controls. The reconciled
@@ -42209,3 +42213,15 @@ UNCOMPILED and UNSELECTED. Member reads verify the restored deploymentc18c2fd1
 and count correction. Records precede this archive pointer. This is scoped
 comparison evidence, not a complete build closure or full remote acceptance.
 Checkpoint delta: one PRD path; production/tests/public API+0/-0.
+### Coverage retirement submission and merged Client guidance
+
+Integrated main8557f0d8 into chore/owner-coverage without changing the qualified
+flake or Rust sources. PR388 merged2026-10-22T21:05:52Z after all six checks
+passed on8157bba1; its tree equals the verified head. Reconciled six existing
+current guides and repaired the acceptance page's current-status link. Earlier
+dated submission/build records retain their historical scope. Full remote
+acceptance remains active. Coverage source and actual Nix evidence are unchanged;
+fresh pinned nixfmt-check and git diff-check pass. Complete submission delta:
+nine paths, Rust production/tests/public types+0/-0; verification machinery
++47/-56/net-9. The extra paths contain delivery prose/link corrections only.
+Independent submission review and exact new-head CI remain required.
