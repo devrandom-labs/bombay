@@ -436,6 +436,18 @@ where
                         retain_diagnostic(&self.ingress, self.inputs.1.diagnostics.get(), ExportError::RetentionCapacity);
                         continue;
                     }
+                    let refusal = if query.payload().is_some_and(|bytes| bytes.len() > self.inputs.2.input_bytes.get()) {
+                        Some(json::Error::InputBytes)
+                    } else if query.attachment().is_some_and(|bytes| bytes.len() > self.inputs.2.proof_bytes.get()) {
+                        Some(json::Error::ProofBytes)
+                    } else {
+                        None
+                    };
+                    if let Some(cause) = refusal {
+                        discard_query(Some((query, permit)));
+                        retain_diagnostic(&self.ingress, self.inputs.1.diagnostics.get(), ExportError::Json { cause });
+                        continue;
+                    }
                     let raw = query.payload()
                         .map(|bytes| bytes.to_bytes().into_owned().into_boxed_slice())
                         .unwrap_or_default();

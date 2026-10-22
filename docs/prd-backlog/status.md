@@ -6,11 +6,22 @@ budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
 
-PR387 currently fails Deny on rustls-webpki0.103.15/RUSTSEC-2026-0382 and
-webpki-roots1.0.9/RUSTSEC-2026-0381. The pre-recorded isolated correction updates
-only their patch records in both existing TLS lockfiles, then verifies locked
-integration and new-head CI. Outbound implementation remains pending; this
-dependency correction closes no full remote acceptance row.
+PR387's TLS advisory correction d9a5a092 selects rustls-webpki0.103.16 and
+webpki-roots1.0.10 in both existing locks, with fresh Deny CI passing. Four real
+TLS request cases and three isolated native custody cases pass in each profile.
+All required CI checks pass on that exact pushed head. Outbound implementation
+remains pending; this dependency correction closes no full remote acceptance row.
+
+The next resource correction rejects oversized borrowed payload/proof lengths
+before materializing either. Separate payload/proof copy inversions each fail
+only their intended largest-allocation oracle in debug and optimized execution;
+the other two cases pass. The independent measurement control also rejects
+recording an old realloc size as the new request. All healthy owners are restored;
+final whole-library debug/optimized each pass416/416, with strict workspace
+all-feature/all-target lint and formatting passing. Fresh exact-head CI remains
+pending for this resource correction.
+These narrow results do not close aggregate resource, missing-proof, outbound
+or full remote acceptance requirements.
 
 Current remote expiry comparison: committed d4d69e63 proves two first-attempt
 permission-expiry defects in both profiles. The committed0852abcd borrowed native

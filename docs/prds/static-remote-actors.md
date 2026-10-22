@@ -1,6 +1,6 @@
 # Static remote actors and typed admission
 
-## Current status (2026-10-21 UTC)
+## Current status (2026-10-22 UTC)
 
 Latest user direction: “there is no budget.” The user explicitly preapproves
 implementation changes and removes all production/test line, path and public
@@ -9,11 +9,23 @@ again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
 
-Current CI blocker: PR387's Deny job rejects two newly reported TLS advisories.
-The next isolated stage updates rustls-webpki0.103.15 to0.103.16 and
-webpki-roots1.0.9 to1.0.10 in the root and transport-custody Cargo.lock files.
-It changes no SDK version, feature, manifest, application policy or exemption.
-Outbound production implementation follows this dependency correction.
+PR387's TLS advisory blocker is corrected in d9a5a092: both existing locks now
+select rustls-webpki0.103.16 and webpki-roots1.0.10. Fresh Deny CI passes.
+Four real TLS request controls and three isolated native custody controls
+pass in each profile. No SDK
+version, feature, manifest, application policy or exemption changes. All required
+CI checks pass on exact d9a5a092. The ordinary outbound product remains pending.
+
+The subsequent borrowed-ingress correction adds12 production lines, using
+existing refusal/disposal owners before either oversized contiguous copy.
+Independent payload/proof inversions reject each defect in both profiles.
+Final current-source debug and optimized each pass416/416, with no ignored or
+filtered tests; strict workspace/all-feature/all-target Clippy and formatting
+checks pass. Fresh CI for this resource correction remains pending.
+Its complete source delta is production+12/-0/net12, tests+508/-20/net488,
+public types+0/-0, three Rust paths and these two existing records. No untracked
+repository paths exist. This growth supplies a missing resource law; it is not
+production reduction or full R02/R14 acceptance.
 
 The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
 serving is implemented; ordinary Node-owned outbound requests and the separate
@@ -40926,6 +40938,29 @@ verification and next independently scoped stages explicit. No untracked
 repository file or temporary inverse is present. Native fixture and required
 new-head CI remain delivery gates, not inferred successes.
 
+Final narrow qualification: isolated native controls pass3/0 in both profiles,
+66 filtered,0.02/0.01s. Commands use the existing isolated manifest, locked
+protected-transport feature, test protected_counter, filter remote_counter::native_,
+test-threads1, with and without --release, through pinned Nix. Receipts are
+/tmp/bombay-tls-native-{debug,release}.{log,exit}, both0. Supplemental root
+`cargo metadata --locked --features bombay-rs/remote --format-version 1` exits0
+and includes both patched TLS records; the earlier default root metadata did
+not select them. Fresh Deny run39693824144/job119546254210 passes advisories,
+bans, licenses and sources at exact d9a5a092. Full CI39693824236 is running.
+Independent actual-outcome/counterexample review:
+/tmp/bombay-prd-resumption/pr387-deny/tls-outcomes-independent.md,
+SHA2566f2e4123c84d18013a914f8c392fbcf81b7f9cf595bf1e9bbcd4701789613f2b.
+The earlier pending statements above describe their earlier checkpoints. No
+full feature row, merged delivery or full local Nix pass follows this correction.
+
+Durable narrow evidence archive:
+/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/tls-advisory-patch-20261022.tar.gz,
+SHA2569d5f301a508cc063340c3c72ab852fdbc9c9bde73f752f9bc078b1d5a004dc43.
+It retains update/metadata/format/test receipts, failed and patched Deny logs,
+primary package/upstream evidence and independent reviews. Source is Git
+d9a5a092 plus the two explicit lock hashes above; it does not freeze the entire
+compiler/dependency closure or turn earlier Nix results into current acceptance.
+
 ### Outbound consumer comparison — next stage, no production edit yet
 
 The existing private live-read test proves an actor's Actions can reach an
@@ -40980,3 +41015,117 @@ PRD/backlog; no new public type or interface. No production edit until the TLS
 stage qualifies and the actual original-source allocation regression fails.
 The claim is limited to preventing Bombay's oversized materialization, not
 bounding prior SDK reception, fragment traversal, parser or provider heaps.
+
+Original ingress regression, first actual profile: final test source
+de9b3169e36d5f478848c9b83da34acf297151959c03db0c6970b2b5a09ac817,
+production query938a2342 unchanged. Pinned
+`cargo test --locked -p bombay-rs --all-features --lib fragmented_ -- --test-threads=1`
+executes exactly3 cases: legal control passes; input/proof cases fail only the
+resource assertion1759, observing8/9 allocation calls versus0. All preceding
+actual native/callback EOF, count restoration, root/native/two publications,
+Session cleanup, independent Counter0 and provider/admission0 checks execute.
+Later new diagnostic-location checks are unexecuted negative evidence. Actual
+exit101,0.06s; raw/tmp/bombay-ingress-bytes-original-qualified-debug.{log,exit}.
+The optimized original replay is running. Two preceding E0284 compiler vetoes
+were test-call setup: qualify existing declare/serve with their exact private
+Exports<Counter,Event,(),EstablishedRecipient<Counter>> contract, as existing
+comparison tests do. They establish no failing runtime law or API change.
+
+Ordinary outbound comparison: cold generic constructor/extraction definitions
+compile0. Actual external actor/current receiver control compiles0 and runs1/0,
+0.02s. The desired outgoing consumer then fails only E0432 for the absent
+Client hypothesis; this establishes missing ownership, not a required named
+type. Source df240babbff2c6d1fbdd39c5160624aef0db7e75bfdfbdf8565a7193998d6cc5
+under/tmp/bombay-outbound-client-comparison. Initial manual-rustc integration
+environment omission and an unnecessary Metadata.clone were corrected outside
+the repository; their earlier logs remain setup epochs. The cold named versus
+opaque comparison has not yet established real-policy inference or runtime
+capability. Total standard Into remains eligible: Node's existing stored-close
+guard may already prevent active extraction, so no artificial Client refusal
+or extra public wrapper is justified. All terminal/provider/callback laws and
+the actual forwarding inverse still require owning implementation and execution.
+
+Optimized original replay completes101: same legal1pass and only the two
+allocation failures, after the same independent cleanup/zero-effect facts.
+The correction now proceeds in existing query.rs serving: borrowed payload
+length first, proof length second, prior to either copy; retain the existing
+typed Json cause in bounded diagnostics and use existing Query-before-permit
+disposal. Expected production addition15–25 lines, no deletion or new public
+type; tests remain in their owning existing module. Correct the two reviewed
+legal-branch expected-value constructions by binding them outside assertions
+before final test qualification. Final positives must pass both profiles; the
+copy-before-rejection inverse must retain corrected refusal behavior while
+failing only the resource oracle. No aggregate/native-buffer/peak-heap claim.
+
+Oracle correction (2026-10-22 UTC): the zero-count hypothesis is falsified:
+the fixed path still observes4 calls. Independent bare native-disposal controls
+also vary with first use and do not match serving-poll overhead; their equality
+comparisons fail2-versus3 and2-versus1. Do not tune an allowed count or retain
+those controls as proof. Retain their raw failed epochs, but replace this oracle.
+The existing actor_execution test allocator already observes every requested
+Layout on this thread. Extend that owner only to retain the largest successful
+requested size, preserving existing count APIs, overflow, nesting and panic
+release. Compare existing DHAT and alloc_count first: DHAT would replace the
+global allocator and include native-worker noise; alloc_count is isolated-only
+and reports aggregates, not this largest-layout fact. No dependency, tool,
+production hook or second allocator is needed.
+
+Expected additional test owner actor_execution.rs, approximately40–80 changed
+test lines and one independent reservation control; production0/public types0
+for instrumentation. Export tests use independently oversized64KiB fragmented
+payload/proof, prepared before measurement; largest requested allocation must
+remain below that actual oversized buffer length. Exact-bound legal input still
+executes the real actor. Separate single-buffer payload/proof copy inverses
+must fail, despite identical corrected refusals and cleanup. This detects the
+selected contiguous materialization, not arbitrary chunked copies, total/peak
+memory or prior SDK buffering. Primary source/callsite comparison:
+/tmp/bombay-prd-resumption/pr387-deny/ingress-size-oracle-review.md,
+SHA2563abe8239c4cda32bc8a5eca58eae692e531f5812d0ff68f1739c0ad9978983f7.
+
+The final largest-layout oracle passes all416 library tests in debug and all3
+fragmented cases optimized. Separate original payload and proof relocations
+each fail only the intended size assertion in both profiles:65536 requested
+bytes versus65536 original bytes; the other two controls pass. Independent
+review761c4f79c43bba13e677657e52c2c154da6376306eb970130e21459c6f1e6d94
+reads all four terminal receipts and distinguishes preceding cleanup/effect
+observations from subsequent, unexecuted diagnostic assertions. Healthy query
+70de1fd49a621831a020ab139f15127965db03091f94634d441f0b823db100e6 is restored.
+
+Instrumentation falsifier before final qualification: change only successful
+realloc recording from its requested new size to its old Layout size. The
+existing reservation control must reject that incorrect largest-size fact;
+restore allocator7aa440891d94c0ede29bc513065e77796a10f6dd7281e313777712e90ff65a96
+before final whole-library debug/optimized execution, strict lint and formatting.
+This is test-owner qualification, not another production law or allocation
+framework. Full CI on pushed d9a5a092 passes; it does not qualify this later
+uncommitted resource correction.
+
+Final healthy85decf90 test epoch executes416/416 in debug7.12s and optimized
+5.79s, identical unique inventories including the four new controls. Strict
+workspace/all-feature/all-target Clippy then rejects only single_match_else in
+the new test; formatting passes. Replace only that outer Option match with
+if-let/else, preserving branch contents and order. The corrected test source
+is36f6177fcdaf899473c2890309e146516ed2eac7f7b388a8b6c60c7730f43cdc;
+strict Clippy now passes14.41s. Final current-source executions use separate
+idiomatic-library debug/optimized receipts; earlier passes are not silently
+relabeled. Production70de and test allocator7aa remain unchanged.
+
+Current36f6177f qualification completes: debug416/0 in11.15s, optimized416/0 in
+9.47s, identical416 unique passing names and no ignored/filtered cases. Strict
+workspace/all-feature/all-target Clippy exits0 in14.41s; final fmt --check exits0.
+The independent source comparison85ecb1fee04bac4c4a5dae72f21ec74b7be287805d5592c9dff0e1243a3b09f5
+proves the complete pre-branch prefix byte-identical and both branch contents
+and operation order unchanged by the lint correction. Earlier exact inversions
+retain their narrow sensitivity. Final tracked/untracked census: production
++12/-0/net12; tests+508/-20/net488; public API+0/-0 types; five existing changed
+paths, no untracked files. Only the query's12 lines are production; the existing
+test allocator's production prefix is unchanged. Full PRD acceptance and
+distillation remain open.
+
+Final independent actual-results review335b3b626d54a388a688ad3f2e58ed9eac7ad3e68b703862daa26cb8b5c0bd03
+accepts that exact current source and command scope. Durable source/patch/raw
+receipts/reviews archive:
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/ingress-borrowed-limits-20261022.tar.gz`,
+SHA256752512051d3f05f15c8e2b124c7b18be427563817561f631e33ff49b46fed5ae.
+Its PRD/status snapshots precede only this archive-pointer paragraph; it is not
+a frozen compiler closure or proof of CI/main delivery.

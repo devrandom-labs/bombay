@@ -1,7 +1,9 @@
 use super::declaration::{Commands, Delivery, Reception, reply, submission};
 use super::query::Exports;
-use super::{Attempt, Export, ExportLimits, RequestKey};
+use super::{Attempt, Export, ExportError, ExportLimits, RequestKey};
+use crate::actor_execution::tests::allocation_sizes_during;
 use crate::actors::ActorExt;
+use crate::remote::json;
 use crate::{
     ActorFailureAssessment, Application, ApplicationHandle, Completion, MailAddr, MailboxCapacity,
     RetirementAssessment, TrySendError,
@@ -22,9 +24,10 @@ use std::task::Wake;
 use std::time::{Duration, Instant};
 use thiserror::Error;
 use tokio::runtime::Builder;
-use tokio::sync::oneshot;
+use tokio::sync::{mpsc as query_ingress, oneshot};
 use tokio::time::timeout;
 use zenoh::Session;
+use zenoh::bytes::ZBytes;
 use zenoh::query::{ConsolidationMode, Reply as QueryReply};
 use zenoh::sample::Locality;
 
@@ -1435,4 +1438,439 @@ fn retired_ledger_retry_keeps_the_original_full_append() {
             .await
             .expect("the original Full-to-Closed trace and cleanup terminate");
         });
+}
+#[test]
+fn fragmented_input_is_refused_before_materialization() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            timeout(
+                Duration::from_secs(40),
+                fragmented_ingress(Some(json::Error::InputBytes)),
+            )
+            .await
+            .expect("fragmented input refusal and original cleanup finish");
+        });
+}
+
+#[test]
+fn fragmented_proof_is_refused_before_materialization() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            timeout(
+                Duration::from_secs(40),
+                fragmented_ingress(Some(json::Error::ProofBytes)),
+            )
+            .await
+            .expect("fragmented proof refusal and original cleanup finish");
+        });
+}
+
+#[test]
+fn legal_fragmented_request_reaches_its_actual_actor() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            timeout(Duration::from_secs(40), fragmented_ingress(None))
+                .await
+                .expect("legal fragmented request and original cleanup finish");
+        });
+}
+
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    reason = "one native ingress trace retains original fragments, measured serving poll, typed refusals, actor results and complete cleanup"
+)]
+async fn fragmented_ingress(refusal: Option<json::Error>) {
+    // This trace checks input carriage. Its deterministic reply protection
+    // proves exact policy output, not authenticated reply acceptance.
+    let network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    let session = zenoh::open(network.to_configuration().unwrap())
+        .await
+        .expect("the actual private native Session opens");
+    let verified = Cell::new(0);
+    let decoded = Cell::new(0);
+    let constructed = Cell::new(0);
+    let encoded = Cell::new(0);
+    let protected = Cell::new(0);
+    let authorized = Cell::new(0);
+    let originals = RefCell::new(Vec::new());
+    let outcome = Application::new(Counter::new().stop_on_shutdown())
+        .run_with(|application| {
+            let session = &session;
+            let refusal = &refusal;
+            let verified = &verified;
+            let decoded = &decoded;
+            let constructed = &constructed;
+            let encoded = &encoded;
+            let protected = &protected;
+            let authorized = &authorized;
+            let originals = &originals;
+            async move {
+                let target = application.root().established_recipient();
+                let origin = application.actor_address(&target).unwrap();
+                let runtime = session.zid().to_string();
+                let mut claims = metadata(ProviderProfile::Recorded, "counter", runtime.clone(), runtime.clone());
+                claims.actor_generation = origin.0;
+                let binding = Binding {
+                    deployment: "two-node-read-study", caller: "caller", controller: "owner",
+                    actor: "counter", host: "receiver", protocol: "counter",
+                    target_assignment: "one-live-counter", logical_session: 367,
+                };
+                let records = [ProtectedMessage {
+                    protected: serde_json::to_vec(&ReadRequestRef {
+                        bombay: &claims, kind: Purpose::Request, operation: Command::Increment,
+                    }).unwrap().into_boxed_slice(),
+                    proof: Box::from([7_u8, 11]),
+                }];
+                let mut bounds = limits();
+                bounds.input_bytes = NonZeroUsize::new(records[0].protected.len()).unwrap();
+                bounds.proof_bytes = NonZeroUsize::new(records[0].proof.len()).unwrap();
+                let mut raw = records[0].protected.to_vec();
+                let mut evidence = records[0].proof.to_vec();
+                let path = match refusal {
+                    Some(json::Error::InputBytes) => { raw.resize(65_536, b' '); "bombay/ingress/input" }
+                    Some(json::Error::ProofBytes) => { evidence.resize(65_536, 13); "bombay/ingress/proof" }
+                    None => "bombay/ingress/legal",
+                    Some(_) => panic!("only the two selected byte refusals are configured"),
+                };
+                let mut payload = ZBytes::writer();
+                let middle = raw.len() / 2;
+                payload.append(ZBytes::from(raw[..middle].to_vec()));
+                payload.append(ZBytes::from(raw[middle..].to_vec()));
+                let mut attachment = ZBytes::writer();
+                attachment.append(ZBytes::from(evidence[..1].to_vec()));
+                attachment.append(ZBytes::from(evidence[1..].to_vec()));
+                let maximum = NonZeroUsize::new(2).unwrap();
+                let deadline = Instant::now() + Duration::from_secs(30);
+                let current = |receipt: &recorded::Receipt<Command>, runtime: &str, actor: MailAddr| {
+                    authorized.set(authorized.get() + 1);
+                    let scope = recorded::projection(receipt);
+                    if scope.bombay.runtime_generation.as_ref() != runtime
+                        || scope.bombay.actor_generation != actor.0
+                        || recorded::identity(receipt).0 != &binding
+                    { return Err(VerificationError::Invalid); }
+                    current_scope(scope, &claims, &scope.operation, Purpose::Request, deadline)
+                };
+                let mut export = Export::new(
+                    path, ExportLimits {
+                        queued_queries: maximum, retained_queries: maximum,
+                        retained_requests: maximum, diagnostics: maximum,
+                    }, bounds,
+                    |bytes: &[u8]| {
+                        decoded.set(decoded.get() + 1);
+                        serde_json::from_slice::<ReadRequest<Command>>(bytes)
+                    },
+                    reply(
+                        |request: ReadRequest<Command>| match request.operation {
+                            Command::Increment => Ok(move |reply_to| {
+                                constructed.set(constructed.get() + 1);
+                                CounterMessage::IncrementAndReply {
+                                    request_sequence: request.bombay.request_sequence, reply_to,
+                                }
+                            }),
+                            Command::Read => Err(request),
+                        },
+                        |_: &recorded::Receipt<Command>, original: &User<MailAddr, CounterIncremented>| {
+                            encoded.set(encoded.get() + 1);
+                            Ok::<_, Never>(original.message.request_sequence.to_ne_bytes().to_vec().into_boxed_slice())
+                        },
+                    ),
+                    async |bytes: &[u8], proof: &[u8]| {
+                        verified.set(verified.get() + 1);
+                        let original = ProtectedMessage { protected: bytes.into(), proof: proof.into() };
+                        let result = recorded::verify::<Command>(&original, &records, binding).await;
+                        if let Ok(receipt) = &result {
+                            originals.borrow_mut().push(request_originals(bytes, proof, receipt));
+                        }
+                        result
+                    },
+                    async |_: &[u8], _: &recorded::Receipt<Command>| {
+                        protected.set(protected.get() + 1);
+                        Ok::<_, Never>(Box::<[u8]>::from([13_u8, 17]))
+                    },
+                    |left, right| recorded::identity(left) == recorded::identity(right),
+                    &current, &current,
+                );
+                let controls = export.preflight(&application, &target, &mut Vec::new())
+                    .unwrap_or_else(|()| panic!("the real Counter owns the export"));
+                <_ as Exports<Counter, Event, (), EstablishedRecipient<Counter>>>::declare(&mut export, session).await
+                    .unwrap_or_else(|()| panic!("the real native declaration opens"));
+                let (mut callback_queries, issuer) = export.active.take()
+                    .expect("the production callback owns its counted receiver");
+                let capacity = issuer.upgrade().expect("the live callback retains its count owner");
+                let receiving = session.get(path).allowed_destination(Locality::SessionLocal)
+                    .consolidation(ConsolidationMode::None).timeout(Duration::from_secs(5))
+                    .payload(payload.finish()).attachment(attachment.finish()).await
+                    .expect("the actual fragmented Query starts");
+                let original = callback_queries.recv().await
+                    .expect("the production callback transfers the exact original and permit");
+                let native_payload = original.0.payload().expect("the actual payload remains present");
+                let native_proof = original.0.attachment().expect("the actual proof remains present");
+                let fragments = (native_payload.slices().count(), native_proof.slices().count());
+                let lengths = (native_payload.len(), native_proof.len());
+                let charged = capacity.available_permits();
+                let (queries, incoming) = query_ingress::channel(maximum.get());
+                export.active = Some((incoming, issuer));
+                export.ingress.lock().unwrap().reserve_exact(maximum.get());
+                let (joined, joining) = oneshot::channel::<()>();
+                let (waiting, transfer, queued, dequeued, observed, allocations, replies, eof, disconnected, joined) = {
+                    let serving = <_ as Exports<Counter, Event, (), EstablishedRecipient<Counter>>>::serve(&mut export, controls, runtime, joining.shared());
+                    let mut serving = pin!(serving);
+                    let waiting = poll_fn(|cx| Poll::Ready(serving.as_mut().poll(cx))).await;
+                    let transfer = queries.try_send(original);
+                    let queued = queries.capacity();
+                    let (observed, allocations) = poll_fn(|cx| {
+                        let mut observed = None;
+                        let allocations = allocation_sizes_during(|| {
+                            observed = Some(serving.as_mut().poll(cx));
+                        });
+                        Poll::Ready((observed.expect("the actual serving poll returns"), allocations))
+                    }).await;
+                    let dequeued = queries.capacity();
+                    let mut replies = Vec::new();
+                    let eof = loop {
+                        tokio::select! {
+                            biased;
+                            reply = receiving.recv_async() => match reply {
+                                Ok(reply) => replies.push(reply),
+                                Err(cause) => break cause,
+                            },
+                            () = serving.as_mut() => panic!("the serving owner precedes its explicit join"),
+                        }
+                    };
+                    let disconnected = receiving.is_disconnected();
+                    let joined = joined.send(());
+                    serving.await;
+                    (waiting, transfer, queued, dequeued, observed, allocations, replies, eof, disconnected, joined)
+                };
+                drop(queries);
+                let callback_eof = callback_queries.recv().await;
+                let released = capacity.available_permits();
+                let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+                let requests = requests.into_iter().map(|request| request.try_into_parts()
+                    .unwrap_or_else(|_| panic!("joined serving releases every producer loan")))
+                    .collect::<Vec<_>>();
+                let mut ordinary = application.client::<CounterValue>().unwrap();
+                let admitted = ordinary.send(CounterMessage::Read(ordinary.recipient())).await;
+                let fence = if admitted.is_ok() { ordinary.receive().await } else { None };
+                let shutdown = application.shutdown();
+                (
+                    origin, records, raw, evidence, fragments, lengths, bounds, maximum,
+                    charged, waiting, transfer, queued, dequeued, observed, allocations, replies, eof, disconnected, joined,
+                    callback_eof, released, startup, withdrawal, diagnostics, requests,
+                    admitted, fence, ordinary, shutdown,
+                )
+            }
+        }).await.unwrap_or_else(|_| panic!("the actual Counter Application starts"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let (
+        (
+            origin,
+            records,
+            raw,
+            evidence,
+            fragments,
+            lengths,
+            bounds,
+            maximum,
+            charged,
+            waiting,
+            transfer,
+            queued,
+            dequeued,
+            observed,
+            allocations,
+            replies,
+            eof,
+            disconnected,
+            joined,
+            callback_eof,
+            released,
+            startup,
+            withdrawal,
+            diagnostics,
+            requests,
+            admitted,
+            fence,
+            mut ordinary,
+            shutdown,
+        ),
+        cleanup,
+    ) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the original work outcome survives complete cleanup"));
+    let closed = session.close().await;
+    ordinary.close_admission();
+    let mut ordinary_tail = Vec::new();
+    while let Some(original) = ordinary.receive().await {
+        ordinary_tail.push(original);
+    }
+    let (root_origin, root) = native.expect("the original native Counter retirement remains");
+    let root_address = root_origin.address();
+    let _counter = completed_actor(root_origin, root);
+    let report = report.expect("the actual root report remains independent");
+    let notifications = notifications.expect("both actual notification receipts remain");
+    let originals = originals.into_inner();
+    let (allocation_count, largest_allocation) = allocations;
+    let eof_text = eof.to_string();
+    assert!(cleanup.is_ok() && closed.is_ok() && shutdown.is_ok() && session.is_closed());
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    assert_eq!(root_address, origin);
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert_eq!(fragments, (2, 2));
+    assert_eq!(lengths, (raw.len(), evidence.len()));
+    assert_eq!(charged, maximum.get() - 1);
+    assert_eq!(released, maximum.get());
+    assert_eq!((queued, dequeued), (maximum.get() - 1, maximum.get()));
+    assert!(matches!(waiting, Poll::Pending) && matches!(observed, Poll::Pending));
+    assert!(transfer.is_ok() && joined.is_ok() && callback_eof.is_none());
+    assert!(disconnected);
+    assert_eq!(eof_text, "receiving on a closed channel");
+    assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+    assert!(admitted.is_ok() && ordinary_tail.is_empty());
+    let fence = fence.expect("the independent Counter Read acquired its actual state");
+    assert_eq!(fence.from, origin);
+    if let Some(expected) = refusal {
+        assert_eq!(fence.message, 0);
+        assert_eq!(
+            (
+                verified.get(),
+                decoded.get(),
+                constructed.get(),
+                encoded.get(),
+                protected.get(),
+                authorized.get()
+            ),
+            (0, 0, 0, 0, 0, 0)
+        );
+        assert!(replies.is_empty() && originals.is_empty());
+        let oversized_length = match &expected {
+            json::Error::InputBytes => lengths.0,
+            json::Error::ProofBytes => lengths.1,
+            _ => panic!("only the configured byte refusals reach this assertion"),
+        };
+        // Native cleanup may allocate; a contiguous oversized copy may not.
+        assert!(
+            largest_allocation < oversized_length,
+            "oversized native length {oversized_length}, largest allocation {largest_allocation}"
+        );
+        assert!(requests.is_empty());
+        let [diagnostic] = <[_; 1]>::try_from(diagnostics)
+            .unwrap_or_else(|_| panic!("one bounded typed ingress refusal remains"));
+        match (expected, diagnostic) {
+            (
+                json::Error::InputBytes,
+                ExportError::Json {
+                    cause: json::Error::InputBytes,
+                },
+            ) => {
+                assert_eq!(lengths, (65_536, bounds.proof_bytes.get()));
+            }
+            (
+                json::Error::ProofBytes,
+                ExportError::Json {
+                    cause: json::Error::ProofBytes,
+                },
+            ) => {
+                assert_eq!(lengths, (bounds.input_bytes.get(), 65_536));
+            }
+            _ => panic!("the exact selected input or proof refusal must survive"),
+        }
+    } else {
+        assert!(
+            allocation_count > 0 && largest_allocation > 0,
+            "the same measured path materializes an accepted original"
+        );
+        assert_eq!(
+            lengths,
+            (bounds.input_bytes.get(), bounds.proof_bytes.get())
+        );
+        assert_eq!(fence.message, 1);
+        assert_eq!(
+            (
+                verified.get(),
+                decoded.get(),
+                constructed.get(),
+                encoded.get(),
+                protected.get(),
+                authorized.get()
+            ),
+            (1, 1, 1, 1, 1, 4)
+        );
+        assert!(diagnostics.is_empty());
+        let [reply] = <[_; 1]>::try_from(replies)
+            .unwrap_or_else(|_| panic!("one actual correlated native reply remains"));
+        let reply = reply
+            .result()
+            .expect("the actual native publication succeeds");
+        let bytes = reply.payload().to_bytes();
+        let proof = reply
+            .attachment()
+            .expect("the actual protection proof remains")
+            .to_bytes();
+        assert_eq!(bytes.as_ref(), 23_u64.to_ne_bytes());
+        assert_eq!(proof.as_ref(), [13, 17]);
+        let [request] = <[_; 1]>::try_from(requests)
+            .unwrap_or_else(|_| panic!("one actual original request remains"));
+        let (
+            key,
+            original,
+            receipt,
+            input,
+            native,
+            encoding,
+            protection,
+            publications,
+            refusals,
+            panics,
+        ) = request;
+        let receipt = receipt
+            .expect("the provider result remains")
+            .unwrap_or_else(|_| panic!("the exact registered proof verifies"));
+        let after = request_originals(&original.0, &original.1, &receipt);
+        let expected_originals = [after];
+        assert_eq!(original.0, records[0].protected);
+        assert_eq!(original.1, records[0].proof);
+        assert_eq!(originals, expected_originals);
+        assert!(key.is_some() && input.is_none());
+        assert!(
+            matches!(refusals, (None, None, None))
+                && matches!(panics, (None, None, None, None, None, None))
+        );
+        assert!(
+            encoding.as_ref().is_some_and(Result::is_ok)
+                && protection.as_ref().is_some_and(Result::is_ok)
+        );
+        assert_eq!(publications.len(), 1);
+        assert!(publications.iter().all(Result::is_ok));
+        let (constructor, client, admission, processed, tail) =
+            native.expect("the actual processing operation remains");
+        let Attempt::Returned(Ok(client)) = client else {
+            panic!("the original reply client remains");
+        };
+        assert_ne!(client.address(), origin);
+        assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+        let expected_processed = Some(Some(User::new(
+            origin,
+            CounterIncremented {
+                request_sequence: 23,
+            },
+        )));
+        assert_eq!(processed, expected_processed);
+        assert_eq!(tail.len(), 1);
+        assert!(tail[0].is_none());
+    }
 }
