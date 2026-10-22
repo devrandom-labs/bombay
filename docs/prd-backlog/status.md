@@ -13,9 +13,11 @@ recorded; no GitHub review submission is recorded. Main is integrated and the
 remaining outgoing work continues on feat/remote-client. This is delivery of
 the scoped cold Export/resource implementation, not full remote acceptance.
 
-The public Client slice is committed locally as f863b7cd and carries actual
+The public Client slice is committed as f863b7cd and carries actual
 outbound requests through the existing Node lifecycle. Its named count inputs
-and distinct-count verification remain uncommitted. An external public read
+and distinct-count verification are committed as66fa106a, followed by current
+guidance in fa6717f3. The pushed slice is submitted in
+[PR388](https://github.com/devrandom-labs/bombay/pull/388). An external public read
 passes, and the three public
 Ready/disposal provider cases pass in both profiles while preserving acquired
 results and exact panic causes. Native response handoff and bounded outer
@@ -39,8 +41,9 @@ complete product. All three individual count substitutions now fail ONLY
 their intended post-cleanup count oracles in BOTH profiles; exact healthy
 restoration and fresh four-case Client controls pass in each profile. Final
 strict workspace/all-feature/all-target lint, fmt and remote rustdoc pass.
-Current guidance must be updated before a focused PR; new-head Nix/CI/review
-and main delivery remain pending. No full
+Current guidance is reconciled and passes8 affected compiler tests plus final
+strict lint, fmt and rustdoc. PR388's five visible CI jobs are running;
+new-head CI success, review and main delivery remain pending. No full
 resource/security or remote-counter row closes from these count controls.
 
 PR387's TLS advisory correction d9a5a092 selects rustls-webpki0.103.16 and

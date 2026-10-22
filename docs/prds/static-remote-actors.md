@@ -14,8 +14,8 @@ Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 e1eab601. The repository owner marked it ready and merged it; no GitHub review
 submission is recorded. Independent source/results reviews remain in the
 feature evidence. Main is fetched and integrated; its tree equals e1eab601.
-Continuing work is on feat/remote-client, preserving the uncommitted private
-outbound comparison. This delivers the scoped cold Export/resource changes,
+Continuing work is submitted as PR388 from feat/remote-client, with the
+outbound implementation committed and pushed. PR387 delivers the scoped cold Export/resource changes,
 not the complete R01–R25/AUTH1/NET1 PRD.
 
 PR387's TLS advisory blocker is corrected in d9a5a092: both existing locks now
@@ -23,7 +23,8 @@ select rustls-webpki0.103.16 and webpki-roots1.0.10. Fresh Deny CI passes.
 Four real TLS request controls and three isolated native custody controls
 pass in each profile. No SDK
 version, feature, manifest, application policy or exemption changes. All required
-CI checks pass on exact d9a5a092. The ordinary outbound product remains pending.
+CI checks pass on exact d9a5a092. The subsequent outbound slice is submitted
+separately in PR388; its CI and merge remain pending.
 
 The subsequent borrowed-ingress correction adds12 production lines, using
 existing refusal/disposal owners before either oversized contiguous copy.
@@ -38,9 +39,12 @@ repository paths exist. This growth supplies a missing resource law; it is not
 production reduction or full R02/R14 acceptance.
 
 The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
-serving is merged. Public Client's first verified slice is committed locally
-as f863b7cd and executes a real external read through the existing Node
-lifecycle. The next named-limit input and its controls remain uncommitted.
+serving is merged. Public Client's first verified slice is committed as
+f863b7cd and executes a real external read through the existing Node lifecycle.
+Named limits and their controls are committed as66fa106a, followed by current
+guidance in fa6717f3. All are pushed and submitted in
+[PR388](https://github.com/devrandom-labs/bombay/pull/388). Its five visible CI
+jobs are running; no new-head CI success or merged delivery is claimed.
 Three public Ready/disposal provider
 cases and native response handoff pass in both profiles; the deliberate
 early-release inverse rejects its defect in both profiles. Temporary mounts are
@@ -54,6 +58,12 @@ The separate remote-counter application
 and complete ordinary outbound acceptance remain product development. Full security/resource
 acceptance, three repository scans, distillation, CI/review and main delivery
 remain open. The twenty-five full acceptance rows are not closed by prerequisites.
+The final named-limit matrix passes501 tests/profile across the same12 targets;
+three independent count substitutions fail their intended laws in both profiles,
+followed by exact source restoration and passing owning controls. The reconciled
+guidance passes8 affected public compiler tests, strict lint, fmt and rustdoc.
+
+### Earlier binding and refusal checkpoint
 
 The current binding-result repair preserves both Ready Err with supplied Work
 and Ready Ok with genuine Work absence before producer disposal. Original-code
@@ -41863,3 +41873,15 @@ It retains the complete eleven-path patch against66fa106a, mounted review and
 raw focused compiler/format/lint/rustdoc receipts. Its record snapshot precedes
 this archive pointer. It does not replace the separately archived501/profile
 source and inverse evidence or add fresh CI/delivery evidence.
+
+### PR388 submission and current-summary reconciliation
+
+The reviewed outbound/count/guidance slice is submitted as PR388 targeting main,
+headfa6717f3. Actual CI run39837158987 and CodeQL/Deny companion runs are live;
+all five visible jobs are in progress. Independent exact-head review found no
+new source blocker but identified two stale current-summary statements about
+uncommitted limits and pending guidance. Reconcile those summaries with the
+actual commits/submission, and label the earlier binding/refusal checkpoint as
+historical. This records-only correction touches this PRD and the status index;
+production/tests/public types+0/-0. Historical source/results remain unchanged.
+Do not infer merged delivery or any full acceptance row from submission.
