@@ -1,6 +1,6 @@
 # Static remote actors and typed admission
 
-## Current status (2026-10-22 UTC)
+## Current status (2026-10-23 UTC)
 
 Latest user direction: “there is no budget.” The user explicitly preapproves
 implementation changes and removes all production/test line, path and public
@@ -13,9 +13,9 @@ Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 3625efe86f8613e13b3a3bc6cf180dc5de57edc7 after all six required checks passed on
 e1eab601. The repository owner marked it ready and merged it; no GitHub review
 submission is recorded. Independent source/results reviews remain in the
-feature evidence. Main is fetched and integrated; its tree equals e1eab601.
-Continuing work is submitted as PR388 from feat/remote-client, with the
-outbound implementation committed and pushed. PR387 delivers the scoped cold Export/resource changes,
+feature evidence. The PR387 merge tree equals e1eab601.
+PR388 also merged, delivering the outbound Client as recorded below.
+PR387 delivers the scoped cold Export/resource changes,
 not the complete R01–R25/AUTH1/NET1 PRD.
 
 PR387's TLS advisory blocker is corrected in d9a5a092: both existing locks now
@@ -23,8 +23,8 @@ select rustls-webpki0.103.16 and webpki-roots1.0.10. Fresh Deny CI passes.
 Four real TLS request controls and three isolated native custody controls
 pass in each profile. No SDK
 version, feature, manifest, application policy or exemption changes. All required
-CI checks pass on exact d9a5a092. The subsequent outbound slice is submitted
-separately in PR388; its CI and merge remain pending.
+CI checks pass on exact d9a5a092. The subsequent outbound slice is delivered
+separately in PR388.
 
 The subsequent borrowed-ingress correction adds12 production lines, using
 existing refusal/disposal owners before either oversized contiguous copy.
@@ -42,9 +42,12 @@ The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
 serving is merged. Public Client's first verified slice is committed as
 f863b7cd and executes a real external read through the existing Node lifecycle.
 Named limits and their controls are committed as66fa106a, followed by current
-guidance in fa6717f3. All are pushed and submitted in
-[PR388](https://github.com/devrandom-labs/bombay/pull/388). Its five visible CI
-jobs are running; no new-head CI success or merged delivery is claimed.
+guidance in fa6717f3. [PR388](https://github.com/devrandom-labs/bombay/pull/388)
+merged2026-10-22T21:05:52Z as8557f0d80bae833e2484988749aed4d29d53842c.
+All six checks passed on exact8157bba1, including Nix Flake Check and both
+native TLS profiles. Its merge tree equals that verified head. Independent
+source/results review is recorded; no GitHub approval submission is claimed.
+Main is fetched and integrated into the coverage retirement branch.
 Three public Ready/disposal provider
 cases and native response handoff pass in both profiles; the deliberate
 early-release inverse rejects its defect in both profiles. Temporary mounts are
@@ -56,8 +59,9 @@ tests across12 remote targets in EACH debug and optimized profile, with no
 failed, ignored or filtered tests. Formatting and remote rustdoc also pass.
 The separate remote-counter application
 and complete ordinary outbound acceptance remain product development. Full security/resource
-acceptance, three repository scans, distillation, CI/review and main delivery
-remain open. The twenty-five full acceptance rows are not closed by prerequisites.
+acceptance, the final repository scan, distillation, and delivery of the
+remaining slices stay open. The twenty-five full acceptance rows are not closed
+by prerequisites.
 The final named-limit matrix passes501 tests/profile across the same12 targets;
 three independent count substitutions fail their intended laws in both profiles,
 followed by exact source restoration and passing owning controls. The reconciled
@@ -41991,6 +41995,19 @@ The separately submitted PR388's final8157bba1 independent branch review is
 SHA256c337ba7471448bb14e118b2ea0af9f38a228b7c38b9ca6a0d700f6ea8b0b2714.
 That exact source remains unchanged by this coverage branch.
 
+### Coverage retirement submission and merged Client guidance
+
+Integrated main8557f0d8 into chore/owner-coverage without changing the qualified
+flake or Rust sources. PR388 merged2026-10-22T21:05:52Z after all six checks
+passed on8157bba1; its tree equals the verified head. Reconciled six existing
+current guides and repaired the acceptance page's current-status link. Earlier
+dated submission/build records retain their historical scope. Full remote
+acceptance remains active. Coverage source and actual Nix evidence are unchanged;
+fresh pinned nixfmt-check and git diff-check pass. Complete submission delta:
+nine paths, Rust production/tests/public types+0/-0; verification machinery
++47/-56/net-9. The extra paths contain delivery prose/link corrections only.
+Independent submission review and exact new-head CI remain required.
+
 ### Exact runtime-construction child — diagnostic-retirement prerequisite
 
 Coverage Python retirement is locally qualified and committed6e70adad in its
@@ -42065,3 +42082,24 @@ strengthened/restored/final source, raw profile logs/exits and both reviews.
 Member reads verify final sourcefd631426 and review243ee976. Records precede
 this pointer. No executable/compiler closure, current/MSRV matrix retirement,
 new-head CI or merged delivery is inferred from this archive.
+
+### Named runtime child — dependent draft delivery
+
+Prepared `test/named-runtime-child` in an isolated delivery checkout by merging
+the frozen owner-coverage submission `dc988108`. Only append conflicts in this
+PRD and the status index required resolution: current coverage/merged-Client
+guidance and the complete named-child evidence above are both preserved. No
+remote-counter research or readiness source is imported. The focused delta
+against that dependency remains exactly the existing `run_with.rs` test plus
+this PRD and the status index; Rust production and public API are unchanged.
+
+The test source remains exactly SHA256
+`fd631426fd04f78c77519464c8a05609fbea7b1f90e964fac506ad17d5c1df61`.
+Retained pinned-Nix evidence is the preformat complete target in both profiles
+(22 passed, 1 expected ignored), strict target Clippy exit0, and the identical
+formatted semantics' final exact-parent debug/optimized runs (1 passed,
+22 filtered each) plus fmt exit0. No Rust command was rerun for this docs-only
+integration, and these results are not relabeled new-head CI. Draft delivery
+depends on PR389; it must stay draft until that dependency actually merges and
+the submitted named-child head satisfies required CI and independent review.
+Diagnostic Python/current+MSRV retirement and full remote acceptance stay open.
