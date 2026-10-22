@@ -9,6 +9,15 @@ again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
 
+Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
+3625efe86f8613e13b3a3bc6cf180dc5de57edc7 after all six required checks passed on
+e1eab601. The repository owner marked it ready and merged it; no GitHub review
+submission is recorded. Independent source/results reviews remain in the
+feature evidence. Main is fetched and integrated; its tree equals e1eab601.
+Continuing work is on feat/remote-client, preserving the uncommitted private
+outbound comparison. This delivers the scoped cold Export/resource changes,
+not the complete R01–R25/AUTH1/NET1 PRD.
+
 PR387's TLS advisory blocker is corrected in d9a5a092: both existing locks now
 select rustls-webpki0.103.16 and webpki-roots1.0.10. Fresh Deny CI passes.
 Four real TLS request controls and three isolated native custody controls
@@ -21,15 +30,26 @@ existing refusal/disposal owners before either oversized contiguous copy.
 Independent payload/proof inversions reject each defect in both profiles.
 Final current-source debug and optimized each pass416/416, with no ignored or
 filtered tests; strict workspace/all-feature/all-target Clippy and formatting
-checks pass. Fresh CI for this resource correction remains pending.
+checks pass. All six required checks pass on its exact pushed head and the
+resource correction is included in the PR387 merge recorded above.
 Its complete source delta is production+12/-0/net12, tests+508/-20/net488,
 public types+0/-0, three Rust paths and these two existing records. No untracked
 repository paths exist. This growth supplies a missing resource law; it is not
 production reduction or full R02/R14 acceptance.
 
 The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
-serving is implemented; ordinary Node-owned outbound requests and the separate
-remote-counter application remain product development. Full security/resource
+serving is merged. Uncommitted public Client code now executes a real external
+read through the existing Node lifecycle. Three public Ready/disposal provider
+cases and native response handoff pass in both profiles; the deliberate
+early-release inverse rejects its defect in both profiles. Temporary mounts are
+removed. A deterministic capacity wake rejects the acquired-row selection race
+in both profiles; the two-site repair passes418 library plus43 external tests
+in both profiles. Strict workspace/all-feature/all-target Clippy now passes on
+the subsequent documentation/fixture finalization. That source now passes498
+tests across12 remote targets in EACH debug and optimized profile, with no
+failed, ignored or filtered tests. Formatting and remote rustdoc also pass.
+The separate remote-counter application
+and complete ordinary outbound acceptance remain product development. Full security/resource
 acceptance, three repository scans, distillation, CI/review and main delivery
 remain open. The twenty-five full acceptance rows are not closed by prerequisites.
 
@@ -46,8 +66,8 @@ strict workspace lint, docs and formatting. No test or public type is added;
 two public enum variants are removed. Current measured production is2615,
 with260 historically charged paths and five gross public types. All earlier
 costs remain recorded; the user has removed the implementation budgets.
-Main531ded50 was fetched again and is already integrated. No current delivery
-or full-feature completion is inferred. Dated records below retain their exact
+Main3625efe8 is now integrated. No full-feature completion is inferred.
+Dated records below retain their exact
 historical source and verification scope.
 
 ### Earlier ingress and privacy checkpoint
@@ -41129,3 +41149,435 @@ receipts/reviews archive:
 SHA256752512051d3f05f15c8e2b124c7b18be427563817561f631e33ff49b46fed5ae.
 Its PRD/status snapshots precede only this archive-pointer paragraph; it is not
 a frozen compiler closure or proof of CI/main delivery.
+
+### Ordinary outbound ownership — genuine runtime comparison
+
+The next blocker is R01's missing Node-owned outgoing interpretation, already
+exposed by the real pure Reader consumer's missing-Client compiler denial.
+Base e1eab601 has a clean tree and unchanged locked Behavior/Actors0.29.0
+(revision55dbac2d), Address0.3.0, Communication0.1.6, Timers0.2.0, in-tree Observe,
+SDK1.10.10 and Tokio1.53.1; no patch/replace or dependency change is selected.
+Their previously inspected concrete Actions, ExternalActor, actor_address,
+native declaration and Node joined/withdrawal owners remain the build contract.
+
+First compile and execute the actual private runtime candidate, not a fake
+lifecycle implementation. Frozen external source runtime.rs9bedcb71cdc5012b86e4917c45ca780166bdb1388e81bba6d0ce73117803a91f
+and runtime.mdae4399cee730854fe316e5984895883fbce6a1f7332e884c942b38afca0c7bf4
+are under/tmp/bombay-outbound-client-comparison. Temporarily mount it as a remote
+sibling and move the existing Provider/provide body unchanged from export/request
+to verification; update only owning imports. Expected repository owners are
+remote/mod.rs, verification.rs, export/request.rs, export/query.rs and these
+records; the786-line private probe remains outside until selected. Production
+helper move has net0 body lines, with several import/mount lines; public types0.
+The desired runtime adds real request/reply custody, concurrency, native Querier
+and retirement at that existing Node seam. No second Node/runtime/provider law.
+
+Use the existing pure Reader and two actual Applications with genuine Work
+absence; prove one protected Read reaches the cold Export, actual Counter value1
+returns, and the final typed ProtectedConsumed send survives joined retirement.
+Keep raw SDK originals private. Constructor/lifecycle inference, total standard
+Into versus a named owner, and actual consumer visibility are compiler questions;
+no public projection is selected. Missing forwarding must fail an independent
+final actor outcome before retaining this implementation. Required debug and
+optimized controls, negative replays and two source/results reviews follow.
+
+Comparison policies are explicit, not final acceptance: P active operations,
+N acquired source rows with the closed original unread prefix retained at N,
+R charged native replies plus at most one exact diagnostic original; later
+overflow is explicitly discharged. Actual EOF differs from quota stop. Source
+recipient possession is delegated capability; numeric User.from is merely a
+declared-address routing filter, not authenticated sender identity. Provider
+policy owns protected caller/scope/authority. Existing Node receives the exact
+whole-operation poll panic; cancelled-operation disposal remains a separately
+recorded policy question. SDK-free terminal projection, aggregate byte bounds,
+full cancellation/security matrices and final interface selection stay open.
+Temporary absolute source mounts must be removed or replaced before delivery.
+
+Actual pinned private-owner check exits0; actual private-mounted consumer
+executes one two-Application case and passes0.04s (416 filtered). This is runtime
+evidence for the selected internal path, not public API or strict-lint acceptance:
+the unselected probe/shared fixtures still emit dead-code warnings. Provider
+body is moved once, with no replacement semantic implementation.
+
+For the forwarding inverse, give the Reader the existing ActorExt deadline
+policy so omission terminates through ordinary interpreted timer Actions and
+both Nodes still join/close. Observe its retained base through BehaviorBase;
+assert final actual replies before ACK expectations. Suppress only actual local
+reply admission while preserving its exact constructed message, then expect
+the final Reader0-versus1 outcome to fail after normal cleanup. The outside10s
+watchdog is not accepted as the law failure. No I/O is added to a Behavior fold.
+
+The lawful DeadlineReaction uses Behavior's Stopped marker. Initial E0432
+(incorrect Exit import) and E0308 (lifecycle Exit versus Stopped) are setup
+vetoes, not runtime failures. Corrected consumer2c88acda1b252fe137a29ea94367322f045884977a20c46c4a16fffc49ac98ef
+passes the actual one-case comparison in debug0.05s and optimized0.03s, each
+416 filtered. A single native-delivery omission retains the constructed message
+as unattempted Either::Left and returns; no fake Full/Closed/Ok is introduced.
+Mutant4710e6580d1846ee5189f6b94b156570c00479f1347bfdeec68238aac31fd097
+fails only the final Reader assertion (empty versus ReadReply1) in both
+profiles, each1.03s, after both Node cleanup/close/report/notification checks.
+Later ACK/encoder checks are unexecuted negative evidence. Healthy runtime9bed
+is restored exactly; separate restored positives pass1/0 in both profiles,
+debug0.05s and optimized0.03s.
+
+Source review cdafefb946f205b344452b871b2fe0d0e787ba2a45e8b480b299f09c249b0f27
+proves Provider body relocation byte-exact. It also identifies two unselected
+policies: successful provider output with disposal panic currently proceeds in
+this draft; cancellation retains operation disposal in its row rather than
+Node.kernel_disposal. P bounds provider/query/reply stages after synchronous
+selection, not all N retained futures/encoded rows. R+1 excludes prior/concurrent
+SDK buffering. No full policy, aggregate-resource or strict-lint acceptance
+follows from the private positive. Reader incoming User.from is not observed;
+this witness proves typed value delivery, ACK and lifetime only.
+
+Final actual-results review acf34c6772b03712b5f56fe5072d52017bb7b7faf850d3346a4d7bbb8540174d
+reads all six positive/inverse/restored receipts and exact source restoration.
+The comparison uses only ordinary typed Actions in the Reader, actual Node
+execution without Work, actual native querying and cold Export serving. It
+qualifies that private runtime law; it does not select the public constructor,
+projection, provider-disposal policy, full R01 acceptance or distillation.
+
+Private comparison archive:
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/outbound-owned-read-20261022.tar.gz`,
+SHA2565563c2e2a60238d3e5a2f148d59762779473686a6963825cfca0162cce371321.
+It retains the real sources, all setup/positive/inverse/restored receipts and
+reviews; it is not a compiler closure or public/delivery qualification. PRD
+snapshot precedes only the final result/archive paragraphs.
+
+The next interface comparison reuses the same acquired response owner, not an
+additional wrapper around NativeReply. Normative acceptance requires protected
+bytes/proof/correlation, exact opaque causes, native admission and disposition;
+it permits typed discharge and does not require public Sample QoS snapshots.
+The reviewed alternatives and five ownership questions are recorded in
+response-owner.mda9d54862206e2665a7464ec5d08626a575e6b7eb3dfcc4e0855d76de5cef8365
+under the comparison directory. Compare SDK-free borrowed byte/proof iterators
+and exact standard Error access, then one consuming handoff. It explicitly
+discharges an unused successful native envelope before releasing its charge;
+an actual error retains its cause and charge until their owner is released.
+Do not copy rejected oversized bytes, duplicate all transport metadata types,
+fabricate a withdrawal result or expose an SDK escape hatch.
+
+Expected owning interface candidates are the existing Client, acquired Reply
+renamed Response to distinguish the inbound Reply declaration, and its existing
+closed refusal renamed ClientError. Each already owns concrete state/effect
+facts in the genuine consumer; no new semantic implementation is added merely
+for presentation. A private error/count owner is eligible only if a failing
+charge-lifetime law proves naked error boxing releases the charge too early.
+Existing standard native Error boxes move unchanged. Expected eventual source
+owner is remote/client.rs (approximately800–1000 initial lines), with existing
+Node attachment/remote imports, owning consumer tests and these records;
+temporary absolute mounts must disappear. This is an interface experiment,
+not an accepted public-type count or final retained size. Qualify the existing
+provider Ready/disposal fault regressions before retaining its dispatch policy.
+
+Selected dispatch regression before any repair: external consumer-provider-
+disposal.rs94a147358602d5df0d20e5e23f6273859e0fd2637ec2affc30db3d2a8886c037
+adds three concrete cases against unchanged runtime9bed. A direct wrapper of
+the owning Recorded Ready provider returns its actual Ok before Drop raises a
+unique owned typed cause. After both Nodes close, each fault case proves the
+original provider result and exact cause allocation/content coexist BEFORE
+asserting no Get (protection) or no decoding/delivery (verification). Healthy
+still proves ReadReply1 and terminal ACK. Faults must stop subsequent stages,
+matching the existing inbound policy, while preserving every acquired fact.
+The owning actor deadline provides normal finite retirement. Initial actual
+baseline is expected healthy1pass/two intended failures in both profiles;
+compiler/setup failures and the outside watchdog are not accepted regressions.
+Author two-pass review2a717a89515232cf2b5ba0f6c665569051c4a90cf28f32df2b4126b1ae09b914
+and the pre-edit plan remain beside the source. No production guard is added
+until those original-source failures execute.
+
+The unchanged9bed baseline now executes as intended: debug101 (healthy1pass,
+only protection405 and verification452 fail,0.12s) and optimized101 (same
+three-case outcomes,0.03s), each417 filtered. Actual Ready Ok and original
+typed disposal cause/pointer/content checks execute before those failures,
+after both Nodes' cleanup. Later denial-specific assertions remain unexecuted
+negative evidence. The selected smallest correction is two checks immediately
+after existing provide returns: any construction/poll/disposal fact stops the
+next stage. Keep the actual Ok and all cause slots unchanged. This reuses the
+existing inbound fail-closed policy, adds no state/type/helper, and changes only
+the private outgoing candidate (approximately12 lines) before final public
+lowering. Require all three cases to pass in both profiles before broadening.
+
+The two checks now pass all three fault/control cases in debug2.06s and
+optimized2.05s, each417 filtered. Both exact disposal hooks still execute;
+Ready results and original causes survive, while all subsequent no-Get,
+no-decoding, Reader/ACK and receiver-count oracles execute successfully.
+Independent repair review f1ba84e8210bf0186d67176f962c9d0cae69d33dfbabfa46c842db3de3ca0efb
+accepts only that12-line policy correction (runtimeb5c6e2d2); no broader
+cancellation or public projection is inferred.
+
+The same corrected runtime is now lowered into remote/client.rs from the
+frozen public candidate8be01e84c032f42fc1146acc3d02b121f052c113558455ba8af167d29f3743d5,
+with those exact checks. Public Client/Response/ClientError reexports compile
+cleanly against the locked graph (check0,1.74s); external compilation remains
+to prove. The adapted three provider cases preserve their invariants through
+public Response access; no second runtime is retained. Temporary test-only
+absolute mounts remain and must be replaced before delivery.
+
+The real response ownership control executes actual SessionLocal native
+error/success/absent-proof/empty-proof frames. Its first debug run fails only
+the last Display contract (native details versus fixed bounded text), after
+all original byte-pointer/content, exact source/encoding, callback EOF,
+withdrawal/close and charge0→0→1 checks pass. It copies bytes only for test
+observations, not response materialization. It is not TLS-wire, provider-policy
+or Client's runtime oversized-rejection evidence. Debug redaction is separately
+unreached in this initial failure. Correct Display first, then execute the
+independent final Debug contract before retaining its redaction correction.
+### Public outgoing response — diagnostic regression checkpoint
+
+On main3625/feat/remote-client, the actual external public consumer compiles
+and executes successfully (compile0/run0, one test, 0.02s). Raw receipts:
+`/tmp/bombay-outbound-public-consumer-{compile,run}.{log,exit}`. This proves
+that consumer's actual Node-owned read, not full outbound acceptance. Its
+shared-fixture warnings remain to reconcile before the strict gate.
+
+The actual native response ownership test first rejects the original outer
+Display at line204; correcting only Display then rejects Debug at line205.
+`/tmp/bombay-outbound-response-{original,display-corrected}-debug.{log,exit}`
+both exit101, one intended failure. Before either final diagnostic assertion,
+the test observes real native replies, callback EOF, withdrawal/session close,
+borrowed original fragments and native cause, and charge retention through
+error disposal. The corrected-Display source is401cbeb3, tests ea4d4b64.
+Independent two-pass source/result review9022f1e1 records the exact scopes.
+
+The next production edit removes only ResponseError's native-cause Debug
+field: constant outer diagnostics must not print untrusted native payloads;
+Error::source must still expose the exact borrowed cause. Expected owner:
+remote/client.rs, net0 lines, no new/removed public type. Reuse the existing
+private native-error/permit owner. Run the actual response test in debug and
+optimized builds, then invert only error-permit retention, observe its
+post-handoff count assertion fail in both builds and restore. No peak-memory,
+allocation-free transport, authenticated sender or complete R01 claim follows.
+
+The corrected source1b5da8ae passes the response test in both profiles
+(debug0/1/.03s; optimized0/1/.02s). The adapted public provider source f36b97d0
+also passes all three Ready/disposal cases in both profiles (1.12/1.01s),
+retaining actual Ok and exact disposal panic while vetoing the following
+stage. Raw prefixes: `/tmp/bombay-outbound-response-corrected-` and
+`/tmp/bombay-outbound-public-provider-`. The one-arm charge inverse a37f8476
+fails debug only at tests169 (actual available1 versus required0), after real
+cleanup; optimized is running. Later cause/diagnostic assertions are not
+credited by that negative. Two-pass source/positive/inverse-plan review42bcdc18
+retains exact scopes. Full-library and warning-clean gates remain pending.
+
+After exact restoration, select two mechanical finalization changes before
+retaining this owner. Proposal client-errors.patch75a75a0f converts the same
+errors to already selected thiserror2.0.20, replaces the candidate tuple Shape
+with flat Json{cause}, keeps constant outer diagnostics and exact source, adds
+redacted no-bound Debug to the existing Client/Response, corrects the stale
+module introduction and moves the test declaration to the end. Official
+[Rust API Guidelines](https://rust-lang.github.io/api-guidelines/debuggability.html)
+and the existing Export spelling supply the public Debug policy. The two
+error owners and cause-before-permit order remain unchanged. Raw source delta
++54/-54/net0 in client.rs; public types+0/-0. Source reviews b1238152 establish
+this scope before edits. Move verification's unchanged test declaration after
+the relocated provider owner as well; no additional provider semantics.
+
+Replace the two absolute test mounts with four external public leaves in the
+existing application_clients target, using relative, shared fixtures and the
+same pure Reader. Remove only compiler-disabled old comparison branches.
+Extract the existing TLS configuration/reservation declarations from protocol
+into one concrete network fixture and reexport them for existing callers;
+outbound consumes that same source instead of copying configuration facts.
+The native Response test remains beside its private owner. Proposal
+response-fixture.patch71e9e8dd removes its unrelated protocol include and uses
+one explicit native SessionLocal Config (Peer, retained Gets3, no endpoints or
+scouting, observer maximum8192). Raw test delta+20/-11; every statement from
+key binding through the final diagnostics remains unchanged. Two source
+reviews d062075b map the same native law and explicitly disclaim Network/TLS
+mapping evidence. Expected source/test owners: remote/mod.rs, client.rs,
+client/tests.rs, verification.rs, tests/application_clients.rs and its outbound
+and network fixture children, protocol.rs, and these records. No dependencies,
+production lifecycle, public type or provider policy are added by relocation.
+Fresh debug/optimized focused runs and strict checks must qualify the final
+repository layout; earlier epochs are not relabelled as those results.
+
+### Outbound accepted prefix — actual retirement counterexample
+
+The charge inverse completes in both profiles: a37f8476 exits101 only at
+tests169, count1 versus0 (.06/.01s), following native cleanup. Restoring exact
+1b5da8ae gives whole-library421/421 in both profiles, 5.66/5.57s, no ignored
+or filtered tests. Its raw prefixes are response-charge-inverse and
+outbound-restored-library under/tmp/bombay-. These remain pre-relocation epochs.
+
+Repository finalization is now applied. The first native fixture attempt uses
+the wrong Config wrapper and fails seven E0599/E0609 setup diagnostics. The
+optimized sibling is explicitly interrupted after the same compiler failures
+(recorded shell130), not credited as runtime evidence. The import is corrected
+to the exact zenoh_config::Config already used by remote/network.rs. No runtime
+or configuration policy is invented from compiler feedback. The sole unused
+reserved_address reexport has a narrow allowance: it is consumed by Node unit
+cohorts but not the external cohort; the body remains owned once in network.rs.
+
+Current source882279a2 and native test06d07c8c compile. Corrected debug runs
+library417/417 and external42/43: only outbound delivery's final acknowledgment
+oracle fails at delivery406, actual[] versus [(MailAddr0,23,ReadReply)]. Its
+earlier actual ReaderRead1, encoding, checked(scope,1), both cleanup and report
+observations pass. Corrected optimized passes417/417 and43/43 (5.41/1.89s).
+One green schedule does not discharge the debug counterexample. Strict whole
+workspace/all-feature/all-target Clippy exits101 with28 production findings
+and test findings. Raw prefix:/tmp/bombay-outbound-repository-corrected-;
+lint:/tmp/bombay-outbound-repository-clippy. No final-layout acceptance or
+delivery follows. Independent actual-source review56c06413 records these limits.
+
+Root and independent inspection find an accepted-prefix scheduling gap:
+serve retains a Source message then queues a lazy request future. If joined
+becomes ready before that future's first poll, the biased join branch drops it
+before Self::select. Post-join draining selects only newly received messages,
+leaving that already acquired row unselected. The original may remain retained;
+the failed observer does not prove payload loss or a missing terminal Actions
+commit. The required law is one selection outcome for every acquired prefix row
+within quota, without starting providers or native Gets after join.
+
+Before a production repair, add a deterministic owner test using the actual
+Communication capacity notification: register a real pending capacity observer
+whose standard Wake resolves the test-owned joined oneshot when Source dequeue
+releases capacity. This lets joined become ready inside the actual receive,
+after select's join arm polled Pending but before the following iteration.
+Old serving should retain the original row yet produce no selector outcome;
+the final oracle requires exactly one. Run the original in debug and optimized
+builds. Reuse actual Source/endpoint, native Querier and existing Exports port,
+not a fake lifecycle or sleeps. The selected repair candidate then moves the
+existing synchronous select immediately after row insertion and removes its
+lazy request entry call (two existing sites in client.rs, approximately net0,
+public types+0/-0). The current guard immediately before Get stays unchanged.
+This does not add a new selection phase, wrapper, retry or cancellation owner.
+Check panic conservation explicitly: old selection panic is caught then moved
+out of operation_poll into Node.poll; eager selection reaches that same Node
+cause with its retained row, but completed may truthfully remain absent. Do
+not claim identical operation-completion facts. Test qualification and actual
+repair remain pending; broader production lint cleanup waits for this blocker.
+
+Durable pre-repair source/result/review archive:
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/outbound-client-custody-1b5-20261022.tar.gz`,
+SHA2566e0616049530367021fd40471bfb9b74e7c2db5d580201b58026649989c9e31e.
+Reading archive members independently rechecks exact diagnostic1b5 source,
+ea4 native test and finalization882 source. It includes both charge inverses,
+restored whole-library receipts, public consumer/provider results, repository
+failure/lint logs, proposals and record/lock snapshots. It excludes executables
+and does not claim a complete compiler closure, accepted-prefix regression
+execution, final source acceptance, CI or merged delivery. Record snapshots
+precede this archive-pointer paragraph.
+
+Measured complete tracked/untracked finalization delta against main3625,
+before the new accepted-prefix test: production+1308/-74/net1234;
+tests+1666/-46/net1620; public types+3/-0; fifteen paths including records.
+This is new outbound capability and its verification, not production reduction.
+Previous historical costs remain recorded; no numerical budget is restored.
+
+The new prefix fixture initially supplies an unsupported current-thread SDK
+host, then incorrectly re-receives a one-shot Source EOF. Neither SDK panic,
+watchdog nor either interrupted optimized sibling (shell130) earns law credit.
+The corrected fixture uses the existing two-worker native host and the actual
+stored EOF once, retaining both Boxes and returned Source identity. Source12bfe3e4
+against unchanged Client882279a2 now exits101 in BOTH profiles only at prefix195:
+selected0 versus1 (.01/.00s), after all earlier native cleanup, original
+allocation/content, foreign-origin refusal, one capacity wake, successful join
+publication and EOF facts. Later selected/encoded checks are unexecuted on that
+negative. Raw prefix:/tmp/bombay-outbound-prefix-eof-corrected-. Independent
+review b7da3bf9 acknowledges the missed fixture EOF distinction and accepts
+the corrected debug result; paired optimized review remains pending.
+
+Proceed with the previously selected two-site eager selection repair. Its
+scoped no-new-work law applies to the joined acquisition/prefix path, not a
+claim that every active provider/native Get is excluded by every concurrent
+join. Wider provider-first polling/cancellation remains R18 verification.
+The original partial trace is preserved, not replaced by a longer watchdog,
+an optional assertion or a green optimized schedule.
+
+The actual two-site repair1b686422 passes full library418/418 plus external
+application_clients43/43 in BOTH profiles: debug5.61/4.07s, optimized5.54/1.69s.
+No ignored/filtered tests. The original source remains frozen882279a2 and the
+same corrected regression12bfe3e4 rejects it in both profiles. Independent
+source/original/debug review432eee1b accepts that bounded causal comparison;
+optimized result review is the next evidence step. This repairs acquired-row
+selection, not every cancellation/retirement path or the full PRD.
+
+Now select the measured lint finalization client-lint.patch1c41fe08, based on
+this exact repaired owner and native parent test633a033d. It adds only local
+expectations for concrete products, explicit policy arguments and reviewed
+exclusive/immutable producer loans; preserves selected Get's synchronous
+Ready-entry guard; names the existing Either fallback and uses equivalent
+let-else; documents constructor count/deadline semantics and the internal
+terminal Rc invariant; and changes one test iterator spelling. Expected
+delta client+83/-6/net77, tests+1/-1/net0, public types+0/-0. This positive
+production delta is documentation/verification containment, not reduction.
+No wrapper, alias, new bound, new policy or lifetime change is authorized by
+compiler friction. Two source reviews ed3e20ec verify the exact proposal;
+actual strict checks and new-source focused execution remain necessary.
+
+### Outbound final source qualification and named count inputs
+
+Recovery rechecks final Client b00a0132, native tests37ea83e7 and prefix47be31e7
+against the actual source and raw receipts. Both complete selected remote
+matrices pass498 tests over12 targets, no ignored/filtered/failed cases. Command:
+`cargo test --offline --locked -p bombay-rs --features remote [--release] --lib
+--test remote_verification --test remote_ingress --test remote_metadata
+--test remote_json --test remote_surface --test remote_node
+--test application_clients --test node_outcome --test node_borrowing
+--test actor_interface --test fixed_supervisor_recovery`, in the pinned Nix
+shell. Debug log43d8d618bb3cfedb2025d84e4b4b1e01ec0efadd2b6555ab658b013e9790c929;
+optimized7d4c4acb2e67e1bc36f72232486df8c7cf0de670002e675f38ade22652a328be.
+Raw logs/exits: `/tmp/bombay-outbound-final-{debug,release}.{log,exit}`.
+Strict `cargo clippy --offline --locked --workspace --all-features --all-targets
+-- -D warnings` passes (fixture-clippy log1540763d); `cargo fmt --all -- --check`
+and `cargo doc --offline --locked -p bombay-rs --features remote --no-deps` pass
+(final-format-check/final-doc receipts). This is the listed remote matrix,
+not execution of every workspace test or a new-head Nix/CI qualification.
+
+Whole tracked/untracked delta against main3625: production+1387/-74/net1313;
+tests+1904/-46/net1858; public types+3/-0;16 paths including these records.
+No manifest, dependency, lock or feature change. This is positive capability
+growth, not production reduction. Audit2 inventory/search/owning-source reads
+cover677 paths; report `/tmp/bombay-prd-resumption/audit-2.md`, SHA256
+aefccf7ba2769c16c80301bdfe89946e0ac8cc4c35701f979f00566e361dc6e0.
+It identifies stale current onboarding, missing one-shot EOF guidance, a
+positive-test cardinality gap in the Driver gate and seven live Python files
+whose obligations must survive retirement. No blanket deletion is justified.
+Audit3 and the fixed-point/distillation requirements remain open.
+
+Next isolated design experiment is a named ClientLimits input, replacing the
+anonymous `(P,N,R,json)` tuple with three required named NonZeroUsize fields
+and the existing separate json::Limits argument. This is deliberate Bombay
+input policy, not a new actor law or interpreter. P owns concurrent operations,
+N acquired Source rows including no-Get outcomes, R charged native responses
+per query, with the existing first-refusal additional original explicit.
+The product owns no execution state or event transformation. The tuple can
+execute these laws but conceals their distinct same-typed inputs; named fields
+replace that positional caller machinery. The actual two-Node Reader and its
+provider/Source consumers demonstrate the use. Reuse the existing Client,
+Source, Node, Semaphore, native Querier, json owner and all typed policies;
+add no builder, default, alias, old overload or independent validation layer.
+
+Pre-edit proposal `/tmp/bombay-outbound-client-comparison/client-limits.patch`
+SHA25696fd57cd53e3d2befe148381d272262e7e84d7eeba93934397799f1101396ffa
+touches client.rs, remote/mod.rs and its three live callers. Expected raw
+delta+82/-39/net43, public types+1/-0, three public fields and one extra
+constructor argument. Five-question/source reviews and exact index mapping
+are in client-limits.md (b4b42af1). First compile the desired real consumer
+only against the prior owner (consumer patch5c156d21), retain its actual
+missing-API diagnostic, restore it exactly, then apply the coherent proposal.
+All original4/4/4 callers must still pass; distinct P1/N2/R3 and P1/N4/R2
+observable controls must reject count substitution before mapping acceptance.
+They must use actual Source/native ownership and complete cleanup, without
+re-receiving an already acquired one-shot EOF or crediting a watchdog.
+Static denial proves API absence only; it does not prove runtime mapping.
+Control design/authoring and independent result review are delegated; root
+remains sole pinned-Nix Rust executor. No implementation budget is restored.
+
+Durable final-source/prefix archive:
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/outbound-final-b00-20261022.tar.gz`,
+SHA25623820d0f94e560a5cee962db583d2fc9d0a6b5f82bb280cceae498d809c5dc60.
+Independent member reads rehash Client b00a0132 and optimized log7d4c4acb.
+It retains all changed tracked/untracked source, prefix failures/repair/final
+receipts, reviews, lock/instruction and record snapshots, with unselected
+proposals explicitly separate. No executables, full compiler closure, new-head
+Nix/CI or merged delivery are certified. Snapshots precede this pointer.
+
+Independent final result review05b54d10 (final-results-independent.md) confirms
+both498-case inventories agree, with22 inner UI cases separately reported
+(2 accepted programs/20 compile denials), and all final strict/fmt/doc exits0.
+It distinguishes the actual later fixture-clippy0 from historical final-clippy101,
+the root-recorded argv from Cargo output, and source-equivalent fixture edits
+from earlier receipt bytes. No broader workspace execution or compiler closure
+is inferred. Named counts remain subject to their separate controls.

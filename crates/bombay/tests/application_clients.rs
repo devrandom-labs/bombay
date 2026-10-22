@@ -880,3 +880,7 @@ mod network_replay;
 #[cfg(feature = "remote")]
 #[path = "application_clients/node_exports.rs"]
 mod node_exports;
+
+#[cfg(feature = "remote")]
+#[path = "application_clients/outbound.rs"]
+mod outbound;

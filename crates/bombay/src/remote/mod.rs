@@ -11,6 +11,9 @@ mod network;
 pub(crate) mod startup;
 mod verification;
 
+mod client;
+pub use client::{Client, ClientError, Response};
+
 pub(crate) use export::Exports;
 pub use export::{
     Attempt, Export, ExportError, ExportLimits, Reply, Request, RequestKey, Stop, Submission,

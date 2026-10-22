@@ -1,10 +1,10 @@
 use super::declaration::{Commands, Delivery, Reception, Target as ActorTarget};
-use super::request::{Identity, Request, discard_query, provide};
+use super::request::{Identity, Request, discard_query};
 use super::{Export, ExportError, ExportLimits, RequestKey};
 use crate::address::MailAddr;
 use crate::application::{ActorInterface, ApplicationHandle, ApplicationLifecycle};
 use crate::local::endpoint::ExtractLocalEndpoint;
-use crate::remote::verification::poll_verification;
+use crate::remote::verification::{poll_verification, provide};
 use crate::remote::{IngressError, json, try_retain};
 use crate::{ActorRetirementReport, InstalledActor};
 use behavior::{EstablishedRecipient, Protocol};

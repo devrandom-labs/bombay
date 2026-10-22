@@ -6,20 +6,44 @@ budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
 
+PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,
+with all six required checks passing on e1eab601. Its source tree is identical
+to that verified head. Repository-owner merge and independent local reviews are
+recorded; no GitHub review submission is recorded. Main is integrated and the
+remaining outgoing work continues on feat/remote-client. This is delivery of
+the scoped cold Export/resource implementation, not full remote acceptance.
+
+The uncommitted public Client now carries actual outbound requests through the
+existing Node lifecycle. An external public read passes, and the three public
+Ready/disposal provider cases pass in both profiles while preserving acquired
+results and exact panic causes. Native response handoff and bounded outer
+diagnostics pass; the early-release inverse fails as intended in both profiles.
+Repository-native tests replace the temporary mounts. A deterministic capacity
+wake rejects the acquired-prefix selection race in both profiles, after all
+original-message and cleanup checks. The two-site repair passes418 library and
+43 external tests in both profiles. Final source passes498 tests across12
+remote targets in EACH profile, with no failures, ignored or filtered cases;
+strict workspace/all-feature/all-target lint, formatting and remote rustdoc
+pass. Audit2 identifies current onboarding/EOF guidance and gate/Python
+retirement obligations; audit3 and distillation remain open. Next is the
+named count input experiment and distinct-limit controls, then remote-counter
+and remaining full acceptance matrices. No full R01–R25/AUTH1/NET1 row is
+closed here; new-head Nix/CI/review and main delivery remain pending.
+
 PR387's TLS advisory correction d9a5a092 selects rustls-webpki0.103.16 and
 webpki-roots1.0.10 in both existing locks, with fresh Deny CI passing. Four real
 TLS request cases and three isolated native custody cases pass in each profile.
 All required CI checks pass on that exact pushed head. Outbound implementation
 remains pending; this dependency correction closes no full remote acceptance row.
 
-The next resource correction rejects oversized borrowed payload/proof lengths
+The merged resource correction rejects oversized borrowed payload/proof lengths
 before materializing either. Separate payload/proof copy inversions each fail
 only their intended largest-allocation oracle in debug and optimized execution;
 the other two cases pass. The independent measurement control also rejects
 recording an old realloc size as the new request. All healthy owners are restored;
 final whole-library debug/optimized each pass416/416, with strict workspace
-all-feature/all-target lint and formatting passing. Fresh exact-head CI remains
-pending for this resource correction.
+all-feature/all-target lint and formatting passing. All exact-head required CI
+checks pass for this resource correction, now merged through PR387.
 These narrow results do not close aggregate resource, missing-proof, outbound
 or full remote acceptance requirements.
 
