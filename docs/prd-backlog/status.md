@@ -1086,3 +1086,14 @@ and extra max-safe/below-by-one/restored arithmetic controls pass. The retained
 verification machinery delta is+47/-56/net-9; no Rust/API change. Final
 independent result review, focused commit and new-head CI/delivery remain
 separate from this local acceptance; the rest of Python retirement stays open.
+
+### Named runtime child prerequisite (2026-10-22)
+
+The existing runtime-construction parent now requires its exact ignored child
+once and complete1/0/0 result. The old parent falsely passes with a different
+real, qualified test in both profiles; the strengthened parent rejects only
+that wrong-child count after successful child cleanup. Restored full run_with
+passes22tests/1expectedignored in both profiles, strict target lint passes,
+and the formatted final parent passes both profiles plus fmt. Rust production
+and public API are unchanged; tests+15/-1/net14. Diagnostic Python/current and
+MSRV matrix retirement remains separate and unfulfilled; see the feature PRD.
