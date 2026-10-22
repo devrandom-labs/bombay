@@ -2,7 +2,7 @@
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Step, Stopped, User};
 use bombay::prelude::Application;
-use bombay::remote::{Attempt, Client, Export, ExportLimits, Metadata, reply};
+use bombay::remote::{Attempt, Client, ClientLimits, Export, ExportLimits, Metadata, reply};
 use bombay::{ActorFailureAssessment, ApplicationScope, MailAddr, RetirementAssessment};
 use futures_util::future::Either;
 use std::cell::Cell;
@@ -276,7 +276,12 @@ async fn read(fault: ProviderFault) {
             let client = Client::new(
                 requests,
                 "bombay/outbound/read",
-                (maximum, maximum, maximum, limits()),
+                ClientLimits {
+                    concurrent_requests: maximum,
+                    retained_requests: maximum,
+                    retained_responses: maximum,
+                },
+                limits(),
                 Duration::from_secs(20),
                 move |original: &User<MailAddr, CounterServiceInput>,
                       runtime: &str,

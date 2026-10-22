@@ -38,8 +38,10 @@ repository paths exist. This growth supplies a missing resource law; it is not
 production reduction or full R02/R14 acceptance.
 
 The complete R01–R25/AUTH1/NET1 objective remains active. Inbound cold Export
-serving is merged. Uncommitted public Client code now executes a real external
-read through the existing Node lifecycle. Three public Ready/disposal provider
+serving is merged. Public Client's first verified slice is committed locally
+as f863b7cd and executes a real external read through the existing Node
+lifecycle. The next named-limit input and its controls remain uncommitted.
+Three public Ready/disposal provider
 cases and native response handoff pass in both profiles; the deliberate
 early-release inverse rejects its defect in both profiles. Temporary mounts are
 removed. A deterministic capacity wake rejects the acquired-row selection race
@@ -41581,3 +41583,213 @@ It distinguishes the actual later fixture-clippy0 from historical final-clippy10
 the root-recorded argv from Cargo output, and source-equivalent fixture edits
 from earlier receipt bytes. No broader workspace execution or compiler closure
 is inferred. Named counts remain subject to their separate controls.
+
+The verified outbound slice is committed locally as f863b7cd, not pushed or
+merged. Fetching origin/main still resolves3625efe8. The final runtime receipts
+precede only the last fixture lint edits; source-equivalence review5380b03c,
+confirmed by05b54d10, supplies that exact qualification rather than pretending
+those test bytes were identical to an earlier log's inputs.
+
+The desired actual delivery consumer5746f67f against unchanged Client b00a0132
+now fails pinned `cargo check --offline --locked -p bombay-rs --features remote
+--test application_clients` with101. It reports E0432 for missing ClientLimits,
+E0061 for the extra explicit JSON argument and six consequent shifted-argument
+errors. This is the intended absent API, not a runtime defect or eight
+independent invariants. Raw log88781524a99a3492607f192c867ffa1a1647aefa45ea676abfd4c5f7a0b6912d
+at `/tmp/bombay-outbound-limits-original-check.log`; exit recorded separately.
+Restore caller ef0f09da byte-exactly before applying full proposal96fd57cd.
+That reviewed production input shape is now applied (Client82d34b2f); the SAME
+delivery consumer now checks successfully in2.63s, selected-check receipts.
+No new execution owner, defaults or compatibility path are introduced.
+The other existing unit/public consumers, static required-field denial and
+distinct-count observable controls remain the next qualification gates.
+
+Named-input existing controls pass in debug: both actual native/prefix unit
+cases (2/2) and all four external outbound cases (4/4), with the remaining
+tests explicitly filtered by those focused commands. Required-field static
+control uses the existing remote_surface trybuild owner, adding its own
+client_limits_require_response_capacity test, a complete P1/N2/R3 pass fixture
+and a fail fixture omitting ONLY retained_responses; expected diagnostic is
+actual E0063 naming that field. The outside source comparison is reviewed twice
+(client-limits-static.md a5adb747). Expected added paths are the two Rust
+fixtures and compiler-produced stderr, plus existing remote_surface registration;
+production+0/-0, public types+0/-0 for this verification stage. Keep existing
+native privacy fixtures unchanged. A missing snapshot is a harness setup
+result, not semantic acceptance; inspect the real compiler diagnostic before
+retaining it. These fixtures prove one required field, not runtime routing.
+
+The first static run exits101 solely because the expected snapshot is absent:
+complete product compiles and the omitted-field program reports exactly E0063
+for retained_responses. Retain the actual generated stderr59e07a62; no diagnostic
+is handwritten. Re-running all remote_surface tests passes2/2, including both
+unchanged native privacy denials and the complete/missing-capacity pair.
+Raw prefixes `/tmp/bombay-outbound-limits-static-{first,debug}` distinguish
+setup from accepted execution. Optimized execution and runtime count routing
+remain unqualified at this checkpoint.
+
+The named product makes three former type_complexity expectations obsolete:
+strict Clippy reports ONLY unfulfilled expectations at select/request/reply,
+not new behavioral diagnostics. Remove select's sole expectation attribute and
+the one obsolete entry from each request/reply list (production-6 lines),
+retaining all argument/loan/length expectations and every method body. This
+deletes obsolete verification annotations; it introduces no model or bound.
+Raw prior failure is limits-clippy101; formatting already passes. Re-run strict
+lint after that narrow deletion and independently review the source delta.
+
+Pruned Client0f3d2f1a passes strict whole-workspace/all-feature/all-target lint
+(14.58s, limits-pruned-clippy receipts). Independent scoped reviewbed444b4
+binds the actual compiler/runtime receipts and precise six-line annotation
+deletion without optimized or distinct-count credit.
+
+Before installing distinct-count tests: selected outside source8e2d7238 is
+369 raw lines at client/tests/limits.rs plus one parent module registration,
+no production/type/dependency change. It exercises P1/N2/R3 and P1/N4/R2 over
+the actual ExternalActor Source, native SessionLocal Queryable/Get and existing
+finite Recorded protocol. Original pointer/content order, N acquired rows,
+one accepted unread original, actual one-shot EOF, P1 concurrent protection,
+R retained native originals plus the first exact refusal, actual withdrawal
+and Session close are independent outcomes. Every pending protector is
+released before law assertions; responder work follows the OBSERVED selected
+row count so quota inversions terminate rather than earn timeout credit.
+The actual bounded serving future is unconstrained only in the test host so
+an inherited Tokio poll budget does not truncate the initial quota snapshot.
+
+The last actual native Query may have responses acquired only by retirement;
+do not manufacture provider completion for it. P1 successor Gets independently
+require all preceding operations' acquired EOF/completion and checked outputs.
+Typed callback refusal is inspected by borrow AFTER cleanup BEFORE consuming
+Client, preserving the original in its owner; no downcast or new test hook.
+Author reviewfecb998f and root source review reject the earlier downcast,
+ineffective Copy drop, assertion-contained acquisition and unspecified
+predecessor completion. Peer review must accept the corrected exact source
+before execution. Setup failures carry no law credit.
+
+Falsifiers are separate owning-source substitutions: active semaphore P uses
+R; serving/draining quota N uses R; callback charged count R uses N. Each must
+fail an independent fixed expected concurrency, row/prefix or response/refusal
+outcome AFTER cleanup in debug, then optimized. Restore exact healthy source
+between cuts. The test's count observations cannot establish aggregate-byte,
+TLS, production authentication, two-process application or whole R14 acceptance.
+
+Second review accepts8e2d subject to one final observational relation: a reply
+with verified=None must belong to the actual last query AND have operation
+completed=None; completedSome would require the Ready verifier to have run.
+Install the reviewed source with precisely that added assertion, then format
+and execute it. This strengthens the cancellation qualification without a new
+runtime state, hook or altered bound.
+
+Initial formatted control source532e2901 fails compilation with two E0277:
+selected native ZBytes has no From<Box<[u8]>> for reply payload/attachment.
+Use the supported Vec<u8> input already used by the production native boundary
+and existing fixtures, changing only these two test publication conversions.
+The copied observer/record pair remains retained; every published native
+envelope owns its actual supplied bytes. This is fixture setup, not runtime
+law failure, allocation evidence or a reason to introduce a conversion wrapper.
+
+Supported control source32c030d1 now passes both debug cases in.01s (418
+other tests filtered); log09416b9b. Mounted-source review553d40b9 rechecks the
+two supported publication conversions and the completedNone relation. Neither
+inverses nor optimized controls have executed yet. Strict control lint finds
+only duplicate same-source nominal fixture modules, unused Counter branches,
+one long trace and prefix single-match spelling. Reuse existing narrow module
+expectations rather than widening fixture visibility or creating a new test
+framework; keep the long trace local and change only its prefix loop spelling
+to while-let, retaining exactly one actual terminal None. These test-only
+annotations/spelling changes preserve every trace operation and oracle.
+
+Current control sourcec8c9bb5e and Client0f3d2f1a pass the complete selected
+remote debug matrix:501/501 across12 targets, no failures/ignored/filtered.
+Raw log3a1d1473234c1cc5b0e84633241a50a114ea2c647f4795ed4704c8fa38a428c0,
+`/tmp/bombay-outbound-limits-full-debug.{log,exit}`. Independent two-pass source
+and raw review confirms only local fixture expectations and an equivalent
+single-EOF loop changed from32c030d1; strict targeted lib/tests Clippy passes
+(controls-local-clippy log96b051e5). Full optimized matrix is now running on
+the same source; no inverse or optimized credit is claimed before its receipt.
+Outside single-owner cuts are frozen as active-response34632e04 (P uses R),
+source-responseb28922af (three serving/draining N accesses use R), and
+response-source5ab4ae4f (callback R uses N). Each is compared against healthy
+0f3d2f1a and must be restored byte-exactly between comparisons.
+
+Healthy optimized full matrix also exits0 with501/501 across the same12
+targets and no failed/ignored/filtered tests. Raw optimized log SHA256
+5232478ec0eac81e383429cfeeb154f007ec3173ad6b3f5986b446d4b5337d8b,
+`/tmp/bombay-outbound-limits-full-release.{log,exit}`. Independent debug review
+eb092ef0 and inverse-source review963d6a71 retain bounded count/cleanup scope.
+Now execute the three separate causal inverses; pass counts alone do not
+establish their sensitivity. The active inverse34632e04 is currently applied
+only for its focused debug comparison. Healthy0f3 remains frozen outside.
+
+The P→R inverse34632e04 now exits101 in BOTH profiles ONLY at limits419:
+actual active tuple(2,2,2), expected(1,1,1), for both count configurations.
+Debug.03s/optimized.01s; no watchdog/setup/other panic. All preceding admission,
+native startup/withdrawal/close, joined/release, initial pending/source identity
+and selected-row-count checks pass. Later row/prefix/reply/provider oracles
+are unexecuted in this negative. Debug log5804a562; optimizedbed49c07 under
+`/tmp/bombay-outbound-limits-active-inverse-{debug,release}.{log,exit}`.
+Undo the single-site patch and compare the entire Client byte-exactly against
+frozen healthy0f3 before applying separate N→R sourceb28922af. That exact
+restoration is verified. N→R now runs its focused debug comparison; no negative
+claim precedes its actual outcome.
+
+The N→R inverseb28922af now exits101 in BOTH profiles ONLY at limits418:
+selected2 versus4 and3 versus2, each.01s, following actual native cleanup,
+join/release, initial pending and returned Source identity. All later active/
+row/prefix/reply/provider assertions remain unexecuted in that negative.
+Debug log600c7221/optimized380f81dd under source-inverse-{debug,release}.
+Restore healthy0f3 by reverse patch and full-file cmp, then apply the separate
+single-site R→N inverse5ab4ae4f. Its debug exits101 ONLY at limits484:
+retained replies2 versus3 and3 versus2 (.03s, log711dfadb). Prior cleanup,
+row/prefix originals, active P1 and first-row native Get/encoding/proof facts
+pass; later first-refusal/Response facts and subsequent-row assertions are
+unexecuted. Optimized R→N is now live. No watchdog or setup failure is credited.
+
+Optimized R→N also exits101 ONLY at limits484 for both cases (.01s,
+log705287b98490fac5b045b6b8f409d32fdcb9134109f779ef9141945f3abf364e).
+The three independent substitutions therefore reject all three misrouted
+policies in both profiles. Independent paired/source reviews18ab0b02 and
+9379c97e check reached versus unexecuted oracles and confirm no residual earlier
+mutation. Reverse the final single-site patch and compare all Client bytes
+against healthy0f3 again. Fresh restored debug runs all four Client owning
+cases successfully (.02s, logd84b66a0); optimized restoration is running.
+
+Complete current tracked/untracked delta for the named-input stage against
+f863b7cd: production+61/-39/net22; tests+593/-6/net587; public types+1/-0;
+13 paths including both records. Against main3625 the complete retained tree
+is production+1409/-74/net1335; tests+2491/-46/net2445; public types+4/-0;
+21 paths including records. These are explicit end-state diff scopes, not a
+reset or refund of historical/rejected authored costs. No new dependency,
+manifest, default, overload, validation framework or runtime owner is retained.
+This positive input-surface change makes independent existing count policies
+explicit; it is not production code reduction or full resource acceptance.
+
+Fresh restored optimized also passes all four owning Client cases (.01s,
+logcc7cb14d217c7d8d6d1c4498a7d529ac7efa2dbde40f9af3ccbac53b5ebd8ba3).
+Healthy Client0f3d2f1a and testsc8c9bb5e remain byte-identical to the positive
+501-case source. Final `cargo clippy --offline --locked --workspace --all-features
+--all-targets -- -D warnings` passes17.03s (a7c329b1); final formatting check
+passes; `cargo doc --offline --locked -p bombay-rs --features remote --no-deps`
+passes2.26s (b3bd6762). Receipts are limits-restored-{debug,release} and
+limits-final-{clippy,format,doc} under/tmp/bombay-outbound-. The pinned shell
+is idle; no inverse remains applied. This retains the named-input experiment.
+
+Scoped source review confirms Provider/provide moved byte-exactly to its one
+shared owner, inbound changes only imports, and Node plus finite provider/
+requester/custody source are unchanged. Four new public types against main
+each have actual consumers; no alias/default/old overload/temporary mount or
+second runtime is retained. Remaining PR-readiness work includes current
+user-facing/API-audit/module/capability documentation: those four existing
+guides still predate this Client slice. Update them in a separate documented
+stage before submitting the focused PR. Wider feature distillation, actual
+new-head Nix/CI/review and main delivery are unfulfilled; the full PRD stays active.
+
+Final local result reviewc4c9d36e and branch source/minimization reviewb0617fe4
+seal the exact retained source, scoped outcomes and four-guide PR-readiness gap.
+Durable archive `client-limits-qualified-20261022.tar.gz` in the common
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/` directory
+has SHA256800a52029af70b4f994aeb7de7973fcdd681765da44c568b08097da0293ce446.
+Independent archive member reads recheck healthy Client0f3d2f1a, testsc8c9bb5e
+and restored optimized logcc7cb14d. It preserves the complete tracked/untracked
+source, original static diagnostics, compared mutants and raw paired receipts,
+reviews/records/locks. Mutants are comparison artifacts only. It certifies no
+new-head Nix/CI, executable/compiler closure, full acceptance or merge; its
+record snapshots precede this pointer and the separate documentation stage.

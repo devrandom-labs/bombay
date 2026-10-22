@@ -12,7 +12,7 @@ pub(crate) mod startup;
 mod verification;
 
 mod client;
-pub use client::{Client, ClientError, Response};
+pub use client::{Client, ClientError, ClientLimits, Response};
 
 pub(crate) use export::Exports;
 pub use export::{

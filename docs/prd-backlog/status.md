@@ -13,8 +13,10 @@ recorded; no GitHub review submission is recorded. Main is integrated and the
 remaining outgoing work continues on feat/remote-client. This is delivery of
 the scoped cold Export/resource implementation, not full remote acceptance.
 
-The uncommitted public Client now carries actual outbound requests through the
-existing Node lifecycle. An external public read passes, and the three public
+The public Client slice is committed locally as f863b7cd and carries actual
+outbound requests through the existing Node lifecycle. Its named count inputs
+and distinct-count verification remain uncommitted. An external public read
+passes, and the three public
 Ready/disposal provider cases pass in both profiles while preserving acquired
 results and exact panic causes. Native response handoff and bounded outer
 diagnostics pass; the early-release inverse fails as intended in both profiles.
@@ -29,6 +31,17 @@ retirement obligations; audit3 and distillation remain open. Next is the
 named count input experiment and distinct-limit controls, then remote-counter
 and remaining full acceptance matrices. No full R01–R25/AUTH1/NET1 row is
 closed here; new-head Nix/CI/review and main delivery remain pending.
+
+Named ClientLimits and its distinct P1/N2/R3, P1/N4/R2 controls now qualify
+the full selected remote matrix501/501 in each profile,12 targets/no skips or
+filters. Required-field E0063 is compiler-produced and paired with a compiling
+complete product. All three individual count substitutions now fail ONLY
+their intended post-cleanup count oracles in BOTH profiles; exact healthy
+restoration and fresh four-case Client controls pass in each profile. Final
+strict workspace/all-feature/all-target lint, fmt and remote rustdoc pass.
+Current guidance must be updated before a focused PR; new-head Nix/CI/review
+and main delivery remain pending. No full
+resource/security or remote-counter row closes from these count controls.
 
 PR387's TLS advisory correction d9a5a092 selects rustls-webpki0.103.16 and
 webpki-roots1.0.10 in both existing locks, with fresh Deny CI passing. Four real

@@ -303,6 +303,25 @@ where
     }
 }
 
+/// Explicit outgoing operation and retained-original maxima; no defaults.
+///
+/// These count limits do not bound aggregate bytes, provider allocations or the
+/// already accepted unread prefix retained by the original closed source.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ClientLimits {
+    /// Maximum operations holding an active request permit through protection,
+    /// native Get and response handling. Waiting source rows count separately.
+    pub concurrent_requests: NonZeroUsize,
+    /// Maximum acquired source rows, including no-Get acknowledgments. Reaching
+    /// this count closes source admission; an unread accepted prefix stays owned.
+    pub retained_requests: NonZeroUsize,
+    /// Maximum charged native response originals per query, across callback
+    /// queue and acquired rows. The first refused original is retained separately
+    /// for diagnostics: total native custody is this count plus at most one.
+    /// Later overflow originals are explicitly discharged.
+    pub retained_responses: NonZeroUsize,
+}
+
 /// A cold outgoing source, explicit policies, and bounded acquired request custody.
 pub struct Client<
     Requests,
@@ -404,7 +423,8 @@ impl<
         Requests,
         (
             String,
-            (NonZeroUsize, NonZeroUsize, NonZeroUsize, json::Limits),
+            ClientLimits,
+            json::Limits,
             Duration,
             Encode,
             Protect,
@@ -445,13 +465,11 @@ where
     /// Create a cold outgoing client with explicit source and query policies.
     ///
     /// `source` receives the actor's actual messages; `key` selects the native
-    /// query destination. The limits tuple is `(P, N, R, json_limits)`: P bounds
-    /// active protected-query operations; N bounds acquired source rows, including
-    /// no-Get messages such as acknowledgments; R bounds charged native responses
-    /// per query. One additional first-refusal original is retained for diagnostics;
-    /// later overflow originals are explicitly discharged. These are count bounds,
-    /// not aggregate byte or provider-allocation bounds. JSON limits select the
-    /// protected framing checks. `timeout` selects the native query deadline and
+    /// query destination. `limits` explicitly selects concurrent operations,
+    /// acquired source rows and charged responses per query. It also documents
+    /// the separately retained first-refusal original and source quota policy.
+    /// `json_limits` independently selects the protected framing checks.
+    /// `timeout` selects the native query deadline and
     /// does not certify actor termination or application processing.
     ///
     /// The encoder's `Ok(None)` selects no Get. The protector, verifier, decoder
@@ -464,7 +482,8 @@ where
     pub fn new(
         source: ExternalActor<Requests>,
         key: impl Into<String>,
-        limits: (NonZeroUsize, NonZeroUsize, NonZeroUsize, json::Limits),
+        limits: ClientLimits,
+        json_limits: json::Limits,
         timeout: Duration,
         encode: Encode,
         protect: Protect,
@@ -478,6 +497,7 @@ where
             inputs: (
                 key.into(),
                 limits,
+                json_limits,
                 timeout,
                 encode,
                 protect,
@@ -497,14 +517,11 @@ where
 
     // Synchronous selection is also used for the remaining accepted prefix at
     // join. No new provider/Get starts while that prefix is being retired.
-    #[expect(
-        clippy::type_complexity,
-        reason = "selection borrows the same concrete policy and limit inputs retained by the Client"
-    )]
     fn select(
         inputs: &(
             String,
-            (NonZeroUsize, NonZeroUsize, NonZeroUsize, json::Limits),
+            ClientLimits,
+            json::Limits,
             Duration,
             Encode,
             Protect,
@@ -534,19 +551,18 @@ where
             *request.refusal.borrow_mut() = Some(ClientError::Origin { expected: target });
             return;
         }
-        let permission = match (inputs.7)(&request.original, runtime, target) {
+        let permission = match (inputs.8)(&request.original, runtime, target) {
             Ok(permission) => permission,
             Err(cause) => {
                 *request.permission.borrow_mut() = Some(cause);
                 return;
             }
         };
-        *request.encoded.borrow_mut() = Some((inputs.3)(&request.original, runtime, target));
+        *request.encoded.borrow_mut() = Some((inputs.4)(&request.original, runtime, target));
         drop(permission);
     }
 
     #[expect(
-        clippy::type_complexity,
         clippy::too_many_arguments,
         clippy::await_holding_refcell_ref,
         reason = "immutable original encoding and proof and the sole native receiver stay outside producers; authority guards end before suspending waits, while Get enters and returns synchronously through the selected Ready future"
@@ -554,7 +570,8 @@ where
     async fn request<Target>(
         inputs: &(
             String,
-            (NonZeroUsize, NonZeroUsize, NonZeroUsize, json::Limits),
+            ClientLimits,
+            json::Limits,
             Duration,
             Encode,
             Protect,
@@ -596,7 +613,7 @@ where
             }
         };
         provide(
-            || (inputs.4)(encoded, &request.original),
+            || (inputs.5)(encoded, &request.original),
             &request.protected,
             &request.protection_factory,
             &request.protection_poll,
@@ -614,12 +631,12 @@ where
         let Some(Ok(proof)) = protection.as_ref() else {
             return;
         };
-        if let Err(cause) = json::check(encoded, proof, &inputs.1.3) {
+        if let Err(cause) = json::check(encoded, proof, &inputs.2) {
             *request.refusal.borrow_mut() = Some(ClientError::Json { cause });
             return;
         }
         // The original provider output is already outside its disposed future.
-        let permission = match (inputs.7)(&request.original, runtime, target) {
+        let permission = match (inputs.8)(&request.original, runtime, target) {
             Ok(permission) => permission,
             Err(cause) => {
                 *request.permission.borrow_mut() = Some(cause);
@@ -629,7 +646,7 @@ where
         // R bounds charged native replies, including retained terminal rows.
         // The explicit first-refusal policy below retains at most one further
         // original: total native reply custody is R + 1 per submitted request.
-        let maximum = inputs.1.2.get();
+        let maximum = inputs.1.retained_responses.get();
         let (publication, incoming) = mpsc::channel(maximum);
         *request.incoming.borrow_mut() = Some(incoming);
         let replies = Arc::new(Semaphore::new(maximum));
@@ -692,7 +709,6 @@ where
     }
 
     #[expect(
-        clippy::type_complexity,
         clippy::too_many_arguments,
         clippy::too_many_lines,
         clippy::await_holding_refcell_ref,
@@ -701,7 +717,8 @@ where
     async fn reply<Target>(
         inputs: &(
             String,
-            (NonZeroUsize, NonZeroUsize, NonZeroUsize, json::Limits),
+            ClientLimits,
+            json::Limits,
             Duration,
             Encode,
             Protect,
@@ -738,13 +755,13 @@ where
             *reply.shape.borrow_mut() = Some(Err(ClientError::MissingProof));
             return;
         };
-        if sample.payload().len() > inputs.1.3.input_bytes.get() {
+        if sample.payload().len() > inputs.2.input_bytes.get() {
             *reply.shape.borrow_mut() = Some(Err(ClientError::Json {
                 cause: json::Error::InputBytes,
             }));
             return;
         }
-        if proof.len() > inputs.1.3.proof_bytes.get() {
+        if proof.len() > inputs.2.proof_bytes.get() {
             *reply.shape.borrow_mut() = Some(Err(ClientError::Json {
                 cause: json::Error::ProofBytes,
             }));
@@ -754,7 +771,7 @@ where
             sample.payload().to_bytes().into_owned().into_boxed_slice(),
             proof.to_bytes().into_owned().into_boxed_slice(),
         );
-        let shape = json::check(&original.0, &original.1, &inputs.1.3)
+        let shape = json::check(&original.0, &original.1, &inputs.2)
             .map_err(|cause| ClientError::Json { cause });
         *reply.wire.borrow_mut() = Some(original);
         *reply.shape.borrow_mut() = Some(shape);
@@ -766,7 +783,7 @@ where
             return;
         };
         provide(
-            || (inputs.5)(&wire.0, &wire.1),
+            || (inputs.6)(&wire.0, &wire.1),
             &reply.verified,
             &reply.verification_factory,
             &reply.verification_poll,
@@ -784,7 +801,7 @@ where
         let Some(Ok(receipt)) = verified.as_ref() else {
             return;
         };
-        let permission = match (inputs.8)(receipt, &request.original, runtime, target) {
+        let permission = match (inputs.9)(receipt, &request.original, runtime, target) {
             Ok(permission) => permission,
             Err(cause) => {
                 *reply.permission.borrow_mut() = Some(cause);
@@ -794,10 +811,10 @@ where
         // Preserve the actual constructed message before ending this loan and
         // requesting fresh authority. A refusal cannot erase the message.
         *reply.decoded.borrow_mut() =
-            Some((inputs.6)(receipt, &wire.0, &request.original).map(Either::Left));
+            Some((inputs.7)(receipt, &wire.0, &request.original).map(Either::Left));
         drop(permission);
         loop {
-            let permission = match (inputs.8)(receipt, &request.original, runtime, target) {
+            let permission = match (inputs.9)(receipt, &request.original, runtime, target) {
                 Ok(permission) => permission,
                 Err(cause) => {
                     *reply.permission.borrow_mut() = Some(cause);
@@ -926,7 +943,8 @@ impl<
         Requests,
         (
             String,
-            (NonZeroUsize, NonZeroUsize, NonZeroUsize, json::Limits),
+            ClientLimits,
+            json::Limits,
             Duration,
             Encode,
             Protect,
@@ -986,7 +1004,11 @@ where
     }
 
     async fn declare(&mut self, session: &Session) -> Result<(), ()> {
-        let (pending, retained, replies, _) = self.inputs.1;
+        let ClientLimits {
+            concurrent_requests: pending,
+            retained_requests: retained,
+            retained_responses: replies,
+        } = self.inputs.1;
         if pending.get() > Semaphore::MAX_PERMITS || replies.get() > Semaphore::MAX_PERMITS {
             self.startup = Some(Err(ExportError::QueryCapacity));
             return Err(());
@@ -1004,7 +1026,7 @@ where
             .consolidation(ConsolidationMode::None)
             .congestion_control(CongestionControl::Drop)
             .allowed_destination(Locality::Any)
-            .timeout(self.inputs.2)
+            .timeout(self.inputs.3)
             .await;
         match declaration {
             Ok(querier) => {
@@ -1038,14 +1060,14 @@ where
             let source = &mut self.source;
             let source_address = source.address();
             let retained = &self.requests;
-            let capacity = Arc::new(Semaphore::new(inputs.1.0.get()));
+            let capacity = Arc::new(Semaphore::new(inputs.1.concurrent_requests.get()));
             let mut requests = FuturesUnordered::new();
             loop {
                 tokio::select! {
                     biased;
                     actual = &mut joined => { self.joined = Some(actual); break; }
                     Some(()) = requests.next(), if !requests.is_empty() => {},
-                    original = source.receive(), if retained.borrow().len() < inputs.1.1.get() => {
+                    original = source.receive(), if retained.borrow().len() < inputs.1.retained_requests.get() => {
                         let Some(original) = original else {
                             self.source_eof = Some(());
                             // No repoll after the actual one-shot user EOF.
@@ -1055,7 +1077,7 @@ where
                         };
                         let request = Rc::new(Request::new(original));
                         retained.borrow_mut().push(Rc::clone(&request));
-                        if retained.borrow().len() == inputs.1.1.get() {
+                        if retained.borrow().len() == inputs.1.retained_requests.get() {
                             // Quota closes admission now, not after an actor's
                             // final send could block forever on this mailbox.
                             source.close_admission();
@@ -1101,7 +1123,7 @@ where
         // Only unused row budget can receive accepted prefix. Exhaustion leaves
         // the closed original Source and remaining prefix in this Client.
         if self.source_eof.is_none() {
-            while self.requests.borrow().len() < self.inputs.1.1.get() {
+            while self.requests.borrow().len() < self.inputs.1.retained_requests.get() {
                 let Some(original) = self.source.receive().await else {
                     self.source_eof = Some(());
                     break;

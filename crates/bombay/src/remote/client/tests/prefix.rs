@@ -1,5 +1,5 @@
 //! Actual Source dequeue and joined cancellation preserve one selection outcome.
-use super::super::{Client, ClientError};
+use super::super::{Client, ClientError, ClientLimits};
 use crate::MailAddr;
 use crate::application::{ApplicationScope, MailboxCapacity};
 use crate::local::endpoint::ExtractLocalEndpoint;
@@ -110,7 +110,12 @@ async fn acquired_acknowledgment_is_selected_before_joined_cancels_its_operation
         let mut client = Client::new(
             source,
             "bombay/outbound/source-prefix",
-            (maximum, maximum, maximum, limits),
+            ClientLimits {
+                concurrent_requests: maximum,
+                retained_requests: maximum,
+                retained_responses: maximum,
+            },
+            limits,
             Duration::from_secs(20),
             |original: &User<MailAddr, Box<[u8]>>, runtime: &str, target| {
                 selected.borrow_mut().push((original.from, original.message.as_ptr(),
