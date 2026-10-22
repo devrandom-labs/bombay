@@ -41885,3 +41885,108 @@ actual commits/submission, and label the earlier binding/refusal checkpoint as
 historical. This records-only correction touches this PRD and the status index;
 production/tests/public types+0/-0. Historical source/results remain unchanged.
 Do not infer merged delivery or any full acceptance row from submission.
+
+### Coverage command retirement — scoped next experiment
+
+PR388 (`feat/remote-client`, headfa6717f3) is open; its actual new-head CI is
+running and its full delivery remains unproven. Keep that slice unchanged.
+This separate branch starts the first explicitly requested Python retirement,
+using the reviewed ownership amendment825561a7 rather than translating custom
+controllers. The exact blocker is the existing Nix owner-coverage check's
+52-line Python reduction of an ecosystem LLVM JSON report.
+
+Before edits: keep the existing `cargo llvm-cov --locked --workspace --all-targets
+--json --output-path` producer, four per-owner floors and artifacts unchanged.
+Replace only its reducer with inline pinned jq1.8.1 in the existing derivation;
+replace that derivation's Python input with jq, remove the retired script's
+source-files entry, then delete tools/verify-owner-coverage.py after qualifying
+the reducer. Expected paths: flake.nix, that script, this PRD and backlog status;
+production Rust delta0, tests0, public types+0/-0. Expected deletion52 Python
+lines; no new script, manifest, command runner or validation framework.
+Existing Nix/Crane, cargo-llvm-cov0.8.5 and jq own the operation. Other Python
+consumers remain pending; this stage must not silently remove their laws.
+
+Fresh primary-source check: https://jqlang.org/manual/v1.8/ documents slurp,
+raw output and exit-status behavior; exact upstream cargo-llvm-cov v0.8.5
+src/cli.rs supports aggregate thresholds without a per-owner inclusion selector.
+Aggregate coverage cannot replace independent90/93/90/90 owner floors. Full
+source/qualification proposal6bb64d37 and superseding ownership amendment825561a7
+are retained under/tmp/bombay-prd-resumption/; both source review passes precede
+selection. There is no numerical implementation budget under the user's
+explicit override; measurement and minimization still apply.
+
+Falsifiers: literal LLVM-shaped boundary report must produce four lines and0;
+each missing/duplicate owner (including separate runs), each below-floor owner,
+unrelated high coverage, malformed/non-numeric/impossible line totals, empty or
+multiple reports and near paths must fail. Windows path normalization must pass
+and duplicate normalized owners must fail. Exercise the entire jq-to-tee
+pipeline with pipefail, not just jq alone, then restore valid input and rerun.
+These synthetic checks prove only report reduction. Actual unchanged owning
+Nix coverage export and four totals, two reviews and required CI remain needed.
+
+The mounted reducer's first source review8b2598c1 identified two actual gaps:
+jq can iterate object values where LLVM requires arrays, and arbitrary large
+integer percentage products can round under jq arithmetic. Add explicit report/
+run/file/name shapes and positive integral line totals; bound count to
+90071992547409 so each percentage product remains exactly representable. Counts
+beyond that supported exact domain are refused, not rounded into a passing
+floor. No real source file approaches that limit. The original unguarded
+reducer actually returns0 for object-data, object-files, fractional-covered and
+a below-floor huge-integer report (initial-counterexamples.log4e931dab).
+These are report-reduction controls, not coverage execution or production laws.
+
+The final mounted reducer43d1ead0 passes47 pipeline invocations/45 distinct
+labels:42 expected refusals exit5 and5 positives exit0 (literal valid, Windows
+and three restored positives). Every positive compares all four output lines
+with the independent literal expected rows. Missing/duplicate/below-floor cuts
+cover all four owners; duplicate rows span separate runs, unrelated full
+coverage cannot mask a low owner, and malformed shape/value/input/path controls
+fail. The full jq-to-tee pipeline has pipefail. The corrected numeric and shape
+controls reject all four original false passes. Final log45acfc45 and separate
+exit0, original and final reducer sources, literal inputs/outputs/diagnostics and
+one-off external check.sh60e328e0 are retained in
+/tmp/bombay-owner-coverage-qualification/. No project-owned test runner is added.
+Two-pass independent review623d698e confirms the actual matrix and source,
+without claiming exhaustive numeric-domain tests. The unchanged real owning
+Nix coverage derivation is running through the sole pinned shell; no total,
+acceptance, new-head CI or merge is claimed before its terminal result.
+
+Actual `nix build --no-link --print-out-paths
+.#checks.aarch64-darwin.bombay-owner-coverage` now exits0. Output is
+/nix/store/przmbb6yhas29fd717i172vv3fg7psr2-bombay-workspace-0.1.0.
+The unchanged default-feature workspace/all-targets coverage producer completed
+in4m11s and the retained reducer reports Driver737/818 (floor90), actor
+execution1006/1048 (floor93), actor outcome95/97 (floor90), Observe502/525
+(floor90). This is the existing coverage scope, not an all-feature remote test
+or Linux CI claim. Copied raw coverage.json SHA2566deff2d66318c4fd89316a7a371eab54fcd2cf255de5462b2e8dd2c9b0ef9eb6,
+owner outputb5426474d3002c2774a7a800d4753cc0db675a852f564390ef972d95f50cd7f6,
+full build logb51ed586b727bbd1c17581fc691908f31b043bfe62108770a66ca7d2e8ea3609,
+derivation description, command log and separate exit receipt are retained.
+Pinned `nixfmt --check flake.nix` exits0. The same literal largest-supported
+count90071992547409 at93% accepts83766953069091 covered, rejects one fewer for
+below-floor (not a shape error), then accepts the restored input; all four
+positive output lines match literal expected rows. Additional boundary log
+1b67a16c exits0. These three invocations supplement, not replace or relabel,
+the earlier47-invocation source-bound cohort.
+
+Complete four-path tracked/untracked delta against8157bba1: Rust production
++0/-0/net0; Rust tests+0/-0/net0; public types+0/-0. Verification machinery
+(flake plus deleted Python) is+47/-56/net-9. The four configured floor facts
+have one owner inside the existing Nix gate. No permanent test tool, manifest,
+wrapper or dependency is added; pkgs.jq replaces only this gate's pkgs.python3.
+This is scoped verification-code reduction. Other six Python files and inline
+workflow consumers still require retirement after preserving their actual laws.
+
+Final independent real-evidence review785007078a5d7f79efc41a1bc4eceebc60c477ef24d5f8ffa12da3bdf7dcf73d
+closes both source/outcome passes for this scoped retirement. Durable archive
+`coverage-python-retirement-20261022.tar.gz` in the common Git archive directory
+has SHA2568c96090b6309dbf798415e5f8d032f98f75200491b7facdccec38b72f7ba6cf3.
+It preserves the complete four-path patch, exact original/final reducers and
+counterexamples, literal report controls, actual raw coverage/build/derivation,
+locks, records and all reviews. Archive member reads recheck raw coverage6deff2d6,
+final reducer43d1ead0 and final review78500707. Record snapshots precede this
+pointer; it certifies no new-head CI, merge or whole-PRD acceptance.
+The separately submitted PR388's final8157bba1 independent branch review is
+/tmp/bombay-outbound-client-comparison/pr388-8157bba1-independent.md,
+SHA256c337ba7471448bb14e118b2ea0af9f38a228b7c38b9ca6a0d700f6ea8b0b2714.
+That exact source remains unchanged by this coverage branch.
