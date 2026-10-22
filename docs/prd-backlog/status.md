@@ -10,14 +10,18 @@ PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,
 with all six required checks passing on e1eab601. Its source tree is identical
 to that verified head. Repository-owner merge and independent local reviews are
 recorded; no GitHub review submission is recorded. Main is integrated and the
-remaining outgoing work continues on feat/remote-client. This is delivery of
+outgoing Client is now delivered through PR388. This is delivery of
 the scoped cold Export/resource implementation, not full remote acceptance.
 
 The public Client slice is committed as f863b7cd and carries actual
 outbound requests through the existing Node lifecycle. Its named count inputs
 and distinct-count verification are committed as66fa106a, followed by current
-guidance in fa6717f3. The pushed slice is submitted in
-[PR388](https://github.com/devrandom-labs/bombay/pull/388). An external public read
+guidance in fa6717f3. [PR388](https://github.com/devrandom-labs/bombay/pull/388)
+merged2026-10-22T21:05:52Z as8557f0d80bae833e2484988749aed4d29d53842c,
+with all six checks passing on exact8157bba1. The merge tree equals that
+verified head; main is fetched and integrated into the coverage retirement
+branch. Independent source/results reviews are recorded; no GitHub approval
+submission is claimed. An external public read
 passes, and the three public
 Ready/disposal provider cases pass in both profiles while preserving acquired
 results and exact panic causes. Native response handoff and bounded outer
@@ -32,7 +36,7 @@ pass. Audit2 identifies current onboarding/EOF guidance and gate/Python
 retirement obligations; onboarding/EOF guidance is now reconciled, while audit3
 and distillation remain open. Next are the separate remote-counter application
 and remaining full acceptance matrices. No full R01–R25/AUTH1/NET1 row is
-closed here; new-head Nix/CI/review and main delivery remain pending.
+closed here; the remaining slices still require their own review, CI and merge.
 
 Named ClientLimits and its distinct P1/N2/R3, P1/N4/R2 controls now qualify
 the full selected remote matrix501/501 in each profile,12 targets/no skips or
@@ -42,15 +46,15 @@ their intended post-cleanup count oracles in BOTH profiles; exact healthy
 restoration and fresh four-case Client controls pass in each profile. Final
 strict workspace/all-feature/all-target lint, fmt and remote rustdoc pass.
 Current guidance is reconciled and passes8 affected compiler tests plus final
-strict lint, fmt and rustdoc. PR388's five visible CI jobs are running;
-new-head CI success, review and main delivery remain pending. No full
+strict lint, fmt and rustdoc. PR388's Nix, native TLS debug/optimized, Deny and
+both CodeQL checks passed before its merge. No full
 resource/security or remote-counter row closes from these count controls.
 
 PR387's TLS advisory correction d9a5a092 selects rustls-webpki0.103.16 and
 webpki-roots1.0.10 in both existing locks, with fresh Deny CI passing. Four real
 TLS request cases and three isolated native custody cases pass in each profile.
 All required CI checks pass on that exact earlier pushed head. The subsequent
-outbound implementation is submitted separately in PR388; this dependency
+outbound implementation is delivered separately in PR388; this dependency
 correction closes no full remote acceptance row.
 
 The merged resource correction rejects oversized borrowed payload/proof lengths
@@ -67,7 +71,7 @@ or full remote acceptance requirements.
 ### Earlier expiry, binding and approval checkpoints
 
 The following source epochs and numerical approvals are historical; the current
-unbounded execution and PR388 submission are described above.
+unbounded execution and PR388 delivery are described above.
 
 Earlier remote expiry comparison: committed d4d69e63 proves two first-attempt
 permission-expiry defects in both profiles. The committed0852abcd borrowed native
@@ -1067,3 +1071,23 @@ ingress watchdog. The constructed-original custody model and repair remain
 unselected; this regression checkpoint closes no full acceptance gate. Strict
 lint still reports3shared-fixture findings plus legacy external compilation
 errors. The revised255-path question remains pending; all existing caps carry.
+
+### Coverage Python retirement experiment (2026-10-22)
+
+Separate chore/owner-coverage work replaces only the existing coverage report
+reducer with inline pinned jq and removes its52-line Python script/source input.
+The producer, four owner floors and artifacts remain unchanged. Final synthetic
+matrix47 invocations passes, with all four reproduced original false passes
+rejected; two-pass independent source/outcome review is recorded in the remote
+PRD. At that initial checkpoint the actual owning Nix build was still running.
+Its completed result follows. Other Python owners, CI and delivery remain pending.
+PR388's outbound source is unchanged by this separate experiment.
+
+The scoped coverage experiment now passes its unchanged actual owning Nix
+coverage derivation on aarch64-darwin:737/818 Driver,1006/1048 execution,95/97
+outcome,502/525 Observe, with the same90/93/90/90 floors. Pinned Nix formatting
+and extra max-safe/below-by-one/restored arithmetic controls pass. The retained
+verification machinery delta is+47/-56/net-9; no Rust/API change. Final
+independent result review passes and the focused implementation is committed
+as6e70adad. New-head CI/delivery remain separate from this local acceptance;
+the rest of Python retirement stays open.

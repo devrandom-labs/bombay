@@ -11,8 +11,8 @@ external interface, timer, Entity, supervisor, and worker-pool paths have
 executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
 or multithread execution. Durability remains planned. PR387 merged the cold
-remote Export/Node service; the local outbound Client slice described below is
-not yet merged. Complete remote acceptance remains open. The optional `remote`
+remote Export/Node service; PR388 merged the outbound Client described below.
+Complete remote acceptance remains open. The optional `remote`
 feature also provides `remote::verify` for
 provider-result custody. The merged ingress primitive adds `remote::try_retain`
 for nonwaiting count retention (PR363). Neither supplies
@@ -659,7 +659,8 @@ declared-route mismatch, JSON refusal and absent proof without exposing payloads
 in its outer diagnostics. Advanced inspection is optional, not a reporting
 callback required to run the application.
 
-This outgoing slice is locally verified, not merged or complete remote support.
+This outgoing slice is verified and merged through PR388; complete remote support
+remains pending.
 Full cancellation/unwind, pressure/retry, public privacy/authentication and
 resource acceptance remain open. Zenoh stays an internal networking owner; ordinary
 applications must not assemble its request/reply loops. Refusal preserves the

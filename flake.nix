@@ -63,7 +63,6 @@
               (pkgs.lib.fileset.maybeMissing ./crates/bombay-engine/tests/driver-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/child_preparation_retirement_evidence.py)
-              (pkgs.lib.fileset.maybeMissing ./tools/verify-owner-coverage.py)
               ./nix/references.sh
               ./tools/references.sh
               ./flake.nix
@@ -256,14 +255,58 @@
               inherit cargoArtifacts;
               nativeBuildInputs = [
                 pkgs.cargo-llvm-cov
-                pkgs.python3
+                pkgs.jq
               ];
               buildPhaseCargoCommand = ''
                 mkdir -p "$out"
                 cargo llvm-cov --locked --workspace --all-targets \
                   --json --output-path "$out/coverage.json"
-                python3 tools/verify-owner-coverage.py "$out/coverage.json" \
-                  | tee "$out/owner-coverage.txt"
+                set -o pipefail
+                jq -ers '
+                  if length != 1 then error("expected one coverage JSON document") else .[0] end
+                  | if type != "object" or (.data | type) != "array" then
+                      error("expected coverage data array")
+                    elif any(.data[]; type != "object" or (.files | type) != "array") then
+                      error("expected coverage file arrays")
+                    else . end
+                  | [.data[].files[]] as $files
+                  | if any($files[]; type != "object" or (.filename | type) != "string") then
+                      error("expected coverage files with names")
+                    else . end
+                  | {
+                      "crates/bombay-engine/src/driver.rs": 90,
+                      "crates/bombay/src/actor_execution.rs": 93,
+                      "crates/bombay/src/actor_outcome.rs": 90,
+                      "crates/bombay/src/observe/mod.rs": 90
+                    }
+                  | to_entries
+                  | map(
+                      . as $floor
+                      | [$files[] | select(
+                          (.filename | gsub("\\\\"; "/")) | endswith("/" + $floor.key)
+                        )] as $owners
+                      | if ($owners | length) != 1 then
+                          error("\($floor.key): expected one owner report, found \($owners | length)")
+                        else
+                          $owners[0].summary.lines as $lines
+                          | if ($lines.count | type) != "number"
+                              or ($lines.covered | type) != "number"
+                              or $lines.count <= 0 or $lines.covered < 0
+                              or $lines.covered > $lines.count
+                              or ($lines.count | floor) != $lines.count
+                              or ($lines.covered | floor) != $lines.covered
+                              # Keep both percentage products exact in jq arithmetic.
+                              or $lines.count > 90071992547409 then
+                              error("\($floor.key): invalid line accounting")
+                            elif 100 * $lines.covered < $floor.value * $lines.count then
+                              error("\($floor.key): line coverage below \($floor.value)%")
+                            else
+                              "\($floor.key): \($lines.covered)/\($lines.count) lines, floor \($floor.value)%"
+                            end
+                        end
+                    )
+                  | .[]
+                ' "$out/coverage.json" | tee "$out/owner-coverage.txt"
               '';
               doInstallCargoArtifacts = false;
               doCheck = false;

@@ -14,7 +14,7 @@ networking substrate; a deterministic network test host is a verification seam.
 Selo builds on Bombay, Mnesis and `mnesis-bombay`; Bombay does not depend on
 Selo or Mnesis. The new document's proposed distributed contracts are not
 implemented capabilities or additions to the current Engine port. PR387 merged
-the cold Export/Node service; the local unmerged Client slice adds a narrower
+the cold Export/Node service; PR388 merged the Client, adding a narrower
 ordinary actor request/reply path. The complete multi-node Application contract
 and separate remote-counter application remain pending. The optional `remote` feature
 provides provider-result acquisition through `remote::verify`; the
@@ -133,7 +133,7 @@ facilities. Count limits do not prove peak memory or callback allocation bounds.
 Full SDK privacy/authentication, general cancellation/unwind and pressure/retry,
 the ordinary remote-counter application and complete resource/security gates
 remain unaccepted. Local outgoing read/provider/count controls establish only
-their recorded slice; new-head CI/review and main delivery remain separate.
+their recorded slice, delivered through PR388 after all six checks passed.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The
