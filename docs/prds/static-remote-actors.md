@@ -13,7 +13,7 @@ Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 3625efe86f8613e13b3a3bc6cf180dc5de57edc7 after all six required checks passed on
 e1eab601. The repository owner marked it ready and merged it; no GitHub review
 submission is recorded. Independent source/results reviews remain in the
-feature evidence. Main is fetched and integrated; its tree equals e1eab601.
+feature evidence. The PR387 merge tree equals e1eab601.
 PR388 also merged, delivering the outbound Client as recorded below.
 PR387 delivers the scoped cold Export/resource changes,
 not the complete R01–R25/AUTH1/NET1 PRD.
