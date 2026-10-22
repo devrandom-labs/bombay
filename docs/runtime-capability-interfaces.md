@@ -30,16 +30,27 @@ top-level metadata object; concrete Serde schemas retain field presence, uniquen
 meaning. Native syntax causes remain available. This checks acceptance after
 token materialization and proves neither a peak-heap bound nor authentication.
 The optional remote feature provides Application::open_node and remote::Node as a
-transport owner over ordinary Application execution. Both Node callbacks receive
-only the typed ApplicationHandle, preserving caller-local borrows and non-Send
-work. Node::run_with awaits the complete outcome; execute_with retains separate
-execution and receiving operations. Both preserve original Work on refusal
-through the existing invocation spine. The native Session remains inside Node;
-remaining public SDK configuration/query surfaces are tracked in the
-[DevX coordination](prds/developer-experience.md). It owns no new actor trait,
-mailbox, lifetime authority or permission policy. Startup profile checks preserve original declarations on refusal;
-actual SDK and root/child integration remain separate verification gates.
+transport owner, reusing ordinary Application execution with its privately owned
+Session. Node::run_with awaits its complete outcome; execute_with keeps separate
+execution and receiving operations. Both callbacks receive only the ordinary
+Application handle and retain caller-local borrows and non-Send outputs. Both
+carry declared Entity family receptionists and exact family shutdown receiving
+through the existing family-capable invocation owner. They
+preserve original Work on refusal through the existing invocation spine. It owns no new actor trait,
+mailbox, lifetime authority or permission policy. Startup consumes explicit
+Bombay Network inputs, constructs the fixed private configuration, and returns
+original Application/Network on refusal. Its focused real Counter startup/work/
+retirement controls establish no full remote service or peer handshake.
 Native transport fixtures remain scoped verification consumers.
+The user requires this transport ownership to stay entirely private. The current
+cold Export/Node candidate keeps Session, Query ingress and native declarations
+in private owner fields; consuming Request extraction discharges its native
+Query instead of returning it. Full public-surface/privacy acceptance remains
+open, including the current compile-denial diagnostic. Startup now
+accepts only Network and rejects a concrete native Config at compile time. Networking startup, service work and
+retirement must reuse Application ownership; users compose Bombay contracts.
+The next release/API delivery is held until the remote PRD's session-free
+Application witness and public-surface audit establish that boundary.
 
 Merged PR370 adds remote-only
 `ApplicationHandle::export_client` over an existing EstablishedRecipient. Actual
@@ -56,29 +67,38 @@ Full/Closed originals without awaiting capacity. The local service retains its
 permission/time snapshot and retry policy; client construction and attempted
 mailbox admission remain separate facts. Stable Entity resolution still awaits.
 
-Merged PR372 composes those existing owners through
-`ApplicationHandle::export`. Only Node execution attaches its own native Session
-to the live handle; there is no public arbitrary handle/Session pairing.
-`remote::Export` retains protected bytes, proof and opaque provider receipt with
-one independent existing reply client per request. It compares stable provider
-identities, preserves duplicate/conflicting originals, and checks explicit count
-limits before allocating a new endpoint. Final permission/time loans cover one
-nonwaiting mailbox attempt and native result storage. Only a retained native
-Full permits explicit retry; interrupted return remains uncertain. Protocol
-authentication, native reply validation, publication permission, retry waiting
-and full resource/security acceptance remain distinct uncompleted obligations.
-This primitive introduces no second local mailbox or Behavior algebra.
-Its dependent concurrent-receive candidate borrows the existing query channel
-and actual eligible native waits together. The optional normal futures-util
-dependency remains behind `remote`; its direct edge requests `alloc` with defaults
-off, while resolved features follow Cargo's normal feature union.
-An acquired native result stays in its request row; a separate runtime-issued
-key identifies it without declaring protocol validity or business completion.
-Either occupied outside slot prevents further acquisition. Native-first
-selection relies on once-acquired append-only rows for its lifetime request-count
-bound; this is no latency, capacity-wake or whole-memory bound. Temporary future
-collection allocation and rebuild work remain explicit costs. This operation
-does not supply authenticated orchestration or reply publication.
+The unmerged cold-service candidate replaces the earlier imperative
+ApplicationHandle::export path. Node.exports owns binding to actual actor proofs,
+declaration startup, concurrent interpretation, withdrawal and connection close
+after the existing Application/family cleanup. It reuses the same invocation
+spine for supplied Work and genuine absence; it adds no actor contract or mailbox.
+Cold Export inputs retain explicit wire/security policies and limits. Reply,
+Submission and Stop select and encode existing native operations without a
+terminal-presentation callback. Native outcome inspection is optional.
+
+Each retained Request owns original protected/proof bytes, opaque verification,
+exact native attempt/reply/EOF facts and independent provider results/panics.
+Consuming extraction transfers the existing closed native product unchanged,
+or returns the same Request while a producer loan remains. It neither certifies
+cleanup nor grants retry. A runtime-issued key is identity only. The actual
+Node post-join close result remains distinct from actor retirement and Work.
+Declaration/cache lifetime follows the existing Application cleanup publication,
+so supplied Work may retrieve a cached result after target retirement. Native
+request reception retains its own target/root retirement observations. Node
+extraction keeps separate original kernel poll and disposal panic payloads.
+Current permission loans span construction and the synchronous native attempt.
+Cached duplicates end the request loan before the independent reply check,
+allowing both policies to use the same nonreentrant authority owner.
+Known Full retains its exact rejected command through the existing capacity
+wait, fresh authority check and synchronous retry. Scoped Ledger and Counter
+pressure controls qualify that path; full pressure acceptance remains open.
+Uncertain supplies no proof of nonadmission and must not be retried.
+
+The optional futures-util dependency remains behind remote with explicit std
+and defaults disabled; it supplies the existing collection/shared-future
+facilities. Count limits do not prove peak memory or callback allocation bounds.
+Full SDK privacy, nonprovider unwind cleanup, outbound Actions, the ordinary
+remote application and complete resource/security gates remain unaccepted.
 
 The [developer experience coordination](prds/developer-experience.md) records
 the current published dependency selection and its source verification. The

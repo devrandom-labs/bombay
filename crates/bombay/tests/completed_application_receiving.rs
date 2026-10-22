@@ -5413,3 +5413,7 @@ fn supplied_ready_user_none_has_its_bare_original_output() {
         drop(root_receipt);
     });
 }
+
+#[cfg(feature = "remote")]
+#[path = "completed_application_receiving/network.rs"]
+mod network;

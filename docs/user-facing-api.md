@@ -544,48 +544,88 @@ check versions, profiles, SDK identities, replay and permission. Metadata neithe
 authenticates input nor grants actor access. Providers protect the exact original
 transmitted bytes; deserializing and reserializing is not proof verification.
 
-The `remote` feature provides `application.open_node(config).await`. Its input is the configuration owner's `Config` from
-`bombay-zenoh-config` 1.10.2 (aliased as `zenoh_config` in Cargo). Build
-root/child topology with ordinary Application first. Its returned
-`remote::Node` owns that declaration and one fresh native Session. Await the
-complete application with
+The `remote` feature uses `application.open_node(network).await`. Supply Bombay's
+`remote::Network`: explicit deployment roots, native query capacity and
+`NetworkLayout`. Peer layout has independent connecting/listening directions;
+`RouterClient` requires connecting endpoints. Each `ConnectionEndpoints` owns an
+all-of plain-address list, its certificate and private key. `CredentialSource`
+selects each file or base64 value independently. There are no implicit
+credentials, shared identities or query limits, and no public SDK Config input.
+Build topology, children and Entity families with ordinary Application first. The returned
+`remote::Node` owns that declaration and one private fresh network connection.
+Await the complete application with
 `node.run_with(|application| async move { ... }).await`.
 Work receives the same inferred Application handle as local execution and can
 return caller-local, non-`Send` values. The joined result is the ordinary
 `ApplicationOutcome`, including independent native retirement and both
-notification results. Finish receiving before `node.close().await`, retaining
-the independent close result.
-For independently driven operations, use
+notification results. For the basic transport owner, finish receiving before
+`node.close().await`, retaining the independent close result.
+For independently driven basic transport operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
 
-Transport hiding remains unfinished: startup configuration, exported query
-custody and native failures still expose SDK types. These are
-remaining interface work, not the canonical business callback. Zenoh is Bombay's
-internal network; application authors compose actors and use typed Bombay
-clients and recipients. Both execution entry points preserve the original
-callable on refusal. Missing-host refusal also restores the original declaration;
+For remote metadata, `node.runtime_id()` returns the connection owner's identity
+as a string. `application.actor_address(&recipient)` returns an actor's address
+only after checking its association with that Application; foreign actors and
+external reply endpoints return `ExportError::UnownedTarget`. Association survives
+actor retirement, and the runtime ID survives connection close. These projections
+do not grant operation permission or establish readiness.
+
+Declared Entity families use that same Node path. Work selects their existing
+receptionists with `application.entities(role)`; receiving retains the actual
+family shutdown results alongside the root, Work and notifications.
+
+The current unmerged remote-service candidate attaches cold declarations with
+`node.exports(exports, binding)`. The asynchronous binding returns the actual
+root/child target proofs after staging. `Export::new` selects explicit limits,
+wire decoding, operation declarations, verification/protection, request identity
+and current request/reply permission. `reply`, `submission` and `stop` each
+take operation selection and wire encoding; they require no terminal reporting
+callback. Existing actor behaviors and their `ActorExt` policies stay unchanged.
+
+Run an attached node with `run_with` for supplied caller work or `run` for genuine
+work absence. The node owns declaration startup, receiving, withdrawal, joined
+Application/family cleanup and connection close. Optional `node.into_parts()`
+returns exports, the original binding result, actual close result and separate
+kernel poll/disposal panic payloads only after joined execution has acquired
+close and a binding result; otherwise it returns the same Node.
+Cached replies remain available after target retirement while supplied Work
+continues. The existing Application cleanup signal ends declaration serving;
+each new native operation still observes its target's actual retirement.
+An export's `into_parts` and a retained Request's `try_into_parts` provide deliberate
+advanced inspection of originals. Request extraction needs no declaration or
+presentation callback and returns the same Request while custody is borrowed.
+
+This candidate is not merged remote support. Whole-service unwind, full retry
+acceptance, outbound typed Actions, full public SDK privacy and resource/security
+acceptance remain open. Zenoh stays an internal networking owner; ordinary
+applications must not assemble its request/reply loops. Refusal preserves the
+original callable. Missing-host refusal also restores the original declaration;
 a second execution returns `NodeExecutionRefusal::ExecutionIssued`, including
 when that already-issued Node's Session is closed.
 
-Startup returns the original Application/configuration on profile, host or
-native refusal. The selected profile requires configured TLS addresses, disabled
-discovery, mutual TLS, configured private roots, verified names and explicit
-native query capacity. No default capacity is selected. Per-endpoint overrides
-and `OneOf` fallback are rejected. SDK parsing verifies actual credentials; policy
-checks alone prove no handshake. Opening requires an entered multithreaded Tokio
-host. Native SDK configuration and query access must move into their runtime
-owners before the network interface work is complete.
+Startup returns the original Application/Network on mapping, host or native
+refusal. Bombay constructs TLS-only connections with disabled discovery,
+mutual TLS, supplied private roots and verified names. Empty directions,
+endpoint metadata/options and unsupported file-path encoding are refused.
+Outgoing addresses retain all-of semantics; no fallback is inferred. Actual
+credential parsing remains native; construction establishes no peer handshake.
+Opening requires an entered multithreaded Tokio host. Native startup timeout
+and retry defaults establish no bounded startup or readiness guarantee. The
+input-privacy stage passes its focused mapping, caller and original-input
+controls; the private remote service remains required before full interface
+acceptance.
 Whole operation disposal is surrender, not proof of joined retirement.
 
-Node and `ApplicationHandle::export` are delivered on main. Export uses
-its Node's private Session and actual Application ownership. Each request
-retains its originals with an independent reply client and preserves native
-nonwaiting admission results. Concurrent receiving preserves query/native
-acquisitions independently of provider verification, reply protection and
-current permission. Authenticated remote operations and the ordinary multi-node
-API remain pending. The developer experience coordination tracks joined-node
-verification and the remaining SDK configuration/query interfaces to encapsulate.
+The former imperative `ApplicationHandle::export`, `retain`/`attempt`/`retry`
+and manual `undeclare` path is retired in this candidate. Historical main delivery
+is recorded in the remote PRD; it does not select a second current spelling.
+Retained requests preserve original protected bytes, opaque receipts, actual
+native attempts and replies independently of verification, protection and
+permission. In particular, native `Full` preserves its exact rejected command;
+automatic retry waits for native capacity and obtains fresh authority. The
+owning Ledger and Counter Reply laws pass locally, including original Full retry
+custody. Ordinary outbound composition and full remote gates remain open.
 The local `examples/counter` and future `examples/remote-counter` are separate
 applications; owning tests retain custody and fault assertions.
 
@@ -949,8 +989,9 @@ The intended ordinary public surface is:
 
 Explicit hosting uses `Application::with_topology` with deliberately imported
 `bombay::{ActorSpace, ActorSpaces, Hosts}`. `Application` remains in the ordinary
-prelude. One declared topology deriving hosting and retirement remains the target
-for complex graphs.
+prelude. For child graphs, one `topology!` declaration derives static hosting and
+complete native descendant custody. `TerminalProjection` remains an optional
+owned presentation of those results.
 
 Users never manually construct or implement:
 

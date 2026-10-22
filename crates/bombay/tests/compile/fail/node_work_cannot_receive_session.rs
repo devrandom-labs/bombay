@@ -1,9 +1,9 @@
-use bombay::{Application, ApplicationHandle};
 use bombay::actors::ActorExt;
 use bombay::behavior::Behavior;
 use bombay::prelude::{ShutdownRejection, StopOnShutdown};
+use bombay::remote::Network;
+use bombay::{Application, ApplicationHandle};
 use zenoh::Session;
-use zenoh_config::Config;
 
 #[path = "../../../../../examples/counter/src/counter.rs"]
 mod counter;
@@ -21,9 +21,9 @@ async fn receive_session(
     application.shutdown()
 }
 
-async fn actor_work(config: Config) {
+async fn actor_work(network: Network) {
     let mut node = Application::new(Counter::new().stop_on_shutdown())
-        .open_node(config)
+        .open_node(network)
         .await
         .unwrap_or_else(|_| panic!("the node opens"));
     let _outcome = node.run_with(receive_session).await;

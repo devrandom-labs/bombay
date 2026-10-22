@@ -198,7 +198,7 @@ distributed acceptance properties, not guarantees already supplied by this
 release. Zenoh is the selected production networking direction; Mnesis-backed
 durability and downstream Selo identity integration remain planned work.
 
-The direct Driver and lower lifecycle layers exist. Communication 0.1.4's
+The direct Driver and lower lifecycle layers exist. Communication 0.1.6's
 affine mailbox admission owner, Bombay's private affine Observe import, and the
 actor-owned TimerQueue are integrated. The redundant runtime-stop channel,
 activation channels, keyed termination cell, timer task, and timer command
@@ -207,8 +207,9 @@ channel are gone.
 The exact selected contracts and any live blockers are recorded in
 [`docs/prd-backlog/status.md`](docs/prd-backlog/status.md). The local
 explicit application path has executable source and controls. Local actors, supervision, pools, HTTP and Entity use the same `Application`
-owner. Explicit topology hosting and terminal projection remain necessary for
-complex graphs while the declared-topology derivation is unfinished.
+owner. Declared topology supplies static hosting and actor-indexed descendant
+custody for child graphs. Terminal projection is an optional owned presentation
+of those complete native results.
 Feature acceptance, distillation and merge state remain in the selected PRD
 and backlog; source formation does not establish those states.
 

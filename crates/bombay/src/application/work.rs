@@ -1,6 +1,10 @@
-use behavior::Never;
+use super::ApplicationHandle;
+use crate::address::MailAddr;
+use behavior::{Never, Protocol};
+use core::future::Future;
 use tokio::sync::oneshot::error::RecvError;
 
+use super::ApplicationScope;
 use super::execution::{ApplicationCleanupError, ApplicationWorkPresence};
 
 /// Caller-local work disposition alongside the actual unit application cleanup.
@@ -170,6 +174,73 @@ impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
     }
 }
 
+impl<Inputs, Work, Invoke, Output, Cleanup, Root, Spaces, Families, Failure, PreparedInputs>
+    WorkOutcome<
+        Inputs,
+        ApplicationWorkPresence<(Work, Invoke), Never>,
+        ApplicationWorkPresence<Output, Never>,
+        Cleanup,
+        (
+            Root,
+            Spaces,
+            Families,
+            ApplicationWorkPresence<Work, Never>,
+            Failure,
+            ApplicationScope,
+        ),
+        PreparedInputs,
+        ApplicationWorkPresence<(Work, Invoke), Never>,
+    >
+{
+    #[expect(
+        clippy::type_complexity,
+        reason = "preserve original family staging inputs without a new product"
+    )]
+    pub(in crate::application) fn into_supplied_with_entities(
+        self,
+    ) -> WorkOutcome<
+        Inputs,
+        Work,
+        Output,
+        Cleanup,
+        (Root, Spaces, Families, Work, Failure, ApplicationScope),
+        PreparedInputs,
+    > {
+        let outcome = match self {
+            Self::StagingRejected {
+                inputs: (root, spaces, families, work, failure, scope),
+            } => WorkOutcome::StagingRejected {
+                inputs: (root, spaces, families, work.into_supplied(), failure, scope),
+            },
+            Self::Unstarted { application, work } => WorkOutcome::Unstarted {
+                application,
+                work: work.into_supplied(),
+            },
+            Self::Prepared {
+                inputs,
+                work,
+                cleanup,
+            } => WorkOutcome::Prepared {
+                inputs,
+                work,
+                cleanup,
+            },
+            Self::NotInvoked {
+                work,
+                startup_error,
+                cleanup,
+            } => WorkOutcome::NotInvoked {
+                work,
+                startup_error,
+                cleanup,
+            },
+            Self::Completed { output, cleanup } => WorkOutcome::Completed { output, cleanup },
+            Self::Interrupted { cleanup } => WorkOutcome::Interrupted { cleanup },
+        };
+        outcome.into_supplied()
+    }
+}
+
 #[cfg(feature = "axum")]
 impl<Inputs, Work, Invoke, Output, Cleanup, StagingInputs, PreparedInputs>
     WorkOutcome<
@@ -287,4 +358,112 @@ impl<Inputs, Invoke, Cleanup, StagingInputs, PreparedInputs>
             Self::Interrupted { cleanup } => WorkOutcome::Interrupted { cleanup },
         }
     }
+}
+
+/// Preserve absent work and original entity inputs for remote execution.
+#[cfg(feature = "remote")]
+impl<Inputs, Invoke, Cleanup, Root, Spaces, Families, Failure, PreparedInputs>
+    WorkOutcome<
+        Inputs,
+        ApplicationWorkPresence<(Never, Invoke), ()>,
+        ApplicationWorkPresence<Never, ()>,
+        Cleanup,
+        (
+            Root,
+            Spaces,
+            Families,
+            ApplicationWorkPresence<Never, ()>,
+            Failure,
+            ApplicationScope,
+        ),
+        PreparedInputs,
+        ApplicationWorkPresence<(Never, Invoke), ()>,
+    >
+{
+    #[expect(
+        clippy::type_complexity,
+        reason = "preserve the existing entity inputs and original staging failure while proving callable absence"
+    )]
+    pub(in crate::application) fn into_absent_with_entities(
+        self,
+    ) -> WorkOutcome<
+        Inputs,
+        Option<Never>,
+        Option<Never>,
+        Cleanup,
+        (
+            Root,
+            Spaces,
+            Families,
+            Option<Never>,
+            Failure,
+            ApplicationScope,
+        ),
+        PreparedInputs,
+    > {
+        match self {
+            Self::StagingRejected {
+                inputs: (root, spaces, families, work, failure, scope),
+            } => {
+                let work = match work {
+                    ApplicationWorkPresence::Absent(()) => None,
+                    ApplicationWorkPresence::Supplied(never) => match never {},
+                };
+                WorkOutcome::StagingRejected {
+                    inputs: (root, spaces, families, work, failure, scope),
+                }
+            }
+            Self::Unstarted { application, work } => match work {
+                ApplicationWorkPresence::Absent(()) => WorkOutcome::Unstarted {
+                    application,
+                    work: None,
+                },
+                ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
+            },
+            Self::Prepared {
+                inputs,
+                work,
+                cleanup,
+            } => match work {
+                ApplicationWorkPresence::Absent(()) => WorkOutcome::Prepared {
+                    inputs,
+                    work: None,
+                    cleanup,
+                },
+                ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
+            },
+            Self::NotInvoked {
+                work,
+                startup_error,
+                cleanup,
+            } => match work {
+                ApplicationWorkPresence::Absent(()) => WorkOutcome::NotInvoked {
+                    work: None,
+                    startup_error,
+                    cleanup,
+                },
+                ApplicationWorkPresence::Supplied((never, _invoke)) => match never {},
+            },
+            Self::Completed { output, cleanup } => match output {
+                ApplicationWorkPresence::Absent(()) => WorkOutcome::Completed {
+                    output: None,
+                    cleanup,
+                },
+                ApplicationWorkPresence::Supplied(never) => match never {},
+            },
+            Self::Interrupted { cleanup } => WorkOutcome::Interrupted { cleanup },
+        }
+    }
+}
+
+pub(in crate::application) fn invoke<Work, WorkFuture, Target, Event, Families>(
+    work: Work,
+    application: ApplicationHandle<Target, Event, Families>,
+) -> WorkFuture
+where
+    Target: Protocol<Addr = MailAddr>,
+    Work: FnOnce(ApplicationHandle<Target, Event, Families>) -> WorkFuture,
+    WorkFuture: Future,
+{
+    work(application)
 }

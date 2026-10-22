@@ -196,14 +196,14 @@
                 RUSTDOCFLAGS = "--deny warnings";
               };
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1
+                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1
                 cat "remote-debug.log"
                 grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
                 grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::recorded_pending_protection_preserves_other_requests_and_replay ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_pending_protection_preserves_other_requests_and_replay ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::recorded_cold_protection_preserves_requests_and_replay ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_cold_protection_preserves_requests_and_replay ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::protection::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
+                grep -Fx 'test application::node::tests::protection::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';
@@ -214,14 +214,14 @@
             // {
               inherit cargoArtifacts;
               buildPhaseCargoCommand = ''
-                cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-release.log" 2>&1
+                cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-release.log" 2>&1
                 cat "remote-release.log"
                 grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-release.log"
                 grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-release.log"
-                grep -Fx 'test application::node::tests::requests::recorded_pending_protection_preserves_other_requests_and_replay ... ok' "remote-release.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_pending_protection_preserves_other_requests_and_replay ... ok' "remote-release.log"
-                grep -Fx 'test application::node::tests::requests::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::recorded_cold_protection_preserves_requests_and_replay ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_cold_protection_preserves_requests_and_replay ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::protection::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::protection::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
               '';
             }
           );

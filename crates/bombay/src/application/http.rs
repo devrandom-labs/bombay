@@ -18,7 +18,7 @@ use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
     ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
-use core::future::Future;
+use core::future::{Future, Ready};
 use std::io;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
@@ -183,6 +183,8 @@ where
             _,
             _,
             Never,
+            Ready<()>,
+            _,
         >(
             executor,
             (self, router, address),
@@ -212,32 +214,35 @@ where
                         });
                     }
                 };
-                let original_work = ApplicationWorkPublication {
-                    publication: Some((
-                        ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Supplied((
-                                (router, listener),
-                                async |(router, listener): (Router, TcpListener),
-                                       application: ApplicationHandle<
-                                    Root::Protocol,
-                                    Actor::Event,
-                                >| {
-                                    let lifecycle = application.lifecycle();
-                                    let server_shutdown = lifecycle.termination();
-                                    axum::serve(listener, router(application.clone()))
-                                        .with_graceful_shutdown(async move {
-                                            match server_shutdown.await {
-                                                Ok(_) | Err(_) => {}
-                                            }
-                                        })
-                                        .await
-                                },
-                            )),
-                            None,
-                        ),
-                        publication,
-                    )),
-                };
+                let original_work =
+                    ApplicationWorkPublication {
+                        publication: Some((
+                            ApplicationWorkCustody::NotInvoked(
+                                ApplicationWorkPresence::Supplied((
+                                    (router, listener),
+                                    |(router, listener): (Router, TcpListener),
+                                     application: ApplicationHandle<
+                                        Root::Protocol,
+                                        Actor::Event,
+                                    >| {
+                                        async move {
+                                            let lifecycle = application.lifecycle();
+                                            let server_shutdown = lifecycle.termination();
+                                            axum::serve(listener, router(application.clone()))
+                                                .with_graceful_shutdown(async move {
+                                                    match server_shutdown.await {
+                                                        Ok(_) | Err(_) => {}
+                                                    }
+                                                })
+                                                .await
+                                        }
+                                    },
+                                )),
+                                None,
+                            ),
+                            publication,
+                        )),
+                    };
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,
@@ -275,6 +280,7 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
+            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         );
         let receiving = async move {
             let (work, root_report, root, termination_notification) = receiving.await;

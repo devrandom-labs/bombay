@@ -34,18 +34,32 @@ It preserves native syntax causes and leaves original protected/proof buffers
 with the caller. Concrete Serde protocols still own required/unique fields;
 provider, replay and permission policy remain separate. Token materialization
 precedes its token check, so no peak-heap bound is claimed. Actual Node consumers
-reuse Counter and terminating MailLedger in application_clients/json_receiving.rs;
+reuse Counter and terminating MailLedger in application/node/tests/json.rs;
 they are tests rather than a second production receiver. The optional remote graph now names the pinned controlled SDK and configuration
 owners. Private application/node.rs owns one finalized Application and one fresh
-Session; Application::open_node checks private remote/startup.rs policy first.
-Node::run_with joins the existing Application execution and receiving operations;
-Node::execute_with retains separate operations. Both callbacks receive the ordinary
-ApplicationHandle and may retain caller-local borrows and non-Send values. The
-native Session stays inside Node and its private invocation path. These execution
-methods do not authenticate or admit remote commands. Typed network exports and
-multi-node composition remain pending; transport fixtures do not establish that public surface. Protected Counter
+Session; Application::open_node consumes Network and constructs private
+configuration through remote/network.rs. Original Network inputs survive refusal.
+Node carries the ordinary declaration's root, children and Entity families.
+Its Work receives the existing family receptionists and its outcome retains
+their exact shutdown results. Node::run_with joins the existing Application execution and receiving operations;
+Node::execute_with retains separate execution and receiving operations.
+Both pass only the ordinary Application handle to work through the same
+invocation owner. Caller-local borrows and non-Send outputs remain supported.
+The unmerged cold-service candidate attaches typed declarations with Node.exports.
+Node owns binding, startup, concurrent serving, withdrawal, joined Application/
+family receiving and native close. The runtime owns operation interpretation;
+the existing Application cleanup publication ends declaration/cache serving,
+while native requests independently observe actual target/root retirement.
+wire/security functions remain explicit typed policies. Request extraction is
+optional and transfers original native products without a presentation callback.
+Full remote acceptance remains pending; transport fixtures do not establish it. Protected Counter
 regressions belong to `crates/bombay/tests/protected_counter`, executed by the
 isolated transport-custody package rather than an example binary.
+Ordinary remote Application composition must hide Session ownership, native
+configuration translation, declarations and transport request/reply loops inside
+Bombay. The current low-level Node interface does not establish that finished
+surface. Advanced public APIs also use Bombay contracts; Zenoh Config, Session,
+Query, Reply and declarations remain private implementation/test details.
 
 ## Workspace boundary
 
@@ -123,11 +137,15 @@ tree:
 | `application/mod.rs` | root, role-indexed child and Entity-family declarations; curate the application surface | `Application` owns root, selected protocol spaces, role-indexed cold actors and Entity families. Construction starts no task and adds no birth algebra. |
 | `application/scope.rs` | establish external endpoints needed before root construction | `ApplicationScope` transfers one root declaration and the existing address allocation source into Application. Prepared and staging rejection retain it for exact-value retry; receivers remain independently owned. |
 | `application/composition.rs` | static declaration-to-Behavior composition and exact origin selection | canonical `ApplicationBehavior`, `ApplicationDefinitionError` and `ApplicationStagingError`; implementation traits remain private |
-| `application/execution.rs` | one paired execution/result owner, supplied Work, cleanup custody and configured blocking entry | `ApplicationOutcome`, `ApplicationCleanupError` and `RunError`; async, owned blocking and Entity execution share this owner |
+| `application/execution.rs` | one paired execution/result owner, supplied Work, cleanup custody and configured blocking entry | `ApplicationOutcome`, `ApplicationCleanupError` and `RunError`; async, owned blocking and Entity execution share this owner. |
 | `application/interface.rs` | application capability construction, fixed-target communication and explicit lifecycle projection | ApplicationHandle is the entry; ApplicationClient owns fixed-target replies and ApplicationSender owns one-way sending. Both reuse ExternalActor. Merged PR370 adds remote-only Application-certified actor construction and native nonwaiting client attempts. ApplicationLifecycle owns shutdown/termination/joined-report observation. ActorInterface exports named capabilities without lifecycle authority; no receiving is cloned. |
-| `application/node.rs` | opt-in fresh native Session and one finalized Application declaration; reuse the existing execution/receiving owner | `remote::Node`, `NodeExecutionRefusal`; no replacement actor lifecycle or forwarding topology builders |
-| `remote/startup.rs` | selected configured TLS profile and exact original-input startup refusal | `remote::NodeStartupRefusal`; native certificate parsing and TLS remain SDK-owned |
-| `remote/export.rs` | one Node-associated query declaration, retained request originals and independent existing native clients | Merged PR372 delivers `Export`, explicit `ExportLimits`, runtime-issued `RequestKey`, `Admission`, `RequestRefusal` and existing `ExportError`; Application supplies its private Session and certified interface. The dependent concurrent-receive candidate retains actual native waits with the selected futures-util collection and stores acquired originals in the existing owners. Permission providers and native protocol validation retain their own contracts. No default capacity, retry schedule or second mailbox. |
+| `application/node.rs` | opt-in fresh native Session and one finalized Application declaration, including its Entity families; reuse the existing family execution/receiving owner | `remote::Node`, `NodeExecutionRefusal`; no replacement actor lifecycle or forwarding topology builders |
+| `remote/network.rs` | explicit Network inputs and private fixed TLS configuration construction | Network, NetworkLayout, ConnectionEndpoints and CredentialSource; no public native Config conversion or alternate runtime |
+| `remote/startup.rs` | exact original-input mapping/host/open refusal causes | `remote::NodeStartupRefusal`; actual native causes remain accessible through standard Error sources |
+| `remote/export/mod.rs` | cold Export inputs, explicit limits, keys, attempt states and curated operation/request contracts | Unmerged service candidate; Node alone interprets declarations. No defaults or second mailbox. |
+| `remote/export/declaration.rs` | pure operation selection/encoding and private native admission, reply/EOF draining and exact shutdown interpretation | Reply, Submission and Stop use existing Application clients/senders and exact lifecycle proofs. No stored presentation policy. |
+| `remote/export/query.rs` | declaration startup/withdrawal, bounded query ownership, request interpretation and replay/publication | Existing typed policies and futures-util collection; known-Full waits reuse Communication and fresh request authority. Whole-service unwind remains open. |
+| `remote/export/request.rs` | affine original request facts and independently acquired provider/native results | Original provider results/panics remain outside disposable producers. Consuming extraction returns originals unchanged or the same borrowed Request. |
 | `application/http.rs` | opt-in HTTP preparation, binding and serving over the common execution owner | existing application methods; retains bind, serving and actor failures. The feature-gated outcome mapper remains in `application/execution.rs`. |
 | `local/children.rs` | closed occurrence product, exact creation status, endpoint/control and descendant task retirement | crate-private; creation-order native custody and independent descendant retirement assessments stay with the local actor |
 | `entity/` | native family definition, stable logical identity, bounded hydration/admission, passivation, exact retirement, and family shutdown/join | `EntityDefinition`, `EntityCapacity`, `Entities<D>`, and `EntityRef<D>` form the native application surface; the generic directory and runtime port remain advanced |

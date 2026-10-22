@@ -1,34 +1,174 @@
 # Static remote actor acceptance
 
-The focused main-based declaration diagnostic stage requires bounded outer
-ExportError Display/Debug plus the same exact native Error::source. Its existing
-actual seven-constructor test acquires original targets and all Application/Node
-cleanup before the paired format oracle. Actual main prior-source debug and
-optimized runs reach that intended assertion; fixed focused1/0/0 and full-client
-21/0/0 pass per profile. Main default773/0/2 plus7/0/3 docs, all-features840/0/2
-plus7/0/3 docs, strict Clippy and formatting pass on exact export91b7562/test2c16483b.
-The final post-tuple assertion is unexecuted only in the intended failing runs.
-Research runs are not relabeled as this tree. Final review/PR/required CI remain
-pending; this prerequisite closes no full R25 or other acceptance row and
-includes no separate Network/family service work. See the
-[pre-edit change record](../static-remote-actors.md#declaration-diagnostics--focused-main-contribution-2026-10-16).
+The dated prerequisite checkpoints below are historical evidence at their
+stated revisions. The [current feature status](../static-remote-actors.md#current-status-2026-10-21-utc)
+owns current dependency, implementation and verification facts. All full
+acceptance rows remain open; historical failures and passing runs keep their
+original source scope.
+
+Main reconciliation (2026-10-16, historical): mainf25e4a0c includes PR375 and
+the reviewed, CI-passing PR382 test-only compatibility repair. It selects
+Behavior/Actors0.26.0 and complete Application/Work outcomes. The earlier
+connection-entry prototype is retired from current source. Its distinct
+configuration, startup-disposal, connection-retirement, public-entry and family
+controls below retain their historical source scope; upstream tests do not
+replace all of those laws. Current service ownership and consumer witnesses
+remain required. No full remote acceptance row closes from this cleanup.
+
+Current input-privacy work uses the same Node opener with Network instead of
+raw SDK Config. Four public input tests, eight owning mapping tests, migrated
+callers and six native public Node controls pass in debug and optimized builds.
+Mapping, credential disclosure and original-input reconstruction inversions
+reach their intended assertions; exact source is restored. Concrete Config now
+receives the intended E0308 denial; existing Session and close-borrow denials
+retain their original diagnostics. Default workspace execution and strict
+all-feature lint pass. Full-feature execution passes847 tests and7 doctests,
+failing only the kept Query privacy target. Query privacy, peer
+handshake and full service acceptance remain open. Historical raw
+Config/Session/privacy statements below retain their original source scope.
+
+The following family-composition checkpoint uses the same Node owner and
+existing family invocation, with a real reply before and after root retirement
+while Work remains live, exact family receiving and original borrowed/non-Send
+Work. Both50-case consumer cohorts and the report-loss/restored controls pass
+their intended profile-specific checks. Default workspace773/0/2 and all-feature
+848/1/2 (only the known Query privacy failure), plus7/0/3 doctests in each run,
+bind its unchanged production. Two later equivalent test assertion spellings
+receive independent two-pass review and focused1/0/0 reruns in both profiles.
+Strict lint/format pass; isolated native fixture68/0/1 per profile leaves its
+controlled subprocess unexecuted. Node's existing public type gains Families;
+empty-Node staging and prepared Arc products change explicitly. No additional
+runtime, service/privacy acceptance or full witness is established.
+
+The separate declaration-diagnostic correction keeps the exact native error
+source and original target while bounding outer Display/Debug. Its real native
+constructor-refusal oracle fails on prior source in both profiles; fixed focused
+and all21 Application-client controls pass in each profile. Strict lint and
+formatting pass. Focused main delivery merged through PR384 asf25e4a0c after
+all six CI checks and independent review; its exact main-specific evidence is
+in the [owning record](../static-remote-actors.md#declaration-diagnostics--focused-main-contribution-2026-10-16).
+This closes no Query privacy, full R25 or service lifecycle requirement.
 
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.
 Every full R01–R25 witness is **unexecuted** until its evidence record is
-populated. Executed prerequisite probes do not close a full witness. The PRD's
+populated. The shared-native replay design stage is now recorded in the
+PRD: real Counter processing/value/Stop and unrelated Ledger native consumers
+must pass focused controls and intended inversions before caller migration.
+Cold retention, entered-constructor uncertainty, permission loans and permanent
+native-acquisition suppression are independent gates; no executed service or
+full-row credit follows from the existing compiler-only comparison. Executed prerequisite probes do not close a full witness. The PRD's
 profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
-Communication0.1.6 adoption PR377 merged76dbd849 with all six checks passing;
-required38820049280 succeeds and reviewed/tested/main tree25bc63d2 matches.
-PR379 now integrates actual main67a286c, including PR374. Its startup kernel
-and test remain byte-identical to17fec54; the merged futures-util dependency
-edge belongs to PR374. Documentation is resolved; fresh head CI is required.
-The startup correction remains unmerged. Capacity observation reserves no slot
-and cannot replace fresh permission checks; no full remote row advances.
+## Historical prerequisite evidence
+
+The following checkpoints retain their exact earlier revisions and execution
+scope. Removed research is not a current API or current passing witness.
+
+The connection-entry stage now executes five public Application caller tests
+in debug and release: original cold input recovery, actual startup-refusal
+custody, cancelled borrowed execution waiting, run_remote result products, and
+acquired Ready output preservation when actual Work producer disposal panics.
+The last control catches its original allocated panic and acquires native actor,
+both notification and joined connection-close results before asserting output
+custody. Delaying Completed publication past producer disposal fails its intended
+post-cleanup oracle in both profiles; exact production source is restored. This
+does not prove recovery of future-local service rows from Interrupted Work.
+Restoring the old coupled cold/prepared Work mapper fails compilation at the
+intended outcome projection in both profiles. This is static denial only.
+These local Counter controls establish no remote admission, handshake, service
+or whole-PRD witness. A separate actual nonempty Entity-family control now
+receives before and after root retirement while Work remains live, then acquires
+the exact family shutdown after Work completes. Its missing-publication cut
+fails after cleanup in both profiles; restored Application/completed-receiving
+controls pass81 cases per profile. This establishes the scoped local family
+composition law only. The owning connection association/surrender test retains
+its separate execution record in the PRD.
+The startup-acquisition prerequisite PR379 merged38774de with all six checks
+and required/native execution reviews passing. It closes no full remote row.
+PR378 and replacement PR380 were closed unmerged by the release bot; PR381
+is the current successor. PR374 merged67a286c; the full service and private
+transport API remain open.
+
+Communication adoption [PR377](https://github.com/devrandom-labs/bombay/pull/377)
+merged76dbd849 at2026-10-16T00:31:25Z after all six checks and scoped reviews
+passed. Reviewed/submitted329, actual CI429 and merged main share tree25bc63d2.
+Required Nix38820049280 succeeds: workspace703/0/1, remote406/profile,
+requester6/profile, primitive fuzz passing and Miri skipped. Required/native
+reviews005a8147/98d0443b and actual merge receiptcf93122f preserve attribution.
+This delivers the dependency prerequisite, not a full remote witness. Below,
+older preparation facts retain their historical source and execution scope.
+
+Earlier private composition adds actual missing-host and executor-loss controls
+and generated reply protection for both Counter/Ledger provider families.
+Restored combined library348 and application38 cases pass in both profiles;
+the intended failure-erasure, literal-proof, metadata and bound cuts fail their
+specific oracles after cleanup. Strict lint remains blocked by eight unused
+private connection declarations; the scoped command does not reach test lint.
+The public Application service and SDK privacy replacement remain absent, so
+these facts close no full row. Owning Communication PR13 merged as39fd717e
+with all five checks passing and exact reviewed/tested/main tree agreement.
+It separately verifies capacity readiness and exact custody. Its version-only
+release PR14 merged963067e0 after all five checks passed. Actual registry,
+archive and tag verification passes. The coordinator selects0.1.6 with every
+other package retained and348 library/38 Application cases passing per profile;
+independent main-based adoption PR377 is ready after its eight actual checks
+and independent source/execution reviews pass. Main controls are333 library,
+36 Application and70/0/1 protected-counter per profile. Required CI/merge remain.
+Actual Application integration remains required.
+Provider PR376 mergedc249044a after all six exact-head checks and required-Nix/
+native/source reviews passed; tested/reviewed/main trees match54451654.
+Actual six requester cases execute once per profile, with primitive fuzz passing
+and conditional Miri skipped. Actual merge receipt095a3c42 retains provenance.
+PR377 integrates that main as3299340; fresh combined checks/CI remain required.
+Neither prerequisite closes any full acceptance row.
+
+The private acquired-Connection preparation handoff adds two focused ownership
+laws (plus two inherited Counter cases), passing debug and optimized builds.
+Dropping only the prepared Connection fails the intended None-versus-actual-ID
+oracle in both profiles after cleanup; exact restoration passes. Combined
+Application/HTTP/Entity coverage passes421 cases per profile on the original
+test source. Sharing Counter removes two duplicate inherited cases; fresh350
+library controls pass in both profiles. Formatting and local strict lint pass.
+Remote strict lint returns101 for eight unused private production declarations
+only, with no test diagnostics. This remains an explicit delivery gate; this does not solve startup-producer disposal,
+pre-spawn unwind, the public service or SDK privacy. No full row closes.
+
+The final pending-protection comparison32c534a5 executes both finite providers
+in debug and optimized builds; restored complete Counter targets pass72/0/1
+per profile. Borrowing instead of sharing is statically denied; substituting an
+equal receipt or including authority revision in replay identity reaches the
+intended post-cleanup failures in both profiles. This proves one original
+receipt can support concurrent immutable consumers while another native request
+progresses. It proves no Query traffic, current revocation, protected publication
+or finished public service. All full rows stay open. The public API must expose
+only Bombay contracts, with transport configuration, sessions, queries, replies,
+declarations and callbacks private even for advanced consumers. PR374 merged
+its prerequisite and PR373 was superseded; release PR381 and full-service
+delivery remain held pending that integration.
+
+Current compiler counterexamples make the privacy defect executable:
+`remote_surface` fails its expected-denial assertions because ordinary Bombay
+consumers can infer native configuration, access the lent Session and acquire
+a native Query without importing the SDK. All three snippets compile; both
+outer debug/release test invocations return101 for that intended reason.
+Trybuild uses dev compilation in either outer profile. This is an intentional
+red acceptance gate, not a passing witness. Actual Application replacement and
+a complete public-surface audit must establish privacy before delivery.
+
+### Earlier main-delivery evidence
+
+The following preparation snapshot predates the PR377 merge recorded above.
+Its pending-delivery statements retain their original source qualification.
+
+Communication0.1.6 publication is verified after reviewed owning PR13 and release
+PR14 merges with passing CI. Narrow Bombay adoption is selected; its main-based
+tests and PR delivery remain pending. Capacity observation neither reserves a
+slot nor substitutes for fresh permission checks. Arbitrary foreign-waker-panic
+sibling progress is unsupported. This prerequisite closes no full row.
 
 [Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
 mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
@@ -166,6 +306,14 @@ Keep the local counter in `examples/counter` and the remote counter in
 `examples/remote-counter`. Each teaches one complete application through public
 composition. Assertions and transport/fault campaigns stay in owning tests or
 isolated research; relocating a fixture does not prove shipping remote support.
+Ordinary remote composition must use Bombay APIs without importing Zenoh,
+opening or closing its Session, declaring queryables, or writing transport
+request/reply loops. Bombay owns those operations and their cleanup within the
+Application lifecycle. The public remote-counter application must demonstrate
+this boundary. Advanced public APIs also use Bombay contracts and must not
+expose native Zenoh Config, Session, Query, Reply or declaration types. Review
+all public signatures, callbacks, exports, examples and rustdoc for those leaks;
+transport fixtures cannot substitute for the session-free Application witness.
 First reconcile the committed DevX Application APIs with the proven admission
 and retirement laws, preserving the active worktree's uncommitted changes.
 
@@ -533,10 +681,15 @@ strict workspace Clippy and formatting. Its own CI and delivery remain required.
 No full R01–R25, AUTH1 or NET1 obligation closes from these results.
 
 
-Application startup-custody regression: prior main fails exactly the acquired
-affine-owner release oracle in debug and optimized builds after real Ready and
-original producer-disposal panic. The six-line existing-kernel correction and
-193-line owning test preserve cold Application/Work and original panic, without
-Zenoh or a new API. Fixed debug/optimized controls each pass the actual test; affected combined
-checks, required CI and actual PR delivery remain pending in the PRD. No full
-remote row closes.
+Earlier private startup checkpoint (before PR379 delivery): original owner loss fails deterministically in
+both profiles; separate success/refusal publication omissions each fail their
+report oracle in both profiles. Exact restored source passes353 owning library
+tests per profile. Generic Application correction is submitted separately as
+PR379, with reviewed capacity dependency integrated early; actual required CI
+and merges remain pending. This closes no full remote acceptance or privacy gate.
+
+The generic startup law delivered in PR379 preserves the actual acquired
+affine owner when its Ready producer disposal panics. Prior source fails the
+release oracle in both profiles; the merged correction and193-line owning
+test preserve cold Application/Work and the allocated panic without a new API.
+All six CI checks pass; merged38774de is recorded above.

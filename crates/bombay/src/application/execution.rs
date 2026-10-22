@@ -1,3 +1,4 @@
+use super::work::invoke;
 use super::{ApplicationScope, MailboxCapacity};
 use crate::NativeHost;
 use crate::address::{ApplicationAddresses, MailAddr};
@@ -27,6 +28,11 @@ use core::fmt;
 use core::future::{Future, Ready, poll_fn};
 use core::ops::AsyncFnOnce;
 use core::pin::pin;
+use core::task::Poll;
+#[cfg(feature = "remote")]
+use futures_util::FutureExt;
+#[cfg(feature = "remote")]
+use futures_util::future::Either;
 use std::io;
 use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::sync::Arc;
@@ -70,7 +76,6 @@ where
     /// Original borrowed setup or Work causes unwind in the caller; retained receiving remains independent.
     #[expect(
         clippy::type_complexity,
-        clippy::too_many_lines,
         reason = "retain independent work phase, original root reply and role-indexed shutdown receiving results"
     )]
     pub fn execute_with_entities<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
@@ -165,6 +170,149 @@ where
         ) -> WorkFuture,
         WorkFuture: Future,
     {
+        match self.execute_with_entities_invocation(
+            ApplicationWorkPresence::Supplied((work, invoke)),
+            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
+        ) {
+            Ok((execution, (receiving, received_families))) => Ok((execution, async move {
+                let (work, root_report, root, notifications) = receiving.await;
+                let work = work.into_supplied_with_entities();
+                let families = received_families.await;
+                ApplicationOutcome::new(work, root_report, root, notifications, families)
+            })),
+            Err((application, work, cause)) => {
+                let (work, _invoke) = work.into_supplied();
+                Err((application, work, cause))
+            }
+        }
+    }
+
+    // Preserve original Work independently from the concrete invocation callable.
+    #[expect(
+        clippy::too_many_lines,
+        clippy::type_complexity,
+        reason = "one owning family preparation, invocation and complete independent receiving product"
+    )]
+    pub(in crate::application) fn execute_with_entities_invocation<
+        Actor,
+        StagingFailure,
+        ChildFailures,
+        Work,
+        Invoke,
+        WorkFuture,
+        NoWork,
+        Exporting,
+        Binding,
+    >(
+        self,
+        work: ApplicationWorkPresence<(Work, Invoke), NoWork>,
+        binding: Option<Binding>,
+    ) -> Result<
+        (
+            impl Future<Output = ()>,
+            (
+                impl Future<
+                    Output = (
+                        WorkOutcome<
+                            Self,
+                            ApplicationWorkPresence<(Work, Invoke), NoWork>,
+                            ApplicationWorkPresence<<WorkFuture as Future>::Output, NoWork>,
+                            (),
+                            (
+                                Root,
+                                Spaces,
+                                Families,
+                                ApplicationWorkPresence<Work, NoWork>,
+                                StagingFailure,
+                                ApplicationScope,
+                            ),
+                            (Actor, Arc<Spaces>, ApplicationScope),
+                            ApplicationWorkPresence<(Work, Invoke), NoWork>,
+                        >,
+                        Option<ActorRetirementReport>,
+                        Result<
+                            (
+                                RootOrigin<Root>,
+                                ActorRetirement<
+                                    Actor,
+                                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                                    ChildFailures,
+                                >,
+                            ),
+                            RecvError,
+                        >,
+                        Result<ActorNotificationReceipts, RecvError>,
+                    ),
+                >,
+                impl Future<Output = Families::Shutdowns>,
+            ),
+        ),
+        (
+            Self,
+            ApplicationWorkPresence<(Work, Invoke), NoWork>,
+            TryCurrentError,
+        ),
+    >
+    where
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
+        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
+            + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Arc<Spaces>>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = ChildFailures,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Arc<Spaces>,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    ChildFailures,
+                ),
+            > + Send
+            + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
+        ChildFailures: Send + 'static,
+        Families::Installed: 'static,
+        Invoke: FnOnce(
+            Work,
+            ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
+        ) -> WorkFuture,
+        Binding: for<'application> AsyncFnOnce(
+            &'application ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
+        ) -> Result<Option<Exporting>, ()>,
+        WorkFuture: Future,
+        Exporting: Future<Output = ()>,
+    {
         let executor = match Handle::try_current() {
             Ok(executor) => executor,
             Err(error) => return Err((self, work, error)),
@@ -189,22 +337,21 @@ where
             _,
             _,
             _,
-            Never,
+            NoWork,
+            _,
+            _,
         >(
             executor,
             self,
-            (work, |work: Work, application| work(application)),
+            work,
             async |application: &Self| ((), application.allocations()),
             move |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
                   startup_inputs,
                   allocations| {
-                let (application, cold_work, publication) = original_work.into_unstarted();
+                let (application, work, publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
-                        ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Supplied(cold_work),
-                            None,
-                        ),
+                        ApplicationWorkCustody::NotInvoked(work, None),
                         publication,
                     )),
                 };
@@ -219,16 +366,40 @@ where
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
-                        let (work, invoke) = work.into_supplied();
-                        let _ = invoke;
-                        return Err(ApplicationWorkPublication {
-                            publication: Some((
-                                ApplicationWorkCustody::StagingRejected((
-                                    root, spaces, families, work, failure, scope,
-                                )),
-                                publication,
-                            )),
-                        });
+                        return match work {
+                            ApplicationWorkPresence::Supplied((work, invoke)) => {
+                                let rejection = ApplicationWorkPublication {
+                                    publication: Some((
+                                        ApplicationWorkCustody::StagingRejected((
+                                            root,
+                                            spaces,
+                                            families,
+                                            ApplicationWorkPresence::Supplied(work),
+                                            failure,
+                                            scope,
+                                        )),
+                                        publication,
+                                    )),
+                                };
+                                drop(invoke);
+                                Err(rejection)
+                            }
+                            ApplicationWorkPresence::Absent(absence) => {
+                                Err(ApplicationWorkPublication {
+                                    publication: Some((
+                                        ApplicationWorkCustody::StagingRejected((
+                                            root,
+                                            spaces,
+                                            families,
+                                            ApplicationWorkPresence::Absent(absence),
+                                            failure,
+                                            scope,
+                                        )),
+                                        publication,
+                                    )),
+                                })
+                            }
+                        };
                     }
                 };
                 let spaces = Arc::new(spaces);
@@ -255,20 +426,9 @@ where
                     Some(executor.spawn(installed_families.shutdown(publications)))
                 },
             ),
+            binding,
         );
-        let receiving = async move {
-            let (work, root_report, root_retirement, termination_notification) = receiving.await;
-            let work_outcome = work.into_supplied();
-            let family_retirements = received_families.await;
-            ApplicationOutcome::new(
-                work_outcome,
-                root_report,
-                root_retirement,
-                termination_notification,
-                family_retirements,
-            )
-        };
-        Ok((execution, receiving))
+        Ok((execution, (receiving, received_families)))
     }
 
     /// Await caller-local Entity work and the exact independent root/family receiving product.
@@ -481,104 +641,6 @@ where
         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
     {
-        self.execute_with_invocation(work, |work: Work, application| work(application))
-    }
-
-    // Keep original Work separate while Node associates its private connection.
-    #[expect(
-        clippy::type_complexity,
-        reason = "preserve the independent original work, native root and both notification receiving products"
-    )]
-    pub(crate) fn execute_with_invocation<
-        Actor,
-        StagingFailure,
-        ChildFailures,
-        Work,
-        Invoke,
-        WorkFuture,
-    >(
-        self,
-        work: Work,
-        invoke: Invoke,
-    ) -> Result<
-        (
-            impl Future<Output = ()>,
-            impl Future<
-                Output = ApplicationOutcome<
-                    WorkOutcome<
-                        Self,
-                        Work,
-                        <WorkFuture as Future>::Output,
-                        (),
-                        (Root, Spaces, Work, StagingFailure, ApplicationScope),
-                        (Actor, Spaces, ApplicationScope),
-                    >,
-                    (
-                        RootOrigin<Root>,
-                        ActorRetirement<
-                            Actor,
-                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            ChildFailures,
-                        >,
-                    ),
-                    (),
-                >,
-            >,
-        ),
-        (Self, Work, TryCurrentError),
-    >
-    where
-        Spaces: ApplicationTopology<Root, Members> + NativeHost,
-        Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
-        Actor: BehaviorBase
-            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
-            + Send
-            + 'static,
-        Actor::Event: Send + 'static,
-        BehaviorMessage<Actor>: Send + 'static,
-        Actor::Sends: Send + 'static,
-        Actor::Error: Send + 'static,
-        Actor::InterpretationCustody: Send + 'static,
-        Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
-                RuntimeChildBindings<
-                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                    Members::Origins,
-                >,
-            > + Send
-            + 'static,
-        ChildBindings<
-            Actor,
-            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-            Members::Origins,
-        >: ChildBindingsIn<Actor, Spaces>
-            + RetireChildTasks<
-                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
-            > + Send
-            + 'static,
-        RootInterpreter<
-            Actor,
-            Spaces,
-            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-            Members::Origins,
-        >: CommitActions<
-                Actor,
-                Retired = (
-                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
-                ),
-            > + Send
-            + 'static,
-        Actor::Settlements: ClassifySettlement + Send,
-        RootOrigin<Root>: Send + 'static,
-        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
-            RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
-        Invoke: FnOnce(Work, ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
-        WorkFuture: Future,
-    {
         let executor = match Handle::try_current() {
             Ok(executor) => executor,
             Err(error) => return Err((self, work, error)),
@@ -601,6 +663,8 @@ where
             _,
             _,
             Never,
+            Ready<()>,
+            _,
         >(
             executor,
             self,
@@ -609,11 +673,11 @@ where
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
              allocations| {
-                let (application, cold_work, publication) = original_work.into_unstarted();
+                let (application, (work, invoke), publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
                         ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Supplied(cold_work),
+                            ApplicationWorkPresence::Supplied((work, invoke)),
                             None,
                         ),
                         publication,
@@ -657,6 +721,7 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
+            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         );
         let receiving = async move {
             let (work, root_report, root, termination_notification) = receiving.await;
@@ -674,7 +739,7 @@ where
     /// Construct genuine absent work with original inputs and joined raw root facts.
     /// Descendant custody is selected by the same application topology as supplied work.
     /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
-    /// This comparison selects no terminal projection and constructs no callable value.
+    /// This constructs no Work callable or Work future and selects no terminal projection.
     /// The execution remains cold; only polling stages or starts the actor.
     ///
     /// # Errors
@@ -787,6 +852,8 @@ where
             _,
             _,
             (),
+            Ready<()>,
+            _,
         >(
             executor,
             self,
@@ -795,8 +862,7 @@ where
             |original_work: ApplicationWorkPublication<_, _, _, _, _, _>,
              startup_inputs,
              allocations| {
-                let (application, cold_work, publication) = original_work.into_unstarted();
-                let () = cold_work;
+                let (application, (), publication) = original_work.into_unstarted();
                 let original_work = ApplicationWorkPublication {
                     publication: Some((
                         ApplicationWorkCustody::NotInvoked(
@@ -846,6 +912,7 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
+            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         );
         let receiving = async move {
             let (work, root_report, root, termination_notification) = receiving.await;
@@ -862,7 +929,7 @@ where
 
     /// Await genuine absent work with original inputs and joined raw root facts.
     /// `Completed { output: None }` means an actual startup grant was acquired without supplied work.
-    /// This comparison selects no terminal projection and constructs no callable value.
+    /// This constructs no Work callable or Work future and selects no terminal projection.
     /// The execution remains cold; only polling stages or starts the actor.
     ///
     /// # Errors
@@ -1341,6 +1408,8 @@ pub(in crate::application) fn execute_application_with<
     RetireUnstartedFamilies,
     ColdWork,
     NoWork,
+    Exporting,
+    Binding,
 >(
     executor: Handle,
     application: Inputs,
@@ -1351,6 +1420,7 @@ pub(in crate::application) fn execute_application_with<
         InstalledFamilies::ShutdownPublications,
         RetireUnstartedFamilies,
     ),
+    binding: Option<Binding>,
 ) -> (
     impl Future<Output = ()>,
     impl Future<
@@ -1447,7 +1517,15 @@ where
         Work,
         ApplicationHandle<Actor::Protocol, Actor::Event, InstalledFamilies::Receptionists>,
     ) -> WorkFuture,
+    Binding: for<'application> AsyncFnOnce(
+        &'application ApplicationHandle<
+            Actor::Protocol,
+            Actor::Event,
+            InstalledFamilies::Receptionists,
+        >,
+    ) -> Result<Option<Exporting>, ()>,
     WorkFuture: Future,
+    Exporting: Future<Output = ()>,
     RetireUnstartedFamilies: FnOnce(
         Handle,
         InstalledFamilies,
@@ -1586,8 +1664,17 @@ where
             drop(entered_executor);
             started
         };
+        let mut authority = Some(authority);
         let (retirement_publication, retirement_observation) = observe::pair();
         let (joined_publication, joined) = oneshot::channel();
+        #[cfg(feature = "remote")]
+        let (export_joined, joined) = match binding.as_ref() {
+            Some(_) => {
+                let joined = joined.shared();
+                (Some(joined.clone()), Either::Left(joined))
+            }
+            None => (None, Either::Right(joined)),
+        };
         let origin = RootOrigin::<Owner>::new(MailAddr::APPLICATION_ROOT);
         let cleanup = executor.spawn(async move {
             // Joining observes the actual actor; it does not request a stop.
@@ -1630,54 +1717,87 @@ where
             Err(cleanup) => drop(cleanup),
         }
         let started = startup.await;
-        let Some((ApplicationWorkCustody::NotInvoked(work, None), publication)) =
-            original_work.publication.take()
-        else {
-            unreachable!("startup owns the single uninvoked callable publication");
-        };
+        let mut exports = pin!(None);
         match started {
-            Ok(actor) => {
+            Ok(actor) => 'invocation: {
+                let application = ApplicationHandle::new(
+                    actor,
+                    shutdown_control,
+                    retirement_observation,
+                    interface_allocations,
+                    client_capacity,
+                    receptionists,
+                    #[cfg(feature = "remote")]
+                    export_joined,
+                );
+                if let Some(binding) = binding {
+                    let bound;
+                    {
+                        let mut binding = pin!(binding(&application));
+                        bound = poll_fn(|context| match binding.as_mut().poll(context) {
+                            Poll::Ready(Ok(exporting)) => {
+                                exports.set(exporting);
+                                Poll::Ready(Ok(()))
+                            }
+                            Poll::Ready(Err(())) => Poll::Ready(Err(())),
+                            Poll::Pending => Poll::Pending,
+                        })
+                        .await;
+                    }
+                    if let Err(()) = bound {
+                        drop(authority.take());
+                        drop(original_work);
+                        break 'invocation;
+                    }
+                }
+                let Some((ApplicationWorkCustody::NotInvoked(work, None), publication)) =
+                    original_work.publication.take()
+                else {
+                    unreachable!("successful binding retains the original uninvoked Work");
+                };
                 match work {
                     ApplicationWorkPresence::Supplied((work, invoke)) => {
-                        let application = ApplicationHandle::new(
-                            actor,
-                            shutdown_control,
-                            retirement_observation,
-                            interface_allocations,
-                            client_capacity,
-                            receptionists,
-                        );
-                        {
-                            let mut application_work = pin!(invoke(work, application));
-                            let output =
-                                poll_fn(|context| application_work.as_mut().poll(context)).await;
-                            original_work.publication = Some((
-                                ApplicationWorkCustody::Completed(
-                                    ApplicationWorkPresence::Supplied(output),
-                                ),
-                                publication,
-                            ));
-                        }
+                        let work = invoke(work, application);
+                        let mut application_work = Box::pin(work);
+                        let mut publication = Some(publication);
+                        poll_fn(|context| match application_work.as_mut().poll(context) {
+                            Poll::Ready(output) => {
+                                original_work.publication = Some((
+                                    ApplicationWorkCustody::Completed(
+                                        ApplicationWorkPresence::Supplied(output),
+                                    ),
+                                    publication.take().expect("one bare work result"),
+                                ));
+                                Poll::Ready(())
+                            }
+                            Poll::Pending => {
+                                if let Some(exporting) = exports.as_mut().as_pin_mut()
+                                    && exporting.poll(context).is_ready()
+                                {
+                                    exports.set(None);
+                                }
+                                Poll::Pending
+                            }
+                        })
+                        .await;
                     }
                     ApplicationWorkPresence::Absent(absence) => {
-                        // Discharge the genuine unused startup projections in their existing field order.
                         original_work.publication = Some((
                             ApplicationWorkCustody::Completed(ApplicationWorkPresence::Absent(
                                 absence,
                             )),
                             publication,
                         ));
-                        drop((
-                            actor,
-                            shutdown_control,
-                            interface_allocations,
-                            receptionists,
-                        ));
                     }
                 }
                 drop(original_work);
             }
             Err(error) => {
+                let Some((ApplicationWorkCustody::NotInvoked(work, None), publication)) =
+                    original_work.publication.take()
+                else {
+                    unreachable!("failed startup retains the original uninvoked Work");
+                };
                 match publication.send(ApplicationWorkCustody::NotInvoked(work, Some(error))) {
                     Ok(()) => {}
                     Err(work) => drop(work),
@@ -1687,9 +1807,26 @@ where
         match permission.send(()) {
             Ok(()) | Err(()) => {}
         }
-        match joined.await {
-            Ok(()) | Err(_) => {}
-        }
+        // Work releases its existing permission before exports can await family cleanup.
+        let mut joining = pin!(Some(joined));
+        poll_fn(|context| {
+            if let Some(exporting) = exports.as_mut().as_pin_mut()
+                && exporting.poll(context).is_ready()
+            {
+                exports.set(None);
+            }
+            if let Some(joined) = joining.as_mut().as_pin_mut()
+                && joined.poll(context).is_ready()
+            {
+                joining.set(None);
+            }
+            if exports.is_none() && joining.is_none() {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        })
+        .await;
         drop(authority);
     };
     let result = async move {
@@ -1763,7 +1900,7 @@ mod startup {
     use crate::behavior::{Behavior, BehaviorBase, Never};
     use crate::local::children::StructuralOrigins;
     use behavior_actors::StopOnShutdown;
-    use core::future::{Future, poll_fn};
+    use core::future::{Future, Ready, poll_fn};
     use std::cell::Cell;
     use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
     use std::ptr;
@@ -1842,6 +1979,8 @@ mod startup {
                     _,
                     _,
                     Never,
+                    Ready<()>,
+                    _,
                 >(
                     Handle::current(),
                     application,
@@ -1896,6 +2035,7 @@ mod startup {
                         ))
                     },
                     ((), |_executor, (), ()| None),
+                    None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
                 );
                 let mut execution = Box::pin(execution);
                 let caught = poll_fn(|context| {

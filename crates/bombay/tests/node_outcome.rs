@@ -13,12 +13,15 @@ use bombay::behavior::{
     BehaviorBase, ClassifySettlement, Never, NoSends, SettlementStatus, Stopped,
 };
 use bombay::prelude::*;
-use bombay::remote::NodeExecutionRefusal;
+use bombay::remote::{
+    ConnectionEndpoints, CredentialSource, Network, NetworkLayout, NodeExecutionRefusal,
+};
 use counter::{Counter, CounterMessage, CounterValue};
 use std::cell::Cell;
 use std::fs::File;
 use std::future::Future;
 use std::io::Read;
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::pin::pin;
 use std::ptr;
@@ -30,24 +33,22 @@ use std::time::Duration;
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
-use zenoh_config::Config;
 
-fn listening_configuration() -> Config {
+fn listening_configuration() -> Network {
     let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
-    let declaration = serde_json::json!({
-        "mode": "peer", "queries_max_retained": 2,
-        "listen": {"endpoints": ["tls/localhost:0"]},
-        "scouting": {"multicast": {"enabled": false, "listen": false}, "gossip": {"enabled": false}},
-        "transport": {"link": {"protocols": ["tls"], "tls": {
-            "root_ca_certificate": certificates.join("root-ca.pem"),
-            "listen_certificate": certificates.join("recipient-certificate.pem"),
-            "listen_private_key": certificates.join("recipient-private-key.pem"),
-            "enable_mtls": true, "verify_name_on_connect": true, "use_public_pki": false
-        }}}
-    }).to_string();
-    Config::from_deserializer(&mut serde_json::Deserializer::from_str(&declaration))
-        .expect("the upstream native listening profile")
+    Network {
+        layout: NetworkLayout::Peer {
+            connect: None,
+            listen: Some(ConnectionEndpoints {
+                addresses: vec!["localhost:0".to_owned()],
+                certificate: CredentialSource::File(certificates.join("recipient-certificate.pem")),
+                private_key: CredentialSource::File(certificates.join("recipient-private-key.pem")),
+            }),
+        },
+        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
+        max_retained_queries: NonZeroUsize::new(2).unwrap(),
+    }
 }
 
 #[test]
