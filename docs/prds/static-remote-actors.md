@@ -12,8 +12,8 @@ Correctness, architecture, actual verification, review and CI remain mandatory.
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged the scoped
 coverage Python retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
 All six checks passed on dc988108, including Nix39866951393. The merge and
-verified head share treed7e91521. Main is fetched; integration follows the current
-stable-source verification. Six Python files and inline workflow blocks remain.
+verified head share treed7e91521. Main427329df is fetched and integrated after
+stable-source verification; the retained source is unchanged. Six Python files and inline workflow blocks remain.
 The separately qualified named-child PR390 remains open pending required Nix.
 
 Initial-route follow-up is locally active: four native controls pass in debug
