@@ -1,5 +1,28 @@
 # Static remote actors and typed admission
 
+## Delivery checkpoint (2026-10-24 UTC)
+
+PR395 merged the Tokio prerequisite at2026-10-23T23:26:42Z as
+36b5c1f9f92b56f527167076249d12c1ceba0545 after all six checks passed on
+be200b25527fcaa41f74d32cf9deb29304b0a48b. Required Nix40013873012 completed
+21:57:09Z. Verified and merge trees match7f8c9218. Independent final readiness
+review4db1ad16 confirms exact locks, selected source and actual checks. Actual
+main36b5c1f9 is fetched and integrated into the denied-Stop follow-up.
+
+PR393/90ecb176 and PR394/e68d521f also passed all six checks. PR393's raw
+Nix gate actually runs all21 existing commands with patched Tokio1.53.3,
+including both native inversions/restorations; independent review79e171a1
+retains the full job log. Neither PR is claimed merged: subsequent GitHub API
+requests time out, so current mergeability after main advances is unverified.
+Keep the exact tested heads and use normal server merge once current state is
+observable. This is a delivery-network limitation, not a local test failure.
+
+The denied-Stop stage is committed as3d81fb02, with final two-pass qualification
+08e05181. Its source/result archive SHA256eaaed494c108bff011528c4a968093ebc6205d980f55f914508a287e1bb558bd
+was independently extracted and every checksum passed. The final review is
+also retained beside that archive. Its focused PR/CI/main delivery and the
+full remaining remote acceptance scope stay open.
+
 ## Separate-program denied Stop — pre-edit record (2026-10-23)
 
 R23 still requires the ordinary application's denied-Stop witness. The smallest

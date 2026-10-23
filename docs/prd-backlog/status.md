@@ -1,5 +1,12 @@
 # Backlog status and dependencies
 
+PR395 is delivered as36b5c1f9 at2026-10-23T23:26:42Z after six successful
+checks on be200b25; verified/merge trees match7f8c9218. Actual main is fetched
+and integrated here. PR393/90ecb176 and PR394/e68d521f each pass all six
+checks, including current-lock native21 for PR393; their normal merge remains
+unverified while subsequent GitHub API reads time out. No merge is inferred.
+Denied-Stop3d81fb02 is locally qualified and archived, pending focused delivery.
+
 Active R23 verification stage: compare the shipped separate-program Counter
 under matching versus differing receiver Stop proof. Require exact refusal
 and originals, no native Stop, an independent live Counter Read1 and ordinary
