@@ -12,18 +12,23 @@ Correctness, architecture, actual verification, review and CI remain mandatory.
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged the scoped
 coverage Python retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
 All six checks passed on dc988108, including Nix39866951393. The merge and
-verified head share treed7e91521. Main427329df is fetched and integrated after
-stable-source verification; the retained source is unchanged. Six Python files and inline workflow blocks remain.
-The separately qualified named-child PR390 remains open pending required Nix.
+verified head share treed7e91521. Six Python files and inline workflow blocks remain.
+[PR390](https://github.com/devrandom-labs/bombay/pull/390) merged the qualified
+named-child prerequisite at2026-10-23T00:49:10Z as
+a88dbe83df336f5c32047686f27f39c12bc59b9a after all six checks passed on79d49080.
+Required Nix completed00:44:25Z; merge and verified head share tree4642f533.
+Actual maina88dbe83 is fetched and integrated into route PR391; its qualified
+Rust source is unchanged. Diagnostic Python/current+MSRV retirement remains open.
 
-Initial-route follow-up is locally active: four native controls pass in debug
+Initial-route follow-up is submitted as draft PR391: four native controls pass in debug
 and optimized builds, and three separate source cuts fail their intended laws
 in both profiles. Each cut is restored before replay. Public consuming callers
 and the four current guides are migrated; strict workspace/all-feature/all-target
 Clippy passes. The public Counter Increment/Read/Stop journey passes both
 profiles, including its wrong-value control and restoration. The final retained
 remote matrix passes505 tests/profile; formatting and rustdoc pass. Focused
-submission precedes the separate-process application. This is not a full remote acceptance
+delivery awaits the integrated head's required CI and final review. The separate-process
+application follows. This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
 

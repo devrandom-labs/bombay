@@ -10,14 +10,19 @@ govern completion. The complete remote PRD remains active.
 retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
 All six checks pass on dc988108; its tree equals the merge tree. This delivers
 only the existing coverage reducer replacement. Six Python files and inline
-workflow blocks remain; named-child PR390 still awaits required Nix.
+workflow blocks remain. PR390 merged its named-child prerequisite at
+2026-10-23T00:49:10Z as a88dbe83 after all six checks passed on79d49080;
+required Nix completed00:44:25Z and the verified/merge trees match. Actual main
+a88dbe83 is fetched and integrated into route PR391. Diagnostic Python and its
+current+MSRV matrix remain open.
 
 The initial-route follow-up is locally verified by four native controls in both
 profiles, three intended owning-source falsifiers and exact restorations. Its
 public Counter Increment/Read/Stop comparison also passes both profiles; a real
 wrong-value cut fails its intended native oracle and restores cleanly. Public
 consumers/guides and strict lint are reconciled. The retained remote matrix
-passes505 tests/profile; formatting and rustdoc pass. Focused delivery precedes
+passes505 tests/profile; formatting and rustdoc pass. Draft PR391 now requires
+its integrated head's actual CI and final review before delivery, followed by
 the ordinary separate-process application;
 the PRD retains the precise remaining acceptance clauses.
 
