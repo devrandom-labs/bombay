@@ -21,9 +21,12 @@ profiles, three intended owning-source falsifiers and exact restorations. Its
 public Counter Increment/Read/Stop comparison also passes both profiles; a real
 wrong-value cut fails its intended native oracle and restores cleanly. Public
 consumers/guides and strict lint are reconciled. The retained remote matrix
-passes505 tests/profile; formatting and rustdoc pass. Draft PR391 now requires
-its integrated head's actual CI and final review before delivery, followed by
-the ordinary separate-process application;
+passes505 tests/profile; formatting and rustdoc pass. PR391 merged at
+2026-10-23T07:51:23Z asfcaf7430 after all six checks passed on e32fa62a;
+verified and merge trees match. The child-preparation Python retirement now
+passes all21 existing/native commands and its existing Nix check. Five Python
+files remain in that proposal, six on main until its focused CI/review and merge.
+The ordinary separate-process application remains in PR392;
 the PRD retains the precise remaining acceptance clauses.
 
 PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,

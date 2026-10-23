@@ -20,15 +20,24 @@ Required Nix completed00:44:25Z; merge and verified head share tree4642f533.
 Actual maina88dbe83 is fetched and integrated into route PR391; its qualified
 Rust source is unchanged. Diagnostic Python/current+MSRV retirement remains open.
 
-Initial-route follow-up is submitted as draft PR391: four native controls pass in debug
+PR391 merged at2026-10-23T07:51:23Z asfcaf743010f97eb125671e21dde88f54a5833ebb
+after all six checks passed on e32fa62a; required Nix completed02:38:27Z.
+The verified head and merge share tree623f7ad5. This retirement branch integrates
+that actual main. Its child-preparation Python retirement is locally verified
+by all21 existing/native commands and the existing dedicated Nix check; focused
+CI/review and merge remain pending. Five Python files remain in this proposal,
+while six remain on main until this change merges. The separate finite-test
+application remains in PR392 with its own required CI and delivery pending.
+
+Four initial-route native controls pass in debug
 and optimized builds, and three separate source cuts fail their intended laws
 in both profiles. Each cut is restored before replay. Public consuming callers
 and the four current guides are migrated; strict workspace/all-feature/all-target
 Clippy passes. The public Counter Increment/Read/Stop journey passes both
 profiles, including its wrong-value control and restoration. The final retained
 remote matrix passes505 tests/profile; formatting and rustdoc pass. Focused
-delivery awaits the integrated head's required CI and final review. The separate-process
-application follows. This is not a full remote acceptance
+delivery is recorded above. The separate-process
+application follows in its own PR. This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
 
@@ -42588,3 +42597,85 @@ contract are unchanged. This integration adds no Rust source or public type.
 Previous route-head CI is historical: the integrated submitted head needs its
 own required checks and final source review before readiness/merge. Full remote
 R01–R25/AUTH1/NET1 remains active.
+
+## Child preparation Python retirement — pre-edit record (2026-10-23)
+
+This separate verification stage starts from actual main a88dbe83. It retires
+only `child_preparation_retirement_evidence.py` after the existing Actor
+execution evidence owner proves the same native law. Production, public API,
+Cargo manifests, lock, the owning test and its assertions stay byte-identical.
+The workspace still selects Behavior/Actors0.29 and Macros0.16 (Behavior
+revision55dbac2d), Address0.3, Communication0.1.6 and Timers0.2; Observe remains
+local. No patch or dependency edge changes. Existing launch owns settlement of
+child preparation; the existing fixed-supervisor test owns parent/sibling
+progress, unfinished-resource custody, joined retirement and exact replay.
+The existing Bash owner, Cargo, jq, Perl and pinned Nix environment already
+provide snapshotting, precise source mutation, named-case guards and receipts.
+No new runner, replacement runtime, test model or library is needed.
+
+The candidate extends `actor-execution-law-evidence.sh` to include launch in
+restoration and run the existing named native child test healthy/inverse/
+restored in debug and optimized builds. The inverse removes only the exact
+`residual.receive_activation_tasks().await` block and must fail its existing
+post-cleanup temporal oracle, rather than compilation or completed-future
+misuse. Healthy/restored runs must each execute exactly one named test.
+All fifteen previous actor commands remain. Six distinct native logs and six
+records join the existing receipt stream. One five-source checksum ledger
+replaces redundant Python recording, and checks snapshot/caller conservation.
+Historical Python artifacts retain their old shape; new artifacts deliberately
+use the existing owner receipt and do not claim executable recovery.
+
+Expected scope: three verification/configuration paths and this PRD; production
++0/-0/net0, verification +91/-128/net-37, public types+0/-0. The flake removes
+only this gate's Python input/invocation and the retired file's source entry.
+The full workspace still contains other Python obligations. Syntax, all prior
+commands, six actual native outcomes, exact source restoration, independent
+source/outcome reviews and the existing Nix check must pass before acceptance.
+The finite-test Counter application remains a separate PR392 stage, and full
+remote security/resource/scenario acceptance remains open.
+
+### Child-retirement actual qualification and minimization
+
+Pinned Bash syntax passes. The existing actor-execution owner exits0 after
+21actual Cargo commands: five healthy unit references, eight semantic source
+cuts, two affine compiler denials and six native child phases. Its existing
+JSON receipt has16records (ten inversions/denials plus six native phases),
+not21 records. Every healthy/restored native profile runs exactly the named
+one-passed case; both inversions exit101 and fail the intended joined-report
+oracle at fixed_supervisor_recovery.rs1340 after cleanup/original acquisition.
+The earlier terminal guard is observed, but completed-future misuse is absent.
+Later resource/replay/native-tail assertions are not credited in those failing
+runs. The five-source ledger passes; source restoration and caller conservation
+pass. No production or test assertion body changes.
+
+The existing aarch64-darwin `bombay-actor-execution-law-evidence` Nix check
+also exits0, including all21 commands and install/fixup. Its captured derivation
+isjp96162sp38r8b5drxq37k436fk2nfg2, output8nwr5k30qqg6wfrhr7fa9fd4pl2cs8z1;
+build phase takes6minutes3seconds. This captured source precedes final records
+and integration of route mainfcaf7430; the retained shell00e9e467, flakefe193725
+and five native input hashes are unchanged. Required submitted-head CI remains
+independent. Source/native-outcome two-pass reviewe97658a2 finds no scoped veto;
+its distinction between16records,21commands and unexecuted negative tails is
+retained. Raw local/native/Nix logs and checksum ledgers remain in the feature
+evidence, rather than a new project verification tool.
+
+Minimization reuses the existing snapshot, mutation, restoration, named-case
+and receipt owners, deleting the separate118-line Python controller and its
+three flake lines. The lean candidate removes50 redundant recording lines
+from the earlier rejected proposal, including duplicate JSON/executable-hash
+recording. Old artifacts retain their historical meanings. Final software
+delta is production+0/-0/net0, verification+91/-128/net-37, publicAPI+0/-0;
+five total paths include the reciprocal status record. No new runner, library,
+type, native hook or requirement is retained. All earlier costs remain history;
+this stage delivers neither the other five Python retirements nor full remote
+acceptance. Focused PR, actual required CI and main merge remain open.
+
+Qualified source/results archive:
+`child-retirement-qualified-20261023.tar.gz`, SHA256
+`b85ff6083c6de386e4126eae86ce905bf51be6e43eedaec0a10c4bf1c8dc2617`,
+under the common Git2026-10-21 session archive. Packager and root independently
+extract and rehash all87 payloads. The archive preserves the exact five-path
+delta before this pointer, original retired Python, selected inputs and both
+actual21-command cohorts. Independent Nix qualification6090525c confirms the
+captured/current law-owner equivalence. No compiler closure, binary recovery,
+submitted-head CI or merged-delivery claim follows from this archive.

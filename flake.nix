@@ -62,7 +62,6 @@
               ./docs/prds/static-remote-actors/transport-custody/certificates
               (pkgs.lib.fileset.maybeMissing ./crates/bombay-engine/tests/driver-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
-              (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/child_preparation_retirement_evidence.py)
               ./nix/references.sh
               ./tools/references.sh
               ./flake.nix
@@ -352,12 +351,10 @@
               nativeBuildInputs = [
                 pkgs.jq
                 pkgs.perl
-                pkgs.python3
               ];
               buildPhaseCargoCommand = ''
                 mkdir -p "$out"
                 bash crates/bombay/tests/actor-execution-law-evidence.sh --output "$out"
-                env -u CARGO_TARGET_DIR python3 crates/bombay/tests/child_preparation_retirement_evidence.py --output "$out/child-preparation"
               '';
               doInstallCargoArtifacts = false;
               doCheck = false;
