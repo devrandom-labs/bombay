@@ -1,5 +1,13 @@
 # Backlog status and dependencies
 
+Current prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
+reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
+upstream-patched1.53.3 in the root and isolated transport locks and changes
+the isolated exact pin at its owner. No advisory exception, runtime/API change
+or full remote acceptance is claimed. Its compatibility checks, independent
+review and fresh required CI/main delivery remain open; previous green heads
+do not qualify these current PR heads.
+
 Latest user direction removes all implementation budgets and preapproves their
 expansion: “there is no budget.” Do not request line/path/type/verification
 budget approval again. Historical numbers below retain their source scope;
