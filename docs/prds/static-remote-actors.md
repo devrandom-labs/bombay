@@ -43000,8 +43000,9 @@ Nix success is not substituted for them.
 The smallest selected change adjusts the existing `checks` job's bounded
 execution guard from120 to180minutes. All commands, profiles, targets, native
 oracles, required checks and fuzz campaigns remain selected. The prior verified
-route run required roughly104minutes; the additional application and workspace
-feature unification exceed the previous guard on the observed runner. The new
+route run required roughly104minutes. The complete observed flake run exceeded
+the previous guard while compiling the optimized workspace; individual cost
+contributors were not isolated. The new
 guard is an allowance for completing the same work, not measured proof that
 180minutes suffices. No resource algorithm, cache wrapper, source exclusion or
 new workflow is introduced. Reuse the existing GitHub timeout property and
