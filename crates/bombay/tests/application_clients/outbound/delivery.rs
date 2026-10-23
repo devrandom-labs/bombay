@@ -426,10 +426,23 @@ async fn read() {
                 requester::CounterProofPurpose::ReadReply
             )]
         );
-        // Keep the complete terminal Client: its public original-fact extraction
-        // product is deliberately not invented by this consumer comparison.
+        let (source, inputs, startup, withdrawal, joined, source_eof, outgoing_rows, routes) =
+            whole_client.into_parts();
+        let (listener, observed, listener_withdrawal) = routes;
+        assert!(
+            matches!(listener, Some(Ok(())))
+                && matches!(observed, Some(Ok(())))
+                && matches!(listener_withdrawal, Some(Ok(())))
+        );
+        // Keep all original terminal products through the route observations.
         drop((
-            whole_client,
+            source,
+            inputs,
+            startup,
+            withdrawal,
+            joined,
+            source_eof,
+            outgoing_rows,
             recipient,
             rows,
             declarations,

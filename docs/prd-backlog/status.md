@@ -6,6 +6,21 @@ budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
 
+[PR389](https://github.com/devrandom-labs/bombay/pull/389) merged coverage Python
+retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
+All six checks pass on dc988108; its tree equals the merge tree. This delivers
+only the existing coverage reducer replacement. Six Python files and inline
+workflow blocks remain; named-child PR390 still awaits required Nix.
+
+The initial-route follow-up is locally verified by four native controls in both
+profiles, three intended owning-source falsifiers and exact restorations. Its
+public Counter Increment/Read/Stop comparison also passes both profiles; a real
+wrong-value cut fails its intended native oracle and restores cleanly. Public
+consumers/guides and strict lint are reconciled. The retained remote matrix
+passes505 tests/profile; formatting and rustdoc pass. Focused delivery precedes
+the ordinary separate-process application;
+the PRD retains the precise remaining acceptance clauses.
+
 PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,
 with all six required checks passing on e1eab601. Its source tree is identical
 to that verified head. Repository-owner merge and independent local reviews are

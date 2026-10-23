@@ -394,7 +394,8 @@ async fn retain_requests(retained: usize, responses: usize) {
             })
         })
         .collect::<Vec<_>>();
-    let (mut source, _inputs, startup, withdrawal, joined, source_eof, rows) = client.into_parts();
+    let (mut source, _inputs, startup, withdrawal, joined, source_eof, rows, _routes) =
+        client.into_parts();
     let mut prefix = Vec::new();
     let mut prefix_eof = None;
     if source_eof.is_none() {

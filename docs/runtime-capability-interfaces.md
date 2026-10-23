@@ -104,6 +104,13 @@ real Application-associated reply actor. Source capability possession and
 declared numeric origin do not authenticate an actor. Verification and current
 permission remain explicit receiving policy, separate from local association.
 
+Only real Gets await the first successful observed native matching snapshot,
+after protection/framing and before acquiring fresh request permission. One
+SDK-owned listener and shared computation serve this initial observation; no-Get
+rows continue independently. Joined cleanup cancels the wait. A later route loss
+still produces ordinary Get/EOF behavior; visibility is not authentication,
+delivery or lasting availability. The native Get timeout does not bound this wait.
+
 Required `ClientLimits` supplies independent nonzero maxima for concurrent
 operations, acquired source rows and charged native responses per query;
 `json::Limits` remains a separate constructor input. No defaults or tuple
@@ -120,8 +127,12 @@ payload/proof inspection exposes no SDK owner. Consuming extraction explicitly
 discharges unused success-envelope metadata; a native error retains its actual
 cause and permit in one standard Error owner until disposal. Callback refusal
 handoff retains the exact original error and charge. Client extraction returns
-the original source/policies and actual rows/startup/withdrawal/joined/EOF facts;
-it does not synthesize native outcomes or certify authentication. Existing
+the original source/policies and actual rows/startup/withdrawal/joined/EOF facts,
+then an independent listener-creation/visibility/listener-withdrawal triple.
+Querier startup success can coexist with listener creation failure; an actual
+observation error remains separate and leaves Get unattempted. Listener retirement
+precedes Querier retirement, preserving both native results. Extraction
+does not synthesize native outcomes or certify authentication. Existing
 factory/poll/disposal acquisition semantics are shared with inbound Export.
 The private native Session/Querier and callback loops never become actor effects
 or user Work. The one-shot public read uses ActorExt's existing deadline policy;

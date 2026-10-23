@@ -160,7 +160,7 @@ async fn acquired_acknowledgment_is_selected_before_joined_cancels_its_operation
             EstablishedRecipient<MessageProtocol<MailAddr, ()>>,
         >>::withdraw(&mut client).await;
         let closed = session.close().await;
-        let (source, _inputs, startup, withdrawal, joined, eof, rows) = client.into_parts();
+        let (source, _inputs, startup, withdrawal, joined, eof, rows, _routes) = client.into_parts();
         // The actual user-lane EOF is one-shot and already retained by Client.
         // Re-polling its Source would wait on the still-live control lane.
         let returned_source = source.address();

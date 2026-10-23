@@ -515,8 +515,9 @@ async fn read(fault: ProviderFault) {
         assert_eq!(report.retirement(), RetirementAssessment::Established);
         assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
         assert_ne!(source_address, reader_address);
-        let (mut source, inputs, startup, withdrawal, joined, source_eof, outgoing_rows) =
+        let (mut source, inputs, startup, withdrawal, joined, source_eof, outgoing_rows, routes) =
             whole_client.into_parts();
+        let (listener, observed, listener_withdrawal) = routes;
         let outgoing_count = outgoing_rows.len();
         let mut outgoing_rows = outgoing_rows.into_iter();
         let (
@@ -568,6 +569,7 @@ async fn read(fault: ProviderFault) {
                 && matches!(joined, Some(Ok(())))
         );
         assert!(source_eof.is_some() && source_tail.is_empty());
+        assert!(matches!(listener, Some(Ok(()))) && matches!(listener_withdrawal, Some(Ok(()))));
         assert!(
             request_permission.is_none()
                 && request_capacity.is_none()
@@ -602,6 +604,7 @@ async fn read(fault: ProviderFault) {
         assert_eq!(request_proof.as_ref(), registry[0].1.proof.as_ref());
         match fault {
             ProviderFault::ProtectionDisposal => {
+                assert!(observed.is_none());
                 let original = protection_original
                     .as_ref()
                     .expect("Ready proof and original disposal panic coexist");
@@ -632,6 +635,7 @@ async fn read(fault: ProviderFault) {
                 assert!(remaining_source.is_empty());
             }
             ProviderFault::Healthy | ProviderFault::VerificationDisposal => {
+                assert!(matches!(observed, Some(Ok(()))));
                 assert!(protection_original.is_none());
                 assert!(matches!(query, Attempt::Returned(Ok(()))));
                 assert!(callback_eof.is_some());
