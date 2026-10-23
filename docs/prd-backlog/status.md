@@ -1,5 +1,19 @@
 # Backlog status and dependencies
 
+Active R23 verification stage: compare the shipped separate-program Counter
+under matching versus differing receiver Stop proof. Require exact refusal
+and originals, no native Stop, an independent live Counter Read1 and ordinary
+caller Uncertain(Stop), plus the matched positive and intended inverse in both
+profiles. The existing test owner is reused; production/API/dependency delta0.
+No full R23 or send-only/pressure acceptance is inferred.
+
+Denied-Stop local verification now passes both real-program controls D/R,
+with the intended proof inverse at the actual child verification oracle after
+cleanup. Restored package passes ten outer tests/profile; final focused checks,
+strict lint, formatting and independent reviews pass. Production/API delta0;
+retained verification+469/-1. Its focused submitted-head CI and main delivery
+remain pending; pressure, exit/scenario mapping and full R23 remain open.
+
 Current prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
 reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
 upstream-patched1.53.3 in the root and isolated transport locks and changes
