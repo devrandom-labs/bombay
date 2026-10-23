@@ -42564,3 +42564,22 @@ integration, and these results are not relabeled new-head CI. Draft delivery
 depends on PR389; it must stay draft until that dependency actually merges and
 the submitted named-child head satisfies required CI and independent review.
 Diagnostic Python/current+MSRV retirement and full remote acceptance stay open.
+
+### Named runtime child — merged delivery and route-branch integration
+
+PR390 https://github.com/devrandom-labs/bombay/pull/390 merged on
+2026-10-23T00:49:10Z as a88dbe83df336f5c32047686f27f39c12bc59b9a.
+All six checks passed on the reviewed exact head
+79d490805c5f5684587e1dfa211474177c5b2bd3; Nix Flake Check job120146159330
+completed00:44:25Z. The merge is delivery of that named-child prerequisite,
+not diagnostic-Python retirement or full remote acceptance. Source review
+43f35833 and archived actual negative/restored receipts retain their scope.
+
+Merged this actual origin/main into fix/client-route. Both append-only document
+histories survive; the coverage submission section is retained once. The named
+run_with source is now inherited from main, leaving the route PR's13path delta.
+Route Client45282b54 and routes4d2d8edd, their505test paired receipts, and public
+contract are unchanged. This integration adds no Rust source or public type.
+Previous route-head CI is historical: the integrated submitted head needs its
+own required checks and final source review before readiness/merge. Full remote
+R01–R25/AUTH1/NET1 remains active.

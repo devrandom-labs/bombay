@@ -1124,3 +1124,10 @@ above; no Rust commands were rerun for this integration. Its draft PR depends
 on PR389 and remains blocked from readiness/merge pending actual dependency
 merge, submitted-head required CI and independent review. Full remote acceptance
 and diagnostic Python/current+MSRV retirement remain open.
+
+PR390 is merged2026-10-23T00:49:10Z as a88dbe83 after all six checks passed on
+79d49080 (required Nix completed00:44:25Z). The exact named-child prerequisite
+is delivered; diagnostic Python/current+MSRV retirement remains open. The route
+PR391 integrates that actual main, preserving both feature histories with no
+Rust/public-type change; its new submitted head still needs required CI/review.
+The full remote PRD remains active.
