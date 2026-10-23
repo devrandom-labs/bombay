@@ -21,14 +21,18 @@ profiles, three intended owning-source falsifiers and exact restorations. Its
 public Counter Increment/Read/Stop comparison also passes both profiles; a real
 wrong-value cut fails its intended native oracle and restores cleanly. Public
 consumers/guides and strict lint are reconciled. The retained remote matrix
-passes505 tests/profile; formatting and rustdoc pass. Draft PR391 now requires
-its integrated head's actual CI and final review before delivery. The ordinary
+passes505 tests/profile; formatting and rustdoc pass. PR391 merged at
+2026-10-23T07:51:23Z asfcaf7430 after all six checks passed on e32fa62a;
+verified and merge trees match. Actual main is integrated into PR392. The ordinary
 finite-test application in `examples/remote-counter` now runs in two OS processes:
 success, provider refusal, wrong-proof handling and processing-before-publication
 loss pass both profiles. Full workspace debug/optimized tests and strict lint
 pass. The smaller private directory owner passes all eight application cases in
 both profiles under the previously failing long parent. The dedicated
 aarch64-darwin Nix check passes; submitted-head CI and delivery remain pending.
+Its first required Nix CI run hit the two-hour job guard during optimized
+workspace compilation. The existing guard is raised to three hours with the
+same complete commands and required checks; no passing CI is inferred.
 The complete pressure/denied-stop/scenario matrix remains open;
 the PRD retains the precise remaining acceptance clauses.
 

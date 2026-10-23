@@ -20,21 +20,27 @@ Required Nix completed00:44:25Z; merge and verified head share tree4642f533.
 Actual maina88dbe83 is fetched and integrated into route PR391; its qualified
 Rust source is unchanged. Diagnostic Python/current+MSRV retirement remains open.
 
-Initial-route follow-up is submitted as draft PR391: four native controls pass in debug
+[PR391](https://github.com/devrandom-labs/bombay/pull/391) merged the initial-route
+follow-up at2026-10-23T07:51:23Z asfcaf743010f97eb125671e21dde88f54a5833ebb.
+All six checks passed on e32fa62a; required Nix completed02:38:27Z. The verified
+head and merge share tree623f7ad5. Actual main is integrated into PR392.
+Four native controls pass in debug
 and optimized builds, and three separate source cuts fail their intended laws
 in both profiles. Each cut is restored before replay. Public consuming callers
 and the four current guides are migrated; strict workspace/all-feature/all-target
 Clippy passes. The public Counter Increment/Read/Stop journey passes both
 profiles, including its wrong-value control and restoration. The final retained
 remote matrix passes505 tests/profile; formatting and rustdoc pass. Focused
-delivery awaits the integrated head's required CI and final review. The separate-process
+delivery is recorded above. The separate-process
 finite-test application is implemented in `examples/remote-counter`: actual
 success, provider refusal, wrong-proof and processing-before-publication loss
 checks pass in both profiles. Full workspace debug/optimized tests and strict
 lint pass. The smaller private temporary-directory owner passes all eight
 application cases in both profiles under the previously failing long parent;
 the dedicated aarch64-darwin Nix check also passes. Submitted-head CI and
-delivery remain pending.
+delivery remain pending. Its first Nix CI run exceeded the existing two-hour
+job guard while compiling the optimized workspace. The existing guard is now
+three hours; every required command remains selected and must actually pass.
 This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
@@ -42980,3 +42986,36 @@ that application commit, stacked after draft route PR391. Both still require
 actual submitted-head CI and final delivery; no full remote row closes here.
 The prior archive explicitly excludes this then-running log; preserve this
 completed receipt and its review as separate subsequent evidence.
+
+## Remote Counter CI execution guard — pre-edit record (2026-10-23)
+
+PR392 at535853f0 passed both native TLS profiles, Deny and both CodeQL checks.
+Its required Nix job120198350507 did not complete: GitHub's actual annotation
+states that the job exceeded2h0m0s. The raw job log shows the complete flake
+still compiling the optimized workspace at cancellation, including the new
+remote Counter. No unexpected test failure is established by this cancelled run. Required
+CI and full-flake qualification remain pending; local dedicated application
+Nix success is not substituted for them.
+
+The smallest selected change adjusts the existing `checks` job's bounded
+execution guard from120 to180minutes. All commands, profiles, targets, native
+oracles, required checks and fuzz campaigns remain selected. The prior verified
+route run required roughly104minutes; the additional application and workspace
+feature unification exceed the previous guard on the observed runner. The new
+guard is an allowance for completing the same work, not measured proof that
+180minutes suffices. No resource algorithm, cache wrapper, source exclusion or
+new workflow is introduced. Reuse the existing GitHub timeout property and
+pinned Nix/Crane/Cargo owners; no dependency or public API changes are involved.
+Expected additional scope is one existing workflow line (+1/-1), this feature
+record and its reciprocal current status. Production/tests/API delta is zero.
+Actual submitted-head CI must pass before merge.
+
+The completed local application Nix receipt is archived separately as
+`remote-counter-nix-qualified-20261023.tar.gz`, SHA256
+`a00cd49caddbaf3d89f3bcdaf34690c76081f8bab2c2fc3f3cab7174def8b6ea`,
+under the common Git session archive for2026-10-21. Its nine payloads rehash
+successfully after fresh extraction by both packager and root; the raw exit is0
+and log digest matches4e3d67b9. It retains the captured derivation/source
+comparison and independent qualification reviewa307aba0. The earlier application
+archiveaa230f71 remains unchanged. Neither archive certifies exact-head CI or a
+hermetic compiler closure.
