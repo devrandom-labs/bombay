@@ -1,6 +1,6 @@
 # Static remote actors and typed admission
 
-## Delivery checkpoint (2026-10-24 UTC)
+## Delivery checkpoint (2026-10-24 local)
 
 PR395 merged the Tokio prerequisite at2026-10-23T23:26:42Z as
 36b5c1f9f92b56f527167076249d12c1ceba0545 after all six checks passed on
