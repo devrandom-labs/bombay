@@ -42544,3 +42544,23 @@ It retains the complete tracked/untracked software, pre-pointer records, selecte
 lock/instructions, raw receipts, inversions, reviews and remaining-clause map.
 Manifest verification and member reads recheck Client45282b54, routes4d2d8edd
 and final review88bdb746. It is not a hermetic build closure or delivery proof.
+### Named runtime child — dependent draft delivery
+
+Prepared `test/named-runtime-child` in an isolated delivery checkout by merging
+the frozen owner-coverage submission `dc988108`. Only append conflicts in this
+PRD and the status index required resolution: current coverage/merged-Client
+guidance and the complete named-child evidence above are both preserved. No
+remote-counter research or readiness source is imported. The focused delta
+against that dependency remains exactly the existing `run_with.rs` test plus
+this PRD and the status index; Rust production and public API are unchanged.
+
+The test source remains exactly SHA256
+`fd631426fd04f78c77519464c8a05609fbea7b1f90e964fac506ad17d5c1df61`.
+Retained pinned-Nix evidence is the preformat complete target in both profiles
+(22 passed, 1 expected ignored), strict target Clippy exit0, and the identical
+formatted semantics' final exact-parent debug/optimized runs (1 passed,
+22 filtered each) plus fmt exit0. No Rust command was rerun for this docs-only
+integration, and these results are not relabeled new-head CI. Draft delivery
+depends on PR389; it must stay draft until that dependency actually merges and
+the submitted named-child head satisfies required CI and independent review.
+Diagnostic Python/current+MSRV retirement and full remote acceptance stay open.
