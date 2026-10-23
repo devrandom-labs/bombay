@@ -633,8 +633,16 @@ let outcome = node.run().await?;
 ```
 
 The encoder's `Ok(None)` selects no Get, for example for a protocol
-acknowledgment. Concurrent requests bounds operations holding a permit through
-protection, Get and response handling. Retained requests bounds acquired source
+acknowledgment. A real Get waits for the first successfully observed matching
+native route after protection and framing checks. It acquires fresh request
+permission after that wait; no permission guard spans the wait. No-Get messages
+remain independent. This initial snapshot promises neither identity, delivery
+nor continued availability: later route loss retains ordinary Get/EOF results.
+Joined cleanup cancels the initial wait. The native query timeout starts with
+Get, so it does not bound the initial visibility wait.
+
+Concurrent requests bounds operations holding a permit through
+protection, initial visibility waiting, Get and response handling. Retained requests bounds acquired source
 rows, including no-Get messages; reaching it closes admission and keeps any
 accepted unread prefix in the original source. Retained responses bounds charged
 native replies per query across queue and acquired responses. The first refused
@@ -649,7 +657,11 @@ cleanup. The source capability and the checked return recipient are separate:
 comparing declared numeric origins is routing policy, not authentication.
 Optional consuming `Client::into_parts` returns the original source and policy
 inputs, actual startup/withdrawal/joined/EOF observations and original request
-rows. A quota stop is not EOF; the returned source keeps its unread accepted
+rows, followed by a triple for listener creation, observed visibility and listener
+withdrawal. These native results stay independent: successful Querier startup
+can coexist with failed listener creation, while an observation error leaves
+Get unattempted. An absent visibility result does not certify a matching route.
+A quota stop is not EOF; the returned source keeps its unread accepted
 prefix. An acquired `Response` offers borrowed payload/proof fragments and the
 actual error through standard `Error`, with no public SDK type. Its consuming
 handoff preserves typed results and deliberately disposes unused native
@@ -660,7 +672,8 @@ in its outer diagnostics. Advanced inspection is optional, not a reporting
 callback required to run the application.
 
 This outgoing slice is verified and merged through PR388; complete remote support
-remains pending.
+remains pending. Initial visibility waiting is a subsequent local change with
+its own qualification; it is not evidence of a delivery or authentication promise.
 Full cancellation/unwind, pressure/retry, public privacy/authentication and
 resource acceptance remain open. Zenoh stays an internal networking owner; ordinary
 applications must not assemble its request/reply loops. Refusal preserves the

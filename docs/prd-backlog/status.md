@@ -6,6 +6,26 @@ budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
 
+[PR389](https://github.com/devrandom-labs/bombay/pull/389) merged coverage Python
+retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
+All six checks pass on dc988108; its tree equals the merge tree. This delivers
+only the existing coverage reducer replacement. Six Python files and inline
+workflow blocks remain. PR390 merged its named-child prerequisite at
+2026-10-23T00:49:10Z as a88dbe83 after all six checks passed on79d49080;
+required Nix completed00:44:25Z and the verified/merge trees match. Actual main
+a88dbe83 is fetched and integrated into route PR391. Diagnostic Python and its
+current+MSRV matrix remain open.
+
+The initial-route follow-up is locally verified by four native controls in both
+profiles, three intended owning-source falsifiers and exact restorations. Its
+public Counter Increment/Read/Stop comparison also passes both profiles; a real
+wrong-value cut fails its intended native oracle and restores cleanly. Public
+consumers/guides and strict lint are reconciled. The retained remote matrix
+passes505 tests/profile; formatting and rustdoc pass. Draft PR391 now requires
+its integrated head's actual CI and final review before delivery, followed by
+the ordinary separate-process application;
+the PRD retains the precise remaining acceptance clauses.
+
 PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,
 with all six required checks passing on e1eab601. Its source tree is identical
 to that verified head. Repository-owner merge and independent local reviews are
@@ -1102,7 +1122,6 @@ passes22tests/1expectedignored in both profiles, strict target lint passes,
 and the formatted final parent passes both profiles plus fmt. Rust production
 and public API are unchanged; tests+15/-1/net14. Diagnostic Python/current and
 MSRV matrix retirement remains separate and unfulfilled; see the feature PRD.
-
 Named-child draft delivery now integrates the frozen owner-coverage submission
 dc988108 while preserving its current guides and the named-child records.
 The unchanged fd631426 test retains the qualified paired target/focused evidence
@@ -1110,3 +1129,10 @@ above; no Rust commands were rerun for this integration. Its draft PR depends
 on PR389 and remains blocked from readiness/merge pending actual dependency
 merge, submitted-head required CI and independent review. Full remote acceptance
 and diagnostic Python/current+MSRV retirement remain open.
+
+PR390 is merged2026-10-23T00:49:10Z as a88dbe83 after all six checks passed on
+79d49080 (required Nix completed00:44:25Z). The exact named-child prerequisite
+is delivered; diagnostic Python/current+MSRV retirement remains open. The route
+PR391 integrates that actual main, preserving both feature histories with no
+Rust/public-type change; its new submitted head still needs required CI/review.
+The full remote PRD remains active.

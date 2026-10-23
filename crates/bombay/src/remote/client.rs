@@ -10,12 +10,14 @@ use crate::application::{ApplicationHandle, ExternalActor};
 use crate::local::endpoint::{ActorRef, ExtractLocalEndpoint};
 use behavior::{EstablishedRecipient, Protocol, User};
 use communication::TrySendError;
+use futures_util::FutureExt;
 use futures_util::future::{Either, Shared};
 use futures_util::stream::{FuturesUnordered, StreamExt};
 use std::any::Any;
 use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::fmt;
+use std::future::Future;
 use std::mem::replace;
 use std::num::NonZeroUsize;
 use std::panic::resume_unwind;
@@ -26,6 +28,8 @@ use thiserror::Error;
 use tokio::sync::oneshot::error::RecvError;
 use tokio::sync::{AcquireError, OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
 use zenoh::Session;
+use zenoh::handlers::{RingChannel, RingChannelHandler};
+use zenoh::matching::{MatchingListener, MatchingStatus};
 use zenoh::qos::CongestionControl;
 use zenoh::query::{
     ConsolidationMode, Querier, QueryTarget, Reply as NativeReply, ReplyError as NativeReplyError,
@@ -361,6 +365,10 @@ pub struct Client<
         >,
     >,
     querier: Option<Querier<'static>>,
+    listener: Option<MatchingListener<RingChannelHandler<MatchingStatus>>>,
+    listener_creation: Option<Result<(), Box<dyn StdError + Send + Sync>>>,
+    visibility: RefCell<Option<Result<(), Box<dyn StdError + Send + Sync>>>>,
+    listener_withdrawal: Option<Result<(), Box<dyn StdError + Send + Sync>>>,
     startup: Option<Result<(), ExportError>>,
     withdrawal: Option<Result<(), Box<dyn StdError + Send + Sync>>>,
     joined: Option<Result<(), RecvError>>,
@@ -475,6 +483,9 @@ where
     /// The encoder's `Ok(None)` selects no Get. The protector, verifier, decoder
     /// and current-permission policies remain distinct caller-supplied inputs.
     /// Construction retains these inputs without starting providers or a query.
+    /// Real Gets await the first successfully observed matching native route.
+    /// This does not promise identity, delivery or continued route availability;
+    /// later route loss retains the ordinary native Get and EOF outcomes.
     #[expect(
         clippy::too_many_arguments,
         reason = "the source, destination, limits and independent typed policies are explicit inputs"
@@ -508,6 +519,10 @@ where
             ),
             requests: RefCell::new(Vec::new()),
             querier: None,
+            listener: None,
+            listener_creation: None,
+            visibility: RefCell::new(None),
+            listener_withdrawal: None,
             startup: None,
             withdrawal: None,
             joined: None,
@@ -565,9 +580,10 @@ where
     #[expect(
         clippy::too_many_arguments,
         clippy::await_holding_refcell_ref,
+        clippy::too_many_lines,
         reason = "immutable original encoding and proof and the sole native receiver stay outside producers; authority guards end before suspending waits, while Get enters and returns synchronously through the selected Ready future"
     )]
-    async fn request<Target>(
+    async fn request<'visibility, Target>(
         inputs: &(
             String,
             ClientLimits,
@@ -597,6 +613,9 @@ where
         target: MailAddr,
         runtime: &str,
         capacity: Arc<Semaphore>,
+        visible: impl Future<
+            Output = &'visibility RefCell<Option<Result<(), Box<dyn StdError + Send + Sync>>>>,
+        >,
         joined: Shared<oneshot::Receiver<()>>,
     ) where
         Target: Protocol<Addr = MailAddr, Msg = Message>,
@@ -635,6 +654,15 @@ where
             *request.refusal.borrow_mut() = Some(ClientError::Json { cause });
             return;
         }
+        // Only real Gets wait. No-Get rows and pending sibling operations retain
+        // their existing progress; joined cancellation is owned by provide.
+        let visibility = visible.await;
+        let observed = visibility.borrow();
+        match observed.as_ref() {
+            Some(Ok(())) => {}
+            Some(Err(_)) | None => return,
+        }
+        drop(observed);
         // The original provider output is already outside its disposed future.
         let permission = match (inputs.8)(&request.original, runtime, target) {
             Ok(permission) => permission,
@@ -897,6 +925,11 @@ where
     )]
     async fn retire(&mut self) {
         self.source.close_admission();
+        // Querier retirement removes its listeners too: preserve this distinct
+        // native result first instead of relying on SDK Drop logging.
+        if let Some(listener) = self.listener.take() {
+            self.listener_withdrawal = Some(listener.undeclare().await);
+        }
         if let Some(querier) = self.querier.take() {
             self.withdrawal = Some(querier.undeclare().await);
         }
@@ -1032,7 +1065,24 @@ where
             Ok(querier) => {
                 self.querier = Some(querier);
                 self.startup = Some(Ok(()));
-                Ok(())
+                let listener = self
+                    .querier
+                    .as_ref()
+                    .expect("the acquired native Querier remains outside listener construction")
+                    .matching_listener()
+                    .with(RingChannel::new(1))
+                    .await;
+                match listener {
+                    Ok(listener) => {
+                        self.listener = Some(listener);
+                        self.listener_creation = Some(Ok(()));
+                        Ok(())
+                    }
+                    Err(cause) => {
+                        self.listener_creation = Some(Err(cause));
+                        Err(())
+                    }
+                }
             }
             Err(cause) => {
                 self.startup = Some(Err(ExportError::Declaration { cause }));
@@ -1060,6 +1110,30 @@ where
             let source = &mut self.source;
             let source_address = source.address();
             let retained = &self.requests;
+            let listener = self.listener.as_ref();
+            let visibility = &self.visibility;
+            // One shared computation, not cloned native causes or a new
+            // publisher. The exact observed result stays in Client custody.
+            let visible = async {
+                if visibility.borrow().is_some() {
+                    return;
+                }
+                let Some(listener) = listener else {
+                    return;
+                };
+                let observed = loop {
+                    match querier.matching_status().await {
+                        Ok(status) if status.matching() => break Ok(()),
+                        Ok(_) => match listener.recv_async().await {
+                            Ok(_) => {}
+                            Err(cause) => break Err(cause),
+                        },
+                        Err(cause) => break Err(cause),
+                    }
+                };
+                *visibility.borrow_mut() = Some(observed);
+            }
+            .shared();
             let capacity = Arc::new(Semaphore::new(inputs.1.concurrent_requests.get()));
             let mut requests = FuturesUnordered::new();
             loop {
@@ -1089,10 +1163,12 @@ where
                         let runtime = &runtime;
                         let capacity = Arc::clone(&capacity);
                         let ending = joined.clone();
+                        let visible = visible.clone();
                         requests.push(async move {
                             provide(
                                 || Self::request(inputs, &request, querier, endpoint,
-                                    source_address, target, runtime, capacity, ending.clone()),
+                                    source_address, target, runtime, capacity,
+                                    async move { visible.await; visibility }, ending.clone()),
                                 &request.completed,
                                 &request.operation_factory,
                                 &request.operation_poll,
@@ -1258,10 +1334,12 @@ where
     ///
     /// Cold extraction retains absent startup/withdrawal/EOF results. Successful
     /// Node extraction follows real producer disposal and native withdrawal.
-    /// Any remaining native Querier is explicitly surrendered through its Drop;
+    /// Any remaining native listener and Querier are surrendered through Drop;
     /// this does not fabricate an undeclare result or callback EOF observation.
     /// Response owners keep each acquired reply paired with its count charge.
     /// Source quota exhaustion returns the exact closed Source and unread prefix.
+    /// The final triple retains listener creation, initial visibility and listener
+    /// withdrawal independently of Querier startup/withdrawal and every Get.
     ///
     /// # Panics
     /// Panics if an internal request producer still owns a row at terminal handoff.
@@ -1303,8 +1381,14 @@ where
             ),
             Option<()>,
         )>,
+        (
+            Option<Result<(), Box<dyn StdError + Send + Sync>>>,
+            Option<Result<(), Box<dyn StdError + Send + Sync>>>,
+            Option<Result<(), Box<dyn StdError + Send + Sync>>>,
+        ),
     ) {
         // The native owner is private even on the advanced consuming path.
+        drop(self.listener);
         drop(self.querier);
         (
             self.source,
@@ -1324,6 +1408,11 @@ where
                         .into_parts()
                 })
                 .collect(),
+            (
+                self.listener_creation,
+                self.visibility.into_inner(),
+                self.listener_withdrawal,
+            ),
         )
     }
 }

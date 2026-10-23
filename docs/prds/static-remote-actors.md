@@ -9,6 +9,29 @@ again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
 
+[PR389](https://github.com/devrandom-labs/bombay/pull/389) merged the scoped
+coverage Python retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
+All six checks passed on dc988108, including Nix39866951393. The merge and
+verified head share treed7e91521. Six Python files and inline workflow blocks remain.
+[PR390](https://github.com/devrandom-labs/bombay/pull/390) merged the qualified
+named-child prerequisite at2026-10-23T00:49:10Z as
+a88dbe83df336f5c32047686f27f39c12bc59b9a after all six checks passed on79d49080.
+Required Nix completed00:44:25Z; merge and verified head share tree4642f533.
+Actual maina88dbe83 is fetched and integrated into route PR391; its qualified
+Rust source is unchanged. Diagnostic Python/current+MSRV retirement remains open.
+
+Initial-route follow-up is submitted as draft PR391: four native controls pass in debug
+and optimized builds, and three separate source cuts fail their intended laws
+in both profiles. Each cut is restored before replay. Public consuming callers
+and the four current guides are migrated; strict workspace/all-feature/all-target
+Clippy passes. The public Counter Increment/Read/Stop journey passes both
+profiles, including its wrong-value control and restoration. The final retained
+remote matrix passes505 tests/profile; formatting and rustdoc pass. Focused
+delivery awaits the integrated head's required CI and final review. The separate-process
+application follows. This is not a full remote acceptance
+or delivery claim. The concrete remaining clauses are retained in the acceptance
+table; existing merged evidence is not reset by this follow-up.
+
 Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 3625efe86f8613e13b3a3bc6cf180dc5de57edc7 after all six required checks passed on
 e1eab601. The repository owner marked it ready and merged it; no GitHub review
@@ -41995,19 +42018,6 @@ The separately submitted PR388's final8157bba1 independent branch review is
 SHA256c337ba7471448bb14e118b2ea0af9f38a228b7c38b9ca6a0d700f6ea8b0b2714.
 That exact source remains unchanged by this coverage branch.
 
-### Coverage retirement submission and merged Client guidance
-
-Integrated main8557f0d8 into chore/owner-coverage without changing the qualified
-flake or Rust sources. PR388 merged2026-10-22T21:05:52Z after all six checks
-passed on8157bba1; its tree equals the verified head. Reconciled six existing
-current guides and repaired the acceptance page's current-status link. Earlier
-dated submission/build records retain their historical scope. Full remote
-acceptance remains active. Coverage source and actual Nix evidence are unchanged;
-fresh pinned nixfmt-check and git diff-check pass. Complete submission delta:
-nine paths, Rust production/tests/public types+0/-0; verification machinery
-+47/-56/net-9. The extra paths contain delivery prose/link corrections only.
-Independent submission review and exact new-head CI remain required.
-
 ### Exact runtime-construction child — diagnostic-retirement prerequisite
 
 Coverage Python retirement is locally qualified and committed6e70adad in its
@@ -42083,6 +42093,462 @@ Member reads verify final sourcefd631426 and review243ee976. Records precede
 this pointer. No executable/compiler closure, current/MSRV matrix retirement,
 new-head CI or merged delivery is inferred from this archive.
 
+### Full Counter protocol — ordinary public consumer comparison
+
+The named-child prerequisite is committedd906a80a; no inverse remains applied.
+Start a separate compiler comparison for the outstanding actual remote-counter
+product, without selecting new runtime/API machinery from compiler errors.
+Fresh Cargo.lock inspection still selects registry Behavior/Actors0.29.0,
+Macros0.16.0, Address0.3.0, Communication0.1.6 and Timers0.2.0, no patches.
+Re-read Behavior algebra exports and complete selected AGENTS, Actors deadline/
+shutdown implementations and selected timer-request tests, Bombay ActorExt,
+Address claim/lease and registration tests, Communication recv/end-marker,
+Timers schedule/cancel/pop and differential tests, Observe unique publication,
+actual Node startup/serving and Metadata/public consumer contracts. Existing
+owners remain authoritative; there is no dependency or ownership change.
+
+The owning composition is one nested reply(Increment)/reply(Read)/stop(Stop)
+Export plus one Node-owned Client and the original local Counter source.
+Caller returns only typed Actions for actual processed correlation→Read→Stop.
+Three operation source rows suffice; no ACK/no-Get mechanism belongs in this
+ordinary application. Concrete finite TEST grants are independently provisioned
+from actual issued bindings; local Mode is the sole policy input and is absent
+from the controller's response. New deploymentc18c2fd1 preserves olddc90 as an
+unselected source epoch. No SDK, mutable received-claim registry or second
+runtime is proposed.
+
+Frozen outside consumer c2f01ddc (239lines), protocol7b65ae1f (140) and deployment
+c18c2fd1 (201) have author source review241215ac. Root reads their complete
+bodies before mounting. Expected initial mutation is only a temporary three-line
+module mount in existing application_clients.rs; production+0/-0, public types
++0/-0, no retained source/API selection. All outside authored/copied epochs
+remain historical costs; the user has removed numerical budgets. First run only
+the owning public target's --no-run compiler check through pinned Nix. Any
+setup errors are not semantic falsifiers. Remove the mount byte-exact before
+retaining records or broadening verification.
+
+Independent source review already identifies two UNRESOLVED semantic gaps:
+counts/report presence alone do not check complete acquired row facts, and
+simultaneously released bindings do not causally prove peer queryable readiness.
+Actual Get may precede remote route propagation and receive immediate FINAL.
+The current source is eligible for compiler-fitness comparison only. Runtime
+acceptance needs genuine existing-owner readiness evidence and post-cleanup
+row/report observations. No sleep, enlarged watchdog, SDK escape hatch or new
+public facade is selected. R01/R23 two-process/ordinary application and broad
+security/resource acceptance remain open; a one-process prototype cannot close
+them. Actor deadline and pure ProductionRequired refusal remain separately
+scoped policies, not readiness or native production-preflight evidence.
+
+Actual first pinned `cargo test --offline --locked -p bombay-rs --features remote
+--test application_clients --no-run` exits0 in11.27s against the exact frozen
+sources. The ordinary existing tuple operations, three typed protocols, pure
+Caller sends, borrowed callbacks/bindings and current outcome projections
+compile without a new public type, bound, facade or runtime edit. Eight warnings
+remain in this deliberately incomplete probe (unused exact errors/configuration
+fields and duplicate inclusion's unused local Increment variant); no strict-lint
+or runtime acceptance is claimed. Do not erase error payloads to silence them.
+The temporary module mount is removed and the original whole parent compares
+byte-exact to its saved source before any records are retained. Compiler fitness
+does not resolve the independent observation/readiness gaps or qualify R01/R23.
+
+Next gather one explicitly exploratory debug execution of the same frozenv1,
+without accepting its incomplete oracles. This can establish an actual complete
+journey on one schedule or an actual setup failure; either outcome remains
+separate from stable readiness, R01/R23 acceptance and the uncompiled stronger
+observation proposald484b3f8. Reinstall only the same temporary public test mount,
+run exactly the one named case, acquire actual terminal output, then remove the
+whole mount byte-exact. No production source/policy edit is authorized by a
+passing or failing exploratory schedule alone. The initial native match race
+and incomplete fact observations remain documented blockers to acceptance.
+
+The exact frozenv1 exploratory debug run exits0: one actual named case passes
+in.05s,43others filtered (log576952f8). It establishes one observed complete
+journey, not adversarial readiness, strict lint, optimized execution, full fact
+conservation or two-process delivery. The whole parent is restored byte-exact
+again. The stronger observation proposal remains a distinct uncompiled source.
+
+Next compiler-only comparison: outside counter-bootstrap-control.rs3e4bbba7
+(213lines), author review0b42c9ed, uses two actual live Node bindings and the
+same complete six-pair configuration. Test mode must reach declaration/Work;
+local ProductionRequired must retain typed refusal before either. It issues no
+Get, so this isolates preflight policy from unresolved route readiness. Expected
+mutation is again only the temporary three-line application_clients module mount;
+production/API0, no selected production edit. Root reads the whole candidate;
+require returned unused Work to be Some before semantic acceptance. First use
+--no-run; actual profile controls, original guard-bypass inversion, both profiles,
+strict/source minimization and compiler static denials remain unqualified.
+
+The original bootstrap control3e4bbba7 compiles0 in10.73s, with16 unused-code
+warnings from its deliberately shared full protocol module. No runtime or lint
+credit. Restore the test parent again. Before execution, copy the control and
+c18 deployment to separate policy comparison files, preserving both frozen
+originals. Strengthen only unused Work presence to Some and point the control
+at its separately mutable deployment copy. Healthy two-case debug/optimized
+execution must precede the single ProductionRequired guard-bypass inversion;
+restore the exact healthy deployment before final positives. These are external
+probes with a temporary test mount, not selected production/application files.
+
+Root's proposed Some assertion is statically wrong: the supplied Work projection
+returns the actual concrete unused closure, not Option. Both setup attempts
+exit101/E0308 only at that assertion; no case executes. Preserve b24fc887 and
+option-{debug,release} logs as rejected setup, withdraw that assertion and keep
+the original3e control body (only its deployment path names the isolated copy).
+Existing static ownership already proves returned supplied Work presence; no
+new state, wrapper or runtime repair is warranted. Subsequent healthy receipts
+have separate names and do not overwrite those setup failures.
+
+The bootstrap comparison completes all six semantic commands: healthy and exact-
+restored debug/optimized each pass both named cases; guard-only inverseec9b6f42
+exits101 in each profile with Test still passing and ONLY ProductionRequired's
+line192 typed-binding-refusal assertion failing. Both native outcomes, closes,
+reports/notifications and common checks precede that oracle. Its later receiving
+Work cleanup/startup/presence assertions are unexecuted negatives; healthy and
+restored cases execute them. Private deployment is restored byte-exactc18c2fd1;
+the whole test parent is restored byte-exactf8a4fb08, with no Rust diff or mount.
+Two-pass actual source/outcome review3ee725ba records the scoped result. Its
+Option-error execution count needs correction: the two option-* logs are copies
+of the two original setup logs, not two repeated commands. There were TWO E0308
+setup attempts, six subsequent semantic commands, no credit for duplicate files.
+
+This proves the finite Test guard can refuse a complete valid profile before
+actual public Node declaration/Work, with a matched Test positive and guard-only
+falsifier. It establishes neither production-provider success, full R10, route
+readiness, two OS processes nor static construction/privacy. Fixture warnings
+and source conformance remain unqualified; no external probe becomes production
+or retained test code here. Complete current repository delta is this PRD only;
+Rust production/tests/public API+0/-0. No inverse or temporary mount remains.
+
+PR388 delivery is now authoritative: merged2026-10-22T21:05:52Z as
+8557f0d80bae833e2484988749aed4d29d53842c, all six checks SUCCESS on exact8157bba1.
+The Nix job120030581670 finished successfully20:59:56Z; native TLS both profiles,
+Deny and both CodeQL checks also passed. Fresh origin/main selects8557f0d8;
+its tree6f0a32450c57492e9afb8efbe23957312010d1c5 equals the verified PR head.
+The submitted outbound/count/guidance slice is delivered; full R01–R25/AUTH1/NET1
+remains active. Main integration and current guidance reconciliation follow in
+the focused coverage retirement branch; unrelated worktrees remain preserved.
+
+Durable `counter-public-comparison-20261023.tar.gz` in the common Git archive
+has SHA2562e3f906a2118369aaed7285558e160cf5679e9014ad59bc3ccce0fc5f0147735.
+It preserves the frozen compiler/exploratory and bootstrap sources, raw outputs,
+exit receipts, reviewed count correctionf5a86215, and actual PR388 delivery.
+Its separate proposals directory labels the stronger/conforming sources
+UNCOMPILED and UNSELECTED. Member reads verify the restored deploymentc18c2fd1
+and count correction. Records precede this archive pointer. This is scoped
+comparison evidence, not a complete build closure or full remote acceptance.
+Checkpoint delta: one PRD path; production/tests/public API+0/-0.
+### Coverage retirement submission and merged Client guidance
+
+Integrated main8557f0d8 into chore/owner-coverage without changing the qualified
+flake or Rust sources. PR388 merged2026-10-22T21:05:52Z after all six checks
+passed on8157bba1; its tree equals the verified head. Reconciled six existing
+current guides and repaired the acceptance page's current-status link. Earlier
+dated submission/build records retain their historical scope. Full remote
+acceptance remains active. Coverage source and actual Nix evidence are unchanged;
+fresh pinned nixfmt-check and git diff-check pass. Complete submission delta:
+nine paths, Rust production/tests/public types+0/-0; verification machinery
++47/-56/net-9. The extra paths contain delivery prose/link corrections only.
+Independent submission review and exact new-head CI remain required.
+
+### Complete Counter observations — compiler comparison
+
+Compare the separate conforming consumer4b8e9200, protocol2cc90718 and
+validated deploymenta1ed5419 through the existing application_clients target.
+These replace neither frozen v1 nor its evidence. The stronger test observes
+all three native operations, original request/reply bytes, receipt ownership,
+processed correlation, Read value1, joined Stop report and both Nodes' cleanup.
+Pure Caller Actions and the existing Counter remain the sole actor owners.
+The deployment removes only values already preserved in validated Metadata;
+flat thiserror causes preserve originals. No production/API change is selected.
+Expected temporary edit: three-line test module mount only, then byte-exact
+parent restoration. Begin with pinned --no-run. Runtime profiles, value
+inversion, strict checks and readiness qualification remain separate gates.
+Fresh lock and selected Behavior55dbac2d instructions are rechecked; no owner
+version, patch, runtime, native SDK or public surface changes.
+
+The exact conforming comparison's pinned --no-run exits0 in14.96s with no
+warnings. All three outside source hashes remain unchanged; the whole test
+parent is restored byte-exactf8a4fb08. Next execute the complete observed journey
+in debug and optimized profiles on this source, then restore the mount again.
+These controls may qualify the stronger observations on their actual schedules;
+they do not qualify adversarial readiness or two-process delivery.
+
+Preselect a separate value falsifier after both healthy profiles finish. Outside
+copies change only Counter's actual Read reply from stored value to value+1,
+and configure the finite provider's Read pair for that actual2 so verification
+cannot hide the semantic error behind an earlier proof refusal. All assertions
+remain byte-identical, especially the independent native Read value1 oracle.
+Expected failure follows both Nodes' cleanup and the completed Increment row;
+the later response-ledger/Caller final-state assertions are not credited if the
+native Read oracle stops execution. Original actor/application sources remain
+unchanged; mount the isolated actor copy only for this comparison. Restore the
+exact healthy parent and both profiles afterward. This tests the observation's
+sensitivity to a false Read; it does not select a production fix or claim route
+readiness. No source edit may overlap an active compilation.
+
+Actual conforming debug completes1/0 in.03s,43filtered. Optimized execution
+exits101 in15.02s at consumer260: acquired/source-query counts(1,1), expected
+(3,3). All preceding cleanup, binding/startup/withdrawal/join/EOF observations
+pass; receiving-row and later complete-row oracles are unexecuted. This is an
+actual failed optimized journey, consistent with the independently identified
+route-readiness gap, not a qualified healthy pair. Do not execute or credit the
+planned value inverse until a healthy matched-profile setup qualifies. Both
+frozen sources remain unchanged and the whole parent is restoredf8a4fb08 again.
+The exact missing-route characterization precedes selection of any wait policy;
+no sleep, watchdog expansion or public SDK access is a repair.
+
+Characterize unmatched routing before any production-policy change using the
+private Client's existing host. Outside readiness-baseline.rs27f3843e uses one
+actual isolated Session with no Queryable, one preaccepted boxed original and
+literal independently configured request/proof. Retain actual matching status,
+Get, response/EOF, original pointer and full cleanup; poll serving once, then
+publish the real joined input unconditionally. Its final oracle expects the
+CURRENT valid unmatched Get/empty EOF. This is not yet a waiting-law regression.
+Expected temporary edit: client/tests.rs module mount only; production/API0.
+Selected bombay-zenoh1.10.10 stable Querier matching APIs are inspected locally. Compiler
+fitness then actual debug/optimized results precede selecting waiting semantics.
+
+### Initial route visibility — selected policy and failing law
+
+The actual no-Queryable baseline passes in both profiles (.01/.00s), retaining
+an unmatched Get ReturnedOk and real empty callback EOF after complete cleanup.
+It proves that mechanism is possible, not the cause of the earlier Counter
+failure. Independent outcome reviewbc58a974 limits that failed trace correctly.
+
+Select a deliberate Bombay startup policy: before the first real Get, wait for
+a successful observed native matching-status snapshot after listener registration.
+Only actual Get operations await it; no-Get rows and synchronous selection retain
+their existing behavior. Protection/result acquisition remains before this wait,
+and current request authority is reacquired after it. A later route loss remains
+ordinary native Get/EOF behavior; visibility is neither identity, admission,
+route reservation nor a delivery guarantee. Actor deadlines/joined cancellation
+remain application policy. No sleep or implicit retry is introduced.
+
+Reuse one native RingChannel(1) MatchingListener owned by Client and one inferred
+shared unit-output future in serve. Only the unit completion is cloned; exact
+native results remain in Client-owned outside slots. Register before snapshot,
+resnapshot after every notification (SDK's initial notification can use a true
+fallback on status error). Preserve listener declaration, first observation and
+explicit listener withdrawal independently; withdraw the listener before the
+Querier, including cancellation/unwind. No second observation cell or public
+SDK access is allowed. Source comparison5655ecd4 rejects a gate before all source
+work, per-operation listeners, watch/background machinery and cloned errors.
+
+The first regression is an outside copy of the qualified baseline. Keep all
+original/protection/count/cleanup checks, but replace only its final Get/EOF
+oracle with Unattempted/None. Establish the intended failure in both profiles
+before production edits. Expected implementation: existing Client owner and
+its private tests, current public projection consumers/guides and feature records;
+roughly120 production lines, no new public type. Append the three independent
+route results to Client's existing consuming projection rather than erase them.
+A private inferred Future input to the existing native request interpreter
+allows the one shared wait precisely after protection and before Get, avoiding
+both duplicated request logic and a new public policy wrapper. This parameter
+is selected by this law before compilation, not invented from a diagnostic.
+Focused unmatched cancellation, no-Get coexistence and late Queryable progress,
+matched debug/optimized controls, original/inverse replay, independent reviews,
+then consumer migration and complete gates remain required.
+
+Fresh selected-contract correction: the Cargo alias `zenoh` selects registry
+bombay-zenoh1.10.10 (checksum611fed73), not stock zenoh1.10.1. Re-read the selected
+Querier, MatchingListener builder/retirement, Session registration/update and
+Ring receiver sources; their hashes match independent review8c927126. Earlier
+stock-source inspection is comparison only, not the selected build contract.
+All executions use the unchanged lock-selected package. Selected Config remains
+bombay-zenoh-config1.10.2; protocol/result owners remain1.10.1. No patch or lock
+change occurs. Behavior/Actors0.29.0 (Behavior revision55dbac2d), Macros0.16.0,
+Address0.3.0, Communication0.1.6, Observe's existing unique publisher and
+Timers0.2.0 are freshly inspected with their relevant owner tests/docs. Native
+route observation stays wholly in remote::Client; no Behavior, mailbox, address,
+completion, timer, Driver or public runtime contract is reimplemented.
+
+Both original wait-law executions now exit101 ONLY at readiness-wait169's final
+Unattempted/None oracle, after every original/protection/count/native cleanup
+check. Debug/optimized each execute one named case,420filtered, in.01s. The
+matched preceding baseline passes both profiles. Exact original production0f3
+remains unchanged through both negatives; restore the parent before lowering.
+Model/source reviews42b8215c andd7e6e823 accept the recorded ordinary-Rust
+comparison subject to actual compilation and runtime controls. Raw proposed
+Client change is+87/-4/net83, public types+0/-0; the new native resource and three
+facts have one existing owner. The appended projection is an explicit API change;
+no original seven-field or request-row result changes order or loses custody.
+
+Initial lowered sourcea254 compiles without diagnostic-driven model changes.
+The retained unmatched-cancellation control passes debug1/0 in.02s,420filtered;
+all original/protection/count checks and the three independent route receipts
+execute before the final Unattempted/None oracle. Optimized execution is pending.
+Whole source/API consumer migration and broad checks wait for that focused pair.
+No source inversion or temporary external module mount remains applied.
+
+The exact lowered unmatched control now also passes optimized1/0 in.01s,
+420filtered. Both profiles acquire native listener/Querier retirement and preserve
+the same source/protection facts; original source fails the final oracle in
+both profiles. Independent mounted-source review35475a6d finds no ownership veto.
+This is the unmatched/cancellation law only; an always-deny implementation still
+passes it. Next add the independent no-Get/P1 sibling and late real Queryable
+controls before accepting the gate or migrating the public consumers.
+
+Selected positive controls8f33db42 stay with the private routes test owner:
+P1/N2 retains one actual protected Get pending while the no-Get sibling completes
+before joined, and a later actual SessionLocal Queryable releases the preaccepted
+Get into a checked reply/target admission. All terminal originals/native results
+precede oracles. The late route control records actual initial permission calls;
+an early-Get counterexample releases joined without waiting for a query already
+lost. Unit verification discharges only an exact independently configured pair;
+complete native/protected bytes remain owned. Reuse the identical native Config
+and JSON limits once across the three tests; no new test tool/framework or
+application code. Format through pinned Nix, then run all three in both profiles.
+
+First three-control compile exits101/E0283 at the late query's read-only Vec
+comparison: as_ref has both Vec and slice targets. No case runs. Preserve that
+source6932b4b9 and diagnostic; use the concrete standard Vec::as_slice method
+for both retained native vectors. No type, bound, owner or test law changes.
+Pinned formatting changes only layout: Client is+92/-4/net88, no new public type.
+
+The three controls execute debug3/0 in.01s,420filtered. Two compiler warnings
+expose an actual review gap: the late route case retained but did not assert
+Querier startup/withdrawal. Add those independent Some(Ok) oracles after real
+cleanup; do not underscore/discard either fact. This strengthens the control
+rather than waiving lint. Initial native/query/target/proof and no-Get sibling
+observations all pass, but the corrected source still needs both profiles and
+fresh review. The E0283 setup attempt remains a separate zero-execution result.
+
+Corrected formatted controls5a811420 pass debug3/0 (.02s) and optimized3/0
+(.01s),420filtered, without warnings. The old missing startup/withdrawal oracles
+are corrected in separate author review2bffced5; earlier8f33/ed3 source claims
+retain that limitation. These results establish actual matched progress and
+independent no-Get progress, not just refusal. Production remains118ca868.
+
+Before final migration, add the independent actual native-error control60185dde,
+review106d1b7c: close the real Session after the pending ring receive, poll serving
+again before unconditional joined release, preserve the exact acquired boxed
+error through consuming projection, and require Get/EOF Unattempted/None.
+Listener and Querier retirement remain independent. Reuse the same Config/limits
+and rename the initial private case to unmatched; add no fake cause or source
+hook. Error tests and all four owning cases need actual profile qualification.
+The skip-wait inverse is prepared outside only; no inverse is applied.
+
+All four owning controls now pass debug4/0 in.01s,420filtered, with no warnings.
+The actual Session close releases the native ring receive as Err; the same error
+object survives Client's consuming projection, operation completion is Some,
+and no Get/callback EOF is fabricated. Explicit listener and Querier retirement
+both succeed independently. Optimized execution and intended gate inversions
+remain pending. This qualifies only these observed local-native schedules,
+not full service unwind, TLS traffic or the earlier failed Counter's cause.
+
+Preselect three separate owning-source falsifiers against formatted118ca868 and
+four-control source80e5cd26. First remove only the visibility await/result check
+(drop its unused future); unmatched cancellation and the late Queryable's actual
+initial fresh-permission oracle must reject early Get after cleanup. Second
+allow actual Some(Err) visibility through the existing match; the real closed-
+Session control must retain that same error but reject the attempted Get/EOF.
+Third move only P acquisition before the existing no-Get early return; P1/N2
+must reject the missing pre-join no-Get completion after both original rows and
+native cleanup are acquired. All copies are outside; apply one at a time only
+after current optimized positives finish, run exact intended debug/optimized
+killers, then restore118ca868 and require all four healthy controls again.
+Compilation errors, unrelated failures and watchdogs are not accepted kills.
+
+Skip-wait inverse88defa24 executes both exact killers in BOTH profiles: unmatched
+fails ONLY routes216's Get/EOF oracle (.02/.01s), and late Queryable fails ONLY
+routes767's initial permission tuple (1,1,0,0,2) versus (1,1,0,0,1), after cleanup
+(.00/.00s). Each selects one actual case,423filtered; no compiler error, unrelated
+failure or watchdog supplies a kill. Later late-route response assertions remain
+unexecuted negatives. Restore byte-exact118ca868 before healthy replay; native
+error and P/no-Get inverses remain outside/unapplied. Actual four-case source/
+outcome reviewb62869ae covers the preceding healthy epoch, not these inversions.
+Draft PR390 now contains the separately qualified named-child test, head79d49080,
+dependent on coverage PR389. Its isolated checkout and queued CI do not change
+this runtime experiment or establish delivery. PR389 still awaits Nix; all other
+five checks pass and exact-head auto-merge is enabled.
+
+After skip-wait inversion, exact healthy118 restoration passes all four controls
+again in both profiles (.02/.01s),420filtered. Apply only the independently
+reviewed native-error permission inverse dc6177d5 next. The same actual closed-
+Session error remains outside; the final Get/EOF oracle must reject interpreting
+shared completion as successful visibility. No other source or test changes.
+
+Native-error permission inverse dc6177d5 exits101 in BOTH profiles ONLY at
+routes1041's final Get/EOF oracle (.02/.01s), one named case/423filtered. Actual
+native-error acquisition, identical error-object handoff, both native retirement
+results, operation completion and original/protection checks all precede it.
+No watchdog, setup error or other assertion supplies the kill. Restore118ca868
+byte-exact again and replay all four healthy controls before the final P/no-Get
+inversion. No inversion remains applied during this restoration.
+
+After the native-error inverse, exact healthy118 again passes all four controls
+in debug and optimized execution,420filtered. The final isolated falsifier is
+7b9efc4c: P acquisition moves before no-Get selection. Run only the P1/N2 sibling
+case in each profile; its actual pre-join completed snapshot must reject the
+blocked no-Get after cleanup. Tests80e5cd26 and all other production code remain
+unchanged. Restore118 and all four controls after the intended result.
+
+All three initial-route falsifiers are now qualified. The final P-before-no-Get
+cut7b9efc4c fails only the saved pre-join completion oracle, routes508, in both
+profiles: [None,None] instead of [None,Some(())], after original custody and
+native cleanup. Exact healthy118 is restored; all four controls pass again
+debug/optimized (.03/.01s),420filtered. Independent two-pass outcome review
+db69c59b binds all eight intended negative commands and six four-case restored
+commands. It explicitly records the root's separately executed final optimized
+invocation even though its output bytes coincide with the earlier positive log.
+Later assertions after each failing oracle receive no negative-execution credit.
+
+Mechanical migration applies reviewed consumerc6456c45 and guide4a6a34a7.
+Only two public consumers need the appended three native results; all original
+rows/results remain. Clarify that P remains charged during initial visibility
+waiting, while no-Get rows bypass it. First strict lint exits101 only for line
+counts in the existing request operation/four complete native traces and one
+redundant Pending pattern. Scoped expectations preserve each full ownership
+trace; use Poll::is_pending without storing a semantic bool. No new abstraction,
+bound, error or policy is introduced. Final strict all-workspace/all-feature/
+all-target Clippy exits0 in16.71s. Final production45282b54 and routes4d2d8edd
+are a lint-only epoch after118/80e; fresh broad execution remains required.
+
+Public Counter visible1b30 now passes its complete Increment/Read/Stop journey
+in both profiles (.05/.03s), one named case/43filtered. Its unchanged concrete
+protocol2cc90718 and validated finite deploymenta1ed5419 remain the application
+comparison owners. A separate copied Counter9cd8b7d1 returns stored value+1;
+the inverse consumerf08ba9ab changes only the independently configured Read
+reply pair to2, preserving the expected observable value1. Both actual negatives
+exit101 only at native Read oracle312, (MailAddr(0),2) versus (MailAddr(0),1),
+after both Node cleanup, route facts, reports and original Increment checks.
+Later response/tail/Stop/final-Journey assertions receive no negative credit.
+Exact healthy restoration passes both profiles again (.05/.01s). Two-pass
+independent reviewe1c67b45 binds these six commands. The temporary external
+module mount is removed; the retained integration parent is byte-exactf8a4fb08.
+No fault or outside source remains on the shipping test path. These results
+qualify the new selected-policy journey, not the cause of the earlier optimized
+one-row failure or the separate-process R23 matrix.
+
+The final retained source passes505 tests across12 remote targets in EACH debug
+and optimized profile, with no failed, ignored or filtered outer tests.
+The temporary Counter comparison is absent from both matrices. Final pinned
+format check and remote rustdoc exit0; strict workspace/all-feature/all-target
+Clippy passes on the same retained Rust source. The24 internal compiler fixtures
+are separate from the505 outer test count, not additional runtime cases.
+Complete source delta from2616f97b, including untracked routes.rs:
+
+```text
+production: +93 / -4 / net89
+tests:      +1086 / -6 / net1080
+public API: +0 types / -0 types
+```
+
+Thirteen paths include the six current guide/feature records. The public change
+appends three independent native results to Client::into_parts; its original
+seven fields and request-row products retain their order and custody. New
+capability code is net-positive, not deletion or full remote completion.
+
+Final independent source/outcome/minimization review88bdb746 closes both review
+passes for this slice, binding retained software and all final commands. It
+finds no competing owner, framework, lost original or unjustified public type.
+This scoped result permits a focused PR; full-PRD distillation remains open.
+
+Durable initial-route-qualified-20261023.tar.gz in the common Git archive directory
+has SHA256497a491216ca8140f05c29c83537a8a8d1086381b9daab5edaa01e5cac5886c0.
+It retains the complete tracked/untracked software, pre-pointer records, selected
+lock/instructions, raw receipts, inversions, reviews and remaining-clause map.
+Manifest verification and member reads recheck Client45282b54, routes4d2d8edd
+and final review88bdb746. It is not a hermetic build closure or delivery proof.
 ### Named runtime child — dependent draft delivery
 
 Prepared `test/named-runtime-child` in an isolated delivery checkout by merging
@@ -42103,3 +42569,22 @@ integration, and these results are not relabeled new-head CI. Draft delivery
 depends on PR389; it must stay draft until that dependency actually merges and
 the submitted named-child head satisfies required CI and independent review.
 Diagnostic Python/current+MSRV retirement and full remote acceptance stay open.
+
+### Named runtime child — merged delivery and route-branch integration
+
+PR390 https://github.com/devrandom-labs/bombay/pull/390 merged on
+2026-10-23T00:49:10Z as a88dbe83df336f5c32047686f27f39c12bc59b9a.
+All six checks passed on the reviewed exact head
+79d490805c5f5684587e1dfa211474177c5b2bd3; Nix Flake Check job120146159330
+completed00:44:25Z. The merge is delivery of that named-child prerequisite,
+not diagnostic-Python retirement or full remote acceptance. Source review
+43f35833 and archived actual negative/restored receipts retain their scope.
+
+Merged this actual origin/main into fix/client-route. Both append-only document
+histories survive; the coverage submission section is retained once. The named
+run_with source is now inherited from main, leaving the route PR's13path delta.
+Route Client45282b54 and routes4d2d8edd, their505test paired receipts, and public
+contract are unchanged. This integration adds no Rust source or public type.
+Previous route-head CI is historical: the integrated submitted head needs its
+own required checks and final source review before readiness/merge. Full remote
+R01–R25/AUTH1/NET1 remains active.
