@@ -27,7 +27,8 @@ finite-test application in `examples/remote-counter` now runs in two OS processe
 success, provider refusal, wrong-proof handling and processing-before-publication
 loss pass both profiles. Full workspace debug/optimized tests and strict lint
 pass. The smaller private directory owner passes all eight application cases in
-both profiles under the previously failing long parent; new Nix/CI delivery is pending.
+both profiles under the previously failing long parent. The dedicated
+aarch64-darwin Nix check passes; submitted-head CI and delivery remain pending.
 The complete pressure/denied-stop/scenario matrix remains open;
 the PRD retains the precise remaining acceptance clauses.
 

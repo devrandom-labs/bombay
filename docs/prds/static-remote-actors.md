@@ -33,7 +33,8 @@ success, provider refusal, wrong-proof and processing-before-publication loss
 checks pass in both profiles. Full workspace debug/optimized tests and strict
 lint pass. The smaller private temporary-directory owner passes all eight
 application cases in both profiles under the previously failing long parent;
-actual new Nix/CI delivery remains pending.
+the dedicated aarch64-darwin Nix check also passes. Submitted-head CI and
+delivery remain pending.
 This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
@@ -42955,3 +42956,27 @@ instructions/requirements, raw original/negative/restored results and reviews;
 its PRD/status snapshots precede this pointer. The actively written Nix build
 log is explicitly excluded and labelled pending. This is source/results recovery,
 not a hermetic compiler closure, successful new Nix build, CI or merged delivery.
+
+### Ordinary Counter — actual dedicated Nix qualification
+
+The local command `nix build path:.#checks.aarch64-darwin.bombay-example-remote-counter
+--no-link --max-jobs 1 --cores 2 -L` exits0. Raw counter-nix-build.log has SHA256
+4e3d67b96f8e1039aa4c37dd95154bf304d988936821527e6ef7b68cda12e723.
+Its actual derivation is /nix/store/rdirsg824xzk76clj181cs13m2lzg894-bombay-workspace-0.1.0.drv,
+source /nix/store/f7li0adk8zsx0dqwjn5asfmiqv99xs35-source and registered output
+/nix/store/9r20rlg9iiydxbdpid9fn16fg57xv8v4-bombay-workspace-0.1.0.
+Both actual package profiles pass5process+3pure cases,0filtered, with one
+registered ignored native child required by its passing exact parent. Process
+21.30/20.57s; install/fixup complete. No source-filter or workflow change was needed.
+
+Independent comparison with committed7ba443ac finds19of20paths byte-identical,
+including every Rust/test/config/lock/flake/guide. Only15metadata lines for final
+review and the archive pointer were appended to the PRD after source capture.
+A subsequent current-path path-info query correctly sees a different, unbuilt
+output for that changed metadata; it is not a failure of the completed build.
+This qualifies the captured software on aarch64-darwin, not exact-head CI or the
+entire flake. Draft PR392 https://github.com/devrandom-labs/bombay/pull/392 contains
+that application commit, stacked after draft route PR391. Both still require
+actual submitted-head CI and final delivery; no full remote row closes here.
+The prior archive explicitly excludes this then-running log; preserve this
+completed receipt and its review as separate subsequent evidence.
