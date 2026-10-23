@@ -37,8 +37,10 @@ The root entry checks are owned by the [application topology](../examples/applic
 positive and negative boundaries. These references identify the owning checks;
 the combined integration still requires its final full verification. The
 [outgoing public consumers](../crates/bombay/tests/application_clients/outbound.rs)
-exercise actual Node-owned reads and provider disposal; the separate ordinary
-remote-counter application and full multi-node contract remain pending. The subsequent
+exercise actual Node-owned reads and provider disposal. The separate
+[remote Counter](../examples/remote-counter/README.md) demonstrates ordinary
+composition with an explicit finite test identity; the full multi-node
+contract remains pending. The subsequent
 merged opt-in `remote` feature provides `remote::verify`: one ordinary function over
 a borrowed request, a caller-owned standard result slot and a concrete provider
 future. It adds no public type, trait or bound beyond `FnOnce` and `Future`.
@@ -135,7 +137,9 @@ network handshake nor production authentication. Full remote export/admission
 acceptance remains pending. The merged cold Export/Node service supplies inbound
 composition and the merged outgoing Client slice has public read/provider/count
 controls. Full privacy/authentication, cancellation/unwind, pressure/resource
-matrices and the ordinary remote-counter application remain separate open gates.
+matrices remain separate open gates. The
+[remote Counter](../examples/remote-counter/README.md) is a finite test-profile
+consumer, not production identity acceptance.
 PR388 delivers the outgoing slice after all six exact-head checks passed.
 
 Merged PR370 adds public root/sibling/nested-child and closed-target

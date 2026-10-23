@@ -19,7 +19,7 @@ jobs:
   checks:
     name: Nix Flake Check
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     permissions:
       actions: write
       contents: read

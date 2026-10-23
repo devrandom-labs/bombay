@@ -392,6 +392,18 @@
               '';
             }
           );
+          bombay-example-remote-counter = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              # Both roles require an assignment operator; package tests own
+              # their real subprocess exchange and cleanup.
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-example-remote-counter
+                cargo test --locked --release -p bombay-example-remote-counter
+              '';
+            }
+          );
           bombay-protected-counter = craneLib.mkCargoDerivation (
             commonArgs
             // {

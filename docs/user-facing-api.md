@@ -19,8 +19,9 @@ for nonwaiting count retention (PR363). Neither supplies
 authentication, actor admission or multi-node Application assembly.
 Protected Counter transport regressions
 live in Bombay's tests, built by the isolated transport-custody test package.
-The local `examples/counter` and future `examples/remote-counter` applications
-remain separate.
+The local `examples/counter` and [remote Counter](../examples/remote-counter/README.md)
+are separate applications. The remote example selects an explicit finite test
+identity and refuses `production-required` before Node startup.
 See the [source-backed inventory](prd-backlog/evidence.md). This guide is included in crate rustdoc. The entry fragments below
 are owning doctests, awaiting the reconciled branch's complete verification; fragments labelled text or ignore omit surrounding
 definitions and remain schematic. The source-bound application spellings are:
@@ -41,6 +42,7 @@ each layer.
 | `Machine`, timers, and `ActorExt` wrappers | [actor-template example](../examples/actor-templates/src/main.rs), [template application tests](../crates/bombay/tests/template_application.rs) |
 | Actor facade and exact send lane | [counter example](../examples/counter/src/counter.rs), [macro parity tests](../crates/bombay/tests/macro_last_authoring.rs) |
 | Exact external request and reply | [actor interface tests](../crates/bombay/tests/actor_interface.rs) |
+| Node-owned remote request/reply and shutdown | [remote Counter](../examples/remote-counter/README.md), [process tests](../examples/remote-counter/tests/processes.rs) |
 | Native Entity definition and application | [Entity example](../examples/entity/src/main.rs), [Entity application test](../crates/bombay/tests/entity_application.rs) |
 
 ## Entry boundary
@@ -64,7 +66,8 @@ not itself request a stop, and dropping a future does not promise completed
 asynchronous cleanup.
 This executable fragment checks that complete handoff.
 Ordinary actor composition uses the domain client/template path below; the
-complete multi-node contract and separate remote-counter application remain pending.
+complete multi-node contract remains pending. The separate remote Counter uses
+the explicit finite test profile described above.
 
 ```rust
 # struct Service;
@@ -702,9 +705,10 @@ permission. In particular, native `Full` preserves its exact rejected command;
 automatic retry waits for native capacity and obtains fresh authority. The
 owning Ledger and Counter Reply laws pass locally, including original Full retry
 custody. The local public read/provider/count controls exercise the outgoing
-slice; the separate remote-counter application and full remote gates remain open.
-The local `examples/counter` and future `examples/remote-counter` are separate
-applications; owning tests retain custody and fault assertions.
+slice; full remote gates remain open. The separate
+[remote Counter](../examples/remote-counter/README.md) demonstrates the ordinary
+application with a finite test identity; owning tests retain custody and fault
+assertions.
 
 ## Application composition
 
