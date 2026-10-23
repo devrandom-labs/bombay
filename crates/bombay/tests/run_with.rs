@@ -1676,5 +1676,19 @@ fn public_run_blocking_recovers_real_build_error_without_limiting_other_tests() 
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("1 passed; 0 failed"));
+    assert_eq!(
+        stdout
+            .lines()
+            .filter(|line| {
+                *line
+                    == "test public_run_blocking_recovers_real_build_error_in_limited_child ... ok"
+            })
+            .count(),
+        1,
+        "the named descriptor-limited child must execute exactly once: {stdout}"
+    );
+    assert!(
+        stdout.contains("test result: ok. 1 passed; 0 failed; 0 ignored;"),
+        "successful process status alone does not prove the intended child ran: {stdout}"
+    );
 }

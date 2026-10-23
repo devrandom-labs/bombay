@@ -1091,3 +1091,22 @@ verification machinery delta is+47/-56/net-9; no Rust/API change. Final
 independent result review passes and the focused implementation is committed
 as6e70adad. New-head CI/delivery remain separate from this local acceptance;
 the rest of Python retirement stays open.
+
+### Named runtime child prerequisite (2026-10-22)
+
+The existing runtime-construction parent now requires its exact ignored child
+once and complete1/0/0 result. The old parent falsely passes with a different
+real, qualified test in both profiles; the strengthened parent rejects only
+that wrong-child count after successful child cleanup. Restored full run_with
+passes22tests/1expectedignored in both profiles, strict target lint passes,
+and the formatted final parent passes both profiles plus fmt. Rust production
+and public API are unchanged; tests+15/-1/net14. Diagnostic Python/current and
+MSRV matrix retirement remains separate and unfulfilled; see the feature PRD.
+
+Named-child draft delivery now integrates the frozen owner-coverage submission
+dc988108 while preserving its current guides and the named-child records.
+The unchanged fd631426 test retains the qualified paired target/focused evidence
+above; no Rust commands were rerun for this integration. Its draft PR depends
+on PR389 and remains blocked from readiness/merge pending actual dependency
+merge, submitted-head required CI and independent review. Full remote acceptance
+and diagnostic Python/current+MSRV retirement remain open.

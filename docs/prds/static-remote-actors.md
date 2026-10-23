@@ -42007,3 +42007,99 @@ fresh pinned nixfmt-check and git diff-check pass. Complete submission delta:
 nine paths, Rust production/tests/public types+0/-0; verification machinery
 +47/-56/net-9. The extra paths contain delivery prose/link corrections only.
 Independent submission review and exact new-head CI remain required.
+
+### Exact runtime-construction child — diagnostic-retirement prerequisite
+
+Coverage Python retirement is locally qualified and committed6e70adad in its
+separate four-path slice. This next test-only stage addresses a real observation
+gap before the separate diagnostic Python controller can retire: run_with's
+parent currently accepts any successful child reporting1passed/0failed, whereas
+interpreter_retirement already requires the exact ignored child name once.
+Do not delete diagnostics.py or waive either supported compiler lane here.
+
+Fresh source bindings: run_with.rs169abf11, interpreter_retirement10467500.
+Cargo.lock976839a3 and all selected owner versions remain unchanged; no patch,
+Behavior/Actors0.29 algebra, Communication0.1.6 mailbox, Address0.3 identity,
+Observe publication, Timers0.2 scheduling or interpreter contract changes.
+The sole contract tested is actual execution of the existing descriptor-limited
+child. Both runtime configurations, native errors/original declarations/builders
+and joined cleanup remain owned by its existing body. No new runtime or wrapper.
+
+Before edit: expected paths are the existing run_with.rs parent, this PRD and
+status index. Expected Rust production+0/-0; tests+14/-1/net13; public types
++0/-0. Reuse the exact child-line and complete summary assertions already used
+in interpreter_retirement. Outside patch6eb1601c and two-pass source/plan review
+54b93755 preserve command/limit/child source unchanged. The intended falsifier
+selects a different REAL finite passing test under the same64-FD wrapper and
+removes only --ignored, proving the old generic parent can pass without its
+required witness. An absent filter already fails the old generic count and
+cannot establish this defect. Restore the actual command byte-exact afterward.
+
+Pinned all-feature debug compilation succeeds; the alternate real entered-host
+retry leaf actually passes once under64 descriptors, with complete1/0/0 summary.
+The original actual limited-child parent also passes once in debug. Optimized
+baseline/alternate qualification is running. These initial source-bound logs
+live under/tmp/bombay-named-runtime-child/. No test assertion change or inverse
+is applied yet, and no parser retirement/acceptance is inferred from preparation.
+
+Actual alternate leaf and original parent each pass in BOTH debug and optimized
+all-feature executables. Source169abf11 is preserved. Replacing only the child
+command with the qualified real alternate/removing--ignored produces8b7d0493:
+the original parent falsely passes in BOTH profiles. Strengthening only its
+assertions producesfcece35f: BOTH executions exit101 only at1679's intended
+named-count0vs1, after the real alternate reports1passed/0failed/0ignored.
+The existing child-status assertion already passed; the later summary assertion
+is unexecuted in these negatives. No absent filter, fake output or limit change
+supplies this evidence.
+
+Restore the actual limited-child command from original169abf11, then apply the
+assertion-only patch: retainedd01e3932 passes the complete run_with target in
+both profiles,22passed/0failed/1expectedignored/0filtered. Each invokes the real
+limited child through its normal parent and passes all six existing inner UI
+cases; inner cases are not counted again in22. Focused all-feature test-target
+strict Clippy passes. Initial fmt exits1 only for a new long-line wrap; pinned
+cargo fmt applies that whitespace correction and final fmt-check exits0.
+Formatted sourcefd631426 passes the actual parent again in both profiles,
+1passed/22filtered each. Those focused runs are not relabeled complete modules;
+the complete module's preformat source differs only by that line break.
+
+Two-pass independent semantic review675b8a58 retains the initial fmt result
+honestly; a separate final qualification seals the later formatting/focused
+receipts. All sources, raw outputs and separate exit receipts are under
+/tmp/bombay-named-runtime-child/. Complete current stage against6e70adad has
+production+0/-0/net0; tests+15/-1/net14; public types+0/-0; three paths including
+these records. No fixture snapshot, child body, runtime contract or compiler
+lane changes. This adds a missing executable-identity oracle; diagnostics.py
+and its tests remain until current/MSRV ownership and fixture evidence qualify
+separately. No new-head CI/merge or full remote acceptance is claimed.
+
+Final independent qualification review243ee976f3a5fdde0d0e21cdae3e01794482959ec4583878a85c276749f8b7ab
+confirms the formatted actual source and terminal focused receipts. Durable
+`named-runtime-child-20261022.tar.gz` in the common Git archive directory has
+SHA25699700fc97ab9358b8a78f5fa73bd6d010a5f17bb4e6f02542e755216e79cd9c6.
+It retains the complete three-path patch and records, every original/wrong/
+strengthened/restored/final source, raw profile logs/exits and both reviews.
+Member reads verify final sourcefd631426 and review243ee976. Records precede
+this pointer. No executable/compiler closure, current/MSRV matrix retirement,
+new-head CI or merged delivery is inferred from this archive.
+
+### Named runtime child — dependent draft delivery
+
+Prepared `test/named-runtime-child` in an isolated delivery checkout by merging
+the frozen owner-coverage submission `dc988108`. Only append conflicts in this
+PRD and the status index required resolution: current coverage/merged-Client
+guidance and the complete named-child evidence above are both preserved. No
+remote-counter research or readiness source is imported. The focused delta
+against that dependency remains exactly the existing `run_with.rs` test plus
+this PRD and the status index; Rust production and public API are unchanged.
+
+The test source remains exactly SHA256
+`fd631426fd04f78c77519464c8a05609fbea7b1f90e964fac506ad17d5c1df61`.
+Retained pinned-Nix evidence is the preformat complete target in both profiles
+(22 passed, 1 expected ignored), strict target Clippy exit0, and the identical
+formatted semantics' final exact-parent debug/optimized runs (1 passed,
+22 filtered each) plus fmt exit0. No Rust command was rerun for this docs-only
+integration, and these results are not relabeled new-head CI. Draft delivery
+depends on PR389; it must stay draft until that dependency actually merges and
+the submitted named-child head satisfies required CI and independent review.
+Diagnostic Python/current+MSRV retirement and full remote acceptance stay open.
