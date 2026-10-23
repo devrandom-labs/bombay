@@ -16,7 +16,9 @@ Selo or Mnesis. The new document's proposed distributed contracts are not
 implemented capabilities or additions to the current Engine port. PR387 merged
 the cold Export/Node service; PR388 merged the Client, adding a narrower
 ordinary actor request/reply path. The complete multi-node Application contract
-and separate remote-counter application remain pending. The optional `remote` feature
+remains pending. The separate [remote Counter](../examples/remote-counter/README.md)
+uses an explicit finite test identity and refuses production-required mode
+before Node startup. The optional `remote` feature
 provides provider-result acquisition through `remote::verify`; the
 merged ingress primitive adds `remote::try_retain` for count retention (PR363).
 Neither establishes authentication, actor admission or a networking runtime.
@@ -141,9 +143,11 @@ the native query deadline is not a global actor termination policy.
 The optional futures-util dependency remains behind remote with explicit std
 and defaults disabled; it supplies the existing collection/shared-future
 facilities. Count limits do not prove peak memory or callback allocation bounds.
-Full SDK privacy/authentication, general cancellation/unwind and pressure/retry,
-the ordinary remote-counter application and complete resource/security gates
-remain unaccepted. Local outgoing read/provider/count controls establish only
+Full SDK privacy/authentication, general cancellation/unwind, pressure/retry
+and complete resource/security gates remain unaccepted. The
+[remote Counter](../examples/remote-counter/README.md) demonstrates ordinary
+composition with a finite test identity. Local outgoing read/provider/count
+controls establish only
 their recorded slice, delivered through PR388 after all six checks passed.
 
 The [developer experience coordination](prds/developer-experience.md) records
