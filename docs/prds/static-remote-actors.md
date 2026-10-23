@@ -1,5 +1,58 @@
 # Static remote actors and typed admission
 
+## Tokio I/O safety prerequisite (2026-10-23)
+
+The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
+locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
+failure, independent of the child-retirement and provider-interface changes.
+The upstream advisory identifies1.53.3 as patched; its release also corrects
+semaphore, timer, task and I/O wake/drop behavior. Select that patch rather
+than suppressing the advisory or taking an unrelated minor upgrade.
+
+Pre-edit scope: root Cargo.lock, isolated transport-custody Cargo.lock and its
+exact Tokio manifest pin, plus this PRD and reciprocal status. Expected
+production Rust +0/-0, verification Rust +0/-0, public types +0/-0. Reuse the
+existing runtime, native TLS campaigns, application processes, resource and
+retirement tests; add no wrapper, unsafe application code, test runner or
+advisory exception. Root's existing ^1.47 constraint admits1.53.3. The isolated
+fixture's =1.53.1 constraint must change at its owning manifest.
+
+Fresh prerequisite inspection: Behavior/Actors0.29.0 remain the selected
+55dbac2d revision, macros0.16.0, Address0.3.0, Communication0.1.6, Timers0.2.0
+and local Observe remain unchanged; there is no patch override. Their typed
+fold, creation, mailbox, lease, completion and scheduling owners are retained.
+This dependency-only stage changes no Bombay semantic contract. No project
+Rust source calls AsyncFd directly; selected transitive consumers still need
+compatibility inspection and strict compilation. The smallest failing
+regression is the actual required Deny advisory result. Acceptance requires
+only the intended Tokio node/checksum change in each lock, compatibility and
+native regression checks in both profiles, independent review and fresh
+required CI on the submitted head. Previous green checks do not qualify the
+new lock. Old1.53.1 transport results remain historical evidence only.
+
+Primary sources, accessed2026-10-23: the
+[RustSec advisory](https://rustsec.org/advisories/RUSTSEC-2026-0386.html) and
+[Tokio1.53.3 release changes](https://github.com/tokio-rs/tokio/blob/tokio-1.53.3/tokio/CHANGELOG.md).
+The downloaded advisory and changelog, actual failing CI log and subsequent
+results are retained under `/tmp/bombay-prd-resumption/`. No full R01–R25,
+AUTH1 or NET1 acceptance follows from this prerequisite.
+
+Resolution checkpoint: both pinned-shell offline precise Cargo updates exit0.
+Each complete lock diff is exactly Tokio's version and published checksum;
+all other package records and dependency edges are unchanged. Root lock is
+83f01ca3ff82f49f485cb017d14279a654fafc2dfb592f4818b9b726686a3578;
+isolated lock667a182086669aab92209509ad8646b189818918a68328655c318fd81a242982.
+The cached patched crate's checksum equals the registry index and both locks:
+ce3335fa71841cda333a58d7615b03901380ecf09d59b3296d21f8bbac0dde4e.
+All18 selected registry direct consumers accept1.53.3; its manifest retains
+the dependency requirements, features, MIT license and Rust1.71 minimum.
+No selected consumer outside Tokio calls AsyncFd. Fresh relevant neighboring
+source/API/test/doc inspection preserves each existing owner. Workspace
+all-feature/all-target strict Clippy and formatting exit0 through pinned Nix;
+application/native checks are still in progress. This source-only stage adds
+no product or verification Rust and no public type. Required CI and reviewed
+main delivery remain pending.
+
 ## Current status (2026-10-23 UTC)
 
 Latest user direction: “there is no budget.” The user explicitly preapproves
