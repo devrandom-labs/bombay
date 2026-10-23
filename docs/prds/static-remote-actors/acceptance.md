@@ -702,8 +702,8 @@ All six CI checks pass; merged38774de is recorded above.
 row rather than crediting one missing-provider constructor diagnostic. It closes
 neither other remote rows nor the broader RELEASE-04 production-provider example.
 R10 explicitly leaves the real Selo example outside this milestone. PR392's
-required submitted-head CI and delivery remain pending; an extended job allowance
-is not a passing receipt.
+application merged as632bf184 after all six checks passed on95c1105a. This
+R10 evidence/interface follow-up still needs its own required CI and delivery.
 
 | Required clause | Current owning source and independent observation |
 | --- | --- |

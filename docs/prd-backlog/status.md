@@ -6,6 +6,11 @@ budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
 
+PR392 merged the finite-test application at2026-10-23T19:21:29Z as632bf184,
+after all six checks passed on95c1105a; verified and merge trees match.
+Actual main is integrated into this provider-interface/R10 evidence follow-up.
+Its own required CI/main delivery remains open.
+
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged coverage Python
 retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
 All six checks pass on dc988108; its tree equals the merge tree. This delivers
@@ -29,10 +34,11 @@ success, provider refusal, wrong-proof handling and processing-before-publicatio
 loss pass both profiles. Full workspace debug/optimized tests and strict lint
 pass. The smaller private directory owner passes all eight application cases in
 both profiles under the previously failing long parent. The dedicated
-aarch64-darwin Nix check passes; submitted-head CI and delivery remain pending.
+aarch64-darwin Nix check passes; application submitted-head CI and delivery are
+recorded above.
 Its first required Nix CI run hit the two-hour job guard during optimized
 workspace compilation. The existing guard is raised to three hours with the
-same complete commands and required checks; no passing CI is inferred.
+same complete commands and required checks, which now all pass on95c1105a.
 The complete pressure/denied-stop/scenario matrix remains open;
 the PRD retains the precise remaining acceptance clauses.
 
@@ -41,7 +47,7 @@ selection, early production refusal, the genuine Test journey, its intended
 guard inverse/restoration and both deterministic provider implementations.
 The [complete evidence](../prds/static-remote-actors/acceptance.md#r10--explicit-test-identity-and-production-refusal-2026-10-23)
 records distinct source/lock epochs and both source/evidence reviews. All other
-full rows remain open; PR392 required CI/delivery, Selo and broader release
+full rows remain open; this follow-up's required CI/delivery, Selo and broader release
 obligations are separate. No completion percentage is inferred.
 
 PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,

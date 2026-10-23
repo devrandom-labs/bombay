@@ -9,6 +9,12 @@ again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
 
+PR392 merged the finite-test remote Counter at2026-10-23T19:21:29Z as
+632bf18454016de9b986066c0130a83142a9187d after all six checks passed on95c1105a;
+required Nix completed10:08:55Z. Verified and merge trees match dea8c9cf.
+Actual main is integrated into this provider-interface/R10 evidence follow-up.
+Its qualified Rust is unchanged; its own required CI and delivery remain open.
+
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged the scoped
 coverage Python retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
 All six checks passed on dc988108, including Nix39866951393. The merge and
@@ -37,10 +43,10 @@ success, provider refusal, wrong-proof and processing-before-publication loss
 checks pass in both profiles. Full workspace debug/optimized tests and strict
 lint pass. The smaller private temporary-directory owner passes all eight
 application cases in both profiles under the previously failing long parent;
-the dedicated aarch64-darwin Nix check also passes. Submitted-head CI and
-delivery remain pending. Its first Nix CI run exceeded the existing two-hour
+the dedicated aarch64-darwin Nix check also passes. All six application checks
+pass; its delivery is recorded above. Its first Nix CI run exceeded the existing two-hour
 job guard while compiling the optimized workspace. The existing guard is now
-three hours; every required command remains selected and must actually pass.
+three hours; every required command remains selected.
 This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
@@ -53,7 +59,8 @@ and both independent deterministic provider ports. The
 binds all clauses to actual sources and outcomes, distinguishing source/lock
 epochs. Independent review3e6872ba and root resolve the separate protection
 provider attribution. All other full rows remain open. This is local semantic
-acceptance, not PR392 CI, main delivery, Selo or full RELEASE-04 completion.
+acceptance; this follow-up still requires its own CI/main delivery. Selo and
+full RELEASE-04 remain separate.
 
 Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 3625efe86f8613e13b3a3bc6cf180dc5de57edc7 after all six required checks passed on
@@ -43118,6 +43125,6 @@ software test, dependency or public type is required by this evidence assembly.
 The change touches only the acceptance companion, PRD and reciprocal status:
 production+0/-0/net0, tests+0/-0/net0, publicAPI+0/-0. Older application-planning
 text is explicitly historical. R10's local semantic satisfaction leaves required
-PR392 CI/main delivery, every other full row, production cryptography/Selo and
+this follow-up's CI/main delivery, every other full row, production cryptography/Selo and
 the broader release inventory open. Existing application archives retain raw
 source/results; review copies are preserved with the common Git session records.
