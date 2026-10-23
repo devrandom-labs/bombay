@@ -20,15 +20,28 @@ Required Nix completed00:44:25Z; merge and verified head share tree4642f533.
 Actual maina88dbe83 is fetched and integrated into route PR391; its qualified
 Rust source is unchanged. Diagnostic Python/current+MSRV retirement remains open.
 
-Initial-route follow-up is submitted as draft PR391: four native controls pass in debug
+[PR391](https://github.com/devrandom-labs/bombay/pull/391) merged the initial-route
+follow-up at2026-10-23T07:51:23Z asfcaf743010f97eb125671e21dde88f54a5833ebb.
+All six checks passed on e32fa62a; required Nix completed02:38:27Z. The verified
+head and merge share tree623f7ad5. Actual main is integrated into PR392.
+Four native controls pass in debug
 and optimized builds, and three separate source cuts fail their intended laws
 in both profiles. Each cut is restored before replay. Public consuming callers
 and the four current guides are migrated; strict workspace/all-feature/all-target
 Clippy passes. The public Counter Increment/Read/Stop journey passes both
 profiles, including its wrong-value control and restoration. The final retained
 remote matrix passes505 tests/profile; formatting and rustdoc pass. Focused
-delivery awaits the integrated head's required CI and final review. The separate-process
-application follows. This is not a full remote acceptance
+delivery is recorded above. The separate-process
+finite-test application is implemented in `examples/remote-counter`: actual
+success, provider refusal, wrong-proof and processing-before-publication loss
+checks pass in both profiles. Full workspace debug/optimized tests and strict
+lint pass. The smaller private temporary-directory owner passes all eight
+application cases in both profiles under the previously failing long parent;
+the dedicated aarch64-darwin Nix check also passes. Submitted-head CI and
+delivery remain pending. Its first Nix CI run exceeded the existing two-hour
+job guard while compiling the optimized workspace. The existing guard is now
+three hours; every required command remains selected and must actually pass.
+This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
 
@@ -80,8 +93,9 @@ in both profiles. Strict workspace/all-feature/all-target Clippy now passes on
 the subsequent documentation/fixture finalization. That source now passes498
 tests across12 remote targets in EACH debug and optimized profile, with no
 failed, ignored or filtered tests. Formatting and remote rustdoc also pass.
-The separate remote-counter application
-and complete ordinary outbound acceptance remain product development. Full security/resource
+The finite-test remote-counter application now runs in two actual programs;
+its complete pressure/denied-stop/scenario matrix and ordinary outbound acceptance
+remain open. Full security/resource
 acceptance, the final repository scan, distillation, and delivery of the
 remaining slices stay open. The twenty-five full acceptance rows are not closed
 by prerequisites.
@@ -42588,3 +42602,421 @@ contract are unchanged. This integration adds no Rust source or public type.
 Previous route-head CI is historical: the integrated submitted head needs its
 own required checks and final source review before readiness/merge. Full remote
 R01–R25/AUTH1/NET1 remains active.
+
+### Ordinary separate-process Counter — implementation record
+
+Route fix is submitted as draft [PR391](https://github.com/devrandom-labs/bombay/pull/391),
+exact599f738c, after independent revieweb3aaf95; required CI remains pending.
+It depends on named-child PR390 and includes fetched main427329df. Its frozen
+branch stays separate from subsequent application development.
+
+R23's concrete missing witness is an ordinary Counter/Caller in two OS processes
+through shipping Application/Node/Export/Client, without native SDK access or a
+process-local authority registry. Reuse the qualified public journey1b30f92b,
+the canonical local Counter source, existing three-operation declaration product,
+explicit TLS Network and private validated finite assignment. The external
+controller configures actual issued bindings; the application only consumes one
+bounded configuration through cancellable UnixStream IO before declaration.
+Production-required configuration must refuse this finite Test provider before
+Node startup or assignment IO, at one owning configuration choice.
+
+Ordinary useful output requires a genuine named Actions result lane, replacing
+test-only native-custody inspection. Retain the request lane; matched Stop emits
+Complete(previously received value), wrong reply emits Failed(original), and the
+existing ActorExt receive-timeout emits Uncertain(current operation). These are
+explicit application policies, with no automatic retry or claim of nonexecution.
+The Caller has no remaining fallible transition after Failed becomes a result;
+use its existing infallible actor contract. Work receives that output and returns;
+Node owns joined cleanup, with no manual disposal or notification barrier.
+
+Before retention, separate pure protocol tests must assert complete request/result
+lanes, births, next state and stop/continue for success, wrong originals and every
+timeout phase. Missing successful result and timeout-as-success source cuts must
+fail their intended observable laws. The separate process test must acquire both
+real exits and release children/socket/files before success assertions. First
+success alone does not reject unconditional output shortcuts; proof/scope and
+no-transport falsifiers, denied Stop, pressure, exit and reply-loss uncertainty
+remain required for full R23.
+
+Expected paths: root workspace manifest/lock; examples/remote-counter manifest,
+README, four application source modules and separate protocol/process tests;
+these existing feature/backlog records. Forecast roughly750 raw application
+lines before formatting, including the validated-assignment source copy; this
+is new capability, not reduction. No public Bombay type, dependency owner,
+runtime API, lifecycle framework, transport loop or macro is added. Cargo's
+existing workspace gate owns the new targets; no custom runner or tool suite.
+Selected owner versions/lock remain the freshly verified route-stage contracts;
+receive-timeout's complete selected0.29 source/tests are re-read before selection.
+Only the new example package may alter the lock; audit every other record.
+
+Before repository application edits, the three complete-Actions tests74754ded
+are path-mounted against the old frozen protocol2cc90718/deploymenta1ed5419.
+The actual --no-run exits101 with14 static errors limited to missing result
+types/lane/endpoint, missing expiry reaction and the old inhabited actor error's
+infallible denial. Zero tests execute. This establishes the new application
+output surface's absence; it is not a runtime failure or a library API defect.
+The temporary parent is restored byte-exactf8a4fb08 before adding the example.
+
+Select refined ordinary source969b2b64/be8992fc/43af3f93/9fe79deb after two source
+reviews and two pre-compiler model corrections: use the infallible actor default
+when all Unexpected replies are owned domain results; choose Test/provider refusal
+once in Configuration::read, storing no redundant Mode in accepted configuration.
+Remove duplicate provider choices from assignment parsing, preserving every actual
+binding, slot, correlation, framing and exact-pair check. Original external
+prototypes and their older bootstrap evidence stay unchanged. New CLI refusal
+requires fresh process qualification, not inherited old-helper credit.
+Pinned offline metadata exits0; the lock adds only the new workspace package
+and changes no existing package/version/feature declaration. First actual package
+compilation follows with the independently authored pure tests already present.
+
+First package --no-run exits0 in4.65s without API/model changes. Expected shared
+module dead-code warnings are scoped to the reused Counter and pure-test imports;
+no production law is removed. Pinned formatting only changes layout. The three
+pure tests pass in both profiles with no skipped or filtered cases or warnings:
+complete request/result actions, exact Failed reply and real receive-timeout
+generations/replay. The separate process test also passes in BOTH profiles,
+one actual case each (.97/.47s), with distinct child PIDs/issued runtimes,
+real TLS, checked domain output and both reaped exits before assertions.
+These are real separate-process success results, not complete R23 or fault proof.
+
+Current healthy formatted source: mainfa3a3cf1, deploymente49933f3,
+networkd4ebbfb1, protocole1160f86; pure tests8ea7c315 and process testf6b53094.
+Source review66d59d1e records explicit first-error exit classification: later
+close/poll/disposal inspections and a coexisting domain failure can be superseded
+by an earlier returned refusal. Cleanup absence/error also share the exit
+classification. Do not claim complete cause aggregation or R18/R25 from this
+application. Native originals remain in the runtime outcomes until scope exit;
+new aggregation requires its own failing combined-failure law, not speculative
+machinery. The user README states this bounded first-error policy.
+
+Three independent application-source falsifiers are preselected againste1160f86:
+omit only the final Complete send; replace timeout Uncertain by Complete; normalize
+the Failed reply's original sequence. Each must fail its own pure oracle in
+debug/optimized, then restore exact healthy source and pass all three controls.
+First omission141f6683 now fails only the missing-single-result oracle in BOTH
+profiles, one case/2filtered, after all preceding successful request actions.
+Later Stop/state/expiry assertions receive no negative credit. Its unused
+Complete warning is mutant-only; the semantic failure executes. Healthy source
+is restored before replay and before either later source cut.
+
+### Remote-counter role inputs — original failure before correction
+
+The ordinary server currently requires WAIT_SECONDS without using it. The
+selected correction is private CLI configuration only: Serve owns the common
+address/credentials/assignment; Call additionally owns its positive Duration.
+Use five server arguments and six caller arguments, without adding a server
+policy, dummy duration, generic builder, public type or dependency. Existing
+Mode retains its early ProductionRequired refusal. Borrow only the assignment
+Path and move each address into its existing Network, deleting two clones.
+Expected main delta +50/-35 before formatting; README and existing process test
+owner receive the matching commands. Outside main ada656f7 and two-pass source
+review0ae18f6b precede the edit. Earlier provider/actor/runtime laws are unchanged.
+
+The independently mounted arguments child uses the existing Program kill/reap
+owner. Both actual original executions exit101 at its provider-diagnostic
+oracle: five-argument ProductionRequired Serve incorrectly returns usage rather
+than the exact finite-provider refusal. All five commands have already exited,
+been reaped, and had output acquired; their directory is removed before this
+oracle. One named case executes per profile, one existing case filtered; no
+watchdog or compilation error supplies this failure. The later four per-case
+oracles receive no negative credit. Receipts are counter-role-original-debug
+and counter-role-original-release under /tmp/bombay-outbound-client-comparison.
+Replace only main/README with the reviewed candidate, then qualify all five
+controls and actual two-process/adverse behavior afresh in both profiles.
+
+The selected role correction now passes all seven application cases in BOTH
+profiles: four real process/CLI controls plus three pure complete-Actions tests.
+Serve5/Call6 is used in the real TLS journey. ProductionRequired refuses before
+invalid TLS startup/queued assignment; only the caller's Read reply pair differs
+in the wrong-proof case, yielding exit2/Uncertain Read with a still-live service.
+The parent deliberately kills/reaps that service afterward; this is not clean
+server shutdown evidence. Old CLI negatives and all earlier source epochs remain
+separate. Receipts: counter-role-adverse-{debug,release}; process4/0 and pure3/0,
+no ignored/filtered cases. Two-pass source reviewd9092c98 preceded mounting.
+
+Next add a public-consumer loss case only in the existing processes test tree.
+Frozen sourcef08fe151 and two source reviews09d8dedc/3ea58683 use an exact-named
+ignored receiving child and the existing Program guard. The real Counter emits
+its processed Increment result; the test-owned reply protector acquires its
+actual proof and stays Pending. Work independently reads value1 from that same
+Counter, then requests shutdown and joins/closes before complete native-row
+inspection, requiring zero publication. The ordinary separate caller must report
+Uncertain Increment after both children reap. This is processing-before-
+publication loss, not on-wire reply loss or full R13. No stronger relative
+ordering of the caller's timeout and server exit is claimed.
+
+Expected change: one existing test registration, one test child source, and
+futures-util as a direct test-only dependency on the already selected workspace
+version. Exhaustive native Either inspection needs that owning public type;
+there is no new version, runtime dependency, application hook, SDK use, runner,
+public type or production edit. First compiler fitness only; then actual paired
+execution and timeout-to-Complete falsification before law credit. All assertions
+follow provider/native/Node cleanup; iterator advancement is acquired beforehand.
+
+The loss test's first setup did not execute: futures-util is already selected
+but is not a workspace.dependencies entry; inheriting it failed manifest loading.
+Use the existing Bombay direct dependency declaration (0.3.34/default-false/std)
+as a dev-only edge. The following locked attempt correctly refused a stale lock;
+o law credit. Offline Cargo updates only this example's package entry. Initial
+actual compilation then rejects the test's field access on Result notification
+receipts (E0609 twice). Ordinary test extraction now expects the existing owned
+receipt before observing its fields; no model or public interface is added.
+Corrected --no-run exits0 without warnings. The actual loss parent passes BOTH
+profiles, one named case/5filtered,20.94/20.87s. The ignored exact-named child is
+executed and required by its parent, not counted as a second outer case. It
+establishes processing/read1/zero publication/cleanup and ordinary uncertainty;
+it does not establish a wire-published packet drop.
+
+Process falsifiers were independently source-selected in reviewff6e5328 before
+mounting: main11087d2a no-Get cutd08df617 must yield Uncertain Increment and fail
+success stdout after caller/server reaps; guard-only cutf7dd3c69 must reach real
+missing-credential startup and fail the exact early provider diagnostic; finite
+Read/Reply proof-equality cut1004fd26 must accept the wrong proof, complete the
+actual Stop, and fail the first Uncertain Read stdout oracle after both reaps.
+Each runs separately in both profiles against frozen test oracles, followed by
+byte-exact restoration and healthy controls. No setup failure, watchdog, later
+unexecuted oracle or mutant-only warning supplies semantic credit. The initial
+no-Get pair is now running; no other cut is mounted concurrently.
+
+Actual no-Get sourcecut d08df617 exits101 in BOTH profiles only at the success
+controller's primary stdout oracle339: Uncertain Increment instead of checked
+value1/Stopped, after caller exit and server kill/reap. One named case/5filtered,
+21.01/20.52s; no watchdog, compile failure or changed oracle supplies the kill.
+Later clean-status checks remain unexecuted negatives. Restore byte-exact main
+11087d2a before the four relevant process controls in each profile; loss source
+and protocol remain healthy throughout. No inverse remains during restoration.
+
+The temporary named-child/route delivery checkout is retired with ordinary
+non-forced git worktree remove after independent audit32802874: no tracked,
+untracked or ignored files, actual pushed e32 equals both local refs, no live
+cwd remains, and shared objects/archives are outside. Root research at e32
+preserves the dirty application separately. Seven pre-existing worktrees remain;
+none with dirty work, unique history or active shells was forcibly removed.
+PR391's pushed branch remains intact while its required CI is pending.
+
+The no-Get healthy replay uncovered a separate test-controller defect, not a
+runtime negative: debug has3passing/1setup failure at processes232, AlreadyExists
+creating the success directory. Optimized has4/0. Three concurrently executable
+cases share counter-PID-clock paths; their same observed timestamp can collide.
+Preserve the failed receipt and sourceb641207a. Minimal correction uses distinct
+semantic success/refusal/proof prefixes in those three cases, retaining actual
+PID/time uniqueness within each case. No new temp framework/dependency/helper,
+application or native code changes. Expected test delta+3/-3 across one existing
+file, production/public types0. Requalify four controls in BOTH profiles before
+any further sourcecut; do not relabel the failed replay as a pass or native law.
+
+Distinct test directory prefixes pass fresh four-control debug/optimized runs,
+4/0 each with2loss-related filtered cases; these are the actual healthy replay
+pair after the no-Get cut. The earlier AlreadyExists result remains a failed
+setup epoch. Independent two-pass review of the minimal fix finds no new owner,
+framework or policy. Only now apply the separate provider-guard cutf7dd3c69.
+
+The first provider-guard inverse is NOT qualified: both profiles reach only the
+10s outer watchdog. The assumption that nonexistent TLS paths cause immediate
+Node refusal was not established and is withdrawn. Both receipts remain failed
+setup/falsifier attempts; they prove neither the intended early diagnostic law
+nor the cause of the pending native startup. Healthy main11087d2a is restored.
+
+Use an already-owned deterministic configuration refusal instead: the existing
+remote/network/tests endpoint-injection controls reject localhost:9?priority=1
+in both directions before SDK startup. Set only this early-provider process
+control's address to that unsupported address. Preserve absent credentials and
+all exact provider/assignment/output oracles. The guard must precede even this
+configuration validation; when removed the actual bounded Node startup error
+must differ from the provider refusal. One test input/comment change, no
+production policy or new validation. Qualify healthy both profiles first, then
+replay the identical guard-only sourcecut and exact restorations. Never credit
+elapsed time or increase the watchdog to fit the earlier assumption.
+
+The deterministic provider control passes healthy both profiles. Replayed guard
+cut now exits101 in BOTH profiles only at processes414: actual bounded Node-open
+refusal instead of the required early provider diagnostic, after both children
+reap and assignment/output cleanup. One case/5filtered,.91/.39s. No watchdog or
+mutant-only unused-variant warning supplies the kill; only the first role's
+per-case diagnostic assertion is reached negatively. Restore exact11087d2a and
+all four relevant controls in both profiles before the independent proof cut.
+
+After provider restoration, all four controls pass again in both profiles.
+The independent finite Read-proof cut1004fd26 then exits101 in BOTH profiles
+only at processes525's primary caller-output oracle: actual Complete1/Stopped
+versus required Uncertain Read. Both actual children are reaped first,1case/
+5filtered,1.03/.48s. It keeps original bytes/purpose/Receipt and other operation
+proof checks; the later exit2/server-liveness assertions are unexecuted negatives.
+Restore exact deployment816f6b39 before paired four-control replay. No proof or
+other inverse remains during that restoration.
+
+Proof restoration passes all four relevant controls in BOTH profiles,4/0 each,
+2filtered. Final application-policy falsifier uses source4c7d69d0 against exact
+protocole69bfe0a: only timeout Uncertain(operation) becomes
+Complete(sequence(operation)), preserving the same stop/result lane and empty
+request lane. Source review63840609 precedes this edit. The loss parent's exact
+native child must still qualify processing1/zero publication/cleanup; its final
+ordinary caller exit2 oracle must fail after both reaps. Apply by exact source
+copy (the outside no-index patch's output path is not a repository target).
+Run this one parent in both profiles, then restore exacte69 and complete package
+both profiles. No main, deployment, proof or controller policy changes with it.
+
+The loss timeout-classification inverse4c7 exits101 in BOTH profiles ONLY at
+lost_reply397: actual ordinary caller exit0 versus expected exit2,21.06/20.49s,
+one case/5filtered. Both reaps, actual successful exact native child and its
+1passed/0failed/0ignored summary checks precede that oracle. Caller stdout after
+it is unexecuted negatively. The unused Uncertain warning is mutant-only, not
+the failure. Restore byte-exact protocole69 before complete package debug/
+optimized and final gates. No source inverse remains applied.
+
+After focused laws/cuts, add the ordinary example to existing entry points and
+checks. Preselected review1bd17290 proposes one12-line Crane check beside the
+local Counter, running the complete new package in both profiles without an
+interactive cargo run. Existing Cargo source/certificate filters and checks.yml
+already supply its inputs/discovery. Five guide/index edits replace obsolete
+future-example wording with the real finite-test consumer, keeping complete
+remote/production identity acceptance open. Expected verification config+12/-0;
+guidance+41/-19, no Rust/public type or new tool/framework/workflow. Actual Nix
+evaluation/execution and final complete software checks remain required.
+
+Complete restored package passes8 outer cases in EACH profile:5process +3pure,
+no filtered cases. The one registered ignored native child runs through its
+exact-named parent and is not counted again. Final process duration20.92/20.37s.
+The first strict package check rejects only11 lint findings: five complete-trace
+line counts, four empty-byte assertion diagnostics and two cheap policy inputs.
+Keep whole traces with five narrow line-count expectations; use slice equality
+to show unexpected output. Mode and ProgramRole are immutable repeatable run
+settings containing no affine capability, so Copy/Clone is truthful, matching
+existing ReplyProof. No application law, ownership or public interface changes.
+The subsequent strict workspace/all-feature/all-target Clippy exits0 in17.63s;
+pinned Nix format-check also exits0. These test-only lint edits are a new source
+epoch; fresh complete debug/optimized verification follows before final review.
+
+### Complete workspace verification and directory minimization
+
+Pinned cargo test --locked --offline --workspace --all-features exits0 in BOTH
+debug and optimized profiles on the lint-adjusted source. Their raw logs are
+counter-workspace-{debug,release}; final format-check also follows. All application
+and existing workspace tests/doctests pass; no outer total is inferred from
+nested compiler output. Optimized compilation is expensive but completes.
+
+Four subsequent controlled path commands are distinct from native-policy cuts:
+the103-byte representative socket path passes both profiles; a longer configured
+TMPDIR producing116bytes fails both only with InvalidInput/path must be shorter
+than SUN_LEN before children start. The source cleans its directory first.
+No current Nix-builder failure is claimed (representative Nix path100bytes fits),
+and no arbitrary-length TMPDIR guarantee is selected. Preserve all four actual
+counter-long-{tmp,parent}-original logs/exit receipts without relabeling this test
+setup defect as remote semantic failure.
+
+Select the already-prepared smaller owner from source revieweedead60 after these
+actual failures: existing locked tempfile3.27.0 (checksum32497e9a), already used
+by proptest/rusty-fork, MIT OR Apache-2.0/MSRV1.63, same default getrandom graph.
+Use Builder prefix counter-, explicit0700 permissions and TempDir outside each
+timed trace. All5controllers borrow its path; acquire close() after native child
+reaps before semantic assertions. This replaces manual PID/time uniqueness and
+removal, shortens the measured path and adds emergency scope cleanup without a
+wrapper or runner. Default permissions are not0700, so explicit permissions are
+required. Expected3test-source delta+54/-73/net-19, plus one dev-only manifest
+and lock edge; production/public types0. Existing bytes, proof tables, timers,
+process guards and all oracles stay unchanged. No new dependency version or
+production feature is introduced. Compile/long-parent/full-package D/R, strict
+lint and actual Nix remain required; prior workspace gates retain their source
+scope. The full remote PRD remains active.
+
+The selected directory contraction compiles0 without model changes. Its final
+complete package under the formerly failing longer parent passes8outer cases
+in EACH profile (5process+3pure),0filtered. The registered ignored native child
+is actually executed by its exact parent and not counted again. Process21.14/
+20.51s. Final strict workspace/all-feature/all-target Clippy exits0 in1.17s,
+and final fmt-check exits0. Production main11087d2a/deployment816f6b39/protocol
+e69bfe0a/networkd4ebbfb1 are unchanged. Final tests c9325748/5fe49c99/93684951
+bind the real directory owner. Existing package versions remain byte-unchanged;
+Cargo.lock adds only the new example package with its test edges.
+
+Complete scoped stage, including every new path:
+
+```text
+production: +1192 / -0 / net1192
+ tests:      +1390 / -0 / net1390
+public API: +0 Bombay types / -0 Bombay types
+```
+
+Twenty paths include the package/member/lock, existing Nix check, five current
+entry guides, its README and these feature/backlog records. Configuration has
++46/-0 lines; the3test-source directory contraction is separately -19 from the
+preceding local candidate, not a claim that this net-positive application stage
+is code deletion. Existing Counter is reused once; no second runtime, mailbox,
+actor contract, generic runner, Python tool or public facade is added. Selected
+source/outcome reviews1ae5cd93/73fcabf0, process inversions0b1df434 and pure
+inversions20a1ce70 retain their actual epochs. Actual Nix/CI, final delivery and
+the complete acceptance matrices remain open; this is a focused application
+slice, not full-PRD distillation or completion.
+
+Final independent local qualification review86101208 binds the final source,
+all8passing outer cases in both profiles, exact-child protection, strict lint
+and fmt. It records no remaining scoped source/minimization veto and keeps Nix,
+CI, full R13/R23 and exhaustive repository distillation open. Broader audit3's
+factual guide/Driver/Python findings remain separate follow-up work.
+
+Durable remote-counter-qualified-20261023.tar.gz in the common Git archive
+has SHA256aa230f71e6dcf7ecee9d2b8613e36744f883afadfc0d4154ca7f9f0d6f584076.
+Its387-file manifest verifies. Member reads recheck main11087d2a, processesc9325748
+and final review86101208. It contains the complete20path delta, selected locks/
+instructions/requirements, raw original/negative/restored results and reviews;
+its PRD/status snapshots precede this pointer. The actively written Nix build
+log is explicitly excluded and labelled pending. This is source/results recovery,
+not a hermetic compiler closure, successful new Nix build, CI or merged delivery.
+
+### Ordinary Counter — actual dedicated Nix qualification
+
+The local command `nix build path:.#checks.aarch64-darwin.bombay-example-remote-counter
+--no-link --max-jobs 1 --cores 2 -L` exits0. Raw counter-nix-build.log has SHA256
+4e3d67b96f8e1039aa4c37dd95154bf304d988936821527e6ef7b68cda12e723.
+Its actual derivation is /nix/store/rdirsg824xzk76clj181cs13m2lzg894-bombay-workspace-0.1.0.drv,
+source /nix/store/f7li0adk8zsx0dqwjn5asfmiqv99xs35-source and registered output
+/nix/store/9r20rlg9iiydxbdpid9fn16fg57xv8v4-bombay-workspace-0.1.0.
+Both actual package profiles pass5process+3pure cases,0filtered, with one
+registered ignored native child required by its passing exact parent. Process
+21.30/20.57s; install/fixup complete. No source-filter or workflow change was needed.
+
+Independent comparison with committed7ba443ac finds19of20paths byte-identical,
+including every Rust/test/config/lock/flake/guide. Only15metadata lines for final
+review and the archive pointer were appended to the PRD after source capture.
+A subsequent current-path path-info query correctly sees a different, unbuilt
+output for that changed metadata; it is not a failure of the completed build.
+This qualifies the captured software on aarch64-darwin, not exact-head CI or the
+entire flake. Draft PR392 https://github.com/devrandom-labs/bombay/pull/392 contains
+that application commit, stacked after draft route PR391. Both still require
+actual submitted-head CI and final delivery; no full remote row closes here.
+The prior archive explicitly excludes this then-running log; preserve this
+completed receipt and its review as separate subsequent evidence.
+
+## Remote Counter CI execution guard — pre-edit record (2026-10-23)
+
+PR392 at535853f0 passed both native TLS profiles, Deny and both CodeQL checks.
+Its required Nix job120198350507 did not complete: GitHub's actual annotation
+states that the job exceeded2h0m0s. The raw job log shows the complete flake
+still compiling the optimized workspace at cancellation, including the new
+remote Counter. No unexpected test failure is established by this cancelled run. Required
+CI and full-flake qualification remain pending; local dedicated application
+Nix success is not substituted for them.
+
+The smallest selected change adjusts the existing `checks` job's bounded
+execution guard from120 to180minutes. All commands, profiles, targets, native
+oracles, required checks and fuzz campaigns remain selected. The prior verified
+route run required roughly104minutes. The complete observed flake run exceeded
+the previous guard while compiling the optimized workspace; individual cost
+contributors were not isolated. The new
+guard is an allowance for completing the same work, not measured proof that
+180minutes suffices. No resource algorithm, cache wrapper, source exclusion or
+new workflow is introduced. Reuse the existing GitHub timeout property and
+pinned Nix/Crane/Cargo owners; no dependency or public API changes are involved.
+Expected additional scope is one existing workflow line (+1/-1), this feature
+record and its reciprocal current status. Production/tests/API delta is zero.
+Actual submitted-head CI must pass before merge.
+
+The completed local application Nix receipt is archived separately as
+`remote-counter-nix-qualified-20261023.tar.gz`, SHA256
+`a00cd49caddbaf3d89f3bcdaf34690c76081f8bab2c2fc3f3cab7174def8b6ea`,
+under the common Git session archive for2026-10-21. Its nine payloads rehash
+successfully after fresh extraction by both packager and root; the raw exit is0
+and log digest matches4e3d67b9. It retains the captured derivation/source
+comparison and independent qualification reviewa307aba0. The earlier application
+archiveaa230f71 remains unchanged. Neither archive certifies exact-head CI or a
+hermetic compiler closure.

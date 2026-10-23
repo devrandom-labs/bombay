@@ -384,6 +384,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bombay-example-remote-counter"
+version = "0.1.0"
+dependencies = [
+ "bombay-rs",
+ "futures-util",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "bombay-example-supervision"
 version = "0.1.0"
 dependencies = [

@@ -59,6 +59,10 @@ optional and transfers original native products without a presentation callback.
 Full remote acceptance remains pending; transport fixtures do not establish it. Protected Counter
 regressions belong to `crates/bombay/tests/protected_counter`, executed by the
 isolated transport-custody package rather than an example binary.
+The separate [remote Counter](../examples/remote-counter/README.md) owns ordinary
+application configuration, its pure customer protocol and useful output. Its
+explicit finite test identity is application policy; Node retains networking
+and routine cleanup. Subprocess control and fault assertions stay in its tests.
 Ordinary remote Application composition must hide Session ownership, native
 configuration translation, declarations and transport request/reply loops inside
 Bombay. The current low-level Node interface does not establish that finished

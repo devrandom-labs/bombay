@@ -7,6 +7,7 @@ members = [
     "examples/axum",
     "examples/counter",
     "examples/entity",
+    "examples/remote-counter",
     "examples/supervision",
     "examples/worker-pool",
     "tests/renamed-downstream",
