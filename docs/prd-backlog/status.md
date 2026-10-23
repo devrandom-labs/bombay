@@ -1,38 +1,24 @@
 # Backlog status and dependencies
 
-PR395 is delivered as36b5c1f9 at2026-10-23T23:26:42Z after six successful
-checks on be200b25; verified/merge trees match7f8c9218. Actual main is fetched
-and integrated here. PR393/90ecb176 and PR394/e68d521f each pass all six
-checks, including current-lock native21 for PR393; their normal merge remains
-unverified while subsequent GitHub API reads time out. No merge is inferred.
-Denied-Stop3d81fb02 is locally qualified and archived, pending focused delivery.
+Denied-Stop follow-up integrates actual main277e6dfe and provider headed72df92.
+Its test source8f7427dd is unchanged: both real-program controls pass D/R,
+the intended proof inverse fails the actual child verification oracle after
+cleanup, the restored package passes ten outer tests/profile and final lint,
+formatting and independent reviews pass. Production/API delta0; verification
++469/-1. Focused CI/main delivery, pressure, exit/scenario mapping and full R23
+remain pending. Both complete provider/child and Stop records are conserved.
 
-Active R23 verification stage: compare the shipped separate-program Counter
-under matching versus differing receiver Stop proof. Require exact refusal
-and originals, no native Stop, an independent live Counter Read1 and ordinary
-caller Uncertain(Stop), plus the matched positive and intended inverse in both
-profiles. The existing test owner is reused; production/API/dependency delta0.
-No full R23 or send-only/pressure acceptance is inferred.
+PR395 merged patched Tokio as36b5c1f9 at2026-10-23T23:26:42Z after six green
+checks on be200b25; verified/merge trees match7f8c9218. PR393 merged child
+Python retirement as277e6dfe at23:44:22Z after six green checks on90ecb176;
+verified/merge trees match3e062d6a. Its actual patched-lock Nix gate runs all21
+commands; independent raw-job review79e171a1 retains the evidence. The clean,
+pushed task worktree is safely archived and removed. Five Python files remain.
 
-Denied-Stop local verification now passes both real-program controls D/R,
-with the intended proof inverse at the actual child verification oracle after
-cleanup. Restored package passes ten outer tests/profile; final focused checks,
-strict lint, formatting and independent reviews pass. Production/API delta0;
-retained verification+469/-1. Its focused submitted-head CI and main delivery
-remain pending; pressure, exit/scenario mapping and full R23 remain open.
-
-Current prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
-reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
-upstream-patched1.53.3 in the root and isolated transport locks and changes
-the isolated exact pin at its owner. No advisory exception, runtime/API change
-or full remote acceptance is claimed. Its compatibility checks, independent
-review and fresh required CI/main delivery remain open; previous green heads
-do not qualify these current PR heads.
-
-The provider follow-up now integrates PR395's exact Tokio prerequisite.
-PR395/be200b25 Deny40013872994 passes; both patched-lock ordinary counter
-profiles pass all eight existing cases. Provider submitted-head CI remains
-pending, with earlier19c6c4ea UI source/results kept at their actual lock epoch.
+Actual main277e6dfe is now integrated into the provider/R10 follow-up. Only
+PRD/status records conflicted; qualified UI/runtime sources and patched locks
+are unchanged. Earlier e68d521f's six-green CI remains historical. Fresh
+submitted-head checks/review and normal PR394 merge remain required.
 
 Latest user direction removes all implementation budgets and preapproves their
 expansion: “there is no budget.” Do not request line/path/type/verification

@@ -1,28 +1,5 @@
 # Static remote actors and typed admission
 
-## Delivery checkpoint (2026-10-24 local)
-
-PR395 merged the Tokio prerequisite at2026-10-23T23:26:42Z as
-36b5c1f9f92b56f527167076249d12c1ceba0545 after all six checks passed on
-be200b25527fcaa41f74d32cf9deb29304b0a48b. Required Nix40013873012 completed
-21:57:09Z. Verified and merge trees match7f8c9218. Independent final readiness
-review4db1ad16 confirms exact locks, selected source and actual checks. Actual
-main36b5c1f9 is fetched and integrated into the denied-Stop follow-up.
-
-PR393/90ecb176 and PR394/e68d521f also passed all six checks. PR393's raw
-Nix gate actually runs all21 existing commands with patched Tokio1.53.3,
-including both native inversions/restorations; independent review79e171a1
-retains the full job log. Neither PR is claimed merged: subsequent GitHub API
-requests time out, so current mergeability after main advances is unverified.
-Keep the exact tested heads and use normal server merge once current state is
-observable. This is a delivery-network limitation, not a local test failure.
-
-The denied-Stop stage is committed as3d81fb02, with final two-pass qualification
-08e05181. Its source/result archive SHA256eaaed494c108bff011528c4a968093ebc6205d980f55f914508a287e1bb558bd
-was independently extracted and every checksum passed. The final review is
-also retained beside that archive. Its focused PR/CI/main delivery and the
-full remaining remote acceptance scope stay open.
-
 ## Separate-program denied Stop — pre-edit record (2026-10-23)
 
 R23 still requires the ordinary application's denied-Stop witness. The smallest
@@ -119,7 +96,18 @@ verification, not code reduction. Pressure, process-exit scenario mapping,
 full R23/R11, distillation and submitted-head CI/review/main delivery remain
 open. No application fault machinery or runtime change is retained.
 
-## Tokio I/O safety prerequisite (2026-10-23)
+Provider integration (2026-10-24 local): actual main277e6dfe and provider
+follow-uped72df92 are integrated. Only these two record files conflicted;
+the entire denied-Stop section, complete provider/child appendices and current
+delivered-status facts are conserved. All software/configuration outside the
+single Stop test owner equals ed72df92. That test owner remains exact8f7427dd.
+The final two-pass Stop review is08e05181; the qualified archive's actual
+SHA256 is eaaed494c108bff011528c4a968093ebc6205d980f55f914508a287e1bb558bd.
+Independent fresh extraction passes every checksum. This preserves source and
+results, not a compiler/binary closure. PR394's new CI remains separate; the
+denied-Stop follow-up needs its own submitted-head CI and normal main delivery.
+
+## Tokio I/O safety prerequisite — historical implementation record (2026-10-23)
 
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
 locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
@@ -195,6 +183,25 @@ type ceilings and budget approval checkpoints. Do not ask for budget increases
 again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
+
+PR395 merged patched Tokio as36b5c1f9f92b56f527167076249d12c1ceba0545 at
+2026-10-23T23:26:42Z after six successful checks on be200b25; verified/merge
+trees match7f8c9218. PR393 then merged child Python retirement as
+277e6dfe2c5377b8b31810c025509322640a588e at23:44:22Z after six successful
+checks on90ecb176; verified/merge trees match3e062d6a. Required Nix40014264183
+actually runs the patched-lock21-command owner, including healthy/inverse/
+restored native child phases; raw-job review79e171a1 preserves its scope.
+The clean/pushed task worktree is removed without force after full source/CI
+archiveccbc9473 and independent extracted checksum verification. Five Python
+files and other inline workflow blocks remain; their retirement is separate.
+
+Actual main277e6dfe is integrated into PR394's provider/R10 follow-up. Only
+the PRD/status records conflicted: both complete feature-local append sections
+are retained, while current delivery summaries reflect the actual merges.
+All qualified UI sources, compiler snapshots, runtime/application owners and
+both patched locks remain byte-identical. Earlier e68d521f passed all six
+checks; this new submitted head still needs fresh CI and review. No old green
+check is transferred to it. All remaining full remote obligations stay active.
 
 PR392 merged the finite-test remote Counter at2026-10-23T19:21:29Z as
 632bf18454016de9b986066c0130a83142a9187d after all six checks passed on95c1105a;
@@ -43315,3 +43322,135 @@ text is explicitly historical. R10's local semantic satisfaction leaves required
 this follow-up's CI/main delivery, every other full row, production cryptography/Selo and
 the broader release inventory open. Existing application archives retain raw
 source/results; review copies are preserved with the common Git session records.
+
+## Child preparation Python retirement — pre-edit record (2026-10-23)
+
+This separate verification stage starts from actual main a88dbe83. It retires
+only `child_preparation_retirement_evidence.py` after the existing Actor
+execution evidence owner proves the same native law. Production, public API,
+Cargo manifests, lock, the owning test and its assertions stay byte-identical.
+The workspace still selects Behavior/Actors0.29 and Macros0.16 (Behavior
+revision55dbac2d), Address0.3, Communication0.1.6 and Timers0.2; Observe remains
+local. No patch or dependency edge changes. Existing launch owns settlement of
+child preparation; the existing fixed-supervisor test owns parent/sibling
+progress, unfinished-resource custody, joined retirement and exact replay.
+The existing Bash owner, Cargo, jq, Perl and pinned Nix environment already
+provide snapshotting, precise source mutation, named-case guards and receipts.
+No new runner, replacement runtime, test model or library is needed.
+
+The candidate extends `actor-execution-law-evidence.sh` to include launch in
+restoration and run the existing named native child test healthy/inverse/
+restored in debug and optimized builds. The inverse removes only the exact
+`residual.receive_activation_tasks().await` block and must fail its existing
+post-cleanup temporal oracle, rather than compilation or completed-future
+misuse. Healthy/restored runs must each execute exactly one named test.
+All fifteen previous actor commands remain. Six distinct native logs and six
+records join the existing receipt stream. One five-source checksum ledger
+replaces redundant Python recording, and checks snapshot/caller conservation.
+Historical Python artifacts retain their old shape; new artifacts deliberately
+use the existing owner receipt and do not claim executable recovery.
+
+Expected scope: three verification/configuration paths and this PRD; production
++0/-0/net0, verification +91/-128/net-37, public types+0/-0. The flake removes
+only this gate's Python input/invocation and the retired file's source entry.
+The full workspace still contains other Python obligations. Syntax, all prior
+commands, six actual native outcomes, exact source restoration, independent
+source/outcome reviews and the existing Nix check must pass before acceptance.
+The finite-test Counter application remains a separate PR392 stage, and full
+remote security/resource/scenario acceptance remains open.
+
+### Child-retirement actual qualification and minimization
+
+Pinned Bash syntax passes. The existing actor-execution owner exits0 after
+21actual Cargo commands: five healthy unit references, eight semantic source
+cuts, two affine compiler denials and six native child phases. Its existing
+JSON receipt has16records (ten inversions/denials plus six native phases),
+not21 records. Every healthy/restored native profile runs exactly the named
+one-passed case; both inversions exit101 and fail the intended joined-report
+oracle at fixed_supervisor_recovery.rs1340 after cleanup/original acquisition.
+The earlier terminal guard is observed, but completed-future misuse is absent.
+Later resource/replay/native-tail assertions are not credited in those failing
+runs. The five-source ledger passes; source restoration and caller conservation
+pass. No production or test assertion body changes.
+
+The existing aarch64-darwin `bombay-actor-execution-law-evidence` Nix check
+also exits0, including all21 commands and install/fixup. Its captured derivation
+isjp96162sp38r8b5drxq37k436fk2nfg2, output8nwr5k30qqg6wfrhr7fa9fd4pl2cs8z1;
+build phase takes6minutes3seconds. This captured source precedes final records
+and integration of route mainfcaf7430; the retained shell00e9e467, flakefe193725
+and five native input hashes are unchanged. Required submitted-head CI remains
+independent. Source/native-outcome two-pass reviewe97658a2 finds no scoped veto;
+its distinction between16records,21commands and unexecuted negative tails is
+retained. Raw local/native/Nix logs and checksum ledgers remain in the feature
+evidence, rather than a new project verification tool.
+
+Minimization reuses the existing snapshot, mutation, restoration, named-case
+and receipt owners, deleting the separate118-line Python controller and its
+three flake lines. The lean candidate removes50 redundant recording lines
+from the earlier rejected proposal, including duplicate JSON/executable-hash
+recording. Old artifacts retain their historical meanings. Final software
+delta is production+0/-0/net0, verification+91/-128/net-37, publicAPI+0/-0;
+five total paths include the reciprocal status record. No new runner, library,
+type, native hook or requirement is retained. All earlier costs remain history;
+this stage delivers neither the other five Python retirements nor full remote
+acceptance. Focused PR, actual required CI and main merge remain open.
+
+Qualified source/results archive:
+`child-retirement-qualified-20261023.tar.gz`, SHA256
+`b85ff6083c6de386e4126eae86ce905bf51be6e43eedaec0a10c4bf1c8dc2617`,
+under the common Git2026-10-21 session archive. Packager and root independently
+extract and rehash all87 payloads. The archive preserves the exact five-path
+delta before this pointer, original retired Python, selected inputs and both
+actual21-command cohorts. Independent Nix qualification6090525c confirms the
+captured/current law-owner equivalence. No compiler closure, binary recovery,
+submitted-head CI or merged-delivery claim follows from this archive.
+
+### Child retirement — integration after Counter delivery
+
+The all-green original child heada2278fa0 is historical after PR392 delivery.
+Only the PRD/status merge conflicts required resolution. All application records
+from actual main632bf184 and the complete child-retirement section are retained.
+The retained child script stays00e9e467, its native law/production/test bodies
+remain unchanged, and the combined flake is938beb59. New Cargo.lockaf4406db and
+the workspace example member come from delivered main, not this retirement.
+Their dependency versions do not change the selected child law. The earlier
+five-source ledger is not relabelled as this newer lock/workspace epoch.
+
+Fresh execution of the same21 existing/native commands is required on the
+integrated inputs, followed by new submitted-head CI and independent review.
+Prior all-green CI on a2278fa0 does not certify the conflict-resolution head.
+The focused delta against actual main stays production+0/-0/net0,
+verification+91/-128/net-37, publicAPI+0/-0 and five paths including records.
+
+Fresh integrated-input native execution now exits0 after all21 commands,
+including healthy/inverse/restored native debug and optimized phases. Its
+16-record receipt and five-source ledger are retained at
+`/tmp/bombay-child-retirement-integrated-20261023`; outer command log/exit are
+`/tmp/bombay-outbound-client-comparison/child-retirement-integrated-native.*`.
+This is fresh native qualification on af4406db/b40 workspace inputs. The
+integrated source review81da62b6 verifies complete main/old-child conservation.
+New submitted-head full CI remains required; no old a227 check is transferred.
+
+### Child retirement — patched Tokio integration
+
+Pushed fixbe200b25527fcaa41f74d32cf9deb29304b0a48b is integrated after
+PR393/a84ec103's required Deny failure. Its dependency scope is exactly the
+root and isolated transport locks selecting Tokio1.53.3 plus the isolated
+manifest's matching exact pin. No advisory exception or Bombay Rust change
+is introduced; all delivered application and child-retirement records remain.
+
+Independent two-pass review216925c963f674a82d1021106305471c031f0948bd4522d9a759f0c1f672af4f
+qualifies the fresh integrated native run on former head a84ec103:21 actual
+commands, comprising five unit positives, eight runtime inversions, two affine
+denials and six native healthy/inverse/restored commands. The16-record receipt
+excludes the five separately logged unit positives. Both native inversions
+reach the intended joined-preparation assertion after actual cleanup; later
+negative assertions remain unexecuted. Healthy/restored native runs pass both
+profiles. The prior raw command log is15dd9343fb85f808cad32d3de654e7b217c2d1510951bdd28f7fbcd165a0a457.
+
+Those results and their five-source ledger bind root lockaf4406db and workspace
+manifestb40c063e. The patched root lock is now83f01ca3ff82f49f485cb017d14279a654fafc2dfb592f4818b9b726686a3578;
+the workspace manifest and existing law owners remain unchanged. Do not relabel
+that older run, its original Nix receipt or old green checks as qualification
+of the new lock. Fresh compatibility/native results and submitted-head full CI
+remain required. This integration records no PR393 merge or full remote acceptance.
