@@ -53,6 +53,21 @@ application/native checks are still in progress. This source-only stage adds
 no product or verification Rust and no public type. Required CI and reviewed
 main delivery remain pending.
 
+Provider-follow-up integration: PR395/be200b25 carries the separately reviewed
+Tokio prerequisite, with formal source review001bdf06. Its actual Deny check
+40013872994 passes; other required checks remain pending. The provider branch
+now includes that exact dependency change, so its earlier head19c6c4ea and UI
+qualification retain their historical lock epoch. With patched root83f01ca3,
+the unchanged ordinary remote-counter passes all eight existing outer cases
+in EACH debug and optimized profile (five process parents, three pure tests;
+one ignored native child is executed by its owning exact-named parent).
+Both actual command exits are0. Raw logs/exits are
+`/tmp/bombay-prd-resumption/tokio-patched-counter-{debug,release}.{log,exit}`;
+strict workspace Clippy and formatting also exit0. These are integration
+controls, not a local reproduction of the upstream unsafe-descriptor defect.
+The provider branch requires fresh submitted-head CI; neither PR395's Deny
+success nor previous UI results substitute for that gate.
+
 ## Current status (2026-10-23 UTC)
 
 Latest user direction: “there is no budget.” The user explicitly preapproves

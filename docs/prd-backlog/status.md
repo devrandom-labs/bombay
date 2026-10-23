@@ -8,6 +8,11 @@ or full remote acceptance is claimed. Its compatibility checks, independent
 review and fresh required CI/main delivery remain open; previous green heads
 do not qualify these current PR heads.
 
+The provider follow-up now integrates PR395's exact Tokio prerequisite.
+PR395/be200b25 Deny40013872994 passes; both patched-lock ordinary counter
+profiles pass all eight existing cases. Provider submitted-head CI remains
+pending, with earlier19c6c4ea UI source/results kept at their actual lock epoch.
+
 Latest user direction removes all implementation budgets and preapproves their
 expansion: “there is no budget.” Do not request line/path/type/verification
 budget approval again. Historical numbers below retain their source scope;
