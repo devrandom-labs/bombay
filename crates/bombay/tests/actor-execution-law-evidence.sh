@@ -7,9 +7,13 @@ if [[ -z "${IN_NIX_SHELL:-}" && -z "${NIX_BUILD_TOP:-}" ]]; then
 fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repository_root="$(cd "$script_dir/../../.." && pwd)"
+repository_root="$(cd "$script_dir/../../.." && pwd -P)"
 output_dir=""
 cargo_profile=()
+cargo_target=(--lib)
+cargo_capture=()
+native_phase=''
+native_profile=''
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -29,11 +33,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/bombay-actor-execution-law.XXXXXX")"
+work_dir="$(cd "$work_dir" && pwd -P)"
 trap 'rm -rf "$work_dir"' EXIT
 if [[ -z "$output_dir" ]]; then
   output_dir="$(mktemp -d "${TMPDIR:-/tmp}/bombay-incarnation-result.XXXXXX")"
 fi
+output_dir="$(realpath -m "$output_dir")"
+case "$output_dir" in
+  "$repository_root"|"$repository_root"/*) printf '%s\n' 'Evidence output must be outside the caller checkout' >&2; exit 2 ;;
+esac
 mkdir -p "$output_dir"
+mkdir "$output_dir/child-preparation"
 
 source_dir="$work_dir/source"
 mkdir -p "$source_dir"
@@ -49,14 +59,32 @@ tar -C "$repository_root" \
 
 cd "$source_dir"
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$work_dir/target}"
+export CARGO_TARGET_DIR="$(realpath -m "$CARGO_TARGET_DIR")"
+case "$CARGO_TARGET_DIR" in
+  "$repository_root"|"$repository_root"/*) printf '%s\n' 'Build artifacts must be outside the caller checkout' >&2; exit 2 ;;
+esac
 
 actor_execution='crates/bombay/src/actor_execution.rs'
 outcome='crates/bombay/src/actor_outcome.rs'
 pristine_actor_execution="$work_dir/actor_execution.rs"
 pristine_outcome="$work_dir/actor_outcome.rs"
+launch='crates/bombay/src/launch.rs'
+pristine_launch="$work_dir/launch.rs"
+child_test='joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_progress'
+child_sources=("$launch" crates/bombay/tests/fixed_supervisor_recovery.rs Cargo.lock Cargo.toml crates/bombay/Cargo.toml)
+for child_source in "${child_sources[@]}"; do
+  case "$(realpath "$child_source")" in
+    "$source_dir"/*) ;;
+    *) printf '%s\n' 'Child preparation source escaped the snapshot' >&2; exit 2 ;;
+  esac
+done
+child_checksums="$output_dir/child-preparation/original-sources.sha256"
+(cd "$repository_root" && sha256sum "${child_sources[@]}") > "$child_checksums"
+sha256sum --status --check "$child_checksums"
 receipt_rows="$work_dir/receipt.ndjson"
 cp "$actor_execution" "$pristine_actor_execution"
 cp "$outcome" "$pristine_outcome"
+cp "$launch" "$pristine_launch"
 : > "$receipt_rows"
 
 restore_sources() {
@@ -66,7 +94,23 @@ restore_sources() {
   if ! cmp -s "$pristine_outcome" "$outcome"; then
     cp "$pristine_outcome" "$outcome"
   fi
+  if ! cmp -s "$pristine_launch" "$launch"; then
+    cp "$pristine_launch" "$launch"
+  fi
 }
+
+finish_evidence() {
+  local status=$?
+  restore_sources
+  if ! sha256sum --status --check "$child_checksums" \
+    || ! (cd "$repository_root" && sha256sum --status --check "$child_checksums"); then
+    printf '%s\n' 'Child preparation snapshot or caller source conservation failed' >&2
+    status=1
+  fi
+  rm -rf "$work_dir"
+  exit "$status"
+}
+trap finish_evidence EXIT
 
 replace_exact() {
   local path="$1"
@@ -87,6 +131,12 @@ replace_exact() {
 
 apply_mutation() {
   case "$1" in
+    omit-child-preparation-retirement)
+      replace_exact "$launch" '    if let Some(residual) = residual {
+        residual.receive_activation_tasks().await;
+    }
+' ''
+      ;;
     terminal-after-driver)
       replace_exact "$actor_execution" \
         '        let terminal = Terminal::<_, B, E::Residual, B::Error, E::Error, E::RetirementRequest>::new(
@@ -226,16 +276,17 @@ apply_mutation() {
 
 run_reference() {
   local test_name="$1"
+  local label="${2:-reference-${test_name//::/-}}"
   local output
   local status
 
   restore_sources
   printf 'PASS  %s\n' "$test_name"
   set +e
-  output="$(cargo test ${cargo_profile[@]+"${cargo_profile[@]}"} --locked -p bombay-rs --lib "$test_name" -- --exact 2>&1)"
+  output="$(cargo test "${cargo_profile[@]}" --locked -p bombay-rs "${cargo_target[@]}" "$test_name" -- --exact "${cargo_capture[@]}" 2>&1)"
   status=$?
   set -e
-  printf '%s\n' "$output" > "$output_dir/reference-${test_name//::/-}.log"
+  printf '%s\n' "$output" > "$output_dir/$label.log"
   if [[ $status -ne 0 ]] || ! NAMED_REFERENCE="$test_name" perl -0ne '
     exit(/(?:\A|\n)running 1 test\n(?:(?!^test result:).)*^test \Q$ENV{NAMED_REFERENCE}\E \.\.\. ok\n(?:(?!^test result:).)*^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [^\n]*\n(?:(?!^test result:).)*\z/ms ? 0 : 1);
   ' <<< "$output"; then
@@ -243,12 +294,17 @@ run_reference() {
     printf 'healthy reference did not pass exactly one named test: %s\n' "$test_name" >&2
     exit 1
   fi
+  if [[ -n "$native_phase" ]]; then
+    jq -n --arg phase "$native_phase" --arg profile "$native_profile" --arg test "$test_name" --arg log "$label.log" \
+      '{phase:$phase,profile:$profile,test:$test,log:$log,result:"passed"}' >> "$receipt_rows"
+  fi
   printf '%s\n' "$output"
 }
 
 kill_mutation() {
   local inversion="$1"
   local killer="$2"
+  local label="${3:-kill-$inversion}"
   local output
   local status
 
@@ -256,10 +312,10 @@ kill_mutation() {
   apply_mutation "$inversion"
   printf 'KILL  %s with %s\n' "$inversion" "$killer"
   set +e
-  output="$(cargo test ${cargo_profile[@]+"${cargo_profile[@]}"} --locked -p bombay-rs --lib "$killer" -- --exact 2>&1)"
+  output="$(cargo test "${cargo_profile[@]}" --locked -p bombay-rs "${cargo_target[@]}" "$killer" -- --exact "${cargo_capture[@]}" 2>&1)"
   status=$?
   set -e
-  printf '%s\n' "$output" > "$output_dir/kill-$inversion.log"
+  printf '%s\n' "$output" > "$output_dir/$label.log"
   restore_sources
 
   if [[ $status -eq 0 ]]; then
@@ -279,9 +335,20 @@ kill_mutation() {
     printf 'mutation failed outside its named killer: %s\n' "$inversion" >&2
     exit 1
   fi
+  if [[ "$native_phase" == inverse ]]; then
+    if [[ $status -ne 101 ]] || ! grep -Fxq "test $killer ... FAILED" <<< "$output" \
+      || ! grep -Eq 'joined child report precedes no unfinished owned preparation|joined child report stays absent across parent and sibling progress' <<< "$output" \
+      || grep -Eq 'resumed after completion|called after complete' <<< "$output"; then
+      printf '%s\n' "$output" >&2
+      printf '%s\n' 'Child preparation failed outside its intended native oracle' >&2
+      exit 1
+    fi
+  fi
 
   jq -n --arg inversion "$inversion" --arg killer "$killer" \
-    '{inversion: $inversion, result: "killed", killer: $killer}' >> "$receipt_rows"
+    --arg phase "$native_phase" --arg profile "$native_profile" --arg log "$label.log" \
+    '{inversion: $inversion, result: "killed", killer: $killer}
+      + (if $phase == "" then {} else {phase:$phase,profile:$profile,log:$log} end)' >> "$receipt_rows"
 }
 
 deny_mutation() {
@@ -339,6 +406,22 @@ deny_mutation duplicate-driver driver
 deny_mutation duplicate-retirement retirement
 
 restore_sources
+original_profile=("${cargo_profile[@]}")
+cargo_target=(--test fixed_supervisor_recovery)
+cargo_capture=(--nocapture)
+for native_phase in healthy inverse restored; do
+  for native_profile in debug release; do
+    cargo_profile=()
+    if [[ "$native_profile" == release ]]; then cargo_profile=(--release); fi
+    if [[ "$native_phase" == inverse ]]; then
+      kill_mutation omit-child-preparation-retirement "$child_test" "child-preparation/$native_phase-$native_profile"
+    else
+      run_reference "$child_test" "child-preparation/$native_phase-$native_profile"
+    fi
+    sha256sum --status --check "$child_checksums"
+  done
+done
+cargo_profile=("${original_profile[@]}")
 behavior_revision="$(jq -r '.behavior.revision' docs/driver-law-manifest.json)"
 jq -s \
   --arg revision "$behavior_revision" \
@@ -347,7 +430,8 @@ jq -s \
     behavior_revision: $revision,
     production_sources: [
       "crates/bombay/src/actor_execution.rs",
-      "crates/bombay/src/actor_outcome.rs"
+      "crates/bombay/src/actor_outcome.rs",
+      "crates/bombay/src/launch.rs"
     ],
     results: .
   }' "$receipt_rows" > "$output_dir/actor-execution-law-evidence.json"
