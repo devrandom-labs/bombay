@@ -36,6 +36,14 @@ same complete commands and required checks; no passing CI is inferred.
 The complete pressure/denied-stop/scenario matrix remains open;
 the PRD retains the precise remaining acceptance clauses.
 
+The complete selected R10 witness is locally satisfied by explicit finite-test
+selection, early production refusal, the genuine Test journey, its intended
+guard inverse/restoration and both deterministic provider implementations.
+The [complete evidence](../prds/static-remote-actors/acceptance.md#r10--explicit-test-identity-and-production-refusal-2026-10-23)
+records distinct source/lock epochs and both source/evidence reviews. All other
+full rows remain open; PR392 required CI/delivery, Selo and broader release
+obligations are separate. No completion percentage is inferred.
+
 PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,
 with all six required checks passing on e1eab601. Its source tree is identical
 to that verified head. Repository-owner merge and independent local reviews are
@@ -158,13 +166,13 @@ work; full service/privacy, CI/review and main delivery remain open. The
 [identity record](../prds/static-remote-actors.md#runtime-and-actor-identity--local-verification-and-minimization)
 retains the exact scopes, costs and remaining gates.
 
-Current next product step: the separate remote-counter application through the
+Earlier application planning checkpoint, before PR392: the separate remote-counter application through the
 existing Node-owned Client and Export. The actual external two-Application read
 trace now exercises that SDK-free public path, including pure actor Actions.
 Advanced native requester tests remain scoped mechanism consumers. Trusted
 cross-process test-identity provisioning, the full Increment/Read/Stop journey
 and security/resource/fault acceptance still need their actual witnesses.
-All full rows remain open; no percentage is inferred.
+All full rows remained open at that checkpoint; current acceptance is recorded above.
 
 Earlier cold-path preparation checkpoint (2026-10-17):
 The bounded ownership comparison passes4/0 in both profiles, its intended

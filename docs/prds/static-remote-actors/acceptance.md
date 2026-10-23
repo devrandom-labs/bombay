@@ -2,9 +2,10 @@
 
 The dated prerequisite checkpoints below are historical evidence at their
 stated revisions. The [current feature status](../static-remote-actors.md#current-status-2026-10-23-utc)
-owns current dependency, implementation and verification facts. All full
-acceptance rows remain open; historical failures and passing runs keep their
-original source scope.
+owns current dependency, implementation and verification facts. R10's selected
+semantic witness is locally satisfied by the [current evidence](#r10--explicit-test-identity-and-production-refusal-2026-10-23).
+All other full acceptance rows remain open. Required CI and delivery remain
+separate; historical failures and passing runs keep their original source scope.
 
 Main reconciliation (2026-10-16, historical): mainf25e4a0c includes PR375 and
 the reviewed, CI-passing PR382 test-only compatibility repair. It selects
@@ -52,8 +53,9 @@ This closes no Query privacy, full R25 or service lifecycle requirement.
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.
-Every full R01–R25 witness is **unexecuted** until its evidence record is
-populated. The shared-native replay design stage is now recorded in the
+Each full R01–R25 witness receives credit only when its complete evidence record
+is populated; R10's local semantic record is now populated below. The following
+shared-native replay checkpoint retains its historical source scope: that design stage was recorded in the
 PRD: real Counter processing/value/Stop and unrelated Ledger native consumers
 must pass focused controls and intended inversions before caller migration.
 Cold retention, entered-constructor uncertainty, permission loans and permanent
@@ -693,3 +695,99 @@ affine owner when its Ready producer disposal panics. Prior source fails the
 release oracle in both profiles; the merged correction and193-line owning
 test preserve cold Application/Work and the allocated panic without a new API.
 All six CI checks pass; merged38774de is recorded above.
+
+## R10 — explicit test identity and production refusal (2026-10-23)
+
+**Locally satisfied for the selected milestone.** This assembles the whole R10
+row rather than crediting one missing-provider constructor diagnostic. It closes
+neither other remote rows nor the broader RELEASE-04 production-provider example.
+R10 explicitly leaves the real Selo example outside this milestone. PR392's
+required submitted-head CI and delivery remain pending; an extended job allowance
+is not a passing receipt.
+
+| Required clause | Current owning source and independent observation |
+| --- | --- |
+| Fake evidence is selected explicitly in tests. | [Command::read](../../../examples/remote-counter/src/main.rs) requires the literal mode `test` or `production-required` after exact Serve5/Call6 arity. There is no default test mode. The trusted assignment separately supplies an explicit finite profile; [Deployment validation](../../../examples/remote-counter/src/deployment.rs) requires it and all three grants/six paired records, without serde defaults. The actual two-program Test journey executes Increment/Read/Stop successfully. |
+| Production cannot start using fake or missing required identity. | The application has only the finite test provider; it has no production-capable identity implementation. ProductionRequired therefore returns the bounded provider refusal before constructing Configuration, opening Node, connecting for assignment or declaring Export. Fake-only availability and missing production capability share this truthful refusal. The [process owner](../../../examples/remote-counter/tests/processes.rs) executes both roles, reaps them, observes no assignment acceptance and checks exact exit1/empty stdout/provider diagnostic. The [five CLI cases](../../../examples/remote-counter/tests/processes/arguments.rs) also check role-specific arity and required positive caller duration. |
+| The refusal boundary is falsifiable. | Removing only ProductionRequired's return lets the program reach deterministic existing endpoint-metadata refusal. Both profiles then fail the exact provider diagnostic after both real outputs/reaps and directory cleanup: actual `counter Node could not open` instead of the required provider refusal. The initial absent-TLS watchdog attempts are excluded. Healthy/restored controls inspect both roles; the negative reaches only the first role's diagnostic assertion. |
+| Both deterministic provider implementations compile with the same port. | The existing cold [construction](../../../crates/bombay/tests/application_clients/network_replay/construction.rs), [replay](../../../crates/bombay/src/application/node/tests/replay.rs) and [proof refusal](../../../crates/bombay/src/application/node/tests/protection.rs) owners actually execute their Recorded/Scheduled cases in both workspace profiles. The construction/replay [provider owner](../../../crates/bombay/tests/application_clients/protocol.rs) and the separate [protection providers](../../../crates/bombay/tests/protected_counter/providers.rs) return distinct nominal receipts and concrete Ready/async futures through the same generic callbacks. No provider registry, downcast, erased future or caller-dependent cast selects them. |
+
+The trusted-provider assumption remains explicit: these tests prove Bombay's
+policy interpretation, not cryptography or protection from a malicious trusted
+Rust implementation. Callback/receipt generic types remain concrete. Actual
+validated Deployment and Receipt fields remain private. Missing-verifier UI
+controls strengthen the required-input interface separately; they are not the
+whole R10 witness and do not create a dynamic provider-presence requirement.
+
+### Sources and commands
+
+The policy source is main `11087d2af47b385f3a516e69a09db799b381b2092f436e84dcf086eebbb95abb`
+and Deployment `816f6b391512b94f1879fa2d7c030f5ed9349990090de806b8c94680a3955e78`.
+Final process and arguments owners are respectively `c932574883884647c5797658e9b610202efc1f2fb9a1c5919c96d1b2545d6873`
+and `5fe49c99ec3720b8bb35cbdc8b98c34326c35bc36bec4c87e3a109416f4b6771`.
+The guard cut is main `f7dd3c694f7a2d2c581ab2fae906dc893cccf8001895071eba6ffa2c159b871c`:
+only its ProductionRequired arm continues instead of returning. Exact healthy
+source is restored before replay; later directory/lint epochs do not rewrite
+that earlier source-bound inversion.
+
+The pinned-shell workspace commands are `cargo test --locked --offline --workspace --all-features`
+and the same command with `--release`. The actual `counter-workspace-{debug,release}`
+receipts exit0 and explicitly contain all ten names below as `ok`, not filtered:
+
+- `network_replay::construction::recorded_counter_joined_node_issues_export`
+- `network_replay::construction::scheduled_counter_joined_node_issues_export`
+- `network_replay::construction::recorded_ledger_public_node_issues_export`
+- `network_replay::construction::scheduled_ledger_public_node_issues_export`
+- `application::node::tests::replay::recorded_counter_node_reuses_first_read_outcome`
+- `application::node::tests::replay::scheduled_counter_node_reuses_first_read_outcome`
+- `application::node::tests::replay::recorded_ledger_node_reuses_first_read_outcome`
+- `application::node::tests::replay::scheduled_ledger_node_reuses_first_read_outcome`
+- `application::node::tests::protection::recorded_outbound_request_protection_refuses_untrusted_declarations`
+- `application::node::tests::protection::scheduled_outbound_request_protection_refuses_untrusted_declarations`
+
+Current provider/construction/replay/protection hashes are respectively
+`c142411edf2197b2b283b52f82667973cf62fe4cad72650d78e66380cb49bbba`,
+`c1b5dc839c0d21f857a7a6b30ddbcca4906037e03d8545a46259e25b25051917`,
+`39aa7b1a1bd3942991676052c87ae3564e3f267837afac416f26a4f106788da8`
+and `b48408f06a8ca6be7289630342fc9716bb38ca84cb6637af4be04720d9e8646c`.
+The final two proof-refusal cases use the separately mounted
+`protected_counter/providers.rs`, SHA256
+`5bc4a39f6f8c39d75b54634cf1db53ab6afe9169c09f708e49ea7047c659c88e`;
+the first eight construction/replay cases use the protocol provider above.
+
+Workspace runs precede the directory contraction and bind Cargo.lock
+`4edede11cc08549f422a75fdd21d511f5ba1a3732b0d89040fc1f3b910ef2073`
+through the sealed final-source review1ae5cd93 in the application archive.
+The final package/TempDir runs bind
+`af4406dbc4338dfd77e13cc89ffa59d8c85a8da3f2eead9a4c6baf057b85f4ed`.
+That later lock adds the already selected tempfile dev edge; provider source
+and selected owning dependency versions remain unchanged. The workspace logs
+are not described as a recompilation of that final lock.
+
+The final package commands select `-p bombay-example-remote-counter` in each
+profile, without a case filter. The guard campaign selects its actual
+`production_required_refuses_before_tls_or_assignment` process leaf separately
+in each profile, applies only the recorded source cut and restores it before
+the four-control replay. Command/harness custody is retained in the owning PRD
+records; no optional capture flags are inferred from the raw output.
+
+### Raw receipts and limits
+
+Raw logs are retained under `/tmp/bombay-outbound-client-comparison` and in the
+application's recorded evidence custody. SHA256 pairs below are debug/optimized.
+
+| Receipt | Actual result | Raw log SHA256 pair |
+| --- | --- | --- |
+| `counter-workspace` | Both exit0; all provider construction4/replay4/refusal2 names above execute. | `e155e80d0d00d3196ad863e8c1a52fce094e052af4c912e90c3bcc40215ac1ea` / `38a472cffdd6ae6b82280adf96bcdf9d04d620d4911e960926bd7baae9ff5b8c` |
+| `counter-tempdir` | Both exit0; five process parents and three pure tests pass, none filtered. Relevant production/CLI names and ordinary Test success all execute. | `58b784211628ff70cd9e626b5e2c46e7dadb02782f4a646e8f41143d372e3ee8` / `96d982d6819bbe523382c2a0cdf09c0a55c6ef8fca020d4195132cb0d542fa1c` |
+| `counter-provider-controlled-inverse` | Both exit101 only at the intended post-cleanup provider-diagnostic assertion, .91/.39s; five other leaves filtered. | `a0d102157fe7d6b53bf655c277f69e6cbb5a6bed23696278580d73e0ec2f6f29` / `141056dd3aed82f783c770f3634587d232955a3c6561df5492d8514604628b86` |
+| `counter-provider-restored` | Both exit0, all four selected process/CLI controls pass, two unrelated leaves filtered. | `dadff12809f4bab99045d8b9f45a569227e455de9afd1fa14fa27b6cd767d808` / `21b34f0497020577745b38e2af80f4b3e40d8a6b625c6928719db670eb82c586` |
+
+Two source/evidence passes checked the entire clause mapping, actual named
+provider outcomes, shared guard policy, exact source cut, reached negative
+oracle, restoration and final source epoch. The actual inverse's second role
+diagnostic assertions are unexecuted; acquired outputs do not substitute for
+them. No watchdog, setup failure, zero-case binary harness or filtered case
+supplies credit. These facts satisfy the selected R10 semantic row without
+claiming production authentication, Selo, the complete RELEASE inventory,
+required submitted-head CI or merged feature delivery.

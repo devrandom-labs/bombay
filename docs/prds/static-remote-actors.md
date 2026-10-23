@@ -45,6 +45,16 @@ This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
 
+The complete selected R10 semantic witness is now locally satisfied: explicit
+finite-test selection, refusal of fake/missing production capability before
+startup, the real successful Test control, its guard-only falsifier/restoration,
+and both independent deterministic provider ports. The
+[R10 evidence](static-remote-actors/acceptance.md#r10--explicit-test-identity-and-production-refusal-2026-10-23)
+binds all clauses to actual sources and outcomes, distinguishing source/lock
+epochs. Independent review3e6872ba and root resolve the separate protection
+provider attribution. All other full rows remain open. This is local semantic
+acceptance, not PR392 CI, main delivery, Selo or full RELEASE-04 completion.
+
 Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 3625efe86f8613e13b3a3bc6cf180dc5de57edc7 after all six required checks passed on
 e1eab601. The repository owner marked it ready and merged it; no GitHub review
@@ -43090,3 +43100,24 @@ is in the common Git2026-10-21 session archive. Root independently extracts it
 and verifies all88 manifest entries; it contains87 inventory payloads plus
 inventory/checksum records. The snapshot predates this pointer and depends on
 base95c1105a; it is not a compiler/binary closure, CI or delivery certificate.
+
+## R10 complete local evidence reconciliation (2026-10-23)
+
+The selected literal R10 row is unchanged. This records its whole semantic
+witness from already executed owning cases, rather than adding a new provider
+model or treating compiler arity alone as acceptance. Author review1357ea2a,
+independent clause review3e6872ba and root source/raw-log inspection agree.
+The independent attribution/epoch findings are resolved: construction/replay
+use protocol providerc142411e; protection uses distinct provider5bc4a39f;
+workspace lock4edede11 and final package lockaf4406db retain their actual epochs.
+All ten actual provider names execute in each workspace profile; the genuine
+Test journey, both ProductionRequired refusals, intended guard-only negative
+and restored controls supply the remaining clauses. No new runtime state,
+software test, dependency or public type is required by this evidence assembly.
+
+The change touches only the acceptance companion, PRD and reciprocal status:
+production+0/-0/net0, tests+0/-0/net0, publicAPI+0/-0. Older application-planning
+text is explicitly historical. R10's local semantic satisfaction leaves required
+PR392 CI/main delivery, every other full row, production cryptography/Selo and
+the broader release inventory open. Existing application archives retain raw
+source/results; review copies are preserved with the common Git session records.
