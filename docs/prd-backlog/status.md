@@ -8,11 +8,26 @@ or full remote acceptance is claimed. Its compatibility checks, independent
 review and fresh required CI/main delivery remain open; previous green heads
 do not qualify these current PR heads.
 
+The child-retirement branch now integrates pushed Tokio fixbe200b25. Independent
+review216925c9 confirms the fresh21-command native run on former head a84ec103
+and lockaf4406db, including both intended native failures and exact restored
+passes. That result remains scoped to the former lock. The integrated root
+lock is83f01ca3 with Tokio1.53.3; fresh compatibility/native execution and
+submitted-head CI must qualify it before PR393 delivery. No earlier green
+check or original Nix receipt is transferred to this lock epoch.
+
 Latest user direction removes all implementation budgets and preapproves their
 expansion: “there is no budget.” Do not request line/path/type/verification
 budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
+
+PR392 merged the finite-test remote Counter at2026-10-23T19:21:29Z as632bf184
+after all six checks passed on95c1105a, including required Nix at10:08:55Z.
+Verified and merge trees match. This child-retirement proposal now integrates
+that actual main. Its prior qualified script is unchanged; the integrated
+flake/lock reflect the delivered application and require fresh submitted-head
+CI. Five Python files remain in this proposal, six on main until its merge.
 
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged coverage Python
 retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
@@ -37,10 +52,11 @@ success, provider refusal, wrong-proof handling and processing-before-publicatio
 loss pass both profiles. Full workspace debug/optimized tests and strict lint
 pass. The smaller private directory owner passes all eight application cases in
 both profiles under the previously failing long parent. The dedicated
-aarch64-darwin Nix check passes; submitted-head CI and delivery remain pending.
+aarch64-darwin Nix check passes; all six submitted-head checks pass and delivery
+is recorded above.
 Its first required Nix CI run hit the two-hour job guard during optimized
 workspace compilation. The existing guard is raised to three hours with the
-same complete commands and required checks; no passing CI is inferred.
+same complete commands and required checks, which now all pass on95c1105a.
 The complete pressure/denied-stop/scenario matrix remains open;
 the PRD retains the precise remaining acceptance clauses.
 
