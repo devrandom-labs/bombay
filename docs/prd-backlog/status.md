@@ -1,5 +1,21 @@
 # Backlog status and dependencies
 
+Current prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
+reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
+upstream-patched1.53.3 in the root and isolated transport locks and changes
+the isolated exact pin at its owner. No advisory exception, runtime/API change
+or full remote acceptance is claimed. Its compatibility checks, independent
+review and fresh required CI/main delivery remain open; previous green heads
+do not qualify these current PR heads.
+
+The child-retirement branch now integrates pushed Tokio fixbe200b25. Independent
+review216925c9 confirms the fresh21-command native run on former head a84ec103
+and lockaf4406db, including both intended native failures and exact restored
+passes. That result remains scoped to the former lock. The integrated root
+lock is83f01ca3 with Tokio1.53.3; fresh compatibility/native execution and
+submitted-head CI must qualify it before PR393 delivery. No earlier green
+check or original Nix receipt is transferred to this lock epoch.
+
 Latest user direction removes all implementation budgets and preapproves their
 expansion: “there is no budget.” Do not request line/path/type/verification
 budget approval again. Historical numbers below retain their source scope;
