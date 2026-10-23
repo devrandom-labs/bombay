@@ -94,8 +94,20 @@ run_reference() {
   local reference="$1"
   local suite="${reference%%::*}"
   local test_name="${reference#*::}"
+  local output
+  local status
   printf 'PASS  %s\n' "$reference"
-  cargo test "${profile_arguments[@]}" --locked -p bombay-engine --test "$suite" "$test_name" -- --exact
+  set +e
+  output="$(cargo test "${profile_arguments[@]}" --locked -p bombay-engine --test "$suite" "$test_name" -- --exact 2>&1)"
+  status=$?
+  set -e
+  printf '%s\n' "$output"
+  if [[ $status -ne 0 ]] || ! NAMED_REFERENCE="$test_name" perl -0ne '
+    exit(/(?:\A|\n)running 1 test\n(?:(?!^test result:).)*^test \Q$ENV{NAMED_REFERENCE}\E \.\.\. ok\n(?:(?!^test result:).)*^test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; [0-9]+ filtered out; finished in [^\n]*\n(?:(?!^test result:).)*\z/ms ? 0 : 1);
+  ' <<< "$output"; then
+    printf 'reference did not pass exactly one named test: %s\n' "$reference" >&2
+    exit 1
+  fi
 }
 
 apply_mutation() {

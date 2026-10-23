@@ -43121,3 +43121,65 @@ text is explicitly historical. R10's local semantic satisfaction leaves required
 PR392 CI/main delivery, every other full row, production cryptography/Selo and
 the broader release inventory open. Existing application archives retain raw
 source/results; review copies are preserved with the common Git session records.
+
+## Direct Driver evidence zero-case guard — pre-edit record (2026-10-23)
+
+The third repository audit's direct-script hypothesis is now reproduced in a
+mainfcaf disposable snapshot. Unchanged Driver evidence sourcead008523 passes
+D-INIT-1 in both profiles. Changing only its positive reference and command to
+an absent exact test makes the same script exit0 and record positive="passed"
+while actual Cargo runs0tests; its real boundary and mutation killer still run.
+The existing law_manifest validator independently rejects that bad reference
+in both profiles (exit101, stale/unknown executable evidence). This is a direct
+manual receipt weakness, not a false-green full Nix or a new Driver semantic
+failure. Raw command logs/receipts are in
+`/tmp/bombay-driver-reference-results-20261023`.
+
+Reuse the existing actor-execution owner's exact named-one-test/full-passing-
+summary guard at Driver's existing run_reference. Expected scope is one existing
+verification script and this PRD; production+0/-0/net0, tests approximately
++16/-1, public types+0/-0. No new manifest validator, runner, test model,
+dependency or runtime owner is introduced. Selected Behavior/Actors0.29 at55db,
+Address0.3/Communication0.1.6/Timers0.2/local Observe remain unchanged. Bad-reference
+debug/optimized commands must now stop before boundary/mutation/success receipt;
+exact original manifest restoration and healthy profile runs must pass. The
+existing complete Driver Nix check remains the full current gate.
+
+### Direct Driver guard actual outcome and minimization
+
+Original sourcead008523 accepts the absent exact positive in both profiles:
+Cargo selects0tests and the script exits0 with positive.result="passed".
+The real boundary still passes and the genuine duplicate-initialization killer
+fails its exact count oracle (2versus1). Independently, the unchanged canonical
+manifest validator rejects the same stale reference in both profiles. The
+complete gate was protected; only direct selected execution had the weakness.
+
+Retained source2ff6c36a rejects that same absent reference with exit1 in each
+profile before boundary, mutation or success JSON. Restoring manifest1c2d85b5
+makes both selected healthy profiles pass, including the original boundary and
+intended killer. Bash syntax passes. The existing full aarch64-darwin Driver
+Nix check exits0: all eight rows retain two passing references and one intended
+killer; raw log has16PASS/8KILL. Its registered output is3562lvrmi2sam81ihwwic0cbwjyss1ql;
+raw SHA256e5ff056eef66a515e48f28c0b034937750b331e6d4d3fe4a699bbf02bf039620.
+Build takes1minute9seconds and completes install/fixup. Captured source and
+current script/manifest/Driver/Environment/test targets/selected lock agree.
+The last manifest-test failure is its intended source mutation, not a build
+failure. D-PORT's inverse removes its expected E0599 while unrelated E0277
+remains; this is diagnostic inversion, not proof the entire fixture compiles.
+
+Independent two-pass source/outcome reviewd8946a31 confirms the focused and
+full-gate scope. Final change is verification+13/-1/net12, production+0/-0/net0,
+publicAPI+0/-0, two paths including this record. The original helper's existing
+Cargo command, profiles, mutation engine, manifest validator and receipt shape
+remain; only actual named one-test success gates receipt creation. No new tool,
+runner, semantic test, framework or API is introduced. This adds verification
+code for a proved receipt defect; it is not code reduction or new remote-law
+acceptance. Required focused CI/review and main delivery remain separate.
+
+Source/results recovery is retained in the common Git2026-10-21 archive
+`driver-reference-qualified-20261023.tar.gz`, SHA256
+`368007ca0e50a06dd372bd624bcf1789aee32452345a19e04bc66012ca7c743c`.
+Root independently extracts it and rehashes all79 payloads. It contains the
+frozen two-path delta before this pointer, all original/corrected focused
+receipts and the actual eight-row Nix output/review. Base68d73354 is required;
+no compiler/binary closure, exact later-head CI or merged delivery is claimed.
