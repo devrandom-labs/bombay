@@ -2733,3 +2733,610 @@ fn native_reply_count_keeps_active_and_unread_originals() {
         assert!(matches!(drained, mpsc::error::TryRecvError::Disconnected));
     });
 }
+// Appended inside the existing protected_counter/transport.rs owner.
+mod campaigns {
+    use super::{CounterProofProfile, RemoteCounterLayout, RemoteCounterRole};
+    use std::collections::BTreeSet;
+    use std::env;
+    use std::fs::{self, DirBuilder, File};
+    use std::io::{self, BufRead, BufReader, Read, Write};
+    use std::net::TcpListener;
+    use std::os::unix::fs::DirBuilderExt;
+    use std::path::Path;
+    use std::process::{self, Child, ChildStdin, Command, ExitStatus, Stdio};
+    use std::sync::mpsc::{self, Receiver, SyncSender};
+    use std::thread::{self, Scope};
+    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+    const NATIVE_TEST: &str =
+        "remote_counter::remote_counter_query_preserves_admission_and_processing";
+
+    #[derive(Clone, Copy)]
+    enum GrantRelease {
+        GrantStop,
+        ReleaseQuery,
+        Eof,
+    }
+
+    #[derive(Clone, Copy)]
+    enum EvidenceSource {
+        Target,
+        SiblingProcessing,
+        SiblingRead,
+    }
+
+    // std::Child supplies no kill/reap on Drop. This owner preserves the
+    // qualified pilot's necessary cancellation and failure responsibility.
+    struct NativeChild {
+        child: Child,
+    }
+    impl Drop for NativeChild {
+        fn drop(&mut self) {
+            if !matches!(self.child.try_wait(), Ok(Some(_))) {
+                drop(self.child.kill());
+                drop(self.child.wait());
+            }
+        }
+    }
+
+    enum Observation {
+        Line {
+            role: RemoteCounterRole,
+            original: String,
+        },
+        Eof {
+            role: RemoteCounterRole,
+        },
+        Refused {
+            role: RemoteCounterRole,
+            cause: io::Error,
+        },
+    }
+
+    fn role_name(role: RemoteCounterRole) -> &'static str {
+        match role {
+            RemoteCounterRole::Router => "router",
+            RemoteCounterRole::Recipient => "recipient",
+            RemoteCounterRole::ChildRecipient => "child-recipient",
+            RemoteCounterRole::Caller => "caller",
+        }
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "each argument is an original native role input or an owned observation transfer"
+    )]
+    fn launch<'scope>(
+        scope: &'scope Scope<'scope, '_>,
+        role: RemoteCounterRole,
+        (layout, profile, grant, evidence): (
+            RemoteCounterLayout,
+            CounterProofProfile,
+            GrantRelease,
+            EvidenceSource,
+        ),
+        address: &str,
+        certificates: &Path,
+        directory: &Path,
+        binding: Option<(&str, &str)>,
+        observations: SyncSender<Observation>,
+    ) -> io::Result<(NativeChild, ChildStdin)> {
+        let name = role_name(role);
+        let layout = match layout {
+            RemoteCounterLayout::Peer => "peer",
+            RemoteCounterLayout::RouterClient => "router",
+        };
+        let profile = match profile {
+            CounterProofProfile::RecordedTest => "recorded",
+            CounterProofProfile::ScheduledTest => "scheduled",
+        };
+        let evidence = match evidence {
+            EvidenceSource::Target => "target",
+            EvidenceSource::SiblingProcessing => "sibling-processing",
+            EvidenceSource::SiblingRead => "sibling-read",
+        };
+        let expectation = match grant {
+            GrantRelease::GrantStop => "accepted",
+            GrantRelease::ReleaseQuery | GrantRelease::Eof => "refused",
+        };
+        let mut command = Command::new(env::current_exe()?);
+        command
+            .args(["--ignored", "--exact", NATIVE_TEST, "--nocapture"])
+            .env("BOMBAY_COUNTER_ROLE", name)
+            .env("BOMBAY_COUNTER_LAYOUT", layout)
+            .env("BOMBAY_COUNTER_PROVIDER", profile)
+            .env("BOMBAY_COUNTER_ADDRESS", address)
+            .env("BOMBAY_COUNTER_CERTIFICATES", certificates)
+            .env("BOMBAY_COUNTER_EVIDENCE_SOURCE", evidence)
+            .env("BOMBAY_COUNTER_GRANT_EXPECTATION", expectation);
+        if let Some((runtime, actor)) = binding {
+            command
+                .env("BOMBAY_COUNTER_RUNTIME_GENERATION", runtime)
+                .env("BOMBAY_COUNTER_ACTOR_GENERATION", actor);
+        }
+        println!("native invocation: {command:?}");
+        let mut child = NativeChild {
+            child: command
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(File::create(directory.join(format!("{name}.stderr")))?)
+                .spawn()?,
+        };
+        let input = child
+            .child
+            .stdin
+            .take()
+            .ok_or_else(|| io::Error::other("native input absent"))?;
+        let output = child
+            .child
+            .stdout
+            .take()
+            .ok_or_else(|| io::Error::other("native output absent"))?;
+        let mut log = File::create(directory.join(format!("{name}.stdout")))?;
+        scope.spawn(move || {
+            let mut output = BufReader::new(output);
+            loop {
+                let mut original = Vec::with_capacity(16_386);
+                let acquired = output
+                    .by_ref()
+                    .take(16_386)
+                    .read_until(b'\n', &mut original);
+                let observation = match acquired {
+                    Ok(0) => Observation::Eof { role },
+                    Ok(_) if original.len() > 16_385 || original.last() != Some(&b'\n') => {
+                        Observation::Refused {
+                            role,
+                            cause: io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                "native control line exceeded its actual framing bound",
+                            ),
+                        }
+                    }
+                    Ok(_) => match log.write_all(&original).and_then(|()| log.flush()) {
+                        Ok(()) => match String::from_utf8(original) {
+                            Ok(original) => Observation::Line { role, original },
+                            Err(cause) => Observation::Refused {
+                                role,
+                                cause: io::Error::new(io::ErrorKind::InvalidData, cause),
+                            },
+                        },
+                        Err(cause) => Observation::Refused { role, cause },
+                    },
+                    Err(cause) => Observation::Refused { role, cause },
+                };
+                match observation {
+                    Observation::Line { .. } => {
+                        if observations.send(observation).is_err() {
+                            return;
+                        }
+                    }
+                    terminal => {
+                        drop(observations.send(terminal));
+                        return;
+                    }
+                }
+            }
+        });
+        Ok((child, input))
+    }
+
+    fn observe(
+        incoming: &Receiver<Observation>,
+        acquired: &mut Vec<(RemoteCounterRole, String)>,
+        role: RemoteCounterRole,
+        marker: &str,
+        deadline: Instant,
+    ) -> io::Result<String> {
+        loop {
+            if let Some((_, original)) = acquired
+                .iter()
+                .find(|(source, line)| *source == role && line.contains(marker))
+            {
+                return Ok(original.clone());
+            }
+            let remaining = deadline
+                .checked_duration_since(Instant::now())
+                .ok_or_else(|| {
+                    io::Error::new(
+                        io::ErrorKind::TimedOut,
+                        "external process guard; no semantic credit",
+                    )
+                })?;
+            match incoming.recv_timeout(remaining).map_err(io::Error::other)? {
+                Observation::Line { role, original } => {
+                    if acquired.len() == 256 {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            "native control transcript exceeded this finite fixture",
+                        ));
+                    }
+                    acquired.push((role, original));
+                }
+                Observation::Eof { role: source } if source == role => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::UnexpectedEof,
+                        "native role ended before its required observation",
+                    ));
+                }
+                Observation::Eof { .. } => {}
+                Observation::Refused {
+                    role: source,
+                    cause,
+                } => {
+                    let _source = source;
+                    return Err(cause);
+                }
+            }
+        }
+    }
+
+    fn release(input: &mut ChildStdin, command: &[u8]) -> io::Result<()> {
+        input.write_all(command)?;
+        input.flush()
+    }
+
+    fn reaped(child: &mut NativeChild, deadline: Instant) -> io::Result<ExitStatus> {
+        loop {
+            if let Some(status) = child.child.try_wait()? {
+                return Ok(status);
+            }
+            if Instant::now() >= deadline {
+                return Err(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "native exit guard; no semantic credit",
+                ));
+            }
+            // Poll only actual OS exit; this is not a native readiness delay.
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "retain one complete role exchange and reap every child before observing its native result"
+    )]
+    fn cross_native_roles(
+        (layout, recipient_role, profile, grant, evidence): (
+            RemoteCounterLayout,
+            RemoteCounterRole,
+            CounterProofProfile,
+            GrantRelease,
+            EvidenceSource,
+        ),
+        certificates: &Path,
+        directory: &Path,
+    ) {
+        let result = thread::scope(|scope| {
+            let deadline = Instant::now() + Duration::from_secs(90);
+            let port = {
+                let reservation = TcpListener::bind(("127.0.0.1", 0))?;
+                reservation.local_addr()?.port()
+            };
+            let address = format!("tls/localhost:{port}");
+            let (outgoing, incoming) = mpsc::sync_channel(32);
+            let mut acquired = Vec::new();
+            let mut router = match layout {
+                RemoteCounterLayout::Peer => None,
+                RemoteCounterLayout::RouterClient => {
+                    let actual = launch(
+                        scope,
+                        RemoteCounterRole::Router,
+                        (layout, profile, grant, evidence),
+                        &address,
+                        certificates,
+                        directory,
+                        None,
+                        outgoing.clone(),
+                    )?;
+                    observe(
+                        &incoming,
+                        &mut acquired,
+                        RemoteCounterRole::Router,
+                        "READY",
+                        deadline,
+                    )?;
+                    Some(actual)
+                }
+            };
+            let (mut recipient, mut recipient_input) = launch(
+                scope,
+                recipient_role,
+                (layout, profile, grant, evidence),
+                &address,
+                certificates,
+                directory,
+                None,
+                outgoing.clone(),
+            )?;
+            let issued = observe(&incoming, &mut acquired, recipient_role, "BOUND ", deadline)?;
+            let (_, projection) = issued
+                .split_once("BOUND ")
+                .ok_or_else(|| io::Error::other("actual binding projection absent"))?;
+            let [runtime, actor]: [&str; 2] = projection
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .try_into()
+                .map_err(|_| io::Error::other("actual binding needs exactly two generations"))?;
+            let runtime_generation = runtime.parse::<u64>().map_err(io::Error::other)?;
+            let actor_generation = actor.parse::<u64>().map_err(io::Error::other)?;
+            observe(&incoming, &mut acquired, recipient_role, "READY", deadline)?;
+            let (mut caller, caller_input) = launch(
+                scope,
+                RemoteCounterRole::Caller,
+                (layout, profile, grant, evidence),
+                &address,
+                certificates,
+                directory,
+                Some((runtime, actor)),
+                outgoing,
+            )?;
+            observe(
+                &incoming,
+                &mut acquired,
+                recipient_role,
+                "RECEIVED",
+                deadline,
+            )?;
+            observe(
+                &incoming,
+                &mut acquired,
+                RemoteCounterRole::Caller,
+                "PENDING_LOCAL_READ2",
+                deadline,
+            )?;
+            release(&mut recipient_input, b"release-query\n")?;
+            observe(
+                &incoming,
+                &mut acquired,
+                RemoteCounterRole::Caller,
+                "STOP_REFUSAL_SETTLED",
+                deadline,
+            )?;
+            // Preserve the old controller's actual authenticated-refusal gate.
+            // STOP_REFUSAL_SETTLED follows this marker in the same stdout pipe.
+            let refused = acquired.iter().find(|(role, line)| {
+                *role == RemoteCounterRole::Caller && line.trim() == "SEND_ONLY_REFUSED"
+            });
+            match (refused, grant) {
+                (Some(_), GrantRelease::GrantStop) => {
+                    release(&mut recipient_input, b"grant-stop\n")?
+                }
+                (Some(_), GrantRelease::ReleaseQuery) => {
+                    release(&mut recipient_input, b"release-query\n")?
+                }
+                (Some(_), GrantRelease::Eof) | (None, _) => {}
+            }
+            // EOF is an actual stdin close, including the unaccepted-fact path.
+            drop(recipient_input);
+            observe(
+                &incoming,
+                &mut acquired,
+                recipient_role,
+                "FINISHED",
+                deadline,
+            )?;
+            observe(
+                &incoming,
+                &mut acquired,
+                RemoteCounterRole::Caller,
+                "FINISHED",
+                deadline,
+            )?;
+            if let Some((_, input)) = router.as_mut() {
+                release(input, b"release-router\n")?;
+            }
+            drop(caller_input);
+            let recipient_exit = reaped(&mut recipient, Instant::now() + Duration::from_secs(10))?;
+            let caller_exit = reaped(&mut caller, Instant::now() + Duration::from_secs(10))?;
+            let router_exit = match router.as_mut() {
+                Some((actual, _)) => {
+                    Some(reaped(actual, Instant::now() + Duration::from_secs(10))?)
+                }
+                None => None,
+            };
+            Ok::<_, io::Error>((
+                runtime_generation,
+                actor_generation,
+                recipient_exit,
+                caller_exit,
+                router_exit,
+            ))
+        });
+        // All child guards precede scoped reader joins, including early errors.
+        // Preserve all raw diagnostics before the final native success oracles.
+        let roles = match layout {
+            RemoteCounterLayout::Peer => vec![recipient_role, RemoteCounterRole::Caller],
+            RemoteCounterLayout::RouterClient => vec![
+                RemoteCounterRole::Router,
+                recipient_role,
+                RemoteCounterRole::Caller,
+            ],
+        };
+        let mut outputs = Vec::new();
+        for role in roles {
+            let name = role_name(role);
+            let original = fs::read_to_string(directory.join(format!("{name}.stdout")));
+            let errors = fs::read(directory.join(format!("{name}.stderr")));
+            if let Ok(original) = &original {
+                print!("{original}");
+            }
+            if let Ok(errors) = &errors {
+                eprint!("{}", String::from_utf8_lossy(errors));
+            }
+            outputs.push((role, original, errors));
+        }
+        let removed = fs::remove_dir_all(directory);
+        let (_runtime, _actor, recipient_exit, caller_exit, router_exit) =
+            result.expect("actual native control and all child cleanup finish");
+        removed.expect("all native children and readers precede directory retirement");
+        assert!(recipient_exit.success());
+        assert!(caller_exit.success());
+        match layout {
+            RemoteCounterLayout::Peer => assert!(router_exit.is_none()),
+            RemoteCounterLayout::RouterClient => {
+                let actual = router_exit.expect("actual external router exit");
+                assert!(actual.success());
+            }
+        }
+        let expected_name = format!("test {NATIVE_TEST} ...");
+        for (_, original, errors) in outputs {
+            let original = original.expect("actual native role stdout retained");
+            let _errors = errors.expect("actual native role stderr retained");
+            let executed = original.matches(&expected_name).count();
+            assert_eq!(executed, 1);
+            assert!(original.contains("test result: ok. 1 passed; 0 failed; 0 ignored;"));
+            assert!(!original.contains("... FAILED"));
+        }
+    }
+
+    #[test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "the literal independent matrix denies an omitted, repeated or substituted native configuration"
+    )]
+    fn all_release_and_evidence_cases_cross_actual_native_roles() {
+        let expected = [
+            "grant-stop/target/peer/root/recorded",
+            "grant-stop/target/peer/root/scheduled",
+            "grant-stop/target/peer/child/recorded",
+            "grant-stop/target/peer/child/scheduled",
+            "grant-stop/target/router/root/recorded",
+            "grant-stop/target/router/root/scheduled",
+            "grant-stop/target/router/child/recorded",
+            "grant-stop/target/router/child/scheduled",
+            "eof/target/peer/root/recorded",
+            "eof/target/peer/root/scheduled",
+            "eof/target/peer/child/recorded",
+            "eof/target/peer/child/scheduled",
+            "eof/target/router/root/recorded",
+            "eof/target/router/root/scheduled",
+            "eof/target/router/child/recorded",
+            "eof/target/router/child/scheduled",
+            "release-query/target/peer/root/recorded",
+            "release-query/target/peer/root/scheduled",
+            "release-query/target/peer/child/recorded",
+            "release-query/target/peer/child/scheduled",
+            "release-query/target/router/root/recorded",
+            "release-query/target/router/root/scheduled",
+            "release-query/target/router/child/recorded",
+            "release-query/target/router/child/scheduled",
+            "grant-stop/sibling-processing/peer/child/recorded",
+            "grant-stop/sibling-processing/peer/child/scheduled",
+            "grant-stop/sibling-processing/router/child/recorded",
+            "grant-stop/sibling-processing/router/child/scheduled",
+            "grant-stop/sibling-read/peer/child/recorded",
+            "grant-stop/sibling-read/peer/child/scheduled",
+            "grant-stop/sibling-read/router/child/recorded",
+            "grant-stop/sibling-read/router/child/scheduled",
+        ]
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("private fixture clock")
+            .as_nanos();
+        let directory =
+            env::temp_dir().join(format!("protected-native-matrix-{}-{stamp}", process::id()));
+        DirBuilder::new()
+            .mode(0o700)
+            .create(&directory)
+            .expect("this controller's private log directory");
+        let certificates = Path::new(env!("CARGO_MANIFEST_DIR")).join("certificates");
+        let mut completed = Vec::new();
+        for (grant, evidence, recipients) in [
+            (
+                GrantRelease::GrantStop,
+                EvidenceSource::Target,
+                &[
+                    RemoteCounterRole::Recipient,
+                    RemoteCounterRole::ChildRecipient,
+                ][..],
+            ),
+            (
+                GrantRelease::Eof,
+                EvidenceSource::Target,
+                &[
+                    RemoteCounterRole::Recipient,
+                    RemoteCounterRole::ChildRecipient,
+                ][..],
+            ),
+            (
+                GrantRelease::ReleaseQuery,
+                EvidenceSource::Target,
+                &[
+                    RemoteCounterRole::Recipient,
+                    RemoteCounterRole::ChildRecipient,
+                ][..],
+            ),
+            (
+                GrantRelease::GrantStop,
+                EvidenceSource::SiblingProcessing,
+                &[RemoteCounterRole::ChildRecipient][..],
+            ),
+            (
+                GrantRelease::GrantStop,
+                EvidenceSource::SiblingRead,
+                &[RemoteCounterRole::ChildRecipient][..],
+            ),
+        ] {
+            for layout in [RemoteCounterLayout::Peer, RemoteCounterLayout::RouterClient] {
+                for &recipient in recipients {
+                    for profile in [
+                        CounterProofProfile::RecordedTest,
+                        CounterProofProfile::ScheduledTest,
+                    ] {
+                        let grant_name = match grant {
+                            GrantRelease::GrantStop => "grant-stop",
+                            GrantRelease::ReleaseQuery => "release-query",
+                            GrantRelease::Eof => "eof",
+                        };
+                        let evidence_name = match evidence {
+                            EvidenceSource::Target => "target",
+                            EvidenceSource::SiblingProcessing => "sibling-processing",
+                            EvidenceSource::SiblingRead => "sibling-read",
+                        };
+                        let layout_name = match layout {
+                            RemoteCounterLayout::Peer => "peer",
+                            RemoteCounterLayout::RouterClient => "router",
+                        };
+                        let target_name = match recipient {
+                            RemoteCounterRole::Recipient => "root",
+                            RemoteCounterRole::ChildRecipient => "child",
+                            RemoteCounterRole::Router | RemoteCounterRole::Caller => {
+                                unreachable!("only recipient roles are selected")
+                            }
+                        };
+                        let profile_name = match profile {
+                            CounterProofProfile::RecordedTest => "recorded",
+                            CounterProofProfile::ScheduledTest => "scheduled",
+                        };
+                        let identity = format!(
+                            "{grant_name}/{evidence_name}/{layout_name}/{target_name}/{profile_name}"
+                        );
+                        let output = directory.join(identity.replace('/', "-"));
+                        DirBuilder::new()
+                            .mode(0o700)
+                            .create(&output)
+                            .expect("one private directory for this actual native case");
+                        cross_native_roles(
+                            (layout, recipient, profile, grant, evidence),
+                            &certificates,
+                            &output,
+                        );
+                        println!("native configuration completed: {identity}");
+                        completed.push(identity);
+                    }
+                }
+            }
+        }
+        let removed = fs::remove_dir(&directory);
+        removed.expect("all native configuration directories were retired after their children");
+        let actual = completed
+            .iter()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>();
+        assert_eq!(completed.len(), 32);
+        assert_eq!(expected.len(), 32);
+        assert_eq!(actual, expected);
+    }
+}

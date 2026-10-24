@@ -1,5 +1,47 @@
 # Static remote actors and typed admission
 
+## Current PR401 source integration (2026-10-24)
+
+This proposed public-pressure integration inherits immutable PR400 head
+cfd72a955640ad5534c6885b1b94104545e6f1b4, containing397/a84c0dbf,
+398/1e70671d and399/404acb36 on actual delivered main32145c3f.
+Deliver397→398→399→400 before this stacked401. This is temporary source and
+delivery ordering, not a new semantic PRD dependency or additional evidence
+for the public law. None of those four submitted slices is claimed merged;
+their own exact-head CI/review/delivery remain independent. Actual394=b45
+and396=321 are delivered after six successful checks and equal tested trees.
+
+Only the three already-qualified public test sources are newly selected here:
+pressurea20580e4, parent6e7ed052 and lost-replyf41b63fb. Their actual operations,
+assertions and order stay unchanged. The parent shares the existing Network
+owner; delivered Stop functions change only that import. Production/API,
+application, dependencies and runtime remain unchanged. Preserve all inherited
+main UI/Stop, nativee78/workflow471, limits810, R10/R17 acceptance and normative
+rows, fairness records, locks and original source/custody facts. The candidate
+retains exactly three Python files; neither retirement is called delivered
+until its own normal merge. No additional deletion is selected.
+
+The complete public qualification and original selection below retain their
+actual079/main321 source scope. Earlier e660/eb8 failures and a205 current
+positives remain distinct: no later negative tail, Node cancellation or other
+outcome is credited from an unexecuted assertion. Private399 proves its separate
+permit boundary; public401 proves its recorded real two-program progress and
+borrowed-wait cancellation. NET-14 mailbox Full, exits/scenario mapping and full
+R23/remote acceptance remain open. Fresh integrated-head conservation review,
+six-check CI and normal main delivery are still required; no inherited check
+is relabelled as execution on this integration.
+
+All complete inherited records below keep their source epochs and scoped
+census. Their earlier pending394/396 clauses are historical; those two actual
+deliveries are recorded above. Other unmerged stages' pending language remains
+valid. The following records preserve both histories rather than collapsing
+public and private pressure, TLS support or native execution into one witness.
+
+Integrated public census vs cfd72: tests+1014/-6; records+252/-0;
+five paths+1266/-6/net1260. Including inherited source vs actual321:
+twelve paths+3399/-412/net2987 (tests+2110/-306, workflow+81/-67,
+records+1208/-39). Production/API0; fresh exact-head CI and delivery remain open.
+
 ## Public held-reply pressure — local qualification (2026-10-24)
 
 Current baseline is actual main32145c3f. Final shared test sourcea20580e4,
@@ -176,6 +218,460 @@ production source changes. Recheck strict lint, healthy profiles and the full
 owning package; prove the delivered Stop body remains exact apart from the
 mechanical shared import. No new architecture is justified by these diagnostics.
 
+## Current PR399 source integration (2026-10-24)
+
+This proposed integration inherits immutable PR398 head
+1e70671d2edde2333ffe1df248080094308773fa, whose parents are original support
+recorde2bc8f8a and integrated PR397a84c0dbf. That PR397 source already includes
+delivered main32145c3f09986da75c6cf332080d81813764fb8e. Deliver PR397, then
+PR398, before this stacked PR399. This is temporary source/delivery ordering;
+neither native-controller retirement nor R17 is a semantic prerequisite or
+additional witness for this private capacity law. Neither397 nor398 is claimed
+merged here. Their own exact-head CI/review/delivery remain independent.
+
+PR394 is actually delivered asb45c7566 and PR396 as32145c3, after all six
+checks passed on their exact heads and verified/tested/delivered trees matched.
+Their complete provider/R10 and Stop records, along with397's complete native
+shell-correction and398's R17 records, are preserved below without relabelling
+original source or result epochs. R10 and R17 retain their own populated
+acceptance records and distinct scopes; full remote/R23 acceptance stays open.
+
+PR399's only new software is exact private limits8104870796e01ce99d556ed3e3a9cc427c6532fa483db431155d118515c22f12.
+Production Client remains45282b54; all inherited nativee78/workflow471,
+UI fixtures/registration, denied-Stop source, acceptance, locks and production
+must remain unchanged. Only this test and its two owning records are selected;
+production/API0. Required integrated-head conservation review, fresh six-check
+CI and normal main delivery remain open. Old3e1 local/CI receipts do not prove
+execution on this integration.
+
+The original capacity selection and qualification below retain their main277
+source scope, including actual Get-oracle1019 inverse, exact restoration,
+negative unexecuted tails and manual same-future poll/resume limit. Historical
+pending delivery statements are superseded only by actual delivered facts
+above; no asynchronous cancellation or public two-program pressure credit is
+added. Current inherited support/native summaries likewise retain their own
+stage scope and original dated census; they are not this stage's total delta.
+
+Integrated capacity census against1e706: three paths+701/-4/net697, comprising
+tests+489/-4 and records+212/-0. Including inherited397/398 against actual321:
+seven paths+1947/-242/net1705 (tests+1096/-156, workflow+81/-67,
+records+770/-19). Production/API0; all inherited source and requirements stay exact.
+
+## Held native request capacity — pre-edit record (2026-10-24)
+
+R23 pressure still needs its public two-program witness. First close the owning
+private regression gap: a held actual A native Query retains the one request
+permit through reply EOF, so an explicitly polled B request cannot enter its
+Get. B Pending alone is insufficient: it could already be awaiting its own
+reply. Preserve B's actual Get phase before A release, then assert it only
+after both requests, replies, originals and native cleanup have settled.
+
+This is an existing Client law, not a new actor/runtime policy or a production
+bug claim. The smallest failing regression deliberately drops the actual
+request permit just after native Get returns, before A's real reply/EOF. The
+same finite two-Query driver must still finish both early/late B cases and
+reject only the saved pre-release Get phase. A watchdog, compiler error or
+native setup failure receives no law credit. Restore exact production source
+and replay both debug/optimized profiles before retaining the test.
+
+Expected existing paths: `crates/bombay/src/remote/client/tests/limits.rs`, this
+PRD and the status index. Corrected outside candidate28e890b7 is raw tests
++279/-4/net275 before formatting; no production/API/dependency changes remain.
+Formatting may expand the test; record the actual final complete delta rather
+than hide that growth. The one-line temporary production inverse is recorded
+separately and is not retained. User approval removes numeric budget ceilings;
+all previous authored/modified costs and stages still carry.
+
+Fresh selected contracts: Behavior/Actors0.29.0 VCS55dbac2d, macros0.16,
+Address0.3/9f058dc0, Communication0.1.6/963067e0, Timers0.2/9369d1f6, local
+Observe; root lock83f01ca3/isolated667a1820, no patches. Complete selected
+Behavior AGENTS and these owners' source/API/tests/docs remain verified.
+Client45282b54 and existing limits764eb188 are exact main277e6dfe sources.
+The native selected SDK stays1.10.10, config1.10.2 and Tokio1.53.3. No missing
+dependency or new ownership interface is required for this private test.
+
+Reuse Client::select/request, Request originals, actual Source and return
+endpoint, native Querier/Query/FINAL/EOF, existing Recorded full-pair policy,
+bounded semaphore, pinned futures and ordinary Poll/Attempt products. No
+public observer hook, fake route success, model Get, new trait, wrapper or
+generic runner. A is established by its actual acquired Query, not an encoder
+or protector marker. B's actual pre-release protection phase and registry
+count are saved independently; original outputs/causes remain in their rows.
+
+Source reviews8efe7b75/990c5a08 found the initial proposal omitted that
+protection observation and overstated cancellation. Corrected review9f3a2d2f
+adds the actual observations and narrows the test to manual poll, temporary
+borrow end and same-future resume. This is not asynchronous wait cancellation.
+The chosen early-permit inverse credits the Get/permit-retention law only;
+later protection assertions receive no inverse credit if the Get oracle fails
+first. Full public two-OS pressure, borrowed Node-wait cancellation, exit and
+deterministic scenario mapping remain separate required R23 work.
+
+The full candidate and exact patch are outside under
+`/tmp/bombay-outbound-client-comparison/limits-permit-observations.*`.
+Compiler/lifetime/first-poll fitness, actual healthy/inverse/restored outcomes,
+two final test reviews, minimization, strict checks and CI/main delivery remain
+pending. Do not add architecture in response to compiler friction.
+
+### Held native request capacity — actual qualification (2026-10-24)
+
+Initial formatted test01f33152 passes the exact new leaf in debug/optimized
+with production45282b54. The actual one-line inverse1e732a13 adds only
+`drop(_permit)` after native Get result storage and `drop(permission)`, before
+reply receiving. Both actual runs exit101 only at the saved B Get oracle,
+limits.rs1019, after both source originals, native requests/replies, checked
+receipts, deliveries, actual EOF and cleanup assertions passed. There is no
+compiler, setup or watchdog failure. Later protection/registry assertions are
+unexecuted in these negative runs and receive no independent inverse credit.
+Actual source/patch/input ledgers and all four raw logs are preserved.
+
+Production is restored byte-exact45282b54. Final test81048707 changes only
+qualification comments from01f; independent reviewc1851ec9 verifies unchanged
+operations, assertions and order, and the intended actual inverse outcomes.
+The final restored source passes the existing three-case limit group in each
+profile:3passed/0failed/0ignored,422filtered. The complete library passes
+425passed/0failed/0ignored/0filtered in both profiles,4.96/4.83seconds.
+Pinned commands are `cargo test --locked --offline -p bombay-rs --all-features
+--lib remote::client::tests::limits:: -- --nocapture` and the full `--lib`
+selection, each repeated with `--release`. Each raw command exit and the
+sequential owning-check script exit is0. The final three-input ledger rehashes
+production45282, tests810 and root lock83f01 successfully.
+
+Pinned `cargo fmt --all -- --check` and
+`cargo clippy --locked --offline --workspace --all-targets --all-features --
+-D warnings` pass on the final source. Existing remote debug/release Nix
+checks already execute this owning library; no new gate, source filter or
+workflow is added. Required new-head full CI and actual main merge remain
+separate from these local results.
+
+Minimization retains one independent law in its existing private Client test
+owner. The two older limit cases hold protection and refuse return admission;
+they do not poll B after A acquires an actual native Query and retain its
+pre-release Get phase. Combining these traces would add divergent provider,
+delivery and hosting branches. Reuse the existing concrete owners without a
+fixture framework, observer API, new type or runtime policy. Production
+states/branches/modules/public spellings remain unchanged. The retained
+test-only delta is+489/-4/net485, production+0/-0/net0, publicAPI+0types/-0types,
+three existing paths including the two feature records, no untracked files.
+The formatted expansion is counted; this is additional verification code.
+
+This directly driven SessionLocal component test preserves its actual originals
+and native outcomes. It establishes neither asynchronous borrowed-wait
+cancellation nor normal serve/Node completion. Public two-program pressure,
+exit, mailbox pressure, deterministic scenario mapping and full R23 remain
+open. Local checks and this scoped minimization do not claim repository-wide
+distillation or merged delivery.
+
+Independent final reviewab694760 checks both review passes on final810 and
+all terminal receipts, including425 unique passing names/profile with equal
+sets. Root reviewbab394c0 concurs. The earlier source reviews and inverse
+reviewc185 remain distinct; no old source epoch or unexecuted negative tail
+is relabelled. Actual raw results and frozen sources remain under
+`/tmp/bombay-prd-resumption/client-held-native-20261024`.
+
+Qualified archive `client-native-pressure-qualified-20261024.tar.gz`, SHA256
+`6a0eb84f14a84c663d2ac7b5a24aea00ab92adabffada0d4e6c5f14d1c1c37d4`,
+is in the common Git session archive for2026-10-21. Fresh extraction passes
+all48 payload checks, and base277e6dfe plus the actual patch reconstructs
+final810, unchanged production45282 and both captured records. This later
+pointer is outside that capture. It preserves source/results, not a compiler
+or binary closure, exact-head CI or main delivery.
+
+### Delivered prerequisites for the held-request stage
+
+Actual main277e6dfe contains PR395's patched-lock merge36b5c1f and PR393's
+child-retirement merge277e6dfe. Both merged after all six required checks
+passed on exact headsbe200b25/90ecb176, and verified/merge trees match.
+The selected locks83f01ca3/667a1820 already contain Tokio1.53.3. The advisory
+and then-pending child records below retain their earlier source scope;
+they do not block this held-request stage. Provider394, denied-Stop396,
+protected-native397 and support-record398 have their own delivery states.
+
+## Current R17 record integration (2026-10-24)
+
+R17's literal dependency/configuration witness is now locally satisfied for the
+[fixed TLS support record](static-remote-actors/acceptance.md#current-r17-support-record--fixed-tls-profile-2026-10-24):
+exact SDK1.10.10/Config1.10.2/Protocol1.10.1, patched Tokio1.53.3, explicit
+Peer/RouterClient configuration, discovery disabled, actual native connectivity
+and delivered Peer two-program application, plus typed configuration/native-open
+refusals. Only Peer receives public two-process application credit; native
+RouterClient and mapped address alternatives retain their stated evidence scope.
+This records existing patched-lock main277e6dfe evidence and changes no runtime
+or supported platform. Broader ZEN-04 platform certification, R21 and remaining
+R23 requirements stay open. Other rows keep their independent record states;
+full AUTH1/NET1 and the PRD remain active. This documentation-only stage still
+needs its own final review, required CI and actual main delivery.
+
+This proposal reconciles PR398's existing R17 record with immutable PR397
+integration `a84c0dbf624be09c1740361b24be75416a2ddafa`, based on delivered
+main `32145c3f09986da75c6cf332080d81813764fb8e`. PR397 is delivered first only
+to order the overlapping documentation updates; its native-controller change
+is not an R17 semantic prerequisite or additional R17 evidence. Neither
+proposal is described here as merged. Required exact-head CI, independent
+review and normal main delivery remain separate.
+
+Integrated R17 census against a84: documentation+145/-3/net142 over three paths;
+production/tests/API/configuration/dependencies0. Including inherited397 against
+actual321: six paths+1246/-238/net1008 (records+558/-19, tests+607/-152,
+workflow+81/-67). Inherited source is preserved; fresh exact-head CI is pending.
+
+## Historical R17 support reconciliation at main277 — pre-edit record (2026-10-24)
+
+The following selection and its measured delta belong to the original PR398
+source at main277; its pending wording is historical. The integration above
+owns current delivery ordering, while the acceptance companion owns row states.
+
+The literal R17 support witness has no populated current evidence record,
+although the selected fixed TLS profile and its adverse startup cases already
+execute in delivered main277e6dfe. Reconcile those facts at the existing
+acceptance owner; do not invent another runtime, configuration or test suite.
+This stage changes only this PRD, its acceptance companion and the backlog
+status index. Production, test Rust, configuration, dependencies and public
+API all remain unchanged. Expected three existing Markdown paths only.
+
+Fresh source/lock inspection confirms Behavior/Actors0.29.0 at55dbac2d,
+macros0.16, Address0.3/9f058dc0, Communication0.1.6/963067e0, Timers0.2/9369d1f6
+and local Observe; no patch override. Their source/public contracts/tests/docs
+and complete selected Behavior AGENTS retain the existing owners. Network
+owns explicit configuration; Application/Node owns native opening and exact
+refused-original custody; existing native ingress and public application tests
+own connectivity/cleanup. No dependency ownership edge is unresolved here.
+Root/isolated locks83f01ca3/667a1820 and six concrete source owners match the
+reviewed delivered main. The actual required Nix log9b1d2ddd names the mapping,
+native Peer/Router, public Node refusal and separate-program passes in both
+profiles. Its durable archive is independently hash-verified in the support
+record. No old green badge or unexecuted example substitutes for those traces.
+
+Independent two-pass review2c210f4a maps every literal R17 clause to source and
+actual outcomes, challenging disabled connectivity, silent discovery fallback,
+missing TLS input, untested topology and source/version substitution. Only
+tested scope receives credit. Broader ZEN-04 platform certification is explicitly
+deferred in this PRD; R21 metadata/isolation and remaining R23 scenarios stay
+open. The historical61eca7a6 audit table retains its original source scope;
+current complete row states belong to the acceptance records. The separate
+native-controller PR397 is not a prerequisite and receives no support credit
+from this documentation reconciliation. Final measured delta, independent
+record review, required CI and actual main delivery remain pending.
+
+### R17 retained record review and complete delta
+
+The support record is retained at its existing acceptance owner. Independent
+two-pass review57fbcf55b5d3c058f6e36b57cc65d6bb664830925cfbb32cafc165d52ed0cc2c
+finds no scoped veto after the stale advisory status was explicitly labelled
+historical. Its original source review2c210f4a and the final review are copied
+to the durable session archive's `r17-support-review-20261024/` directory.
+No supplemental unmerged native campaign is needed or credited for R17.
+
+Actual local checks: the literal normative R17 row compares byte-identical to
+main; all software/configuration/dependency paths are unchanged; diff whitespace
+passes; main277e6dfe and reviewed90ecb176 have the identical source tree3e062d6a.
+The actual earlier required Nix traces and typed adverse cases are attributed
+in the support table, not relabelled as new execution. No Rust test is added or
+rerun for this documentation-only reconciliation.
+
+Complete tracked/untracked stage census against main277e6dfe: production and
+test Rust+0/-0/net0; public types+0/-0; configuration/dependencies0; documentation
++150/-7/net143 across exactly three existing Markdown paths, with no
+untracked repository files. Earlier costs and all independent row states carry.
+Required submitted-head CI/review and actual main merge remain pending.
+
+## Current PR397 integration (2026-10-24)
+
+This proposed integration uses actual main
+32145c3f09986da75c6cf332080d81813764fb8e. PR394 normally merged as
+b45c756625b8b3d1a25ca37f507344b9a76559e4 at2026-10-24T01:31:45Z after
+all six checks passed on exacted72df92; verified/tested/delivered trees match
+20b77b9122f8ec36daa2e8b4e20472d134f12523. PR396 normally merged as
+32145c3f09986da75c6cf332080d81813764fb8e at01:51:48Z after all six checks
+passed on exact881e606f; submitted, tested and delivered trees match
+c40dc2697578f4529a9a6474b0e093896c186578. Both deliveries used normal review
+and merge requirements, without bypass. Provider/R10 and denied-Stop delivery
+are distinct scoped facts; neither closes the complete remote PRD or R23.
+
+PR397 retains only its existing five-path native-controller/workflow/record
+stage. Its software is nativee78fb162 and corrected workflow471698cd; no
+production/API, lock, acceptance or licensing file changes are selected.
+All delivered main UI fixtures, registration and original denied-Stop source
+must remain unchanged. Actual48d5f798 has five successful checks and Nix still
+running at the last bounded readback; those results do not qualify a new
+integrated head. Independent conservation review, fresh exact-head CI and
+normal main delivery remain required. No semantic dependency on the independent
+R17, capacity or fairness proposals is introduced.
+
+The dated implementation and integration checkpoints below preserve BOTH
+complete histories and their original source epochs. Their earlier pending
+PR394/396 and prerequisite language is historical, superseded by the actual
+deliveries above. Native original679 CI failure, corrected48 local evidence,
+rejected duplicate-debug extraction and genuine optimized receipts retain
+their separate meanings. No prior passing result is relabelled as execution
+on the proposed integration.
+
+Integration census against actual321: production+0/-0/net0; tests+607/-152/
+net455; workflow+81/-67/net14; public types+0/-0. Five paths include both
+records. Complete candidate+1101/-235/net866, including records+413/-16.
+The qualified software remains exact; required new-head CI remains open.
+
+## Protected native transport Python retirement — pre-edit record (2026-10-24)
+
+The protected Counter CI step still depends on a152-line Python controller and
+four inline Python readers. Select the existing isolated Cargo test target as
+the single execution owner. Preserve its five groups of8/8/8/4/4 actual native
+configurations, both provider profiles, root/child recipients, Peer/RouterClient
+layouts, actual authority issuance, release/EOF ordering and all native oracles.
+This is verification migration, not a new actor/runtime law or full remote
+acceptance. The raw transport30-case Python controller remains separate.
+
+Before repository implementation, the outside candidate has passed actual
+debug/optimized32-configuration controls, named-test/omission/same-count
+substitution inversions and exact restoration. A wrong name fails its exact
+native-name guard; omission executes28; substitution executes32 but only24
+distinct configurations. All failures occur after the acquired children and
+readers settle and their configuration directories retire. No compiler error,
+watchdog or missing test selection earns actor-law credit. Final restored
+controls execute32 unique configurations and80 native roles per profile.
+
+Fresh locked-source verification: root83f01ca3 and isolated667a1820 retain
+Behavior/Actors0.29.0, VCS55dbac2d1068b29907498b3a7fa32b3080e0cd30;
+macros0.16.0; Address0.3.0 VCS9f058dc0; Communication0.1.6 VCS963067e0;
+Timers0.2.0 VCS9369d1f6; local Observe; no patches. Their selected registry
+source, public contracts, documentation and relevant tests are inspected again:
+pure Behavior/Actions and named send products; exact address lease release;
+Communication cancellation and rejected originals; affine Observe publication;
+generation-safe Timers cancellation. The complete selected Behavior AGENTS
+applies. Existing Counter behavior, Application/Node, protected provider,
+native role and retirement owners remain unchanged. The selected SDK remains
+bombay-zenoh1.10.10/config1.10.2/protocol1.10.1 with TLS, Tokio1.53.3.
+There is no dependency/version/feature or ownership prerequisite left unresolved
+for this migration. Production admission, security and simulation gaps remain
+independent full-PRD prerequisites.
+
+Expected five existing paths: append607 test-only Rust lines to
+`crates/bombay/tests/protected_counter/transport.rs`; workflow+74/-63; delete
+`transport-custody/verify_protected_counter.py`152 lines; update this PRD and
+the status index. Production+0/-0/net0, public types+0/-0. Verification source
+is+607/-152/net455 plus workflow net11, before documentation. This is
+net-positive verification code, not source reduction. All earlier cumulative
+costs remain recorded; the user's explicit no-budget direction applies.
+
+Use only ordinary std scoped readers, bounded channels, owned Child kill/reap
+on failure and the existing concrete native role sum. No new binary, generic
+runner, task framework, dependency, public API or example plumbing. The native
+owner's original120167-byte prefix remains5e6d7c72 byte-exact; all actor laws
+continue to belong to it. The only new test product owns an actual OS child
+whose std Drop would otherwise leave it running. Closed release/evidence sums
+carry distinct fixture choices; no semantic booleans or hidden actor effects.
+
+Standard jq selects one actual Cargo artifact by name/kind/test/feature/profile;
+Bash file identity verifies its actual source despite Cargo's dot segments.
+Actual wrong-profile, duplicate-artifact and different-source controls refuse;
+restored arguments select the original object. The different existing source
+operand is `crates/bombay/tests/protected_counter/retirement.rs`, not a fake
+Cargo record. Three unchanged native commands keep their exact passing names
+and one-summary/count checks using grep. Actual zero-test and extra-real-test
+outputs refuse in both profiles; original successful outputs pass again.
+
+Preserve the original16 source hashes, seven PEM hashes, actual executable
+hash, revision/profile, Cargo JSONL/stderr, matrix log/exit hashes and actual
+native Command diagnostics (including issued binding and endpoint). Retire the
+old repeated campaign.json representation; do not claim schema compatibility.
+First review maps every old case and oracle. Independent second review checks
+omission/duplication, EOF/release, source identity, cleanup and zero selection.
+Source/results reviews are retained outside under
+`/tmp/bombay-outbound-client-comparison/protected-native-*.md`; raw receipts
+under `/tmp/bombay-protected-native-control-results-20261023/`.
+Final archive, measured complete delta, retained-source checks and submitted-head
+CI/review/main delivery still need recording. No full acceptance row closes.
+
+### Retained native qualification and minimality (2026-10-24)
+
+The retained native source is SHA256
+e78fb1622052e8313d12052193f973598ae9e0b82436f981dbd40477cd420c9b;
+the workflow is d7447d50d13061c49b26ceb9716b8c7bc4fe381a8fef1d898f571dd981ab0878.
+Its complete original native prefix remains byte-identical, not merely a
+passing replacement model. The deleted controller's historical source is
+a9c823466e107a5bdd26471fdb4f84eaa96d2c382ec81010769f6b356919bf06.
+
+Through the existing pinned Nix shell, both retained commands
+`cargo test --locked --offline --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --features protected-transport --test protected_counter`
+and the same command with `--release` exit0:69passed/0failed/1ignored/0filtered
+per profile,9.83s/9.52s. The ignored native entry point is deliberately invoked
+by exact name in80 actual child roles; it is not an unexecuted actor witness.
+Strict Clippy on that selected feature/test target and isolated formatting
+also exit0. No full-workspace or submitted-head CI result is inferred.
+
+The complete protected workflow step also exits0 in both profiles under that
+same pinned shell. The temporary extraction removes only YAML indentation,
+substitutes the actual matrix profile and omits the nested `nix develop -c`
+prefix because the shell is already pinned. Each actual matrix completes32
+unique configurations/80 native passes/80 invocation records, followed by
+the unchanged native2/2/1 cohorts and all14 literal summary checks. The root
+workflow artifacts retain16 source hashes, seven PEMs, actual distinct native
+binaries, exact Cargo metadata, matrix originals and exit receipts. A separate
+readback exits0 after checking every manifest, both profile texts, real Cargo
+optimization0/3 and32/80/80 counts. Local revision277e6dfe identifies the base;
+the source manifests and working-tree patch identify the tested modifications.
+
+An initial temporary extraction accidentally mutated its input lines, making
+its second nominal run debug again. Its exit0 is explicitly rejected as
+optimized evidence. The missing release-artifact readback exposed that error.
+The rejected script/log/exit/source-check are preserved separately; corrected
+extractore4aa6cc1 copies each line and the genuine optimized step exits0 with
+actual optimization3 and its distinct release binary. The retained workflow
+itself was unchanged by this qualification error. Earlier lifetime-compile and
+raw-path-selector failures retain their original rejected setup scope.
+
+Independent two-pass source/outcome reviews ec9b42be,6b655663,8c52f62f and
+39d654c3 map the old five groups, all native/cleanup oracles, each intended
+guard failure and restored positive. Zero/extra selections reject at the first
+successful-name count; later summary checks receive no inversion credit.
+Every acquired actual result is inspected after its required cleanup. No
+original actor law, provider distinction, authority binding or final outcome
+is replaced by a watchdog, encoder count or fake native transcript.
+
+Aggregate audit: native actor control states, policy, production transition
+branches, modules and public spellings are unchanged. One private test module
+owns finite external execution, not a second actor interpreter. Its3-way
+release choice,3-way evidence source and line/EOF/read-error observations keep
+distinct current values; one Child owner supplies std's missing failure-path
+kill/reap. BTreeSet compares complete actual identities against an independent
+literal set. No arrival-history state, semantic boolean, erased future,
+protocol registry, wrapper facade or public construction seam is added.
+The project-owned Python controller and four inline readers are deleted rather
+than kept as a second spelling. Disposition: locally eligible; final review,
+archive sealing and submitted-head CI/main delivery remain separate gates.
+
+Final independent retained-source/outcome review
+6a3528fbaca7477f5c4c4ed8f9e54691f3124b49a466ffa163d4722eae68cef4
+finds no scoped veto, including the corrected genuine optimized workflow and
+all artifact custody. Qualified source and raw old/rejected/current receipts,
+complete base277e6dfe plus working-tree patch and all reviews are sealed in
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/protected-native-qualified-20261024.tar.gz`,
+SHA2563698d6ef7ab6704c6be6979a56d0499c1c622f67439915062d4b68bc76bfaa5f.
+Independent extraction verifies all 250 payload checksums; base-source extraction
+plus the actual patch reproduces nativee78/workflowd744 and both records,
+with the protected Python file absent. This is source/evidence custody, not a
+compiler/binary closure. This final archive record follows the sealed source
+snapshot and is retained in Git. Actual wrong-existing-owner identity also
+refuses1 at the retained root, followed by restored correct identity0; its
+original operands and receipts are preserved in the archive.
+
+Complete working-tree checkpoint against main277e6dfe, including staged deletion
+and all untracked paths:
+
+```text
+production: +0 / -0 / net 0
+tests:      +607 / -152 / net 455
+workflow:   +74 / -63 / net 11
+public API: +0 types / -0 types
+records:    +224 / -4 / net 220
+```
+
+Five existing paths change; there are no untracked repository files. Earlier
+task costs and qualified deliveries remain in their owning records; this is
+the focused stage census, not a reset of cumulative work. Actual submitted-head
+CI and normal reviewed main merge remain required before calling this slice
+delivered. Full R01–R25/AUTH1/NET1 acceptance and distillation remain open.
+
 ## Separate-program denied Stop — pre-edit record (2026-10-23)
 
 R23 still requires the ordinary application's denied-Stop witness. The smallest
@@ -285,6 +781,10 @@ denied-Stop follow-up needs its own submitted-head CI and normal main delivery.
 
 ## Tokio I/O safety prerequisite — historical implementation record (2026-10-23)
 
+The implementation checkpoints below retain their original source scope.
+Actual PR395 delivery is recorded in the current status; their pending language
+does not describe the current patched locks.
+
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
 locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
 failure, independent of the child-retirement and provider-interface changes.
@@ -362,14 +862,39 @@ Correctness, architecture, actual verification, review and CI remain mandatory.
 
 PR395 merged patched Tokio as36b5c1f9f92b56f527167076249d12c1ceba0545 at
 2026-10-23T23:26:42Z after six successful checks on be200b25; verified/merge
-trees match7f8c9218. PR393 then merged child Python retirement as
-277e6dfe2c5377b8b31810c025509322640a588e at23:44:22Z after six successful
-checks on90ecb176; verified/merge trees match3e062d6a. Required Nix40014264183
-actually runs the patched-lock21-command owner, including healthy/inverse/
-restored native child phases; raw-job review79e171a1 preserves its scope.
-The clean/pushed task worktree is removed without force after full source/CI
-archiveccbc9473 and independent extracted checksum verification. Five Python
-files and other inline workflow blocks remain; their retirement is separate.
+trees match7f8c9218. PR393 merged child Python retirement as277e6dfe at23:44:22Z
+after six successful checks on90ecb176; verified/merge trees match3e062d6a.
+Required Nix40014264183 runs the patched-lock21-command native owner;
+raw-job review79e171a1 preserves its source scope. Its clean/pushed worktree
+was retired without force after archiveccbc9473 and independent checksum review.
+
+PR394 and PR396 are delivered as actualb45 and321 respectively, with all six
+checks successful and verified/tested/delivered source trees equal as recorded
+in the current integration note. Their complete provider/R10 and Stop records
+are conserved below. The current PR397 proposal integrates321 while retaining
+nativee78fb162 and corrected workflow471698cd. Only shared current summaries
+and dated record placement are reconciled; qualified UI/runtime/application
+sources and both patched locks remain unchanged. Actual main321 has five
+Python files; this native-only retirement removes one, leaving four in this
+candidate. Unmerged fairness retirement is not counted as delivered.
+
+PR397 still needs its own integrated-head conservation review, fresh submitted
+CI and normal reviewed main delivery. Old48 checks remain bound to48. Full
+security, pressure/exit/scenario, simulation, diagnostics, acceptance and
+distillation remain open except for independently populated scoped records.
+
+### Earlier application and child integration checkpoint
+
+[PR392](https://github.com/devrandom-labs/bombay/pull/392) merged the finite-test
+remote Counter at2026-10-23T19:21:29Z as632bf18454016de9b986066c0130a83142a9187d.
+All six checks passed on95c1105a; required Nix completed10:08:55Z. The verified
+head and merge share treedea8c9cf. This child-retirement proposal integrates
+that actual main; its unchanged script is00e9e467 and its combined flake is938beb59.
+The earlier child evidence remains bound to its source epoch; this integrated
+head requires fresh checks before delivery. Five Python files remain in this
+proposal, six on main until it merges. Full remote acceptance remains active.
+
+### Earlier provider-main checkpoint
 
 Actual main277e6dfe is integrated into PR394's provider/R10 follow-up. Only
 the PRD/status records conflicted: both complete feature-local append sections
@@ -378,12 +903,6 @@ All qualified UI sources, compiler snapshots, runtime/application owners and
 both patched locks remain byte-identical. Earlier e68d521f passed all six
 checks; this new submitted head still needs fresh CI and review. No old green
 check is transferred to it. All remaining full remote obligations stay active.
-
-PR392 merged the finite-test remote Counter at2026-10-23T19:21:29Z as
-632bf18454016de9b986066c0130a83142a9187d after all six checks passed on95c1105a;
-required Nix completed10:08:55Z. Verified and merge trees match dea8c9cf.
-Actual main is integrated into this provider-interface/R10 evidence follow-up.
-Its qualified Rust is unchanged; its own required CI and delivery remain open.
 
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged the scoped
 coverage Python retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
@@ -21921,8 +22440,9 @@ authority. This is an isolated test trust input, not production discovery,
 identity establishment, delegation or an additional authentication protocol.
 Use existing readiness/release control machinery; no new channel primitive.
 
-Name the controller docs/prds/static-remote-actors/transport-custody/
-verify_protected_counter.py. It releases the held actual Query only after both
+Historical controller selection: docs/prds/static-remote-actors/transport-custody/
+verify_protected_counter.py, retired by the protected-native migration recorded
+above. Its preserved ordering releases the held actual Query only after both
 recipient Query-received and caller-local Read2 facts, avoiding timing/yield
 assumptions. Keep Query and Reply custody products distinct and acquire all
 cleanup before observational assertions. Native request/admission/processing
@@ -39436,6 +39956,10 @@ localization is still the next diagnostic once its file is within scope.
 
 ### Whole-PRD acceptance audit at61eca7a6
 
+This is the historical61eca7a6 source audit. Current complete row states belong
+to the populated acceptance records; the original table below is not rewritten
+to give this earlier source credit for later deliveries or reconciliation.
+
 The previous goal turn made progress through the qualified consumer and lint
 commits. Fresh two-pass audits now compare every normative acceptance row with
 current owning source and evidence; all25 full rows remain open. This is a
@@ -43630,3 +44154,97 @@ the workspace manifest and existing law owners remain unchanged. Do not relabel
 that older run, its original Nix receipt or old green checks as qualification
 of the new lock. Fresh compatibility/native results and submitted-head full CI
 remain required. This integration records no PR393 merge or full remote acceptance.
+
+## Protected Counter CI shell correction — pre-edit record (2026-10-24)
+
+Submitted PR397 head67978dc6 fails both native jobs in the protected Counter
+step. Debug job120724675613 and downloaded artifact12540344320 establish the
+cause: the shell welcome banner precedes successful Cargo JSON output, and
+strict jq rejects it with exit5 before the32-configuration controller runs.
+The release failing step is confirmed, but its raw log download timed out;
+the same detailed cause is not independently credited to that profile.
+Debug raw log43ca3b7d and artifact572f8ae8 retain the actual failing inputs.
+Prior local step qualification removed nested Nix entry because it already ran
+inside the pinned shell. Those local native results stand at that scope; they
+did not verify the structured-output boundary used by submitted-head CI.
+
+The smallest correction enters the existing pinned Nix shell once around the
+whole protected step. Cargo/jq redirects and command substitutions then run
+inside that shell, after its welcome output. Preserve the strict one-artifact,
+source identity, optimization,32-configuration,80-role and named-case guards;
+do not filter arbitrary text out of JSON or alter the shared shellHook. Reuse
+Nix, Bash and jq already selected by the repository. The neighboring CESR
+workflow already runs a multi-command step inside pinned Bash. Pass this body
+as a quoted Bash command so program text does not become native child stdin;
+set inner `-euo pipefail` explicitly and retain inherited Cargo environment.
+Expected scope is this existing workflow and the two existing feature records:
+production/tests/public types+0/-0, workflow three added shell wrapper lines
+and removal of redundant inner Nix prefixes. No dependency changes occur.
+
+Before acceptance, run the actual corrected Nix entry in both profiles with
+all original guards, inspect complete artifact/source/binary manifests, and
+prove the old entry contaminates structured output using actual Nix stdout.
+Review the shell expansion and observable outcomes independently. New exact-head
+required CI and normal reviewed merge remain mandatory; old green checks and
+local extracted-step results cannot substitute for them. Pressure test work is
+preserved separately in exact stashb77d606029e2f610aef8a5c7f07859049b3c4e85
+and an outside binary patch while this concrete CI blocker is corrected.
+
+### Shell correction — actual qualification and minimization
+
+Workflow471698cd retains the exact old90-line body after only eight inner
+Nix-prefix removals; three wrapper lines establish the one pinned shell.
+Independent source reviewcbe0d590 checks quoting, stdin, strict inner flags,
+profile/environment inheritance, error propagation and all unchanged guards.
+The extractor964dc90a copies each original line, removes YAML indentation and
+substitutes only the actual GitHub profile. It retains the real Nix entry.
+Both extracted scripts pass pinned Bash syntax checks. Initial cache DNS
+retries precede successful shell entry; neither attempt was cancelled or
+relabelled as a test failure.
+
+Literal debug76635731 and release1bb67640 scripts each exit0 through fresh
+`nix develop`, including the real shellHook. Both Cargo streams parse fully
+without discarding any lines. Each has exactly one protected test artifact
+with the actual source identity, feature, test kind and optimization0/3.
+Each controller completes32 distinct configurations,80 native invocations
+and80 passing native entry points; controller time is9.89/9.42seconds.
+The unchanged separate native cohorts execute exactly2/2/1 passing cases in
+each profile. All14 literal execution guards pass. The paired artifact
+readback exits0 for16 sources, seven PEMs, each actual binary and matrix
+log/exit, profile labels and genuine optimization metadata.
+
+The downloaded original failing CI JSON is preserved as0b6f704d. Replaying
+that actual input through pinned jq returns5 at the same line1/column7 parse
+error. This independently confirms the original shell-output defect; it is
+not an actor-law inversion. The prior controller/name/omission/substitution
+inversions retain their own exact source and profile scopes. Actual new
+logs and copied artifacts live under
+`/tmp/bombay-prd-resumption/native-shell-correction-20261024`.
+
+All Rust sources, owners, test bodies, dependencies and public interfaces
+remain unchanged in this correction. Aggregate states, subordinate states,
+transition branches, modules and public spellings are unchanged; no new
+actor semantics or scheduling authority appears. The scope review passes:
+one existing shell boundary owns the structured-output fix, with no banner
+filter, parser fallback, new script, dependency or shared setup change.
+Production+0/-0/net0, tests+0/-0/net0, publicAPI+0/-0 for the correction;
+workflow+11/-8/net3 and the two existing feature records are its complete
+changed-path scope. Exact new-head required CI and main delivery remain open.
+
+Independent paired outcome reviewb5599cf1 passes both source/outcome review
+rounds with no scoped veto. It independently rehashes the inputs/manifests,
+checks both exact32-case sets and2/2/1 cohorts, and distinguishes the original
+CI-input replay from actor-law inversion. Root reviewd3ba6b9f concurs.
+Against actual main277e6dfe the complete migration still changes five existing
+paths, with no untracked project files: production+0/-0/net0,
+tests+607/-152/net455 including the retired Python controller,
+workflow+81/-67/net14, publicAPI+0types/-0types; the remaining changes are
+the two existing feature records. This is net-positive verification code.
+
+Supplemental archive `native-shell-correction-qualified-20261024.tar.gz`,
+SHA256372e0e01590fe0bfdffe0153cb9f724cef3729f7974ac98270cfd51f6ab21b65,
+lives in the common Git session archive for2026-10-21. Fresh extraction passes
+all53 payload checks; base67978 plus the actual patch reproduces workflow471698,
+nativee78, both captured records and Python absence. This later archive pointer
+is outside that source capture. Original qualified archive3698d6ef is unchanged;
+neither archive is a compiler closure or submitted-head CI certificate.
