@@ -1,5 +1,39 @@
 # Backlog status and dependencies
 
+PR401's proposed public held-reply integration inherits immutable400/cfd72a95,
+including397/a84c0dbf,398/1e70671d and399/404acb36 on actual main321.
+Deliver397→398→399→400 before401, solely temporary source/delivery ordering;
+none is a new semantic prerequisite or additional public-pressure evidence.
+Those four drafts are not claimed merged. Actual394=b45 and396=321 remain
+delivered after six successful checks and matching verified/tested/merge trees.
+
+Publica205/parent6e7/lost-replyf41 remain the only new software in this stage.
+All inherited source, R10/R17 records, normative rows, nativee78/workflow471,
+limits810, UI/Stop, locks and production stay exact. The candidate has three
+Python files after the two inherited selected retirements; their delivery
+remains pending. Production/API0; no new runtime or application mechanism.
+
+The original local result below keeps its079/main321 source scope, separate
+from e660/eb8 negatives. New integrated-head CI/review and normal main delivery
+remain required. Public/private pressure, support and maintenance scopes stay
+independent; NET-14, exits/scenario mapping and full R23/remote remain open.
+
+### Original public pressure qualification
+
+Public held-reply pressure is locally qualified on actual main32145c3f.
+Current shared sourcea20580e4 passes its focused parent and complete eleven-
+outer-test package in both profiles; four named subprocess registrations are
+exercised by their parents. Formatting, strict workspace/all-target/all-feature
+Clippy and all six retained input checks pass. The earlier e660 native-send
+omission fails its intended reply vector after cleanup in both profiles;
+production is restored exactly. Its later unreached assertions receive no
+negative credit. Mechanical shared imports preserve the tested operations.
+
+This five-path stage adds verification+1014/-6/net1008, production/API0.
+The two-pass final review4eeebbaa accepts local outcomes and containment.
+New-head CI/review/main delivery, private399's separate permit boundary,
+NET-14 mailbox Full, exit/scenario mapping and full R23 remain open.
+
 PR400's unused fairness Python reproducer retirement now inherits immutable
 PR399/404acb361a2c24ffcde946c51fea19e7f330fe07, including PR398/1e70671d,
 PR397/a84c0dbf and actual delivered main321. Deliver397, then398, then399,
