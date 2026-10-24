@@ -6,7 +6,9 @@ use bombay::actors::ActorExt;
 use bombay::behavior::BehaviorBase;
 use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
 use bombay::prelude::Completion;
-use bombay::remote::{Attempt, Export, ExportError, ExportLimits, reply, stop, submission};
+use bombay::remote::{
+    Attempt, Export, ExportError, ExportLimits, RefusalRetention, reply, stop, submission,
+};
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ApplicationScope, MailAddr, RetirementAssessment,
 };
@@ -17,6 +19,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
 
+#[path = "overlap.rs"]
+mod overlap;
 #[path = "peer.rs"]
 mod peer;
 #[path = "../protocol.rs"]
@@ -27,6 +31,8 @@ mod peer;
 mod protocol;
 #[path = "quota.rs"]
 mod quota;
+#[path = "recovery.rs"]
+mod recovery;
 #[path = "refusals.rs"]
 mod refusals;
 #[path = "targets.rs"]
@@ -231,6 +237,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
             Ok::<_, Refusal>(permission)
         };
     let export_limits = ExportLimits {
+        refusals: RefusalRetention::Retain,
         queued_queries: maximum,
         retained_queries: maximum,
         retained_requests: maximum,

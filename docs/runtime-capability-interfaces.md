@@ -86,6 +86,12 @@ Consuming extraction transfers the existing closed native product unchanged,
 or returns the same Request while a producer loan remains. It neither certifies
 cleanup nor grants retry. A runtime-issued key is identity only. The actual
 Node post-join close result remains distinct from actor retirement and Work.
+Export's explicit refusal retention policy either preserves completed unkeyed
+originals or discharges them after native Query and all producer loans end.
+Discharge runs in Node's caught serving poll, before ordinary withdrawal.
+Keyed requests and acquired provider panic facts keep their lifetime positions;
+vacancy reuse never compacts or retargets an issued key. Extraction omits vacant
+positions and does not promise chronological row order under discharge.
 Declaration/cache lifetime follows the existing Application cleanup publication,
 so supplied Work may retrieve a cached result after target retirement. Native
 request reception retains its own target/root retirement observations. Node

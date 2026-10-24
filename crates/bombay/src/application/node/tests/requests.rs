@@ -16,7 +16,8 @@ use bombay::actors::ActorExt;
 use bombay::behavior::User;
 use bombay::prelude::{Application, MailAddr};
 use bombay::remote::{
-    Attempt, Export, ExportError, ExportLimits, Metadata, json, reply, try_retain, verify,
+    Attempt, Export, ExportError, ExportLimits, Metadata, RefusalRetention, json, reply,
+    try_retain, verify,
 };
 use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
@@ -667,6 +668,7 @@ async fn cold_pending_protection<Receipt>(
     let export = Export::new(
         "bombay/protection/cold",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

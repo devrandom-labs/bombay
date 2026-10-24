@@ -1,6 +1,6 @@
 use super::declaration::{Commands, Delivery, Reception, reply, submission};
 use super::query::Exports;
-use super::{Attempt, Export, ExportError, ExportLimits, RequestKey};
+use super::{Attempt, Export, ExportError, ExportLimits, RefusalRetention, RequestKey};
 use crate::actor_execution::tests::allocation_sizes_during;
 use crate::actors::ActorExt;
 use crate::remote::json;
@@ -219,6 +219,7 @@ async fn redeclared_counter() {
                     });
                 let maximum = NonZeroUsize::new(2).unwrap();
                 let export_limits = ExportLimits {
+                    refusals: RefusalRetention::Retain,
                     queued_queries: maximum,
                     retained_queries: maximum,
                     retained_requests: maximum,
@@ -1084,7 +1085,8 @@ async fn first_attempt_expiry(expiry: Expiry) {
                 };
                 let mut export = Export::new(
                     "bombay/expiry/first", ExportLimits {
-                        queued_queries: maximum, retained_queries: maximum,
+                        refusals: RefusalRetention::Retain,
+queued_queries: maximum, retained_queries: maximum,
                         retained_requests: maximum, diagnostics: maximum,
                     }, limits(),
                     |bytes: &[u8]| {
@@ -1565,7 +1567,8 @@ async fn fragmented_ingress(refusal: Option<json::Error>) {
                 };
                 let mut export = Export::new(
                     path, ExportLimits {
-                        queued_queries: maximum, retained_queries: maximum,
+                        refusals: RefusalRetention::Retain,
+queued_queries: maximum, retained_queries: maximum,
                         retained_requests: maximum, diagnostics: maximum,
                     }, bounds,
                     |bytes: &[u8]| {

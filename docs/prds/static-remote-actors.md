@@ -1,5 +1,24 @@
 # Static remote actors and typed admission
 
+The [cold command ownership witness](cold-overlap.md) owns the fresh R22
+comparison of two real public Nodes under one overlapping selector. It reuses
+existing static grant policies and records both actual receptions and a
+post-cleanup unselected Counter oracle. Healthy, intended grant-omission and
+restored traces qualify in both profiles; final owning49-case suites and lint
+pass. Focused PR, required CI and delivery remain pending.
+Historical raw overlap evidence keeps its original source scope.
+
+The [R09 recovery regression](request-recovery.md) owns the fresh same-export
+invalid-then-valid comparison and lifetime-quota conflict. Its accepted scope,
+dependency verification and evidence remain separate from the historical
+checkpoints below; the complete remote PRD remains active.
+
+Current delivery checkpoint: actual main50e0de42 contains reviewed PR397–403,
+each with six successful exact-head checks and matching tested/merged trees.
+The R09 recovery implementation retains its own pending delivery gates.
+Dated stages below preserve their original source and delivery
+epochs; superseded pending-PR wording is historical, not current status.
+
 ## Listening-client authentication — matched-control selection (2026-10-24)
 
 Current source baseline is pending public-pressure PR401 head850dd064 on actual

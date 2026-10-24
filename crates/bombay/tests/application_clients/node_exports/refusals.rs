@@ -9,7 +9,7 @@ use super::{peer, protocol, wire};
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, User};
 use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
-use bombay::remote::{Attempt, Export, ExportError, ExportLimits};
+use bombay::remote::{Attempt, Export, ExportError, ExportLimits, RefusalRetention};
 use bombay::remote::{reply, stop, submission};
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ApplicationScope, Completion, MailAddr,
@@ -462,6 +462,21 @@ async fn refused(stage: RefusalStage) {
             )
         };
     let export_limits = ExportLimits {
+        refusals: match stage {
+            RefusalStage::VerifiedDisposal
+            | RefusalStage::RefusedDisposal
+            | RefusalStage::VerificationPoll
+            | RefusalStage::VerificationDoublePanic
+            | RefusalStage::VerificationFactory
+            | RefusalStage::ProtectionFactory => RefusalRetention::Discharge,
+            RefusalStage::Binding
+            | RefusalStage::Declaration
+            | RefusalStage::Verification
+            | RefusalStage::Protection
+            | RefusalStage::Request
+            | RefusalStage::ReplyEncoding
+            | RefusalStage::Reply => RefusalRetention::Retain,
+        },
         queued_queries: maximum,
         retained_queries: maximum,
         retained_requests: maximum,

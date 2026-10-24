@@ -6,7 +6,7 @@ use super::protocol::{
 use super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
 use crate::application::Application;
-use crate::remote::{Attempt, Export, ExportLimits, submission};
+use crate::remote::{Attempt, Export, ExportLimits, RefusalRetention, submission};
 use crate::{ActorFailureAssessment, Completion, MailAddr, RetirementAssessment, TrySendError};
 use behavior::Never;
 use serde::{Deserialize, Serialize};
@@ -44,6 +44,7 @@ async fn replay_after_retirement() {
     let export = Export::new(
         "bombay/retired-replay",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

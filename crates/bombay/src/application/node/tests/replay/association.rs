@@ -9,7 +9,7 @@ use super::super::protocol::{
 use super::super::{Counter, CounterMessage};
 use bombay::actors::ActorExt;
 use bombay::behavior::{EstablishedRecipient, Never, User};
-use bombay::remote::{Attempt, Export, ExportLimits, Metadata, reply};
+use bombay::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, Application, MailAddr, RetirementAssessment};
 use std::cell::RefCell;
 use std::num::NonZeroUsize;
@@ -95,6 +95,7 @@ async fn cold_counter_request_keeps_its_own_reply_and_late_tail() {
         let export = Export::new(
             "bombay/association/read",
             ExportLimits {
+                refusals: RefusalRetention::Retain,
                 queued_queries: maximum,
                 retained_queries: maximum,
                 retained_requests: maximum,
