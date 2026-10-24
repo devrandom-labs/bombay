@@ -10,7 +10,8 @@ explicit Retain/Discharge policy now passes five recovery/key controls,13
 original refusal controls and one Node destructor-panic control in each build
 profile. Private live-custody also passes both. All five source cuts reproduce
 their intended post-cleanup failures in both profiles; healthy source is
-restored. Final shared workspace checks and delivery remain pending.
+restored. Final shared workspace tests pass in both profiles, with strict
+Clippy and formatting. PR404 awaits its required submitted-head CI and delivery.
 Cache/delegation/full R09 and the complete remote PRD remain open.
 
 The [observation disposal regression](../prds/observation-disposal.md) is merged

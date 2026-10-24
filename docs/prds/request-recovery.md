@@ -412,7 +412,7 @@ reviewed source epochs stay preserved; no test oracle is weakened.
 
 Final complete census against originalb19, including staged new custody.rs
 and all tracked/untracked changes:37 paths; production+103/-20/net83,
-tests+1459/-40/net1419, records+496/-12/net484;
+tests+1459/-40/net1419, records+509/-12/net497;
 public types+1/-0 and one required existing-product field. Query's four
 test-registration lines count as tests. This is positive production capability
 growth, not code reduction. Final two-pass source/outcome/minimization
@@ -424,3 +424,15 @@ Exact submitted-head
 Nix/other CI, independent delivery review and protected main merge remain
 required. Full R09/cache/delegation/flood/CPU, R12/R14/R25 and the other remote
 requirements remain open.
+
+## Post-capture record correction
+
+Final readback catches two stale backlog pointers still describing the final
+workspace checks as pending. Correct both to the actual paired workspace,
+Clippy and formatting passes, with PR404's required CI and delivery pending.
+This changes only the two backlog documents and this record; all35 qualified
+software/lock inputs remain byte-identical. Capsuleadd5cc3f retains the
+preceding complete tree792d10ca and its exact496/-12 record census. The
+final census above includes this subsequent prose correction. No old source,
+failure, test run or captured document is relabelled as a later epoch. The
+updated PR head needs its own required CI before normal protected merge.
