@@ -1,5 +1,181 @@
 # Static remote actors and typed admission
 
+## Public held-reply pressure — local qualification (2026-10-24)
+
+Current baseline is actual main32145c3f. Final shared test sourcea20580e4,
+parent6e7ed052 and lost-replyf41b63fb pass the exact pressure parent in both
+profiles (one pass, eleven filtered;0.07/0.15seconds). Complete owning package
+passes the same eleven unique outer tests in both profiles: eight processes
+and three protocol tests, zero failures/filters. Four ignored registrations
+are subprocess owners executed by those parents; they are not four additional
+independently archived successes. Process suites take21.09/20.59seconds.
+Pinned formatting, strict workspace/all-target/all-feature Clippy and six-input
+readback all exit0. No new whole-workspace runtime or submitted-head CI result
+is inferred from these local checks.
+
+Final independent two-pass review4eeebbaa accepts actual outcomes and scoped
+minimization; paired review6597982a preserves the earlier e660/eb8 negative
+epochs. Both intended failures reach the empty-versus-two reply vector after
+cleanup, not the watchdog. Later unreached rows/admission assertions remain
+uncredited. Only shared Network imports and empty-vector assertion style
+change from e660 to a205; vector operands, operations and control order are
+unchanged. Current positives qualify that retained spelling. Production
+Client45282b54 is restored byte-exact; production and public API delta is zero.
+
+Complete test delta: +1014/-6/net1008 over three test paths, including the new
+1008-line child. Two project records bring the stage to five paths. The shared
+Network module reuses its existing owner; delivered Stop functions remain
+exact apart from imports. No new runtime, framework, dependency, public type
+or application hook is retained. This is additional verification code, not
+production code reduction or repository-wide distillation. Required new-head
+CI/review/main delivery, the separate private permit law, NET-14 mailbox Full,
+remaining exits/scenario mapping and full R23 remain open.
+
+Final pre-archive census against32145c3f, including the untracked child:
+production+0/-0/net0; tests+1014/-6/net1008; public types+0/-0.
+Project records+196/-9; complete five-path delta+1210/-15/net1195.
+No tracked or untracked implementation file is omitted from this measurement.
+
+Qualified source/results archive is retained in the common Git directory at
+`session-archives/2026-10-21/public-held-pressure-qualified-20261024.tar.gz`,
+SHA256 `4743da2ae12c246617901747e32322989dbf5e54b23e139ae7f62afca2a06076`.
+All77 payload hashes and base321+patch recovery pass the coordinator readback.
+The archive precedes only this eight-line pointer: final records+204/-9 and
+complete five-path delta+1218/-15/net1203. Production/tests/API stay as above.
+Submitted-head checks and actual delivery remain separate from this archive.
+
+### Historical pre-edit record
+
+R23 still needs public separate-program pressure, borrowed-wait cancellation,
+exit and deterministic scenario mapping. This stage selects only actual
+progress and custody through a held native reply and cancellation of a pending
+borrowed Node wait. Private permit regression399 separately distinguishes B
+waiting for P from waiting for its own reply; a public P2 change may preserve
+the final outputs and is not this stage's falsifier. NET-14 mailbox Full and
+whole R23 remain separate. No production defect is assumed from this test gap.
+
+Ordinary existing composition suffices at source review: a pure concrete Burst
+actor emits Increment and Read init Actions through one actual Source, retains
+the original sender/reply values and uses the existing ActorExt deadline as
+its finite terminal policy. The ordinary sequential Caller stays unchanged.
+Receiving Counter/Export uses the complete existing finite Deployment policy,
+holds the SAME acquired reply proof across actual release, and performs an
+independent local Read before and after. All I/O and test control stay outside
+folds. Both programs use public Nodes, real TLS and isolated local spaces.
+
+Keep the original Node.run and notice futures pinned outside biased select;
+drop only the pending borrowed Node wait and resume that SAME original future.
+Unexpected completion remains owned and is never repolled. Preserve the same
+buffered control reader across configuration/notices. Actual held notice and
+borrow-ended result precede unconditional release; both normal program exits,
+native custody, notifications and cleanup precede final exact reply-vector
+assertions. These facts require actual execution, not a manual-poll proxy.
+
+Smallest intended failing regression suppresses the existing native Client
+admission while retaining its actual decoded message. Real Gets, proofs,
+Counter processing and cleanup must still complete; the actual actor deadline
+then retires its incomplete vector. Both profiles must fail that final vector
+after cleanup, rather than compilation, setup or watchdog. Later admission
+assertions get no negative credit if unreached. Freeze the actual inverse and
+restore Client45282 exactly before retaining any result. No new observer,
+endpoint API, actor contract, timer, runtime or orchestration framework is
+selected; compiler friction may veto this concrete composition, not invent one.
+
+Fresh baseline is actual mainb45c7566, delivered PR394 at01:31:45Z after all six
+checks passed on ed72df92. Verified/tested/delivered trees match20b77b91.
+Actual Nix120714234734 completes01:24:23Z with full flake and Driver/Observe
+fuzz; Miri is correctly skipped for this PR event. Independent readiness273236ab
+checks source reviews and server rules, followed by a normal merge without
+bypass. Durable delivery archive553fd78a preserves exact source/CI/merge;
+both fresh independent extractions verify all13 payloads and source recovery.
+This delivers provider-interface/selected R10 evidence, not full remote scope.
+
+Selected contracts freshly match this baseline: Behavior/Actors0.29 at55dbac2d,
+Macros0.16, Address0.3/9f058dc0, Communication0.1.6/963067e0,
+Timers0.2/9369d1f6 and local Observe; root lock83f01ca3/isolated667a1820,
+SDK1.10.10/Config1.10.2/Tokio1.53.3, no patches. Complete selected Behavior
+instructions and the relevant owner APIs/tests/docs are verified. Node95497c1b,
+Client45282b54, parentc9325748, protocol e69bfe0a, Deployment816f6b39,
+Networkd4ebbfb1 and custodycf9b2afb remain exact. No missing dependency contract
+or new interface is needed; concrete compiler/lifetime/runtime fitness remains
+unproved. Engine/Address/Communication/Observe/Timers keep their existing laws.
+
+Expected scope is four paths: new owning integration child
+`examples/remote-counter/tests/processes/pressure.rs`, its two-line existing
+parent registration, this PRD and status. Frozen outside candidateb41070f7
+is633 raw child lines; complete patchd08495be is+635/-0 before formatting.
+Production+0/-0/net0, publicAPI+0types/-0types; this is additional verification
+code. Preserve all author correction/copy costs. The user removes numeric
+ceilings, not ownership, measured containment or acceptance. Ordinary Rust
+uses the already selected actor facade/ActorExt/Node/Export/Client products;
+no new macro, wrapper or policy API is proposed. Author reviewe002e119 and
+independent two-pass source review72fcfc8f allow the concrete experiment only.
+First apply/freeze/format/compile, then require healthy debug and optimized
+traces before the actual inverse, exact restoration, relevant full checks,
+two outcome reviews, minimization and focused CI/review/main delivery.
+
+### Public pressure — first fitness checkpoint
+
+Pinned formatting expands the raw633-line child to1010 lines (source7680b924),
+plus the two parent registrations. All costs remain counted. The first concrete
+compile succeeds without a source/type/API repair. Exact parent runs pass in
+debug and optimized,1passed/0failed/0ignored,8filtered,0.06seconds each.
+Their four-input ledger binds unchanged production45282 and lock83f01. This is
+healthy consumer execution, not an inverse or whole-R23 result.
+
+Before the planned production-source inversion, independent review finds a
+verification defect: parent failure reports include child stderr while libtest
+normally writes the captured child assertion to stdout. Preserve both actual
+stdout and stderr in each failed-status assertion after both reaps and cleanup.
+This changes only failure diagnostics; no domain observation or success oracle
+is weakened. Freeze that new test source and require actual healthy runs in
+both profiles before introducing the native-admission cut. Earlier768 results
+retain their source scope; do not assume that opaque parent failure proves the
+intended child vector oracle.
+
+### Public pressure — inverse and current-main integration
+
+Current diagnostic sourcee660 passes both healthy profiles. Actual native-send
+cuteb8ac7da stores the SAME decoded message as Left instead of native admission;
+only its now-unused private source parameter is mechanically renamed. Both
+profiles exit101 at the intended waiting-caller vector assertion,748: empty
+versus the exact two expected replies, after caller cleanup/report/custody.
+The parent retains that actual stdout at995 after both reaps/private cleanup
+and the receiver's successful complete trace. Child10.01/10.00seconds follows
+the real actor deadline; parent10.09seconds is below its40-second watchdog.
+Later caller row/admission and parent child-name assertions are unexecuted and
+uncredited in the negatives. Debug review904aee70 retains its exact scope.
+Optimized execution's exit-trap restores production45282 byte-exact; copy/cmp,
+empty production Git diff and restoration receipt0 confirm no mutant remains.
+
+PR396 now merges normally as32145c3f09986da75c6cf332080d81813764fb8e at
+2026-10-24T01:51:48Z after all six checks passed on exact881e606f. Original
+tested merge, submitted head, current merge and delivered source share tree
+c40dc269. Required Nix completes01:30:55Z with actual matching/denied Stop
+processes, full flake and both fuzz campaigns; normal server review requirements
+are satisfied without bypass. Its PR body now accurately records delivered394.
+This supplies the denied-Stop slice; public pressure/full R23 remain separate.
+
+Before final checks this stage fast-forwards to that actual main. Exact stash
+b6803c26bdcdd339dc3a3f2213c74f2e30993f8d preserves the four owned paths including
+the untracked public test; applying that exact object restorese660. Only the
+two shared records conflict. Preserve both complete public and Stop sections,
+the delivered R10 records and exact new main Stop source8f7427dd. Earlier
+e660 results stay scoped to the pre-integration baseline; source equivalence
+and fresh final tests must qualify the retained composition.
+
+Strict Clippy on restorede660 identifies two test-only defects before retention:
+the production Network source is included twice in the same integration crate,
+and an empty-vector assertion hides the unexpected values. Reuse ONE existing
+Network module at the process-test parent and import it from both children;
+delete the duplicate declarations. This adds no transport or new interface.
+Keep the custody inspector private to its sole pressure consumer. Assert the
+complete empty User vector with ordinary equality. This necessary containment
+adds the existing lost-reply child as a fifth path; no owning Network or other
+production source changes. Recheck strict lint, healthy profiles and the full
+owning package; prove the delivered Stop body remains exact apart from the
+mechanical shared import. No new architecture is justified by these diagnostics.
+
 ## Separate-program denied Stop — pre-edit record (2026-10-23)
 
 R23 still requires the ordinary application's denied-Stop witness. The smallest

@@ -1,5 +1,24 @@
 # Backlog status and dependencies
 
+Public held-reply pressure is locally qualified on actual main32145c3f.
+Current shared sourcea20580e4 passes its focused parent and complete eleven-
+outer-test package in both profiles; four named subprocess registrations are
+exercised by their parents. Formatting, strict workspace/all-target/all-feature
+Clippy and all six retained input checks pass. The earlier e660 native-send
+omission fails its intended reply vector after cleanup in both profiles;
+production is restored exactly. Its later unreached assertions receive no
+negative credit. Mechanical shared imports preserve the tested operations.
+
+This five-path stage adds verification+1014/-6/net1008, production/API0.
+The two-pass final review4eeebbaa accepts local outcomes and containment.
+New-head CI/review/main delivery, private399's separate permit boundary,
+NET-14 mailbox Full, exit/scenario mapping and full R23 remain open.
+
+PR396 delivered denied Stop as32145c3f at01:51:48Z after six successful checks
+on881e606f; tested/head/merge trees matchc40dc269. Actual main is integrated
+into this public-pressure stage while preserving both full evidence sections.
+The following Stop integration paragraph is its historical submission scope.
+
 Denied-Stop follow-up integrates actual main277e6dfe and provider headed72df92.
 Its test source8f7427dd is unchanged: both real-program controls pass D/R,
 the intended proof inverse fails the actual child verification oracle after
@@ -15,10 +34,10 @@ verified/merge trees match3e062d6a. Its actual patched-lock Nix gate runs all21
 commands; independent raw-job review79e171a1 retains the evidence. The clean,
 pushed task worktree is safely archived and removed. Five Python files remain.
 
-Actual main277e6dfe is now integrated into the provider/R10 follow-up. Only
-PRD/status records conflicted; qualified UI/runtime sources and patched locks
-are unchanged. Earlier e68d521f's six-green CI remains historical. Fresh
-submitted-head checks/review and normal PR394 merge remain required.
+At the earlier main277 integration, only PRD/status records conflicted;
+qualified UI/runtime sources and patched locks were unchanged. Earlier
+e68d521f's six-green CI stays historical. New ed72 checks subsequently passed;
+actual PR394 delivery is recorded in the current remote PRD.
 
 Latest user direction removes all implementation budgets and preapproves their
 expansion: “there is no budget.” Do not request line/path/type/verification
@@ -28,8 +47,8 @@ govern completion. The complete remote PRD remains active.
 
 PR392 merged the finite-test application at2026-10-23T19:21:29Z as632bf184,
 after all six checks passed on95c1105a; verified and merge trees match.
-Actual main is integrated into this provider-interface/R10 evidence follow-up.
-Its own required CI/main delivery remains open.
+That main was integrated into the provider-interface/R10 follow-up, whose
+subsequent PR394 delivery is recorded in the current remote PRD.
 
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged coverage Python
 retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
@@ -66,9 +85,9 @@ The complete selected R10 witness is locally satisfied by explicit finite-test
 selection, early production refusal, the genuine Test journey, its intended
 guard inverse/restoration and both deterministic provider implementations.
 The [complete evidence](../prds/static-remote-actors/acceptance.md#r10--explicit-test-identity-and-production-refusal-2026-10-23)
-records distinct source/lock epochs and both source/evidence reviews. All other
-full rows remain open; this follow-up's required CI/delivery, Selo and broader release
-obligations are separate. No completion percentage is inferred.
+records distinct source/lock epochs and both source/evidence reviews. PR394
+delivery is recorded in the current remote PRD. All other full rows, Selo and
+broader release obligations remain separate. No completion percentage is inferred.
 
 PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,
 with all six required checks passing on e1eab601. Its source tree is identical

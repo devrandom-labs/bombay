@@ -1,6 +1,7 @@
 //! Proposed child of tests/processes.rs; fault custody belongs only to this test.
 use super::{
-    Mode, Program, ProgramRole, ReplyProof, assignment, counter, deployment, protocol, provision,
+    Mode, Program, ProgramRole, ReplyProof, assignment, counter, deployment, network, protocol,
+    provision,
 };
 use bombay::actors::ActorExt;
 use bombay::prelude::*;
@@ -25,11 +26,6 @@ use thiserror::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::oneshot;
-
-// Relative to the proposed tests/processes/lost_reply.rs destination. This is
-// the application's exact Network input construction, not another transport.
-#[path = "../../src/network.rs"]
-mod network;
 
 #[derive(Debug, Error)]
 enum Refusal {

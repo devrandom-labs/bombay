@@ -27,6 +27,8 @@ mod counter;
     reason = "the controller shares actual binding and operation types; each program executes validation and providers"
 )]
 mod deployment;
+#[path = "../src/network.rs"]
+mod network;
 #[path = "../src/protocol.rs"]
 #[expect(
     dead_code,
@@ -40,6 +42,8 @@ use protocol::Value;
 mod arguments;
 #[path = "processes/lost_reply.rs"]
 mod lost_reply;
+#[path = "processes/pressure.rs"]
+mod pressure;
 
 #[derive(Clone, Copy)]
 enum Mode {
