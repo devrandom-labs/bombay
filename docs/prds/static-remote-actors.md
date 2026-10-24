@@ -1,6 +1,66 @@
 # Static remote actors and typed admission
 
-## Tokio I/O safety prerequisite (2026-10-23)
+## R17 support reconciliation — pre-edit record (2026-10-24)
+
+The literal R17 support witness has no populated current evidence record,
+although the selected fixed TLS profile and its adverse startup cases already
+execute in delivered main277e6dfe. Reconcile those facts at the existing
+acceptance owner; do not invent another runtime, configuration or test suite.
+This stage changes only this PRD, its acceptance companion and the backlog
+status index. Production, test Rust, configuration, dependencies and public
+API all remain unchanged. Expected three existing Markdown paths only.
+
+Fresh source/lock inspection confirms Behavior/Actors0.29.0 at55dbac2d,
+macros0.16, Address0.3/9f058dc0, Communication0.1.6/963067e0, Timers0.2/9369d1f6
+and local Observe; no patch override. Their source/public contracts/tests/docs
+and complete selected Behavior AGENTS retain the existing owners. Network
+owns explicit configuration; Application/Node owns native opening and exact
+refused-original custody; existing native ingress and public application tests
+own connectivity/cleanup. No dependency ownership edge is unresolved here.
+Root/isolated locks83f01ca3/667a1820 and six concrete source owners match the
+reviewed delivered main. The actual required Nix log9b1d2ddd names the mapping,
+native Peer/Router, public Node refusal and separate-program passes in both
+profiles. Its durable archive is independently hash-verified in the support
+record. No old green badge or unexecuted example substitutes for those traces.
+
+Independent two-pass review2c210f4a maps every literal R17 clause to source and
+actual outcomes, challenging disabled connectivity, silent discovery fallback,
+missing TLS input, untested topology and source/version substitution. Only
+tested scope receives credit. Broader ZEN-04 platform certification is explicitly
+deferred in this PRD; R21 metadata/isolation and remaining R23 scenarios stay
+open. The historical61eca7a6 audit table retains its original source scope;
+current complete row states belong to the acceptance records. The separate
+native-controller PR397 is not a prerequisite and receives no support credit
+from this documentation reconciliation. Final measured delta, independent
+record review, required CI and actual main delivery remain pending.
+
+### R17 retained record review and complete delta
+
+The support record is retained at its existing acceptance owner. Independent
+two-pass review57fbcf55b5d3c058f6e36b57cc65d6bb664830925cfbb32cafc165d52ed0cc2c
+finds no scoped veto after the stale advisory status was explicitly labelled
+historical. Its original source review2c210f4a and the final review are copied
+to the durable session archive's `r17-support-review-20261024/` directory.
+No supplemental unmerged native campaign is needed or credited for R17.
+
+Actual local checks: the literal normative R17 row compares byte-identical to
+main; all software/configuration/dependency paths are unchanged; diff whitespace
+passes; main277e6dfe and reviewed90ecb176 have the identical source tree3e062d6a.
+The actual earlier required Nix traces and typed adverse cases are attributed
+in the support table, not relabelled as new execution. No Rust test is added or
+rerun for this documentation-only reconciliation.
+
+Complete tracked/untracked stage census against main277e6dfe: production and
+test Rust+0/-0/net0; public types+0/-0; configuration/dependencies0; documentation
++150/-7/net143 across exactly three existing Markdown paths, with no
+untracked repository files. Earlier costs and all independent row states carry.
+Required submitted-head CI/review and actual main merge remain pending.
+
+## Tokio I/O safety prerequisite — historical implementation record (2026-10-23)
+
+The implementation checkpoints below retain their original source scope.
+Actual PR395 delivery is recorded in the current status; their pending language
+does not describe the current patched locks.
 
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
 locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
@@ -61,6 +121,31 @@ type ceilings and budget approval checkpoints. Do not ask for budget increases
 again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
+
+PR395 merged patched Tokio as36b5c1f9f92b56f527167076249d12c1ceba0545 at
+2026-10-23T23:26:42Z after six successful checks on be200b25; verified/merge
+trees match7f8c9218. PR393 merged child Python retirement as
+277e6dfe2c5377b8b31810c025509322640a588e at23:44:22Z after six successful
+checks on90ecb176; verified/merge trees match3e062d6a. Its actual patched-lock
+required Nix40014264183 executes the21-command owner, including intended
+native failures and restored controls. The clean/pushed task worktree was
+retired without force after full source/CI archiveccbc9473 and independent
+extracted checksum verification.
+
+R17's literal dependency/configuration witness is now locally satisfied for the
+[fixed TLS support record](static-remote-actors/acceptance.md#current-r17-support-record--fixed-tls-profile-2026-10-24):
+exact SDK1.10.10/Config1.10.2/Protocol1.10.1, patched Tokio1.53.3, explicit
+Peer/RouterClient configuration, discovery disabled, actual native connectivity
+and delivered Peer two-program application, plus typed configuration/native-open
+refusals. Only Peer receives public two-process application credit; native
+RouterClient and mapped address alternatives retain their stated evidence scope.
+This records existing patched-lock main277e6dfe evidence and changes no runtime
+or supported platform. Broader ZEN-04 platform certification, R21 and remaining
+R23 requirements stay open. Other rows keep their independent record states;
+full AUTH1/NET1 and the PRD remain active. This documentation-only stage still
+needs its own final review, required CI and actual main delivery.
+
+### Earlier application and child integration checkpoint
 
 [PR392](https://github.com/devrandom-labs/bombay/pull/392) merged the finite-test
 remote Counter at2026-10-23T19:21:29Z as632bf18454016de9b986066c0130a83142a9187d.
@@ -39110,6 +39195,10 @@ longer watchdog or dismissal of the current reproducible failure. Await-stage
 localization is still the next diagnostic once its file is within scope.
 
 ### Whole-PRD acceptance audit at61eca7a6
+
+This is the historical61eca7a6 source audit. Current complete row states belong
+to the populated acceptance records; the original table below is not rewritten
+to give this earlier source credit for later deliveries or reconciliation.
 
 The previous goal turn made progress through the qualified consumer and lint
 commits. Fresh two-pass audits now compare every normative acceptance row with

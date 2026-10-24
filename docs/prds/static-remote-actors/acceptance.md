@@ -2,9 +2,43 @@
 
 The dated prerequisite checkpoints below are historical evidence at their
 stated revisions. The [current feature status](../static-remote-actors.md#current-status-2026-10-23-utc)
-owns current dependency, implementation and verification facts. All full
-acceptance rows remain open; historical failures and passing runs keep their
-original source scope.
+owns current dependency, implementation and verification facts. Complete row
+states belong to the populated evidence records below. R17 is locally satisfied
+for its recorded fixed TLS profile; other rows retain their independent states.
+Semantic acceptance, record delivery and full feature completion are separate.
+Historical failures and passing runs keep their original source scope.
+
+## Current R17 support record — fixed TLS profile (2026-10-24)
+
+R17's literal dependency/configuration witness is locally satisfied for the tested profile below. This records existing executed evidence; it adds no networking implementation, public API or support for an untested platform. Its documentation delivery remains subject to the owning PR's review/CI/main merge. Every other acceptance row retains its independently recorded state.
+
+### Reproducible inputs
+
+Delivered main `277e6dfe2c5377b8b31810c025509322640a588e` contains PR392's public two-program application, PR395's patched dependency and PR393's required-gate execution. Root lock SHA256 `83f01ca3ff82f49f485cb017d14279a654fafc2dfb592f4818b9b726686a3578`; isolated native lock `667a182086669aab92209509ad8646b189818918a68328655c318fd81a242982`.
+
+Bombay's `remote` feature is explicit; crate defaults are empty. Its manifests select `bombay-zenoh=1.10.10`, `bombay-zenoh-config=1.10.2`, `zenoh-protocol=1.10.1`, defaults disabled and SDK `transport_tls` only. Locked TLS link/transport are1.10.4 and Tokio1.53.3. These are declared/locked profile facts, not a relabelled fresh all-features metadata expansion. No experimental, UDP or shared-memory transport is selected.
+
+| Configuration and exact owner | Executed evidence | Supported claim and limit |
+| --- | --- | --- |
+| `NetworkLayout::Peer`, explicit listen-only or connect-only; public example `src/network.rs` | Delivered `examples/remote-counter/tests/processes.rs::separate_programs_increment_read_and_stop_through_real_tls`: distinct actual OS PIDs/runtime bindings; real encoded Increment→processed101→Read1→Stop; both clean application exits. Required patched-lock Nix reruns it in debug and optimized profiles. | Direct TLS Peer-to-Peer on tested Unix localhost; current required CI is Linux. This is public application evidence, not shared-process Sessions or a configuration-only example. No container, Kubernetes, arbitrary multi-host/DNS or Windows assignment-socket certification. |
+| Peer connect-only/listen-only/both-direction and `NetworkLayout::RouterClient`; `Network::to_configuration` | `remote::network::tests::layouts_preserve_addresses_credentials_and_the_fixed_profile` compares actual selected native getters: exact supplied address lists with native AllOf, independent deployment/connect/listen credential sources, mode and query limits, TLS-only/mTLS/name verification. Current patched-lock Nix passes debug and optimized. | All four configuration alternatives are mapped without implicit direction or credential fallback. IPv6/address-list forms have getter/configuration coverage; that is not runtime deployment certification for each address/platform. |
+| RouterClient to an external Router; same Network owner | `remote::network::tests::ingress::refused_queries_complete_while_accepted_queries_remain_retained` opens actual TLS Sessions for both a Peer listener and a controlled Router listener; the Router branch uses RouterClient. Real queries, transfer refusals, native FINAL/EOF, permit return, undeclarations and both Session closes are acquired. Current patched-lock Nix passes both profiles. | Selected RouterClient connectivity is tested at the actual native transport boundary. This retained witness has multiple Sessions in one OS process. Router remains external infrastructure, not a third public Network layout. There is no delivered public two-process Router application claim or invented requirement that every alternative have one. |
+| Missing/empty required directions; same Network owner | `empty_directions_and_absent_peer_connections_refuse_without_consuming_inputs` observes exact typed `NodeStartupRefusal::Unsupported` for no Peer direction and every supplied empty direction, including RouterClient, preserving originals. Native getter tests also reject injected endpoint options. Both profiles execute in current required Nix. | Disabled required configuration cannot silently choose another layout/address or discovery profile. This is typed configuration refusal, not a promise that an asynchronously reconnecting remote peer's absence makes Session open fail immediately. |
+| Missing required TLS input; actual public `Application::open_node` | `public_node::public_node_native_open_refusal_preserves_usable_application_and_original_configuration` removes the actual required PEM, requires native `NodeStartupRefusal::Open`, exact standard source identity and original inputs, then uses the recovered Application for a real local Read and joined cleanup. Current required Nix runs the six-case public_node cohort debug/optimized,6passed/0failed/0ignored/63filtered each. | Actual native startup fails closed with originals/cause retained and no profile substitution. Missing-PEM failure is not a wrong-trust-root, peer-authentication or ACL-denial witness; R20 and R07 remain distinct. |
+
+The fixed profile disables **all three** discovery controls: multicast discovery `enabled=false`, multicast `listen=false`, gossip `enabled=false`. Only TLS is permitted, mutual TLS/name verification are enabled, public PKI is disabled, and directions carry explicit credentials. This is enforced by the exact Network source and independent native-getter assertions; successful native/application traces use those same owners. There is no discovery/experimental fallback on configuration or native-open failure. Matching visibility is not identity, actor readiness, hosting authority or delivery assurance.
+
+### Actual provenance and durable evidence
+
+Required [Nix job120622350998/run40014264183](https://github.com/devrandom-labs/bombay/actions/runs/40014264183/job/120622350998) succeeds on submitted `90ecb176982844c057aae3fab05bf6ca6e27f926` at2026-10-23T21:57:46Z; reviewed/merge source tree matches main277e6dfe. Raw job log SHA256 `9b1d2ddd9200cce088564af614382cc50a1e173ac905e421ee5ab033b9322905` names the mapping/native-ingress/application passes and actual public_node commands/results in both profiles. Public native-open refusal appears at raw lines20018/20032; six-case summaries at20022/20038. The separate empty `pr393-final-nix-job-20261024.json` API attempt is not evidence; actual check metadata is `pr393-merged-20261024.json`, SHA256 `662eb82f0a57208e623e88fb28014a7a1892fe072fb14869c2395e9f4ec497d2`.
+
+Durable original CI evidence is `/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/child-retirement-patched-ci-20261024.tar.gz`, SHA256 `ccbc947310b69c858a1156423c59562ce34c81db0fa2960c46de28c26d02e1af`, including that exact raw Nix log. This support record is not a compiler/binary closure or certification of every historical external artifact.
+
+### Completion boundary
+
+This populates the literal R17 record: exact versions/features, explicit tested topologies, real processes using the declared profile, and typed failure when required configuration is absent. No further implementation or mandatory every-layout public application was identified for that scoped witness. The selected PRD explicitly defers broader ZEN-04 container/Kubernetes deployment certification; that backlog debt remains. Neither this table nor Peer success closes authenticated metadata/availability/deployment isolation in R21, R23 pressure/exit/scenario mapping, security, production identity, full AUTH1/NET1 or the full PRD. No existing row's literal required oracle is reduced.
+
+## Historical source checkpoints
 
 Main reconciliation (2026-10-16, historical): mainf25e4a0c includes PR375 and
 the reviewed, CI-passing PR382 test-only compatibility repair. It selects
@@ -52,8 +86,8 @@ This closes no Query privacy, full R25 or service lifecycle requirement.
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.
-Every full R01–R25 witness is **unexecuted** until its evidence record is
-populated. The shared-native replay design stage is now recorded in the
+A row without a populated complete evidence record remains unexecuted; partial
+prerequisites alone cannot close its witness. The shared-native replay design stage is now recorded in the
 PRD: real Counter processing/value/Stop and unrelated Ledger native consumers
 must pass focused controls and intended inversions before caller migration.
 Cold retention, entered-constructor uncertainty, permission loans and permanent

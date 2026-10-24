@@ -1,6 +1,26 @@
 # Backlog status and dependencies
 
-Current prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
+R17's populated support record now locally satisfies its literal witness for
+the selected fixed TLS profile, using delivered source and actual patched-lock
+CI evidence on main277e6dfe. It separates the public two-program Peer application,
+native RouterClient connectivity, mapped address alternatives and typed
+configuration/native-open refusals. No implementation
+or other row state changes. Broader ZEN-04, R21, remaining R23 and full remote
+acceptance stay open. Independent final record review57fbcf55 passes; this
+record's required CI and actual main delivery remain pending.
+
+PR395 merged the patched locks as36b5c1f at2026-10-23T23:26:42Z after six
+successful checks on be200b25. PR393 merged child Python retirement as277e6dfe
+at23:44:22Z after six successful checks on90ecb176, including actual patched-lock
+Nix40014264183 and its21-command native owner. Verified and merge trees match
+for both deliveries. Its clean/pushed task worktree was safely retired after
+full source/CI archiveccbc9473 and independent checksum readback. The support
+record uses that actual delivered main; separate open PRs retain their own
+submitted-head CI and delivery gates.
+
+### Historical advisory and child integration checkpoints
+
+Earlier prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
 reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
 upstream-patched1.53.3 in the root and isolated transport locks and changes
 the isolated exact pin at its owner. No advisory exception, runtime/API change
