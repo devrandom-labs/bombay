@@ -1,5 +1,48 @@
 # Backlog status and dependencies
 
+PR399's private held-native-request test remains locally qualified on exact
+limits810 and unchanged production45282. Its proposed integration inherits
+immutable398/1e70671d, including397/a84c0dbf and actual delivered main321.
+Deliver397, then398, before this stacked399; this is temporary source delivery
+ordering, not a new semantic PRD dependency or additional capacity witness.
+Those two prerequisite deliveries are not claimed merged. Fresh exact-head
+CI, conservation review and normal main delivery remain required for each.
+
+Actual394=b45 and396=321 are delivered after six successful checks and matching
+verified/tested/delivered source trees. Complete provider/R10, Stop, native
+shell-correction and R17 histories are retained. R10 and R17 keep their distinct
+populated records; full R23/remote acceptance stays open. PR399 selects only
+the existing limits test and its two records, production/API0. Inherited
+nativee78/workflow471, main UI/Stop/acceptance, locks and production stay exact.
+
+### Original held-request qualification and pre-edit checkpoints
+
+The held-native-request capacity test is locally qualified: the intended
+early-permit source cut fails its saved Get oracle after cleanup in both
+profiles, exact production restoration is verified, and final limits3/3 plus
+full library425/425 pass. Formatting and strict all-target/all-feature Clippy
+pass. The retained change is tests+489/-4/net485, production/API0, three
+existing paths. Required CI, reviewed main delivery and the public two-process
+pressure/cancellation/exit/scenario acceptance remain open. Full R23 is active.
+
+### Held-request pre-edit checkpoint
+
+The private held-native-request capacity regression is selected before the
+larger public R23 pressure application. It directly polls the same B request
+while A's actual native Query is held; saved Get phase distinguishes permit
+waiting from waiting on B's own reply. Expected test-only+279/-4 beforefmt,
+production/API0, three existing paths including records. The intended inverse
+releases A's permit before native reply EOF; all cleanup must precede its
+saved-phase failure. Corrected source review preserves B protection facts and
+manual poll/resume wording. Execution, final checks and main delivery remain
+pending; public two-program pressure and full R23 stay open.
+
+PR395 delivered the patched locks as36b5c1f and PR393 delivered child Python
+retirement as277e6dfe after all six checks passed on their exact heads;
+verified/merge trees match. This stage starts from that actual main277e6dfe
+and patched root lock83f01ca3. The earlier advisory checkpoint below is
+historical. Other remote acceptance and pending PR deliveries stay separate.
+
 R17's literal support witness is locally satisfied for the
 [recorded fixed TLS profile](../prds/static-remote-actors/acceptance.md#current-r17-support-record--fixed-tls-profile-2026-10-24).
 This is existing patched-lock main277 evidence: public two-program Peer,

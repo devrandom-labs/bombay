@@ -1,5 +1,5 @@
 //! Distinct active-operation, Source-row and native-response count policies.
-use super::super::{Client, ClientLimits};
+use super::super::{Client, ClientLimits, Request};
 use crate::MailAddr;
 use crate::application::{ApplicationScope, MailboxCapacity};
 use crate::local::endpoint::ExtractLocalEndpoint;
@@ -9,13 +9,14 @@ use behavior::{EstablishedRecipient, MessageProtocol, Never, User};
 use futures_util::FutureExt;
 use futures_util::future::Either;
 use std::cell::{Cell, RefCell};
-use std::future::{Future, poll_fn};
+use std::future::{Future, poll_fn, ready};
 use std::num::NonZeroUsize;
 use std::pin::pin;
-use std::sync::PoisonError;
+use std::rc::Rc;
+use std::sync::{Arc, PoisonError};
 use std::task::Poll;
 use std::time::Duration;
-use tokio::sync::{TryAcquireError, oneshot};
+use tokio::sync::{Semaphore, TryAcquireError, oneshot};
 use tokio::task::unconstrained;
 use zenoh::sample::Locality;
 use zenoh_config::{Config, ModeDependentValue, WhatAmI};
@@ -538,4 +539,488 @@ async fn retain_requests(retained: usize, responses: usize) {
         let registry = registries[position].borrow();
         assert_eq!(registry.len(), 2);
     }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one permit trace retains both actual request futures, native originals and cleanup before the saved pre-release observations"
+)]
+async fn held_native_reply_keeps_the_second_request_waiting() {
+    tokio::time::timeout(Duration::from_secs(10), async {
+        let mut configuration = Config::default();
+        configuration.set_mode(Some(WhatAmI::Peer)).unwrap();
+        configuration
+            .set_queries_max_retained(NonZeroUsize::new(2))
+            .unwrap();
+        configuration
+            .connect
+            .set_endpoints(ModeDependentValue::Unique(Vec::new()))
+            .unwrap();
+        configuration
+            .listen
+            .set_endpoints(ModeDependentValue::Unique(Vec::new()))
+            .unwrap();
+        configuration
+            .scouting
+            .multicast
+            .set_enabled(Some(false))
+            .unwrap();
+        configuration
+            .scouting
+            .multicast
+            .set_listen(Some(ModeDependentValue::Unique(false)))
+            .unwrap();
+        configuration
+            .scouting
+            .gossip
+            .set_enabled(Some(false))
+            .unwrap();
+        let session = zenoh::open(configuration)
+            .await
+            .expect("the actual native Session opens");
+        let runtime = session.zid().to_string();
+        let key = "bombay/outbound/held-native-permit";
+        let queryable = session
+            .declare_queryable(key)
+            .allowed_origin(Locality::SessionLocal)
+            .await
+            .expect("the actual local Queryable opens");
+        let scope = ApplicationScope::new().client_capacity(MailboxCapacity::new(2).unwrap());
+        let source = scope
+            .external::<MessageProtocol<MailAddr, Box<[u8]>>>()
+            .unwrap();
+        let mut target = scope.external::<MessageProtocol<MailAddr, u64>>().unwrap();
+        let source_address = source.address();
+        let target_address = target.address();
+        let endpoint = target.recipient().interpret(&mut ExtractLocalEndpoint);
+        let registries = [RefCell::new(Vec::new()), RefCell::new(Vec::new())];
+        let mut originals = Vec::new();
+        let mut admitted = Vec::new();
+        for sequence in 0..2u64 {
+            let mut claims = metadata(ProviderProfile::Recorded, "caller".into(), runtime.clone());
+            claims.actor_generation = target_address.0;
+            claims.request_sequence = sequence;
+            let original = serde_json::to_vec(&ReadRequestRef {
+                bombay: &claims,
+                kind: Purpose::Request,
+                operation: CounterOperation::Read,
+            })
+            .unwrap()
+            .into_boxed_slice();
+            originals.push((original.as_ptr(), original.to_vec()));
+            admitted.push(target.send(&source.recipient(), original).await);
+        }
+        let authority = RefCell::new(target_address);
+        let mut client = Client::new(
+            source,
+            key,
+            ClientLimits {
+                concurrent_requests: NonZeroUsize::new(1).unwrap(),
+                retained_requests: NonZeroUsize::new(2).unwrap(),
+                retained_responses: NonZeroUsize::new(1).unwrap(),
+            },
+            limits(),
+            Duration::from_secs(20),
+            |original: &User<MailAddr, Box<[u8]>>, actual_runtime: &str, actual_target| {
+                let request: ReadRequest = serde_json::from_slice(&original.message)
+                    .map_err(VerificationError::Declaration)?;
+                if original.from != target_address
+                    || actual_target != target_address
+                    || actual_runtime != runtime
+                    || request.kind != Purpose::Request
+                    || request.operation != CounterOperation::Read
+                {
+                    return Err(VerificationError::Invalid);
+                }
+                Ok(Some(original.message.to_vec().into_boxed_slice()))
+            },
+            async |bytes: &[u8], _: &User<MailAddr, Box<[u8]>>| {
+                let request: ReadRequest =
+                    serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+                let position = usize::try_from(request.bombay.request_sequence)
+                    .map_err(|_| VerificationError::Invalid)?;
+                let mut logical = logical_scope();
+                logical.identity.sequence = request.bombay.request_sequence;
+                logical.identity.binding.actor_generation = target_address.0;
+                recorded::protect_request(bytes, &request.bombay, logical, &registries[position])
+                    .await
+            },
+            async |bytes: &[u8], proof: &[u8]| {
+                let response: ReadReply =
+                    serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+                let position = usize::try_from(response.bombay.request_sequence)
+                    .map_err(|_| VerificationError::Invalid)?;
+                recorded::verify(
+                    &ProtectedMessage {
+                        protected: bytes.into(),
+                        proof: proof.into(),
+                    },
+                    &registries[position],
+                )
+                .await
+            },
+            |receipt: &recorded::Receipt, bytes: &[u8], original: &User<MailAddr, Box<[u8]>>| {
+                let response: ReadReply =
+                    serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+                let request: ReadRequest = serde_json::from_slice(&original.message)
+                    .map_err(VerificationError::Declaration)?;
+                if response.bombay != recorded::projection(receipt).0.bombay
+                    || response.bombay != request.bombay
+                    || response.kind != Purpose::ReadReply
+                    || response.operation != CounterOperation::Read
+                    || response.value != request.bombay.request_sequence
+                {
+                    return Err(VerificationError::Invalid);
+                }
+                Ok(response.value)
+            },
+            |original: &User<MailAddr, Box<[u8]>>, actual_runtime: &str, actual_target| {
+                let authority = authority.borrow();
+                if original.from == *authority
+                    && actual_target == *authority
+                    && actual_runtime == runtime
+                {
+                    Ok(authority)
+                } else {
+                    Err("the actual request does not name this return endpoint")
+                }
+            },
+            |receipt: &recorded::Receipt,
+             original: &User<MailAddr, Box<[u8]>>,
+             actual_runtime: &str,
+             actual_target| {
+                let authority = authority.borrow();
+                let claims = &recorded::projection(receipt).0.bombay;
+                if original.from == *authority
+                    && actual_target == *authority
+                    && actual_runtime == runtime
+                    && claims.runtime_generation.as_ref() == actual_runtime
+                    && claims.actor_generation == actual_target.0
+                {
+                    Ok(authority)
+                } else {
+                    Err("the actual reply does not name this return endpoint")
+                }
+            },
+        );
+        let declared = <Client<_, _, _, _, _, _, _, _, _, _> as Exports<
+            MessageProtocol<MailAddr, u64>,
+            Never,
+            (),
+            EstablishedRecipient<MessageProtocol<MailAddr, u64>>,
+        >>::declare(&mut client, &session)
+        .await;
+        // Consume the real admitted Source prefix once, retaining its exact Users.
+        client.source.close_admission();
+        let first_original = client
+            .source
+            .receive()
+            .await
+            .expect("the first admitted original");
+        let second_original = client
+            .source
+            .receive()
+            .await
+            .expect("the second admitted original");
+        let source_eof = client.source.receive().await;
+        if source_eof.is_none() {
+            client.source_eof = Some(());
+        }
+        let (publication, joined) = oneshot::channel();
+        let joined = joined.shared();
+        let (
+            first_poll,
+            second_poll,
+            second_query_before_release,
+            second_protection_before_release,
+            second_registry_before_release,
+            received,
+        ) = {
+            let first = Rc::new(Request::new(first_original));
+            let second = Rc::new(Request::new(second_original));
+            client.requests.borrow_mut().push(Rc::clone(&first));
+            client.requests.borrow_mut().push(Rc::clone(&second));
+            Client::<_, _, _, _, _, _, _, _, _, _>::select(
+                &client.inputs,
+                &first,
+                &runtime,
+                target_address,
+            );
+            Client::<_, _, _, _, _, _, _, _, _, _>::select(
+                &client.inputs,
+                &second,
+                &runtime,
+                target_address,
+            );
+            let querier = client
+                .querier
+                .as_ref()
+                .expect("actual declaration acquired this Querier");
+            // Use the real initial native observation, not a manufactured ready-route result.
+            let observed = loop {
+                match querier.matching_status().await {
+                    Ok(status) if status.matching() => break Ok(()),
+                    Ok(_) => match client
+                        .listener
+                        .as_ref()
+                        .expect("native listener acquired")
+                        .recv_async()
+                        .await
+                    {
+                        Ok(_) => {}
+                        Err(cause) => break Err(cause),
+                    },
+                    Err(cause) => break Err(cause),
+                }
+            };
+            *client.visibility.borrow_mut() = Some(observed);
+            let capacity = Arc::new(Semaphore::new(client.inputs.1.concurrent_requests.get()));
+            let mut first_wait = pin!(unconstrained(
+                Client::<_, _, _, _, _, _, _, _, _, _>::request(
+                    &client.inputs,
+                    &first,
+                    querier,
+                    &endpoint,
+                    source_address,
+                    target_address,
+                    &runtime,
+                    Arc::clone(&capacity),
+                    ready(&client.visibility),
+                    joined.clone(),
+                )
+            ));
+            let mut second_wait = pin!(unconstrained(
+                Client::<_, _, _, _, _, _, _, _, _, _>::request(
+                    &client.inputs,
+                    &second,
+                    querier,
+                    &endpoint,
+                    source_address,
+                    target_address,
+                    &runtime,
+                    Arc::clone(&capacity),
+                    ready(&client.visibility),
+                    joined.clone(),
+                )
+            ));
+            // Recorded protection is Ready and native Get entry returns Ready;
+            // this poll reaches A's actual native response receive, with P held.
+            let first_poll =
+                poll_fn(|context| Poll::Ready(first_wait.as_mut().poll(context))).await;
+            let held = queryable
+                .recv_async()
+                .await
+                .expect("A's actual native Query arrived");
+            // Manually poll a temporary borrow; resume the same pinned B later.
+            let second_poll = {
+                let mut borrowed = second_wait.as_mut();
+                poll_fn(|context| Poll::Ready(borrowed.as_mut().poll(context))).await
+            };
+            let second_query_before_release = match &*second.query.borrow() {
+                Attempt::Unattempted => Attempt::Unattempted,
+                Attempt::Uncertain => Attempt::Uncertain,
+                Attempt::Returned(_) => Attempt::Returned(()),
+            };
+            // Save only the actual result phase; the complete original output
+            // or refusal stays owned by B's row through final extraction.
+            let second_protection_before_release = second
+                .protected
+                .borrow()
+                .as_ref()
+                .map(|original| original.as_ref().map(|_| ()).map_err(|_| ()));
+            let second_registry_before_release = registries[1].borrow().len();
+            // No assertion precedes release. The same two-query driver also
+            // completes if the inverse has already submitted B while A is held.
+            let native = async {
+                let mut held = Some(held);
+                let mut received = Vec::new();
+                for _ in 0..2 {
+                    let query = match held.take() {
+                        Some(query) => query,
+                        None => queryable
+                            .recv_async()
+                            .await
+                            .expect("B's actual native Query arrived"),
+                    };
+                    let raw = query
+                        .payload()
+                        .expect("actual request payload")
+                        .to_bytes()
+                        .into_owned()
+                        .into_boxed_slice();
+                    let proof = query
+                        .attachment()
+                        .expect("actual request proof")
+                        .to_bytes()
+                        .into_owned()
+                        .into_boxed_slice();
+                    let request: ReadRequest = serde_json::from_slice(&raw).unwrap();
+                    let position = usize::try_from(request.bombay.request_sequence).unwrap();
+                    let receipt = recorded::verify(
+                        &ProtectedMessage {
+                            protected: raw.clone(),
+                            proof: proof.clone(),
+                        },
+                        &registries[position],
+                    )
+                    .await
+                    .unwrap_or_else(|_| panic!("the full registered request verifies"));
+                    let bytes = serde_json::to_vec(&ReadReplyRef {
+                        bombay: &recorded::projection(&receipt).0.bombay,
+                        kind: Purpose::ReadReply,
+                        operation: CounterOperation::Read,
+                        value: &request.bombay.request_sequence,
+                    })
+                    .unwrap()
+                    .into_boxed_slice();
+                    let response_proof = recorded::protect(&bytes, &receipt, &registries[position])
+                        .await
+                        .unwrap_or_else(|_| panic!("the full actual response pair registers"));
+                    // This releases A's real native wait, even if B was early.
+                    let published = query
+                        .reply(key, bytes.to_vec())
+                        .attachment(response_proof.to_vec())
+                        .await;
+                    drop(query); // Actual native FINAL; no timeout represents EOF.
+                    received.push((position, raw, proof, bytes, response_proof, published));
+                }
+                received
+            };
+            let ((), (), received) =
+                tokio::join!(first_wait.as_mut(), second_wait.as_mut(), native);
+            (
+                first_poll,
+                second_poll,
+                second_query_before_release,
+                second_protection_before_release,
+                second_registry_before_release,
+                received,
+            )
+        };
+        let joined_publication = publication.send(());
+        // Direct request futures have returned and their borrows have ended.
+        <Client<_, _, _, _, _, _, _, _, _, _> as Exports<
+            MessageProtocol<MailAddr, u64>,
+            Never,
+            (),
+            EstablishedRecipient<MessageProtocol<MailAddr, u64>>,
+        >>::withdraw(&mut client)
+        .await;
+        target.close_admission();
+        let mut deliveries = Vec::new();
+        while let Some(original) = target.receive().await {
+            deliveries.push(original);
+        }
+        let withdrawn = queryable.undeclare().await;
+        let closed = session.close().await;
+        let (source, _inputs, startup, withdrawal, joined_fact, source_eof_fact, rows, routes) =
+            client.into_parts();
+        // All native originals, both real EOFs and cleanup precede every oracle.
+        assert!(admitted.iter().all(Result::is_ok));
+        assert!(declared.is_ok() && withdrawn.is_ok() && closed.is_ok());
+        assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+        assert!(matches!(routes, (Some(Ok(())), Some(Ok(())), Some(Ok(())))));
+        assert!(joined_publication.is_ok() && joined_fact.is_none());
+        assert!(source_eof.is_none() && source_eof_fact.is_some());
+        assert_eq!(source.address(), source_address);
+        assert!(first_poll.is_pending() && second_poll.is_pending());
+        assert_eq!(rows.len(), 2);
+        assert_eq!(received.len(), 2);
+        assert_eq!(deliveries.len(), 2);
+        let mut delivered = deliveries
+            .iter()
+            .map(|original| (original.from, original.message))
+            .collect::<Vec<_>>();
+        delivered.sort_unstable();
+        assert_eq!(delivered, [(source_address, 0), (source_address, 1)]);
+        for (position, row) in rows.into_iter().enumerate() {
+            let (
+                original,
+                refusal,
+                encoded,
+                protected,
+                permission,
+                capacity,
+                query,
+                callback,
+                responses,
+                eof,
+                protection_panics,
+                operation_panics,
+                completed,
+            ) = row;
+            let native = received
+                .iter()
+                .find(|native| native.0 == position)
+                .expect("the actual request sequence identifies the row");
+            let encoded = encoded
+                .expect("actual encoding returned")
+                .unwrap_or_else(|_| panic!("valid original encoding"))
+                .expect("this source original requests a real Get");
+            let protected = protected
+                .expect("actual protection returned")
+                .unwrap_or_else(|_| panic!("registered original proof"));
+            assert_eq!(original.from, target_address);
+            assert_eq!(original.message.as_ptr(), originals[position].0);
+            assert_eq!(original.message.as_ref(), originals[position].1.as_slice());
+            assert_eq!(native.1.as_ref(), originals[position].1.as_slice());
+            assert_eq!(encoded.as_ref(), native.1.as_ref());
+            assert_eq!(protected.as_ref(), native.2.as_ref());
+            assert!(native.5.is_ok());
+            assert!(
+                refusal.is_none()
+                    && permission.is_none()
+                    && capacity.is_none()
+                    && callback.is_none()
+            );
+            assert!(matches!(query, Attempt::Returned(Ok(()))) && eof.is_some());
+            assert!(
+                matches!(protection_panics, (None, None, None))
+                    && matches!(operation_panics, (None, None, None))
+            );
+            // This component host directly polls request, not serve's outer provide.
+            assert!(completed.is_none());
+            assert_eq!(responses.len(), 1);
+            for response in responses {
+                let payload = response.payload().flatten().copied().collect::<Vec<_>>();
+                let proof = response
+                    .proof()
+                    .expect("actual response proof")
+                    .flatten()
+                    .copied()
+                    .collect::<Vec<_>>();
+                let (cause, wire, shape, verified, decoded, permission, panics) =
+                    response.into_parts();
+                let wire = wire.expect("actual processed wire pair");
+                let receipt = verified
+                    .expect("actual verification returned")
+                    .unwrap_or_else(|_| panic!("registered response pair"));
+                let projection = recorded::projection(&receipt);
+                let sequence = u64::try_from(position).unwrap();
+                assert_eq!(payload.as_slice(), native.3.as_ref());
+                assert_eq!(proof.as_slice(), native.4.as_ref());
+                assert_eq!(wire.0.as_ref(), payload.as_slice());
+                assert_eq!(wire.1.as_ref(), proof.as_slice());
+                assert_eq!(projection.0.bombay.request_sequence, sequence);
+                assert_eq!(projection.1.identity.sequence, sequence);
+                assert!(cause.is_none() && matches!(shape, Some(Ok(()))) && permission.is_none());
+                assert!(matches!(
+                    decoded,
+                    Some(Ok(Either::Right(Attempt::Returned(Ok(())))))
+                ));
+                assert!(matches!(panics, (None, None, None)));
+            }
+            let registry = registries[position].borrow();
+            assert_eq!(registry.len(), 2);
+        }
+        // A's actual native wait still owned capacity at this saved point.
+        // Both original rows, admitted replies and cleanup are now acquired.
+        assert!(matches!(second_query_before_release, Attempt::Unattempted));
+        // B had no protection result or registered pair before A's real EOF.
+        assert!(second_protection_before_release.is_none());
+        assert_eq!(second_registry_before_release, 0);
+    })
+    .await
+    .expect("the finite actual native permit trace joins before query expiry");
 }
