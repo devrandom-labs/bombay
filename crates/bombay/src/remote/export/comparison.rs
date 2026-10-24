@@ -1,7 +1,7 @@
 //! Actual receipt comparisons while the first native submission's protection is pending.
 use super::super::query::Exports;
 use super::super::request::Identity;
-use super::super::{Attempt, Export, ExportError, ExportLimits, submission};
+use super::super::{Attempt, Export, ExportError, ExportLimits, RefusalRetention, submission};
 use super::counter::{Counter, CounterMessage, CounterValue};
 use crate::actors::ActorExt;
 use crate::{
@@ -124,7 +124,8 @@ async fn compare() {
                         Export::new(
                             "bombay/pending-comparison",
                             ExportLimits {
-                                queued_queries: maximum,
+                                refusals: RefusalRetention::Retain,
+queued_queries: maximum,
                                 retained_queries: maximum,
                                 retained_requests: maximum,
                                 diagnostics: maximum,

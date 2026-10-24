@@ -10,7 +10,7 @@ use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
 use crate::application::work::invoke;
 use crate::behavior::{Behavior, EstablishedRecipient, Never, User};
-use crate::remote::{Export, ExportLimits, reply};
+use crate::remote::{Export, ExportLimits, RefusalRetention, reply};
 use crate::{
     ActorFailureAssessment, ActorRetirement, Application, ApplicationHandle, ApplicationScope,
     MailAddr, RetirementAssessment, WorkOutcome,
@@ -377,7 +377,8 @@ async fn public_binding_refusal(disposal: Option<Arc<Vec<u8>>>) {
         let maximum = NonZeroUsize::new(2).unwrap();
         let export = Export::new(
             "bombay/binding-disposal/read",
-            ExportLimits { queued_queries: maximum, retained_queries: maximum,
+            ExportLimits { refusals: RefusalRetention::Retain,
+queued_queries: maximum, retained_queries: maximum,
                 retained_requests: maximum, diagnostics: maximum },
             limits(),
             |bytes: &[u8]| serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes)
@@ -534,7 +535,8 @@ async fn public_binding_target_survives_disposal_with_genuine_work_absence() {
         let maximum = NonZeroUsize::new(2).unwrap();
         let export = Export::new(
             "bombay/binding-disposal/absent-read",
-            ExportLimits { queued_queries: maximum, retained_queries: maximum,
+            ExportLimits { refusals: RefusalRetention::Retain,
+queued_queries: maximum, retained_queries: maximum,
                 retained_requests: maximum, diagnostics: maximum },
             limits(),
             |bytes: &[u8]| serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes)

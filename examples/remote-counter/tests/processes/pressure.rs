@@ -3,7 +3,9 @@ use super::{Program, ReplyProof, counter, deployment, network, protocol, provisi
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Step, Stopped, User};
 use bombay::prelude::*;
-use bombay::remote::{Attempt, Client, ClientLimits, Export, ExportLimits, json, reply};
+use bombay::remote::{
+    Attempt, Client, ClientLimits, Export, ExportLimits, RefusalRetention, json, reply,
+};
 use bombay::{ActorFailureAssessment, ApplicationScope, RetirementAssessment};
 use counter::{Counter, CounterMessage, CounterValue};
 use deployment::{Binding, Deployment, Operation, Purpose, Receipt, Role};
@@ -227,6 +229,7 @@ async fn held_receiver() {
     let export = Export::new(
         protocol::KEY,
         ExportLimits {
+            refusals: RefusalRetention::Discharge,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

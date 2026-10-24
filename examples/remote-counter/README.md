@@ -58,6 +58,11 @@ a startup refusal. The operator must respond or close its socket connection;
 the actor timeout starts after application startup. No authority is learned
 from received peer claims.
 
+The server explicitly discharges completed ordinary refusals so invalid
+requests do not consume its request capacity forever. Issued request keys and
+provider panic evidence stay retained; this finite example does not provide an
+unbounded request cache or an aggregate memory bound.
+
 ## Results
 
 On success the customer prints:

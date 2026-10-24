@@ -6,7 +6,7 @@ use super::protocol::{
 };
 use super::{LedgerCommand, MailLedger, Receipts};
 use crate::application::{Application, MailboxCapacity};
-use crate::remote::{Attempt, Export, ExportLimits, Metadata, submission};
+use crate::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, submission};
 use crate::{
     ActorFailureAssessment, ActorRetirement, Completion, MailAddr, RetirementAssessment,
     TrySendError,
@@ -149,6 +149,7 @@ async fn append_after_full(next_permission: Permission) {
     let export = Export::new(
         "bombay/full-append",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

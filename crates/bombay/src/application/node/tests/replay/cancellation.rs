@@ -11,7 +11,7 @@ use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Never, User};
 use bombay::composition::{StashRoute, StashStatus, UnlimitedStash};
 use bombay::prelude::{Application, MailAddr};
-use bombay::remote::{Attempt, Export, ExportLimits, reply, verify};
+use bombay::remote::{Attempt, Export, ExportLimits, RefusalRetention, reply, verify};
 use core::future::{Future, poll_fn};
 use core::ops::AsyncFn;
 use core::pin::pin;
@@ -144,6 +144,7 @@ async fn stashed_ledger_reads<Receipt>(
     let export = Export::new(
         "bombay/cancellation/read",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: NonZeroUsize::new(3).unwrap(),

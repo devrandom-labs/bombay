@@ -78,7 +78,8 @@ first release at all.
 | [Local runtime](local-runtime.md) | Activation, the six interpreter gaps found at this snapshot, supervisors, pools, execution, authoring and template verification. |
 | [Core integration and upstream changes](core-integration.md) | Source-level supervisor/pool diagnosis, reproduced contract failures and repository-by-repository implementation handoff. |
 | [Execution ownership PRD](../prds/execution-ownership.md) | Compact execution preservation contract, eight gates, source witnesses and pinned historical decisions. |
-| [Observation disposal](../prds/observation-disposal.md) | Distilled: original repeated destruction reproduced; minimal repair passes local acceptance; PR/CI/main delivery remain. |
+| [Observation disposal](../prds/observation-disposal.md) | Merged: PR403/50e0de42; minimal repair, local acceptance and six exact-head CI checks pass. |
+| [Request recovery](../prds/request-recovery.md) | Active R09 implementation: restored full workspace tests pass in both profiles, with strict Clippy and formatting; PR404 awaits required CI and delivery. |
 | [Developer experience](../prds/developer-experience.md) | Paired Behavior PRD: one application path, inferred topology and native terminal custody. Integration and fresh combined checks remain required. |
 | [Static remote actor PRD](../prds/static-remote-actors.md) | Selected NET1/AUTH1 scope, dependency verification, correctness gates and parallel work plan; [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records the selection rationale. |
 | [Networking](networking.md) | Wire contracts, Zenoh sessions, remote delivery, discovery, queries and subscriptions. |

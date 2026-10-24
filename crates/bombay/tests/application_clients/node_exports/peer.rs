@@ -29,9 +29,9 @@ pub(super) struct Peer {
 }
 
 pub(super) struct Observations {
-    replies: Vec<Option<Reply>>,
-    additional: Vec<Reply>,
-    refused: Vec<Arc<Mutex<Option<TrySendError<Reply>>>>>,
+    pub(super) replies: Vec<Option<Reply>>,
+    pub(super) additional: Vec<Reply>,
+    pub(super) refused: Vec<Arc<Mutex<Option<TrySendError<Reply>>>>>,
     pub(super) closed: Result<(), NativeError>,
 }
 
@@ -75,12 +75,13 @@ impl Observations {
 impl Peer {
     pub(super) async fn quota(
         self,
-        request: ProtectedMessage,
-        shutdown: impl FnOnce() -> Result<(), ShutdownRejection>,
+        requests: [ProtectedMessage; 2],
+        shutdown: impl AsyncFnOnce() -> Result<(), ShutdownRejection>,
         retired: oneshot::Receiver<()>,
     ) -> (Observations, Result<(), ShutdownRejection>) {
+        let [first_request, second_request] = requests;
         self.wait_for(COUNTER).await;
-        let (mut first, first_refused) = self.query(COUNTER, &request).await;
+        let (mut first, first_refused) = self.query(COUNTER, &first_request).await;
         let mut replies = Vec::new();
         // Query FINAL must be observed while this actor and declaration remain live.
         // Preserve an unexpected reply as an observation and still finish cleanup.
@@ -88,13 +89,13 @@ impl Peer {
             replies.push(Some(original));
         }
         self.wait_for(COUNTER).await;
-        let (mut second, second_refused) = self.query(COUNTER, &request).await;
+        let (mut second, second_refused) = self.query(COUNTER, &second_request).await;
         let mut additional = Vec::new();
         while let Some(original) = second.recv().await {
             additional.push(original);
         }
         self.wait_for(COUNTER).await;
-        let shutdown = shutdown();
+        let shutdown = shutdown().await;
         retired
             .await
             .expect("full quota cleanup and Node close complete");
@@ -142,7 +143,7 @@ impl Peer {
         self.session.zid().to_string()
     }
 
-    async fn wait_for(&self, key: &str) {
+    pub(super) async fn wait_for(&self, key: &str) {
         let querier = self
             .session
             .declare_querier(key)
@@ -178,7 +179,7 @@ impl Peer {
         assert!(refused.is_none());
     }
 
-    async fn query(
+    pub(super) async fn query(
         &self,
         key: &str,
         request: &ProtectedMessage,

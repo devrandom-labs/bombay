@@ -107,13 +107,26 @@ impl Error for ExportError {
     }
 }
 
-/// Explicit local query-channel, query-custody and retained-request maxima; no defaults.
+/// Disposition of completed refusals that issued no request key.
+/// Acquired producer panics and all keyed requests remain retained in either mode.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RefusalRetention {
+    /// Keep original refusal values for later consuming inspection.
+    Retain,
+    /// Surrender ordinary refusal originals once every producer lease ends.
+    /// This recovers their capacity, but does not reclaim keyed requests or
+    /// acquired panic evidence. User destructors run inside Node's caught poll.
+    Discharge,
+}
+
+/// Explicit query/request maxima and ordinary refusal disposition; no defaults.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ExportLimits {
     pub queued_queries: NonZeroUsize,
     pub retained_queries: NonZeroUsize,
     pub retained_requests: NonZeroUsize,
     pub diagnostics: NonZeroUsize,
+    pub refusals: RefusalRetention,
 }
 /// One runtime-issued request reference for its target protocol and issuing export.
 /// Fields and construction stay private; a key carries no reply or lifecycle authority.
@@ -214,7 +227,7 @@ pub struct Export<Inputs, Declarations, Entry> {
     startup: Option<Result<(), ExportError>>,
     withdrawal: Option<Result<(), zenoh::Error>>,
     ingress: Arc<Mutex<Vec<ExportError>>>,
-    entries: RefCell<Vec<Entry>>,
+    entries: RefCell<Vec<Option<Entry>>>,
     declaration: RefCell<Option<Queryable<()>>>,
     #[expect(
         clippy::type_complexity,
@@ -226,7 +239,8 @@ pub struct Export<Inputs, Declarations, Entry> {
     )>,
 }
 impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
-    /// Transfer original configuration, declarations and every acquired fact.
+    /// Transfer configuration, declarations and every retained acquired fact.
+    /// With refusal discharge, storage order is not query acquisition order.
     #[expect(
         clippy::type_complexity,
         reason = "consuming extraction transfers the existing configuration, declarations and independent original receipts"
@@ -265,7 +279,7 @@ impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
             startup,
             withdrawal,
             diagnostics,
-            entries.into_inner(),
+            entries.into_inner().into_iter().flatten().collect(),
         )
     }
 }

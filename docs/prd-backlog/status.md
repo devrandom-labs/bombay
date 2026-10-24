@@ -1,18 +1,37 @@
 # Backlog status and dependencies
 
-The [observation disposal regression](../prds/observation-disposal.md) is distilled.
+The [request recovery regression](../prds/request-recovery.md) is active within
+R09 after fresh selected-owner verification. Original debug and optimized runs
+each pass the matched limit2 control and fail limit1 only at the final local
+Read0 versus required1, after complete cleanup. Invalid traffic therefore
+exhausts the same live Export's lifetime custody and blocks a later genuinely
+valid increment. The original paired failure remains frozen. The reviewed
+explicit Retain/Discharge policy now passes five recovery/key controls,13
+original refusal controls and one Node destructor-panic control in each build
+profile. Private live-custody also passes both. All five source cuts reproduce
+their intended post-cleanup failures in both profiles; healthy source is
+restored. Final shared workspace tests pass in both profiles, with strict
+Clippy and formatting. PR404 awaits its required submitted-head CI and delivery.
+Cache/delegation/full R09 and the complete remote PRD remain open.
+
+The [observation disposal regression](../prds/observation-disposal.md) is merged
+through PR403/50e0de42 after all six exact-head checks passed.
 Original-source debug and optimized runs reproduce repeated destruction after
 a destructor panic. The minimal repair passes the exact regression,427 owning
 library cases in each profile, formatting, strict Clippy,28 Loom cases, four
 Miri seeds and all four1024-run Observe fuzz targets. Two-pass independent
-minimization passes; focused PR, required CI and main delivery remain pending. Keyed
+minimization passes; actual tested/submitted/reviewed merge and delivered trees
+match. CI's conditional Miri was skipped; local Miri remains separate. Keyed
 Observe retains its existing capability contract; production+20/-18/net2,
 tests+51/-0, public types+0/-0.
 
-PR397 is delivered as9ea5defe after all six checks passed and the submitted,
-CI-tested and actual merge trees matched. PR398–402 retain separate delivery
-gates. This focused Observe repair does not close the remote PRD or the three
-ongoing complete-codebase audits.
+Current main50e0de42 includes delivered PR397=9ea5defe,398=e50f6e1c,
+399=8a7201b6,400=a1b470f8,401=422a0e6f,402=af59674c and403=50e0de42. Each passed
+all six exact-head checks, independent readiness and normal protected merge;
+submitted, CI-tested and actual merge trees match. Request recovery remains pending.
+These scoped deliveries do not close the remote PRD. Three frozen-baseline
+body scans and all three full32-body current-source reviews are sealed; final
+gates and their separate audit findings remain open.
 
 ### Inherited qualification and delivery checkpoints
 

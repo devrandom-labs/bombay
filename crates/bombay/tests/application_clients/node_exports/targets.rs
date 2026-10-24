@@ -5,7 +5,7 @@ use super::{protocol, same_counter, wire};
 use bombay::actors::ActorExt;
 use bombay::behavior::EstablishedRecipient;
 use bombay::prelude::{Application, Completion};
-use bombay::remote::{Export, ExportError, ExportLimits, reply};
+use bombay::remote::{Export, ExportError, ExportLimits, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, MailAddr, RetirementAssessment, WorkOutcome};
 use protocol::{EndpointRole, ProtectedMessage, configuration, limits, recorded, reserved_address};
 use std::cell::{Cell, RefCell};
@@ -83,6 +83,7 @@ async fn refused(selection: Selection) {
         Export::new(
             key,
             ExportLimits {
+                refusals: RefusalRetention::Retain,
                 queued_queries: maximum,
                 retained_queries: maximum,
                 retained_requests: maximum,

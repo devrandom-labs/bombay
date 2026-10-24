@@ -3,7 +3,7 @@ use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Step, Stopped, User};
 use bombay::prelude::Application;
 use bombay::remote::{Client, ClientLimits};
-use bombay::remote::{Export, ExportLimits, Metadata, reply};
+use bombay::remote::{Export, ExportLimits, Metadata, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, ApplicationScope, MailAddr, RetirementAssessment};
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -62,6 +62,7 @@ async fn read() {
     let export = Export::new(
         "bombay/outbound/read",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

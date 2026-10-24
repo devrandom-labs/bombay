@@ -4,7 +4,7 @@ use super::super::assert_retirement;
 use super::{peer, protocol, same_counter, wire};
 use bombay::actors::ActorExt;
 use bombay::prelude::{Application, MailAddr};
-use bombay::remote::{Attempt, Export, ExportError, ExportLimits, reply};
+use bombay::remote::{Attempt, Export, ExportError, ExportLimits, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use protocol::{
     EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, recorded,
@@ -112,6 +112,7 @@ async fn complete(policy: VerificationPolicy) {
     let export = Export::new(
         peer::COUNTER,
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: NonZeroUsize::new(1).unwrap(),
@@ -166,7 +167,13 @@ async fn complete(policy: VerificationPolicy) {
     };
     let exchange = async {
         let (request, lifecycle, address) = configured.await.expect("actual quota binding");
-        let (peer, shutdown) = peer.quota(request, || lifecycle.shutdown(), retired).await;
+        let repeat = ProtectedMessage {
+            protected: request.protected.clone(),
+            proof: request.proof.clone(),
+        };
+        let (peer, shutdown) = peer
+            .quota([request, repeat], async || lifecycle.shutdown(), retired)
+            .await;
         (peer, shutdown, address)
     };
     let ((outcome, publication), (peer, shutdown, target)) = tokio::join!(execution, exchange);

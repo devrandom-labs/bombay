@@ -7,7 +7,9 @@ use super::protocol::{
 use crate::actors::ActorExt;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::{ApplicationScope, ExternalActorError, MailboxCapacity};
-use crate::remote::{Attempt, Export, ExportError, ExportLimits, Metadata, submission};
+use crate::remote::{
+    Attempt, Export, ExportError, ExportLimits, Metadata, RefusalRetention, submission,
+};
 use crate::{
     ActorFailureAssessment, ActorRetirement, Application, Completion, RetirementAssessment,
     TrySendError, WorkOutcome,
@@ -135,6 +137,7 @@ async fn constructor_refusal() {
     let export = Export::new(
         "bombay/constructor-refusal",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,
@@ -467,6 +470,7 @@ async fn cold_declarations_preserve_native_constructor_refusals() {
     tokio::time::timeout(Duration::from_secs(10), async {
         let maximum = NonZeroUsize::new(2).unwrap();
         let valid = ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

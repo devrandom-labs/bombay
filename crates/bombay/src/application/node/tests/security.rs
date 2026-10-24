@@ -3,7 +3,8 @@ use super::{counter, custody, protocol};
 use crate::actors::ActorExt;
 use crate::behavior::{Never, User};
 use crate::remote::{
-    Attempt, CredentialSource, Export, ExportLimits, Network, NetworkLayout, reply,
+    Attempt, CredentialSource, Export, ExportLimits, Network, NetworkLayout, RefusalRetention,
+    reply,
 };
 use crate::{ActorFailureAssessment, Application, MailAddr, RetirementAssessment};
 use futures_util::future::Either;
@@ -129,6 +130,7 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
         let export = Export::new(
             "bombay/security/matched",
             ExportLimits {
+                refusals: RefusalRetention::Retain,
                 queued_queries: maximum,
                 retained_queries: maximum,
                 retained_requests: maximum,
