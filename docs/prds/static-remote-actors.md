@@ -1,5 +1,13 @@
 # Static remote actors and typed admission
 
+The [cold command ownership witness](cold-overlap.md) owns the fresh R22
+comparison of two real public Nodes under one overlapping selector. It reuses
+existing static grant policies and records both actual receptions and a
+post-cleanup unselected Counter oracle. Healthy, intended grant-omission and
+restored traces qualify in both profiles; final owning49-case suites and lint
+pass. Focused PR, required CI and delivery remain pending.
+Historical raw overlap evidence keeps its original source scope.
+
 The [R09 recovery regression](request-recovery.md) owns the fresh same-export
 invalid-then-valid comparison and lifetime-quota conflict. Its accepted scope,
 dependency verification and evidence remain separate from the historical

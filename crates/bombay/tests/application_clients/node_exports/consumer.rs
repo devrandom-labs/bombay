@@ -19,6 +19,10 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
 
+#[path = "bytes.rs"]
+mod bytes;
+#[path = "overlap.rs"]
+mod overlap;
 #[path = "peer.rs"]
 mod peer;
 #[path = "../protocol.rs"]

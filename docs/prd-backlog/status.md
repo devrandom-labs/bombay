@@ -1,5 +1,25 @@
 # Backlog status and dependencies
 
+The [original request byte witness](../prds/request-bytes.md) is active
+within R02 after fresh locked verification and independent source reviews.
+Real native protected bytes/proof and Ledger processing pass; normalization
+and proof forwarding fail their separate intended post-cleanup oracles in
+both profiles, followed by exact restoration and paired healthy controls.
+Final owning50-case suites, formatting and strict Clippy pass. Production/API0;
+final record review and submitted-head CI/delivery remain. Inherited PR404/405
+precede delivery only. Cancellation stays historical without borrowed-wait
+equivalence or full R13/R02/remote closure; controller retirement is separate.
+
+The [cold command ownership witness](../prds/cold-overlap.md) is active within
+R22 after fresh locked-owner verification. Two current public Nodes receive
+one overlapping command; real receptions and independent post-cleanup counts
+prove that only the statically assigned Counter executes it. Source
+proposal and independent review pass; healthy and restored debug/optimized
+leaves pass, and the deliberate grant omission fails only unselected User1
+versus0 after cleanup in both profiles. Final owning49-case suites, formatting
+and strict Clippy pass. Focused PR/required CI/delivery remain pending. PR404's
+delivery precedes this inherited source slice; full R22 remains open.
+
 The [request recovery regression](../prds/request-recovery.md) is active within
 R09 after fresh selected-owner verification. Original debug and optimized runs
 each pass the matched limit2 control and fail limit1 only at the final local
