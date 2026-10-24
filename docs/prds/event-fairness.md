@@ -833,3 +833,8 @@ production/API0. Existing native receipts retain their original3e1/277 scope;
 source equivalence qualifies the unchanged fairness owners without relabelling
 those runs as execution of this new integration head. Fresh required CI and
 actual retirement delivery remain pending.
+
+Current retirement integration inherits immutable399/404acb361a2c24ffcde946c51fea19e7f330fe07;
+397→398→399 are temporary delivery prerequisites, not semantic dependencies.
+Final three-path census vs404: records+186/-20; tests0/-144; total+186/-164/net22.
+Including inherited source vs321: nine paths+2133/-406/net1727; production/API0; fresh CI pending.
