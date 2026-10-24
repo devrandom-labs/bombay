@@ -122,10 +122,14 @@ impl Peer {
     }
 
     pub(super) async fn open(address: &str) -> Self {
+        Self::open_to(&[address]).await
+    }
+
+    pub(super) async fn open_to(addresses: &[&str]) -> Self {
         let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
         let config = Config::from_json5(&serde_json::json!({
-            "mode":"peer", "connect":{"endpoints":[address]},
+            "mode":"peer", "connect":{"endpoints":addresses},
             "scouting":{"multicast":{"enabled":false,"listen":false},"gossip":{"enabled":false}},
             "transport":{"link":{"protocols":["tls"],"tls":{
                 "root_ca_certificate":certificates.join("root-ca.pem"),
