@@ -1,5 +1,44 @@
 # Static remote actors and typed admission
 
+## Current PR399 source integration (2026-10-24)
+
+This proposed integration inherits immutable PR398 head
+1e70671d2edde2333ffe1df248080094308773fa, whose parents are original support
+recorde2bc8f8a and integrated PR397a84c0dbf. That PR397 source already includes
+delivered main32145c3f09986da75c6cf332080d81813764fb8e. Deliver PR397, then
+PR398, before this stacked PR399. This is temporary source/delivery ordering;
+neither native-controller retirement nor R17 is a semantic prerequisite or
+additional witness for this private capacity law. Neither397 nor398 is claimed
+merged here. Their own exact-head CI/review/delivery remain independent.
+
+PR394 is actually delivered asb45c7566 and PR396 as32145c3, after all six
+checks passed on their exact heads and verified/tested/delivered trees matched.
+Their complete provider/R10 and Stop records, along with397's complete native
+shell-correction and398's R17 records, are preserved below without relabelling
+original source or result epochs. R10 and R17 retain their own populated
+acceptance records and distinct scopes; full remote/R23 acceptance stays open.
+
+PR399's only new software is exact private limits8104870796e01ce99d556ed3e3a9cc427c6532fa483db431155d118515c22f12.
+Production Client remains45282b54; all inherited nativee78/workflow471,
+UI fixtures/registration, denied-Stop source, acceptance, locks and production
+must remain unchanged. Only this test and its two owning records are selected;
+production/API0. Required integrated-head conservation review, fresh six-check
+CI and normal main delivery remain open. Old3e1 local/CI receipts do not prove
+execution on this integration.
+
+The original capacity selection and qualification below retain their main277
+source scope, including actual Get-oracle1019 inverse, exact restoration,
+negative unexecuted tails and manual same-future poll/resume limit. Historical
+pending delivery statements are superseded only by actual delivered facts
+above; no asynchronous cancellation or public two-program pressure credit is
+added. Current inherited support/native summaries likewise retain their own
+stage scope and original dated census; they are not this stage's total delta.
+
+Integrated capacity census against1e706: three paths+701/-4/net697, comprising
+tests+489/-4 and records+212/-0. Including inherited397/398 against actual321:
+seven paths+1947/-242/net1705 (tests+1096/-156, workflow+81/-67,
+records+770/-19). Production/API0; all inherited source and requirements stay exact.
+
 ## Held native request capacity — pre-edit record (2026-10-24)
 
 R23 pressure still needs its public two-program witness. First close the owning
@@ -130,7 +169,403 @@ and then-pending child records below retain their earlier source scope;
 they do not block this held-request stage. Provider394, denied-Stop396,
 protected-native397 and support-record398 have their own delivery states.
 
-## Historical Tokio I/O safety prerequisite (2026-10-23)
+## Current R17 record integration (2026-10-24)
+
+R17's literal dependency/configuration witness is now locally satisfied for the
+[fixed TLS support record](static-remote-actors/acceptance.md#current-r17-support-record--fixed-tls-profile-2026-10-24):
+exact SDK1.10.10/Config1.10.2/Protocol1.10.1, patched Tokio1.53.3, explicit
+Peer/RouterClient configuration, discovery disabled, actual native connectivity
+and delivered Peer two-program application, plus typed configuration/native-open
+refusals. Only Peer receives public two-process application credit; native
+RouterClient and mapped address alternatives retain their stated evidence scope.
+This records existing patched-lock main277e6dfe evidence and changes no runtime
+or supported platform. Broader ZEN-04 platform certification, R21 and remaining
+R23 requirements stay open. Other rows keep their independent record states;
+full AUTH1/NET1 and the PRD remain active. This documentation-only stage still
+needs its own final review, required CI and actual main delivery.
+
+This proposal reconciles PR398's existing R17 record with immutable PR397
+integration `a84c0dbf624be09c1740361b24be75416a2ddafa`, based on delivered
+main `32145c3f09986da75c6cf332080d81813764fb8e`. PR397 is delivered first only
+to order the overlapping documentation updates; its native-controller change
+is not an R17 semantic prerequisite or additional R17 evidence. Neither
+proposal is described here as merged. Required exact-head CI, independent
+review and normal main delivery remain separate.
+
+Integrated R17 census against a84: documentation+145/-3/net142 over three paths;
+production/tests/API/configuration/dependencies0. Including inherited397 against
+actual321: six paths+1246/-238/net1008 (records+558/-19, tests+607/-152,
+workflow+81/-67). Inherited source is preserved; fresh exact-head CI is pending.
+
+## Historical R17 support reconciliation at main277 — pre-edit record (2026-10-24)
+
+The following selection and its measured delta belong to the original PR398
+source at main277; its pending wording is historical. The integration above
+owns current delivery ordering, while the acceptance companion owns row states.
+
+The literal R17 support witness has no populated current evidence record,
+although the selected fixed TLS profile and its adverse startup cases already
+execute in delivered main277e6dfe. Reconcile those facts at the existing
+acceptance owner; do not invent another runtime, configuration or test suite.
+This stage changes only this PRD, its acceptance companion and the backlog
+status index. Production, test Rust, configuration, dependencies and public
+API all remain unchanged. Expected three existing Markdown paths only.
+
+Fresh source/lock inspection confirms Behavior/Actors0.29.0 at55dbac2d,
+macros0.16, Address0.3/9f058dc0, Communication0.1.6/963067e0, Timers0.2/9369d1f6
+and local Observe; no patch override. Their source/public contracts/tests/docs
+and complete selected Behavior AGENTS retain the existing owners. Network
+owns explicit configuration; Application/Node owns native opening and exact
+refused-original custody; existing native ingress and public application tests
+own connectivity/cleanup. No dependency ownership edge is unresolved here.
+Root/isolated locks83f01ca3/667a1820 and six concrete source owners match the
+reviewed delivered main. The actual required Nix log9b1d2ddd names the mapping,
+native Peer/Router, public Node refusal and separate-program passes in both
+profiles. Its durable archive is independently hash-verified in the support
+record. No old green badge or unexecuted example substitutes for those traces.
+
+Independent two-pass review2c210f4a maps every literal R17 clause to source and
+actual outcomes, challenging disabled connectivity, silent discovery fallback,
+missing TLS input, untested topology and source/version substitution. Only
+tested scope receives credit. Broader ZEN-04 platform certification is explicitly
+deferred in this PRD; R21 metadata/isolation and remaining R23 scenarios stay
+open. The historical61eca7a6 audit table retains its original source scope;
+current complete row states belong to the acceptance records. The separate
+native-controller PR397 is not a prerequisite and receives no support credit
+from this documentation reconciliation. Final measured delta, independent
+record review, required CI and actual main delivery remain pending.
+
+### R17 retained record review and complete delta
+
+The support record is retained at its existing acceptance owner. Independent
+two-pass review57fbcf55b5d3c058f6e36b57cc65d6bb664830925cfbb32cafc165d52ed0cc2c
+finds no scoped veto after the stale advisory status was explicitly labelled
+historical. Its original source review2c210f4a and the final review are copied
+to the durable session archive's `r17-support-review-20261024/` directory.
+No supplemental unmerged native campaign is needed or credited for R17.
+
+Actual local checks: the literal normative R17 row compares byte-identical to
+main; all software/configuration/dependency paths are unchanged; diff whitespace
+passes; main277e6dfe and reviewed90ecb176 have the identical source tree3e062d6a.
+The actual earlier required Nix traces and typed adverse cases are attributed
+in the support table, not relabelled as new execution. No Rust test is added or
+rerun for this documentation-only reconciliation.
+
+Complete tracked/untracked stage census against main277e6dfe: production and
+test Rust+0/-0/net0; public types+0/-0; configuration/dependencies0; documentation
++150/-7/net143 across exactly three existing Markdown paths, with no
+untracked repository files. Earlier costs and all independent row states carry.
+Required submitted-head CI/review and actual main merge remain pending.
+
+## Current PR397 integration (2026-10-24)
+
+This proposed integration uses actual main
+32145c3f09986da75c6cf332080d81813764fb8e. PR394 normally merged as
+b45c756625b8b3d1a25ca37f507344b9a76559e4 at2026-10-24T01:31:45Z after
+all six checks passed on exacted72df92; verified/tested/delivered trees match
+20b77b9122f8ec36daa2e8b4e20472d134f12523. PR396 normally merged as
+32145c3f09986da75c6cf332080d81813764fb8e at01:51:48Z after all six checks
+passed on exact881e606f; submitted, tested and delivered trees match
+c40dc2697578f4529a9a6474b0e093896c186578. Both deliveries used normal review
+and merge requirements, without bypass. Provider/R10 and denied-Stop delivery
+are distinct scoped facts; neither closes the complete remote PRD or R23.
+
+PR397 retains only its existing five-path native-controller/workflow/record
+stage. Its software is nativee78fb162 and corrected workflow471698cd; no
+production/API, lock, acceptance or licensing file changes are selected.
+All delivered main UI fixtures, registration and original denied-Stop source
+must remain unchanged. Actual48d5f798 has five successful checks and Nix still
+running at the last bounded readback; those results do not qualify a new
+integrated head. Independent conservation review, fresh exact-head CI and
+normal main delivery remain required. No semantic dependency on the independent
+R17, capacity or fairness proposals is introduced.
+
+The dated implementation and integration checkpoints below preserve BOTH
+complete histories and their original source epochs. Their earlier pending
+PR394/396 and prerequisite language is historical, superseded by the actual
+deliveries above. Native original679 CI failure, corrected48 local evidence,
+rejected duplicate-debug extraction and genuine optimized receipts retain
+their separate meanings. No prior passing result is relabelled as execution
+on the proposed integration.
+
+Integration census against actual321: production+0/-0/net0; tests+607/-152/
+net455; workflow+81/-67/net14; public types+0/-0. Five paths include both
+records. Complete candidate+1101/-235/net866, including records+413/-16.
+The qualified software remains exact; required new-head CI remains open.
+
+## Protected native transport Python retirement — pre-edit record (2026-10-24)
+
+The protected Counter CI step still depends on a152-line Python controller and
+four inline Python readers. Select the existing isolated Cargo test target as
+the single execution owner. Preserve its five groups of8/8/8/4/4 actual native
+configurations, both provider profiles, root/child recipients, Peer/RouterClient
+layouts, actual authority issuance, release/EOF ordering and all native oracles.
+This is verification migration, not a new actor/runtime law or full remote
+acceptance. The raw transport30-case Python controller remains separate.
+
+Before repository implementation, the outside candidate has passed actual
+debug/optimized32-configuration controls, named-test/omission/same-count
+substitution inversions and exact restoration. A wrong name fails its exact
+native-name guard; omission executes28; substitution executes32 but only24
+distinct configurations. All failures occur after the acquired children and
+readers settle and their configuration directories retire. No compiler error,
+watchdog or missing test selection earns actor-law credit. Final restored
+controls execute32 unique configurations and80 native roles per profile.
+
+Fresh locked-source verification: root83f01ca3 and isolated667a1820 retain
+Behavior/Actors0.29.0, VCS55dbac2d1068b29907498b3a7fa32b3080e0cd30;
+macros0.16.0; Address0.3.0 VCS9f058dc0; Communication0.1.6 VCS963067e0;
+Timers0.2.0 VCS9369d1f6; local Observe; no patches. Their selected registry
+source, public contracts, documentation and relevant tests are inspected again:
+pure Behavior/Actions and named send products; exact address lease release;
+Communication cancellation and rejected originals; affine Observe publication;
+generation-safe Timers cancellation. The complete selected Behavior AGENTS
+applies. Existing Counter behavior, Application/Node, protected provider,
+native role and retirement owners remain unchanged. The selected SDK remains
+bombay-zenoh1.10.10/config1.10.2/protocol1.10.1 with TLS, Tokio1.53.3.
+There is no dependency/version/feature or ownership prerequisite left unresolved
+for this migration. Production admission, security and simulation gaps remain
+independent full-PRD prerequisites.
+
+Expected five existing paths: append607 test-only Rust lines to
+`crates/bombay/tests/protected_counter/transport.rs`; workflow+74/-63; delete
+`transport-custody/verify_protected_counter.py`152 lines; update this PRD and
+the status index. Production+0/-0/net0, public types+0/-0. Verification source
+is+607/-152/net455 plus workflow net11, before documentation. This is
+net-positive verification code, not source reduction. All earlier cumulative
+costs remain recorded; the user's explicit no-budget direction applies.
+
+Use only ordinary std scoped readers, bounded channels, owned Child kill/reap
+on failure and the existing concrete native role sum. No new binary, generic
+runner, task framework, dependency, public API or example plumbing. The native
+owner's original120167-byte prefix remains5e6d7c72 byte-exact; all actor laws
+continue to belong to it. The only new test product owns an actual OS child
+whose std Drop would otherwise leave it running. Closed release/evidence sums
+carry distinct fixture choices; no semantic booleans or hidden actor effects.
+
+Standard jq selects one actual Cargo artifact by name/kind/test/feature/profile;
+Bash file identity verifies its actual source despite Cargo's dot segments.
+Actual wrong-profile, duplicate-artifact and different-source controls refuse;
+restored arguments select the original object. The different existing source
+operand is `crates/bombay/tests/protected_counter/retirement.rs`, not a fake
+Cargo record. Three unchanged native commands keep their exact passing names
+and one-summary/count checks using grep. Actual zero-test and extra-real-test
+outputs refuse in both profiles; original successful outputs pass again.
+
+Preserve the original16 source hashes, seven PEM hashes, actual executable
+hash, revision/profile, Cargo JSONL/stderr, matrix log/exit hashes and actual
+native Command diagnostics (including issued binding and endpoint). Retire the
+old repeated campaign.json representation; do not claim schema compatibility.
+First review maps every old case and oracle. Independent second review checks
+omission/duplication, EOF/release, source identity, cleanup and zero selection.
+Source/results reviews are retained outside under
+`/tmp/bombay-outbound-client-comparison/protected-native-*.md`; raw receipts
+under `/tmp/bombay-protected-native-control-results-20261023/`.
+Final archive, measured complete delta, retained-source checks and submitted-head
+CI/review/main delivery still need recording. No full acceptance row closes.
+
+### Retained native qualification and minimality (2026-10-24)
+
+The retained native source is SHA256
+e78fb1622052e8313d12052193f973598ae9e0b82436f981dbd40477cd420c9b;
+the workflow is d7447d50d13061c49b26ceb9716b8c7bc4fe381a8fef1d898f571dd981ab0878.
+Its complete original native prefix remains byte-identical, not merely a
+passing replacement model. The deleted controller's historical source is
+a9c823466e107a5bdd26471fdb4f84eaa96d2c382ec81010769f6b356919bf06.
+
+Through the existing pinned Nix shell, both retained commands
+`cargo test --locked --offline --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --features protected-transport --test protected_counter`
+and the same command with `--release` exit0:69passed/0failed/1ignored/0filtered
+per profile,9.83s/9.52s. The ignored native entry point is deliberately invoked
+by exact name in80 actual child roles; it is not an unexecuted actor witness.
+Strict Clippy on that selected feature/test target and isolated formatting
+also exit0. No full-workspace or submitted-head CI result is inferred.
+
+The complete protected workflow step also exits0 in both profiles under that
+same pinned shell. The temporary extraction removes only YAML indentation,
+substitutes the actual matrix profile and omits the nested `nix develop -c`
+prefix because the shell is already pinned. Each actual matrix completes32
+unique configurations/80 native passes/80 invocation records, followed by
+the unchanged native2/2/1 cohorts and all14 literal summary checks. The root
+workflow artifacts retain16 source hashes, seven PEMs, actual distinct native
+binaries, exact Cargo metadata, matrix originals and exit receipts. A separate
+readback exits0 after checking every manifest, both profile texts, real Cargo
+optimization0/3 and32/80/80 counts. Local revision277e6dfe identifies the base;
+the source manifests and working-tree patch identify the tested modifications.
+
+An initial temporary extraction accidentally mutated its input lines, making
+its second nominal run debug again. Its exit0 is explicitly rejected as
+optimized evidence. The missing release-artifact readback exposed that error.
+The rejected script/log/exit/source-check are preserved separately; corrected
+extractore4aa6cc1 copies each line and the genuine optimized step exits0 with
+actual optimization3 and its distinct release binary. The retained workflow
+itself was unchanged by this qualification error. Earlier lifetime-compile and
+raw-path-selector failures retain their original rejected setup scope.
+
+Independent two-pass source/outcome reviews ec9b42be,6b655663,8c52f62f and
+39d654c3 map the old five groups, all native/cleanup oracles, each intended
+guard failure and restored positive. Zero/extra selections reject at the first
+successful-name count; later summary checks receive no inversion credit.
+Every acquired actual result is inspected after its required cleanup. No
+original actor law, provider distinction, authority binding or final outcome
+is replaced by a watchdog, encoder count or fake native transcript.
+
+Aggregate audit: native actor control states, policy, production transition
+branches, modules and public spellings are unchanged. One private test module
+owns finite external execution, not a second actor interpreter. Its3-way
+release choice,3-way evidence source and line/EOF/read-error observations keep
+distinct current values; one Child owner supplies std's missing failure-path
+kill/reap. BTreeSet compares complete actual identities against an independent
+literal set. No arrival-history state, semantic boolean, erased future,
+protocol registry, wrapper facade or public construction seam is added.
+The project-owned Python controller and four inline readers are deleted rather
+than kept as a second spelling. Disposition: locally eligible; final review,
+archive sealing and submitted-head CI/main delivery remain separate gates.
+
+Final independent retained-source/outcome review
+6a3528fbaca7477f5c4c4ed8f9e54691f3124b49a466ffa163d4722eae68cef4
+finds no scoped veto, including the corrected genuine optimized workflow and
+all artifact custody. Qualified source and raw old/rejected/current receipts,
+complete base277e6dfe plus working-tree patch and all reviews are sealed in
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/protected-native-qualified-20261024.tar.gz`,
+SHA2563698d6ef7ab6704c6be6979a56d0499c1c622f67439915062d4b68bc76bfaa5f.
+Independent extraction verifies all 250 payload checksums; base-source extraction
+plus the actual patch reproduces nativee78/workflowd744 and both records,
+with the protected Python file absent. This is source/evidence custody, not a
+compiler/binary closure. This final archive record follows the sealed source
+snapshot and is retained in Git. Actual wrong-existing-owner identity also
+refuses1 at the retained root, followed by restored correct identity0; its
+original operands and receipts are preserved in the archive.
+
+Complete working-tree checkpoint against main277e6dfe, including staged deletion
+and all untracked paths:
+
+```text
+production: +0 / -0 / net 0
+tests:      +607 / -152 / net 455
+workflow:   +74 / -63 / net 11
+public API: +0 types / -0 types
+records:    +224 / -4 / net 220
+```
+
+Five existing paths change; there are no untracked repository files. Earlier
+task costs and qualified deliveries remain in their owning records; this is
+the focused stage census, not a reset of cumulative work. Actual submitted-head
+CI and normal reviewed main merge remain required before calling this slice
+delivered. Full R01–R25/AUTH1/NET1 acceptance and distillation remain open.
+
+## Separate-program denied Stop — pre-edit record (2026-10-23)
+
+R23 still requires the ordinary application's denied-Stop witness. The smallest
+observable comparison uses the shipped Counter/Caller and public Node, with
+two real OS programs and the existing finite TEST deployment. Change exactly
+the receiver's configured Stop request proof while preserving the unchanged
+caller, real runtime/actor bindings, all grants and the other five records.
+Matching proof must permit actual Stop. Different proof must return the
+original typed verification refusal, preserve the exact request/proof bytes,
+perform no native Stop, leave Counter alive with value1 for an independent
+local Read, and let the unchanged caller report Uncertain(Stop).
+
+This verification-only stage extends the existing owning
+`examples/remote-counter/tests/processes/lost_reply.rs`: expected +310/-2 raw
+test lines before formatting plus PRD/status records; production+0/-0,
+public API+0/-0, no new path/dependency/registration. Reuse existing Program
+kill/reap custody, Unix assignment, validated Deployment, public Node/Export,
+Counter and Caller Actions; add no application fault hooks or runtime owner.
+Actor control states, subordinate alternatives and production transition
+branches are unchanged. A test-local StopProof sum represents the exact
+matching/different assignment distinction. Actor runtime semantics are not
+implemented inside that sum.
+
+Dependencies are freshly inspected in the preceding Tokio prerequisite:
+Behavior/Actors0.29 at55dbac2d, macros0.16, Address0.3, Communication0.1.6,
+Timers0.2 and local Observe retain their owning contracts; selected SDK is
+bombay-zenoh1.10.10 with TLS only. Root lock83f01ca3 and isolated667a1820
+select patched Tokio1.53.3. The test uses actual public boundaries and exact
+native retirement/report products; no dependency contract changes. Source
+review of the outside comparison is89ab8809; it has not yet compiled.
+
+Acceptance: both actual matched and denied parents in debug/optimized builds,
+exact native child execution, joined cleanup before final assertions, full
+typed rows and denial originals. The intended falsifier changes ONLY the
+different receiver proof back to matching while retaining the different
+expectation; it must fail at the verification-denial oracle after cleanup,
+not a timeout, interrupted Work or release-write error. Restore exact source
+and replay both controls. Review every test twice and retain actual diagnostics.
+This proves proof refusal only: send-only authority, Client capacity waiting,
+full R23 and other full PRD requirements remain separate.
+
+First actual draft compiles. Denied control passes in debug, but the matched
+control reaches the existing40-second watchdog: its test Work waits for a
+release the parent supplied only to the denied case. Normal Counter retirement
+does not complete independent caller Work. This is rejected test setup, not
+a runtime defect or semantic evidence. Preserve the first source/log, then
+release BOTH cases after the ordinary caller is actually reaped. Only the
+denied case performs a subsequent local Read; matched Work completes without
+one. The existing complete Work/native cleanup products remain the oracle.
+No production change or invented interruption policy is justified.
+
+Both corrected controls pass in both profiles. Independent adversarial review
+then rejects unconditional receive after a refused audit Read: under the
+intended proof counterfactual, Counter has stopped, and the rejected Read still
+owns its reply endpoint. Waiting on that endpoint could hide the intended
+verification oracle behind a watchdog. Retain the actual admission Result and
+perform receive only after successful admission; record unattempted receive
+using the existing Attempt contract. Always acquire shutdown and cleanup before
+the Stop verification oracle. This corrects verification liveness, not runtime
+behavior; the earlier healthy results remain their exact source epoch.
+
+First finite proof inversions exit101 promptly in both profiles, but their
+outer logs report only failed-child status: libtest's captured assertion is
+in the acquired child's stdout, omitted by the parent's stderr-only diagnostic.
+Those failures receive no intended-law credit. Include both acquired stdout
+and stderr in the existing failure message, preserving actual outputs after
+child reap/directory cleanup, then repeat the same one-proof inverse. This
+changes diagnostic visibility only; do not infer the missing assertion.
+
+Retained local stage (2026-10-24): final source8f7427dddc96ce8672bde83450eaac26744af4e9a83a9a6d7034ad8c933b0595
+passes both exact matched/denied parents in EACH profile, all four exits0.
+The complete package at restored9e4d6a37 passes ten outer tests/profile
+(seven process parents and three pure tests, zero filtered; two deliberately
+ignored child roles are executed and checked by exact parent controls).
+Final strict package/all-target Clippy and formatting exit0. Clippy's two
+style corrections preserve the same typed branch bodies and order; independent
+normalized source review confirms no semantic/ownership change.
+
+Visible inverse logs800849d2/d9383d54 each exit101 at the child's expected
+Some(Err(Refusal::Proof)) assertion, after joined cleanup; no watchdog/setup
+failure is credited. Later assertions on that negative path are unexecuted.
+The inverse source62f14b32 is explicitly reconstructed from frozen9e4d6a37
+and the recorded unique97-to0 edit, not claimed as a contemporaneous hash.
+Restoration is byte-exact. Independent reviews05d69591 and the final source
+review bind both actual outcomes and source epochs. Raw receipts are
+`/tmp/bombay-prd-resumption/stop-*`; source/result archive
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/stop-proof-qualified-20261024.tar.gz`
+preserves the drafts, rejected evidence, restored source and actual results.
+
+Final scoped delta: production+0/-0/net0; tests+469/-1/net468;
+public API+0/-0 types; three existing paths including these two records,
+no untracked repository file. The added test capability is net-positive
+verification, not code reduction. Pressure, process-exit scenario mapping,
+full R23/R11, distillation and submitted-head CI/review/main delivery remain
+open. No application fault machinery or runtime change is retained.
+
+Provider integration (2026-10-24 local): actual main277e6dfe and provider
+follow-uped72df92 are integrated. Only these two record files conflicted;
+the entire denied-Stop section, complete provider/child appendices and current
+delivered-status facts are conserved. All software/configuration outside the
+single Stop test owner equals ed72df92. That test owner remains exact8f7427dd.
+The final two-pass Stop review is08e05181; the qualified archive's actual
+SHA256 is eaaed494c108bff011528c4a968093ebc6205d980f55f914508a287e1bb558bd.
+Independent fresh extraction passes every checksum. This preserves source and
+results, not a compiler/binary closure. PR394's new CI remains separate; the
+denied-Stop follow-up needs its own submitted-head CI and normal main delivery.
+
+## Tokio I/O safety prerequisite — historical implementation record (2026-10-23)
+
+The implementation checkpoints below retain their original source scope.
+Actual PR395 delivery is recorded in the current status; their pending language
+does not describe the current patched locks.
 
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
 locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
@@ -183,6 +618,21 @@ application/native checks are still in progress. This source-only stage adds
 no product or verification Rust and no public type. Required CI and reviewed
 main delivery remain pending.
 
+Provider-follow-up integration: PR395/be200b25 carries the separately reviewed
+Tokio prerequisite, with formal source review001bdf06. Its actual Deny check
+40013872994 passes; other required checks remain pending. The provider branch
+now includes that exact dependency change, so its earlier head19c6c4ea and UI
+qualification retain their historical lock epoch. With patched root83f01ca3,
+the unchanged ordinary remote-counter passes all eight existing outer cases
+in EACH debug and optimized profile (five process parents, three pure tests;
+one ignored native child is executed by its owning exact-named parent).
+Both actual command exits are0. Raw logs/exits are
+`/tmp/bombay-prd-resumption/tokio-patched-counter-{debug,release}.{log,exit}`;
+strict workspace Clippy and formatting also exit0. These are integration
+controls, not a local reproduction of the upstream unsafe-descriptor defect.
+The provider branch requires fresh submitted-head CI; neither PR395's Deny
+success nor previous UI results substitute for that gate.
+
 ## Current status (2026-10-23 UTC)
 
 Latest user direction: “there is no budget.” The user explicitly preapproves
@@ -192,6 +642,31 @@ again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
 
+PR395 merged patched Tokio as36b5c1f9f92b56f527167076249d12c1ceba0545 at
+2026-10-23T23:26:42Z after six successful checks on be200b25; verified/merge
+trees match7f8c9218. PR393 merged child Python retirement as277e6dfe at23:44:22Z
+after six successful checks on90ecb176; verified/merge trees match3e062d6a.
+Required Nix40014264183 runs the patched-lock21-command native owner;
+raw-job review79e171a1 preserves its source scope. Its clean/pushed worktree
+was retired without force after archiveccbc9473 and independent checksum review.
+
+PR394 and PR396 are delivered as actualb45 and321 respectively, with all six
+checks successful and verified/tested/delivered source trees equal as recorded
+in the current integration note. Their complete provider/R10 and Stop records
+are conserved below. The current PR397 proposal integrates321 while retaining
+nativee78fb162 and corrected workflow471698cd. Only shared current summaries
+and dated record placement are reconciled; qualified UI/runtime/application
+sources and both patched locks remain unchanged. Actual main321 has five
+Python files; this native-only retirement removes one, leaving four in this
+candidate. Unmerged fairness retirement is not counted as delivered.
+
+PR397 still needs its own integrated-head conservation review, fresh submitted
+CI and normal reviewed main delivery. Old48 checks remain bound to48. Full
+security, pressure/exit/scenario, simulation, diagnostics, acceptance and
+distillation remain open except for independently populated scoped records.
+
+### Earlier application and child integration checkpoint
+
 [PR392](https://github.com/devrandom-labs/bombay/pull/392) merged the finite-test
 remote Counter at2026-10-23T19:21:29Z as632bf18454016de9b986066c0130a83142a9187d.
 All six checks passed on95c1105a; required Nix completed10:08:55Z. The verified
@@ -200,6 +675,16 @@ that actual main; its unchanged script is00e9e467 and its combined flake is938be
 The earlier child evidence remains bound to its source epoch; this integrated
 head requires fresh checks before delivery. Five Python files remain in this
 proposal, six on main until it merges. Full remote acceptance remains active.
+
+### Earlier provider-main checkpoint
+
+Actual main277e6dfe is integrated into PR394's provider/R10 follow-up. Only
+the PRD/status records conflicted: both complete feature-local append sections
+are retained, while current delivery summaries reflect the actual merges.
+All qualified UI sources, compiler snapshots, runtime/application owners and
+both patched locks remain byte-identical. Earlier e68d521f passed all six
+checks; this new submitted head still needs fresh CI and review. No old green
+check is transferred to it. All remaining full remote obligations stay active.
 
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged the scoped
 coverage Python retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
@@ -229,13 +714,24 @@ success, provider refusal, wrong-proof and processing-before-publication loss
 checks pass in both profiles. Full workspace debug/optimized tests and strict
 lint pass. The smaller private temporary-directory owner passes all eight
 application cases in both profiles under the previously failing long parent;
-the dedicated aarch64-darwin Nix check also passes. All six submitted-head checks
-pass; application delivery is recorded above. Its first Nix CI run exceeded the existing two-hour
+the dedicated aarch64-darwin Nix check also passes. All six application checks
+pass; its delivery is recorded above. Its first Nix CI run exceeded the existing two-hour
 job guard while compiling the optimized workspace. The existing guard is now
 three hours; every required command remains selected.
 This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
+
+The complete selected R10 semantic witness is now locally satisfied: explicit
+finite-test selection, refusal of fake/missing production capability before
+startup, the real successful Test control, its guard-only falsifier/restoration,
+and both independent deterministic provider ports. The
+[R10 evidence](static-remote-actors/acceptance.md#r10--explicit-test-identity-and-production-refusal-2026-10-23)
+binds all clauses to actual sources and outcomes, distinguishing source/lock
+epochs. Independent review3e6872ba and root resolve the separate protection
+provider attribution. All other full rows remain open. This is local semantic
+acceptance; this follow-up still requires its own CI/main delivery. Selo and
+full RELEASE-04 remain separate.
 
 Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 3625efe86f8613e13b3a3bc6cf180dc5de57edc7 after all six required checks passed on
@@ -21726,8 +22222,9 @@ authority. This is an isolated test trust input, not production discovery,
 identity establishment, delegation or an additional authentication protocol.
 Use existing readiness/release control machinery; no new channel primitive.
 
-Name the controller docs/prds/static-remote-actors/transport-custody/
-verify_protected_counter.py. It releases the held actual Query only after both
+Historical controller selection: docs/prds/static-remote-actors/transport-custody/
+verify_protected_counter.py, retired by the protected-native migration recorded
+above. Its preserved ordering releases the held actual Query only after both
 recipient Query-received and caller-local Read2 facts, avoiding timing/yield
 assumptions. Keep Query and Reply custody products distinct and acquire all
 cleanup before observational assertions. Native request/admission/processing
@@ -39241,6 +39738,10 @@ localization is still the next diagnostic once its file is within scope.
 
 ### Whole-PRD acceptance audit at61eca7a6
 
+This is the historical61eca7a6 source audit. Current complete row states belong
+to the populated acceptance records; the original table below is not rewritten
+to give this earlier source credit for later deliveries or reconciliation.
+
 The previous goal turn made progress through the qualified consumer and lint
 commits. Fresh two-pass audits now compare every normative acceptance row with
 current owning source and evidence; all25 full rows remain open. This is a
@@ -43213,6 +43714,97 @@ comparison and independent qualification reviewa307aba0. The earlier application
 archiveaa230f71 remains unchanged. Neither archive certifies exact-head CI or a
 hermetic compiler closure.
 
+## Required remote policies and typed completion — pre-edit record (2026-10-23)
+
+This R01/R10 verification stage reuses the actual public Counter/Caller,
+Deployment and wire modules from the qualified finite-test application. Fresh
+selected locks still name Behavior/Actors0.29 (revision55dbac2d), Macros0.16,
+Address0.3, Communication0.1.6, Timers0.2, local Observe and controlled native
+SDK1.10.10. No patch/dependency edge or runtime owner changes. Existing Client
+and Export constructors own independent required verifier callbacks; Client's
+bound actual target owns its concrete reply type. The existing remote_surface
+trybuild target owns static consumer checks and actual compiler diagnostics.
+
+Two complete real compositions must compile before three single-change
+negative consumers receive credit: omit Client reply verification, omit Export
+request verification, or decode u64 where the actual Caller accepts Reply.
+No callbacks synthesize authority or use dummy providers. Cold entrypoints
+reference the construction functions without executing networking; these are
+compiler contracts, not new runtime evidence. Removing the whole remote
+attachment remains a valid local composition and is not claimed compile-denied.
+The broad R01/R10 rows still require their other actual acceptance evidence.
+
+Expected scope: existing registration plus five source fixtures, production
++0/-0/net0, tests approximately+472 before formatting/compiler snapshots,
+public types+0/-0. Imported example modules remain authoritative; no public
+wrapper, runtime marker, macro or new library is introduced. Intended absent
+provider/message diagnostics must be inspected from the real pinned compiler;
+no stderr is invented. Debug and optimized UI runs plus independent two-pass
+source/outcome review are required. Source proposal b35bb871 and prerecord
+review0b3841f1 remain outside evidence of eligibility, not executed acceptance.
+
+### Required policy actual compiler qualification
+
+Both complete consumers compile with the actual nominal Counter/Caller and
+finite deployment. The three one-change negatives produce actual constructor
+port/arity or bound actor-message diagnostics. Missing Client verification
+produces E0061 (11required versus10supplied) plus three shifted-argument
+cascades. Missing Export verification produces E0061 (10versus9) plus eight
+shifted-argument/attached-run cascades. Wrong completion produces three E0271
+locations for the same Caller::Msg=Reply versus decodedu64 disagreement.
+These are three static laws, not sixteen independent denials.
+
+The first and explicitly formatted compiler runs each exit101 only because
+trybuild records three new stderr files. Both positives pass in both runs;
+there is no unrelated setup denial. Only the actual formatted diagnostics
+are retained. The complete remote_surface target subsequently passes all
+three outer tests in debug and optimized profiles, with no ignored/filtered
+cases. Its five new inner consumers are compiler evidence, not five runtime
+exchanges. Raw log hashes are01d23ac4 (debug) and12ab6a39 (optimized), under
+`/tmp/bombay-outbound-client-comparison/remote-policy-ui-full-*`.
+Selected remote_surface strict Clippy, workspace formatting and explicit
+Rust2024 fixture formatting pass. No production source or public API changes.
+
+Actual verification delta is+956/-0/net956: five formatted source fixtures
+575lines, three real compiler snapshots371lines and registration10lines.
+This is test growth for static contracts, not cleanup or production reduction.
+The parent is appPR392's source; the application and required full CI remain
+separate delivery prerequisites. Neither a passing UI target nor required
+constructor callbacks alone establishes full R01/R10 acceptance.
+
+Independent source/outcome review1687a12b verifies the three laws and actual
+nine-case inner suite (three passing consumers, six denials) under three outer
+tests in each profile. Trybuild's inner compiler remains in its dev profile
+under the optimized outer; no optimized runtime exchange is claimed.
+The scoped source/results archive
+`remote-policy-ui-95c1105a-20261023T081447Z-vQiSdi.tar.gz`, SHA256
+`f89da75e609aae0c71df252e7168f7e61a37bdf7b1a6a9c5719ce50a108d524c`,
+is in the common Git2026-10-21 session archive. Root independently extracts it
+and verifies all88 manifest entries; it contains87 inventory payloads plus
+inventory/checksum records. The snapshot predates this pointer and depends on
+base95c1105a; it is not a compiler/binary closure, CI or delivery certificate.
+
+## R10 complete local evidence reconciliation (2026-10-23)
+
+The selected literal R10 row is unchanged. This records its whole semantic
+witness from already executed owning cases, rather than adding a new provider
+model or treating compiler arity alone as acceptance. Author review1357ea2a,
+independent clause review3e6872ba and root source/raw-log inspection agree.
+The independent attribution/epoch findings are resolved: construction/replay
+use protocol providerc142411e; protection uses distinct provider5bc4a39f;
+workspace lock4edede11 and final package lockaf4406db retain their actual epochs.
+All ten actual provider names execute in each workspace profile; the genuine
+Test journey, both ProductionRequired refusals, intended guard-only negative
+and restored controls supply the remaining clauses. No new runtime state,
+software test, dependency or public type is required by this evidence assembly.
+
+The change touches only the acceptance companion, PRD and reciprocal status:
+production+0/-0/net0, tests+0/-0/net0, publicAPI+0/-0. Older application-planning
+text is explicitly historical. R10's local semantic satisfaction leaves required
+this follow-up's CI/main delivery, every other full row, production cryptography/Selo and
+the broader release inventory open. Existing application archives retain raw
+source/results; review copies are preserved with the common Git session records.
+
 ## Child preparation Python retirement — pre-edit record (2026-10-23)
 
 This separate verification stage starts from actual main a88dbe83. It retires
@@ -43344,3 +43936,97 @@ the workspace manifest and existing law owners remain unchanged. Do not relabel
 that older run, its original Nix receipt or old green checks as qualification
 of the new lock. Fresh compatibility/native results and submitted-head full CI
 remain required. This integration records no PR393 merge or full remote acceptance.
+
+## Protected Counter CI shell correction — pre-edit record (2026-10-24)
+
+Submitted PR397 head67978dc6 fails both native jobs in the protected Counter
+step. Debug job120724675613 and downloaded artifact12540344320 establish the
+cause: the shell welcome banner precedes successful Cargo JSON output, and
+strict jq rejects it with exit5 before the32-configuration controller runs.
+The release failing step is confirmed, but its raw log download timed out;
+the same detailed cause is not independently credited to that profile.
+Debug raw log43ca3b7d and artifact572f8ae8 retain the actual failing inputs.
+Prior local step qualification removed nested Nix entry because it already ran
+inside the pinned shell. Those local native results stand at that scope; they
+did not verify the structured-output boundary used by submitted-head CI.
+
+The smallest correction enters the existing pinned Nix shell once around the
+whole protected step. Cargo/jq redirects and command substitutions then run
+inside that shell, after its welcome output. Preserve the strict one-artifact,
+source identity, optimization,32-configuration,80-role and named-case guards;
+do not filter arbitrary text out of JSON or alter the shared shellHook. Reuse
+Nix, Bash and jq already selected by the repository. The neighboring CESR
+workflow already runs a multi-command step inside pinned Bash. Pass this body
+as a quoted Bash command so program text does not become native child stdin;
+set inner `-euo pipefail` explicitly and retain inherited Cargo environment.
+Expected scope is this existing workflow and the two existing feature records:
+production/tests/public types+0/-0, workflow three added shell wrapper lines
+and removal of redundant inner Nix prefixes. No dependency changes occur.
+
+Before acceptance, run the actual corrected Nix entry in both profiles with
+all original guards, inspect complete artifact/source/binary manifests, and
+prove the old entry contaminates structured output using actual Nix stdout.
+Review the shell expansion and observable outcomes independently. New exact-head
+required CI and normal reviewed merge remain mandatory; old green checks and
+local extracted-step results cannot substitute for them. Pressure test work is
+preserved separately in exact stashb77d606029e2f610aef8a5c7f07859049b3c4e85
+and an outside binary patch while this concrete CI blocker is corrected.
+
+### Shell correction — actual qualification and minimization
+
+Workflow471698cd retains the exact old90-line body after only eight inner
+Nix-prefix removals; three wrapper lines establish the one pinned shell.
+Independent source reviewcbe0d590 checks quoting, stdin, strict inner flags,
+profile/environment inheritance, error propagation and all unchanged guards.
+The extractor964dc90a copies each original line, removes YAML indentation and
+substitutes only the actual GitHub profile. It retains the real Nix entry.
+Both extracted scripts pass pinned Bash syntax checks. Initial cache DNS
+retries precede successful shell entry; neither attempt was cancelled or
+relabelled as a test failure.
+
+Literal debug76635731 and release1bb67640 scripts each exit0 through fresh
+`nix develop`, including the real shellHook. Both Cargo streams parse fully
+without discarding any lines. Each has exactly one protected test artifact
+with the actual source identity, feature, test kind and optimization0/3.
+Each controller completes32 distinct configurations,80 native invocations
+and80 passing native entry points; controller time is9.89/9.42seconds.
+The unchanged separate native cohorts execute exactly2/2/1 passing cases in
+each profile. All14 literal execution guards pass. The paired artifact
+readback exits0 for16 sources, seven PEMs, each actual binary and matrix
+log/exit, profile labels and genuine optimization metadata.
+
+The downloaded original failing CI JSON is preserved as0b6f704d. Replaying
+that actual input through pinned jq returns5 at the same line1/column7 parse
+error. This independently confirms the original shell-output defect; it is
+not an actor-law inversion. The prior controller/name/omission/substitution
+inversions retain their own exact source and profile scopes. Actual new
+logs and copied artifacts live under
+`/tmp/bombay-prd-resumption/native-shell-correction-20261024`.
+
+All Rust sources, owners, test bodies, dependencies and public interfaces
+remain unchanged in this correction. Aggregate states, subordinate states,
+transition branches, modules and public spellings are unchanged; no new
+actor semantics or scheduling authority appears. The scope review passes:
+one existing shell boundary owns the structured-output fix, with no banner
+filter, parser fallback, new script, dependency or shared setup change.
+Production+0/-0/net0, tests+0/-0/net0, publicAPI+0/-0 for the correction;
+workflow+11/-8/net3 and the two existing feature records are its complete
+changed-path scope. Exact new-head required CI and main delivery remain open.
+
+Independent paired outcome reviewb5599cf1 passes both source/outcome review
+rounds with no scoped veto. It independently rehashes the inputs/manifests,
+checks both exact32-case sets and2/2/1 cohorts, and distinguishes the original
+CI-input replay from actor-law inversion. Root reviewd3ba6b9f concurs.
+Against actual main277e6dfe the complete migration still changes five existing
+paths, with no untracked project files: production+0/-0/net0,
+tests+607/-152/net455 including the retired Python controller,
+workflow+81/-67/net14, publicAPI+0types/-0types; the remaining changes are
+the two existing feature records. This is net-positive verification code.
+
+Supplemental archive `native-shell-correction-qualified-20261024.tar.gz`,
+SHA256372e0e01590fe0bfdffe0153cb9f724cef3729f7974ac98270cfd51f6ab21b65,
+lives in the common Git session archive for2026-10-21. Fresh extraction passes
+all53 payload checks; base67978 plus the actual patch reproduces workflow471698,
+nativee78, both captured records and Python absence. This later archive pointer
+is outside that source capture. Original qualified archive3698d6ef is unchanged;
+neither archive is a compiler closure or submitted-head CI certificate.

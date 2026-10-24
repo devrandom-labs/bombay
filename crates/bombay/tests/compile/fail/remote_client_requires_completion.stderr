@@ -1,0 +1,62 @@
+error[E0271]: type mismatch resolving `<Caller as Protocol>::Msg == u64`
+   --> tests/compile/fail/remote_client_requires_completion.rs:117:24
+    |
+117 |     let outcome = node.run().await.unwrap_or_else(|original| {
+    |                        ^^^ type mismatch resolving `<Caller as Protocol>::Msg == u64`
+    |
+note: expected this to be `u64`
+   --> tests/compile/fail/../../../../../examples/remote-counter/src/protocol.rs
+    |
+    |     fn receive(&mut self, reply: Reply) -> BehaviorActed<Self> {
+    |                                  ^^^^^
+    = note: required for `Client<MessageProtocol<bombay::MailAddr, Operation>, (std::string::String, ClientLimits, Limits, Duration, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:63:9: 63:69}, {async closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:71:9: 71:60}, {async closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:74:9: 74:43}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:75:9: 75:80}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:87:9: 87:80}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:97:9: 100:27}), Receipt, u64, Either<deployment::Refusal, protocol::Refusal>, deployment::Refusal, deployment::Refusal, protocol::Refusal, protocol::Refusal, deployment::Refusal>` to implement `remote::export::query::Exports<Caller, EventLayer<behavior_actors::protocol::timer::TimerElapsed<Here>, behavior::User<bombay::MailAddr, protocol::Reply>>, (), behavior::EstablishedRecipient<Caller>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+   --> src/application/node.rs
+    |
+    |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+    |                  --- required by a bound in this associated function
+...
+    |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+
+error[E0271]: type mismatch resolving `<Caller as Protocol>::Msg == u64`
+   --> tests/compile/fail/remote_client_requires_completion.rs:117:19
+    |
+117 |     let outcome = node.run().await.unwrap_or_else(|original| {
+    |                   ^^^^^^^^^^ type mismatch resolving `<Caller as Protocol>::Msg == u64`
+    |
+note: expected this to be `u64`
+   --> tests/compile/fail/../../../../../examples/remote-counter/src/protocol.rs
+    |
+    |     fn receive(&mut self, reply: Reply) -> BehaviorActed<Self> {
+    |                                  ^^^^^
+    = note: required for `Client<MessageProtocol<bombay::MailAddr, Operation>, (std::string::String, ClientLimits, Limits, Duration, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:63:9: 63:69}, {async closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:71:9: 71:60}, {async closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:74:9: 74:43}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:75:9: 75:80}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:87:9: 87:80}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:97:9: 100:27}), Receipt, u64, Either<deployment::Refusal, protocol::Refusal>, deployment::Refusal, deployment::Refusal, protocol::Refusal, protocol::Refusal, deployment::Refusal>` to implement `remote::export::query::Exports<Caller, EventLayer<behavior_actors::protocol::timer::TimerElapsed<Here>, behavior::User<bombay::MailAddr, protocol::Reply>>, (), behavior::EstablishedRecipient<Caller>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+   --> src/application/node.rs
+    |
+    |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+    |                  --- required by a bound in this associated function
+...
+    |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+
+error[E0271]: type mismatch resolving `<Caller as Protocol>::Msg == u64`
+   --> tests/compile/fail/remote_client_requires_completion.rs:117:30
+    |
+117 |     let outcome = node.run().await.unwrap_or_else(|original| {
+    |                              ^^^^^ type mismatch resolving `<Caller as Protocol>::Msg == u64`
+    |
+note: expected this to be `u64`
+   --> tests/compile/fail/../../../../../examples/remote-counter/src/protocol.rs
+    |
+    |     fn receive(&mut self, reply: Reply) -> BehaviorActed<Self> {
+    |                                  ^^^^^
+    = note: required for `Client<MessageProtocol<bombay::MailAddr, Operation>, (std::string::String, ClientLimits, Limits, Duration, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:63:9: 63:69}, {async closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:71:9: 71:60}, {async closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:74:9: 74:43}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:75:9: 75:80}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:87:9: 87:80}, {closure@$DIR/tests/compile/fail/remote_client_requires_completion.rs:97:9: 100:27}), Receipt, u64, Either<deployment::Refusal, protocol::Refusal>, deployment::Refusal, deployment::Refusal, protocol::Refusal, protocol::Refusal, deployment::Refusal>` to implement `remote::export::query::Exports<Caller, EventLayer<behavior_actors::protocol::timer::TimerElapsed<Here>, behavior::User<bombay::MailAddr, protocol::Reply>>, (), behavior::EstablishedRecipient<Caller>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+   --> src/application/node.rs
+    |
+    |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+    |                  --- required by a bound in this associated function
+...
+    |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
