@@ -2,6 +2,7 @@
 //! recycling, stale waiter/state bits surviving `reset`, and exactly-once
 //! outcome destruction across churn well beyond the pool capacity (128).
 
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Barrier;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::task::Poll;
@@ -458,4 +459,54 @@ fn recycled_slot_waiter_traffic_stays_exactly_once() {
             );
         }
     }
+}
+
+// Only a borrowed atomic is retained: even the original repeated Drop cannot
+// release an owned allocation or access a field whose destructor already ran.
+struct PanickingOutcome<'counter> {
+    drops: &'counter AtomicUsize,
+}
+
+impl Drop for PanickingOutcome<'_> {
+    fn drop(&mut self) {
+        let previous = self.drops.fetch_add(1, Ordering::SeqCst);
+        if previous == 0 {
+            panic!("observation outcome disposal");
+        }
+    }
+}
+
+#[test]
+fn pooled_outcome_disposal_panic_does_not_repeat_destruction() {
+    let drops = AtomicUsize::new(0);
+    let space = ObservationSpace::<u8, PanickingOutcome<'_>>::new();
+    let mut original = space.subject(7).expect("the original key is vacant");
+    original.complete(PanickingOutcome { drops: &drops });
+    drop(original);
+    let before_reuse = drops.load(Ordering::SeqCst);
+
+    // With no observation and exactly one retired generation, the actual
+    // existing LIFO pool is the sole source of the replacement's slot.
+    let disposal = catch_unwind(AssertUnwindSafe(|| {
+        drop(space.subject(7));
+    }));
+    let after_reuse = drops.load(Ordering::SeqCst);
+
+    // Join no invented work: these are synchronous owners. Dispose all real
+    // remaining subjects and the namespace before comparing observations.
+    let replacement = space.subject(7).map(drop);
+    drop(space);
+    let after_namespace = drops.load(Ordering::SeqCst);
+
+    let () = replacement.expect("the failed reuse must not retain the key");
+    assert!(
+        disposal.is_err(),
+        "the original destructor panic must escape"
+    );
+    assert_eq!(before_reuse, 0, "pool retention must precede disposal");
+    assert_eq!(
+        (after_reuse, after_namespace),
+        (1, 1),
+        "the acquired outcome may be destroyed only once, including after its destructor panics"
+    );
 }
