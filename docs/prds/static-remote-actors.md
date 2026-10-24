@@ -1,5 +1,279 @@
 # Static remote actors and typed admission
 
+## Listening-client authentication — matched-control selection (2026-10-24)
+
+Current source baseline is pending public-pressure PR401 head850dd064 on actual
+main321; its four predecessor PRs retain their separate CI/review/delivery gates.
+This independent R20 stage inherits that source without claiming it merged.
+
+R20/ ZEN-08 remains open. First establish the smallest real matched control:
+one public listen-only Peer Node/Counter/cold Read Export and a private native
+Peer with the existing good client credentials. Native connector-only timeout0
+and exit-on-failuretrue await one actual connection attempt; public startup
+and retry policy remain unchanged. A successful public Peer opener alone is
+not authenticated readiness. Require actual matching, protected Read0/native
+User0, independently checked byte/proof/receipt pairs, EOF, independent local
+Read0 and complete native/Node/root/Work/notification cleanup before oracles.
+
+This is the positive prerequisite for the separately recorded foreign-client
+case and listening-owner mTLS inverse, not a complete new security law. Preserve
+the literal R20 requirement. Wrong roots/names, insecure fallback, authenticated
+remote exposure and router/confidentiality clauses remain independently open;
+no configuration getter or deterministic application verifier replaces TLS.
+The actual future negative must acquire native connection Err; a timeout,
+missing PEM, failed matched control or unissued bad Get supplies no such credit.
+
+Fresh selected contracts are unchanged: Behavior/Actors0.29 at55dbac2d,
+Macros0.16, Address0.3/9f058dc0, Communication0.1.6/963067e0, Timers0.2/9369d1f6
+and local Observe; root lock83f01ca3/isolated667a1820, no patches. SDK1.10.10,
+Config1.10.2/TLS1.10.4/Tokio1.53.3 retain their exact owners. Fresh source/API/
+documentation/test inspection and full selected760-line Behavior AGENTS are
+bound by the fresh corpus below and author review11b98ec9. Node95497c1b, Networke68aa154,
+Export and its acquisition/declaration/request owners retain the current
+contracts. No dependency, protocol-consumer or ownership gap requires a new API.
+
+Root rechecks the original40-entry corpus60fa5926 before application. Its only
+mismatch is the acceptance document: its51ddb snapshot was captured during
+documentation conflict resolution, as the author review warned. It is not
+selected semantic authority. Keep that ledger and failed readback historical.
+The new43-entry ledger substitutes actual acceptance01c5342c and adds the Node
+parent/constructors/retirement sources. All43 current hashes pass; all25 literal
+normative rows compare byte-identical to delivered main321. Existing source
+contracts are unchanged. This explicitly corrects the evidence epoch rather
+than calling a conflicted document a verified current contract.
+Fresh ledgerbf5dedbc and complete-row comparison2fa5992c are retained alongside
+the original corpus, actual failed/successful readbacks and source proposals.
+
+Ordinary Rust uses existing Node.exports/run_with, typed Counter Actions,
+ActorExt shutdown, finite Recorded products, actual native Query/FINAL/EOF,
+and original outcome/cleanup products. The existing Node test parent already
+owns Counter, protocol and custody; a child reuses them without visibility
+changes or three duplicate source inclusions. Original outside329-line8be
+remains frozen. Amended322-linef5c90 removes those inclusions and binds the two
+expected User products outside assertions; it changes no actual trace/oracle.
+Independent reviews4edc70ba/a602ce87/2c9f8d8c confirm source eligibility only.
+The first outside registration had a corrupt hunk count; corrected16811e1b
+passes apply-check before any project application. That setup failure is not
+semantic evidence. All earlier authoring and correction costs remain recorded.
+
+Expected four paths: new `crates/bombay/src/application/node/tests/security.rs`,
+its existing parent registration, this PRD and backlog status. Raw tests+324/-0
+(322 child, two registration lines), production+0/-0/net0, public types+0/-0,
+no dependency, configuration, example or fixture change. Formatting expansion
+must be counted. No wrapper, alternate actor/runtime, generic fixture or new
+macro is selected. Numeric budgets are removed; containment still applies.
+
+The pinned OpenSSL3.6.2 fixture qualification separately passes own-root
+clientAuth, matching public keys, SAN/EKU/current dates and expected Bombay-root
+issuer rejection2. Reviewe10d1ef2 preserves actual outputs and TLS direction.
+No foreign PEM has been copied into the project or runtime refusal executed.
+Reuse the maintained three TLS1.10.4 inputs only after matched-control fitness;
+the existing seven PEMs and old nonrecursive receipt maps stay exact.
+
+First freeze/apply/format/compile this concrete composition, then execute the
+exact named matched control in debug and optimized through the sole pinned
+Nix runner. Preserve all actual diagnostics and zero-selection checks. A
+compiler veto may reject this composition; it cannot invent new architecture.
+Do not author the larger foreign half before the actual matched controls pass.
+Paired security inverse/restoration, final full checks, two outcome reviews,
+minimization, measured final delta, required CI and normal main delivery remain.
+
+
+### Matched control — actual fitness
+
+Pinned formatting exits0 and expands322 raw child lines to370, source2e227e71.
+The first compile exits0 in39.20seconds without model, lifetime or API repair.
+Actual commands inside the existing pinned Nix shell are `cargo test --locked
+--offline -p bombay-rs --all-features --lib application::node::tests::security::matched_client_reaches_a_public_listening_counter --no-run`,
+then that same selection without `--no-run` and with `-- --exact --nocapture`,
+then the latter with `--release`. Both exact executions exit0:1passed/0failed/
+0ignored/425filtered,0.04/0.02seconds. Optimized compilation takes3m24s.
+No runtime result is inferred from compile-only success.
+
+Paired independent review9cc14aca checks both source/outcome passes, actual
+native Sample/protected pair/Read0/EOF, independent local Read0 and complete
+Node/native cleanup. Formatter changes are mechanical; no source correction
+was required after application. All five selected final inputs rehash exactly;
+pre-edit43-input/25-row correctiond74ed0f9 retains its historical document
+failure. These are matched-control positives only. Foreign refusal, actual
+listening-owner inverse/restoration, full checks and full R20 remain open.
+
+Matched checkpoint against850: four paths including the new child;
+production+0/-0/net0; tests+372/-0/net372; public API+0types/-0types.
+Records+111/-0; complete current delta+483/-0/net483. Earlier author corrections
+and formatting growth remain recorded; this is additional verification code.
+
+Matched-only source/results archive in the common Git directory is
+`session-archives/2026-10-21/r20-matched-qualified-20261024.tar.gz`, SHA256
+`4b9fdc77f8717ddcc7d8006db95cdfde0daa6e8b7d82349b4be472e8f9127749`.
+All41 payload hashes and base850+patch reconstruction pass the root readback.
+The capture precedes only this eight-line pointer: records+119/-0 and complete
+four-path delta+491/-0/net491; production/tests/API stay as above. No foreign,
+compiler/binary-closure, new-head CI, main-delivery or full-R20 claim follows.
+
+### Foreign-client refusal — selection before fixture/source edits
+
+The matched prerequisite now passes both actual profiles on source2e227e71;
+independent paired review9cc14aca preserves its complete native/Counter/cleanup
+observations. Extend that SAME concrete trace at the existing Node test owner.
+Keep one public listener and Counter alive: good-before protected Read0; an
+actual native Peer presenting only a foreign client certificate/key while
+still trusting Bombay's original server root; independent local Read0;
+deliberate local Increment; a NEW valid Peer and protected Read1. Both valid
+connections must succeed. Each actual caller ZID and distinct request sequence
+is registered in the finite full-pair policy, without duplicating authority.
+
+Preserve the bad Network original and actual native Err Box. If native open
+unexpectedly succeeds, keep its actual Session and acquire its real close
+result; never fabricate a close for Err. No Get is issued without a Session.
+All native query/listener/Session, Counter/root, Work, notifications and Node
+cleanup settle before the primary bad-open Err oracle. Counter/row absence is
+corroboration, not denial of an unissued application command. Local declaration
+and authenticated remote exposure remain distinct; do not narrow literal R20.
+
+The intended source inverse changes only the listening owner's mTLS setting;
+all connect-only native controls keep actual mTLS and original server trust.
+It must admit the foreign client while BOTH valid controls, actor progress and
+cleanup still succeed, then fail the saved Err classification. Require actual
+debug/optimized failures at that oracle, freeze the mutant, and restore exact
+production before final positives/full checks. A watchdog/setup/compiler error
+or a broken valid control earns no security-law credit. No production defect
+is presumed; no changed production source is selected for retention.
+
+Reuse three byte-exact maintained TLS1.10.4 fixtures from archive66fdcaa6:
+`certificates/foreign/{root-ca,localhost-certificate,localhost-private-key}.pem`
+and one short attribution README. Root OpenSSL/e10 qualification proves their
+purpose/key/time/foreign-issuer fitness, not the live law. The bad connector's
+server-trust root remains Bombay rootA. Choose the package's Apache-2.0 license
+branch, retaining minica/ZettaScale provenance and the public-test-key warning;
+import no CA private key or signing machinery. Preserve all seven top-level
+PEM bytes and their existing nonrecursive maps. Nix already includes the whole
+certificate directory recursively; this new law must hash its three new PEMs
+explicitly. No dependency, flake filter, workflow, example or public API changes.
+
+Expected cumulative scope is eight paths: the four matched-stage paths plus
+these four nested fixture files. The existing registration stays unchanged.
+Expected extra test source is roughly250 raw lines before ordinary Rust
+composition/formatting; this is an estimate, not a budget. The outside author
+must freeze the actual delta and two source reviews before application. Reuse
+ordinary async functions/closures and existing concrete products; no duplicate
+trace, generic fixture framework, new runtime owner or observer API. Production
+and public-type deltas remain zero; all earlier authoring/formatting costs carry.
+
+Fresh selected contracts/43-input map, production Networke68aa154/Node95497c1b,
+locked Behavior/Actors and all neighboring owners remain as qualified above.
+This stage changes no owner/dependency edge. Other R20 credentials, fallback,
+router visibility and remaining full acceptance are separate. The R09 lifetime
+quota/fair-recovery audit question is independent and selects no repair here.
+
+### Foreign-client control — healthy execution
+
+Raw ordinary-Rust source dbde7b43 replaces the earlier matched-only case;
+formatting produces478 lines, SHA2566f0497bb. It reuses the existing Node test
+parent and adds no production code, public type, runtime or fixture framework.
+First compilation passes in39.07seconds with no source, API or lifetime repair.
+The exact `application::node::tests::security::foreign_client_is_refused_while_the_listener_remains_usable`
+case passes through the pinned Nix shell in debug and optimized:1passed,
+0failed/0ignored/425filtered,0.18/0.14seconds; optimized compilation is3m19s.
+Actual logs cb481fce/d1166f1f and paired independent review308c56fe preserve
+both outcomes. All14 selected source/lock/fixture hashes remain exact afterward.
+
+Both good controls, original foreign-open Err, local Read0/Increment, fresh
+Session Read1, complete native/protected rows and full cleanup reach their
+oracles. The saved foreign classification is checked last. This healthy pair
+alone does not distinguish authentication enforcement from an unrelated failed
+connection. The recorded listening-only mTLS inverse and exact restoration,
+fresh positives, full checks, minimization, required CI and delivery remain.
+
+### Listening-only authentication inverse — actual result
+
+The single temporary Network change sets mTLS from the existing direction
+product: `Some(true)` becomes `Some(connect.is_some() || listen.is_none())`.
+Only the listen-only server disables client authentication; every connect-only
+client retains its original certificate, server root and name verification.
+Original Networke68aa154 and mutant95863a92, exact patchde48100c and14 mutant
+inputs are frozen outside the project. Independent source/guard reviewc377a245
+requires restoring with strict shell error handling even after Cargo fails.
+
+Both actual inverse commands exit101 at the sole final authentication oracle,
+security.rs471, after both good native controls, local progress, all complete
+row/wire facts and cleanup pass. Debug/optimized execution is0.05/0.02seconds;
+compilation37.44seconds/3m19s. Logs cff2d508/48a5dd44 preserve the sole panic:
+`the actual foreign client acquired a native Session`. This is unauthorized
+Session admission sensitivity, not denial of an unissued foreign Get.
+
+The wrapper and restoration both exit0. Root independently checks original
+Networke68aa154, byte comparison, empty production Git diff and all14 healthy
+input hashes. No mutant remains. Fresh restored full-library checks in both
+profiles, formatting and strict workspace Clippy are running; no terminal
+result, full R20, CI or delivery is inferred from the inversion.
+
+Restored full-library debug/optimized execution now passes426/0failed/0ignored/
+0filtered in5.65/5.50seconds on6f0497; formatting passes. Strict Clippy exits101
+on that source: the complete test future is18496bytes, its Node wait17056bytes,
+and String `to_owned` hides a clone. These are actual retained diagnostics,
+not runtime failures. The next confined correction uses ordinary `Box::pin`
+at those two awaits and explicit `caller.clone()`. No trace, assertion,
+authentication policy, error product or production source changes are selected.
+Freeze that small diff and review static forwarding/ownership before applying;
+fresh final-source validation remains mandatory. Earlier source epochs and
+all correction costs remain preserved.
+
+Minimization tries only the inner Node wait box first: shrinking that stored
+future may also remove the outer size warning. The two-box proposal remains
+historical; a second allocation is eligible only if the smaller composition
+still fails Clippy. Neither choice changes an owning interface or test oracle.
+
+### Final listening-client regression — qualification and minimization
+
+Only the inner concrete Node wait needs boxing. Final formatted477-line source
+ea0f5e70 retains one test allocation and the explicit String clone. Strict
+`cargo clippy --locked --offline --workspace --all-targets --all-features -- -D warnings`
+passes in15.83seconds; no suppression or second allocation is retained.
+Fresh final-source `cargo test --locked --offline -p bombay-rs --all-features --lib`
+and its `--release` counterpart each pass426/0failed/0ignored/0filtered,
+5.69/5.62seconds. Both include the actual security case. Logs5232c920/55322703,
+format-check0, wrapper0 and all14 final input hashes pass inside pinned Nix.
+Production Network remains byte-exacte68aa154 with an empty owning Git diff.
+
+Independent source reviewsd1d09f65/2c32d688 prove concrete future forwarding,
+unchanged borrowing/drop/order and original native facts/oracles. The actual
+negative pair stays on6f0497 at its original final471 assertion; this is source
+equivalence plus fresh final positives, not a relabelled ea0 inverse execution.
+The original failed Clippy and larger unselected proposal remain historical.
+
+Minimization retains one test at the existing Node owner, reusing its Counter,
+protocol and custody. The same public listener serves both matched controls;
+ordinary async closures avoid duplicate traces or a generic fixture framework.
+No production state, transition, interpreter, type, API, task, macro or runtime
+is added. Three maintained PEMs and attribution support reproducible foreign
+issuer qualification; the original seven credentials remain exact. This is
+additional verification code, not a code-reduction claim. No application code
+or example plumbing changes. Wrong server roots/names, fallback, ACL/exposure,
+router confidentiality and the remaining PRD acceptance stay open.
+
+Final change record against850: eight owned paths and no untracked files;
+production+0/-0/net0, tests+479/-0/net479, PEM fixtures+67/-0/net67,
+public API+0types/-0types. Records and complete-tree totals are measured in the
+final publication receipt, including this record and its archive pointer.
+Inherited397→398→399→400→401 delivery remains separate. Required new-head CI,
+review and normal main merge are mandatory; no local result implies delivery.
+
+Qualified source/results archive in common Git is
+`session-archives/2026-10-21/r20-listener-auth-qualified-20261024.tar.gz`, SHA256
+`c52a6f07e794371e505cf8eab985f38e75107b473fce10d949b0b5445830d952`.
+All129 payload checks pass. Base850+patch recovery reproduces all702 file bytes
+and modes, treed6842316299e50566373f2a5db56b960cfa4cef5, with all14 final input
+hashes exact. Capture845/0 precedes this pointer/final census only. Independent
+final outcomes27e5f8ac and staged-record reconciliation34da4f2b preserve their
+distinct measured epochs. This is not a compiler/binary closure or CI delivery.
+
+Publication census: records+313/-0/net313; complete eight-path
+slice+859/-0/net859, production/API0, tests479 and PEM67 as above.
+The complete current tree against actual main321 has18 paths,+4258/-412/
+net3846 including all five pending predecessor slices; no untracked files.
+
+
 ## Current PR401 source integration (2026-10-24)
 
 This proposed public-pressure integration inherits immutable PR400 head

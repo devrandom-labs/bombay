@@ -1,5 +1,15 @@
 # Backlog status and dependencies
 
+R20's listening-client regression is locally qualified on securityea0f5e70:
+426 library cases pass in each profile, along with formatting, strict workspace/
+all-target/all-feature Clippy and all14 selected input hashes. The same public
+Counter refuses the foreign client and serves valid Read0 then fresh-Session
+Read1, with complete cleanup. Actual listening-only mTLS inversions on6f0497
+fail only the final foreign-Session oracle after all controls; production is
+restored exactly. One concrete Node wait box suffices; production/public API0.
+Required new-head CI/review/main delivery and the other R20 clauses remain open.
+The five inherited PRs retain their separate exact-head delivery gates.
+
 PR401's proposed public held-reply integration inherits immutable400/cfd72a95,
 including397/a84c0dbf,398/1e70671d and399/404acb36 on actual main321.
 Deliver397→398→399→400 before401, solely temporary source/delivery ordering;
