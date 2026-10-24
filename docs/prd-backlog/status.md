@@ -1,5 +1,38 @@
 # Backlog status and dependencies
 
+PR400's unused fairness Python reproducer retirement now inherits immutable
+PR399/404acb361a2c24ffcde946c51fea19e7f330fe07, including PR398/1e70671d,
+PR397/a84c0dbf and actual delivered main321. Deliver397, then398, then399,
+before this stacked400. This is temporary overlapping-source delivery order,
+not a new semantic dependency between fairness, R17 or request capacity.
+No pending prerequisite is described as merged. Fresh exact-head CI,
+independent conservation review and normal main delivery remain required.
+
+The unused144-line fairness reproducer is deleted locally; its13 owning
+library cases and one public actor case pass in both profiles on the stated
+unchanged owners. Production/API0; verification0/-144; three existing paths
+for this retirement alone. The event-fairness PRD preserves the complete
+qualified history, independent reviews and archive2185580. Actual425-case
+library execution remains on3e1a5ab7; the separate public one-case/profile
+execution and277 input scope are unchanged. Source equivalence is not a fresh
+execution on this combined head. Old ten-plus-two inversions remain historical.
+This maintenance slice does not reopen merged FAIR1 or close PERF-07/remote
+acceptance and introduces no replacement runner or gate change.
+
+Actual main321 contains five Python files. Immutable399/404acb contains four
+after the protected-counter controller retirement. This combined candidate
+contains three: docs/prds/static-remote-actors/transport-custody/verify_transport_custody.py,
+tools/diagnostics.py and tools/diagnostics_test.py. These counts are source
+inventories, not claims that either pending retirement is delivered.
+
+The earlier fairness/provider-main checkpoint also retains PR394's actual
+required Nix job120714234734, completed01:24:23Z with the full flake and
+Driver/Observe fuzz. Independent readiness273236ab checked server rules and
+local reviews; actual mainb45 followed the normal protected merge. Its exact
+head/tree/delivery record remains in the inherited provider records below.
+
+### Inherited remote delivery and qualification records at399/404acb
+
 PR399's private held-native-request test remains locally qualified on exact
 limits810 and unchanged production45282. Its proposed integration inherits
 immutable398/1e70671d, including397/a84c0dbf and actual delivered main321.
