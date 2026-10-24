@@ -1,5 +1,15 @@
 # Backlog status and dependencies
 
+The [request recovery regression](../prds/request-recovery.md) is active within
+R09 after fresh selected-owner verification. Original debug and optimized runs
+each pass the matched limit2 control and fail limit1 only at the final local
+Read0 versus required1, after complete cleanup. Invalid traffic therefore
+exhausts the same live Export's lifetime custody and blocks a later genuinely
+valid increment. The intended paired failure is independently reviewed; no
+production repair or weakened assumption is selected. Explicit disposition,
+replay/original-fact conservation and bounded capacity remain required.
+Cache/delegation/full R09 and the complete remote PRD remain open.
+
 The [observation disposal regression](../prds/observation-disposal.md) is distilled.
 Original-source debug and optimized runs reproduce repeated destruction after
 a destructor panic. The minimal repair passes the exact regression,427 owning

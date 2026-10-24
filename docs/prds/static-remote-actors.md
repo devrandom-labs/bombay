@@ -1,5 +1,10 @@
 # Static remote actors and typed admission
 
+The [R09 recovery regression](request-recovery.md) owns the fresh same-export
+invalid-then-valid comparison and lifetime-quota conflict. Its accepted scope,
+dependency verification and evidence remain separate from the historical
+checkpoints below; the complete remote PRD remains active.
+
 ## Listening-client authentication — matched-control selection (2026-10-24)
 
 Current source baseline is pending public-pressure PR401 head850dd064 on actual

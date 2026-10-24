@@ -166,7 +166,13 @@ async fn complete(policy: VerificationPolicy) {
     };
     let exchange = async {
         let (request, lifecycle, address) = configured.await.expect("actual quota binding");
-        let (peer, shutdown) = peer.quota(request, || lifecycle.shutdown(), retired).await;
+        let repeat = ProtectedMessage {
+            protected: request.protected.clone(),
+            proof: request.proof.clone(),
+        };
+        let (peer, shutdown) = peer
+            .quota([request, repeat], async || lifecycle.shutdown(), retired)
+            .await;
         (peer, shutdown, address)
     };
     let ((outcome, publication), (peer, shutdown, target)) = tokio::join!(execution, exchange);

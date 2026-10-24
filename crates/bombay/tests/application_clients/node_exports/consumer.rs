@@ -27,6 +27,8 @@ mod peer;
 mod protocol;
 #[path = "quota.rs"]
 mod quota;
+#[path = "recovery.rs"]
+mod recovery;
 #[path = "refusals.rs"]
 mod refusals;
 #[path = "targets.rs"]
