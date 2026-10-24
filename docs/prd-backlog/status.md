@@ -1,5 +1,24 @@
 # Backlog status and dependencies
 
+The [observation disposal regression](../prds/observation-disposal.md) is distilled.
+Original-source debug and optimized runs reproduce repeated destruction after
+a destructor panic. The minimal repair passes the exact regression,427 owning
+library cases in each profile, formatting, strict Clippy,28 Loom cases, four
+Miri seeds and all four1024-run Observe fuzz targets. Two-pass independent
+minimization passes; focused PR, required CI and main delivery remain pending. Keyed
+Observe retains its existing capability contract; production+20/-18/net2,
+tests+51/-0, public types+0/-0.
+
+PR397 is delivered as9ea5defe after all six checks passed and the submitted,
+CI-tested and actual merge trees matched. PR398–402 retain separate delivery
+gates. This focused Observe repair does not close the remote PRD or the three
+ongoing complete-codebase audits.
+
+### Inherited qualification and delivery checkpoints
+
+The following checkpoints preserve their stated source and delivery epochs;
+their pending-PR descriptions are historical where superseded above.
+
 R20's listening-client regression is locally qualified on securityea0f5e70:
 426 library cases pass in each profile, along with formatting, strict workspace/
 all-target/all-feature Clippy and all14 selected input hashes. The same public
@@ -8,7 +27,7 @@ Read1, with complete cleanup. Actual listening-only mTLS inversions on6f0497
 fail only the final foreign-Session oracle after all controls; production is
 restored exactly. One concrete Node wait box suffices; production/public API0.
 Required new-head CI/review/main delivery and the other R20 clauses remain open.
-The five inherited PRs retain their separate exact-head delivery gates.
+The inherited PRs retain their separate exact-head delivery gates.
 
 PR401's proposed public held-reply integration inherits immutable400/cfd72a95,
 including397/a84c0dbf,398/1e70671d and399/404acb36 on actual main321.
