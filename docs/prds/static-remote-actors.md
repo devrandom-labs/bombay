@@ -1,6 +1,6 @@
 # Static remote actors and typed admission
 
-## Tokio I/O safety prerequisite (2026-10-23)
+## Tokio I/O safety prerequisite — historical implementation record (2026-10-23)
 
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
 locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
@@ -53,6 +53,21 @@ application/native checks are still in progress. This source-only stage adds
 no product or verification Rust and no public type. Required CI and reviewed
 main delivery remain pending.
 
+Provider-follow-up integration: PR395/be200b25 carries the separately reviewed
+Tokio prerequisite, with formal source review001bdf06. Its actual Deny check
+40013872994 passes; other required checks remain pending. The provider branch
+now includes that exact dependency change, so its earlier head19c6c4ea and UI
+qualification retain their historical lock epoch. With patched root83f01ca3,
+the unchanged ordinary remote-counter passes all eight existing outer cases
+in EACH debug and optimized profile (five process parents, three pure tests;
+one ignored native child is executed by its owning exact-named parent).
+Both actual command exits are0. Raw logs/exits are
+`/tmp/bombay-prd-resumption/tokio-patched-counter-{debug,release}.{log,exit}`;
+strict workspace Clippy and formatting also exit0. These are integration
+controls, not a local reproduction of the upstream unsafe-descriptor defect.
+The provider branch requires fresh submitted-head CI; neither PR395's Deny
+success nor previous UI results substitute for that gate.
+
 ## Current status (2026-10-23 UTC)
 
 Latest user direction: “there is no budget.” The user explicitly preapproves
@@ -62,14 +77,30 @@ again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
 
-[PR392](https://github.com/devrandom-labs/bombay/pull/392) merged the finite-test
-remote Counter at2026-10-23T19:21:29Z as632bf18454016de9b986066c0130a83142a9187d.
-All six checks passed on95c1105a; required Nix completed10:08:55Z. The verified
-head and merge share treedea8c9cf. This child-retirement proposal integrates
-that actual main; its unchanged script is00e9e467 and its combined flake is938beb59.
-The earlier child evidence remains bound to its source epoch; this integrated
-head requires fresh checks before delivery. Five Python files remain in this
-proposal, six on main until it merges. Full remote acceptance remains active.
+PR395 merged patched Tokio as36b5c1f9f92b56f527167076249d12c1ceba0545 at
+2026-10-23T23:26:42Z after six successful checks on be200b25; verified/merge
+trees match7f8c9218. PR393 then merged child Python retirement as
+277e6dfe2c5377b8b31810c025509322640a588e at23:44:22Z after six successful
+checks on90ecb176; verified/merge trees match3e062d6a. Required Nix40014264183
+actually runs the patched-lock21-command owner, including healthy/inverse/
+restored native child phases; raw-job review79e171a1 preserves its scope.
+The clean/pushed task worktree is removed without force after full source/CI
+archiveccbc9473 and independent extracted checksum verification. Five Python
+files and other inline workflow blocks remain; their retirement is separate.
+
+Actual main277e6dfe is integrated into PR394's provider/R10 follow-up. Only
+the PRD/status records conflicted: both complete feature-local append sections
+are retained, while current delivery summaries reflect the actual merges.
+All qualified UI sources, compiler snapshots, runtime/application owners and
+both patched locks remain byte-identical. Earlier e68d521f passed all six
+checks; this new submitted head still needs fresh CI and review. No old green
+check is transferred to it. All remaining full remote obligations stay active.
+
+PR392 merged the finite-test remote Counter at2026-10-23T19:21:29Z as
+632bf18454016de9b986066c0130a83142a9187d after all six checks passed on95c1105a;
+required Nix completed10:08:55Z. Verified and merge trees match dea8c9cf.
+Actual main is integrated into this provider-interface/R10 evidence follow-up.
+Its qualified Rust is unchanged; its own required CI and delivery remain open.
 
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged the scoped
 coverage Python retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
@@ -99,13 +130,24 @@ success, provider refusal, wrong-proof and processing-before-publication loss
 checks pass in both profiles. Full workspace debug/optimized tests and strict
 lint pass. The smaller private temporary-directory owner passes all eight
 application cases in both profiles under the previously failing long parent;
-the dedicated aarch64-darwin Nix check also passes. All six submitted-head checks
-pass; application delivery is recorded above. Its first Nix CI run exceeded the existing two-hour
+the dedicated aarch64-darwin Nix check also passes. All six application checks
+pass; its delivery is recorded above. Its first Nix CI run exceeded the existing two-hour
 job guard while compiling the optimized workspace. The existing guard is now
 three hours; every required command remains selected.
 This is not a full remote acceptance
 or delivery claim. The concrete remaining clauses are retained in the acceptance
 table; existing merged evidence is not reset by this follow-up.
+
+The complete selected R10 semantic witness is now locally satisfied: explicit
+finite-test selection, refusal of fake/missing production capability before
+startup, the real successful Test control, its guard-only falsifier/restoration,
+and both independent deterministic provider ports. The
+[R10 evidence](static-remote-actors/acceptance.md#r10--explicit-test-identity-and-production-refusal-2026-10-23)
+binds all clauses to actual sources and outcomes, distinguishing source/lock
+epochs. Independent review3e6872ba and root resolve the separate protection
+provider attribution. All other full rows remain open. This is local semantic
+acceptance; this follow-up still requires its own CI/main delivery. Selo and
+full RELEASE-04 remain separate.
 
 Cold Export delivery: PR387 merged at2026-10-22T10:33:49Z as
 3625efe86f8613e13b3a3bc6cf180dc5de57edc7 after all six required checks passed on
@@ -43082,6 +43124,97 @@ and log digest matches4e3d67b9. It retains the captured derivation/source
 comparison and independent qualification reviewa307aba0. The earlier application
 archiveaa230f71 remains unchanged. Neither archive certifies exact-head CI or a
 hermetic compiler closure.
+
+## Required remote policies and typed completion — pre-edit record (2026-10-23)
+
+This R01/R10 verification stage reuses the actual public Counter/Caller,
+Deployment and wire modules from the qualified finite-test application. Fresh
+selected locks still name Behavior/Actors0.29 (revision55dbac2d), Macros0.16,
+Address0.3, Communication0.1.6, Timers0.2, local Observe and controlled native
+SDK1.10.10. No patch/dependency edge or runtime owner changes. Existing Client
+and Export constructors own independent required verifier callbacks; Client's
+bound actual target owns its concrete reply type. The existing remote_surface
+trybuild target owns static consumer checks and actual compiler diagnostics.
+
+Two complete real compositions must compile before three single-change
+negative consumers receive credit: omit Client reply verification, omit Export
+request verification, or decode u64 where the actual Caller accepts Reply.
+No callbacks synthesize authority or use dummy providers. Cold entrypoints
+reference the construction functions without executing networking; these are
+compiler contracts, not new runtime evidence. Removing the whole remote
+attachment remains a valid local composition and is not claimed compile-denied.
+The broad R01/R10 rows still require their other actual acceptance evidence.
+
+Expected scope: existing registration plus five source fixtures, production
++0/-0/net0, tests approximately+472 before formatting/compiler snapshots,
+public types+0/-0. Imported example modules remain authoritative; no public
+wrapper, runtime marker, macro or new library is introduced. Intended absent
+provider/message diagnostics must be inspected from the real pinned compiler;
+no stderr is invented. Debug and optimized UI runs plus independent two-pass
+source/outcome review are required. Source proposal b35bb871 and prerecord
+review0b3841f1 remain outside evidence of eligibility, not executed acceptance.
+
+### Required policy actual compiler qualification
+
+Both complete consumers compile with the actual nominal Counter/Caller and
+finite deployment. The three one-change negatives produce actual constructor
+port/arity or bound actor-message diagnostics. Missing Client verification
+produces E0061 (11required versus10supplied) plus three shifted-argument
+cascades. Missing Export verification produces E0061 (10versus9) plus eight
+shifted-argument/attached-run cascades. Wrong completion produces three E0271
+locations for the same Caller::Msg=Reply versus decodedu64 disagreement.
+These are three static laws, not sixteen independent denials.
+
+The first and explicitly formatted compiler runs each exit101 only because
+trybuild records three new stderr files. Both positives pass in both runs;
+there is no unrelated setup denial. Only the actual formatted diagnostics
+are retained. The complete remote_surface target subsequently passes all
+three outer tests in debug and optimized profiles, with no ignored/filtered
+cases. Its five new inner consumers are compiler evidence, not five runtime
+exchanges. Raw log hashes are01d23ac4 (debug) and12ab6a39 (optimized), under
+`/tmp/bombay-outbound-client-comparison/remote-policy-ui-full-*`.
+Selected remote_surface strict Clippy, workspace formatting and explicit
+Rust2024 fixture formatting pass. No production source or public API changes.
+
+Actual verification delta is+956/-0/net956: five formatted source fixtures
+575lines, three real compiler snapshots371lines and registration10lines.
+This is test growth for static contracts, not cleanup or production reduction.
+The parent is appPR392's source; the application and required full CI remain
+separate delivery prerequisites. Neither a passing UI target nor required
+constructor callbacks alone establishes full R01/R10 acceptance.
+
+Independent source/outcome review1687a12b verifies the three laws and actual
+nine-case inner suite (three passing consumers, six denials) under three outer
+tests in each profile. Trybuild's inner compiler remains in its dev profile
+under the optimized outer; no optimized runtime exchange is claimed.
+The scoped source/results archive
+`remote-policy-ui-95c1105a-20261023T081447Z-vQiSdi.tar.gz`, SHA256
+`f89da75e609aae0c71df252e7168f7e61a37bdf7b1a6a9c5719ce50a108d524c`,
+is in the common Git2026-10-21 session archive. Root independently extracts it
+and verifies all88 manifest entries; it contains87 inventory payloads plus
+inventory/checksum records. The snapshot predates this pointer and depends on
+base95c1105a; it is not a compiler/binary closure, CI or delivery certificate.
+
+## R10 complete local evidence reconciliation (2026-10-23)
+
+The selected literal R10 row is unchanged. This records its whole semantic
+witness from already executed owning cases, rather than adding a new provider
+model or treating compiler arity alone as acceptance. Author review1357ea2a,
+independent clause review3e6872ba and root source/raw-log inspection agree.
+The independent attribution/epoch findings are resolved: construction/replay
+use protocol providerc142411e; protection uses distinct provider5bc4a39f;
+workspace lock4edede11 and final package lockaf4406db retain their actual epochs.
+All ten actual provider names execute in each workspace profile; the genuine
+Test journey, both ProductionRequired refusals, intended guard-only negative
+and restored controls supply the remaining clauses. No new runtime state,
+software test, dependency or public type is required by this evidence assembly.
+
+The change touches only the acceptance companion, PRD and reciprocal status:
+production+0/-0/net0, tests+0/-0/net0, publicAPI+0/-0. Older application-planning
+text is explicitly historical. R10's local semantic satisfaction leaves required
+this follow-up's CI/main delivery, every other full row, production cryptography/Selo and
+the broader release inventory open. Existing application archives retain raw
+source/results; review copies are preserved with the common Git session records.
 
 ## Child preparation Python retirement — pre-edit record (2026-10-23)
 
