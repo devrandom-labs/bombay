@@ -1,6 +1,20 @@
 # Backlog status and dependencies
 
-Current prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
+The unused fairness Python reproducer is selected for direct retirement,
+with its owning native library/public actor tests retained byte-for-byte.
+The event-fairness PRD records fresh selected dependencies, current native
+controls and historical mutation scope. This is an independent three-path
+verification deletion, production/API0; no replacement runner or new fairness
+law is selected. Actual checks/review/CI and main delivery remain separate.
+
+The actual retirement baseline main277e6dfe already contains PR395's patched
+lock delivery36b5c1f and PR393's child-retirement delivery277e6dfe, each after
+six successful checks on its exact head and matching verified/merge trees.
+The earlier advisory paragraph below is historical; current root83f01ca3
+selects Tokio1.53.3. This maintenance stage does not reopen merged FAIR1 or
+claim full overload, remote acceptance or delivery of the other pending PRs.
+
+Historical advisory checkpoint: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
 reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
 upstream-patched1.53.3 in the root and isolated transport locks and changes
 the isolated exact pin at its owner. No advisory exception, runtime/API change
