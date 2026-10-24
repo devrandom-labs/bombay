@@ -1,5 +1,85 @@
 # Backlog status and dependencies
 
+PR394 normally merged asb45c756625b8b3d1a25ca37f507344b9a76559e4 at
+2026-10-24T01:31:45Z after all six checks passed on exacted72df92; verified,
+tested and delivered trees match20b77b9122f8ec36daa2e8b4e20472d134f12523.
+PR396 normally merged as32145c3f09986da75c6cf332080d81813764fb8e at01:51:48Z
+after all six checks passed on exact881e606f; submitted, tested and delivered
+trees matchc40dc2697578f4529a9a6474b0e093896c186578. Provider/R10 and denied-Stop
+delivery retain their distinct scopes; full remote/R23 acceptance remains open.
+
+The proposed PR397 integration uses actual main321. It conserves both complete
+provider/Stop and native shell-correction histories, all delivered software,
+patched locks and UI fixtures. Nativee78fb162 and corrected workflow471698cd
+remain its only selected software changes, plus deletion of the protected
+152-line Python controller. Production/API0; five existing paths including
+the two records. Actual main321 has five Python files; this candidate leaves
+four. Independent fairness retirement is not counted as delivered.
+
+Actual48d5f798 has five successful checks with Nix still running at the last
+bounded readback. Its integrated successor requires fresh exact-head CI,
+independent conservation review and normal main delivery. No passing result
+is transferred between source heads. The dated checkpoints below retain
+their original source/CI scope; old PR394/396 pending language is historical.
+
+### Earlier native local qualification and CI checkpoints
+
+The scoped PR397 shell correction now passes actual fresh Nix entry in both
+profiles, preserving every artifact and native execution guard. Each profile
+completes32 configurations/80 invocations/80 native passes and2/2/1 follow-up
+cases; all source/certificate/binary/matrix checksums and actual optimization
+metadata pass. Replaying the original downloaded CI JSON still refuses5.
+The correction changes only workflow shell composition and these records;
+fresh exact-head CI and normal reviewed main delivery remain required.
+
+PR397 head67978dc6 has a newly proved CI blocker: the Nix welcome banner enters
+Cargo JSON, and strict jq rejects the debug artifact before protected native
+execution. Both native steps fail; only the debug raw cause is acquired.
+The feature PRD records a scoped whole-step pinned-shell correction. Preserve
+all artifact/native guards and require fresh exact-head CI before delivery.
+Prior local extracted-step qualification did not exercise this shell boundary.
+
+Protected native transport retirement is active on actual main277e6dfe.
+The pre-edit record in the remote PRD selects the existing isolated Cargo owner
+for all32 native configurations and80 OS roles/profile, preserving the original
+native source. Outside debug/optimized controls, three intended controller
+inversions, exact restoration and actual artifact/source selection pass their
+stated gates. Three unchanged native commands retain exact name/summary guards;
+actual zero/extra selections refuse in both profiles. The retained tests are
++607/-152, workflow+74/-63, production/API0, five paths including records.
+CI/main delivery and the other four Python files remain open. The retained
+full native target now passes69/0/1/0 per
+profile, strict selected-target Clippy and formatting pass, and the complete
+protected workflow step passes in both profiles with actual Cargo optimization
+and source/certificate/binary/log readbacks. The temporary duplicate-debug
+qualification error was rejected and corrected before optimized credit.
+This migration closes no full remote acceptance row.
+
+Final independent retained-source review6a3528fb finds no scoped veto.
+Archive3698d6ef preserves source/raw results/reviews; independent extracted
+checks and base-plus-patch reconstruction pass. Required submitted-head CI and
+normal reviewed main merge remain pending.
+
+### Historical advisory and child integration checkpoints
+
+Earlier prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
+reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
+upstream-patched1.53.3 in the root and isolated transport locks and changes
+the isolated exact pin at its owner. No advisory exception, runtime/API change
+or full remote acceptance is claimed. Its compatibility checks, independent
+review and fresh required CI/main delivery remain open; previous green heads
+do not qualify these current PR heads.
+
+The child-retirement branch now integrates pushed Tokio fixbe200b25. Independent
+review216925c9 confirms the fresh21-command native run on former head a84ec103
+and lockaf4406db, including both intended native failures and exact restored
+passes. That result remains scoped to the former lock. The integrated root
+lock is83f01ca3 with Tokio1.53.3; fresh compatibility/native execution and
+submitted-head CI must qualify it before PR393 delivery. No earlier green
+check or original Nix receipt is transferred to this lock epoch.
+
+### Earlier provider and denied-Stop integration checkpoint
+
 Denied-Stop follow-up integrates actual main277e6dfe and provider headed72df92.
 Its test source8f7427dd is unchanged: both real-program controls pass D/R,
 the intended proof inverse fails the actual child verification oracle after
@@ -25,6 +105,8 @@ expansion: “there is no budget.” Do not request line/path/type/verification
 budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
+
+### Earlier application and feature checkpoints
 
 PR392 merged the finite-test application at2026-10-23T19:21:29Z as632bf184,
 after all six checks passed on95c1105a; verified and merge trees match.

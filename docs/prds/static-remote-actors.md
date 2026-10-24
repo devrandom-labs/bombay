@@ -1,5 +1,202 @@
 # Static remote actors and typed admission
 
+## Current PR397 integration (2026-10-24)
+
+This proposed integration uses actual main
+32145c3f09986da75c6cf332080d81813764fb8e. PR394 normally merged as
+b45c756625b8b3d1a25ca37f507344b9a76559e4 at2026-10-24T01:31:45Z after
+all six checks passed on exacted72df92; verified/tested/delivered trees match
+20b77b9122f8ec36daa2e8b4e20472d134f12523. PR396 normally merged as
+32145c3f09986da75c6cf332080d81813764fb8e at01:51:48Z after all six checks
+passed on exact881e606f; submitted, tested and delivered trees match
+c40dc2697578f4529a9a6474b0e093896c186578. Both deliveries used normal review
+and merge requirements, without bypass. Provider/R10 and denied-Stop delivery
+are distinct scoped facts; neither closes the complete remote PRD or R23.
+
+PR397 retains only its existing five-path native-controller/workflow/record
+stage. Its software is nativee78fb162 and corrected workflow471698cd; no
+production/API, lock, acceptance or licensing file changes are selected.
+All delivered main UI fixtures, registration and original denied-Stop source
+must remain unchanged. Actual48d5f798 has five successful checks and Nix still
+running at the last bounded readback; those results do not qualify a new
+integrated head. Independent conservation review, fresh exact-head CI and
+normal main delivery remain required. No semantic dependency on the independent
+R17, capacity or fairness proposals is introduced.
+
+The dated implementation and integration checkpoints below preserve BOTH
+complete histories and their original source epochs. Their earlier pending
+PR394/396 and prerequisite language is historical, superseded by the actual
+deliveries above. Native original679 CI failure, corrected48 local evidence,
+rejected duplicate-debug extraction and genuine optimized receipts retain
+their separate meanings. No prior passing result is relabelled as execution
+on the proposed integration.
+
+Integration census against actual321: production+0/-0/net0; tests+607/-152/
+net455; workflow+81/-67/net14; public types+0/-0. Five paths include both
+records. Complete candidate+1101/-235/net866, including records+413/-16.
+The qualified software remains exact; required new-head CI remains open.
+
+## Protected native transport Python retirement — pre-edit record (2026-10-24)
+
+The protected Counter CI step still depends on a152-line Python controller and
+four inline Python readers. Select the existing isolated Cargo test target as
+the single execution owner. Preserve its five groups of8/8/8/4/4 actual native
+configurations, both provider profiles, root/child recipients, Peer/RouterClient
+layouts, actual authority issuance, release/EOF ordering and all native oracles.
+This is verification migration, not a new actor/runtime law or full remote
+acceptance. The raw transport30-case Python controller remains separate.
+
+Before repository implementation, the outside candidate has passed actual
+debug/optimized32-configuration controls, named-test/omission/same-count
+substitution inversions and exact restoration. A wrong name fails its exact
+native-name guard; omission executes28; substitution executes32 but only24
+distinct configurations. All failures occur after the acquired children and
+readers settle and their configuration directories retire. No compiler error,
+watchdog or missing test selection earns actor-law credit. Final restored
+controls execute32 unique configurations and80 native roles per profile.
+
+Fresh locked-source verification: root83f01ca3 and isolated667a1820 retain
+Behavior/Actors0.29.0, VCS55dbac2d1068b29907498b3a7fa32b3080e0cd30;
+macros0.16.0; Address0.3.0 VCS9f058dc0; Communication0.1.6 VCS963067e0;
+Timers0.2.0 VCS9369d1f6; local Observe; no patches. Their selected registry
+source, public contracts, documentation and relevant tests are inspected again:
+pure Behavior/Actions and named send products; exact address lease release;
+Communication cancellation and rejected originals; affine Observe publication;
+generation-safe Timers cancellation. The complete selected Behavior AGENTS
+applies. Existing Counter behavior, Application/Node, protected provider,
+native role and retirement owners remain unchanged. The selected SDK remains
+bombay-zenoh1.10.10/config1.10.2/protocol1.10.1 with TLS, Tokio1.53.3.
+There is no dependency/version/feature or ownership prerequisite left unresolved
+for this migration. Production admission, security and simulation gaps remain
+independent full-PRD prerequisites.
+
+Expected five existing paths: append607 test-only Rust lines to
+`crates/bombay/tests/protected_counter/transport.rs`; workflow+74/-63; delete
+`transport-custody/verify_protected_counter.py`152 lines; update this PRD and
+the status index. Production+0/-0/net0, public types+0/-0. Verification source
+is+607/-152/net455 plus workflow net11, before documentation. This is
+net-positive verification code, not source reduction. All earlier cumulative
+costs remain recorded; the user's explicit no-budget direction applies.
+
+Use only ordinary std scoped readers, bounded channels, owned Child kill/reap
+on failure and the existing concrete native role sum. No new binary, generic
+runner, task framework, dependency, public API or example plumbing. The native
+owner's original120167-byte prefix remains5e6d7c72 byte-exact; all actor laws
+continue to belong to it. The only new test product owns an actual OS child
+whose std Drop would otherwise leave it running. Closed release/evidence sums
+carry distinct fixture choices; no semantic booleans or hidden actor effects.
+
+Standard jq selects one actual Cargo artifact by name/kind/test/feature/profile;
+Bash file identity verifies its actual source despite Cargo's dot segments.
+Actual wrong-profile, duplicate-artifact and different-source controls refuse;
+restored arguments select the original object. The different existing source
+operand is `crates/bombay/tests/protected_counter/retirement.rs`, not a fake
+Cargo record. Three unchanged native commands keep their exact passing names
+and one-summary/count checks using grep. Actual zero-test and extra-real-test
+outputs refuse in both profiles; original successful outputs pass again.
+
+Preserve the original16 source hashes, seven PEM hashes, actual executable
+hash, revision/profile, Cargo JSONL/stderr, matrix log/exit hashes and actual
+native Command diagnostics (including issued binding and endpoint). Retire the
+old repeated campaign.json representation; do not claim schema compatibility.
+First review maps every old case and oracle. Independent second review checks
+omission/duplication, EOF/release, source identity, cleanup and zero selection.
+Source/results reviews are retained outside under
+`/tmp/bombay-outbound-client-comparison/protected-native-*.md`; raw receipts
+under `/tmp/bombay-protected-native-control-results-20261023/`.
+Final archive, measured complete delta, retained-source checks and submitted-head
+CI/review/main delivery still need recording. No full acceptance row closes.
+
+### Retained native qualification and minimality (2026-10-24)
+
+The retained native source is SHA256
+e78fb1622052e8313d12052193f973598ae9e0b82436f981dbd40477cd420c9b;
+the workflow is d7447d50d13061c49b26ceb9716b8c7bc4fe381a8fef1d898f571dd981ab0878.
+Its complete original native prefix remains byte-identical, not merely a
+passing replacement model. The deleted controller's historical source is
+a9c823466e107a5bdd26471fdb4f84eaa96d2c382ec81010769f6b356919bf06.
+
+Through the existing pinned Nix shell, both retained commands
+`cargo test --locked --offline --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --features protected-transport --test protected_counter`
+and the same command with `--release` exit0:69passed/0failed/1ignored/0filtered
+per profile,9.83s/9.52s. The ignored native entry point is deliberately invoked
+by exact name in80 actual child roles; it is not an unexecuted actor witness.
+Strict Clippy on that selected feature/test target and isolated formatting
+also exit0. No full-workspace or submitted-head CI result is inferred.
+
+The complete protected workflow step also exits0 in both profiles under that
+same pinned shell. The temporary extraction removes only YAML indentation,
+substitutes the actual matrix profile and omits the nested `nix develop -c`
+prefix because the shell is already pinned. Each actual matrix completes32
+unique configurations/80 native passes/80 invocation records, followed by
+the unchanged native2/2/1 cohorts and all14 literal summary checks. The root
+workflow artifacts retain16 source hashes, seven PEMs, actual distinct native
+binaries, exact Cargo metadata, matrix originals and exit receipts. A separate
+readback exits0 after checking every manifest, both profile texts, real Cargo
+optimization0/3 and32/80/80 counts. Local revision277e6dfe identifies the base;
+the source manifests and working-tree patch identify the tested modifications.
+
+An initial temporary extraction accidentally mutated its input lines, making
+its second nominal run debug again. Its exit0 is explicitly rejected as
+optimized evidence. The missing release-artifact readback exposed that error.
+The rejected script/log/exit/source-check are preserved separately; corrected
+extractore4aa6cc1 copies each line and the genuine optimized step exits0 with
+actual optimization3 and its distinct release binary. The retained workflow
+itself was unchanged by this qualification error. Earlier lifetime-compile and
+raw-path-selector failures retain their original rejected setup scope.
+
+Independent two-pass source/outcome reviews ec9b42be,6b655663,8c52f62f and
+39d654c3 map the old five groups, all native/cleanup oracles, each intended
+guard failure and restored positive. Zero/extra selections reject at the first
+successful-name count; later summary checks receive no inversion credit.
+Every acquired actual result is inspected after its required cleanup. No
+original actor law, provider distinction, authority binding or final outcome
+is replaced by a watchdog, encoder count or fake native transcript.
+
+Aggregate audit: native actor control states, policy, production transition
+branches, modules and public spellings are unchanged. One private test module
+owns finite external execution, not a second actor interpreter. Its3-way
+release choice,3-way evidence source and line/EOF/read-error observations keep
+distinct current values; one Child owner supplies std's missing failure-path
+kill/reap. BTreeSet compares complete actual identities against an independent
+literal set. No arrival-history state, semantic boolean, erased future,
+protocol registry, wrapper facade or public construction seam is added.
+The project-owned Python controller and four inline readers are deleted rather
+than kept as a second spelling. Disposition: locally eligible; final review,
+archive sealing and submitted-head CI/main delivery remain separate gates.
+
+Final independent retained-source/outcome review
+6a3528fbaca7477f5c4c4ed8f9e54691f3124b49a466ffa163d4722eae68cef4
+finds no scoped veto, including the corrected genuine optimized workflow and
+all artifact custody. Qualified source and raw old/rejected/current receipts,
+complete base277e6dfe plus working-tree patch and all reviews are sealed in
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/protected-native-qualified-20261024.tar.gz`,
+SHA2563698d6ef7ab6704c6be6979a56d0499c1c622f67439915062d4b68bc76bfaa5f.
+Independent extraction verifies all 250 payload checksums; base-source extraction
+plus the actual patch reproduces nativee78/workflowd744 and both records,
+with the protected Python file absent. This is source/evidence custody, not a
+compiler/binary closure. This final archive record follows the sealed source
+snapshot and is retained in Git. Actual wrong-existing-owner identity also
+refuses1 at the retained root, followed by restored correct identity0; its
+original operands and receipts are preserved in the archive.
+
+Complete working-tree checkpoint against main277e6dfe, including staged deletion
+and all untracked paths:
+
+```text
+production: +0 / -0 / net 0
+tests:      +607 / -152 / net 455
+workflow:   +74 / -63 / net 11
+public API: +0 types / -0 types
+records:    +224 / -4 / net 220
+```
+
+Five existing paths change; there are no untracked repository files. Earlier
+task costs and qualified deliveries remain in their owning records; this is
+the focused stage census, not a reset of cumulative work. Actual submitted-head
+CI and normal reviewed main merge remain required before calling this slice
+delivered. Full R01–R25/AUTH1/NET1 acceptance and distillation remain open.
+
 ## Separate-program denied Stop — pre-edit record (2026-10-23)
 
 R23 still requires the ordinary application's denied-Stop witness. The smallest
@@ -109,6 +306,10 @@ denied-Stop follow-up needs its own submitted-head CI and normal main delivery.
 
 ## Tokio I/O safety prerequisite — historical implementation record (2026-10-23)
 
+The implementation checkpoints below retain their original source scope.
+Actual PR395 delivery is recorded in the current status; their pending language
+does not describe the current patched locks.
+
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
 locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
 failure, independent of the child-retirement and provider-interface changes.
@@ -186,14 +387,39 @@ Correctness, architecture, actual verification, review and CI remain mandatory.
 
 PR395 merged patched Tokio as36b5c1f9f92b56f527167076249d12c1ceba0545 at
 2026-10-23T23:26:42Z after six successful checks on be200b25; verified/merge
-trees match7f8c9218. PR393 then merged child Python retirement as
-277e6dfe2c5377b8b31810c025509322640a588e at23:44:22Z after six successful
-checks on90ecb176; verified/merge trees match3e062d6a. Required Nix40014264183
-actually runs the patched-lock21-command owner, including healthy/inverse/
-restored native child phases; raw-job review79e171a1 preserves its scope.
-The clean/pushed task worktree is removed without force after full source/CI
-archiveccbc9473 and independent extracted checksum verification. Five Python
-files and other inline workflow blocks remain; their retirement is separate.
+trees match7f8c9218. PR393 merged child Python retirement as277e6dfe at23:44:22Z
+after six successful checks on90ecb176; verified/merge trees match3e062d6a.
+Required Nix40014264183 runs the patched-lock21-command native owner;
+raw-job review79e171a1 preserves its source scope. Its clean/pushed worktree
+was retired without force after archiveccbc9473 and independent checksum review.
+
+PR394 and PR396 are delivered as actualb45 and321 respectively, with all six
+checks successful and verified/tested/delivered source trees equal as recorded
+in the current integration note. Their complete provider/R10 and Stop records
+are conserved below. The current PR397 proposal integrates321 while retaining
+nativee78fb162 and corrected workflow471698cd. Only shared current summaries
+and dated record placement are reconciled; qualified UI/runtime/application
+sources and both patched locks remain unchanged. Actual main321 has five
+Python files; this native-only retirement removes one, leaving four in this
+candidate. Unmerged fairness retirement is not counted as delivered.
+
+PR397 still needs its own integrated-head conservation review, fresh submitted
+CI and normal reviewed main delivery. Old48 checks remain bound to48. Full
+security, pressure/exit/scenario, simulation, diagnostics, acceptance and
+distillation remain open except for independently populated scoped records.
+
+### Earlier application and child integration checkpoint
+
+[PR392](https://github.com/devrandom-labs/bombay/pull/392) merged the finite-test
+remote Counter at2026-10-23T19:21:29Z as632bf18454016de9b986066c0130a83142a9187d.
+All six checks passed on95c1105a; required Nix completed10:08:55Z. The verified
+head and merge share treedea8c9cf. This child-retirement proposal integrates
+that actual main; its unchanged script is00e9e467 and its combined flake is938beb59.
+The earlier child evidence remains bound to its source epoch; this integrated
+head requires fresh checks before delivery. Five Python files remain in this
+proposal, six on main until it merges. Full remote acceptance remains active.
+
+### Earlier provider-main checkpoint
 
 Actual main277e6dfe is integrated into PR394's provider/R10 follow-up. Only
 the PRD/status records conflicted: both complete feature-local append sections
@@ -202,12 +428,6 @@ All qualified UI sources, compiler snapshots, runtime/application owners and
 both patched locks remain byte-identical. Earlier e68d521f passed all six
 checks; this new submitted head still needs fresh CI and review. No old green
 check is transferred to it. All remaining full remote obligations stay active.
-
-PR392 merged the finite-test remote Counter at2026-10-23T19:21:29Z as
-632bf18454016de9b986066c0130a83142a9187d after all six checks passed on95c1105a;
-required Nix completed10:08:55Z. Verified and merge trees match dea8c9cf.
-Actual main is integrated into this provider-interface/R10 evidence follow-up.
-Its qualified Rust is unchanged; its own required CI and delivery remain open.
 
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged the scoped
 coverage Python retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
@@ -21745,8 +21965,9 @@ authority. This is an isolated test trust input, not production discovery,
 identity establishment, delegation or an additional authentication protocol.
 Use existing readiness/release control machinery; no new channel primitive.
 
-Name the controller docs/prds/static-remote-actors/transport-custody/
-verify_protected_counter.py. It releases the held actual Query only after both
+Historical controller selection: docs/prds/static-remote-actors/transport-custody/
+verify_protected_counter.py, retired by the protected-native migration recorded
+above. Its preserved ordering releases the held actual Query only after both
 recipient Query-received and caller-local Read2 facts, avoiding timing/yield
 assumptions. Keep Query and Reply custody products distinct and acquire all
 cleanup before observational assertions. Native request/admission/processing
@@ -43454,3 +43675,97 @@ the workspace manifest and existing law owners remain unchanged. Do not relabel
 that older run, its original Nix receipt or old green checks as qualification
 of the new lock. Fresh compatibility/native results and submitted-head full CI
 remain required. This integration records no PR393 merge or full remote acceptance.
+
+## Protected Counter CI shell correction — pre-edit record (2026-10-24)
+
+Submitted PR397 head67978dc6 fails both native jobs in the protected Counter
+step. Debug job120724675613 and downloaded artifact12540344320 establish the
+cause: the shell welcome banner precedes successful Cargo JSON output, and
+strict jq rejects it with exit5 before the32-configuration controller runs.
+The release failing step is confirmed, but its raw log download timed out;
+the same detailed cause is not independently credited to that profile.
+Debug raw log43ca3b7d and artifact572f8ae8 retain the actual failing inputs.
+Prior local step qualification removed nested Nix entry because it already ran
+inside the pinned shell. Those local native results stand at that scope; they
+did not verify the structured-output boundary used by submitted-head CI.
+
+The smallest correction enters the existing pinned Nix shell once around the
+whole protected step. Cargo/jq redirects and command substitutions then run
+inside that shell, after its welcome output. Preserve the strict one-artifact,
+source identity, optimization,32-configuration,80-role and named-case guards;
+do not filter arbitrary text out of JSON or alter the shared shellHook. Reuse
+Nix, Bash and jq already selected by the repository. The neighboring CESR
+workflow already runs a multi-command step inside pinned Bash. Pass this body
+as a quoted Bash command so program text does not become native child stdin;
+set inner `-euo pipefail` explicitly and retain inherited Cargo environment.
+Expected scope is this existing workflow and the two existing feature records:
+production/tests/public types+0/-0, workflow three added shell wrapper lines
+and removal of redundant inner Nix prefixes. No dependency changes occur.
+
+Before acceptance, run the actual corrected Nix entry in both profiles with
+all original guards, inspect complete artifact/source/binary manifests, and
+prove the old entry contaminates structured output using actual Nix stdout.
+Review the shell expansion and observable outcomes independently. New exact-head
+required CI and normal reviewed merge remain mandatory; old green checks and
+local extracted-step results cannot substitute for them. Pressure test work is
+preserved separately in exact stashb77d606029e2f610aef8a5c7f07859049b3c4e85
+and an outside binary patch while this concrete CI blocker is corrected.
+
+### Shell correction — actual qualification and minimization
+
+Workflow471698cd retains the exact old90-line body after only eight inner
+Nix-prefix removals; three wrapper lines establish the one pinned shell.
+Independent source reviewcbe0d590 checks quoting, stdin, strict inner flags,
+profile/environment inheritance, error propagation and all unchanged guards.
+The extractor964dc90a copies each original line, removes YAML indentation and
+substitutes only the actual GitHub profile. It retains the real Nix entry.
+Both extracted scripts pass pinned Bash syntax checks. Initial cache DNS
+retries precede successful shell entry; neither attempt was cancelled or
+relabelled as a test failure.
+
+Literal debug76635731 and release1bb67640 scripts each exit0 through fresh
+`nix develop`, including the real shellHook. Both Cargo streams parse fully
+without discarding any lines. Each has exactly one protected test artifact
+with the actual source identity, feature, test kind and optimization0/3.
+Each controller completes32 distinct configurations,80 native invocations
+and80 passing native entry points; controller time is9.89/9.42seconds.
+The unchanged separate native cohorts execute exactly2/2/1 passing cases in
+each profile. All14 literal execution guards pass. The paired artifact
+readback exits0 for16 sources, seven PEMs, each actual binary and matrix
+log/exit, profile labels and genuine optimization metadata.
+
+The downloaded original failing CI JSON is preserved as0b6f704d. Replaying
+that actual input through pinned jq returns5 at the same line1/column7 parse
+error. This independently confirms the original shell-output defect; it is
+not an actor-law inversion. The prior controller/name/omission/substitution
+inversions retain their own exact source and profile scopes. Actual new
+logs and copied artifacts live under
+`/tmp/bombay-prd-resumption/native-shell-correction-20261024`.
+
+All Rust sources, owners, test bodies, dependencies and public interfaces
+remain unchanged in this correction. Aggregate states, subordinate states,
+transition branches, modules and public spellings are unchanged; no new
+actor semantics or scheduling authority appears. The scope review passes:
+one existing shell boundary owns the structured-output fix, with no banner
+filter, parser fallback, new script, dependency or shared setup change.
+Production+0/-0/net0, tests+0/-0/net0, publicAPI+0/-0 for the correction;
+workflow+11/-8/net3 and the two existing feature records are its complete
+changed-path scope. Exact new-head required CI and main delivery remain open.
+
+Independent paired outcome reviewb5599cf1 passes both source/outcome review
+rounds with no scoped veto. It independently rehashes the inputs/manifests,
+checks both exact32-case sets and2/2/1 cohorts, and distinguishes the original
+CI-input replay from actor-law inversion. Root reviewd3ba6b9f concurs.
+Against actual main277e6dfe the complete migration still changes five existing
+paths, with no untracked project files: production+0/-0/net0,
+tests+607/-152/net455 including the retired Python controller,
+workflow+81/-67/net14, publicAPI+0types/-0types; the remaining changes are
+the two existing feature records. This is net-positive verification code.
+
+Supplemental archive `native-shell-correction-qualified-20261024.tar.gz`,
+SHA256372e0e01590fe0bfdffe0153cb9f724cef3729f7974ac98270cfd51f6ab21b65,
+lives in the common Git session archive for2026-10-21. Fresh extraction passes
+all53 payload checks; base67978 plus the actual patch reproduces workflow471698,
+nativee78, both captured records and Python absence. This later archive pointer
+is outside that source capture. Original qualified archive3698d6ef is unchanged;
+neither archive is a compiler closure or submitted-head CI certificate.
