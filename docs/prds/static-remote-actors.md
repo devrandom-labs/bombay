@@ -1,5 +1,112 @@
 # Static remote actors and typed admission
 
+## Separate-program denied Stop — pre-edit record (2026-10-23)
+
+R23 still requires the ordinary application's denied-Stop witness. The smallest
+observable comparison uses the shipped Counter/Caller and public Node, with
+two real OS programs and the existing finite TEST deployment. Change exactly
+the receiver's configured Stop request proof while preserving the unchanged
+caller, real runtime/actor bindings, all grants and the other five records.
+Matching proof must permit actual Stop. Different proof must return the
+original typed verification refusal, preserve the exact request/proof bytes,
+perform no native Stop, leave Counter alive with value1 for an independent
+local Read, and let the unchanged caller report Uncertain(Stop).
+
+This verification-only stage extends the existing owning
+`examples/remote-counter/tests/processes/lost_reply.rs`: expected +310/-2 raw
+test lines before formatting plus PRD/status records; production+0/-0,
+public API+0/-0, no new path/dependency/registration. Reuse existing Program
+kill/reap custody, Unix assignment, validated Deployment, public Node/Export,
+Counter and Caller Actions; add no application fault hooks or runtime owner.
+Actor control states, subordinate alternatives and production transition
+branches are unchanged. A test-local StopProof sum represents the exact
+matching/different assignment distinction. Actor runtime semantics are not
+implemented inside that sum.
+
+Dependencies are freshly inspected in the preceding Tokio prerequisite:
+Behavior/Actors0.29 at55dbac2d, macros0.16, Address0.3, Communication0.1.6,
+Timers0.2 and local Observe retain their owning contracts; selected SDK is
+bombay-zenoh1.10.10 with TLS only. Root lock83f01ca3 and isolated667a1820
+select patched Tokio1.53.3. The test uses actual public boundaries and exact
+native retirement/report products; no dependency contract changes. Source
+review of the outside comparison is89ab8809; it has not yet compiled.
+
+Acceptance: both actual matched and denied parents in debug/optimized builds,
+exact native child execution, joined cleanup before final assertions, full
+typed rows and denial originals. The intended falsifier changes ONLY the
+different receiver proof back to matching while retaining the different
+expectation; it must fail at the verification-denial oracle after cleanup,
+not a timeout, interrupted Work or release-write error. Restore exact source
+and replay both controls. Review every test twice and retain actual diagnostics.
+This proves proof refusal only: send-only authority, Client capacity waiting,
+full R23 and other full PRD requirements remain separate.
+
+First actual draft compiles. Denied control passes in debug, but the matched
+control reaches the existing40-second watchdog: its test Work waits for a
+release the parent supplied only to the denied case. Normal Counter retirement
+does not complete independent caller Work. This is rejected test setup, not
+a runtime defect or semantic evidence. Preserve the first source/log, then
+release BOTH cases after the ordinary caller is actually reaped. Only the
+denied case performs a subsequent local Read; matched Work completes without
+one. The existing complete Work/native cleanup products remain the oracle.
+No production change or invented interruption policy is justified.
+
+Both corrected controls pass in both profiles. Independent adversarial review
+then rejects unconditional receive after a refused audit Read: under the
+intended proof counterfactual, Counter has stopped, and the rejected Read still
+owns its reply endpoint. Waiting on that endpoint could hide the intended
+verification oracle behind a watchdog. Retain the actual admission Result and
+perform receive only after successful admission; record unattempted receive
+using the existing Attempt contract. Always acquire shutdown and cleanup before
+the Stop verification oracle. This corrects verification liveness, not runtime
+behavior; the earlier healthy results remain their exact source epoch.
+
+First finite proof inversions exit101 promptly in both profiles, but their
+outer logs report only failed-child status: libtest's captured assertion is
+in the acquired child's stdout, omitted by the parent's stderr-only diagnostic.
+Those failures receive no intended-law credit. Include both acquired stdout
+and stderr in the existing failure message, preserving actual outputs after
+child reap/directory cleanup, then repeat the same one-proof inverse. This
+changes diagnostic visibility only; do not infer the missing assertion.
+
+Retained local stage (2026-10-24): final source8f7427dddc96ce8672bde83450eaac26744af4e9a83a9a6d7034ad8c933b0595
+passes both exact matched/denied parents in EACH profile, all four exits0.
+The complete package at restored9e4d6a37 passes ten outer tests/profile
+(seven process parents and three pure tests, zero filtered; two deliberately
+ignored child roles are executed and checked by exact parent controls).
+Final strict package/all-target Clippy and formatting exit0. Clippy's two
+style corrections preserve the same typed branch bodies and order; independent
+normalized source review confirms no semantic/ownership change.
+
+Visible inverse logs800849d2/d9383d54 each exit101 at the child's expected
+Some(Err(Refusal::Proof)) assertion, after joined cleanup; no watchdog/setup
+failure is credited. Later assertions on that negative path are unexecuted.
+The inverse source62f14b32 is explicitly reconstructed from frozen9e4d6a37
+and the recorded unique97-to0 edit, not claimed as a contemporaneous hash.
+Restoration is byte-exact. Independent reviews05d69591 and the final source
+review bind both actual outcomes and source epochs. Raw receipts are
+`/tmp/bombay-prd-resumption/stop-*`; source/result archive
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/stop-proof-qualified-20261024.tar.gz`
+preserves the drafts, rejected evidence, restored source and actual results.
+
+Final scoped delta: production+0/-0/net0; tests+469/-1/net468;
+public API+0/-0 types; three existing paths including these two records,
+no untracked repository file. The added test capability is net-positive
+verification, not code reduction. Pressure, process-exit scenario mapping,
+full R23/R11, distillation and submitted-head CI/review/main delivery remain
+open. No application fault machinery or runtime change is retained.
+
+Provider integration (2026-10-24 local): actual main277e6dfe and provider
+follow-uped72df92 are integrated. Only these two record files conflicted;
+the entire denied-Stop section, complete provider/child appendices and current
+delivered-status facts are conserved. All software/configuration outside the
+single Stop test owner equals ed72df92. That test owner remains exact8f7427dd.
+The final two-pass Stop review is08e05181; the qualified archive's actual
+SHA256 is eaaed494c108bff011528c4a968093ebc6205d980f55f914508a287e1bb558bd.
+Independent fresh extraction passes every checksum. This preserves source and
+results, not a compiler/binary closure. PR394's new CI remains separate; the
+denied-Stop follow-up needs its own submitted-head CI and normal main delivery.
+
 ## Tokio I/O safety prerequisite — historical implementation record (2026-10-23)
 
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject

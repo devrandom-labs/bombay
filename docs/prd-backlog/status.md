@@ -1,5 +1,13 @@
 # Backlog status and dependencies
 
+Denied-Stop follow-up integrates actual main277e6dfe and provider headed72df92.
+Its test source8f7427dd is unchanged: both real-program controls pass D/R,
+the intended proof inverse fails the actual child verification oracle after
+cleanup, the restored package passes ten outer tests/profile and final lint,
+formatting and independent reviews pass. Production/API delta0; verification
++469/-1. Focused CI/main delivery, pressure, exit/scenario mapping and full R23
+remain pending. Both complete provider/child and Stop records are conserved.
+
 PR395 merged patched Tokio as36b5c1f9 at2026-10-23T23:26:42Z after six green
 checks on be200b25; verified/merge trees match7f8c9218. PR393 merged child
 Python retirement as277e6dfe at23:44:22Z after six green checks on90ecb176;
