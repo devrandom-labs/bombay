@@ -1,6 +1,32 @@
 # Backlog status and dependencies
 
-Current prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
+The held-native-request capacity test is locally qualified: the intended
+early-permit source cut fails its saved Get oracle after cleanup in both
+profiles, exact production restoration is verified, and final limits3/3 plus
+full library425/425 pass. Formatting and strict all-target/all-feature Clippy
+pass. The retained change is tests+489/-4/net485, production/API0, three
+existing paths. Required CI, reviewed main delivery and the public two-process
+pressure/cancellation/exit/scenario acceptance remain open. Full R23 is active.
+
+### Held-request pre-edit checkpoint
+
+The private held-native-request capacity regression is selected before the
+larger public R23 pressure application. It directly polls the same B request
+while A's actual native Query is held; saved Get phase distinguishes permit
+waiting from waiting on B's own reply. Expected test-only+279/-4 beforefmt,
+production/API0, three existing paths including records. The intended inverse
+releases A's permit before native reply EOF; all cleanup must precede its
+saved-phase failure. Corrected source review preserves B protection facts and
+manual poll/resume wording. Execution, final checks and main delivery remain
+pending; public two-program pressure and full R23 stay open.
+
+PR395 delivered the patched locks as36b5c1f and PR393 delivered child Python
+retirement as277e6dfe after all six checks passed on their exact heads;
+verified/merge trees match. This stage starts from that actual main277e6dfe
+and patched root lock83f01ca3. The earlier advisory checkpoint below is
+historical. Other remote acceptance and pending PR deliveries stay separate.
+
+Historical advisory checkpoint: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
 reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
 upstream-patched1.53.3 in the root and isolated transport locks and changes
 the isolated exact pin at its owner. No advisory exception, runtime/API change

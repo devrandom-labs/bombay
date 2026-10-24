@@ -1,6 +1,136 @@
 # Static remote actors and typed admission
 
-## Tokio I/O safety prerequisite (2026-10-23)
+## Held native request capacity — pre-edit record (2026-10-24)
+
+R23 pressure still needs its public two-program witness. First close the owning
+private regression gap: a held actual A native Query retains the one request
+permit through reply EOF, so an explicitly polled B request cannot enter its
+Get. B Pending alone is insufficient: it could already be awaiting its own
+reply. Preserve B's actual Get phase before A release, then assert it only
+after both requests, replies, originals and native cleanup have settled.
+
+This is an existing Client law, not a new actor/runtime policy or a production
+bug claim. The smallest failing regression deliberately drops the actual
+request permit just after native Get returns, before A's real reply/EOF. The
+same finite two-Query driver must still finish both early/late B cases and
+reject only the saved pre-release Get phase. A watchdog, compiler error or
+native setup failure receives no law credit. Restore exact production source
+and replay both debug/optimized profiles before retaining the test.
+
+Expected existing paths: `crates/bombay/src/remote/client/tests/limits.rs`, this
+PRD and the status index. Corrected outside candidate28e890b7 is raw tests
++279/-4/net275 before formatting; no production/API/dependency changes remain.
+Formatting may expand the test; record the actual final complete delta rather
+than hide that growth. The one-line temporary production inverse is recorded
+separately and is not retained. User approval removes numeric budget ceilings;
+all previous authored/modified costs and stages still carry.
+
+Fresh selected contracts: Behavior/Actors0.29.0 VCS55dbac2d, macros0.16,
+Address0.3/9f058dc0, Communication0.1.6/963067e0, Timers0.2/9369d1f6, local
+Observe; root lock83f01ca3/isolated667a1820, no patches. Complete selected
+Behavior AGENTS and these owners' source/API/tests/docs remain verified.
+Client45282b54 and existing limits764eb188 are exact main277e6dfe sources.
+The native selected SDK stays1.10.10, config1.10.2 and Tokio1.53.3. No missing
+dependency or new ownership interface is required for this private test.
+
+Reuse Client::select/request, Request originals, actual Source and return
+endpoint, native Querier/Query/FINAL/EOF, existing Recorded full-pair policy,
+bounded semaphore, pinned futures and ordinary Poll/Attempt products. No
+public observer hook, fake route success, model Get, new trait, wrapper or
+generic runner. A is established by its actual acquired Query, not an encoder
+or protector marker. B's actual pre-release protection phase and registry
+count are saved independently; original outputs/causes remain in their rows.
+
+Source reviews8efe7b75/990c5a08 found the initial proposal omitted that
+protection observation and overstated cancellation. Corrected review9f3a2d2f
+adds the actual observations and narrows the test to manual poll, temporary
+borrow end and same-future resume. This is not asynchronous wait cancellation.
+The chosen early-permit inverse credits the Get/permit-retention law only;
+later protection assertions receive no inverse credit if the Get oracle fails
+first. Full public two-OS pressure, borrowed Node-wait cancellation, exit and
+deterministic scenario mapping remain separate required R23 work.
+
+The full candidate and exact patch are outside under
+`/tmp/bombay-outbound-client-comparison/limits-permit-observations.*`.
+Compiler/lifetime/first-poll fitness, actual healthy/inverse/restored outcomes,
+two final test reviews, minimization, strict checks and CI/main delivery remain
+pending. Do not add architecture in response to compiler friction.
+
+### Held native request capacity — actual qualification (2026-10-24)
+
+Initial formatted test01f33152 passes the exact new leaf in debug/optimized
+with production45282b54. The actual one-line inverse1e732a13 adds only
+`drop(_permit)` after native Get result storage and `drop(permission)`, before
+reply receiving. Both actual runs exit101 only at the saved B Get oracle,
+limits.rs1019, after both source originals, native requests/replies, checked
+receipts, deliveries, actual EOF and cleanup assertions passed. There is no
+compiler, setup or watchdog failure. Later protection/registry assertions are
+unexecuted in these negative runs and receive no independent inverse credit.
+Actual source/patch/input ledgers and all four raw logs are preserved.
+
+Production is restored byte-exact45282b54. Final test81048707 changes only
+qualification comments from01f; independent reviewc1851ec9 verifies unchanged
+operations, assertions and order, and the intended actual inverse outcomes.
+The final restored source passes the existing three-case limit group in each
+profile:3passed/0failed/0ignored,422filtered. The complete library passes
+425passed/0failed/0ignored/0filtered in both profiles,4.96/4.83seconds.
+Pinned commands are `cargo test --locked --offline -p bombay-rs --all-features
+--lib remote::client::tests::limits:: -- --nocapture` and the full `--lib`
+selection, each repeated with `--release`. Each raw command exit and the
+sequential owning-check script exit is0. The final three-input ledger rehashes
+production45282, tests810 and root lock83f01 successfully.
+
+Pinned `cargo fmt --all -- --check` and
+`cargo clippy --locked --offline --workspace --all-targets --all-features --
+-D warnings` pass on the final source. Existing remote debug/release Nix
+checks already execute this owning library; no new gate, source filter or
+workflow is added. Required new-head full CI and actual main merge remain
+separate from these local results.
+
+Minimization retains one independent law in its existing private Client test
+owner. The two older limit cases hold protection and refuse return admission;
+they do not poll B after A acquires an actual native Query and retain its
+pre-release Get phase. Combining these traces would add divergent provider,
+delivery and hosting branches. Reuse the existing concrete owners without a
+fixture framework, observer API, new type or runtime policy. Production
+states/branches/modules/public spellings remain unchanged. The retained
+test-only delta is+489/-4/net485, production+0/-0/net0, publicAPI+0types/-0types,
+three existing paths including the two feature records, no untracked files.
+The formatted expansion is counted; this is additional verification code.
+
+This directly driven SessionLocal component test preserves its actual originals
+and native outcomes. It establishes neither asynchronous borrowed-wait
+cancellation nor normal serve/Node completion. Public two-program pressure,
+exit, mailbox pressure, deterministic scenario mapping and full R23 remain
+open. Local checks and this scoped minimization do not claim repository-wide
+distillation or merged delivery.
+
+Independent final reviewab694760 checks both review passes on final810 and
+all terminal receipts, including425 unique passing names/profile with equal
+sets. Root reviewbab394c0 concurs. The earlier source reviews and inverse
+reviewc185 remain distinct; no old source epoch or unexecuted negative tail
+is relabelled. Actual raw results and frozen sources remain under
+`/tmp/bombay-prd-resumption/client-held-native-20261024`.
+
+Qualified archive `client-native-pressure-qualified-20261024.tar.gz`, SHA256
+`6a0eb84f14a84c663d2ac7b5a24aea00ab92adabffada0d4e6c5f14d1c1c37d4`,
+is in the common Git session archive for2026-10-21. Fresh extraction passes
+all48 payload checks, and base277e6dfe plus the actual patch reconstructs
+final810, unchanged production45282 and both captured records. This later
+pointer is outside that capture. It preserves source/results, not a compiler
+or binary closure, exact-head CI or main delivery.
+
+### Delivered prerequisites for the held-request stage
+
+Actual main277e6dfe contains PR395's patched-lock merge36b5c1f and PR393's
+child-retirement merge277e6dfe. Both merged after all six required checks
+passed on exact headsbe200b25/90ecb176, and verified/merge trees match.
+The selected locks83f01ca3/667a1820 already contain Tokio1.53.3. The advisory
+and then-pending child records below retain their earlier source scope;
+they do not block this held-request stage. Provider394, denied-Stop396,
+protected-native397 and support-record398 have their own delivery states.
+
+## Historical Tokio I/O safety prerequisite (2026-10-23)
 
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
 locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
