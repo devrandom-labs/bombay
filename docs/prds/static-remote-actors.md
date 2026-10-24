@@ -1,6 +1,171 @@
 # Static remote actors and typed admission
 
-## Tokio I/O safety prerequisite (2026-10-23)
+## Protected native transport Python retirement — pre-edit record (2026-10-24)
+
+The protected Counter CI step still depends on a152-line Python controller and
+four inline Python readers. Select the existing isolated Cargo test target as
+the single execution owner. Preserve its five groups of8/8/8/4/4 actual native
+configurations, both provider profiles, root/child recipients, Peer/RouterClient
+layouts, actual authority issuance, release/EOF ordering and all native oracles.
+This is verification migration, not a new actor/runtime law or full remote
+acceptance. The raw transport30-case Python controller remains separate.
+
+Before repository implementation, the outside candidate has passed actual
+debug/optimized32-configuration controls, named-test/omission/same-count
+substitution inversions and exact restoration. A wrong name fails its exact
+native-name guard; omission executes28; substitution executes32 but only24
+distinct configurations. All failures occur after the acquired children and
+readers settle and their configuration directories retire. No compiler error,
+watchdog or missing test selection earns actor-law credit. Final restored
+controls execute32 unique configurations and80 native roles per profile.
+
+Fresh locked-source verification: root83f01ca3 and isolated667a1820 retain
+Behavior/Actors0.29.0, VCS55dbac2d1068b29907498b3a7fa32b3080e0cd30;
+macros0.16.0; Address0.3.0 VCS9f058dc0; Communication0.1.6 VCS963067e0;
+Timers0.2.0 VCS9369d1f6; local Observe; no patches. Their selected registry
+source, public contracts, documentation and relevant tests are inspected again:
+pure Behavior/Actions and named send products; exact address lease release;
+Communication cancellation and rejected originals; affine Observe publication;
+generation-safe Timers cancellation. The complete selected Behavior AGENTS
+applies. Existing Counter behavior, Application/Node, protected provider,
+native role and retirement owners remain unchanged. The selected SDK remains
+bombay-zenoh1.10.10/config1.10.2/protocol1.10.1 with TLS, Tokio1.53.3.
+There is no dependency/version/feature or ownership prerequisite left unresolved
+for this migration. Production admission, security and simulation gaps remain
+independent full-PRD prerequisites.
+
+Expected five existing paths: append607 test-only Rust lines to
+`crates/bombay/tests/protected_counter/transport.rs`; workflow+74/-63; delete
+`transport-custody/verify_protected_counter.py`152 lines; update this PRD and
+the status index. Production+0/-0/net0, public types+0/-0. Verification source
+is+607/-152/net455 plus workflow net11, before documentation. This is
+net-positive verification code, not source reduction. All earlier cumulative
+costs remain recorded; the user's explicit no-budget direction applies.
+
+Use only ordinary std scoped readers, bounded channels, owned Child kill/reap
+on failure and the existing concrete native role sum. No new binary, generic
+runner, task framework, dependency, public API or example plumbing. The native
+owner's original120167-byte prefix remains5e6d7c72 byte-exact; all actor laws
+continue to belong to it. The only new test product owns an actual OS child
+whose std Drop would otherwise leave it running. Closed release/evidence sums
+carry distinct fixture choices; no semantic booleans or hidden actor effects.
+
+Standard jq selects one actual Cargo artifact by name/kind/test/feature/profile;
+Bash file identity verifies its actual source despite Cargo's dot segments.
+Actual wrong-profile, duplicate-artifact and different-source controls refuse;
+restored arguments select the original object. The different existing source
+operand is `crates/bombay/tests/protected_counter/retirement.rs`, not a fake
+Cargo record. Three unchanged native commands keep their exact passing names
+and one-summary/count checks using grep. Actual zero-test and extra-real-test
+outputs refuse in both profiles; original successful outputs pass again.
+
+Preserve the original16 source hashes, seven PEM hashes, actual executable
+hash, revision/profile, Cargo JSONL/stderr, matrix log/exit hashes and actual
+native Command diagnostics (including issued binding and endpoint). Retire the
+old repeated campaign.json representation; do not claim schema compatibility.
+First review maps every old case and oracle. Independent second review checks
+omission/duplication, EOF/release, source identity, cleanup and zero selection.
+Source/results reviews are retained outside under
+`/tmp/bombay-outbound-client-comparison/protected-native-*.md`; raw receipts
+under `/tmp/bombay-protected-native-control-results-20261023/`.
+Final archive, measured complete delta, retained-source checks and submitted-head
+CI/review/main delivery still need recording. No full acceptance row closes.
+
+### Retained native qualification and minimality (2026-10-24)
+
+The retained native source is SHA256
+e78fb1622052e8313d12052193f973598ae9e0b82436f981dbd40477cd420c9b;
+the workflow is d7447d50d13061c49b26ceb9716b8c7bc4fe381a8fef1d898f571dd981ab0878.
+Its complete original native prefix remains byte-identical, not merely a
+passing replacement model. The deleted controller's historical source is
+a9c823466e107a5bdd26471fdb4f84eaa96d2c382ec81010769f6b356919bf06.
+
+Through the existing pinned Nix shell, both retained commands
+`cargo test --locked --offline --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --features protected-transport --test protected_counter`
+and the same command with `--release` exit0:69passed/0failed/1ignored/0filtered
+per profile,9.83s/9.52s. The ignored native entry point is deliberately invoked
+by exact name in80 actual child roles; it is not an unexecuted actor witness.
+Strict Clippy on that selected feature/test target and isolated formatting
+also exit0. No full-workspace or submitted-head CI result is inferred.
+
+The complete protected workflow step also exits0 in both profiles under that
+same pinned shell. The temporary extraction removes only YAML indentation,
+substitutes the actual matrix profile and omits the nested `nix develop -c`
+prefix because the shell is already pinned. Each actual matrix completes32
+unique configurations/80 native passes/80 invocation records, followed by
+the unchanged native2/2/1 cohorts and all14 literal summary checks. The root
+workflow artifacts retain16 source hashes, seven PEMs, actual distinct native
+binaries, exact Cargo metadata, matrix originals and exit receipts. A separate
+readback exits0 after checking every manifest, both profile texts, real Cargo
+optimization0/3 and32/80/80 counts. Local revision277e6dfe identifies the base;
+the source manifests and working-tree patch identify the tested modifications.
+
+An initial temporary extraction accidentally mutated its input lines, making
+its second nominal run debug again. Its exit0 is explicitly rejected as
+optimized evidence. The missing release-artifact readback exposed that error.
+The rejected script/log/exit/source-check are preserved separately; corrected
+extractore4aa6cc1 copies each line and the genuine optimized step exits0 with
+actual optimization3 and its distinct release binary. The retained workflow
+itself was unchanged by this qualification error. Earlier lifetime-compile and
+raw-path-selector failures retain their original rejected setup scope.
+
+Independent two-pass source/outcome reviews ec9b42be,6b655663,8c52f62f and
+39d654c3 map the old five groups, all native/cleanup oracles, each intended
+guard failure and restored positive. Zero/extra selections reject at the first
+successful-name count; later summary checks receive no inversion credit.
+Every acquired actual result is inspected after its required cleanup. No
+original actor law, provider distinction, authority binding or final outcome
+is replaced by a watchdog, encoder count or fake native transcript.
+
+Aggregate audit: native actor control states, policy, production transition
+branches, modules and public spellings are unchanged. One private test module
+owns finite external execution, not a second actor interpreter. Its3-way
+release choice,3-way evidence source and line/EOF/read-error observations keep
+distinct current values; one Child owner supplies std's missing failure-path
+kill/reap. BTreeSet compares complete actual identities against an independent
+literal set. No arrival-history state, semantic boolean, erased future,
+protocol registry, wrapper facade or public construction seam is added.
+The project-owned Python controller and four inline readers are deleted rather
+than kept as a second spelling. Disposition: locally eligible; final review,
+archive sealing and submitted-head CI/main delivery remain separate gates.
+
+Final independent retained-source/outcome review
+6a3528fbaca7477f5c4c4ed8f9e54691f3124b49a466ffa163d4722eae68cef4
+finds no scoped veto, including the corrected genuine optimized workflow and
+all artifact custody. Qualified source and raw old/rejected/current receipts,
+complete base277e6dfe plus working-tree patch and all reviews are sealed in
+`/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/protected-native-qualified-20261024.tar.gz`,
+SHA2563698d6ef7ab6704c6be6979a56d0499c1c622f67439915062d4b68bc76bfaa5f.
+Independent extraction verifies all 250 payload checksums; base-source extraction
+plus the actual patch reproduces nativee78/workflowd744 and both records,
+with the protected Python file absent. This is source/evidence custody, not a
+compiler/binary closure. This final archive record follows the sealed source
+snapshot and is retained in Git. Actual wrong-existing-owner identity also
+refuses1 at the retained root, followed by restored correct identity0; its
+original operands and receipts are preserved in the archive.
+
+Complete working-tree checkpoint against main277e6dfe, including staged deletion
+and all untracked paths:
+
+```text
+production: +0 / -0 / net 0
+tests:      +607 / -152 / net 455
+workflow:   +74 / -63 / net 11
+public API: +0 types / -0 types
+records:    +224 / -4 / net 220
+```
+
+Five existing paths change; there are no untracked repository files. Earlier
+task costs and qualified deliveries remain in their owning records; this is
+the focused stage census, not a reset of cumulative work. Actual submitted-head
+CI and normal reviewed main merge remain required before calling this slice
+delivered. Full R01–R25/AUTH1/NET1 acceptance and distillation remain open.
+
+## Tokio I/O safety prerequisite — historical implementation record (2026-10-23)
+
+The implementation checkpoints below retain their original source scope.
+Actual PR395 delivery is recorded in the current status; their pending language
+does not describe the current patched locks.
 
 The latest required Deny jobs for PR393/a84ec103 and PR394/19c6c4ea reject
 locked Tokio1.53.1 for RUSTSEC-2026-0386. This is an actual dependency-policy
@@ -61,6 +226,27 @@ type ceilings and budget approval checkpoints. Do not ask for budget increases
 again. Keep stages, measurements, ownership proofs and minimization; historical
 costs remain recorded. All budget numbers below are historical, not stop limits.
 Correctness, architecture, actual verification, review and CI remain mandatory.
+
+PR395 merged patched Tokio as36b5c1f9f92b56f527167076249d12c1ceba0545 at
+2026-10-23T23:26:42Z after six successful checks on be200b25; verified/merge
+trees match7f8c9218. PR393 merged child Python retirement as
+277e6dfe2c5377b8b31810c025509322640a588e at23:44:22Z after six successful
+checks on90ecb176; verified/merge trees match3e062d6a. Its actual patched-lock
+required Nix40014264183 executes the21-command owner, including intended
+native failures and restored controls. The clean/pushed task worktree was
+retired without force after full source/CI archiveccbc9473 and independent
+extracted checksum verification.
+
+The current protected-native migration starts from that actual main277e6dfe.
+It retains qualified test sourcee78fb162 and workflowd7447d50 and deletes only
+the152-line protected controller after the recorded outside qualification.
+Four Python files remain in this branch; actual main retains five until this
+slice merges. Provider/R10 follow-up PR394/ed72df92 and denied-Stop draft
+PR396/881e606f have their own unfinished submitted-head CI and delivery.
+No passing checks are transferred between these heads. Full security,
+pressure/exit/scenario, simulation, diagnostics and minimization remain open.
+
+### Earlier application and child integration checkpoint
 
 [PR392](https://github.com/devrandom-labs/bombay/pull/392) merged the finite-test
 remote Counter at2026-10-23T19:21:29Z as632bf18454016de9b986066c0130a83142a9187d.
@@ -21596,8 +21782,9 @@ authority. This is an isolated test trust input, not production discovery,
 identity establishment, delegation or an additional authentication protocol.
 Use existing readiness/release control machinery; no new channel primitive.
 
-Name the controller docs/prds/static-remote-actors/transport-custody/
-verify_protected_counter.py. It releases the held actual Query only after both
+Historical controller selection: docs/prds/static-remote-actors/transport-custody/
+verify_protected_counter.py, retired by the protected-native migration recorded
+above. Its preserved ordering releases the held actual Query only after both
 recipient Query-received and caller-local Read2 facts, avoiding timing/yield
 assumptions. Keep Query and Reply custody products distinct and acquire all
 cleanup before observational assertions. Native request/admission/processing

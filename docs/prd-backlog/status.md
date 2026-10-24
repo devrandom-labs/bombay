@@ -1,6 +1,39 @@
 # Backlog status and dependencies
 
-Current prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
+Protected native transport retirement is active on actual main277e6dfe.
+The pre-edit record in the remote PRD selects the existing isolated Cargo owner
+for all32 native configurations and80 OS roles/profile, preserving the original
+native source. Outside debug/optimized controls, three intended controller
+inversions, exact restoration and actual artifact/source selection pass their
+stated gates. Three unchanged native commands retain exact name/summary guards;
+actual zero/extra selections refuse in both profiles. The retained tests are
++607/-152, workflow+74/-63, production/API0, five paths including records.
+CI/main delivery and the other four Python files remain open. The retained
+full native target now passes69/0/1/0 per
+profile, strict selected-target Clippy and formatting pass, and the complete
+protected workflow step passes in both profiles with actual Cargo optimization
+and source/certificate/binary/log readbacks. The temporary duplicate-debug
+qualification error was rejected and corrected before optimized credit.
+This migration closes no full remote acceptance row.
+
+Final independent retained-source review6a3528fb finds no scoped veto.
+Archive3698d6ef preserves source/raw results/reviews; independent extracted
+checks and base-plus-patch reconstruction pass. Required submitted-head CI and
+normal reviewed main merge remain pending.
+
+PR395 merged the patched locks as36b5c1f at2026-10-23T23:26:42Z after six
+successful checks on be200b25. PR393 merged child Python retirement as277e6dfe
+at23:44:22Z after six successful checks on90ecb176, including actual patched-lock
+Nix40014264183 and its21-command native owner. Verified and merge trees match
+for both deliveries. Its clean/pushed task worktree was safely retired after
+full source/CI archiveccbc9473 and independent checksum readback. The current
+protected-native branch starts from actual main277e6dfe; four Python files
+remain here, five on main until this slice merges. Provider follow-up PR394
+and denied-Stop draft PR396 retain separate unfinished CI/delivery.
+
+### Historical advisory and child integration checkpoints
+
+Earlier prerequisite: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
 reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
 upstream-patched1.53.3 in the root and isolated transport locks and changes
 the isolated exact pin at its owner. No advisory exception, runtime/API change
