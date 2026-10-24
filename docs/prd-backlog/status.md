@@ -1,5 +1,20 @@
 # Backlog status and dependencies
 
+The scoped PR397 shell correction now passes actual fresh Nix entry in both
+profiles, preserving every artifact and native execution guard. Each profile
+completes32 configurations/80 invocations/80 native passes and2/2/1 follow-up
+cases; all source/certificate/binary/matrix checksums and actual optimization
+metadata pass. Replaying the original downloaded CI JSON still refuses5.
+The correction changes only workflow shell composition and these records;
+fresh exact-head CI and normal reviewed main delivery remain required.
+
+PR397 head67978dc6 has a newly proved CI blocker: the Nix welcome banner enters
+Cargo JSON, and strict jq rejects the debug artifact before protected native
+execution. Both native steps fail; only the debug raw cause is acquired.
+The feature PRD records a scoped whole-step pinned-shell correction. Preserve
+all artifact/native guards and require fresh exact-head CI before delivery.
+Prior local extracted-step qualification did not exercise this shell boundary.
+
 Protected native transport retirement is active on actual main277e6dfe.
 The pre-edit record in the remote PRD selects the existing isolated Cargo owner
 for all32 native configurations and80 OS roles/profile, preserving the original

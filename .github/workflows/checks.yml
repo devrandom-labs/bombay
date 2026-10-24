@@ -136,6 +136,7 @@ jobs:
       - name: Build and verify protected Counter Applications
         shell: bash
         run: |
+          nix develop -c bash -euo pipefail -c "$(cat <<'PROTECTED_COUNTER'
           profile_args=()
           if [[ '${{ matrix.profile }}' == 'release' ]]; then
             profile_args+=(--release)
@@ -158,7 +159,7 @@ jobs:
             > "$evidence/protected-counter-sources.sha256"
           sha256sum docs/prds/static-remote-actors/transport-custody/certificates/*.pem \
             > "$evidence/protected-counter-certificates.sha256"
-          nix develop -c cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml \
+          cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml \
             --locked --jobs 2 --test protected_counter --features protected-transport --no-run --message-format=json \
             "${profile_args[@]}" > "$evidence/protected-counter-build.jsonl" \
             2> "$evidence/protected-counter-build.stderr"
@@ -167,7 +168,7 @@ jobs:
             expected_optimization=3
           fi
           artifact="$evidence/protected-counter-artifact.json"
-          nix develop -c jq -ces \
+          jq -ces \
             --arg optimization "$expected_optimization" '
               [.[] | select(.reason == "compiler-artifact"
                 and .target.name == "protected_counter" and .target.kind == ["test"]
@@ -184,12 +185,12 @@ jobs:
                     else error("protected Counter artifact paths must be strings") end
                 else error("exact protected Counter test executable was not built") end
             ' "$evidence/protected-counter-build.jsonl" > "$artifact"
-          native_source=$(nix develop -c jq -er '.source' "$artifact")
-          executable=$(nix develop -c jq -er '.executable' "$artifact")
+          native_source=$(jq -er '.source' "$artifact")
+          executable=$(jq -er '.executable' "$artifact")
           [[ "$native_source" -ef "$PWD/crates/bombay/tests/protected_counter/mod.rs" ]]
           sha256sum "$executable" > "$evidence/protected-counter-executable.sha256"
           controller=remote_counter::campaigns::all_release_and_evidence_cases_cross_actual_native_roles
-          if nix develop -c cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml \
+          if cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml \
             --locked --jobs 2 --test protected_counter --features protected-transport \
             "${profile_args[@]}" "$controller" -- --exact --nocapture \
             > "$evidence/protected-counter-matrix.log" 2>&1; then
@@ -206,26 +207,28 @@ jobs:
           fi
           test "$(grep -Fxc "test $controller ... ok" "$evidence/protected-counter-matrix.log")" -eq 1
           test "$(grep -c '^native configuration completed: ' "$evidence/protected-counter-matrix.log")" -eq 32
-          nix develop -c "$executable" child_stop_keeps_original_target_and_sibling \
+          "$executable" child_stop_keeps_original_target_and_sibling \
             --nocapture > "$evidence/protected-child-stop.log" 2>&1
           test "$(grep -Ec '^test [^[:space:]]+ \.\.\. ok$' "$evidence/protected-child-stop.log")" -eq 2
           test "$(grep -Fxc 'test remote_counter::child_stop_keeps_original_target_and_sibling_for_recorded_proof ... ok' "$evidence/protected-child-stop.log")" -eq 1
           test "$(grep -Fxc 'test remote_counter::child_stop_keeps_original_target_and_sibling_for_scheduled_proof ... ok' "$evidence/protected-child-stop.log")" -eq 1
           test "$(grep -c '^test result:' "$evidence/protected-child-stop.log")" -eq 1
           test "$(grep -Ec '^test result: ok\. 2 passed; 0 failed; 0 ignored;' "$evidence/protected-child-stop.log")" -eq 1
-          nix develop -c "$executable" native_query_count_covers_provider_and_queue \
+          "$executable" native_query_count_covers_provider_and_queue \
             --nocapture > "$evidence/protected-query-count.log" 2>&1
           test "$(grep -Ec '^test [^[:space:]]+ \.\.\. ok$' "$evidence/protected-query-count.log")" -eq 2
           test "$(grep -Fxc 'test remote_counter::native_query_count_covers_provider_and_queue_for_recorded_proof ... ok' "$evidence/protected-query-count.log")" -eq 1
           test "$(grep -Fxc 'test remote_counter::native_query_count_covers_provider_and_queue_for_scheduled_proof ... ok' "$evidence/protected-query-count.log")" -eq 1
           test "$(grep -c '^test result:' "$evidence/protected-query-count.log")" -eq 1
           test "$(grep -Ec '^test result: ok\. 2 passed; 0 failed; 0 ignored;' "$evidence/protected-query-count.log")" -eq 1
-          nix develop -c "$executable" --exact remote_counter::native_reply_count_keeps_active_and_unread_originals \
+          "$executable" --exact remote_counter::native_reply_count_keeps_active_and_unread_originals \
             --nocapture > "$evidence/protected-reply-count.log" 2>&1
           test "$(grep -Ec '^test [^[:space:]]+ \.\.\. ok$' "$evidence/protected-reply-count.log")" -eq 1
           test "$(grep -Fxc 'test remote_counter::native_reply_count_keeps_active_and_unread_originals ... ok' "$evidence/protected-reply-count.log")" -eq 1
           test "$(grep -c '^test result:' "$evidence/protected-reply-count.log")" -eq 1
           test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$evidence/protected-reply-count.log")" -eq 1
+          PROTECTED_COUNTER
+          )"
       - name: Retain native transport observations
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

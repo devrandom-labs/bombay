@@ -43401,3 +43401,97 @@ the workspace manifest and existing law owners remain unchanged. Do not relabel
 that older run, its original Nix receipt or old green checks as qualification
 of the new lock. Fresh compatibility/native results and submitted-head full CI
 remain required. This integration records no PR393 merge or full remote acceptance.
+
+## Protected Counter CI shell correction — pre-edit record (2026-10-24)
+
+Submitted PR397 head67978dc6 fails both native jobs in the protected Counter
+step. Debug job120724675613 and downloaded artifact12540344320 establish the
+cause: the shell welcome banner precedes successful Cargo JSON output, and
+strict jq rejects it with exit5 before the32-configuration controller runs.
+The release failing step is confirmed, but its raw log download timed out;
+the same detailed cause is not independently credited to that profile.
+Debug raw log43ca3b7d and artifact572f8ae8 retain the actual failing inputs.
+Prior local step qualification removed nested Nix entry because it already ran
+inside the pinned shell. Those local native results stand at that scope; they
+did not verify the structured-output boundary used by submitted-head CI.
+
+The smallest correction enters the existing pinned Nix shell once around the
+whole protected step. Cargo/jq redirects and command substitutions then run
+inside that shell, after its welcome output. Preserve the strict one-artifact,
+source identity, optimization,32-configuration,80-role and named-case guards;
+do not filter arbitrary text out of JSON or alter the shared shellHook. Reuse
+Nix, Bash and jq already selected by the repository. The neighboring CESR
+workflow already runs a multi-command step inside pinned Bash. Pass this body
+as a quoted Bash command so program text does not become native child stdin;
+set inner `-euo pipefail` explicitly and retain inherited Cargo environment.
+Expected scope is this existing workflow and the two existing feature records:
+production/tests/public types+0/-0, workflow three added shell wrapper lines
+and removal of redundant inner Nix prefixes. No dependency changes occur.
+
+Before acceptance, run the actual corrected Nix entry in both profiles with
+all original guards, inspect complete artifact/source/binary manifests, and
+prove the old entry contaminates structured output using actual Nix stdout.
+Review the shell expansion and observable outcomes independently. New exact-head
+required CI and normal reviewed merge remain mandatory; old green checks and
+local extracted-step results cannot substitute for them. Pressure test work is
+preserved separately in exact stashb77d606029e2f610aef8a5c7f07859049b3c4e85
+and an outside binary patch while this concrete CI blocker is corrected.
+
+### Shell correction — actual qualification and minimization
+
+Workflow471698cd retains the exact old90-line body after only eight inner
+Nix-prefix removals; three wrapper lines establish the one pinned shell.
+Independent source reviewcbe0d590 checks quoting, stdin, strict inner flags,
+profile/environment inheritance, error propagation and all unchanged guards.
+The extractor964dc90a copies each original line, removes YAML indentation and
+substitutes only the actual GitHub profile. It retains the real Nix entry.
+Both extracted scripts pass pinned Bash syntax checks. Initial cache DNS
+retries precede successful shell entry; neither attempt was cancelled or
+relabelled as a test failure.
+
+Literal debug76635731 and release1bb67640 scripts each exit0 through fresh
+`nix develop`, including the real shellHook. Both Cargo streams parse fully
+without discarding any lines. Each has exactly one protected test artifact
+with the actual source identity, feature, test kind and optimization0/3.
+Each controller completes32 distinct configurations,80 native invocations
+and80 passing native entry points; controller time is9.89/9.42seconds.
+The unchanged separate native cohorts execute exactly2/2/1 passing cases in
+each profile. All14 literal execution guards pass. The paired artifact
+readback exits0 for16 sources, seven PEMs, each actual binary and matrix
+log/exit, profile labels and genuine optimization metadata.
+
+The downloaded original failing CI JSON is preserved as0b6f704d. Replaying
+that actual input through pinned jq returns5 at the same line1/column7 parse
+error. This independently confirms the original shell-output defect; it is
+not an actor-law inversion. The prior controller/name/omission/substitution
+inversions retain their own exact source and profile scopes. Actual new
+logs and copied artifacts live under
+`/tmp/bombay-prd-resumption/native-shell-correction-20261024`.
+
+All Rust sources, owners, test bodies, dependencies and public interfaces
+remain unchanged in this correction. Aggregate states, subordinate states,
+transition branches, modules and public spellings are unchanged; no new
+actor semantics or scheduling authority appears. The scope review passes:
+one existing shell boundary owns the structured-output fix, with no banner
+filter, parser fallback, new script, dependency or shared setup change.
+Production+0/-0/net0, tests+0/-0/net0, publicAPI+0/-0 for the correction;
+workflow+11/-8/net3 and the two existing feature records are its complete
+changed-path scope. Exact new-head required CI and main delivery remain open.
+
+Independent paired outcome reviewb5599cf1 passes both source/outcome review
+rounds with no scoped veto. It independently rehashes the inputs/manifests,
+checks both exact32-case sets and2/2/1 cohorts, and distinguishes the original
+CI-input replay from actor-law inversion. Root reviewd3ba6b9f concurs.
+Against actual main277e6dfe the complete migration still changes five existing
+paths, with no untracked project files: production+0/-0/net0,
+tests+607/-152/net455 including the retired Python controller,
+workflow+81/-67/net14, publicAPI+0types/-0types; the remaining changes are
+the two existing feature records. This is net-positive verification code.
+
+Supplemental archive `native-shell-correction-qualified-20261024.tar.gz`,
+SHA256372e0e01590fe0bfdffe0153cb9f724cef3729f7974ac98270cfd51f6ab21b65,
+lives in the common Git session archive for2026-10-21. Fresh extraction passes
+all53 payload checks; base67978 plus the actual patch reproduces workflow471698,
+nativee78, both captured records and Python absence. This later archive pointer
+is outside that source capture. Original qualified archive3698d6ef is unchanged;
+neither archive is a compiler closure or submitted-head CI certificate.
