@@ -16,8 +16,8 @@ pub use client::{Client, ClientError, ClientLimits, Response};
 
 pub(crate) use export::Exports;
 pub use export::{
-    Attempt, Export, ExportError, ExportLimits, Reply, Request, RequestKey, Stop, Submission,
-    reply, stop, submission,
+    Attempt, Export, ExportError, ExportLimits, RefusalRetention, Reply, Request, RequestKey, Stop,
+    Submission, reply, stop, submission,
 };
 pub use ingress::{IngressError, try_retain};
 pub use metadata::Metadata;

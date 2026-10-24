@@ -1,10 +1,17 @@
 # Observation outcome disposal
 
-Status: distilled; local acceptance and independent minimization pass.
-Source baseline cbaa62a56aceecd71abb46f5ffbbcd6ebd1dcdfc. PR397 has
-since merged as9ea5defe; its delivered tree is a separate source cut. PR402 and
-the remaining remote deliveries are tracked separately; their inherited source
-is not a semantic dependency of this defect. This repair is not delivered yet.
+Status: merged. PR [#403](https://github.com/devrandom-labs/bombay/pull/403)
+merged normally at2026-10-24T06:32:39Z as
+50e0de42ab0f5fa8edec929df03c7983f9fe81fd after all six exact-head checks
+passed, including required Nix job120776373987/run40061689669. Submitted
+b19ca648, actual tested3a557029, reviewed potential7b41b483 and the actual
+merge share complete tree1679ced4dc5fc6fff5dec7115aa976d8eb8708af.
+Independent readiness35073a6b and final PR-body readback7656d333 retain
+delivery evidence. CI's conditional Miri was skipped; local four-seed Miri
+evidence below remains separate. Source baselinecbaa62a5 and the following
+dated preparation checkpoints retain their original scope. Other remote
+deliveries are not semantic prerequisites of this defect; the full remote
+PRD and newly identified, unexecuted reentry hypothesis remain separate.
 
 ## Pre-edit contract and failing-regression plan
 

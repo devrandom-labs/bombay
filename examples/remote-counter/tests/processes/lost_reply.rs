@@ -5,7 +5,7 @@ use super::{
 };
 use bombay::actors::ActorExt;
 use bombay::prelude::*;
-use bombay::remote::{Attempt, Export, ExportLimits, json, reply, stop};
+use bombay::remote::{Attempt, Export, ExportLimits, RefusalRetention, json, reply, stop};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use counter::{Counter, CounterMessage, CounterValue};
 use deployment::{Binding, Deployment, Operation, Purpose, Receipt, Role};
@@ -96,6 +96,7 @@ async fn held_increment_reply_is_withdrawn_after_independent_processing() {
     let export = Export::new(
         protocol::KEY,
         ExportLimits {
+            refusals: RefusalRetention::Discharge,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,
@@ -494,6 +495,7 @@ async fn stop_proof_preserves_the_counter_and_original_request() {
     let export = Export::new(
         protocol::KEY,
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

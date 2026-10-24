@@ -6,7 +6,7 @@ use super::{assert_completed, assert_notifications, configuration, limits, recor
 use bombay::actors::ActorExt;
 use bombay::behavior::User;
 use bombay::prelude::{Application, MailAddr};
-use bombay::remote::{Export, ExportLimits, reply};
+use bombay::remote::{Export, ExportLimits, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use std::cell::RefCell;
 use std::num::NonZeroUsize;
@@ -55,6 +55,7 @@ async fn recorded_counter_joined_node_issues_export() {
     let export = Export::new(
         "bombay/public/counter",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,
@@ -186,6 +187,7 @@ async fn scheduled_counter_joined_node_issues_export() {
     let export = Export::new(
         "bombay/public/counter",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,
@@ -317,6 +319,7 @@ async fn recorded_ledger_public_node_issues_export() {
     let export = Export::new(
         "bombay/public/ledger",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,
@@ -458,6 +461,7 @@ async fn scheduled_ledger_public_node_issues_export() {
     let export = Export::new(
         "bombay/public/ledger",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

@@ -143,7 +143,7 @@ impl Peer {
         self.session.zid().to_string()
     }
 
-    async fn wait_for(&self, key: &str) {
+    pub(super) async fn wait_for(&self, key: &str) {
         let querier = self
             .session
             .declare_querier(key)
@@ -179,7 +179,7 @@ impl Peer {
         assert!(refused.is_none());
     }
 
-    async fn query(
+    pub(super) async fn query(
         &self,
         key: &str,
         request: &ProtectedMessage,

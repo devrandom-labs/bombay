@@ -6,15 +6,15 @@ use super::protocol::{
 use super::{Counter, CounterMessage, CounterValue, LedgerCommand, MailLedger};
 use crate::actors::ActorExt;
 use crate::application::{Application, ApplicationClient, MailboxCapacity};
-use crate::remote::{Attempt, Export, ExportLimits, Metadata, reply, submission};
+use crate::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, reply, submission};
 use crate::{ActorRetirement, MailAddr, TrySendError, WorkOutcome};
 use behavior::{EstablishedRecipient, Never, User};
-use core::future::{pending, poll_fn};
+use core::future::{pending, poll_fn, ready};
 use core::task::Poll;
 use std::cell::{Cell, Ref, RefCell};
 use std::mem;
 use std::num::NonZeroUsize;
-use std::panic::{AssertUnwindSafe, catch_unwind, panic_any};
+use std::panic::{AssertUnwindSafe, catch_unwind, panic_any, resume_unwind};
 use std::ptr;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::{Duration, Instant};
@@ -71,6 +71,7 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
         let export = Export::new(
             "bombay/decoder-unwind",
             ExportLimits {
+                refusals: RefusalRetention::Retain,
                 queued_queries: maximum,
                 retained_queries: maximum,
                 retained_requests: maximum,
@@ -459,6 +460,7 @@ fn retry_permission_unwind_preserves_the_second_native_full() {
                 let export = Export::new(
                     "bombay/second-full-unwind",
                     ExportLimits {
+                        refusals: RefusalRetention::Retain,
                         queued_queries: maximum,
                         retained_queries: maximum,
                         retained_requests: maximum,
@@ -790,4 +792,286 @@ fn retry_permission_unwind_preserves_the_second_native_full() {
             .await
             .expect("the actual retry unwind, worker release and joined cleanup terminate");
         });
+}
+#[derive(Debug)]
+struct RefusalDisposal<'scope> {
+    source: VerificationError,
+    cause: &'scope RefCell<Option<Box<u64>>>,
+    disposals: &'scope Cell<usize>,
+    invalid: &'scope Cell<usize>,
+}
+
+impl Drop for RefusalDisposal<'_> {
+    fn drop(&mut self) {
+        self.disposals.set(self.disposals.get() + 1);
+        if matches!(&self.source, VerificationError::Invalid) {
+            self.invalid.set(self.invalid.get() + 1);
+        }
+        // A one-shot original prevents a second destructor panic on unwind.
+        let original = self.cause.take();
+        if let Some(original) = original {
+            resume_unwind(original);
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one real refusal disposal keeps original panic, native Query, interrupted Work and all independent cleanup facts together"
+)]
+async fn discharged_refusal_panic_preserves_joined_node_finalization() {
+    timeout(Duration::from_secs(10), async {
+        let records = RefCell::new(Vec::<ProtectedMessage>::new());
+        let claims = RefCell::new(None::<Metadata>);
+        let joined = RefCell::new(None);
+        let retirement = RefCell::new(None);
+        let incoming = RefCell::new(None);
+        let transmitted = RefCell::new(None);
+        let original = Box::new(443_u64);
+        let allocation = ptr::from_ref(original.as_ref()).cast::<()>();
+        let cause = RefCell::new(Some(original));
+        let disposals = Cell::new(0);
+        let invalid = Cell::new(0);
+        let verifications = Cell::new(0);
+        let decodings = Cell::new(0);
+        let constructors = Cell::new(0);
+        let encodings = Cell::new(0);
+        let protections = Cell::new(0);
+        let binding = Binding {
+            deployment: "refusal-disposal-unwind",
+            caller: "caller",
+            controller: "owner",
+            actor: "ledger",
+            host: "receiver",
+            protocol: "ledger",
+            target_assignment: "ledger",
+            logical_session: 1,
+        };
+        let maximum = NonZeroUsize::new(2).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(30);
+        let current = |receipt: &recorded::Receipt<()>, runtime: &str, target: MailAddr| {
+            let actual = claims.borrow();
+            let actual = actual.as_ref().expect("actual binder-owned claims");
+            current_scope(
+                recorded::projection(receipt),
+                actual,
+                &(),
+                Purpose::Request,
+                deadline,
+            )?;
+            if actual.runtime_generation.as_ref() != runtime || actual.actor_generation != target.0
+            {
+                return Err(VerificationError::Invalid);
+            }
+            Ok(())
+        };
+        let export = Export::new(
+            "bombay/refusal-disposal-unwind",
+            ExportLimits {
+                refusals: RefusalRetention::Discharge,
+                queued_queries: maximum,
+                retained_queries: maximum,
+                retained_requests: NonZeroUsize::new(1).unwrap(),
+                diagnostics: maximum,
+            },
+            limits(),
+            |bytes: &[u8]| {
+                decodings.set(decodings.get() + 1);
+                let ReadRequest { operation: (), .. } =
+                    serde_json::from_slice::<ReadRequest<()>>(bytes)?;
+                Ok::<_, serde_json::Error>(())
+            },
+            submission(
+                |()| {
+                    Ok::<_, ()>(|| {
+                        constructors.set(constructors.get() + 1);
+                        LedgerCommand::Append(Box::from([29, 31]))
+                    })
+                },
+                |_: &recorded::Receipt<()>,
+                 _: &Attempt<Result<(), TrySendError<LedgerCommand>>>| {
+                    encodings.set(encodings.get() + 1);
+                    Err::<Box<[u8]>, ()>(())
+                },
+            ),
+            |bytes: &[u8], proof: &[u8]| {
+                verifications.set(verifications.get() + 1);
+                let request = ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                };
+                let verified = recorded::verify::<()>(&request, &records.borrow(), binding)
+                    .into_inner()
+                    .map_err(|source| RefusalDisposal {
+                        source,
+                        cause: &cause,
+                        disposals: &disposals,
+                        invalid: &invalid,
+                    });
+                ready(verified)
+            },
+            async |_: &[u8], _: &recorded::Receipt<()>| {
+                protections.set(protections.get() + 1);
+                Err::<Box<[u8]>, ()>(())
+            },
+            |left, right| recorded::identity(left) == recorded::identity(right),
+            &current,
+            &current,
+        );
+        let node = Application::new(MailLedger {
+            entries: Vec::new(),
+        })
+        .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+        .await
+        .unwrap_or_else(|_| panic!("the actual Ledger Node opens"));
+        let runtime = node.runtime_id();
+        let session = node.session.clone();
+        let (configured, configured_request) = oneshot::channel();
+        let mut node = node.exports(export, async |application| {
+            let target = application.root().established_recipient();
+            let mut actual = metadata(
+                ProviderProfile::Recorded,
+                "ledger",
+                runtime.clone(),
+                runtime,
+            );
+            actual.deployment = binding.deployment.into();
+            actual.actor_generation = application.actor_address(&target).unwrap().0;
+            let protected = serde_json::to_vec(&ReadRequestRef {
+                bombay: &actual,
+                kind: Purpose::Request,
+                operation: &(),
+            })
+            .unwrap()
+            .into_boxed_slice();
+            records.borrow_mut().push(ProtectedMessage {
+                protected: protected.clone(),
+                proof: Box::from([19_u8, 23]),
+            });
+            *claims.borrow_mut() = Some(actual);
+            *joined.borrow_mut() = application.cleanup();
+            *retirement.borrow_mut() = Some(application.lifecycle().retirement());
+            configured
+                .send(ProtectedMessage {
+                    protected,
+                    proof: Box::from([31_u8, 37]),
+                })
+                .unwrap_or_else(|_| panic!("Work retains the actual unregistered proof pair"));
+            Ok::<_, Never>(target)
+        });
+        let mut operation = Box::pin(node.run_with(|_| async {
+            let request = configured_request.await.unwrap();
+            let receiving = session
+                .get("bombay/refusal-disposal-unwind")
+                .allowed_destination(Locality::SessionLocal)
+                .payload(request.protected.to_vec())
+                .attachment(request.proof.to_vec())
+                .consolidation(ConsolidationMode::None)
+                .timeout(Duration::from_secs(20))
+                .await
+                .expect("the genuine native query starts");
+            *incoming.borrow_mut() = Some(receiving);
+            *transmitted.borrow_mut() = Some(request);
+            pending::<()>().await;
+        }));
+        let caught = poll_fn(|context| {
+            match catch_unwind(AssertUnwindSafe(|| operation.as_mut().poll(context))) {
+                Ok(Poll::Pending) => Poll::Pending,
+                original => Poll::Ready(original),
+            }
+        })
+        .await;
+        let disposed = catch_unwind(AssertUnwindSafe(|| drop(operation)));
+        let joined = joined.take().expect("actual cleanup observation").await;
+        let external_close = if caught.is_err() {
+            Some(node.close().await)
+        } else {
+            None
+        };
+        let finalized = node.into_parts();
+        let retirement = retirement
+            .take()
+            .expect("independent actual root observation")
+            .await;
+        let incoming = incoming
+            .take()
+            .expect("Work entered its actual native Query");
+        let mut replies = Vec::new();
+        let native_eof = loop {
+            match incoming.recv_async().await {
+                Ok(original) => replies.push(original),
+                Err(cause) => break cause,
+            }
+        };
+        // Native callback EOF, whole Node operation and independent root join
+        // have all settled before a containment or expected-result assertion.
+        assert!(joined.is_ok() && disposed.is_ok() && session.is_closed());
+        assert!(external_close.as_ref().is_none_or(Result::is_ok));
+        assert!(
+            finalized.is_ok(),
+            "ordinary refusal Drop must stay inside Node's caught poll"
+        );
+        let (export, bound, closed, polling, disposal) =
+            finalized.unwrap_or_else(|_| panic!("the actual Node retained close and binding"));
+        let Ok(Poll::Ready(Ok(outcome))) = caught else {
+            panic!(
+                "the Node must return its actual acquired outcome after retaining the Drop cause"
+            );
+        };
+        let (work, report, native, notifications, ()) = outcome.into_parts();
+        let (origin, native) = native.expect("original root joined");
+        let notifications = notifications.expect("both original notifications");
+        let (_, _, startup, withdrawal, diagnostics, rows) = export.into_parts();
+        let polling = polling.expect("original refusal disposal panic remains Node-owned");
+        let polling = polling
+            .downcast_ref::<u64>()
+            .expect("the same original u64 panic payload");
+        let ActorRetirement::OwnerCancelled { custody, .. } = native else {
+            panic!("the still-live Ledger is joined through owner cancellation");
+        };
+        let actual = claims.borrow();
+        let actual = actual.as_ref().expect("actual certified claims remain");
+        let remaining_cause = cause.borrow();
+        let recorded = records.borrow();
+        let transmitted = transmitted.borrow();
+        let transmitted = transmitted
+            .as_ref()
+            .expect("original transmitted query inputs remain caller-owned");
+        assert!(matches!(work, WorkOutcome::Interrupted { cleanup: Ok(()) }));
+        assert_eq!(report, Some(retirement));
+        assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+        assert!(matches!(bound, Some(Ok(_))) && closed.is_ok());
+        assert!(external_close.is_none() && disposal.is_none());
+        assert_eq!(ptr::from_ref(polling).cast::<()>(), allocation);
+        assert_eq!(*polling, 443);
+        assert_eq!(origin.address().0, actual.actor_generation);
+        assert!(custody.behavior.entries.is_empty() && custody.user.is_empty());
+        assert!(custody.capability_failures.is_empty() && custody.additional_failures.is_empty());
+        assert!(
+            custody.unread_owner_cancellation.is_none() && custody.retirement_failures.is_empty()
+        );
+        assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+        assert!(diagnostics.is_empty() && rows.is_empty());
+        assert_eq!(verifications.get(), 1);
+        assert_eq!(
+            (
+                decodings.get(),
+                constructors.get(),
+                encodings.get(),
+                protections.get()
+            ),
+            (0, 0, 0, 0)
+        );
+        assert_eq!((disposals.get(), invalid.get()), (1, 1));
+        assert!(remaining_cause.is_none());
+        assert_eq!(recorded.len(), 1);
+        assert_eq!(transmitted.protected, recorded[0].protected);
+        assert_eq!(transmitted.proof.as_ref(), [31, 37]);
+        assert!(replies.is_empty());
+        // Keep the actual native receiving failure rather than manufacture EOF.
+        drop((native_eof, incoming, replies));
+    })
+    .await
+    .expect("watchdog supplies no disposal or cleanup credit");
 }

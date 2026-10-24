@@ -1,6 +1,6 @@
 use super::declaration::{Commands, Delivery, Reception, Target as ActorTarget};
 use super::request::{Identity, Request, discard_query};
-use super::{Export, ExportError, ExportLimits, RequestKey};
+use super::{Export, ExportError, ExportLimits, RefusalRetention, RequestKey};
 use crate::address::MailAddr;
 use crate::application::{ActorInterface, ApplicationHandle, ApplicationLifecycle};
 use crate::local::endpoint::ExtractLocalEndpoint;
@@ -23,6 +23,10 @@ use std::sync::{Arc, Mutex, PoisonError, Weak};
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::{Semaphore, mpsc, oneshot};
 use zenoh::{Session, Wait};
+
+#[cfg(test)]
+#[path = "custody.rs"]
+mod tests;
 
 pub(crate) trait Exports<Root: Protocol<Addr = MailAddr>, Event, Families, Targets> {
     type Controls;
@@ -161,7 +165,12 @@ where
         Declarations: Delivery<Native, Control>,
         Control: Retirement,
     {
-        let custody = Rc::clone(&self.entries.borrow()[row].custody);
+        let custody = Rc::clone(
+            &self.entries.borrow()[row]
+                .as_ref()
+                .expect("an active producer owns its occupied request")
+                .custody,
+        );
         let (key, _, limits, decode, verify, protect, same_request, current_request, current_reply) =
             &self.inputs;
         if let Err(cause) = json::check(&custody.original.0, &custody.original.1, limits) {
@@ -196,7 +205,7 @@ where
                 return;
             }
         };
-        let canonical = self.entries.borrow().iter().find_map(|request| {
+        let canonical = self.entries.borrow().iter().flatten().find_map(|request| {
             let identity = request.custody.identity.borrow();
             let Identity::Canonical(key) = &*identity else {
                 return None;
@@ -212,7 +221,12 @@ where
             })
         });
         if let Some(canonical) = canonical {
-            let original = Rc::clone(&self.entries.borrow()[canonical.row].custody);
+            let original = Rc::clone(
+                &self.entries.borrow()[canonical.row]
+                    .as_ref()
+                    .expect("issued keys keep their occupied positions")
+                    .custody,
+            );
             if original.original.0 != custody.original.0 {
                 *custody.refusal.borrow_mut() = Some(ExportError::Conflict);
                 return;
@@ -358,7 +372,7 @@ where
         let _ = key;
     }
     fn publish(&self, runtime: &str, address: MailAddr) {
-        for request in self.entries.borrow().iter() {
+        for request in self.entries.borrow().iter().flatten() {
             let custody = &request.custody;
             if custody.completed.borrow().is_none() || custody.query.borrow().is_none() {
                 continue;
@@ -370,7 +384,12 @@ where
                     continue;
                 }
                 Identity::Canonical(_) => Rc::clone(custody),
-                Identity::Duplicate(key) => Rc::clone(&self.entries.borrow()[key.row].custody),
+                Identity::Duplicate(key) => Rc::clone(
+                    &self.entries.borrow()[key.row]
+                        .as_ref()
+                        .expect("issued keys keep their occupied positions")
+                        .custody,
+                ),
             };
             if original.completed.borrow().is_none() {
                 continue;
@@ -402,6 +421,47 @@ where
             discard_query(custody.query.borrow_mut().take());
         }
     }
+    fn discharge(&self) {
+        match self.inputs.1.refusals {
+            RefusalRetention::Retain => return,
+            RefusalRetention::Discharge => {}
+        }
+        let rows = self.entries.borrow().len();
+        for row in 0..rows {
+            let original = {
+                let mut entries = self.entries.borrow_mut();
+                let Some(request) = entries[row].as_ref() else {
+                    continue;
+                };
+                let custody = &request.custody;
+                if custody.completed.borrow().is_none()
+                    || custody.query.borrow().is_some()
+                    || !matches!(*custody.identity.borrow(), Identity::Unassigned)
+                    || custody.verification_factory.borrow().is_some()
+                    || custody.verification_poll.borrow().is_some()
+                    || custody.verification_disposal.borrow().is_some()
+                    || custody.protection_factory.borrow().is_some()
+                    || custody.protection_poll.borrow().is_some()
+                    || custody.protection_disposal.borrow().is_some()
+                {
+                    continue;
+                }
+                entries[row]
+                    .take()
+                    .expect("the eligible request remains occupied")
+            };
+            // Completion is not sole custody. Keep the SAME request and index
+            // if any private producer still owns its original facts.
+            match original.try_into_parts() {
+                Err(original) => self.entries.borrow_mut()[row] = Some(original),
+                Ok(original) => {
+                    // No entries/custody loan survives here. The slot is vacant
+                    // before user Drop; only serving's caught poll calls this.
+                    drop(original);
+                }
+            }
+        }
+    }
     async fn serving<Control, Root: Protocol<Addr = MailAddr>, Event>(
         &mut self,
         interface: ActorInterface<EstablishedRecipient<Target>>,
@@ -428,10 +488,14 @@ where
                 biased;
                 // Work may still request a cached result after its target retires.
                 _ = &mut joined => break,
-                Some(()) = requests.next(), if !requests.is_empty() => { self.publish(&runtime, address); }
+                Some(()) = requests.next(), if !requests.is_empty() => {
+                    self.publish(&runtime, address);
+                    self.discharge();
+                }
                 original = incoming.recv() => {
                     let Some((query, permit)) = original else { break; };
-                    if self.entries.borrow().len() == self.inputs.1.retained_requests.get() {
+                    let vacancy = self.entries.borrow().iter().position(Option::is_none);
+                    if vacancy.is_none() && self.entries.borrow().len() == self.inputs.1.retained_requests.get() {
                         discard_query(Some((query, permit)));
                         retain_diagnostic(&self.ingress, self.inputs.1.diagnostics.get(), ExportError::RetentionCapacity);
                         continue;
@@ -454,9 +518,17 @@ where
                     let proof = query.attachment()
                         .map(|bytes| bytes.to_bytes().into_owned().into_boxed_slice())
                         .unwrap_or_default();
-                    let row = self.entries.borrow().len();
-                    self.entries.borrow_mut().push(Request::new((raw, proof), (query, permit)));
-                    let custody = Rc::clone(&self.entries.borrow()[row].custody);
+                    let original = Some(Request::new((raw, proof), (query, permit)));
+                    let row = if let Some(row) = vacancy {
+                        self.entries.borrow_mut()[row] = original;
+                        row
+                    } else {
+                        let mut entries = self.entries.borrow_mut();
+                        let row = entries.len();
+                        entries.push(original);
+                        row
+                    };
+                    let custody = Rc::clone(&self.entries.borrow()[row].as_ref().expect("new requests occupy their selected position").custody);
                     let issuer = issuer.clone();
                     let interface = &interface;
                     let control = &control;
@@ -492,7 +564,7 @@ where
         reason = "after all producers end, terminal iteration borrows each native owner until its actual replies and EOF are retained"
     )]
     async fn drain(&self) {
-        for request in self.entries.borrow().iter() {
+        for request in self.entries.borrow().iter().flatten() {
             let custody = Rc::clone(&request.custody);
             discard_query(custody.query.borrow_mut().take());
             if let Some(native) = custody.native.borrow_mut().as_mut()

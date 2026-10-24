@@ -3,8 +3,8 @@ use bombay::actors::ActorExt;
 use bombay::behavior::User;
 use bombay::prelude::*;
 use bombay::remote::{
-    Client, ClientLimits, Export, ExportLimits, NodeExecutionRefusal, NodeStartupRefusal, json,
-    reply, stop,
+    Client, ClientLimits, Export, ExportLimits, NodeExecutionRefusal, NodeStartupRefusal,
+    RefusalRetention, json, reply, stop,
 };
 use bombay::{
     ActorFailureAssessment, ActorRetirementReport, ApplicationScope, RetirementAssessment,
@@ -303,6 +303,7 @@ async fn serve(configuration: Configuration) -> Result<Outcome, Refusal> {
     let export = Export::new(
         protocol::KEY,
         ExportLimits {
+            refusals: RefusalRetention::Discharge,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,

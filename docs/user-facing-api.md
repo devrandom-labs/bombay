@@ -601,6 +601,16 @@ An export's `into_parts` and a retained Request's `try_into_parts` provide delib
 advanced inspection of originals. Request extraction needs no declaration or
 presentation callback and returns the same Request while custody is borrowed.
 
+`ExportLimits::refusals` explicitly chooses `RefusalRetention::Retain` or
+`Discharge`. Retain keeps completed refusal originals for later inspection and
+charges their capacity for the export's lifetime. Discharge releases an ordinary
+refusal only after it has no issued key, native Query or producer loan. Acquired
+provider panics and all keyed requests remain retained in either mode. Thus a
+completed invalid request need not exclude a later valid one, while replay
+references stay stable. Discharge deliberately gives up later inspection of
+those refusal originals; its extracted rows have storage order, not request
+chronology. These request-count limits are not aggregate byte or CPU bounds.
+
 The local outgoing slice attaches a `Client` through the same
 `node.exports(client, binding)` owner. The binding returns the actual actor
 recipient that will receive checked replies; Node checks its Application

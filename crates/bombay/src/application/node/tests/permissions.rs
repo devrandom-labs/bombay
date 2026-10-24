@@ -9,7 +9,7 @@ use super::protocol::{
 use super::{Counter, CounterMessage, LedgerCommand, MailLedger};
 use bombay::actors::ActorExt;
 use bombay::behavior::{Never, User};
-use bombay::remote::{Attempt, Export, ExportLimits, Metadata, reply};
+use bombay::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, Application, MailAddr, RetirementAssessment, TrySendError};
 use core::ops::AsyncFn;
 use serde::Serialize;
@@ -82,6 +82,7 @@ async fn borrowed_permission() {
     let export = Export::new(
         "bombay/permission/read",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,
@@ -388,6 +389,7 @@ async fn counter_permissions<Receipt>(
     let export = Export::new(
         "bombay/permission/counter",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,
@@ -789,6 +791,7 @@ async fn ledger_permissions<Receipt>(
     let export = Export::new(
         "bombay/permission/ledger",
         ExportLimits {
+            refusals: RefusalRetention::Retain,
             queued_queries: maximum,
             retained_queries: maximum,
             retained_requests: maximum,
