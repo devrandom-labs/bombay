@@ -818,3 +818,18 @@ all24 payload checks and base277 plus the actual patch reconstructs both
 records, the unchanged public test and Python absence. The actual3e1 library
 control source is retained separately. This later pointer is outside the
 capture; the archive is not a compiler closure or CI/main delivery certificate.
+
+### Integration after provider delivery
+
+PR394 has now delivered as actual mainb45c7566 after all six checks passed on
+ed72df92; verified/merge trees match20b77b91. This retirement integrates that
+main before its own PR submission. Only the shared status record conflicts:
+retain the delivered provider/R10 records, current fairness disposition and
+accurate historical source scopes. Main's provider UI fixtures and acceptance
+records are preserved; no retirement Rust, dependency or Nix change appears.
+The six retained fairness inputs rehash unchanged. The complete retirement
+delta against new main remains the same three paths, verification0/-144 and
+production/API0. Existing native receipts retain their original3e1/277 scope;
+source equivalence qualifies the unchanged fairness owners without relabelling
+those runs as execution of this new integration head. Fresh required CI and
+actual retirement delivery remain pending.

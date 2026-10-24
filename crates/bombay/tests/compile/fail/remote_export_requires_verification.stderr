@@ -1,0 +1,212 @@
+error[E0631]: type mismatch in function arguments
+  --> tests/compile/fail/remote_export_requires_verification.rs:63:9
+   |
+51 |       let export = Export::new(
+   |                    ----------- required by a bound introduced by this call
+...
+63 | /         async |bytes: &[u8], receipt: &Receipt| {
+64 | |             let parsed: protocol::Response = serde_json::from_slice(bytes)
+65 | |                 .map_err(|cause| deployment::Refusal::Json { cause })?;
+66 | |             if parsed.bombay != *receipt.metadata()
+...  |
+72 | |             configured.protect(Purpose::Reply, bytes)
+73 | |         },
+   | |         ^
+   | |         |
+   | |_________expected due to this
+   |           found signature defined here
+   |
+   = note: expected function signature `for<'a, 'b> fn(&'a [u8], &'b [u8]) -> _`
+              found function signature `fn(&[u8], &Receipt) -> _`
+note: required by a bound in `remote::export::query::<impl Export<(std::string::String, ExportLimits, Limits, Decode, Verify, Protect, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, CurrentRequest, CurrentReply), Declarations, bombay::remote::Request<Target, Receipt, Input, Native, VerificationError, DecodingError, EncodingError, ProtectionError, RequestError, ReplyError>>>::new`
+  --> src/remote/export/query.rs
+   |
+   |     Verify: AsyncFn(&[u8], &[u8]) -> Result<Receipt, VerificationError>,
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `remote::export::query::<impl Export<(String, ExportLimits, Limits, Decode, Verify, Protect, fn(&Receipt, &Receipt) -> bool, CurrentRequest, CurrentReply), Declarations, Request<Target, Receipt, Input, Native, VerificationError, DecodingError, EncodingError, ProtectionError, RequestError, ReplyError>>>::new`
+...
+   |     pub fn new(
+   |            --- required by a bound in this associated function
+
+error[E0061]: this function takes 10 arguments but 9 arguments were supplied
+  --> tests/compile/fail/remote_export_requires_verification.rs:51:18
+   |
+51 |     let export = Export::new(
+   |                  ^^^^^^^^^^^
+...
+77 |         &current,
+   |         -------- argument #8 of type `for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool` is missing
+   |
+note: associated function defined here
+  --> src/remote/export/query.rs
+   |
+   |     pub fn new(
+   |            ^^^
+help: provide the argument
+   |
+51 |     let export = Export::new(
+...
+76 |         },
+77 ~         /* fn(&Receipt, &Receipt) -> bool */,
+78 ~         &current,
+   |
+
+error[E0631]: type mismatch in closure arguments
+  --> tests/compile/fail/remote_export_requires_verification.rs:51:18
+   |
+51 |       let export = Export::new(
+   |  __________________^
+52 | |         protocol::KEY,
+53 | |         counts,
+54 | |         framing,
+...  |
+74 | |         |left: &Receipt, right: &Receipt| {
+   | |         --------------------------------- found signature defined here
+...  |
+78 | |         &current,
+79 | |     );
+   | |_____^ expected due to this
+   |
+   = note: expected closure signature `for<'a, 'b> fn(&'a [u8], &'b Receipt) -> _`
+              found closure signature `fn(&Receipt, &Receipt) -> _`
+note: required by a bound in `remote::export::query::<impl Export<(std::string::String, ExportLimits, Limits, Decode, Verify, Protect, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, CurrentRequest, CurrentReply), Declarations, bombay::remote::Request<Target, Receipt, Input, Native, VerificationError, DecodingError, EncodingError, ProtectionError, RequestError, ReplyError>>>::new`
+  --> src/remote/export/query.rs
+   |
+   |     Protect: AsyncFn(&[u8], &Receipt) -> Result<Box<[u8]>, ProtectionError>,
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `remote::export::query::<impl Export<(String, ExportLimits, Limits, Decode, Verify, Protect, fn(&Receipt, &Receipt) -> bool, CurrentRequest, CurrentReply), Declarations, Request<Target, Receipt, Input, Native, VerificationError, DecodingError, EncodingError, ProtectionError, RequestError, ReplyError>>>::new`
+...
+   |     pub fn new(
+   |            --- required by a bound in this associated function
+
+error[E0631]: type mismatch in function arguments
+  --> tests/compile/fail/remote_export_requires_verification.rs:83:24
+   |
+83 |     let outcome = node.run().await.unwrap_or_else(|original| {
+   |                        ^^^
+   |                        |
+   |                        expected due to this
+   |                        found signature defined here
+   |
+   = note: expected function signature `for<'a, 'b> fn(&'a [u8], &'b [u8]) -> _`
+              found function signature `fn(&[u8], &Receipt) -> _`
+   = note: required for `Export<(std::string::String, ExportLimits, Limits, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:55:9: 55:23}, {async closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:63:9: 63:48}, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:74:9: 74:42}, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, &{closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:40:19: 40:71}, _), (bombay::remote::Reply<protocol::Request, Counter, MessageProtocol<bombay::MailAddr, CounterIncremented>, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, protocol::Request> {increment}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, CounterIncremented>) -> Result<Box<[u8]>, protocol::Refusal> {processed}>, (bombay::remote::Reply<protocol::Request, Counter, CounterValue, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, protocol::Request> {protocol::read}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, u64>) -> Result<Box<[u8]>, protocol::Refusal> {value}>, bombay::remote::Stop<protocol::Request, Here, fn(protocol::Request) -> Result<(), protocol::Request> {protocol::stop}, for<'a, 'b, 'c> fn(&'a Receipt, &'b Attempt<Result<(), bombay::prelude::ShutdownRejection>>, &'c std::option::Option<ActorRetirementReport>) -> Result<Box<[u8]>, protocol::Refusal> {stopped}>)), bombay::remote::Request<Counter, Receipt, protocol::Request, futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, MessageProtocol<bombay::MailAddr, CounterIncremented>>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>), futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, CounterValue>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, u64>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, u64>>>), (Attempt<Result<(), bombay::prelude::ShutdownRejection>>, std::option::Option<ActorRetirementReport>)>>, _, serde_json::Error, protocol::Refusal, _, deployment::Refusal, _>>` to implement `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+help: consider wrapping the function in a closure
+   |
+83 |     let outcome = |arg0: &[u8], arg1: &[u8]| node(arg0, /* &Receipt */).run().await.unwrap_or_else(|original| {
+   |                   ++++++++++++++++++++++++++     ++++++++++++++++++++++
+
+error[E0631]: type mismatch in closure arguments
+  --> tests/compile/fail/remote_export_requires_verification.rs:83:24
+   |
+74 |         |left: &Receipt, right: &Receipt| {
+   |         --------------------------------- found signature defined here
+...
+83 |     let outcome = node.run().await.unwrap_or_else(|original| {
+   |                        ^^^ expected due to this
+   |
+   = note: expected closure signature `for<'a, 'b> fn(&'a [u8], &'b Receipt) -> _`
+              found closure signature `fn(&Receipt, &Receipt) -> _`
+   = note: required for `Export<(std::string::String, ExportLimits, Limits, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:55:9: 55:23}, {async closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:63:9: 63:48}, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:74:9: 74:42}, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, &{closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:40:19: 40:71}, _), (bombay::remote::Reply<protocol::Request, Counter, MessageProtocol<bombay::MailAddr, CounterIncremented>, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, protocol::Request> {increment}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, CounterIncremented>) -> Result<Box<[u8]>, protocol::Refusal> {processed}>, (bombay::remote::Reply<protocol::Request, Counter, CounterValue, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, protocol::Request> {protocol::read}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, u64>) -> Result<Box<[u8]>, protocol::Refusal> {value}>, bombay::remote::Stop<protocol::Request, Here, fn(protocol::Request) -> Result<(), protocol::Request> {protocol::stop}, for<'a, 'b, 'c> fn(&'a Receipt, &'b Attempt<Result<(), bombay::prelude::ShutdownRejection>>, &'c std::option::Option<ActorRetirementReport>) -> Result<Box<[u8]>, protocol::Refusal> {stopped}>)), bombay::remote::Request<Counter, Receipt, protocol::Request, futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, MessageProtocol<bombay::MailAddr, CounterIncremented>>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>), futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, CounterValue>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, u64>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, u64>>>), (Attempt<Result<(), bombay::prelude::ShutdownRejection>>, std::option::Option<ActorRetirementReport>)>>, _, serde_json::Error, protocol::Refusal, _, deployment::Refusal, _>>` to implement `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+help: consider wrapping the function in a closure
+   |
+83 |     let outcome = |arg0: &[u8], arg1: &Receipt| node(/* &Receipt */, arg1).run().await.unwrap_or_else(|original| {
+   |                   +++++++++++++++++++++++++++++     ++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+  --> tests/compile/fail/remote_export_requires_verification.rs:83:19
+   |
+83 |     let outcome = node.run().await.unwrap_or_else(|original| {
+   |                   ^^^^^^^^^^
+   |                   |
+   |                   expected due to this
+   |                   found signature defined here
+   |
+   = note: expected function signature `for<'a, 'b> fn(&'a [u8], &'b [u8]) -> _`
+              found function signature `fn(&[u8], &Receipt) -> _`
+   = note: required for `Export<(std::string::String, ExportLimits, Limits, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:55:9: 55:23}, {async closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:63:9: 63:48}, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:74:9: 74:42}, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, &{closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:40:19: 40:71}, _), (bombay::remote::Reply<protocol::Request, Counter, MessageProtocol<bombay::MailAddr, CounterIncremented>, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, protocol::Request> {increment}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, CounterIncremented>) -> Result<Box<[u8]>, protocol::Refusal> {processed}>, (bombay::remote::Reply<protocol::Request, Counter, CounterValue, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, protocol::Request> {protocol::read}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, u64>) -> Result<Box<[u8]>, protocol::Refusal> {value}>, bombay::remote::Stop<protocol::Request, Here, fn(protocol::Request) -> Result<(), protocol::Request> {protocol::stop}, for<'a, 'b, 'c> fn(&'a Receipt, &'b Attempt<Result<(), bombay::prelude::ShutdownRejection>>, &'c std::option::Option<ActorRetirementReport>) -> Result<Box<[u8]>, protocol::Refusal> {stopped}>)), bombay::remote::Request<Counter, Receipt, protocol::Request, futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, MessageProtocol<bombay::MailAddr, CounterIncremented>>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>), futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, CounterValue>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, u64>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, u64>>>), (Attempt<Result<(), bombay::prelude::ShutdownRejection>>, std::option::Option<ActorRetirementReport>)>>, _, serde_json::Error, protocol::Refusal, _, deployment::Refusal, _>>` to implement `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+
+error[E0631]: type mismatch in closure arguments
+  --> tests/compile/fail/remote_export_requires_verification.rs:83:19
+   |
+74 |         |left: &Receipt, right: &Receipt| {
+   |         --------------------------------- found signature defined here
+...
+83 |     let outcome = node.run().await.unwrap_or_else(|original| {
+   |                   ^^^^^^^^^^ expected due to this
+   |
+   = note: expected closure signature `for<'a, 'b> fn(&'a [u8], &'b Receipt) -> _`
+              found closure signature `fn(&Receipt, &Receipt) -> _`
+   = note: required for `Export<(std::string::String, ExportLimits, Limits, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:55:9: 55:23}, {async closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:63:9: 63:48}, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:74:9: 74:42}, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, &{closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:40:19: 40:71}, _), (bombay::remote::Reply<protocol::Request, Counter, MessageProtocol<bombay::MailAddr, CounterIncremented>, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, protocol::Request> {increment}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, CounterIncremented>) -> Result<Box<[u8]>, protocol::Refusal> {processed}>, (bombay::remote::Reply<protocol::Request, Counter, CounterValue, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, protocol::Request> {protocol::read}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, u64>) -> Result<Box<[u8]>, protocol::Refusal> {value}>, bombay::remote::Stop<protocol::Request, Here, fn(protocol::Request) -> Result<(), protocol::Request> {protocol::stop}, for<'a, 'b, 'c> fn(&'a Receipt, &'b Attempt<Result<(), bombay::prelude::ShutdownRejection>>, &'c std::option::Option<ActorRetirementReport>) -> Result<Box<[u8]>, protocol::Refusal> {stopped}>)), bombay::remote::Request<Counter, Receipt, protocol::Request, futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, MessageProtocol<bombay::MailAddr, CounterIncremented>>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>), futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, CounterValue>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, u64>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, u64>>>), (Attempt<Result<(), bombay::prelude::ShutdownRejection>>, std::option::Option<ActorRetirementReport>)>>, _, serde_json::Error, protocol::Refusal, _, deployment::Refusal, _>>` to implement `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+
+error[E0631]: type mismatch in function arguments
+  --> tests/compile/fail/remote_export_requires_verification.rs:83:30
+   |
+83 |     let outcome = node.run().await.unwrap_or_else(|original| {
+   |                              ^^^^^
+   |                              |
+   |                              expected due to this
+   |                              found signature defined here
+   |
+   = note: expected function signature `for<'a, 'b> fn(&'a [u8], &'b [u8]) -> _`
+              found function signature `fn(&[u8], &Receipt) -> _`
+   = note: required for `Export<(std::string::String, ExportLimits, Limits, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:55:9: 55:23}, {async closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:63:9: 63:48}, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:74:9: 74:42}, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, &{closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:40:19: 40:71}, _), (bombay::remote::Reply<protocol::Request, Counter, MessageProtocol<bombay::MailAddr, CounterIncremented>, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, protocol::Request> {increment}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, CounterIncremented>) -> Result<Box<[u8]>, protocol::Refusal> {processed}>, (bombay::remote::Reply<protocol::Request, Counter, CounterValue, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, protocol::Request> {protocol::read}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, u64>) -> Result<Box<[u8]>, protocol::Refusal> {value}>, bombay::remote::Stop<protocol::Request, Here, fn(protocol::Request) -> Result<(), protocol::Request> {protocol::stop}, for<'a, 'b, 'c> fn(&'a Receipt, &'b Attempt<Result<(), bombay::prelude::ShutdownRejection>>, &'c std::option::Option<ActorRetirementReport>) -> Result<Box<[u8]>, protocol::Refusal> {stopped}>)), bombay::remote::Request<Counter, Receipt, protocol::Request, futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, MessageProtocol<bombay::MailAddr, CounterIncremented>>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>), futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, CounterValue>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, u64>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, u64>>>), (Attempt<Result<(), bombay::prelude::ShutdownRejection>>, std::option::Option<ActorRetirementReport>)>>, _, serde_json::Error, protocol::Refusal, _, deployment::Refusal, _>>` to implement `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+
+error[E0631]: type mismatch in closure arguments
+  --> tests/compile/fail/remote_export_requires_verification.rs:83:30
+   |
+74 |         |left: &Receipt, right: &Receipt| {
+   |         --------------------------------- found signature defined here
+...
+83 |     let outcome = node.run().await.unwrap_or_else(|original| {
+   |                              ^^^^^ expected due to this
+   |
+   = note: expected closure signature `for<'a, 'b> fn(&'a [u8], &'b Receipt) -> _`
+              found closure signature `fn(&Receipt, &Receipt) -> _`
+   = note: required for `Export<(std::string::String, ExportLimits, Limits, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:55:9: 55:23}, {async closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:63:9: 63:48}, {closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:74:9: 74:42}, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, &{closure@$DIR/tests/compile/fail/remote_export_requires_verification.rs:40:19: 40:71}, _), (bombay::remote::Reply<protocol::Request, Counter, MessageProtocol<bombay::MailAddr, CounterIncremented>, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, protocol::Request> {increment}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, CounterIncremented>) -> Result<Box<[u8]>, protocol::Refusal> {processed}>, (bombay::remote::Reply<protocol::Request, Counter, CounterValue, fn(protocol::Request) -> Result<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, protocol::Request> {protocol::read}, for<'a, 'b> fn(&'a Receipt, &'b behavior::User<bombay::MailAddr, u64>) -> Result<Box<[u8]>, protocol::Refusal> {value}>, bombay::remote::Stop<protocol::Request, Here, fn(protocol::Request) -> Result<(), protocol::Request> {protocol::stop}, for<'a, 'b, 'c> fn(&'a Receipt, &'b Attempt<Result<(), bombay::prelude::ShutdownRejection>>, &'c std::option::Option<ActorRetirementReport>) -> Result<Box<[u8]>, protocol::Refusal> {stopped}>)), bombay::remote::Request<Counter, Receipt, protocol::Request, futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<MessageProtocol<bombay::MailAddr, CounterIncremented>>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, MessageProtocol<bombay::MailAddr, CounterIncremented>>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, CounterIncremented>>>), futures_util::future::either::Either<(std::option::Option<futures_util::future::either::Either<impl FnOnce(behavior::EstablishedRecipient<CounterValue>) -> CounterMessage, CounterMessage>>, Attempt<Result<ApplicationClient<behavior::EstablishedRecipient<Counter>, CounterValue>, (behavior::EstablishedRecipient<Counter>, ExternalActorError)>>, Attempt<Result<(), bombay::TrySendError<CounterMessage>>>, std::option::Option<std::option::Option<behavior::User<bombay::MailAddr, u64>>>, Vec<std::option::Option<behavior::User<bombay::MailAddr, u64>>>), (Attempt<Result<(), bombay::prelude::ShutdownRejection>>, std::option::Option<ActorRetirementReport>)>>, _, serde_json::Error, protocol::Refusal, _, deployment::Refusal, _>>` to implement `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`

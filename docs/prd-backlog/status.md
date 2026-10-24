@@ -1,34 +1,31 @@
 # Backlog status and dependencies
 
-The unused fairness Python reproducer is selected for direct retirement,
-with its owning native library/public actor tests retained byte-for-byte.
-The event-fairness PRD records fresh selected dependencies, current native
-controls and historical mutation scope. This is an independent three-path
-verification deletion, production/API0; no replacement runner or new fairness
-law is selected. Actual checks/review/CI and main delivery remain separate.
+The unused fairness Python reproducer is deleted locally; its13 owning library
+cases and one public actor case pass in both profiles on the stated unchanged
+owners. Production/API0, verification0/-144, three existing paths. The owning
+PRD retains current/historical source scopes and independent reviews. This
+maintenance slice still needs its own required CI and normal main delivery;
+it does not reopen merged FAIR1 or complete PERF-07/remote acceptance.
 
-The actual retirement baseline main277e6dfe already contains PR395's patched
-lock delivery36b5c1f and PR393's child-retirement delivery277e6dfe, each after
-six successful checks on its exact head and matching verified/merge trees.
-The earlier advisory paragraph below is historical; current root83f01ca3
-selects Tokio1.53.3. This maintenance stage does not reopen merged FAIR1 or
-claim full overload, remote acceptance or delivery of the other pending PRs.
+PR394 merged asb45c756625b8b3d1a25ca37f507344b9a76559e4 at
+2026-10-24T01:31:45Z after all six checks passed on exacted72df92. Verified,
+tested-merge and delivered trees match20b77b9122f8ec36daa2e8b4e20472d134f12523.
+Actual required Nix job120714234734 completed01:24:23Z, including full flake
+and Driver/Observe fuzz. Independent readiness273236ab checks server rules
+and local reviews; normal protected merge used no bypass. This delivers the
+provider-interface and selected R10 evidence slice; full remote scope stays active.
 
-Historical advisory checkpoint: required Deny jobs on PR393/a84ec103 and PR394/19c6c4ea
-reject Tokio1.53.1 under RUSTSEC-2026-0386. The focused patch stage selects
-upstream-patched1.53.3 in the root and isolated transport locks and changes
-the isolated exact pin at its owner. No advisory exception, runtime/API change
-or full remote acceptance is claimed. Its compatibility checks, independent
-review and fresh required CI/main delivery remain open; previous green heads
-do not qualify these current PR heads.
+PR395 merged patched Tokio as36b5c1f9 at2026-10-23T23:26:42Z after six green
+checks on be200b25; verified/merge trees match7f8c9218. PR393 merged child
+Python retirement as277e6dfe at23:44:22Z after six green checks on90ecb176;
+verified/merge trees match3e062d6a. Its actual patched-lock Nix gate runs all21
+commands; independent raw-job review79e171a1 retains the evidence. The clean,
+pushed task worktree is safely archived and removed. Five Python files remain on delivered mainb45; four remain in this candidate.
 
-The child-retirement branch now integrates pushed Tokio fixbe200b25. Independent
-review216925c9 confirms the fresh21-command native run on former head a84ec103
-and lockaf4406db, including both intended native failures and exact restored
-passes. That result remains scoped to the former lock. The integrated root
-lock is83f01ca3 with Tokio1.53.3; fresh compatibility/native execution and
-submitted-head CI must qualify it before PR393 delivery. No earlier green
-check or original Nix receipt is transferred to this lock epoch.
+At the earlier main277 integration, only PRD/status records conflicted;
+qualified UI/runtime sources and patched locks were unchanged. Earlier
+e68d521f's six-green CI stays historical. New ed72 checks subsequently passed;
+actual PR394 delivery is recorded above.
 
 Latest user direction removes all implementation budgets and preapproves their
 expansion: “there is no budget.” Do not request line/path/type/verification
@@ -36,12 +33,10 @@ budget approval again. Historical numbers below retain their source scope;
 ownership, minimization, observable checks, CI/review and main delivery still
 govern completion. The complete remote PRD remains active.
 
-PR392 merged the finite-test remote Counter at2026-10-23T19:21:29Z as632bf184
-after all six checks passed on95c1105a, including required Nix at10:08:55Z.
-Verified and merge trees match. This child-retirement proposal now integrates
-that actual main. Its prior qualified script is unchanged; the integrated
-flake/lock reflect the delivered application and require fresh submitted-head
-CI. Five Python files remain in this proposal, six on main until its merge.
+PR392 merged the finite-test application at2026-10-23T19:21:29Z as632bf184,
+after all six checks passed on95c1105a; verified and merge trees match.
+That main was integrated into the provider-interface/R10 follow-up, whose
+subsequent PR394 delivery is recorded above.
 
 [PR389](https://github.com/devrandom-labs/bombay/pull/389) merged coverage Python
 retirement at2026-10-22T23:56:24Z as427329dff5660fdf29ae38b2998f4148285e5dfc.
@@ -66,13 +61,21 @@ success, provider refusal, wrong-proof handling and processing-before-publicatio
 loss pass both profiles. Full workspace debug/optimized tests and strict lint
 pass. The smaller private directory owner passes all eight application cases in
 both profiles under the previously failing long parent. The dedicated
-aarch64-darwin Nix check passes; all six submitted-head checks pass and delivery
-is recorded above.
+aarch64-darwin Nix check passes; application submitted-head CI and delivery are
+recorded above.
 Its first required Nix CI run hit the two-hour job guard during optimized
 workspace compilation. The existing guard is raised to three hours with the
 same complete commands and required checks, which now all pass on95c1105a.
 The complete pressure/denied-stop/scenario matrix remains open;
 the PRD retains the precise remaining acceptance clauses.
+
+The complete selected R10 witness is locally satisfied by explicit finite-test
+selection, early production refusal, the genuine Test journey, its intended
+guard inverse/restoration and both deterministic provider implementations.
+The [complete evidence](../prds/static-remote-actors/acceptance.md#r10--explicit-test-identity-and-production-refusal-2026-10-23)
+records distinct source/lock epochs and both source/evidence reviews. PR394
+delivery is recorded above. All other full rows, Selo and broader release
+obligations remain separate. No completion percentage is inferred.
 
 PR387 merged2026-10-22T10:33:49Z as3625efe86f8613e13b3a3bc6cf180dc5de57edc7,
 with all six required checks passing on e1eab601. Its source tree is identical
@@ -196,13 +199,13 @@ work; full service/privacy, CI/review and main delivery remain open. The
 [identity record](../prds/static-remote-actors.md#runtime-and-actor-identity--local-verification-and-minimization)
 retains the exact scopes, costs and remaining gates.
 
-Current next product step: the separate remote-counter application through the
+Earlier application planning checkpoint, before PR392: the separate remote-counter application through the
 existing Node-owned Client and Export. The actual external two-Application read
 trace now exercises that SDK-free public path, including pure actor Actions.
 Advanced native requester tests remain scoped mechanism consumers. Trusted
 cross-process test-identity provisioning, the full Increment/Read/Stop journey
 and security/resource/fault acceptance still need their actual witnesses.
-All full rows remain open; no percentage is inferred.
+All full rows remained open at that checkpoint; current acceptance is recorded above.
 
 Earlier cold-path preparation checkpoint (2026-10-17):
 The bounded ownership comparison passes4/0 in both profiles, its intended
