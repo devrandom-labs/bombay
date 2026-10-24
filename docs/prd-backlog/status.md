@@ -1,5 +1,21 @@
 # Backlog status and dependencies
 
+R17's literal support witness is locally satisfied for the
+[recorded fixed TLS profile](../prds/static-remote-actors/acceptance.md#current-r17-support-record--fixed-tls-profile-2026-10-24).
+This is existing patched-lock main277 evidence: public two-program Peer,
+native RouterClient, mapped alternatives and typed absent-configuration/native
+startup refusals retain their distinct scopes. R10's populated record and
+every other row retain their independent states. Broader ZEN-04 certification,
+R21, remaining R23 and full remote acceptance remain open.
+
+This proposal reconciles PR398's existing R17 record with immutable PR397
+integration `a84c0dbf624be09c1740361b24be75416a2ddafa`, based on delivered
+main `32145c3f09986da75c6cf332080d81813764fb8e`. PR397 is delivered first only
+to order the overlapping documentation updates; its native-controller change
+is not an R17 semantic prerequisite or additional R17 evidence. Neither
+proposal is described here as merged. Required exact-head CI, independent
+review and normal main delivery remain separate.
+
 PR394 normally merged asb45c756625b8b3d1a25ca37f507344b9a76559e4 at
 2026-10-24T01:31:45Z after all six checks passed on exacted72df92; verified,
 tested and delivered trees match20b77b9122f8ec36daa2e8b4e20472d134f12523.
