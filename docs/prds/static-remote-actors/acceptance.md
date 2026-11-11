@@ -1,7 +1,7 @@
 # Static remote actor acceptance
 
 The dated prerequisite checkpoints below are historical evidence at their
-stated revisions. The [current feature status](../static-remote-actors.md#current-status-2026-10-23-utc)
+stated revisions. The [current feature status](../static-remote-actors.md#resumed-delivery--2026-11-11)
 owns current dependency, implementation and verification facts. R10's selected
 semantic witness is locally satisfied by the [current evidence](#r10--explicit-test-identity-and-production-refusal-2026-10-23).
 R17 is locally satisfied for its [recorded fixed TLS profile](#current-r17-support-record--fixed-tls-profile-2026-10-24).
@@ -9,9 +9,17 @@ Other rows retain their independent states. Semantic acceptance, exact-head
 CI, record delivery and full feature completion remain separate; historical
 failures and passing runs keep their original source scope.
 
+On 2026-11-11, reviewed PR405/406 delivered the finite current cold-overlap and
+byte-preservation witnesses after all six checks passed. PR404's R09 recovery
+is also merged. These contributions do not close their complete rows. Legacy
+transport-research retirement preserves the cohort-to-owner map and remaining
+debts in the parent PRD; deleting a historical controller adds no acceptance
+credit. R10/PR394 and R17/PR398 have actual reviewed delivery; dated pending
+wording inside their original records preserves the earlier source epoch.
+
 ## Current R17 support record — fixed TLS profile (2026-10-24)
 
-R17's literal dependency/configuration witness is locally satisfied for the tested profile below. This records existing executed evidence; it adds no networking implementation, public API or support for an untested platform. Its documentation delivery remains subject to the owning PR's review/CI/main merge. Every other acceptance row retains its independently recorded state.
+R17's literal dependency/configuration witness is locally satisfied for the tested profile below. This records existing executed evidence; it adds no networking implementation, public API or support for an untested platform. PR398 delivered this record as `e50f6e1c` after all six checks passed. Every other acceptance row retains its independently recorded state.
 
 ### Reproducible inputs
 

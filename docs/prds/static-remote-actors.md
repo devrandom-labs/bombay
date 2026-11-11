@@ -71,12 +71,133 @@ epochs; actual PR405/406 delivery reconciliation is proposed separately in PR407
 Complete tracked/untracked census: four paths; production/tests/API +0/-0.
 Locks +4/-11/net-7; records +79/-0/net79; total +83/-11/net72.
 
+## Resumed delivery — 2026-11-11
+
+The original delivery goal resumes without reducing R01–R25, AUTH1 or NET1.
+The user's later delegation of recommended choices, parallel work and removal
+of implementation budgets remains in force. Correctness, measured changes,
+independent review, required CI and protected PR delivery remain mandatory.
+
+PR404 delivered request-capacity recovery as `9f542c18`. Fresh independent
+source, archived-outcome and actual required-CI reviews pass for PR405 and
+PR406. PR405 merged as `e6d43a638fa09212ef98995e9659dee43e936368` at
+2026-11-11T11:05:52Z; PR406 merged as
+`937fecc3f7b7bc5efe5dd7519e1bf223af76c350` at 11:06:10Z. Each has all six
+successful submitted-head checks. Actual merge trees equal reviewed/tested
+trees `01a875f802a13f7a37d6cb8ba41bcb57aa13026e` and
+`4372d9d7ba057a16143415aa3c98e1db4e6d3101`, respectively. Ordinary protected
+merges used exact head guards, without bypass. The focused PRDs retain the
+original failing controls, restored sources and limits; neither closes its
+whole remote acceptance row.
+
+The complete scoped semantic records remain R10 and R17. Other rows retain
+their independent gaps, including actual ACL/security crossings, freshness,
+replay/restart, aggregate resource bounds, lifecycle failures, independent
+network simulation/replay, command-scoped diagnostics and final distillation.
+Historical pending-delivery statements below keep their original epochs.
+
+### Legacy transport research — pre-edit retirement record
+
+Blocker: CI still builds and runs a bespoke research executable and Python
+controller beside the current Node/Export/Client and native Cargo tests.
+Retire that competing research path, preserving useful obligations with their
+current owners and keeping unproved requirements open. This removes machinery;
+it establishes no new runtime law or blanket equivalence claim.
+
+Fresh verification reads the complete selected Behavior instructions at
+`55dbac2d1068b29907498b3a7fa32b3080e0cd30`, the exact registry archives,
+public API, owning source/tests and current normative documents. Independently
+downloaded archives match every selected Cargo checksum: Behavior/Actors
+0.29.0, Address0.3.0, Communication0.1.6 and Timers0.2.0. Observe remains
+the current local owner including delivered PR403. The selected native graph
+and both locks remain unchanged. No ownership, consumer or version blocker
+was found for deleting this obsolete research implementation.
+
+| Retired cohort | Current owner and evidence | Preserved limitation |
+| --- | --- | --- |
+| Sixteen raw transport cases | PR406's cold Ledger byte/proof trace, current Client receiving/cancellation tests and real separate-program Counter. | Old CANCEL consumes a declaration; REJECTED checks fixture grammar; LATE_EXIT kills after receipt. None proves current borrowed-wait cancellation, authorization or lost-reply uncertainty. Full R02/R06/R13/R18/R23 stays open. |
+| Eight old Counter cases | Protected Counter matrix: 32 configurations, 80 actual native roles, both Query layouts and both providers. Public Node/Client and separate-program Counter own shipping application behavior. | Publication remains explicit omission/debt; this retirement grants no publication support or full provider/topology acceptance. |
+| Six old overlap cases | Delivered PR405's two actual public Node receptions and independent post-cleanup selected1/unselected0 counters; foreign-child tests preserve exact local association. | This is not six-for-six equivalence. Independent host/runtime/generation substitutions, router/restart and complete R03/R11/R22 remain open. |
+
+Delete only `verify_transport_custody.py`, `src/bin/transport_custody.rs` and
+`src/counter_application.rs` under the isolated transport package, and their
+three format/lint, build and observation workflow steps. Keep the package,
+manifests, locks, certificates, complete protected Counter workflow body,
+artifact upload, both native job names, Nix vendor/gate and public Counter
+checks. No replacement controller, production code, public type or dependency.
+Git and the sealed request-bytes baseline retain all retired sources.
+
+Pre-edit estimates were approximately 2270 deleted research lines and 20
+workflow lines. The retained edit deletes exactly 2297 research lines and 18
+workflow lines; production, current product tests and public types remain
++0/-0. Independent review maps each cohort above and rejects credit for obsolete observations. Verify
+isolated Cargo target discovery, format/lint, current byte/overlap consumers
+and preserved native cohorts through pinned Nix, then review the final diff
+and run required submitted-head CI.
+
+### Retirement source review and local checks
+
+The independent two-pass review accepts the cohort mapping and retained diff.
+All shipping Rust, product tests, examples, manifests, locks, certificates and
+Nix checks are byte-identical to main937fecc3. The entire protected Counter
+workflow body and artifact upload remain byte-identical, SHA256
+`cbda5407687da2beaa93e7cf47b70b643724eeb7316796eaa92df91cad9a5b02`.
+No current executable reference to the removed controller remains. Historical
+research commands below retain their original source epochs.
+
+Actual pinned-Nix `cargo test --locked --offline -p bombay-rs --all-features
+--test application_clients` passes 50/0/0 in both debug and `--release`,
+including the delivered overlap and original-byte witnesses. Inner compiler
+fixtures retain their separate counts. Workspace and isolated-package
+`cargo fmt --all -- --check` pass. Isolated locked/offline Cargo metadata
+identifies exactly the retained `protected_counter` test and no executable.
+The initial metadata redirection also captured the shell welcome banner and
+jq refused it; that failed inspection supplies no target-discovery credit.
+The successful command enters pinned Bash first and redirects Cargo inside
+that shell, without filtering structured output.
+
+The removed sources are also preserved in common Git's
+`session-archives/2026-11-11/resumption/retired-transport-sources.tar.gz`,
+SHA256 `9efe63f0359f4f0318ce9d0bca80adfb504d73677cd4ea94f7841b89f1189b5b`.
+The original source/results capsules and their earlier reviews are unchanged.
+No compiler/binary closure or new semantic inversion is claimed by retirement.
+Required submitted-head CI, including both preserved native jobs and the full
+Nix check, plus independent delivery review and actual merge remain mandatory.
+
+Retained census against937fecc3, including tracked and untracked changes:
+production +0/-0/net0; current product tests +0/-0/net0; research verification
++0/-2297/net-2297; workflow +0/-18/net-18; public types +0/-0. Eleven existing
+paths account for this stage; documents +160/-36/net124 include this record.
+Complete delta +160/-2351/net-2191. No new controller or dependency exists.
+
+### Loom prerequisite integration — pre-edit record
+
+Select the independently reviewed Loom correction899b4572 for combined CI
+with retirement54011184. PR408 must pass its own gates and merge before
+PR407; this is temporary source delivery order. Its narrow lock change,
+actual Deny/model/Counter controls and original source epochs remain in the
+separate prerequisite record. No previous0.7.2 CI or native run qualifies
+the new lock. Fresh exact-head checks and final delivery review are required.
+
+Reuse the same current product/native tests, protected workflow and Nix
+owners. Resolve only overlapping delivery prose; no runtime, test, API,
+manifest, policy or further dependency choice. The scoped retirement delta
+remains measured against immutable899b4572; the earlier937-based census above
+retains its original epoch. Record the complete integrated census after merge.
+
+### Loom integration — retained checkpoint
+
+Against immutable899b4572: eleven paths; production/tests/public API0.
+Research -2297, workflow -18, documents +182/-36/net146; total +182/-2351.
+Against actual main937fecc3: thirteen paths, locks +4/-11, documents +261/-36.
+The combined tree needs fresh CI; no old result is relabelled as its execution.
+
 The [cold command ownership witness](cold-overlap.md) owns the fresh R22
 comparison of two real public Nodes under one overlapping selector. It reuses
 existing static grant policies and records both actual receptions and a
 post-cleanup unselected Counter oracle. Healthy, intended grant-omission and
 restored traces qualify in both profiles; final owning49-case suites and lint
-pass. Focused PR, required CI and delivery remain pending.
+pass. PR405's reviewed delivery is recorded above; full R22 remains open.
 Historical raw overlap evidence keeps its original source scope.
 
 The [R09 recovery regression](request-recovery.md) owns the fresh same-export
@@ -84,9 +205,10 @@ invalid-then-valid comparison and lifetime-quota conflict. Its accepted scope,
 dependency verification and evidence remain separate from the historical
 checkpoints below; the complete remote PRD remains active.
 
-Current delivery checkpoint: actual main50e0de42 contains reviewed PR397–403,
+Current delivery checkpoint: main937fecc3 contains reviewed PR397–406,
 each with six successful exact-head checks and matching tested/merged trees.
-The R09 recovery implementation retains its own pending delivery gates.
+R09 recovery and finite cold-overlap/byte-preservation witnesses are delivered;
+full R09, R02 and R22 remain open.
 Dated stages below preserve their original source and delivery
 epochs; superseded pending-PR wording is historical, not current status.
 
