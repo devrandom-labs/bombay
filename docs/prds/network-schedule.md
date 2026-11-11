@@ -1,17 +1,39 @@
 # Incoming request schedule
 
-Current integration checkpoint: the qualified four-path contribution is now
-on reviewed parent256ad8b0. All nine archived source/lock hashes match after
-integration. Shipping owners, request/declaration code, the actual Counter
-and all three locks retain the qualified inputs; only existing record/index
-files gain delivery reconciliation. No earlier run is presented as execution
-of the new combined commit. Required submitted CI and merge remain open.
+Current checkpoint: PR411 delivers the qualified fixed incoming schedule with
+all six checks, independent reviews and a matching merged source tree.
+Shipping owners, request/declaration code, Counter and locks retain their
+qualified inputs. Earlier checkpoints preserve their original source epochs.
 
-Status: active; the first fixed incoming schedule is under verification within
-Static remote actors R24. Original baseline is merged main
+Status: active for complete R24; the first fixed incoming schedule is delivered
+within Static remote actors. Original baseline is merged main
 `937fecc3f7b7bc5efe5dd7519e1bf223af76c350`. This contribution does not implement
 the complete network simulator, generated campaigns, restart or full R24.
 The user's complete R01–R25/AUTH1/NET1 goal remains unchanged.
+
+## Delivery of the fixed schedule — 2026-11-11
+
+[PR411](https://github.com/devrandom-labs/bombay/pull/411) merged as
+`2b7acf1266968e87595fae568bd0d2dc053011c2` at16:38:57Z after all six checks
+passed on `88ee6f52de1ce6b73bbaafce0b762e038308a3f2`. Delivered tree
+`31b5221484805e2849571ddc6adfd5c5b3e95c5f` equals the reviewed and tested
+tree; merge parents are f2832eea and88ee6f52.
+
+The [required Nix job](https://github.com/devrandom-labs/bombay/actions/runs/43038348972/job/130583123557)
+executes the actual fixed schedule in both Linux debug and optimized
+430-case library cohorts; both pass without failures or ignored cases.
+The fifty-client cohort, public Counter, current/minimum compiler gates,
+Observe28/Entity6 models and native campaign retain their separate scopes.
+Artifacts prove Driver2048 and Observe4×1024 ASan executions; those are
+primitive campaigns, not new networking campaigns. Conditional Miri is skipped.
+
+Independent source/outcome/CI review seals508 payload hashes in common Git's
+`session-archives/2026-11-11/ci-review/pr411/`; its manifest SHA256 is
+`5b6c67847ffcf1bce3fc3f40665d54386085b8243984a704ec26f7cb1b428e49`.
+The fully clean worktree was removed with ordinary git worktree remove after
+all users released it. Production/public API remain unchanged. Generated and
+exhaustive schedules, retained minimized replay, volatile restart, scheduled
+network campaigns and complete R24 remain open.
 
 ## Fresh source fitness and exact selected owners
 

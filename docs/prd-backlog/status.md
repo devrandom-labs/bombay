@@ -1,34 +1,41 @@
 # Backlog status and dependencies
 
-The [native access/grant crossing](../prds/remote-access.md) locally qualifies
-four actual TLS Router/Counter cases in both profiles, with independent effect
-oracles, two exact policy omissions and restored controls. The qualified source
-integrates without shipping code/API changes. Required CI/delivery, gateway
+Published Behavior/Actors0.30 qualification is the current prerequisite after
+PR412. The [owning pre-edit record](../prds/static-remote-actors.md#published-behavior-qualification--2026-11-11)
+records the starting0.29 graph separately from verified0.30 publication and
+the three now-aligned registry consumer locks. Current/minimum Machine controls,
+native custody falsifiers and all planned local consumer gates pass. Required
+Linux CI and merge delivery remain open. Remaining remote acceptance is unchanged.
+
+The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
+merged through PR412 after all six checks and independent reviews passed.
+Four actual TLS Router/Counter cases pass in both profiles with independent
+effect oracles, exact policy omissions and restored controls. Gateway
 provenance and other R07/AUTH1/NET1 obligations remain open.
 
 The [R01 protocol record](../prds/remote-protocols.md) assembles the separate-
 program Counter, complete Actions, unrelated local protocol and actual static
-denials. Current focused controls pass in both profiles; the retained minimum
-remote Nix gate passes on submitted256ad8b0, independently of its earlier probe.
-Final reviews pass; PR410 CI and delivery remain required. No full
-remote row, AUTH1 or NET1 is newly marked delivered.
+denials. PR410 delivers the literal R01 witness after all six checks,
+independent reviews and actual retained minimum-remote execution pass.
+This closes literal R01, not its entire mapped inventory families, AUTH1,
+NET1 or the other incomplete remote rows.
 
 The narrow Loom correction408, obsolete transport retirement407 and ordinary
 minimum-compiler gate409 have
 merged after all six checks and independent reviews passed. Actual commits,
 matching delivered trees, CI/artifacts and worktree cleanup are recorded in
 the [remote PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11).
-The [fixed incoming schedule](../prds/network-schedule.md) locally qualifies
-duplicate and changing-authority cases; submitted CI/delivery, broader network
-campaigns/restart and full R24 remain open.
+The [fixed incoming schedule](../prds/network-schedule.md#delivery-of-the-fixed-schedule--2026-11-11)
+merged through PR411 after all six checks and independent reviews passed.
+Broader network campaigns, minimized replay, restart and full R24 remain open.
 
-Updated: 2026-11-11 UTC. Current main is `f3b26a0c`. The original remote PRD
-goal is resumed with the user's approved choices, parallel work and removed
-implementation budgets. The scoped legacy transport-research retirement is
+Updated: 2026-11-11 UTC. This delivery snapshot uses main `3bf270cb`. The
+original remote PRD goal is resumed with the user's approved choices, parallel
+work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the
 [remote PRD](../prds/static-remote-actors.md#resumed-delivery--2026-11-11).
 The runtime, separate-program Counter, R09 recovery and PR405/406 witnesses
-are delivered. R10/R17 retain complete scoped semantic records; full remote
+are delivered. R01/R10/R17 retain complete scoped semantic records; full remote
 acceptance, AUTH1/NET1, simulation, diagnostics and final distillation remain open.
 
 The [original request byte witness](../prds/request-bytes.md) merged through
@@ -75,7 +82,7 @@ match. CI's conditional Miri was skipped; local Miri remains separate. Keyed
 Observe retains its existing capability contract; production+20/-18/net2,
 tests+51/-0, public types+0/-0.
 
-Current main937fecc3 includes delivered PR397=9ea5defe,398=e50f6e1c,
+An earlier delivery checkpoint at main937fecc3 includes PR397=9ea5defe,398=e50f6e1c,
 399=8a7201b6,400=a1b470f8,401=422a0e6f,402=af59674c,403=50e0de42,
 404=9f542c18,405=e6d43a63 and406=937fecc3. Each passed
 all six exact-head checks, independent readiness and normal protected merge;
@@ -643,9 +650,10 @@ tables below:
   the supported normal-waker contract. Arbitrary foreign-callback sibling
   progress is not established by the capacity prerequisite.
 
-All full R01–R25, AUTH1 and NET1 acceptance remains open. Reviewed dependency
-and prerequisite deliveries retain only their recorded scope; publication,
-current combined verification and full-service acceptance remain separate.
+R01, R10 and R17 have their selected records satisfied and delivered. Remaining
+full remote rows, AUTH1 and NET1 stay open. Reviewed dependency and prerequisite
+deliveries retain only their recorded scope; publication, current combined
+verification and full-service acceptance remain separate.
 Release/API delivery remains held by the remote PRD's service and privacy gates.
 
 The previous local-runtime audit is closed: 25 TEST items were verified,
@@ -671,7 +679,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
 | DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): owning PRD tracks DX01–DX28. One Application/topology path, policy Config/startup closures and strict124-fixture verification are implemented with bounded evidence. Owner-inference publication, automatic timers, complete custody/cost coverage and final gates remain open. |
-| NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#resumed-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. PR404/405/406 add recovery, static command ownership and original-byte witnesses. R10/R17 have complete scoped records; the other complete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts are preserved in the PRD and dated checkpoints above. Choices use delegated recommended selections. |
+| NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. R01/R10/R17 have complete scoped records. PR411/412 deliver the fixed incoming schedule and native access/grant crossing; complete R24/R07, other incomplete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts retain their source epochs. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |
 | MNE1 | blocked | External: Mnesis-Bombay release and dependency-graph alignment | PLACE1, DIST1, SELO1 | [Durability](durability-and-operations.md): select current Bombay and compatible Behavior; hydrate before routability and retain exact admission, decision, conflict, uncertain commit and durable completion outcomes. Local migration can proceed independently of NET1; complete distributed writer fencing with PLACE1. |

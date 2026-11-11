@@ -1,5 +1,235 @@
 # Static remote actors and typed admission
 
+## Published Behavior qualification — 2026-11-11
+
+This prerequisite follows the delivered PR412 crossing; it does not replace
+the remaining remote-actor goal or close another acceptance row. The starting
+tree is clean6fb1636c over main3bf270cb. No dependency or source edit preceded
+this change record. Earlier delivery records retain their selected versions.
+
+At the pre-edit checkpoint, fresh root and isolated-lock inspection selected
+registry Behavior/Actors0.29.0
+at55dbac2d1068b29907498b3a7fa32b3080e0cd30 and Macros0.16.0, with no patch.
+The complete selected Behavior AGENTS and candidate628649da instructions were
+read. The candidate adds release coordination instructions; engineering rules
+remain unchanged. Fresh source/API/test/document inspection covers both
+Behavior owners, Address0.3.0 at9f058dc03d1239e1ef5c3147a893b134a1e74a83,
+Communication0.1.6 at963067e0e6bdef15549088966cde354fd820be7e and Timers0.2.0
+at9369d1f6c7fcda91e7de5bf3c19e6769f92145bd, plus in-tree Observe at3bf270cb.
+Those primitives have no Behavior dependency edge. Address preserves opaque
+resolution and exact lease generations; Communication preserves accepted FIFO
+and original rejected payloads; Timers preserves stale-generation rejection;
+Observe moves affine outcomes once. Driver D-TURN-1/D-RETIRE-1 already preserve
+actual fold progress and concrete surviving custody without rollback.
+
+Published registry Behavior/Actors0.30.0 both identify verified source
+628649da014a527d47f21567a859c5c78494df13. Sparse-index checksums match downloaded
+archives: core a053cef32c83bfd0df2fb146d2163a9d78a5e71534febfbd5601087040776b27;
+actors af2978fe3eda8157844a8929b82df5c0454bc4946478993a5c0740fdf4259641.
+Packaged nongenerated files and original manifests match that source. Both
+annotated tags resolve there; publication workflow43062619719 succeeded.
+Macros remains0.16.0. Edition2024/Rust1.95 fit Bombay's1.96 floor; licenses,
+features and other direct dependencies remain compatible. The pair must move
+together because Actors0.30 requires Core0.30. The complete32-payload audit
+is temporarily retained at /tmp/bombay-behavior030-registry.CHHBLk, manifest
+e4282d415a32fb1b7148f794a70a4ddf7ece715f4914398c8d2060c2154fe0fa.
+This publication proof is not consumer execution.
+
+The changed contract belongs to Machine, not Engine or the local runtime.
+Completed replay and actual callback mutations survive later refusal; errors
+own the actual refused User/sender. Execution no longer requires cloned state
+or messages. take transfers remaining originals once. Goto stores its exact
+phase value even when equality suppresses replay. Machine::new remains
+unbounded. Machine::bounded accepts InputLimit, counts held originals, permits
+zero and emits normal typed refusal Actions when full; replay needs no extra
+slot. Stash and Machine have independent retention. Existing composition
+forwarding exposes InputLimit/InputRetention on adoption; no Bombay wrapper,
+prelude expansion, runtime service or new Bombay-defined public type is needed.
+The forwarded upstream public surface grows by these two owning interfaces.
+
+### Pre-edit scope and falsifiers
+
+The blocker is unqualified registry adoption: six existing Machine consumers
+exercise successful cloneable replay, not progressed failure or finite holding.
+The smallest native failing regression uses move-only messages from two real
+senders: rehold one original, complete work, mutate then refuse a later original,
+and preserve an unread suffix. After joined cleanup, compare the actual error
+sender/allocation, completed state, remaining FIFO originals and empty second
+take. Separate bounded open/closed refusal destinations use four originals,
+one held slot and an ordinary Stop, then account for all original allocations
+across held, delivered and rejected custody after cleanup. No expected-count
+wait may turn a retention defect into a timeout. The refusal mailbox has eight
+slots; await actual termination and retirement before closing/draining it.
+Pure complete-Actions controls
+cover zero, replay and equal-but-distinct Goto phases through the existing API.
+
+Establish separate original0.29 move-only execution and absent bounded/take
+static failures. Equal-phase storage already exists in0.29 and is a preservation
+control, not evidence of an earlier phase defect. In a
+disposable, byte-verified Actors0.30 copy, substitute the outer Goto User for
+the refused replay User: the native sender oracle must fail after cleanup.
+Change finite admission from <slots to <=slots: both customer cases must fail
+held-count custody after cleanup. Run each source omission in debug/release,
+restore exact source and rerun controls. Temporary Cargo path overrides stay
+outside retained manifests/locks and are distinct from registry qualification.
+No setup error, compilation failure or watchdog earns runtime-law credit.
+
+Expected paths for the complete branch: the six already reviewed delivery
+Markdown records; root Cargo.toml/Cargo.lock; Engine fuzz Cargo.toml/Cargo.lock;
+transport-custody/Cargo.lock; both Driver manifests; Engine law_manifest.rs;
+Driver test strategy; one owning integration target crates/bombay/tests/machine.rs.
+Total16 paths is forecast honestly, including existing records. The user's
+task-specific removal of all implementation budgets is recorded under
+"Remaining implementation — bounded scope proposal" below; measurement,
+ownership and minimization remain mandatory. Expected production Rust +0/-0;
+test forecast450–700 lines; Bombay-defined public types +0/-0 and forwarded
+upstream interfaces +2/-0. No existing successful test is weakened.
+The current46-template/19-capability inventory retains its exact membership;
+only current selection and Machine lane facts change. Preserve all24 historical
+98983 evidence revisions and their separate evidence constant.
+
+Root owns dependency selection, all three locks, shared records and integration.
+Acceptance owns the new Machine test target after independent pre-edit review;
+the two existing reviewers own independent source/outcome reviews and exact
+registry/graph checks. Use existing pinned Nix/Cargo/Crane gates, current and
+minimum compiler consumers, Engine laws/fuzz build, actor-template application
+and full remote debug/release checks. No new runner or permanent patch.
+Independent pre-edit reviews by review_bytes and review_cold pass after the
+equal-phase history and refusal-mailbox ordering clarifications above. Root's
+source review agrees; this resolves the qualification-plan gate. Actual tests,
+source inversions and registry graph execution remain unqualified.
+Current checkpoint: production +0/-0/net0; tests +0/-0/net0;
+public API +0/-0; records are the existing delivery commit plus this plan.
+
+### Focused qualification
+
+All three retained graphs now select registry Core0.30; root and protected
+transport also select Actors0.30. Macros0.16 is unchanged. Independent lock
+comparison finds399 root records,31 Engine-fuzz records and324 transport
+records. Only the two owner records change in root/transport, and Core in
+Engine fuzz, apart from four root Windows dependency edges that Cargo selects
+from already present windows-sys0.52 to0.61.2. Exact existing errno, rustix,
+tempfile and winapi-util constraints permit both; no other package version or
+declared feature changes. Incidental isolated-workspace package upgrades were
+restored with supported Cargo --precise commands, not manual lock editing.
+The root/fuzz/transport lock hashes are respectively9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394,
+28b6d5217c1973d5abb54333ef900a41d9463f997abe916d144ac481c254b55a and
+dca90d14ac3b9af5bf10d13399766b454b079e737ffdf271c0b94816eb627585.
+This is no Windows runtime qualification.
+
+Actual old0.29 compiler probes reject move-only state/messages with E0277,
+take with E0599 and InputLimit with E0432; the corresponding0.30 probes pass.
+Current Driver manifest tests pass11/11 in debug and release. Both independent
+reviews confirm the24 historical evidence labels,46 template IDs and19
+capability families are preserved exactly. Machine's source inventory now
+records its real refusal lane and current source evidence.
+
+The first579-line lint-corrected Machine target has SHA256
+43dfac194471809419118bcdca0c277bf5f4b0ef939f6442eb18172630a09cd8.
+All six actual registry cases pass debug/release on Rust1.99.0 b940084d7 and
+Rust1.96.0 ac68faa20 (Cargo5f94df478/30a34c682). The minimum execution uses
+the existing minimum-check derivation's development environment and the actual
+checkout; it does not run or earn the28-target diagnostic check. Pinned
+formatting and focused strict Clippy pass. The first lint run's ten style
+findings were corrected without changing control flow, expected values or
+custody observations; both author reviews and independent diff reviews pass.
+
+On that exact final test source, byte-equal path controls pass6/6 in both
+profiles. The wrong-input owner cut fails only the first post-cleanup sender
+oracle at169, actualMailAddr1 versus requiredMailAddr2, in both profiles.
+Exact full-package restoration passes all six cases in both profiles. The
+capacity cut then fails both native customer cases only at post-cleanup held
+count364, actual2 versus required1, in both profiles. Exact restoration again
+passes6/6 in both profiles. Each negative Cargo status is101 after actual test
+execution; none is a setup failure or timeout. Later assertions are unexecuted
+in the negatives and receive no negative credit. The producer archive, retained
+registry graph, disposable path graph and earlier571-line pre-lint test epoch
+remain separate. Independent source/outcome/conservation reviews pass.
+
+Actual logs and source inputs currently live under
+/tmp/bombay-behavior030-inversions.424XMs (final/ holds the579-line epoch),
+/tmp/bombay-behavior030-static-20261111 and
+/tmp/bombay-behavior030-machine-{final,minimum}-{debug,release}-20261111.log.
+Broader workspace, remote, isolated transport/fuzz, diagnostic and required CI
+gates remain open; no merged adoption or full remote acceptance is claimed.
+
+The whole-workspace feature union then exposed an ambiguous empty array in one
+new assertion: serde_json supplies a second u64 comparison. The sole correction
+types the same zero-element array as [u64;0]; it changes no expected value,
+input, control flow or ownership observation. Author and independent source
+review pass. The current579-line target is
+f62443a328e5ce26d2df5d3ebe8c9fb2f1f21e9f1e19fd14706a768fa2332665.
+On that source, pinned workspace formatting, strict workspace/all-target Clippy
+and cargo test --locked --workspace pass. The initial workspace compilation
+failure remains separate. Fresh minimum6/6 D/R, byte-equal path6/6 D/R,
+both intended source failures and both exact-restoration6/6 pairs now bind
+f624 directly; independent source/outcome review passes. The43df results above
+retain their original epoch. The workspace log reports127 Cargo run/doc
+headers and128 result groups (rustdoc splits one group),994 reported passes,
+zero failures and six existing parent-owned child registrations. Their actual
+parent controls pass; no new test is skipped and these are not994 unique laws.
+
+The focused source/input/log capsule is durable outside the worktree at
+/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-11-11/behavior030-focused/.
+Its complete38-payload manifest passes verification, SHA256
+d32a2dc85397f7990af656bad2800fb90c7966b968a921dc1c520cb6038f70ea.
+It preserves all source epochs, original failures, producer archives, current
+base/patch and retained lock hashes. Still-running remote, isolated, CI and
+merge results are excluded and require separate actual evidence.
+
+### Local consumer gates and minimization
+
+The remote feature's13 selected targets pass529 tests in each profile,
+434 library plus95 integration cases, with no failed, ignored or filtered
+cases. This includes the new six-case Machine target and the previous523
+remote cases. The isolated protected-transport target passes69 cases per
+profile. Its one existing ignored registration is the controlled TLS child;
+the passing independent campaign parent explicitly executes32 configurations
+and80 native roles. Those are nested executions, not80 extra outer tests.
+
+Engine's isolated fuzz target compiles with the repository's pinned
+Rust1.98.0-nightly3daae5e42 and Cargo fe63976b2. The first offline attempt
+stopped at a missing cached cc1.4.4 archive before target compilation; supported
+locked fetch followed by locked offline check passes, preserving the complete
+lock. This is type/build compatibility, not a fuzz iteration or sanitizer run.
+Workspace build, documentation and formatting/strict Clippy pass; the isolated
+transport's formatting and strict Clippy also pass. No retained source or lock
+changed during these checks.
+
+Host Nix flake evaluation passes with --no-build. Its earlier failures named
+an invalid cached nightly manifest derivation, not an application error.
+Disabling evaluation cache and repair did not resolve it. Evaluating the
+existing devShells.aarch64-darwin.miri.drvPath recreated that exact manifest
+derivation; repeating the original evaluation passes. No flake, toolchain or
+global configuration changed. This evaluates Darwin outputs only; it is not
+the full Nix build, other-system execution or Miri semantics. Required CI still
+must execute its normal Linux build/check, minimum diagnostic/remote and campaign
+gates. No merged adoption or full remote acceptance is claimed yet.
+
+The retained composition adds no shipping Rust, wrapper, facade, interpreter,
+recipe or runner. Five manifest/lock changes align the three existing graphs;
+four Driver inventory/verification files retain their owners and historical
+evidence. One integration target proves move-only native custody and typed
+finite refusal through existing Application, recipient and settlement APIs.
+The six prior delivery records retain actual reviewed merges and cleanup.
+No extra application spelling or competing composition remains from this work.
+The effective public addition is the two forwarded owner interfaces, not new
+Bombay-defined types; Machine's new methods/defaulted retention parameter and
+breaking error/progress semantics remain explicit above.
+
+Complete scoped census against main3bf270cb, including the new test target:
+production Rust +0/-0/net0; tests +584/-5/net579;
+public interfaces +2/-0 upstream, +0/-0 Bombay-defined;
+configuration +17/-17/net0; records +402/-65/net337;
+16 paths, no untracked paths.
+
+Consumer/evaluation receipts are sealed outside the worktree at
+/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-11-11/behavior030-consumers/.
+The complete26-payload manifest verifies, SHA256
+4d3860304bd9792150fc89ab1031cfe2750f31be73d0aad95d25b76ff99be741.
+Author/root and two independent whole-change reviews pass source, ownership,
+interface, observable-law and evidence checks. Required CI and delivery remain open.
+
 ## Native access and application grants — 2026-11-11
 
 The [scoped R07 record](remote-access.md) qualifies all four actual native
@@ -11,9 +241,11 @@ full cleanup.
 Exact native-rule and application-grant omissions each fail that primary
 effect oracle in both profiles, followed by exact source restoration and the
 complete four-case controls. Formatting, strict Clippy and three source/
-outcome reviews pass. Production/public API remain unchanged. Combined-source
-CI and delivery remain open, as do gateway provenance, field substitutions,
-production cryptography and complete R07/AUTH1/NET1.
+outcome reviews pass. Production/public API remain unchanged. PR412 delivers
+this crossing after all six checks pass; its [owning delivery record](remote-access.md#delivery-of-the-access-crossing--2026-11-11)
+keeps the original hidden failure separate from fresh passing CI. Gateway
+provenance, field substitutions, production cryptography and complete
+R07/AUTH1/NET1 remain open.
 
 ## Current delivery — 2026-11-11
 
@@ -46,12 +278,25 @@ retains actual Linux1.96 execution of28 targets/32 named suites,114 outer
 passes and the exact136-case compiler set. This is the ordinary default/Axum
 compiler gate, separate from the later full remote target in R01.
 
+PR410 delivers the [literal R01 witness](remote-protocols.md#delivery--2026-11-11).
+PR411 delivers the [fixed incoming schedule](network-schedule.md#delivery-of-the-fixed-schedule--2026-11-11).
+PR412 delivers the [native access/grant crossing](remote-access.md#delivery-of-the-access-crossing--2026-11-11).
+Each owning record preserves its exact submitted/merged source, passing CI,
+independent reviews, durable artifacts and normal worktree removal. The
+literal R01 record is satisfied; broader R07/R24, other incomplete rows,
+AUTH1/NET1 and final whole-feature distillation remain open.
+
+Delivery reconciliation at3bf270cb changes six existing Markdown records.
+Production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
+Records +146/-47/net99; no untracked paths are present at this checkpoint.
+
 Under the user's worktree cleanup instruction, the clean PR407 worktree was
 removed after its verified merge, followed by PR409's clean worktree after
 its merge. The shared Cargo cache had already moved
 to `/tmp/bombay-remote-20261111-target` after every active owner released it;
 all evidence lives outside the removed worktree. PR408 has no separate branch
-worktree to remove. Active feature worktrees remain until their own delivery.
+worktree to remove. PR410/411/412 worktrees have also been removed after their
+verified merges and release by all active users.
 Earlier qualification/pending-delivery statements below retain their epochs.
 
 The [first incoming schedule](network-schedule.md) now qualifies duplicate,
@@ -72,9 +317,9 @@ compiler target, with only actual compiler-specific expectation differences.
 Its retained Darwin1.96 execution now passes on submitted256ad8b0; the
 [R01 record](remote-protocols.md#retained-minimum-remote-execution--2026-11-11)
 keeps that later run separate from the earlier probe/evaluation. Source and
-outcome reviews pass. PR410 required CI and actual delivery remain pending.
-R01 is not yet delivered;
-AUTH1, NET1, all other incomplete rows and final distillation remain open.
+outcome reviews pass. [PR410's delivery](remote-protocols.md#delivery--2026-11-11)
+includes the required current and minimum Linux checks and satisfies literal
+R01. AUTH1, NET1, all other incomplete rows and final distillation remain open.
 
 ## Loom maintenance prerequisite — 2026-11-11
 

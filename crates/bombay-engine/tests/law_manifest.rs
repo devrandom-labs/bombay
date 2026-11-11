@@ -5,8 +5,8 @@ use std::{env, fs};
 use serde::Deserialize;
 use serde_json::Value;
 
-const BEHAVIOR_REVISION: &str = "55dbac2d1068b29907498b3a7fa32b3080e0cd30";
-const ACTORS_REVISION: &str = "55dbac2d1068b29907498b3a7fa32b3080e0cd30";
+const BEHAVIOR_REVISION: &str = "628649da014a527d47f21567a859c5c78494df13";
+const ACTORS_REVISION: &str = "628649da014a527d47f21567a859c5c78494df13";
 const EVIDENCE_BEHAVIOR_REVISION: &str = "98983b456c4a8f7cd0911982eaf9488455b6d8bc";
 
 #[derive(Deserialize)]
@@ -480,8 +480,8 @@ fn manifest_exactly_matches_canonical_law_index() {
     let manifest = manifest();
     assert_eq!(manifest.schema, 2);
     assert_eq!(manifest.law_source, "docs/driver-law.md");
-    assert_eq!(manifest.behavior.core, "0.29.0");
-    assert_eq!(manifest.behavior.actors, "0.29.0");
+    assert_eq!(manifest.behavior.core, "0.30.0");
+    assert_eq!(manifest.behavior.actors, "0.30.0");
     assert_eq!(manifest.behavior.macros, "0.16.0");
     assert_eq!(manifest.behavior.revision, BEHAVIOR_REVISION);
     assert_eq!(
@@ -725,7 +725,7 @@ fn engine_does_not_mirror_actor_template_laws() {
     }
     for (field, expected) in [
         ("package", "bombay-behavior-actors"),
-        ("version", "0.29.0"),
+        ("version", "0.30.0"),
         ("revision", ACTORS_REVISION),
     ] {
         if manifest["owner"][field] != expected {

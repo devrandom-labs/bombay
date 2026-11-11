@@ -1,13 +1,22 @@
 # Static remote actor acceptance
 
 The dated prerequisite checkpoints below are historical evidence at their
-stated revisions. The [current feature status](../static-remote-actors.md#resumed-delivery--2026-11-11)
+stated revisions. The [current feature status](../static-remote-actors.md#current-delivery--2026-11-11)
 owns current dependency, implementation and verification facts. R10's selected
 semantic witness is locally satisfied by the [current evidence](#r10--explicit-test-identity-and-production-refusal-2026-10-23).
 R17 is locally satisfied for its [recorded fixed TLS profile](#current-r17-support-record--fixed-tls-profile-2026-10-24).
 Other rows retain their independent states. Semantic acceptance, exact-head
 CI, record delivery and full feature completion remain separate; historical
 failures and passing runs keep their original source scope.
+
+R01's literal witness is satisfied and delivered through PR410/f2832eea.
+Its [owning evidence map and delivery](../remote-protocols.md#delivery--2026-11-11)
+bind the actual separate public programs, complete sender/receiver Actions,
+unexported local protocol and intended compiler denials to passing current and
+minimum checks. This is no claim that every mapped inventory family is complete.
+PR411/2b7acf12 delivers one fixed incoming schedule; PR412/3bf270cb delivers
+the four native-access/application-grant rows. Their owning records preserve
+remaining R24 and R07 obligations; neither full row is closed.
 
 On 2026-11-11, reviewed PR405/406 delivered the finite current cold-overlap and
 byte-preservation witnesses after all six checks passed. PR404's R09 recovery
