@@ -144,11 +144,11 @@ final review and actual PR delivery remain required before recording a merge.
 
 ## Containment
 
-Against the integrated prerequisite `899b4572`, the complete tracked/untracked
+Against the integrated prerequisite `eae29efd`, the complete tracked/untracked
 contribution has five paths: flake.nix, the two deleted diagnostic programs,
 the developer-experience guidance and this record. There are no untracked
-project artifacts. The record and existing guidance account for 163
-added/eight removed documentation lines; the full contribution is 206
+project artifacts. The record and existing guidance account for 174
+added/eight removed documentation lines; the full contribution is 217
 added/308 removed lines. The prerequisite's two locks and two records remain
 separate committed inputs, not additional compiler production changes.
 
