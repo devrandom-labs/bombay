@@ -1,5 +1,16 @@
 # Compiler diagnostics
 
+## Submission integration
+
+Select reviewed retirementeae29efd for the submitted combined source after
+the locally verified coree56f08f0. Deliver PR408, then PR407, then this focused
+compiler contribution. Its five-path scope is measured against immutableeae;
+neither pending prerequisite is called merged. All qualified Rust, snapshots,
+compiler definitions and both0.7.3 locks remain unchanged by integration.
+Local results below retain their actual captured source epochs. The combined
+head needs fresh full CI and independent delivery review before protected merge.
+Supplementary minimum-remote/R01 work remains a separate contribution.
+
 Status: active. This focused maintenance stage replaces the two unused Python
 diagnostic programs with the repository's existing Fenix, Crane, Cargo and
 trybuild owners. Full remote acceptance remains separate.
