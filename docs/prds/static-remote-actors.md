@@ -99,6 +99,21 @@ production +0/-0/net0; current product tests +0/-0/net0; research verification
 paths account for this stage; documents +160/-36/net124 include this record.
 Complete delta +160/-2351/net-2191. No new controller or dependency exists.
 
+### Loom prerequisite integration — pre-edit record
+
+Select the independently reviewed Loom correction899b4572 for combined CI
+with retirement54011184. PR408 must pass its own gates and merge before
+PR407; this is temporary source delivery order. Its narrow lock change,
+actual Deny/model/Counter controls and original source epochs remain in the
+separate prerequisite record. No previous0.7.2 CI or native run qualifies
+the new lock. Fresh exact-head checks and final delivery review are required.
+
+Reuse the same current product/native tests, protected workflow and Nix
+owners. Resolve only overlapping delivery prose; no runtime, test, API,
+manifest, policy or further dependency choice. The scoped retirement delta
+remains measured against immutable899b4572; the earlier937-based census above
+retains its original epoch. Record the complete integrated census after merge.
+
 The [cold command ownership witness](cold-overlap.md) owns the fresh R22
 comparison of two real public Nodes under one overlapping selector. It reuses
 existing static grant policies and records both actual receptions and a
