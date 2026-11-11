@@ -29,6 +29,7 @@
           builtins.readFile ./crates/bombay/tests/compile/diagnostics/compilers.json
         );
         diagnosticCargoArgs = "-p bombay-rs -p bombay-engine -p observe-tests --features axum";
+        minimumRemoteCargoArgs = "-p bombay-rs --all-features";
         minimumRust = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).workspace.package.rust-version;
 
         # Nix and rustup resolve the same pinned toolchain declaration.
@@ -139,6 +140,9 @@
         minimumCargoArtifacts = minimumCraneLib.buildDepsOnly (
           commonArgs // { cargoExtraArgs = "--locked ${diagnosticCargoArgs}"; }
         );
+        minimumRemoteCargoArtifacts = minimumCraneLib.buildDepsOnly (
+          commonArgs // { cargoExtraArgs = "--locked ${minimumRemoteCargoArgs}"; }
+        );
         protectedCounterVendor = craneLib.vendorCargoDeps {
           inherit src;
           cargoLock = ./docs/prds/static-remote-actors/transport-custody/Cargo.lock;
@@ -206,6 +210,18 @@
                 + pkgs.lib.concatMapStringsSep " " (target: "--test ${pkgs.lib.escapeShellArg target}") (
                   builtins.attrNames diagnostics.targets
                 );
+              preCheck = ''
+                rustc --version --verbose
+                cargo --version
+              '';
+            }
+          );
+          bombay-minimum-remote = minimumCraneLib.cargoTest (
+            commonArgs
+            // {
+              cargoArtifacts = minimumRemoteCargoArtifacts;
+              patches = [ ./crates/bombay/tests/compile/diagnostics/minimum.patch ];
+              cargoTestExtraArgs = "${minimumRemoteCargoArgs} --test remote_surface";
               preCheck = ''
                 rustc --version --verbose
                 cargo --version

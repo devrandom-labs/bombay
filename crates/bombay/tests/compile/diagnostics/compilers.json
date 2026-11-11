@@ -11,7 +11,7 @@
       "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
     }
   },
-  "patch_sha256": "fd7bffe7352825d8925eca68f5077145279f05b08206558eff18bdce45e82d93",
+  "patch_sha256": "1ff1697424e63d5028c4e9cfca9d5a6a1bd770dd13c12fb5db2194e180db2743",
   "snapshots": {
     "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
       "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
@@ -127,6 +127,16 @@
       "canonical_sha256": "c891428356c8b2abeece24572d6603bc2962a9a613f16038ad8d6918d5a35434",
       "minimum_sha256": "73de2e1ddd861fd34504be4135ea40571d42b6c1b0de1d8e640eb47b56ca5bbc",
       "fixture_sha256": "c24a16578db568fbc7be86dbba069d83fa479b6f044db4ac42c423142c8c8cc8"
+    },
+    "crates/bombay/tests/compile/fail/remote_client_requires_verification.stderr": {
+      "canonical_sha256": "7c0bcb79869de9081c9f0b310083ba4d85f85de2374204479b591d8239fcaf6d",
+      "minimum_sha256": "f70e51d843fa4610fe49639770e73263a67f94b55c353bf3034f619a69cb4aea",
+      "fixture_sha256": "9dc7fe2f01ae539641957ffa0d766eca52db7d58e4bbf59bdf027ab74a2b6f65"
+    },
+    "crates/bombay/tests/compile/fail/remote_export_requires_verification.stderr": {
+      "canonical_sha256": "a8b8b9e622272332596009227bfc361ef5cfc4e8e21fbe36aa11ee866e3e8bac",
+      "minimum_sha256": "2c50f46e412fdaa8f78ce4e5c7877169a7669329c7f09d826bdf9e3496842bcd",
+      "fixture_sha256": "f98735601e19a98f2f8a52f5e0991a1ef6d1b46ecff692b4ca8272ef2bdffce4"
     }
   },
   "cases": [

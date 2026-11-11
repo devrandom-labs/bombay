@@ -1,0 +1,59 @@
+error[E0277]: the trait bound `Command: remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>` is not satisfied
+  --> tests/compile/fail/remote_export_requires_declaration.rs:21:24
+   |
+21 |     let outcome = node.run().await;
+   |                        ^^^ unsatisfied trait bound
+   |
+   = help: the trait `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>` is not implemented for `Command`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+help: consider further restricting type parameter `Command` with trait `Exports`
+   |
+11 | async fn configured<Command: Serialize + bombay::remote::export::query::Exports<counter::Counter, behavior::EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, counter::CounterMessage>>, (), behavior::EstablishedRecipient<counter::Counter>>>(network: Network, command: Command) {
+   |                                        +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+error[E0277]: the trait bound `Command: remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>` is not satisfied
+  --> tests/compile/fail/remote_export_requires_declaration.rs:21:19
+   |
+21 |     let outcome = node.run().await;
+   |                   ^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>` is not implemented for `Command`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+help: consider further restricting type parameter `Command` with trait `Exports`
+   |
+11 | async fn configured<Command: Serialize + bombay::remote::export::query::Exports<counter::Counter, behavior::EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, counter::CounterMessage>>, (), behavior::EstablishedRecipient<counter::Counter>>>(network: Network, command: Command) {
+   |                                        +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+error[E0277]: the trait bound `Command: remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>` is not satisfied
+  --> tests/compile/fail/remote_export_requires_declaration.rs:21:30
+   |
+21 |     let outcome = node.run().await;
+   |                              ^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `remote::export::query::Exports<Counter, EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, CounterMessage>>, (), behavior::EstablishedRecipient<Counter>>` is not implemented for `Command`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+help: consider further restricting type parameter `Command` with trait `Exports`
+   |
+11 | async fn configured<Command: Serialize + bombay::remote::export::query::Exports<counter::Counter, behavior::EventLayer<behavior_actors::protocol::ShutdownRequested, behavior::User<bombay::MailAddr, counter::CounterMessage>>, (), behavior::EstablishedRecipient<counter::Counter>>>(network: Network, command: Command) {
+   |                                        +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

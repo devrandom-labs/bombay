@@ -11,6 +11,7 @@ use std::num::NonZeroUsize;
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
 
+use super::super::ledger::{LedgerCommand, MailLedger};
 use super::network as protocol;
 use super::{Counter, CounterMessage, CounterValue, custody, providers, reader, requester};
 use custody::completed_actor;
@@ -49,6 +50,9 @@ async fn read() {
     let acknowledged = &RefCell::new(Vec::new());
     let reader_address = &Cell::new(None);
     let priming = RefCell::new(None);
+    let local_original: Box<[u8]> = [127, 131].into();
+    let local_allocation = local_original.as_ptr();
+    let local_delivery = RefCell::new(None);
     let (started, observed) = oneshot::channel();
     let started = RefCell::new(Some(started));
     let receiver = Application::new(Counter::new().stop_on_shutdown())
@@ -145,6 +149,17 @@ async fn read() {
             .await;
         let fenced = counter.receive().await;
         *priming.borrow_mut() = Some((increment, admitted, fenced));
+        let mut local = application
+            .external::<MailLedger>()
+            .expect("an unrelated ordinary local protocol needs no Serde or export");
+        let local_address = local.address();
+        let admission = local
+            .send(&local.recipient(), LedgerCommand::Append(local_original))
+            .await;
+        let original = local.receive().await;
+        local.close_admission();
+        let tail = local.receive().await;
+        *local_delivery.borrow_mut() = Some((local_address, admission, original, tail));
         let published = started
             .borrow_mut()
             .take()
@@ -363,6 +378,17 @@ async fn read() {
     assert!(cleanup.is_ok() && closed.is_ok() && primed.0.is_ok() && primed.1.is_ok());
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    let (local_address, local_admission, local_received, local_tail) = local_delivery
+        .into_inner()
+        .expect("the local endpoint retains its actual admission and receives");
+    let User { from, message } = local_received.expect("the actual local command arrives");
+    let LedgerCommand::Append(local_original) = message else {
+        panic!("the unrelated local endpoint retains the original Append command");
+    };
+    assert!(local_admission.is_ok() && local_tail.is_none());
+    assert_eq!(from, local_address);
+    assert_eq!(local_original.as_ref(), [127, 131]);
+    assert_eq!(local_original.as_ptr(), local_allocation);
     assert!(polling.is_none() && disposal.is_none());
     notifications
         .termination

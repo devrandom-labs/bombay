@@ -1,5 +1,18 @@
 # Static remote actors and typed admission
 
+## Explicit remote protocols — 2026-11-11
+
+The [R01 record](remote-protocols.md#current-integration-and-literal-r01-evidence)
+now assembles the actual separate-program Counter, complete sender/receiver
+Actions, unrelated unexported local protocol and intended compiler denials.
+The focused tests qualify on the current Loom0.7.3 graph in both profiles.
+An ordinary Fenix/Crane minimum-remote check retains the complete remote
+compiler target, with only actual compiler-specific expectation differences.
+Its isolated1.96 execution passes; permanent gate evaluation passes. Exact-head
+CI, final independent review, required preceding PR408/407/409 delivery and
+this contribution's reviewed merge remain pending. R01 is not yet delivered;
+AUTH1, NET1, all other incomplete rows and final distillation remain open.
+
 ## Loom maintenance prerequisite — 2026-11-11
 
 PR407's Deny check fails on unchanged main937fecc3 dependencies because

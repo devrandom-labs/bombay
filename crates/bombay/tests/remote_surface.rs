@@ -22,4 +22,6 @@ fn remote_operations_require_verification_and_typed_completion() {
     cases.compile_fail("tests/compile/fail/remote_client_requires_verification.rs");
     cases.compile_fail("tests/compile/fail/remote_export_requires_verification.rs");
     cases.compile_fail("tests/compile/fail/remote_client_requires_completion.rs");
+    cases.compile_fail("tests/compile/fail/remote_client_requires_interpretation.rs");
+    cases.compile_fail("tests/compile/fail/remote_export_requires_declaration.rs");
 }

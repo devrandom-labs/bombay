@@ -1,0 +1,134 @@
+error[E0277]: the trait bound `ExternalActor<MessageProtocol<bombay::MailAddr, Operation>>: remote::export::query::Exports<Caller, behavior::User<bombay::MailAddr, protocol::Reply>, (), behavior::EstablishedRecipient<Caller>>` is not satisfied
+  --> tests/compile/fail/remote_client_requires_interpretation.rs:43:24
+   |
+43 |     let outcome = node.run().await;
+   |                        ^^^ unsatisfied trait bound
+   |
+   = help: the trait `remote::export::query::Exports<Caller, behavior::User<bombay::MailAddr, protocol::Reply>, (), behavior::EstablishedRecipient<Caller>>` is not implemented for `ExternalActor<MessageProtocol<bombay::MailAddr, Operation>>`
+help: the following other types implement trait `remote::export::query::Exports<Root, Event, Families, Targets>`
+  --> src/remote/export/query.rs
+   |
+   | / impl<
+   | |     Root,
+   | |     Event,
+   | |     Families,
+...  |
+   | |     CurrentRequest: Fn(&Receipt, &str, MailAddr) -> Result<RequestGuard, RequestError>,
+   | |     CurrentReply: Fn(&Receipt, &str, MailAddr) -> Result<ReplyGuard, ReplyError>,
+   | |_________________________________________________________________________________^ `Export<(std::string::String, ExportLimits, Limits, Decode, Verify, Protect, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, CurrentRequest, CurrentReply), Declarations, bombay::remote::Request<Target, Receipt, Input, Native, VerificationError, DecodingError, EncodingError, ProtectionError, RequestError, ReplyError>>` implements `remote::export::query::Exports<Root, Event, Families, Endpoint>`
+...
+   | / impl<Root: Protocol<Addr = MailAddr>, Event, Families, LeftTargets, RightTargets, Left, Right>
+   | |     Exports<Root, Event, Families, (LeftTargets, RightTargets)> for (Left, Right)
+   | | where
+   | |     Left: Exports<Root, Event, Families, LeftTargets>,
+   | |     Right: Exports<Root, Event, Families, RightTargets>,
+   | |________________________________________________________^ `(Left, Right)` implements `remote::export::query::Exports<Root, Event, Families, (LeftTargets, RightTargets)>`
+   |
+  ::: src/remote/client.rs
+   |
+   | / impl<
+   | |     Root,
+   | |     Event,
+   | |     Families,
+...  |
+   | |         MailAddr,
+   | |     ) -> Result<ReplyGuard, ReplyError>,
+   | |________________________________________^ `Client<Requests, (std::string::String, ClientLimits, Limits, Duration, Encode, Protect, Verify, Decode, CurrentRequest, CurrentReply), Receipt, Message, EncodingError, ProtectionError, VerificationError, DecodingError, RequestError, ReplyError>` implements `remote::export::query::Exports<Root, Event, Families, behavior::EstablishedRecipient<Target>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+
+error[E0277]: the trait bound `ExternalActor<MessageProtocol<bombay::MailAddr, Operation>>: remote::export::query::Exports<Caller, behavior::User<bombay::MailAddr, protocol::Reply>, (), behavior::EstablishedRecipient<Caller>>` is not satisfied
+  --> tests/compile/fail/remote_client_requires_interpretation.rs:43:19
+   |
+43 |     let outcome = node.run().await;
+   |                   ^^^^^^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `remote::export::query::Exports<Caller, behavior::User<bombay::MailAddr, protocol::Reply>, (), behavior::EstablishedRecipient<Caller>>` is not implemented for `ExternalActor<MessageProtocol<bombay::MailAddr, Operation>>`
+help: the following other types implement trait `remote::export::query::Exports<Root, Event, Families, Targets>`
+  --> src/remote/export/query.rs
+   |
+   | / impl<
+   | |     Root,
+   | |     Event,
+   | |     Families,
+...  |
+   | |     CurrentRequest: Fn(&Receipt, &str, MailAddr) -> Result<RequestGuard, RequestError>,
+   | |     CurrentReply: Fn(&Receipt, &str, MailAddr) -> Result<ReplyGuard, ReplyError>,
+   | |_________________________________________________________________________________^ `Export<(std::string::String, ExportLimits, Limits, Decode, Verify, Protect, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, CurrentRequest, CurrentReply), Declarations, bombay::remote::Request<Target, Receipt, Input, Native, VerificationError, DecodingError, EncodingError, ProtectionError, RequestError, ReplyError>>` implements `remote::export::query::Exports<Root, Event, Families, Endpoint>`
+...
+   | / impl<Root: Protocol<Addr = MailAddr>, Event, Families, LeftTargets, RightTargets, Left, Right>
+   | |     Exports<Root, Event, Families, (LeftTargets, RightTargets)> for (Left, Right)
+   | | where
+   | |     Left: Exports<Root, Event, Families, LeftTargets>,
+   | |     Right: Exports<Root, Event, Families, RightTargets>,
+   | |________________________________________________________^ `(Left, Right)` implements `remote::export::query::Exports<Root, Event, Families, (LeftTargets, RightTargets)>`
+   |
+  ::: src/remote/client.rs
+   |
+   | / impl<
+   | |     Root,
+   | |     Event,
+   | |     Families,
+...  |
+   | |         MailAddr,
+   | |     ) -> Result<ReplyGuard, ReplyError>,
+   | |________________________________________^ `Client<Requests, (std::string::String, ClientLimits, Limits, Duration, Encode, Protect, Verify, Decode, CurrentRequest, CurrentReply), Receipt, Message, EncodingError, ProtectionError, VerificationError, DecodingError, RequestError, ReplyError>` implements `remote::export::query::Exports<Root, Event, Families, behavior::EstablishedRecipient<Target>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+
+error[E0277]: the trait bound `ExternalActor<MessageProtocol<bombay::MailAddr, Operation>>: remote::export::query::Exports<Caller, behavior::User<bombay::MailAddr, protocol::Reply>, (), behavior::EstablishedRecipient<Caller>>` is not satisfied
+  --> tests/compile/fail/remote_client_requires_interpretation.rs:43:30
+   |
+43 |     let outcome = node.run().await;
+   |                              ^^^^^ unsatisfied trait bound
+   |
+   = help: the trait `remote::export::query::Exports<Caller, behavior::User<bombay::MailAddr, protocol::Reply>, (), behavior::EstablishedRecipient<Caller>>` is not implemented for `ExternalActor<MessageProtocol<bombay::MailAddr, Operation>>`
+help: the following other types implement trait `remote::export::query::Exports<Root, Event, Families, Targets>`
+  --> src/remote/export/query.rs
+   |
+   | / impl<
+   | |     Root,
+   | |     Event,
+   | |     Families,
+...  |
+   | |     CurrentRequest: Fn(&Receipt, &str, MailAddr) -> Result<RequestGuard, RequestError>,
+   | |     CurrentReply: Fn(&Receipt, &str, MailAddr) -> Result<ReplyGuard, ReplyError>,
+   | |_________________________________________________________________________________^ `Export<(std::string::String, ExportLimits, Limits, Decode, Verify, Protect, for<'a, 'b> fn(&'a Receipt, &'b Receipt) -> bool, CurrentRequest, CurrentReply), Declarations, bombay::remote::Request<Target, Receipt, Input, Native, VerificationError, DecodingError, EncodingError, ProtectionError, RequestError, ReplyError>>` implements `remote::export::query::Exports<Root, Event, Families, Endpoint>`
+...
+   | / impl<Root: Protocol<Addr = MailAddr>, Event, Families, LeftTargets, RightTargets, Left, Right>
+   | |     Exports<Root, Event, Families, (LeftTargets, RightTargets)> for (Left, Right)
+   | | where
+   | |     Left: Exports<Root, Event, Families, LeftTargets>,
+   | |     Right: Exports<Root, Event, Families, RightTargets>,
+   | |________________________________________________________^ `(Left, Right)` implements `remote::export::query::Exports<Root, Event, Families, (LeftTargets, RightTargets)>`
+   |
+  ::: src/remote/client.rs
+   |
+   | / impl<
+   | |     Root,
+   | |     Event,
+   | |     Families,
+...  |
+   | |         MailAddr,
+   | |     ) -> Result<ReplyGuard, ReplyError>,
+   | |________________________________________^ `Client<Requests, (std::string::String, ClientLimits, Limits, Duration, Encode, Protect, Verify, Decode, CurrentRequest, CurrentReply), Receipt, Message, EncodingError, ProtectionError, VerificationError, DecodingError, RequestError, ReplyError>` implements `remote::export::query::Exports<Root, Event, Families, behavior::EstablishedRecipient<Target>>`
+note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
+  --> src/application/node.rs
+   |
+   |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |                  --- required by a bound in this associated function
+...
+   |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
