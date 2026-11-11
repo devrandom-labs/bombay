@@ -231,14 +231,14 @@ async fn borrowed_permission() {
 }
 
 #[derive(Debug)]
-enum LocalAuthorityRefusal {
+pub(super) enum LocalAuthorityRefusal {
     Borrow { cause: BorrowError },
     Scope { cause: VerificationError },
     GrantRemoved,
     BindingMismatch,
 }
 
-fn local_current<'loan, Receipt, Operation: Eq>(
+pub(super) fn local_current<'loan, Receipt, Operation: Eq>(
     authority: &'loan RefCell<Option<Binding>>,
     receipt: &Receipt,
     projection: fn(&Receipt) -> &ProofScope<Operation>,

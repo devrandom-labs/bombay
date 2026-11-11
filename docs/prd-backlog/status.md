@@ -1,5 +1,11 @@
 # Backlog status and dependencies
 
+The [native access/grant crossing](../prds/remote-access.md) locally qualifies
+four actual TLS Router/Counter cases in both profiles, with independent effect
+oracles, two exact policy omissions and restored controls. The qualified source
+integrates without shipping code/API changes. Required CI/delivery, gateway
+provenance and other R07/AUTH1/NET1 obligations remain open.
+
 The [R01 protocol record](../prds/remote-protocols.md) assembles the separate-
 program Counter, complete Actions, unrelated local protocol and actual static
 denials. Current focused controls pass in both profiles; the retained minimum
