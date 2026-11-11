@@ -1,11 +1,13 @@
 # Backlog status and dependencies
 
-Published Behavior/Actors0.30 qualification is the current prerequisite after
-PR412. The [owning pre-edit record](../prds/static-remote-actors.md#published-behavior-qualification--2026-11-11)
-records the starting0.29 graph separately from verified0.30 publication and
-the three now-aligned registry consumer locks. Current/minimum Machine controls,
-native custody falsifiers and all planned local consumer gates pass. Required
-Linux CI and merge delivery remain open. Remaining remote acceptance is unchanged.
+Published Behavior/Actors0.30 qualification merged through PR413/814c96d1
+after all six checks and independent reviews passed. The
+[owning record](../prds/static-remote-actors.md#delivery-of-behavior-qualification--2026-11-11)
+preserves the paired registry adoption, three locks, local custody falsifiers,
+actual Linux runtime/minimum compiler/campaign scopes, matching delivery tree
+and normal worktree removal. Remaining remote acceptance is unchanged. R24's
+next exhaustive/generated schedule stage starts from this main and requires
+fresh feature-specific owner verification before authoring.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
@@ -29,7 +31,7 @@ The [fixed incoming schedule](../prds/network-schedule.md#delivery-of-the-fixed-
 merged through PR411 after all six checks and independent reviews passed.
 Broader network campaigns, minimized replay, restart and full R24 remain open.
 
-Updated: 2026-11-11 UTC. This delivery snapshot uses main `3bf270cb`. The
+Updated: 2026-11-11 UTC. This delivery snapshot uses main `814c96d1`. The
 original remote PRD goal is resumed with the user's approved choices, parallel
 work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the
