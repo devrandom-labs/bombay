@@ -32,7 +32,7 @@ use zenoh::query::{ConsolidationMode, Reply as QueryReply};
 use zenoh::sample::Locality;
 
 #[path = "../../../../../examples/counter/src/counter.rs"]
-mod counter;
+pub(super) mod counter;
 use counter::{Counter, CounterIncremented, CounterMessage, CounterValue};
 
 #[path = "../../../tests/protected_counter/custody.rs"]

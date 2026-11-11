@@ -2,23 +2,24 @@
 
 The [R01 protocol record](../prds/remote-protocols.md) assembles the separate-
 program Counter, complete Actions, unrelated local protocol and actual static
-denials. Current focused controls pass in both profiles; the isolated minimum
-compiler remote target passes and its retained Nix gate evaluates. Exact-head
-CI, final review and delivery after PR408/407/409 remain required. No full
+denials. Current focused controls pass in both profiles; the retained minimum
+remote Nix gate passes on submitted256ad8b0, independently of its earlier probe.
+Final reviews pass; PR410 CI and delivery remain required. No full
 remote row, AUTH1 or NET1 is newly marked delivered.
 
-The current Loom maintenance prerequisite is locally qualified on
-`fix/loom-maintenance`: the released compatible owner removes pin-utils,
-full dependency policy and all 28 Observe/6 Entity model cases pass. Public
-Counter debug/optimized checks and actual PR delivery are recorded in the
-[remote PRD](../prds/static-remote-actors.md#loom-maintenance-prerequisite--2026-11-11).
-PR407's research retirement remains separate and cannot merge with its failed
-dependency-policy check. Full remote acceptance remains open.
+The narrow Loom correction408, obsolete transport retirement407 and ordinary
+minimum-compiler gate409 have
+merged after all six checks and independent reviews passed. Actual commits,
+matching delivered trees, CI/artifacts and worktree cleanup are recorded in
+the [remote PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11).
+The [fixed incoming schedule](../prds/network-schedule.md) locally qualifies
+duplicate and changing-authority cases; submitted CI/delivery, broader network
+campaigns/restart and full R24 remain open.
 
-Updated: 2026-11-11 UTC. Current main is `937fecc3`. The original remote PRD
+Updated: 2026-11-11 UTC. Current main is `f3b26a0c`. The original remote PRD
 goal is resumed with the user's approved choices, parallel work and removed
 implementation budgets. The scoped legacy transport-research retirement is
-under verification; its conservation map and exact deletion scope live in the
+delivered; its conservation map and exact deletion scope live in the
 [remote PRD](../prds/static-remote-actors.md#resumed-delivery--2026-11-11).
 The runtime, separate-program Counter, R09 recovery and PR405/406 witnesses
 are delivered. R10/R17 retain complete scoped semantic records; full remote

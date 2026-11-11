@@ -1,5 +1,51 @@
 # Static remote actors and typed admission
 
+## Current delivery — 2026-11-11
+
+PR408 merged as `42f65a1c6161973ceb18b9ed16597e9bb7586fc4` at14:00:11Z.
+Its delivered tree `2c1088c556bb9a93524b41e998e1d6bf65e0da94` equals reviewed
+head899b4572; merge parents are937fecc3 and899b4572. PR407 merged as
+`14729ceb8e07da22ea3efa75555ef38c13f4c161` at14:07:45Z. Its delivered tree
+`be4141e8a8aee5a360b0c2b23ed686a35d302031` equals reviewed headeae29efd;
+parents are42f65a1c andeae29efd. Each has all six successful required checks,
+independent source/outcome/CI reviews and ordinary protected delivery.
+
+Actual [PR408 Nix CI](https://github.com/devrandom-labs/bombay/actions/runs/43013312593/job/130498057018)
+and [PR407 Nix CI](https://github.com/devrandom-labs/bombay/actions/runs/43014182026/job/130501145643)
+execute Observe28/Entity6 optimized model cases, public Counter8 process
+parents/3 protocol cases per profile and the owning50-client cohort. Native
+jobs retain32 configurations/80 actual roles plus the exact2/2/1 auxiliary
+cases in each profile. Downloaded campaign artifacts prove Driver2048 and
+Observe4×1024 seeded ASan executions. Conditional Miri is skipped and earns
+no new credit. Common Git's `session-archives/2026-11-11/ci-review/` preserves
+both PR folders and complete logs/artifacts, with independently passing
+758/513-payload manifests.
+These deliver the narrow dependency correction and obsolete research removal;
+they do not close additional remote acceptance rows.
+
+PR409 merged as `f3b26a0c319f77130e84833099dfbcfc31d09f19` at14:18:14Z,
+parents14729ceb and002d2545; delivered tree47e2638f equals reviewed/tested002.
+All six checks and independent reviews pass. Its
+[owning compiler record](compiler-diagnostics.md#delivery--2026-11-11)
+retains actual Linux1.96 execution of28 targets/32 named suites,114 outer
+passes and the exact136-case compiler set. This is the ordinary default/Axum
+compiler gate, separate from the later full remote target in R01.
+
+Under the user's worktree cleanup instruction, the clean PR407 worktree was
+removed after its verified merge, followed by PR409's clean worktree after
+its merge. The shared Cargo cache had already moved
+to `/tmp/bombay-remote-20261111-target` after every active owner released it;
+all evidence lives outside the removed worktree. PR408 has no separate branch
+worktree to remove. Active feature worktrees remain until their own delivery.
+Earlier qualification/pending-delivery statements below retain their epochs.
+
+The [first incoming schedule](network-schedule.md) now qualifies duplicate,
+held verification expiry/revocation and constructor-expiry traces through the
+actual Export request interpreter and Counter Application. Independent Read2,
+complete typed custody/trace, both paired omission failures and exact restored
+controls pass. This is one fixed incoming slice; generated/exhaustive network
+campaigns, minimized replay, volatile restart and full R24 remain open.
+
 ## Explicit remote protocols — 2026-11-11
 
 The [R01 record](remote-protocols.md#current-integration-and-literal-r01-evidence)
@@ -8,9 +54,11 @@ Actions, unrelated unexported local protocol and intended compiler denials.
 The focused tests qualify on the current Loom0.7.3 graph in both profiles.
 An ordinary Fenix/Crane minimum-remote check retains the complete remote
 compiler target, with only actual compiler-specific expectation differences.
-Its isolated1.96 execution passes; permanent gate evaluation passes. Exact-head
-CI, final independent review, required preceding PR408/407/409 delivery and
-this contribution's reviewed merge remain pending. R01 is not yet delivered;
+Its retained Darwin1.96 execution now passes on submitted256ad8b0; the
+[R01 record](remote-protocols.md#retained-minimum-remote-execution--2026-11-11)
+keeps that later run separate from the earlier probe/evaluation. Source and
+outcome reviews pass. PR410 required CI and actual delivery remain pending.
+R01 is not yet delivered;
 AUTH1, NET1, all other incomplete rows and final distillation remain open.
 
 ## Loom maintenance prerequisite — 2026-11-11
