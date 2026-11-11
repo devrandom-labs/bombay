@@ -81,6 +81,7 @@ first release at all.
 | [Observation disposal](../prds/observation-disposal.md) | Merged: PR403/50e0de42; minimal repair, local acceptance and six exact-head CI checks pass. |
 | [Request recovery](../prds/request-recovery.md) | Active R09 implementation: restored full workspace tests pass in both profiles, with strict Clippy and formatting; PR404 awaits required CI and delivery. |
 | [Cold command ownership](../prds/cold-overlap.md) | Active R22 verification: real two-Node trace and intended grant-omission failure qualified in both profiles; owning49-case suites and lint pass; PR/CI/delivery remain. |
+| [Original request bytes](../prds/request-bytes.md) | Active R02 verification: real native byte/proof and Ledger trace, intended paired failures and restorations qualify; final owning50-case suites, formatting and strict Clippy pass; submitted-head CI/delivery remain. |
 | [Developer experience](../prds/developer-experience.md) | Paired Behavior PRD: one application path, inferred topology and native terminal custody. Integration and fresh combined checks remain required. |
 | [Static remote actor PRD](../prds/static-remote-actors.md) | Selected NET1/AUTH1 scope, dependency verification, correctness gates and parallel work plan; [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records the selection rationale. |
 | [Networking](networking.md) | Wire contracts, Zenoh sessions, remote delivery, discovery, queries and subscriptions. |
