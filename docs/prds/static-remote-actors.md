@@ -1,5 +1,20 @@
 # Static remote actors and typed admission
 
+## Native access and application grants — 2026-11-11
+
+The [scoped R07 record](remote-access.md) qualifies all four actual native
+Query access-rule/application-grant combinations through a controlled TLS
+Router and real Counter Node. Secure health requests succeed on the same
+connections before and after each protected Query. Only double-allow produces
+the actual increment; the independent local Read result is checked after
+full cleanup.
+Exact native-rule and application-grant omissions each fail that primary
+effect oracle in both profiles, followed by exact source restoration and the
+complete four-case controls. Formatting, strict Clippy and three source/
+outcome reviews pass. Production/public API remain unchanged. Combined-source
+CI and delivery remain open, as do gateway provenance, field substitutions,
+production cryptography and complete R07/AUTH1/NET1.
+
 ## Current delivery — 2026-11-11
 
 PR408 merged as `42f65a1c6161973ceb18b9ed16597e9bb7586fc4` at14:00:11Z.
