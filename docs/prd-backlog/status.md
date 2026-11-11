@@ -1,5 +1,15 @@
 # Backlog status and dependencies
 
+The [cold command ownership witness](../prds/cold-overlap.md) is active within
+R22 after fresh locked-owner verification. Two current public Nodes receive
+one overlapping command; real receptions and independent post-cleanup counts
+prove that only the statically assigned Counter executes it. Source
+proposal and independent review pass; healthy and restored debug/optimized
+leaves pass, and the deliberate grant omission fails only unselected User1
+versus0 after cleanup in both profiles. Final owning49-case suites, formatting
+and strict Clippy pass. Focused PR/required CI/delivery remain pending. PR404's
+delivery precedes this inherited source slice; full R22 remains open.
+
 The [request recovery regression](../prds/request-recovery.md) is active within
 R09 after fresh selected-owner verification. Original debug and optimized runs
 each pass the matched limit2 control and fail limit1 only at the final local
