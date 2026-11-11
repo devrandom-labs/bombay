@@ -1,5 +1,30 @@
 # Compiler diagnostics
 
+## Delivery — 2026-11-11
+
+Status: merged. PR409 merged at14:18:14Z as
+`f3b26a0c319f77130e84833099dfbcfc31d09f19`. Its parents are14729ceb and
+reviewed002d2545; delivered tree `47e2638fcd638c0d178b4f94b8857dfb31a957d0`
+equals the reviewed and tested tree. All six required checks and independent
+source/outcome/CI/delivery reviews pass. The clean worktree was removed after
+merge; original source/results remain in common Git and immutable commits.
+The following preparation checkpoints retain their earlier pending states.
+
+Actual [required Nix CI](https://github.com/devrandom-labs/bombay/actions/runs/43019204965/job/130517857232)
+executes Linux Rust1.96.0/ac68faa20 and Cargo1.96.0/30a34c682 over the exact
+28 selected targets. Independent raw readback finds all32 named suites once,
+114 outer passes and one expected parent-owned ignored child, with the exact
+136 compiler-case set matching its manifest. Counts alone are not substituted
+for the actual named case comparison. Existing current-compiler, native,
+Observe28/Entity6 model and bounded fuzz campaigns also pass. Conditional
+Miri is skipped and earns no new credit. Complete source/CI/delivery evidence
+is sealed under common Git's `session-archives/2026-11-11/ci-review/pr409`,
+with499 payload hashes passing.
+
+This delivers only the ordinary minimum-compiler gate and obsolete Python
+retirement. The later R01 minimum-remote extension and complete remote
+acceptance retain their separate records and delivery requirements.
+
 ## Submission integration
 
 Select reviewed retirementeae29efd for the submitted combined source after
@@ -11,7 +36,7 @@ Local results below retain their actual captured source epochs. The combined
 head needs fresh full CI and independent delivery review before protected merge.
 Supplementary minimum-remote/R01 work remains a separate contribution.
 
-Status: active. This focused maintenance stage replaces the two unused Python
+Preparation status: active. This focused maintenance stage replaces the two unused Python
 diagnostic programs with the repository's existing Fenix, Crane, Cargo and
 trybuild owners. Full remote acceptance remains separate.
 

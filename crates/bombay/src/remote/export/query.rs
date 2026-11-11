@@ -28,6 +28,10 @@ use zenoh::{Session, Wait};
 #[path = "custody.rs"]
 mod tests;
 
+#[cfg(test)]
+#[path = "schedule.rs"]
+mod schedule;
+
 pub(crate) trait Exports<Root: Protocol<Addr = MailAddr>, Event, Families, Targets> {
     type Controls;
     fn preflight(

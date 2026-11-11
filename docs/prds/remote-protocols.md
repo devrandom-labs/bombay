@@ -1,9 +1,42 @@
 # Explicit remote protocols
 
-Current checkpoint: qualified R01 tests and minimum-remote gate are integrated
-on reviewed parent `002d254534fde46edaf2b30c52404232a18d9d85`. Required
-submitted-head CI, final independent review and delivery remain pending.
+Current checkpoint: R01 tests and the retained minimum-remote gate qualify
+on submitted `256ad8b028a94be77686cb544ee13b837a5f22be`. Independent final
+source/outcome reviews pass; required Linux CI and delivery remain pending.
 Earlier checkpoints below retain their own source epochs and pending states.
+
+## Retained minimum-remote execution — 2026-11-11
+
+The actual retained Darwin check executes successfully on the clean submitted
+source256ad8b0/treecb15a4f9. Fresh evaluation and actual build agree on
+`/nix/store/r72mivx9df7m8f4iqxwypvyzhnslp9z0-bombay-workspace-test-0.1.0.drv`.
+This differs from the earlier uncommitted-source0kx evaluation because the
+final source/records changed; neither the earlier evaluation nor temporary
+probe is relabelled as this execution.
+
+```sh
+nix build .#checks.aarch64-darwin.bombay-minimum-remote --no-link -L --max-jobs 1 --cores 2
+```
+
+Actual Rust1.96.0/ac68faa20 and Cargo1.96.0/30a34c682 execute the full
+remote_surface target:3 outer/11 compiler cases pass,0 ignored/filtered outer
+tests. The original invalid programs and current/minimum expectations remain
+unchanged; independent readback matches all eight actual immutable test-source
+inputs and the separate expectation patch to256ad8b0. No case filter, parser,
+alternate runner, source substitution or new runtime law is introduced.
+
+Raw log SHA256 is
+`61a2c5c47ad46f7a0ea9de13337ee9eb7802ca587d859ed12b45799ee8ac639d`;
+fresh evaluation SHA256 is
+`bde080527fadcf5d53ffa12e91ba8f7acd04392b49931514b62420ae5f138efb`.
+Both logs and actual exit0 are in common Git's
+`session-archives/2026-11-11/r01-integration/`. Independent source/output and
+derivation reviews pass. The output's ordinary target archive is not claimed
+as a recovered executable or complete transitive compiler closure.
+
+PR408/407/409 are now delivered; PR410 CI and merge remain required. This
+later evidence record changes no test, compiler snapshot, Nix configuration,
+dependency or public interface. Full R01 delivery and other rows remain open.
 
 ## Minimum-compiler integration — pre-edit record
 
