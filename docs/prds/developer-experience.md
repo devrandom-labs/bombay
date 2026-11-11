@@ -201,18 +201,19 @@ controls replace the superseded shared-cache samples. These are bounded buffer
 capacity costs, not whole-framework performance claims; the owning PRD retains
 the exact measurements and limits.
 
-Use the existing immutable verifier inside pinned Nix, with fresh empty output
-directories; verification never overwrites expected diagnostics:
+The supported compiler checks use Cargo and trybuild through pinned Nix. The
+current compiler runs the workspace check; the minimum compiler applies the
+existing reviewed diagnostic patch only inside its disposable Nix build source:
 
 ```sh
-nix develop -c python3 -B tools/diagnostics_test.py
-nix develop -c python3 tools/diagnostics.py --output /tmp/bombay-diagnostics-current
-nix develop -c env RUSTC="$MSRV_BIN/rustc" RUSTDOC="$MSRV_BIN/rustdoc" \
-  python3 tools/diagnostics.py --cargo "$MSRV_BIN/cargo" \
-  --output /tmp/bombay-diagnostics-minimum
+nix build .#checks.aarch64-darwin.bombay-test --no-link
+nix build .#checks.aarch64-darwin.bombay-minimum-compiler --no-link
 ```
 
-MSRV_BIN names the pinned1.96 toolchain; compiler identities are checked.
+Replace aarch64-darwin with the host system when needed. `nix flake check`
+includes both checks. Cargo owns the minimum supported version; the existing
+compiler manifest selects its exact reviewed release and target corpus. The
+[compiler record](compiler-diagnostics.md) retains scope and execution evidence.
 Rust/Cargo/example/fmt/lint commands always run inside pinned Nix. Complete
 resource accounting, proportional failure inspection, Machine/deferred custody,
 SDK privacy, comparable memory/compile costs and final documentation acceptance

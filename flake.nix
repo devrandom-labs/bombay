@@ -24,6 +24,12 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        compilerTools = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.darwin.cctools ];
+        diagnostics = builtins.fromJSON (
+          builtins.readFile ./crates/bombay/tests/compile/diagnostics/compilers.json
+        );
+        diagnosticCargoArgs = "-p bombay-rs -p bombay-engine -p observe-tests --features axum";
+        minimumRust = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).workspace.package.rust-version;
 
         # Nix and rustup resolve the same pinned toolchain declaration.
         toolchain =
@@ -33,11 +39,26 @@
           }).overrideAttrs
             (previous: {
               # Fenix patches compiler-library paths with this tool on macOS.
-              nativeBuildInputs =
-                (previous.nativeBuildInputs or [ ])
-                ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.darwin.cctools ];
+              nativeBuildInputs = (previous.nativeBuildInputs or [ ]) ++ compilerTools;
             });
         craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
+        minimumToolchain =
+          assert pkgs.lib.versions.majorMinor diagnostics.compilers.msrv.release == minimumRust;
+          (
+            (fenix.packages.${system}.toolchainOf {
+              channel = diagnostics.compilers.msrv.release;
+              sha256 = "sha256-mvUGEOHYJpn3ikC5hckneuGixaC+yGrkMM/liDIDgoU=";
+            }).withComponents
+            [
+              "cargo"
+              "rustc"
+              "rust-std"
+            ]
+          ).overrideAttrs
+            (previous: {
+              nativeBuildInputs = (previous.nativeBuildInputs or [ ]) ++ compilerTools;
+            });
+        minimumCraneLib = (crane.mkLib pkgs).overrideToolchain minimumToolchain;
         src =
           let
             withoutCargoTargets = pkgs.lib.fileset.fromSource (
@@ -115,6 +136,9 @@
           '';
         };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        minimumCargoArtifacts = minimumCraneLib.buildDepsOnly (
+          commonArgs // { cargoExtraArgs = "--locked ${diagnosticCargoArgs}"; }
+        );
         protectedCounterVendor = craneLib.vendorCargoDeps {
           inherit src;
           cargoLock = ./docs/prds/static-remote-actors/transport-custody/Cargo.lock;
@@ -170,6 +194,22 @@
             // {
               inherit cargoArtifacts;
               cargoTestExtraArgs = "--workspace --all-targets";
+            }
+          );
+          bombay-minimum-compiler = minimumCraneLib.cargoTest (
+            commonArgs
+            // {
+              cargoArtifacts = minimumCargoArtifacts;
+              patches = [ ./crates/bombay/tests/compile/diagnostics/minimum.patch ];
+              cargoTestExtraArgs =
+                "${diagnosticCargoArgs} "
+                + pkgs.lib.concatMapStringsSep " " (target: "--test ${pkgs.lib.escapeShellArg target}") (
+                  builtins.attrNames diagnostics.targets
+                );
+              preCheck = ''
+                rustc --version --verbose
+                cargo --version
+              '';
             }
           );
           bombay-child-no-default-features = craneLib.mkCargoDerivation (
