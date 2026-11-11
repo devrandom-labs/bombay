@@ -11,9 +11,11 @@ full cleanup.
 Exact native-rule and application-grant omissions each fail that primary
 effect oracle in both profiles, followed by exact source restoration and the
 complete four-case controls. Formatting, strict Clippy and three source/
-outcome reviews pass. Production/public API remain unchanged. Combined-source
-CI and delivery remain open, as do gateway provenance, field substitutions,
-production cryptography and complete R07/AUTH1/NET1.
+outcome reviews pass. Production/public API remain unchanged. PR412 delivers
+this crossing after all six checks pass; its [owning delivery record](remote-access.md#delivery-of-the-access-crossing--2026-11-11)
+keeps the original hidden failure separate from fresh passing CI. Gateway
+provenance, field substitutions, production cryptography and complete
+R07/AUTH1/NET1 remain open.
 
 ## Current delivery — 2026-11-11
 
@@ -46,12 +48,25 @@ retains actual Linux1.96 execution of28 targets/32 named suites,114 outer
 passes and the exact136-case compiler set. This is the ordinary default/Axum
 compiler gate, separate from the later full remote target in R01.
 
+PR410 delivers the [literal R01 witness](remote-protocols.md#delivery--2026-11-11).
+PR411 delivers the [fixed incoming schedule](network-schedule.md#delivery-of-the-fixed-schedule--2026-11-11).
+PR412 delivers the [native access/grant crossing](remote-access.md#delivery-of-the-access-crossing--2026-11-11).
+Each owning record preserves its exact submitted/merged source, passing CI,
+independent reviews, durable artifacts and normal worktree removal. The
+literal R01 record is satisfied; broader R07/R24, other incomplete rows,
+AUTH1/NET1 and final whole-feature distillation remain open.
+
+Delivery reconciliation at3bf270cb changes six existing Markdown records.
+Production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
+Records +146/-47/net99; no untracked paths are present at this checkpoint.
+
 Under the user's worktree cleanup instruction, the clean PR407 worktree was
 removed after its verified merge, followed by PR409's clean worktree after
 its merge. The shared Cargo cache had already moved
 to `/tmp/bombay-remote-20261111-target` after every active owner released it;
 all evidence lives outside the removed worktree. PR408 has no separate branch
-worktree to remove. Active feature worktrees remain until their own delivery.
+worktree to remove. PR410/411/412 worktrees have also been removed after their
+verified merges and release by all active users.
 Earlier qualification/pending-delivery statements below retain their epochs.
 
 The [first incoming schedule](network-schedule.md) now qualifies duplicate,
@@ -72,9 +87,9 @@ compiler target, with only actual compiler-specific expectation differences.
 Its retained Darwin1.96 execution now passes on submitted256ad8b0; the
 [R01 record](remote-protocols.md#retained-minimum-remote-execution--2026-11-11)
 keeps that later run separate from the earlier probe/evaluation. Source and
-outcome reviews pass. PR410 required CI and actual delivery remain pending.
-R01 is not yet delivered;
-AUTH1, NET1, all other incomplete rows and final distillation remain open.
+outcome reviews pass. [PR410's delivery](remote-protocols.md#delivery--2026-11-11)
+includes the required current and minimum Linux checks and satisfies literal
+R01. AUTH1, NET1, all other incomplete rows and final distillation remain open.
 
 ## Loom maintenance prerequisite — 2026-11-11
 

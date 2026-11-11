@@ -4,12 +4,36 @@ Status: active, scoped R07 verification. Original source parent is reviewed
 R01 commit256ad8b0; integration now uses reviewed88ee6f52. This work does not
 close R07, AUTH1 or NET1.
 
-Current checkpoint: the four native access/application-grant controls pass
-debug and optimized on exact restored sources. Both independently reviewed
-one-line policy cuts fail the intended actual Counter-state oracle in both
-profiles; final formatting and strict Clippy pass. Required submitted-head CI,
-combined-source review, PR delivery and the rest of R07 remain pending. Earlier
-execution-in-progress checkpoints below retain their original source epochs.
+Current checkpoint: PR412 delivers the four native access/application-grant
+controls with all six checks, independent reviews and a matching merged source
+tree. Both policy omissions retain their qualified failures and exact restored
+controls. Gateway provenance, field substitutions and the rest of R07 remain
+open. Earlier checkpoints retain their original source epochs.
+
+## Delivery of the access crossing — 2026-11-11
+
+[PR412](https://github.com/devrandom-labs/bombay/pull/412) merged as
+`3bf270cbc5822da80f81155fa743fd8b2833e55a` at19:17:58Z after all six checks
+passed on `fe3310de1ef8588df8e0a58a93cc3b69ebe0c53a`. Delivered tree
+`fcddd357f938e1509394f9d08540081b904f3198` equals the reviewed and tested
+tree; merge parents are2b7acf12 andfe3310de.
+
+The [required Nix job](https://github.com/devrandom-labs/bombay/actions/runs/43059276427/job/130657105316)
+executes all four access cases in Linux debug and optimized profiles. Each
+profile passes523 tests across the twelve selected remote targets, including
+434 library cases, with no failures or ignored cases. Current/minimum compiler
+checks, public Counter, Observe28/Entity6 models and both native campaigns
+also pass. Driver2048 and Observe4×1024 ASan artifacts retain their primitive
+scope; conditional Miri is skipped and earns no credit.
+
+Independent source/outcome/CI review seals504 payload hashes in common Git's
+`session-archives/2026-11-11/ci-review/pr412/`; its manifest SHA256 is
+`a40690a21fe6baa4bbba8e6cd89a1cd769dfdd5c751a7ef0f09274d070798e3b`.
+The fully clean worktree was removed normally after all users released it.
+Production/public API remain unchanged. Original head582bc964's hidden
+Cargo101 failure remains preserved with its cause unknown. The diagnostic
+change restores failure-log visibility; successful fresh fe CI does not prove
+a retrospective repair or close complete R07, AUTH1 or NET1.
 
 ## Pre-edit record — 2026-11-11
 

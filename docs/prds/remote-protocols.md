@@ -1,9 +1,37 @@
 # Explicit remote protocols
 
-Current checkpoint: R01 tests and the retained minimum-remote gate qualify
-on submitted `256ad8b028a94be77686cb544ee13b837a5f22be`. Independent final
-source/outcome reviews pass; required Linux CI and delivery remain pending.
-Earlier checkpoints below retain their own source epochs and pending states.
+Status: merged for the literal R01 witness. Required Linux CI, independent
+source/outcome/minimization reviews and protected delivery pass. This closes
+the five literal obligations in the evidence map below, not their entire
+inventory families, AUTH1, NET1 or the remaining remote rows. Earlier
+checkpoints retain their own source epochs and historical pending states.
+
+## Delivery — 2026-11-11
+
+[PR410](https://github.com/devrandom-labs/bombay/pull/410) merged as
+`f2832eea91be13f01f330ab48b3f3ba5ff3f4c63` at15:17:51Z after all six checks
+passed on `256ad8b028a94be77686cb544ee13b837a5f22be`. The delivered tree
+`cb15a4f9fff0a40e2d56ac41de8557caebb8731d` equals the reviewed and tested tree;
+merge parents are f3b26a0c and256ad8b0.
+
+The [required Nix job](https://github.com/devrandom-labs/bombay/actions/runs/43026265827/job/130541625371)
+executes the separate-program Counter and its pure Actions tests, owning
+Counter controls, fifty application-client cases, current remote_surface
+three outer/eleven compiler cases, and the retained Rust1.96 remote check's
+same three/eleven set. The separate default/Axum minimum gate retains its
+28 targets,32 named suites and136 compiler cases. No current run is inferred
+from the earlier probe or Darwin qualification.
+
+The fixed causal journey is Increment → processed reply → Read1 → Stop.
+No randomized generator or seed is used. Native OS scheduling is uncontrolled;
+this journey supplies no independent network-scheduler evidence for R24.
+
+Independent CI/source/custody review seals506 payload hashes in common Git's
+`session-archives/2026-11-11/ci-review/pr410/`. The clean worktree was removed
+normally after merge; its three ignored WIP files were preserved first, and
+both diagnostics matched the tracked canonical files. Production/public API remain
+unchanged. The complete literal map and its qualified static denials remain
+the semantic evidence; a passing build alone does not establish R01.
 
 ## Retained minimum-remote execution — 2026-11-11
 
