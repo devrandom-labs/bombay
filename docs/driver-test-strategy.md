@@ -9,7 +9,7 @@ primitive concurrency semantics.
 
 The workspace selects published Behavior Core, Actors and Macros through
 `Cargo.lock`. Current archive and source verification is recorded in the
-[developer experience coordination](prds/developer-experience.md).
+[published Behavior qualification](prds/static-remote-actors.md#published-behavior-qualification--2026-11-11).
 Evidence must name the revision of each owner it exercises.
 
 Behavior owns initialization, synchronous folds, complete `Actions`, ordered
@@ -32,10 +32,10 @@ it cannot be used to pass or block an Engine law.
 ## Actor-template boundary inventory
 
 `driver-template-manifest.json` schema 3 is the revision-bound ownership
-inventory for the selected Behavior Actors source. This feature requires
-unpublished candidate `648896595e45e9d97db3c87d1e72e2d6205e8a1d`, currently version0.27.0;
-its registry manifest/lock still need the compatible normal release. It records the
-45 public Behavior compositions by family, public spelling, event boundary,
+inventory for published Behavior Actors0.30.0 at verified source
+`628649da014a527d47f21567a859c5c78494df13`, selected together with Core0.30.0
+and Macros0.16.0 through the registry manifest/lock. It records the
+46 public Behavior compositions by family, public spelling, event boundary,
 ordered effect lanes, composition edge, owning source, and upstream evidence.
 It separately records all 19 actor-owned interpreter-request/source-action
 families, their emitters, and whether Bombay source mentions a matching
@@ -65,14 +65,15 @@ proof. `ObserveEstablishedCreation` and `CancelObservation` are
 public capability contracts with no current public-template emitter and stay
 listed so a later emitter cannot appear outside the inventory.
 
-The published base is `b8307d1a763dfd2998ef140dba488f32eb15d010`. Its four
-ordinary timer wrappers remain named there. The candidate uses
+The selected ordinary timer wrappers use
 EventLayer<OwnedTimerElapsed, B::Event> and the shared timer::ScheduleAt/After
 family with closed TimerId/Here targets. Lease, Presence, CircuitBreaker and
-template restart requests retain their named contracts. These are source-selected
-proofs, not execution against the unchanged registry graph.
+template restart requests retain their named contracts. Machine distinguishes
+unbounded holding from InputLimit refusal delivery carrying complete User values.
+The inventory records owning source facts; consumer execution requires its
+separate native/static evidence.
 The inventory follows the current supervisor, pool, proxy and worker owners;
-all45 template and19 capability-family entries remain. The presence scan includes
+all46 template and19 capability-family entries remain. The presence scan includes
 test source and checks no complete type equation; its green result is catalogue
 consistency, not runtime interpreter correctness. Native/static consumer tests
 own that evidence. Conditional child membership, private-input recovery and
@@ -95,7 +96,7 @@ records:
 - `inversion`: one unique edit to the real owning source plus the exact test
   that must kill it.
 
-Every record contains a unique evidence identifier, the selected Behavior
+Every record contains a unique evidence identifier, its historical Behavior
 revision, an exact claim, and a pinned-Nix reproduction command. Positive and
 boundary records name an integration-test target and exact test. Inversion
 records additionally name the edited repository path, the semantic mutation,

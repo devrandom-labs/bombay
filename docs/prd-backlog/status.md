@@ -1,5 +1,12 @@
 # Backlog status and dependencies
 
+Published Behavior/Actors0.30 qualification is the current prerequisite after
+PR412. The [owning pre-edit record](../prds/static-remote-actors.md#published-behavior-qualification--2026-11-11)
+records the starting0.29 graph separately from verified0.30 publication and
+the three now-aligned registry consumer locks. Current/minimum Machine controls,
+native custody falsifiers and all planned local consumer gates pass. Required
+Linux CI and merge delivery remain open. Remaining remote acceptance is unchanged.
+
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
 Four actual TLS Router/Counter cases pass in both profiles with independent
